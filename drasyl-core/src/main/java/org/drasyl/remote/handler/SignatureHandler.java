@@ -23,7 +23,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -38,7 +38,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public class SignatureHandler extends SimpleDuplexHandler<IntermediateEnvelope<MessageLite>, IntermediateEnvelope<MessageLite>, Address> {
+public class SignatureHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<MessageLite>, AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final SignatureHandler INSTANCE = new SignatureHandler();
     public static final String SIGNATURE_HANDLER = "SIGNATURE_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
@@ -49,12 +49,12 @@ public class SignatureHandler extends SimpleDuplexHandler<IntermediateEnvelope<M
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
-                               final IntermediateEnvelope<MessageLite> msg,
+                               final AddressedIntermediateEnvelope<MessageLite> msg,
                                final CompletableFuture<Void> future) {
         try {
-            if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
+            if (ctx.identity().getPublicKey().equals(msg.getContent().getRecipient())) {
                 // disarm all messages addressed to us
-                final IntermediateEnvelope<MessageLite> disarmedMessage = msg.disarmAndRelease(ctx.identity().getPrivateKey());
+                final AddressedIntermediateEnvelope<MessageLite> disarmedMessage = new AddressedIntermediateEnvelope<>(msg.getSender(), msg.getRecipient(), msg.getContent().disarmAndRelease(ctx.identity().getPrivateKey()));
                 ctx.fireRead(sender, disarmedMessage, future);
             }
             else {
@@ -71,12 +71,12 @@ public class SignatureHandler extends SimpleDuplexHandler<IntermediateEnvelope<M
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final IntermediateEnvelope<MessageLite> msg,
+                                final AddressedIntermediateEnvelope<MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         try {
-            if (ctx.identity().getPublicKey().equals(msg.getSender())) {
+            if (ctx.identity().getPublicKey().equals(msg.getContent().getSender())) {
                 // arm all messages from us
-                final IntermediateEnvelope<MessageLite> armedMessage = msg.armAndRelease(ctx.identity().getPrivateKey());
+                final AddressedIntermediateEnvelope<MessageLite> armedMessage = new AddressedIntermediateEnvelope<>(msg.getSender(), msg.getRecipient(), msg.getContent().armAndRelease(ctx.identity().getPrivateKey()));
                 ctx.write(recipient, armedMessage, future);
             }
             else {

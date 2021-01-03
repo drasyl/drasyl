@@ -40,6 +40,7 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.Pair;
 import org.drasyl.util.PortMappingUtil.PortMapping;
 import org.junit.jupiter.api.Nested;
@@ -194,9 +195,9 @@ class UdpServerTest {
     class MessagePassing {
         @Test
         void shouldPassOutgoingMessagesToUdp(@Mock final InetSocketAddressWrapper recipient,
-                                             @Mock final ByteBuf msg) {
+                                             @Mock(answer = RETURNS_DEEP_STUBS) final AddressedByteBuf msg) {
             when(channel.isWritable()).thenReturn(true);
-            when(recipient.getAddress()).thenReturn(createUnresolved("example.com", 1234));
+            when(msg.getRecipient().getAddress()).thenReturn(createUnresolved("example.com", 1234));
             when(channel.writeAndFlush(any()).isDone()).thenReturn(true);
             when(channel.writeAndFlush(any()).isSuccess()).thenReturn(true);
 
@@ -231,7 +232,7 @@ class UdpServerTest {
 
             pipeline.processInbound(event).join();
 
-            inboundMessages.awaitCount(1).assertValueCount(1);
+            inboundMessages.awaitCount(1).assertValueCount(1).assertValue(p -> p.second() instanceof AddressedByteBuf);
             pipeline.close();
         }
     }

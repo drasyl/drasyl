@@ -23,7 +23,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -37,7 +37,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * This handler filters out all messages received from other networks.
  */
 @Stateless
-public class OtherNetworkFilter extends SimpleInboundHandler<IntermediateEnvelope<MessageLite>, Address> {
+public class OtherNetworkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
@@ -48,10 +48,10 @@ public class OtherNetworkFilter extends SimpleInboundHandler<IntermediateEnvelop
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
-                               final IntermediateEnvelope<MessageLite> msg,
+                               final AddressedIntermediateEnvelope<MessageLite> msg,
                                final CompletableFuture<Void> future) {
         try {
-            if (msg.isChunk() || ctx.config().getNetworkId() == msg.getNetworkId()) {
+            if (msg.getContent().isChunk() || ctx.config().getNetworkId() == msg.getContent().getNetworkId()) {
                 ctx.fireRead(sender, msg, future);
             }
             else {

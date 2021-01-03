@@ -28,7 +28,10 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.remote.protocol.AddressedByteBuf;
+import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
@@ -55,29 +58,30 @@ class ByteBuf2MessageHandlerTest {
     private TypeValidator inboundValidator;
     @Mock
     private TypeValidator outboundValidator;
-    private CompressedPublicKey senderKey;
+    private CompressedPublicKey senderPublicKey;
     private ProofOfWork proofOfWork;
-    private CompressedPublicKey recipient;
+    private CompressedPublicKey recipientPublicKey;
 
     @BeforeEach
     void setUp() throws CryptoException {
-        senderKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
-        recipient = CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
+        senderPublicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
+        recipientPublicKey = CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
         proofOfWork = ProofOfWork.of(1);
     }
 
     @Test
-    void shouldConvertByteBufToEnvelope(@Mock final Address sender) throws IOException {
-        final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(1337, senderKey, proofOfWork, recipient, correspondingId);
-        final ByteBuf byteBuf = acknowledgementMessage.getOrBuildByteBuf();
+    void shouldConvertByteBufToEnvelope(@Mock final InetSocketAddressWrapper senderAddress,
+                                        @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
+        final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
+        final AddressedByteBuf byteBuf = new AddressedByteBuf(senderAddress, recipientAddress, acknowledgementMessage.getOrBuildByteBuf());
 
         final ByteBuf2MessageHandler handler = ByteBuf2MessageHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
-        pipeline.processInbound(sender, byteBuf);
+        pipeline.processInbound(senderPublicKey, byteBuf);
 
         inboundMessages.awaitCount(1).assertValueCount(1);
-        inboundMessages.assertValue(pair -> pair.second() instanceof IntermediateEnvelope);
+        inboundMessages.assertValue(pair -> pair.second() instanceof AddressedIntermediateEnvelope);
 
         ReferenceCountUtil.safeRelease(byteBuf);
         pipeline.close();

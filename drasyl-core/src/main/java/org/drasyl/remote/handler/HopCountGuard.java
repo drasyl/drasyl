@@ -23,6 +23,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -38,7 +39,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * reached, the message is discarded. Otherwise the message can pass.
  */
 @Stateless
-public class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvelope<MessageLite>, Address> {
+public class HopCountGuard extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
     public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
@@ -49,12 +50,12 @@ public class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvelope<Me
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final IntermediateEnvelope<MessageLite> msg,
+                                final AddressedIntermediateEnvelope<MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         try {
-            if (msg.getHopCount() < ctx.config().getRemoteMessageHopLimit()) {
+            if (msg.getContent().getHopCount() < ctx.config().getRemoteMessageHopLimit()) {
                 // route message to next hop (node)
-                msg.incrementHopCount();
+                msg.getContent().incrementHopCount();
 
                 ctx.write(recipient, msg, future);
             }
@@ -66,7 +67,7 @@ public class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvelope<Me
             }
         }
         catch (final IllegalArgumentException e) {
-            LOG.error("Unable to read hop count from message '{}': {}", () -> sanitizeLogArg(msg), e::getMessage);
+            LOG.error("Unable to read hop count from message '{}': {}", () -> sanitizeLogArg(msg.getContent()), e::getMessage);
             ReferenceCountUtil.safeRelease(msg);
             future.completeExceptionally(new Exception("Unable to read hop count from message.", e));
         }

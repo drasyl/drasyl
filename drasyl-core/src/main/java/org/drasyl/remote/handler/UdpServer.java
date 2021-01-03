@@ -45,6 +45,7 @@ import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.PortMappingUtil;
@@ -69,7 +70,7 @@ import static org.drasyl.util.UriUtil.overridePort;
  * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the
  * {@link DrasylPipeline}.
  */
-public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressWrapper> {
+public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocketAddressWrapper> {
     public static final String UDP_SERVER = "UDP_SERVER";
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private final Bootstrap bootstrap;
@@ -183,11 +184,12 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                     .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
                         @Override
                         protected void channelRead0(final ChannelHandlerContext channelCtx,
-                                                    final DatagramPacket msg) {
-                            LOG.trace("Datagram received {}", msg);
-                            final ByteBuf byteBuf = msg.content();
+                                                    final DatagramPacket packet) {
+                            LOG.trace("Datagram received {}", packet);
+                            final ByteBuf byteBuf = packet.content();
                             byteBuf.retain();
-                            ctx.pipeline().processInbound(InetSocketAddressWrapper.of(msg.sender()), byteBuf);
+                            final AddressedByteBuf addressedByteBuf = new AddressedByteBuf(packet.sender(), packet.recipient(), byteBuf);
+                            ctx.pipeline().processInbound(addressedByteBuf.getSender(), addressedByteBuf);
                         }
                     })
                     .bind(ctx.config().getRemoteBindHost(), bindPort);
@@ -239,15 +241,15 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final InetSocketAddressWrapper recipient,
-                                final ByteBuf byteBuf,
+                                final AddressedByteBuf addressedByteBuf,
                                 final CompletableFuture<Void> future) {
         if (channel != null && channel.isWritable()) {
-            final DatagramPacket packet = new DatagramPacket(byteBuf, recipient.getAddress());
+            final DatagramPacket packet = new DatagramPacket(addressedByteBuf.getContent(), addressedByteBuf.getRecipient().getAddress());
             LOG.trace("Send Datagram {}", packet);
             FutureUtil.completeOnAllOf(future, FutureUtil.toFuture(channel.writeAndFlush(packet)));
         }
         else {
-            ReferenceCountUtil.safeRelease(byteBuf);
+            ReferenceCountUtil.safeRelease(addressedByteBuf);
             future.completeExceptionally(new Exception("Udp Channel is not present or is not writable."));
         }
     }

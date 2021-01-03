@@ -26,6 +26,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
@@ -57,9 +58,9 @@ class InvalidProofOfWorkFilterTest {
     private DrasylConfig config;
 
     @Test
-    void shouldDropMessagesWithInvalidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws InterruptedException, IOException {
-        when(message.getProofOfWork().isValid(any(), anyByte())).thenReturn(false);
-        when(message.isChunk()).thenReturn(false);
+    void shouldDropMessagesWithInvalidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException, IOException {
+        when(message.getContent().getProofOfWork().isValid(any(), anyByte())).thenReturn(false);
+        when(message.getContent().isChunk()).thenReturn(false);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -73,9 +74,9 @@ class InvalidProofOfWorkFilterTest {
     }
 
     @Test
-    void shouldPassMessagesWithValidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws IOException {
-        when(message.getProofOfWork().isValid(any(), anyByte())).thenReturn(true);
-        when(message.isChunk()).thenReturn(false);
+    void shouldPassMessagesWithValidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws IOException {
+        when(message.getContent().getProofOfWork().isValid(any(), anyByte())).thenReturn(true);
+        when(message.getContent().isChunk()).thenReturn(false);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -89,8 +90,8 @@ class InvalidProofOfWorkFilterTest {
     }
 
     @Test
-    void shouldPassChunks(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws IOException {
-        when(message.isChunk()).thenThrow(IOException.class);
+    void shouldPassChunks(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws IOException {
+        when(message.getContent().isChunk()).thenThrow(IOException.class);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
