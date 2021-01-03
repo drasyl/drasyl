@@ -19,7 +19,6 @@
 package org.drasyl.remote.handler;
 
 import com.google.protobuf.MessageLite;
-import io.netty.util.ReferenceCounted;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
@@ -40,6 +39,7 @@ import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.remote.handler.UdpDiscoveryHandler.OpenPing;
 import org.drasyl.remote.handler.UdpDiscoveryHandler.Peer;
+import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
@@ -156,10 +156,13 @@ class UdpDiscoveryHandlerTest {
 
         @Test
         void shouldReplyWithAcknowledgmentMessageToDiscoveryMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
-                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address) throws CryptoException {
+                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
+                                                                    @Mock final InetSocketAddressWrapper senderAddress,
+                                                                    @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
             final IntermediateEnvelope<Discovery> discoveryMessage = IntermediateEnvelope.discovery(0, sender, ProofOfWork.of(6518542), recipient, System.currentTimeMillis());
+            final AddressedIntermediateEnvelope<Discovery> addressedDiscoveryMessage = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, discoveryMessage);
 
             when(identity.getPublicKey()).thenReturn(recipient);
 
@@ -167,27 +170,30 @@ class UdpDiscoveryHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
             final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
-            pipeline.processInbound(address, discoveryMessage);
+            pipeline.processInbound(address, addressedDiscoveryMessage);
 
             outboundMessages.awaitCount(1).assertValueCount(1);
-            outboundMessages.assertValue(m -> m instanceof IntermediateEnvelope && ((IntermediateEnvelope<?>) m).getPrivateHeader().getType() == ACKNOWLEDGEMENT);
+            outboundMessages.assertValue(m -> m instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) m).getContent().getPrivateHeader().getType() == ACKNOWLEDGEMENT);
             verify(peersManager, never()).setPeerInformationAndAddPath(any(), any(), any());
             pipeline.close();
         }
 
         @Test
         void shouldUpdatePeerInformationOnAcknowledgementMessageFromNormalPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
-                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) throws IOException, CryptoException {
+                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
+                                                                               @Mock final InetSocketAddressWrapper senderAddress,
+                                                                               @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, CryptoException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
             final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
+            final AddressedIntermediateEnvelope<Acknowledgement> addressedAcknowledgementMessage = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, acknowledgementMessage);
 
             when(identity.getPublicKey()).thenReturn(recipient);
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address, false))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-            pipeline.processInbound(address, acknowledgementMessage).join();
+            pipeline.processInbound(address, addressedAcknowledgementMessage).join();
 
             verify(peersManager).setPeerInformationAndAddPath(any(), any(), any());
             pipeline.close();
@@ -195,17 +201,20 @@ class UdpDiscoveryHandlerTest {
 
         @Test
         void shouldUpdatePeerInformationOnAcknowledgementMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
-                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) throws IOException, CryptoException {
+                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
+                                                                              @Mock final InetSocketAddressWrapper senderAddress,
+                                                                              @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, CryptoException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
             final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
+            final AddressedIntermediateEnvelope<Acknowledgement> addressedAcknowledgementMessage = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, acknowledgementMessage);
 
             when(identity.getPublicKey()).thenReturn(recipient);
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address, true))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-            pipeline.processInbound(address, acknowledgementMessage).join();
+            pipeline.processInbound(address, addressedAcknowledgementMessage).join();
 
             verify(peersManager).setPeerInformationAndAddPathAndSetSuperPeer(any(), any(), any());
             pipeline.close();
@@ -260,15 +269,15 @@ class UdpDiscoveryHandlerTest {
             when(ctx.config().getRemoteSuperPeerEndpoint().getHost()).thenReturn("127.0.0.1");
             when(ctx.identity().getPublicKey()).thenReturn(myPublicKey);
             when(ctx.config().getRemoteSuperPeerEndpoint().getPublicKey()).thenReturn(publicKey);
-            when(ctx.write(any(), any(ReferenceCounted.class), any())).then(invocation -> {
-                ReferenceCountUtil.safeRelease(invocation.getArgument(1, ReferenceCounted.class));
+            when(ctx.write(any(), any(AddressedIntermediateEnvelope.class), any())).then(invocation -> {
+                ReferenceCountUtil.safeRelease(invocation.getArgument(1, AddressedIntermediateEnvelope.class));
                 return null;
             });
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, new HashSet<>());
             handler.doHeartbeat(ctx);
 
-            verify(ctx).write(any(), any(IntermediateEnvelope.class), any());
+            verify(ctx).write(any(), any(AddressedIntermediateEnvelope.class), any());
         }
 
         @Test
@@ -280,15 +289,15 @@ class UdpDiscoveryHandlerTest {
             when(peer.hasControlTraffic(any())).thenReturn(true);
             when(peer.hasApplicationTraffic(any())).thenReturn(true);
             when(ctx.identity().getPublicKey()).thenReturn(myPublicKey);
-            when(ctx.write(any(), any(ReferenceCounted.class), any())).then(invocation -> {
-                ReferenceCountUtil.safeRelease(invocation.getArgument(1, ReferenceCounted.class));
+            when(ctx.write(any(), any(AddressedIntermediateEnvelope.class), any())).then(invocation -> {
+                ReferenceCountUtil.safeRelease(invocation.getArgument(1, AddressedIntermediateEnvelope.class));
                 return null;
             });
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)));
             handler.doHeartbeat(ctx);
 
-            verify(ctx).write(any(), any(IntermediateEnvelope.class), any());
+            verify(ctx).write(any(), any(AddressedIntermediateEnvelope.class), any());
         }
 
         @Test
@@ -310,10 +319,13 @@ class UdpDiscoveryHandlerTest {
     class Uniting {
         @Test
         void shouldHandleUniteMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address) throws IOException, CryptoException {
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
+                                                   @Mock final InetSocketAddressWrapper senderAddress,
+                                                   @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, CryptoException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
             final IntermediateEnvelope<Unite> uniteMessage = IntermediateEnvelope.unite(0, sender, ProofOfWork.of(6518542), recipient, CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), new InetSocketAddress(22527));
+            final AddressedIntermediateEnvelope<Unite> addressedUniteMessage = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, uniteMessage);
 
             when(config.getRemoteSuperPeerEndpoint().getPublicKey()).thenReturn(sender);
             when(identity.getPublicKey()).thenReturn(recipient);
@@ -321,7 +333,7 @@ class UdpDiscoveryHandlerTest {
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(CompressedPublicKey.of(uniteMessage.getBody().getPublicKey().toByteArray()), peer)), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-            pipeline.processInbound(address, uniteMessage).join();
+            pipeline.processInbound(address, addressedUniteMessage).join();
 
             verify(rendezvousPeers).add(any());
 
@@ -331,7 +343,7 @@ class UdpDiscoveryHandlerTest {
 
         @Test
         void shouldInitiateUniteForInboundMessageWithKnownSenderAndRecipient(@Mock final InetSocketAddressWrapper sender,
-                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message,
+                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer senderPeer,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) throws CryptoException {
             final InetSocketAddressWrapper senderSocketAddress = InetSocketAddressWrapper.of(new InetSocketAddress(80));
@@ -344,18 +356,18 @@ class UdpDiscoveryHandlerTest {
             when(senderPeer.getAddress()).thenReturn(senderSocketAddress);
             when(recipientPeer.getAddress()).thenReturn(recipientSocketAddress);
             when(identity.getPublicKey()).thenReturn(myKey);
-            when(message.getSender()).thenReturn(senderKey);
-            when(message.getRecipient()).thenReturn(recipientKey);
+            when(message.getContent().getSender()).thenReturn(senderKey);
+            when(message.getContent().getRecipient()).thenReturn(recipientKey);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getSender(), senderPeer, message.getRecipient(), recipientPeer), rendezvousPeers);
+            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getContent().getSender(), senderPeer, message.getContent().getRecipient(), recipientPeer), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
             final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
 
             pipeline.processInbound(sender, message).join();
 
             outboundMessages.awaitCount(3).assertValueCount(3);
-            outboundMessages.assertValueAt(1, p -> p.first().equals(senderSocketAddress) && p.second() instanceof IntermediateEnvelope && ((IntermediateEnvelope<?>) p.second()).getPrivateHeader().getType() == UNITE);
-            outboundMessages.assertValueAt(2, p -> p.first().equals(recipientSocketAddress) && p.second() instanceof IntermediateEnvelope && ((IntermediateEnvelope<?>) p.second()).getPrivateHeader().getType() == UNITE);
+            outboundMessages.assertValueAt(1, p -> p.first().equals(senderSocketAddress) && p.second() instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().getPrivateHeader().getType() == UNITE);
+            outboundMessages.assertValueAt(2, p -> p.first().equals(recipientSocketAddress) && p.second() instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().getPrivateHeader().getType() == UNITE);
             pipeline.close();
         }
     }
@@ -366,27 +378,27 @@ class UdpDiscoveryHandlerTest {
         class Inbound {
             @Test
             void shouldRelayMessageForKnownRecipient(@Mock final InetSocketAddressWrapper sender,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
                 when(recipientPeer.isReachable(any())).thenReturn(true);
 
-                final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getRecipient(), recipientPeer), rendezvousPeers);
+                final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getContent().getRecipient(), recipientPeer), rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
                 final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processInbound(sender, message).join();
 
                 outboundMessages.awaitCount(1).assertValueCount(1);
-                outboundMessages.assertValue(p -> p.first().equals(recipientPeer.getAddress()) && p.second().equals(message));
+                outboundMessages.assertValue(p -> p.first().equals(recipientPeer.getAddress()) && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().equals(message.getContent()));
                 pipeline.close();
             }
 
             @Test
             void shouldCompleteExceptionallyOnInvalidMessage(@Mock final InetSocketAddressWrapper sender,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message,
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey recipient) throws InterruptedException {
-                when(message.getRecipient()).thenThrow(IllegalArgumentException.class);
+                when(message.getContent().getRecipient()).thenThrow(IllegalArgumentException.class);
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -402,10 +414,13 @@ class UdpDiscoveryHandlerTest {
             @Test
             void shouldUpdateLastCommunicationTimeAndConvertToApplicationMessageForRemoteApplicationMessages(
                     @Mock final Peer peer,
-                    @Mock final InetSocketAddressWrapper address) throws CryptoException {
+                    @Mock final InetSocketAddressWrapper address,
+                    @Mock final InetSocketAddressWrapper senderAddress,
+                    @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final IntermediateEnvelope<Application> applicationMessage = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[]{});
+                final AddressedIntermediateEnvelope<Application> addressedApplicationMessage = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, applicationMessage);
 
                 when(rendezvousPeers.contains(any())).thenReturn(true);
                 when(identity.getPublicKey()).thenReturn(recipient);
@@ -414,7 +429,7 @@ class UdpDiscoveryHandlerTest {
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
                 final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
-                pipeline.processInbound(address, applicationMessage).join();
+                pipeline.processInbound(address, addressedApplicationMessage).join();
 
                 verify(peer).applicationTrafficOccurred();
                 inboundMessages.awaitCount(1).assertValueCount(1);
@@ -445,7 +460,7 @@ class UdpDiscoveryHandlerTest {
                 pipeline.processOutbound(recipient, message).join();
 
                 outboundMessages.awaitCount(1).assertValueCount(1);
-                outboundMessages.assertValue(p -> p.first().equals(recipientSocketAddress) && p.second() instanceof IntermediateEnvelope && ((IntermediateEnvelope<?>) p.second()).getPrivateHeader().getType() == APPLICATION);
+                outboundMessages.assertValue(p -> p.first().equals(recipientSocketAddress) && p.second() instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().getPrivateHeader().getType() == APPLICATION);
                 pipeline.close();
             }
 
@@ -467,7 +482,7 @@ class UdpDiscoveryHandlerTest {
                 pipeline.processOutbound(recipient, message).join();
 
                 outboundMessages.awaitCount(1).assertValueCount(1);
-                outboundMessages.assertValue(p -> p.first().equals(superPeerSocketAddress) && ((IntermediateEnvelope<?>) p.second()).getPrivateHeader().getType() == APPLICATION);
+                outboundMessages.assertValue(p -> p.first().equals(superPeerSocketAddress) && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().getPrivateHeader().getType() == APPLICATION);
                 pipeline.close();
             }
 

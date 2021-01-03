@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.exceptions.UndeliverableException;
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -31,13 +30,18 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.ReferenceCountUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -51,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(MockitoExtension.class)
 class DrasylPipelineIT {
     private PublishSubject<Event> receivedEvents;
     private PublishSubject<Object> outboundMessages;
@@ -128,7 +133,8 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void passEventThroughThePipeline() {
+    void passEventThroughThePipeline(@Mock final InetSocketAddressWrapper senderAddress,
+                                     @Mock final InetSocketAddressWrapper recipientAddress) {
         final TestObserver<Event> events = receivedEvents.test();
 
         final Event testEvent = new Event() {
@@ -148,8 +154,9 @@ class DrasylPipelineIT {
         });
 
         final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes()).armAndRelease(identity2.getPrivateKey());
+        final AddressedIntermediateEnvelope<Application> addressedMessage = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, message);
 
-        pipeline.processInbound(message.getSender(), message);
+        pipeline.processInbound(message.getSender(), addressedMessage);
 
         events.awaitCount(2);
         events.assertValueAt(0, new MessageEvent(message.getSender(), "Hallo Welt".getBytes()));
@@ -225,7 +232,7 @@ class DrasylPipelineIT {
         final CompletableFuture<Void> future = pipeline.processOutbound(identity1.getPublicKey(), payload);
 
         outbounds.awaitCount(1).assertValueCount(1);
-        outbounds.assertValue(m -> m instanceof ByteBuf);
+        outbounds.assertValue(m -> m instanceof IntermediateEnvelope);
         future.join();
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());

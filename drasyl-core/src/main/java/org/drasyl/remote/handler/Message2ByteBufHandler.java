@@ -24,6 +24,8 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.remote.protocol.AddressedByteBuf;
+import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -38,7 +40,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * Handler that converts a given {@link IntermediateEnvelope} to a {@link ByteBuf}.
  */
 @Stateless
-public class Message2ByteBufHandler extends SimpleOutboundHandler<IntermediateEnvelope<MessageLite>, Address> {
+public class Message2ByteBufHandler extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final Message2ByteBufHandler INSTANCE = new Message2ByteBufHandler();
     public static final String MESSAGE_2_BYTE_BUF_HANDLER = "MESSAGE_2_BYTE_BUF_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(Message2ByteBufHandler.class);
@@ -49,13 +51,13 @@ public class Message2ByteBufHandler extends SimpleOutboundHandler<IntermediateEn
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final IntermediateEnvelope<MessageLite> msg,
+                                final AddressedIntermediateEnvelope<MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         ByteBuf byteBuf = null;
         try {
-            byteBuf = msg.getOrBuildByteBuf();
+            byteBuf = msg.getContent().getOrBuildByteBuf();
 
-            ctx.write(recipient, byteBuf, future);
+            ctx.write(recipient, new AddressedByteBuf(msg.getSender(), msg.getRecipient(), byteBuf), future);
         }
         catch (final IOException e) {
             ReferenceCountUtil.safeRelease(byteBuf);
