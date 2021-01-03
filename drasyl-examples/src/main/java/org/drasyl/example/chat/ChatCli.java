@@ -55,6 +55,7 @@ public class ChatCli {
 
         final CompletableFuture<Void> online = new CompletableFuture<>();
         final DrasylNode node = new DrasylNode(config) {
+            @SuppressWarnings("StatementWithEmptyBody")
             @Override
             public void onEvent(final Event event) {
                 if (event instanceof MessageEvent) {

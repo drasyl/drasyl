@@ -27,10 +27,8 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 

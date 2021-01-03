@@ -19,7 +19,6 @@
 package org.drasyl.remote.handler;
 
 import com.google.protobuf.MessageLite;
-import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
@@ -38,7 +37,6 @@ import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.ReferenceCountUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 

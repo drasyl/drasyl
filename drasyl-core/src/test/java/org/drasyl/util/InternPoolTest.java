@@ -53,7 +53,7 @@ class InternPoolTest {
         }
     }
 
-    class MyObject {
+    static class MyObject {
         private final String value;
 
         public MyObject(final String value) {

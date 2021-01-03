@@ -29,6 +29,9 @@ public class DefaultAddressedEnvelope<A extends Address, M> implements Addressed
     private final A recipient;
     private final M content;
 
+    /**
+     * @throws NullPointerException if {@code sender} and {@code recipient} are {@code null}
+     */
     public DefaultAddressedEnvelope(final A sender, final A recipient, final M content) {
         if (sender == null && recipient == null) {
             throw new NullPointerException("recipient and sender");

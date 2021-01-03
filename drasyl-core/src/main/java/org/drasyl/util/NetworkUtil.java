@@ -182,6 +182,7 @@ public final class NetworkUtil {
      * @param port port that should be validated.
      * @return true if valid, otherwise false
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isValidPort(final int port) {
         return port >= MIN_PORT_NUMBER && port <= MAX_PORT_NUMBER;
     }

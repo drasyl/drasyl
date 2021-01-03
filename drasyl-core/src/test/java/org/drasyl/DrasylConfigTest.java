@@ -91,7 +91,6 @@ import static org.drasyl.DrasylConfig.REMOTE_PING_INTERVAL;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINT;
 import static org.drasyl.DrasylConfig.getByte;
-import static org.drasyl.DrasylConfig.getChannelInitializer;
 import static org.drasyl.DrasylConfig.getEndpointList;
 import static org.drasyl.DrasylConfig.getInetAddress;
 import static org.drasyl.DrasylConfig.getInetSocketAddress;
@@ -406,16 +405,6 @@ class DrasylConfigTest {
             final Config config = ConfigFactory.parseString("foo.bar = [\"http://foo.bar\"]");
 
             assertThrows(ConfigException.class, () -> getEndpointList(config, "foo.bar"));
-        }
-    }
-
-    @Nested
-    class GetChannelInitializer {
-        @Test
-        void shouldThrowExceptionForInvalidValue() {
-            final Config config = ConfigFactory.parseString("foo.bar = baz");
-
-            assertThrows(ConfigException.class, () -> getChannelInitializer(config, "foo.bar"));
         }
     }
 

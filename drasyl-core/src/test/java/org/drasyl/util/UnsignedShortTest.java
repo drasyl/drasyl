@@ -40,6 +40,7 @@ class UnsignedShortTest {
 
     @Nested
     class Validation {
+        @SuppressWarnings("ResultOfMethodCallIgnored")
         @Test
         void shouldThrowExceptionOnInvalidValue() {
             assertThrows(IllegalArgumentException.class, () -> UnsignedShort.of(-1));
@@ -116,6 +117,22 @@ class UnsignedShortTest {
             final UnsignedShort ushort2 = UnsignedShort.of(0);
 
             assertNotEquals(ushort1.hashCode(), ushort2.hashCode());
+        }
+    }
+
+    @Nested
+    class Increment {
+        @Test
+        void shouldIncrementShort() {
+            assertEquals(UnsignedShort.of(3), UnsignedShort.of(2).increment());
+        }
+    }
+
+    @Nested
+    class Decrement {
+        @Test
+        void shouldDecrementShort() {
+            assertEquals(UnsignedShort.of(3), UnsignedShort.of(4).decrement());
         }
     }
 }

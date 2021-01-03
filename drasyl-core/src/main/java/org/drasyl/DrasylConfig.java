@@ -22,8 +22,6 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
@@ -445,6 +443,7 @@ public class DrasylConfig {
      * @throws ConfigException.Missing   if value is absent or null
      * @throws ConfigException.WrongType if value is not convertible to a short
      */
+    @SuppressWarnings("unused")
     public static short getShort(final Config config, final String path) {
         final int integerValue = config.getInt(path);
         if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
@@ -541,21 +540,6 @@ public class DrasylConfig {
         }
         catch (final InvocationTargetException e) {
             throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "invocation-target: " + e.getTargetException().getMessage());
-        }
-    }
-
-    /**
-     * @throws ConfigException if value at path is invalid
-     */
-    @SuppressWarnings("unchecked")
-    public static Class<ChannelInitializer<SocketChannel>> getChannelInitializer(final Config config,
-                                                                                 final String path) {
-        final String className = config.getString(path);
-        try {
-            return (Class<ChannelInitializer<SocketChannel>>) Class.forName(className);
-        }
-        catch (final ClassNotFoundException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "socket channel", "class-not-found: " + e.getMessage());
         }
     }
 
@@ -966,9 +950,6 @@ public class DrasylConfig {
         private boolean marshallingOutboundAllowAllPrimitives;
         private boolean marshallingOutboundAllowArrayOfDefinedTypes;
         private List<String> marshallingOutboundAllowedPackages;
-
-        private Builder() {
-        }
 
         @SuppressWarnings({ "java:S107" })
         public Builder(final int networkId,

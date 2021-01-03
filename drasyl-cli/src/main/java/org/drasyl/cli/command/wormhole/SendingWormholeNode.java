@@ -47,6 +47,7 @@ public class SendingWormholeNode extends DrasylNode {
     private final AtomicBoolean sent;
     private String text;
 
+    @SuppressWarnings("SameParameterValue")
     SendingWormholeNode(final CompletableFuture<Void> doneFuture,
                         final PrintStream printStream,
                         final String password,

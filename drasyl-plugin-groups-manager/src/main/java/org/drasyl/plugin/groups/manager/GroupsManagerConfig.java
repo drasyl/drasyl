@@ -75,6 +75,7 @@ public class GroupsManagerConfig {
         this.apiBindPort = config.getInt(API_BIND_PORT);
     }
 
+    @SuppressWarnings("SameParameterValue")
     private Map<String, Group> getGroups(final Config config, final String path) {
         final Map<String, Group> groups = new HashMap<>();
 

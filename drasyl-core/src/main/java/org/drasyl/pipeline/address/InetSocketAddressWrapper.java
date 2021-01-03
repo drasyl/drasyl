@@ -32,10 +32,13 @@ import static java.util.Objects.requireNonNull;
 public class InetSocketAddressWrapper implements Address {
     private final InetSocketAddress address;
 
-    public InetSocketAddressWrapper(final InetSocketAddress address) {
+    private InetSocketAddressWrapper(final InetSocketAddress address) {
         this.address = requireNonNull(address);
     }
 
+    /**
+     * @throws NullPointerException if {@code address} is {@code null}
+     */
     public static InetSocketAddressWrapper of(final InetSocketAddress address) {
         return new InetSocketAddressWrapper(address);
     }

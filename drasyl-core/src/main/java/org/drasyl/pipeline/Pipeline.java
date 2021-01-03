@@ -140,6 +140,7 @@ import java.util.concurrent.CompletableFuture;
  * invocations can't be guaranteed. You have to ensure by yourself, that your handlers are thread-safe
  * if you need it. Also, you have to ensure the order of messages, if you need it.
  */
+@SuppressWarnings("UnusedReturnValue")
 public interface Pipeline {
     /**
      * Inserts a {@link Handler} at the first position of this pipeline.

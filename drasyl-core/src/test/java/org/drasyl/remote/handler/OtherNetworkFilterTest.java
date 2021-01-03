@@ -27,7 +27,6 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

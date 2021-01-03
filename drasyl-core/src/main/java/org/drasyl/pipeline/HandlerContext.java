@@ -84,6 +84,7 @@ public interface HandlerContext {
      * @param event  the event
      * @param future the future of the message
      */
+    @SuppressWarnings("UnusedReturnValue")
     CompletableFuture<Void> fireEventTriggered(Event event, CompletableFuture<Void> future);
 
     /**

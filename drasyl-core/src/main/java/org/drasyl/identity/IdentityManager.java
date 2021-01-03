@@ -69,6 +69,7 @@ public class IdentityManager {
         this(IdentityManager::generateIdentity, config, null);
     }
 
+    @SuppressWarnings("SameParameterValue")
     IdentityManager(final DrasylSupplier<Identity, IdentityManagerException> identityGenerator,
                     final DrasylConfig config,
                     final Identity identity) {

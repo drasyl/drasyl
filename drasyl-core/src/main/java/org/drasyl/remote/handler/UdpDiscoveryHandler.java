@@ -445,7 +445,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         final CompressedPublicKey publicKey = requireNonNull(CompressedPublicKey.of(envelope.getContent().getBodyAndRelease().getPublicKey().toByteArray()));
         final InetSocketAddress address = new InetSocketAddress(envelope.getContent().getBodyAndRelease().getAddress(), UnsignedShort.of(envelope.getContent().getBodyAndRelease().getPort().toByteArray()).getValue());
         LOG.trace("Got {}", envelope.getContent());
-        final InetSocketAddressWrapper socketAddress = new InetSocketAddressWrapper(address);
+        final InetSocketAddressWrapper socketAddress = InetSocketAddressWrapper.of(address);
         final Peer peer = peers.computeIfAbsent(publicKey, key -> new Peer());
         peer.setAddress(socketAddress);
         peer.inboundControlTrafficOccurred();

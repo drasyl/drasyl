@@ -31,6 +31,7 @@ import java.time.Duration;
 
 import static java.time.Duration.ofSeconds;
 
+@SuppressWarnings("InfiniteLoopStatement")
 public class SuperPeerStressTesting {
     private final Cache<CompressedPublicKey, DrasylNode> clients;
 

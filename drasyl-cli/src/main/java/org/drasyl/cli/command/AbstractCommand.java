@@ -75,6 +75,7 @@ abstract class AbstractCommand implements Command {
         }
     }
 
+    @SuppressWarnings("SameParameterValue")
     protected void helpTemplate(final String name, final String header, final String footer) {
         helpTemplate(name, header, footer, Map.of());
     }
@@ -139,6 +140,7 @@ abstract class AbstractCommand implements Command {
         return options;
     }
 
+    @SuppressWarnings({ "unused" })
     protected abstract void help(CommandLine cmd) throws CliException;
 
     protected abstract void execute(CommandLine cmd) throws CliException;

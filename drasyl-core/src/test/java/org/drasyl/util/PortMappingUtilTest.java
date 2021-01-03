@@ -51,8 +51,8 @@ class PortMappingUtilTest {
     class TestPortMapping {
         @Mock(answer = RETURNS_DEEP_STUBS)
         com.offbynull.portmapper.mapper.PortMapper mapper;
-        InetSocketAddress address = InetSocketAddress.createUnresolved("192.168.188.112", 22527);
-        Protocol protocol = TCP;
+        final InetSocketAddress address = InetSocketAddress.createUnresolved("192.168.188.112", 22527);
+        final Protocol protocol = TCP;
         @Mock
         Subject<Optional<InetSocketAddress>> externalAddressObservable;
         @Mock

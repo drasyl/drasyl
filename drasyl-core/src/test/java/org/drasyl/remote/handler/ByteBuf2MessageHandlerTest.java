@@ -18,7 +18,6 @@
  */
 package org.drasyl.remote.handler;
 
-import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;

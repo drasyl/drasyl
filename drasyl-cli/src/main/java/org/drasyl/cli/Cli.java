@@ -31,6 +31,7 @@ import java.util.Map;
  * Provides a command line interface with drasyl-related tools (run root node, generate identity,
  * etc.).
  */
+@SuppressWarnings("SameParameterValue")
 public class Cli {
     public static final Map<String, Command> COMMANDS;
 
@@ -50,6 +51,7 @@ public class Cli {
         this(COMMANDS);
     }
 
+    @SuppressWarnings("SameParameterValue")
     Cli(final Map<String, Command> myCommands) {
         this.myCommands = myCommands;
     }

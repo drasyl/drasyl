@@ -40,7 +40,6 @@ import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
-import org.drasyl.remote.protocol.Protocol;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.UserAgent;
@@ -446,7 +445,7 @@ class ChunkingHandlerTest {
                         .assertValueAt(2, p -> {
                             final AddressedIntermediateEnvelope<?> addressedEnvelope = (AddressedIntermediateEnvelope<?>) p.second();
                             return addressedEnvelope.getContent().getChunkNo().getValue() == 2 && addressedEnvelope.getContent().getByteBuf().readableBytes() < remoteMessageMtu;
-                        });;
+                        });
 
                 pipeline.close();
             }

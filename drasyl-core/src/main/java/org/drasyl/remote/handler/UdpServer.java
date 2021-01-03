@@ -161,6 +161,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
         }
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     private synchronized void startServer(final HandlerContext ctx,
                                           final Event event,
                                           final CompletableFuture<Void> future) {
@@ -168,12 +169,14 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
             LOG.debug("Start Server...");
             final int bindPort;
             if (ctx.config().getRemoteBindPort() == -1) {
-                // derive a port in the range between 22528 and 65528 from its own identity.
-                // this is done because we also expose this port via UPnP-IGD/NAT-PMP/PCP and some
-                // NAT devices behave unexpectedly when multiple nodes in the local network try to
-                // expose the same local port.
-                // a completely random port would have the disadvantage that every time the node is
-                // started it would use a new port and this would make discovery more difficult
+                /*
+                 derive a port in the range between 22528 and 65528 from its own identity.
+                 this is done because we also expose this port via UPnP-IGD/NAT-PMP/PCP and some
+                 NAT devices behave unexpectedly when multiple nodes in the local network try to
+                 expose the same local port.
+                 a completely random port would have the disadvantage that every time the node is
+                 started it would use a new port and this would make discovery more difficult
+                */
                 final int identityHash = Hashing.murmur3_32().hashBytes(ctx.identity().getPublicKey().byteArrayValue()).asInt();
                 bindPort = 22528 + identityHash % 43000;
             }

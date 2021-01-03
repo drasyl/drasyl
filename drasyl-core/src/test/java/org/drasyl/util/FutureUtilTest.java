@@ -69,27 +69,29 @@ class FutureUtilTest {
             assertThrows(CompletionException.class, () -> future.getNow(null));
         }
 
+        @SuppressWarnings("unchecked")
         @Test
-        void shouldTranslateSucceedingPromise(@Mock final Promise promise) {
+        void shouldTranslateSucceedingPromise(@Mock final Promise<String> promise) {
             when(promise.addListener(any())).then(invocation -> {
-                final GenericFutureListener listener = invocation.getArgument(0, GenericFutureListener.class);
+                final GenericFutureListener<Promise<String>> listener = invocation.getArgument(0, GenericFutureListener.class);
                 when(promise.isSuccess()).thenReturn(true);
                 when(promise.getNow()).thenReturn("Hallo");
                 listener.operationComplete(promise);
                 return null;
             });
 
-            final CompletableFuture<Object> future = toFuture(promise);
+            final CompletableFuture<String> future = toFuture(promise);
 
             assertTrue(future.isDone());
             assertEquals("Hallo", future.getNow(null));
         }
 
+        @SuppressWarnings("unchecked")
         @Test
-        void shouldTranslateFailingPromise(@Mock final Promise promise,
+        void shouldTranslateFailingPromise(@Mock final Promise<Object> promise,
                                            @Mock final Throwable throwable) {
             when(promise.addListener(any())).then(invocation -> {
-                final GenericFutureListener listener = invocation.getArgument(0, GenericFutureListener.class);
+                final GenericFutureListener<Promise<Object>> listener = invocation.getArgument(0, GenericFutureListener.class);
                 when(promise.cause()).thenReturn(throwable);
                 listener.operationComplete(promise);
                 return null;

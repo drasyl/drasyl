@@ -33,6 +33,7 @@ public class GroupLeaveMessage extends GroupActionMessage implements GroupsClien
         super(group);
     }
 
+    @SuppressWarnings("EmptyMethod")
     @Override
     public int hashCode() {
         return super.hashCode();

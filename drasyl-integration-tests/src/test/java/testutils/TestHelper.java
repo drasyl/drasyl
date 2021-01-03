@@ -34,6 +34,7 @@ public final class TestHelper {
      * @param msg   message to print
      * @param color color of the message
      */
+    @SuppressWarnings("unused")
     public static void colorizedPrintln(final String msg, final AnsiColor color) {
         LOG.debug(color.getColor() + DIVIDER + msg + DIVIDER + COLOR_RESET.getColor());
     }

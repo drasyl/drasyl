@@ -47,6 +47,7 @@ public class GroupsClientConfig {
         groupsSet = Set.copyOf(getGroupOptions(options, GROUPS));
     }
 
+    @SuppressWarnings("SameParameterValue")
     private Set<GroupUri> getGroupOptions(final Config config, final String path) {
         final Set<GroupUri> options = new HashSet<>();
 

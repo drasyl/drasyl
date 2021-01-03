@@ -33,8 +33,6 @@ import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -155,13 +153,14 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
      * This method does release all potentially acquired {@link io.netty.util.ReferenceCounted}
      * objects.
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void close() {
-        for (final Pair o : ((ReplaySubject<Pair<Address, Object>>) outboundMessages).getValues(new Pair[]{})) {
+        for (final Pair<?, ?> o : ((ReplaySubject<Pair<Address, Object>>) outboundMessages).getValues(new Pair[]{})) {
             ReferenceCountUtil.safeRelease(o.second());
         }
 
-        for (final Pair o : ((ReplaySubject<Pair<Address, Object>>) inboundMessages).getValues(new Pair[]{})) {
+        for (final Pair<?, ?> o : ((ReplaySubject<Pair<Address, Object>>) inboundMessages).getValues(new Pair[]{})) {
             ReferenceCountUtil.safeRelease(o.second());
         }
     }

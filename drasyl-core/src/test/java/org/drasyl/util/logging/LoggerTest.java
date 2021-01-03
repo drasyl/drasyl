@@ -78,25 +78,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.trace("format", arg);
+                underTest.trace("format {}", arg);
 
-                verify(delegate).trace("format", arg);
+                verify(delegate).trace("format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.trace("format", arg1, arg2);
+                underTest.trace("format {} {}", arg1, arg2);
 
-                verify(delegate).trace("format", arg1, arg2);
+                verify(delegate).trace("format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.trace("format", arg1, arg2, arg3);
+                underTest.trace("format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).trace("format", arg1, arg2, arg3);
+                verify(delegate).trace("format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
@@ -128,25 +128,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.trace(marker, "format", arg);
+                underTest.trace(marker, "format {}", arg);
 
-                verify(delegate).trace(marker, "format", arg);
+                verify(delegate).trace(marker, "format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.trace(marker, "format", arg1, arg2);
+                underTest.trace(marker, "format {} {}", arg1, arg2);
 
-                verify(delegate).trace(marker, "format", arg1, arg2);
+                verify(delegate).trace(marker, "format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.trace(marker, "format", arg1, arg2, arg3);
+                underTest.trace(marker, "format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).trace(marker, "format", arg1, arg2, arg3);
+                verify(delegate).trace(marker, "format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
@@ -175,25 +175,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.debug("format", arg);
+                underTest.debug("format {}", arg);
 
-                verify(delegate).debug("format", arg);
+                verify(delegate).debug("format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.debug("format", arg1, arg2);
+                underTest.debug("format {} {}", arg1, arg2);
 
-                verify(delegate).debug("format", arg1, arg2);
+                verify(delegate).debug("format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.debug("format", arg1, arg2, arg3);
+                underTest.debug("format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).debug("format", arg1, arg2, arg3);
+                verify(delegate).debug("format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
@@ -225,25 +225,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.debug(marker, "format", arg);
+                underTest.debug(marker, "format {}", arg);
 
-                verify(delegate).debug(marker, "format", arg);
+                verify(delegate).debug(marker, "format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.debug(marker, "format", arg1, arg2);
+                underTest.debug(marker, "format {} {}", arg1, arg2);
 
-                verify(delegate).debug(marker, "format", arg1, arg2);
+                verify(delegate).debug(marker, "format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.debug(marker, "format", arg1, arg2, arg3);
+                underTest.debug(marker, "format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).debug(marker, "format", arg1, arg2, arg3);
+                verify(delegate).debug(marker, "format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
@@ -272,25 +272,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.info("format", arg);
+                underTest.info("format {}", arg);
 
-                verify(delegate).info("format", arg);
+                verify(delegate).info("format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.info("format", arg1, arg2);
+                underTest.info("format {} {}", arg1, arg2);
 
-                verify(delegate).info("format", arg1, arg2);
+                verify(delegate).info("format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.info("format", arg1, arg2, arg3);
+                underTest.info("format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).info("format", arg1, arg2, arg3);
+                verify(delegate).info("format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
@@ -322,25 +322,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.info(marker, "format", arg);
+                underTest.info(marker, "format {}", arg);
 
-                verify(delegate).info(marker, "format", arg);
+                verify(delegate).info(marker, "format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.info(marker, "format", arg1, arg2);
+                underTest.info(marker, "format {} {}", arg1, arg2);
 
-                verify(delegate).info(marker, "format", arg1, arg2);
+                verify(delegate).info(marker, "format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.info(marker, "format", arg1, arg2, arg3);
+                underTest.info(marker, "format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).info(marker, "format", arg1, arg2, arg3);
+                verify(delegate).info(marker, "format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
@@ -369,25 +369,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.warn("format", arg);
+                underTest.warn("format {}", arg);
 
-                verify(delegate).warn("format", arg);
+                verify(delegate).warn("format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.warn("format", arg1, arg2);
+                underTest.warn("format {} {}", arg1, arg2);
 
-                verify(delegate).warn("format", arg1, arg2);
+                verify(delegate).warn("format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.warn("format", arg1, arg2, arg3);
+                underTest.warn("format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).warn("format", arg1, arg2, arg3);
+                verify(delegate).warn("format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
@@ -419,25 +419,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.warn(marker, "format", arg);
+                underTest.warn(marker, "format {}", arg);
 
-                verify(delegate).warn(marker, "format", arg);
+                verify(delegate).warn(marker, "format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.warn(marker, "format", arg1, arg2);
+                underTest.warn(marker, "format {} {}", arg1, arg2);
 
-                verify(delegate).warn(marker, "format", arg1, arg2);
+                verify(delegate).warn(marker, "format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.warn(marker, "format", arg1, arg2, arg3);
+                underTest.warn(marker, "format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).warn(marker, "format", arg1, arg2, arg3);
+                verify(delegate).warn(marker, "format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
@@ -466,25 +466,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.error("format", arg);
+                underTest.error("format {}", arg);
 
-                verify(delegate).error("format", arg);
+                verify(delegate).error("format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.error("format", arg1, arg2);
+                underTest.error("format {} {}", arg1, arg2);
 
-                verify(delegate).error("format", arg1, arg2);
+                verify(delegate).error("format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.error("format", arg1, arg2, arg3);
+                underTest.error("format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).error("format", arg1, arg2, arg3);
+                verify(delegate).error("format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
@@ -516,25 +516,25 @@ class LoggerTest {
 
             @Test
             void formatObject(@Mock final Object arg) {
-                underTest.error(marker, "format", arg);
+                underTest.error(marker, "format {}", arg);
 
-                verify(delegate).error(marker, "format", arg);
+                verify(delegate).error(marker, "format {}", arg);
             }
 
             @Test
             void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
-                underTest.error(marker, "format", arg1, arg2);
+                underTest.error(marker, "format {} {}", arg1, arg2);
 
-                verify(delegate).error(marker, "format", arg1, arg2);
+                verify(delegate).error(marker, "format {} {}", arg1, arg2);
             }
 
             @Test
             void formatArguments(@Mock final Object arg1,
                                  @Mock final Object arg2,
                                  @Mock final Object arg3) {
-                underTest.error(marker, "format", arg1, arg2, arg3);
+                underTest.error(marker, "format {} {} {}", arg1, arg2, arg3);
 
-                verify(delegate).error(marker, "format", arg1, arg2, arg3);
+                verify(delegate).error(marker, "format {} {} {}", arg1, arg2, arg3);
             }
 
             @Test
