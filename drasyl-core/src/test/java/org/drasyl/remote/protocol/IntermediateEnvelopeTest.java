@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -50,10 +49,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -474,7 +470,7 @@ class IntermediateEnvelopeTest {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                assertEquals(new Signature(new byte[]{}), envelope.getSignature());
+                assertArrayEquals(new byte[]{}, envelope.getSignature());
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);

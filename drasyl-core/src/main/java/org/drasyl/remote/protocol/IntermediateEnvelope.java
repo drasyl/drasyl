@@ -29,7 +29,6 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -461,11 +460,12 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     }
 
     /**
+     * @return signature as byte array
      * @throws IllegalArgumentException if signature could not be read
      */
-    public Signature getSignature() {
+    public byte[] getSignature() {
         try {
-            return new Signature(getPublicHeader().getSignature().toByteArray());
+            return getPublicHeader().getSignature().toByteArray();
         }
         catch (final IOException e) {
             throw new IllegalArgumentException(e);

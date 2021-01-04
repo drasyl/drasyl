@@ -69,6 +69,7 @@ class SignatureHandlerTest {
 
     @Nested
     class OutboundMessages {
+        @SuppressWarnings("rawtypes")
         @Test
         void shouldArmOutgoingMessageFromMe(@Mock final CompressedPublicKey recipient,
                                             @Mock final InetSocketAddressWrapper senderAddress,
@@ -88,13 +89,14 @@ class SignatureHandlerTest {
             outboundMessages.awaitCount(1).assertValueCount(1);
             outboundMessages.assertValue(m -> {
                 final IntermediateEnvelope<?> content = (IntermediateEnvelope<?>) m.getContent();
-                return content.getSignature().getBytes().length != 0;
+                return content.getSignature().length != 0;
             });
 
             ReferenceCountUtil.safeRelease(messageEnvelope);
             pipeline.close();
         }
 
+        @SuppressWarnings("rawtypes")
         @Test
         void shouldPassthroughOutgoingMessageNotFromMe(@Mock final CompressedPublicKey recipient,
                                                        @Mock final InetSocketAddressWrapper senderAddress,
@@ -114,13 +116,14 @@ class SignatureHandlerTest {
             outboundMessages.awaitCount(1).assertValueCount(1);
             outboundMessages.assertValue(m -> {
                 final IntermediateEnvelope<?> content = (IntermediateEnvelope<?>) m.getContent();
-                return content.getSignature().getBytes().length == 0;
+                return content.getSignature().length == 0;
             });
 
             ReferenceCountUtil.safeRelease(messageEnvelope);
             pipeline.close();
         }
 
+        @SuppressWarnings("rawtypes")
         @Test
         void shouldCompleteFutureExceptionallyAndNotPassOutgoingMessageIfArmingFailed(@Mock final InetSocketAddressWrapper senderAddress,
                                                                                       @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException, InterruptedException {

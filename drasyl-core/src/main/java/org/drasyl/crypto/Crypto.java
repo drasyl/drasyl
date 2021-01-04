@@ -89,19 +89,6 @@ public class Crypto {
     }
 
     /**
-     * Generates an asymmetric curve key pair from the given compressed private and public key.
-     *
-     * @param compressedPrivate compressed private key
-     * @param compressedPublic  compressed public key
-     * @return asymmetric curve key pair
-     * @throws CryptoException if key pair could not be generated
-     */
-    public static KeyPair makeKeyPair(final byte[] compressedPrivate,
-                                      final byte[] compressedPublic) throws CryptoException {
-        return new KeyPair(getPublicKeyFromBytes(compressedPublic), getPrivateKeyFromBytes(compressedPrivate));
-    }
-
-    /**
      * Generates an asymmetric curve public key from the given bytes.
      *
      * @param pubKey public key as byte array
@@ -234,19 +221,6 @@ public class Crypto {
     }
 
     /**
-     * Signs the given signable with the PrivateKey. This will also put the resulting signature into
-     * the Signable object
-     *
-     * @param key      Key to use
-     * @param signable signature to create
-     * @throws CryptoException on failure
-     */
-    public static void sign(final PrivateKey key, final Signable signable) throws CryptoException {
-        final byte[] signatureBytes = signMessage(key, signable.getSignableBytes());
-        signable.setSignature(new org.drasyl.crypto.Signature(signatureBytes));
-    }
-
-    /**
      * Creates signature from the given message with the PrivateKey.
      *
      * @param key     Key to use
@@ -264,27 +238,6 @@ public class Crypto {
         catch (final NoSuchAlgorithmException | NoSuchProviderException | SignatureException | InvalidKeyException e) {
             throw new CryptoException(e);
         }
-    }
-
-    /**
-     * Verifies the signature of the given message with the signature and compressed public key.
-     *
-     * @param compressedPublicKey the compressed public key
-     * @param message             the message to verify
-     * @param signature           the signature of the message
-     * @return if the message is valid or not
-     */
-    public static boolean verifySignature(final byte[] compressedPublicKey,
-                                          final byte[] message,
-                                          final byte[] signature) {
-        try {
-            final PublicKey publicKey = getPublicKeyFromBytes(compressedPublicKey);
-            return verifySignature(publicKey, message, signature);
-        }
-        catch (final CryptoException e) {
-            LOG.error("", e);
-        }
-        return false;
     }
 
     /**
@@ -308,20 +261,6 @@ public class Crypto {
             LOG.error("", e);
         }
         return false;
-    }
-
-    /**
-     * Verify the signature of the given Signable object with the public key.
-     *
-     * @param publicKey the public key
-     * @param content   the Signable object
-     * @return if the content is valid or not
-     */
-    public static boolean verifySignature(final PublicKey publicKey, final Signable content) {
-        if (content == null || content.getSignature() == null) {
-            return false;
-        }
-        return verifySignature(publicKey, content.getSignableBytes(), content.getSignature().getBytes());
     }
 
     /**
