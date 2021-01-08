@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -36,7 +36,7 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      * @param compressedKey compressed public key
      * @throws CryptoException if the string parameter does not conform to a valid key
      */
-    private CompressedPublicKey(final String compressedKey) throws CryptoException {
+    public CompressedPublicKey(final String compressedKey) throws CryptoException {
         super(compressedKey);
     }
 

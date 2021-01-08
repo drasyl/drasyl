@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -94,5 +94,13 @@ abstract class AbstractCompressedKey<K> implements Address {
     @Override
     public String toString() {
         return HexUtil.bytesToHex(this.compressedKey);
+    }
+
+    /**
+     * @deprecated use {@link #toString()}
+     */
+    @Deprecated(since = "0.4.0")
+    public String getCompressedKey() {
+        return toString();
     }
 }
