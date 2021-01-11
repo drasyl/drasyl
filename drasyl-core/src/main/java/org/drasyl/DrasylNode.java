@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -34,7 +34,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
@@ -51,9 +50,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -120,7 +117,6 @@ public abstract class DrasylNode {
     private final DrasylConfig config;
     private final Identity identity;
     private final PeersManager peersManager;
-    private final Set<Endpoint> endpoints;
     private final AtomicBoolean acceptNewConnections;
     private final Pipeline pipeline;
     private final AtomicBoolean started;
@@ -157,7 +153,6 @@ public abstract class DrasylNode {
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent, identity);
-            this.endpoints = new CopyOnWriteArraySet<>();
             this.acceptNewConnections = new AtomicBoolean();
             this.started = new AtomicBoolean();
             this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager, started, LazyBossGroupHolder.INSTANCE);
@@ -173,7 +168,6 @@ public abstract class DrasylNode {
     protected DrasylNode(final DrasylConfig config,
                          final Identity identity,
                          final PeersManager peersManager,
-                         final Set<Endpoint> endpoints,
                          final AtomicBoolean acceptNewConnections,
                          final Pipeline pipeline,
                          final PluginManager pluginManager,
@@ -183,7 +177,6 @@ public abstract class DrasylNode {
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
-        this.endpoints = endpoints;
         this.acceptNewConnections = acceptNewConnections;
         this.pipeline = pipeline;
         this.pluginManager = pluginManager;

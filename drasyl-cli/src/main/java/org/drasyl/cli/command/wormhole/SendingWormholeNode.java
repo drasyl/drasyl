@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -28,14 +28,12 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
 
 import java.io.PrintStream;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -55,14 +53,13 @@ public class SendingWormholeNode extends DrasylNode {
                         final DrasylConfig config,
                         final Identity identity,
                         final PeersManager peersManager,
-                        final Set<Endpoint> endpoints,
                         final AtomicBoolean acceptNewConnections,
                         final Pipeline pipeline,
                         final PluginManager pluginManager,
                         final AtomicBoolean started,
                         final CompletableFuture<Void> startSequence,
                         final CompletableFuture<Void> shutdownSequence) {
-        super(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        super(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.password = password;
@@ -117,6 +114,7 @@ public class SendingWormholeNode extends DrasylNode {
         });
     }
 
+    @SuppressWarnings("ReplaceNullCheck")
     private void wrongPassword(final CompressedPublicKey receiver) {
         send(receiver, new WrongPasswordMessage()).whenComplete((result, e) -> {
             if (e != null) {

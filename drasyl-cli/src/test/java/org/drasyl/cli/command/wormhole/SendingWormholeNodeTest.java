@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -24,7 +24,6 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
@@ -37,7 +36,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -69,8 +67,6 @@ class SendingWormholeNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
     @Mock
-    private Set<Endpoint> endpoints;
-    @Mock
     private AtomicBoolean acceptNewConnections;
     @Mock
     private PluginManager pluginManager;
@@ -80,7 +76,7 @@ class SendingWormholeNodeTest {
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new SendingWormholeNode(doneFuture, printStream, password, sent, config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        underTest = new SendingWormholeNode(doneFuture, printStream, password, sent, config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
     }
 
     @Nested
