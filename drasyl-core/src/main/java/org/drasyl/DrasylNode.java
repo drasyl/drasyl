@@ -335,14 +335,15 @@ public abstract class DrasylNode {
      */
     public CompletableFuture<Void> shutdown() {
         if (startSequence.isDone() && !startSequence.isCompletedExceptionally() && started.compareAndSet(true, false)) {
-            onInternalEvent(new NodeDownEvent(Node.of(identity)));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identity);
             shutdownSequence = new CompletableFuture<>();
-            pluginManager.beforeShutdown();
 
             startSequence.whenComplete((t, exp) -> getInstanceHeavy().scheduleDirect(() -> {
+                onInternalEvent(new NodeDownEvent(Node.of(identity))).join();
+                pluginManager.beforeShutdown();
                 rejectNewConnections();
-                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity))).join();
+                final CompletableFuture<Void> voidCompletableFuture = onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity)));
+                voidCompletableFuture.join();
 
                 LOG.info("drasyl Node with Identity '{}' has shut down", identity);
                 pluginManager.afterShutdown();
