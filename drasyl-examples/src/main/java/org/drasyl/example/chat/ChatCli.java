@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -23,7 +23,6 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.event.NodeEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -32,7 +31,6 @@ import org.drasyl.util.DrasylScheduler;
 
 import java.io.File;
 import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -53,7 +51,7 @@ public class ChatCli {
             config = new DrasylConfig();
         }
 
-        final CompletableFuture<Void> online = new CompletableFuture<>();
+        final AtomicBoolean online = new AtomicBoolean();
         final DrasylNode node = new DrasylNode(config) {
             @SuppressWarnings("StatementWithEmptyBody")
             @Override
@@ -66,16 +64,12 @@ public class ChatCli {
                     }
                 }
                 else if (event instanceof NodeOnlineEvent) {
-                    if (online.isDone()) {
-                        addBeforePrompt("Back online! Messages can be sent again.");
-                    }
-                    else {
-                        addBeforePrompt("Online! Your Public Key (address) is: " + ((NodeEvent) event).getNode().getIdentity().getPublicKey());
-                        online.complete(null);
-                    }
+                    addBeforePrompt("drasyl Node is connected to super peer. Relayed communication and discovery available.");
+                    online.set(true);
                 }
                 else if (event instanceof NodeOfflineEvent) {
-                    addBeforePrompt("Offline! No messages can be sent at the moment. Wait until node comes back online.");
+                    addBeforePrompt("drasyl Node lost connection to super peer. Relayed communication and discovery not available.");
+                    online.set(false);
                 }
                 else if (event instanceof NodeUpEvent) {
                     // ignore
@@ -90,12 +84,12 @@ public class ChatCli {
         System.out.println("****************************************************************************************");
         System.out.println("This is an Example of a Chat Application running on the drasyl Overlay Network.");
         System.out.println("It allows you to send Text Messages to other drasyl Nodes running this Chat Application.");
+        System.out.println("Your address is " + node.identity().getPublicKey());
         System.out.println("****************************************************************************************");
         System.out.println();
 
-        System.out.println("Connect to drasyl Overlay Network...");
+        System.out.println("drasyl Node started. Only communication with direct connected peers possible. Connecting to super peer...");
         node.start().join();
-        online.join();
 
         String recipient = "";
         final AtomicBoolean keepRunning = new AtomicBoolean(true);
