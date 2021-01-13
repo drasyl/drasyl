@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -77,9 +77,10 @@ public class DrasylPipeline extends DefaultPipeline {
         this.handlerNames = new ConcurrentHashMap<>();
         this.inboundValidator = TypeValidator.ofInboundValidator(config);
         this.outboundValidator = TypeValidator.ofOutboundValidator(config);
-        this.head = new HeadContext(config, this, DrasylScheduler.getInstanceHeavy(), identity, peersManager, inboundValidator, outboundValidator);
-        this.tail = new TailContext(eventConsumer, config, this, DrasylScheduler.getInstanceHeavy(), identity, peersManager, inboundValidator, outboundValidator);
-        this.scheduler = DrasylScheduler.getInstanceLight();
+        this.dependentScheduler = DrasylScheduler.getInstanceLight();
+        this.independentScheduler = DrasylScheduler.getInstanceHeavy();
+        this.head = new HeadContext(config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+        this.tail = new TailContext(eventConsumer, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
@@ -138,7 +139,7 @@ public class DrasylPipeline extends DefaultPipeline {
         this.handlerNames = handlerNames;
         this.head = head;
         this.tail = tail;
-        this.scheduler = scheduler;
+        this.dependentScheduler = scheduler;
         this.config = config;
         this.identity = identity;
     }

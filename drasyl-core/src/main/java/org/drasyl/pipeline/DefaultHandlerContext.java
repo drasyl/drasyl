@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -34,26 +34,28 @@ public class DefaultHandlerContext extends AbstractHandlerContext {
     /**
      * Generates a new default handler context for the given {@code handler}.
      *
-     * @param name              the name of the handler
-     * @param handler           the handler
-     * @param config            the config of the drasyl node
-     * @param pipeline          the corresponding pipeline object
-     * @param scheduler         the corresponding scheduler
-     * @param identity          the identity of the corresponding node
-     * @param peersManager      the peers manager of the corresponding node
-     * @param inboundValidator  the inbound validator of the pipeline
-     * @param outboundValidator the outbound validator of the pipeline
+     * @param name                 the name of the handler
+     * @param handler              the handler
+     * @param config               the config of the drasyl node
+     * @param pipeline             the corresponding pipeline object
+     * @param dependentScheduler   the dependent scheduler
+     * @param independentScheduler the independent scheduler
+     * @param identity             the identity of the corresponding node
+     * @param peersManager         the peers manager of the corresponding node
+     * @param inboundValidator     the inbound validator of the pipeline
+     * @param outboundValidator    the outbound validator of the pipeline
      */
     public DefaultHandlerContext(final String name,
                                  final Handler handler,
                                  final DrasylConfig config,
                                  final Pipeline pipeline,
-                                 final Scheduler scheduler,
+                                 final Scheduler dependentScheduler,
+                                 final Scheduler independentScheduler,
                                  final Identity identity,
                                  final PeersManager peersManager,
                                  final TypeValidator inboundValidator,
                                  final TypeValidator outboundValidator) {
-        super(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+        super(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
         this.handler = handler;
     }
 

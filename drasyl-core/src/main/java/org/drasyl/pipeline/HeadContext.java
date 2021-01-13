@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -34,19 +34,20 @@ import java.util.concurrent.CompletableFuture;
  * Special class that represents the head of a {@link Pipeline}. This class can not be removed from
  * the pipeline.
  */
-@SuppressWarnings({ "common-java:DuplicatedBlocks" })
+@SuppressWarnings({ "common-java:DuplicatedBlocks", "java:S107" })
 class HeadContext extends AbstractEndHandler {
     public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
 
     public HeadContext(final DrasylConfig config,
                        final Pipeline pipeline,
-                       final Scheduler scheduler,
+                       final Scheduler dependentScheduler,
+                       final Scheduler independentScheduler,
                        final Identity identity,
                        final PeersManager peersManager,
                        final TypeValidator inboundValidator,
                        final TypeValidator outboundValidator) {
-        super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+        super(DRASYL_HEAD_HANDLER, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
     }
 
     @Override
