@@ -131,8 +131,6 @@ public class UnsignedInteger {
 
     @Override
     public String toString() {
-        return "UnsignedInteger{" +
-                "value=" + value +
-                '}';
+        return "" + value;
     }
 }
