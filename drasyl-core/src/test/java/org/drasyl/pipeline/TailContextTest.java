@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -56,7 +56,9 @@ class TailContextTest {
     @Mock
     private Pipeline pipeline;
     @Mock
-    private Scheduler scheduler;
+    private Scheduler dependentScheduler;
+    @Mock
+    private Scheduler independentScheduler;
     @Mock
     private Identity identity;
     @Mock
@@ -72,14 +74,14 @@ class TailContextTest {
     class InGeneral {
         @Test
         void shouldReturnSelfAsHandler() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
 
             assertEquals(tailContext, tailContext.handler());
         }
 
         @Test
         void shouldDoNothingOnHandlerAdded() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
 
             tailContext.handlerAdded(ctx);
 
@@ -88,7 +90,7 @@ class TailContextTest {
 
         @Test
         void shouldDoNothingOnHandlerRemoved() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
 
             tailContext.handlerRemoved(ctx);
 
@@ -100,7 +102,7 @@ class TailContextTest {
     class OnWrite {
         @Test
         void shouldPassthroughsOnWrite() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             final Object msg = mock(Object.class);
 
@@ -114,7 +116,7 @@ class TailContextTest {
     class OnException {
         @Test
         void shouldThrowException() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             final Exception exception = mock(Exception.class);
 
             assertThrows(Exception.class, () -> tailContext.exceptionCaught(ctx, exception));
@@ -126,7 +128,7 @@ class TailContextTest {
     class OnEvent {
         @Test
         void shouldPassEventToConsumer() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             final Event event = mock(Event.class);
 
             tailContext.eventTriggered(ctx, event, future);
@@ -137,7 +139,7 @@ class TailContextTest {
 
         @Test
         void shouldNotWriteToConsumerWhenFutureIsDone() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             final Event event = mock(Event.class);
 
             when(future.isDone()).thenReturn(true);
@@ -153,7 +155,7 @@ class TailContextTest {
     class OnRead {
         @Test
         void shouldPassMessageToApplication() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             final Object msg = mock(Object.class);
 
@@ -165,7 +167,7 @@ class TailContextTest {
 
         @Test
         void shouldNotWriteToConsumerWhenFutureIsDone() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             final Object msg = mock(Object.class);
 
@@ -179,7 +181,7 @@ class TailContextTest {
 
         @Test
         void shouldCompleteFutureAndNothingElseOnAutoSwallow() {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             final AutoSwallow msg = new AutoSwallow() {
             };

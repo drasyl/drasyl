@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -70,7 +70,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
         ctx.outboundValidator().addClass(GroupsServerMessage.class);
 
         // Register stale task timer
-        staleTask = ctx.scheduler().schedulePeriodicallyDirect(() -> staleTask(ctx), 1L, 1L, MINUTES);
+        staleTask = ctx.independentScheduler().schedulePeriodicallyDirect(() -> staleTask(ctx), 1L, 1L, MINUTES);
     }
 
     /**
@@ -127,10 +127,10 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                                final GroupsClientMessage msg,
                                final CompletableFuture<Void> future) {
         if (msg instanceof GroupJoinMessage) {
-            ctx.scheduler().scheduleDirect(() -> handleJoinRequest(ctx, sender, (GroupJoinMessage) msg, future));
+            ctx.independentScheduler().scheduleDirect(() -> handleJoinRequest(ctx, sender, (GroupJoinMessage) msg, future));
         }
         else if (msg instanceof GroupLeaveMessage) {
-            ctx.scheduler().scheduleDirect(() -> handleLeaveRequest(ctx, sender, (GroupLeaveMessage) msg, future));
+            ctx.independentScheduler().scheduleDirect(() -> handleLeaveRequest(ctx, sender, (GroupLeaveMessage) msg, future));
         }
     }
 

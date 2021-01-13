@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -39,7 +39,9 @@ class DefaultHandlerContextTest {
     @Mock
     private Pipeline pipeline;
     @Mock
-    private Scheduler scheduler;
+    private Scheduler dependentScheduler;
+    @Mock
+    private Scheduler independentScheduler;
     @Mock
     private Identity identity;
     @Mock
@@ -51,7 +53,7 @@ class DefaultHandlerContextTest {
 
     @Test
     void shouldCreateDefaultHandler() {
-        final DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+        final DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
 
         assertEquals(handler, ctx.handler());
     }

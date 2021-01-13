@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -125,7 +125,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     synchronized void startHeartbeat(final HandlerContext ctx) {
         if (heartbeatDisposable == null) {
             LOG.debug("Start heartbeat scheduler");
-            heartbeatDisposable = ctx.scheduler()
+            heartbeatDisposable = ctx.independentScheduler()
                     .schedulePeriodicallyDirect(() -> doHeartbeat(ctx), 0, ctx.config().getRemotePingInterval().toMillis(), MILLISECONDS);
         }
     }
@@ -263,7 +263,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                 LOG.trace("Relay message from {} to {}.", msg.getSender(), recipient);
 
                 if (shouldTryUnite(msg.getSender(), msg.getRecipient())) {
-                    ctx.scheduler().scheduleDirect(() -> sendUnites(ctx, msg.getSender(), msg.getRecipient(), recipientSocketAddress, senderSocketAddress));
+                    ctx.independentScheduler().scheduleDirect(() -> sendUnites(ctx, msg.getSender(), msg.getRecipient(), recipientSocketAddress, senderSocketAddress));
                 }
             }
 

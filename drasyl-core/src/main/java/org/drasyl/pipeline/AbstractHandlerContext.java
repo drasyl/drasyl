@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -44,7 +44,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private Integer mask;
     private final String name;
     private final Pipeline pipeline;
-    private final Scheduler scheduler;
+    private final Scheduler dependentScheduler;
+    private final Scheduler independentScheduler;
     private final Identity identity;
     private final PeersManager peersManager;
     private final TypeValidator inboundValidator;
@@ -55,12 +56,13 @@ abstract class AbstractHandlerContext implements HandlerContext {
     protected AbstractHandlerContext(final String name,
                                      final DrasylConfig config,
                                      final Pipeline pipeline,
-                                     final Scheduler scheduler,
+                                     final Scheduler dependentScheduler,
+                                     final Scheduler independentScheduler,
                                      final Identity identity,
                                      final PeersManager peersManager,
                                      final TypeValidator inboundValidator,
                                      final TypeValidator outboundValidator) {
-        this(null, null, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+        this(null, null, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
     }
 
     AbstractHandlerContext(final AbstractHandlerContext prev,
@@ -68,7 +70,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
                            final String name,
                            final DrasylConfig config,
                            final Pipeline pipeline,
-                           final Scheduler scheduler,
+                           final Scheduler dependentScheduler,
+                           final Scheduler independentScheduler,
                            final Identity identity,
                            final PeersManager peersManager,
                            final TypeValidator inboundValidator,
@@ -78,7 +81,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
         this.name = name;
         this.config = config;
         this.pipeline = pipeline;
-        this.scheduler = scheduler;
+        this.dependentScheduler = dependentScheduler;
+        this.independentScheduler = independentScheduler;
         this.identity = identity;
         this.peersManager = peersManager;
         this.inboundValidator = inboundValidator;
@@ -252,8 +256,13 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public Scheduler scheduler() {
-        return this.scheduler;
+    public Scheduler dependentScheduler() {
+        return this.dependentScheduler;
+    }
+
+    @Override
+    public Scheduler independentScheduler() {
+        return this.independentScheduler;
     }
 
     @Override
