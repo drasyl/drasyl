@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -44,18 +44,14 @@ class UnsignedShortTest {
         @Test
         void shouldThrowExceptionOnInvalidValue() {
             assertThrows(IllegalArgumentException.class, () -> UnsignedShort.of(-1));
-            assertThrows(IllegalArgumentException.class, () -> UnsignedShort.of(65_536));
+            assertThrows(IllegalArgumentException.class, UnsignedShort.MAX_VALUE::increment);
         }
 
         @Test
         void shouldThrowExceptionOnInvalidByteValue() {
-            assertThrows(IllegalArgumentException.class, () -> UnsignedShort.of(new byte[]{}));
-            assertThrows(IllegalArgumentException.class, () -> UnsignedShort.of(new byte[]{ 0x0 }));
-            assertThrows(IllegalArgumentException.class, () -> UnsignedShort.of(new byte[]{
-                    0x0,
-                    0x0,
-                    0x0
-            }));
+            assertThrows(IllegalArgumentException.class, () -> UnsignedShort.of(new byte[0]));
+            assertThrows(IllegalArgumentException.class, () -> UnsignedShort.of(new byte[1]));
+            assertThrows(IllegalArgumentException.class, () -> UnsignedShort.of(new byte[3]));
         }
     }
 
@@ -64,13 +60,15 @@ class UnsignedShortTest {
         @Test
         void shouldCreateCorrectShort() {
             assertEquals(0, UnsignedShort.of(0).getValue());
-            assertEquals(0, UnsignedShort.of(new byte[]{ 0x0, 0x0 }).getValue());
+            assertEquals(0, UnsignedShort.MIN_VALUE.getValue());
+            assertEquals(0, UnsignedShort.of(new byte[2]).getValue());
 
             assertEquals(65_535, UnsignedShort.of(65_535).getValue());
             assertEquals(65_535, UnsignedShort.of(new byte[]{
                     (byte) 0xFF,
                     (byte) 0xFF
             }).getValue());
+            assertEquals(UnsignedShort.MAX_VALUE, UnsignedShort.of(65_535));
         }
     }
 

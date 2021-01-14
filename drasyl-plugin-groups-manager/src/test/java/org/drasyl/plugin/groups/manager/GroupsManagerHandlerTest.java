@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -118,7 +118,7 @@ class GroupsManagerHandlerTest {
         void shouldAddClassesToValidatorAndAddStaleTask() {
             when(ctx.inboundValidator()).thenReturn(inboundValidator);
             when(ctx.outboundValidator()).thenReturn(outboundValidator);
-            when(ctx.scheduler()).thenReturn(scheduler);
+            when(ctx.independentScheduler()).thenReturn(scheduler);
 
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
 
@@ -202,6 +202,7 @@ class GroupsManagerHandlerTest {
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
+            future.join();
             testObserver.awaitCount(2).assertValueCount(2);
             testObserver.assertValues(
                     new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of()),
@@ -227,6 +228,7 @@ class GroupsManagerHandlerTest {
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
+            assertThrows(CompletionException.class, future::join);
             testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValues(
                     new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND));
@@ -252,6 +254,7 @@ class GroupsManagerHandlerTest {
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
+            assertThrows(CompletionException.class, future::join);
             testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValues(
                     new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK));
@@ -278,6 +281,7 @@ class GroupsManagerHandlerTest {
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
+            assertThrows(CompletionException.class, future::join);
             testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValues(
                     new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN));
@@ -326,6 +330,7 @@ class GroupsManagerHandlerTest {
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
+            future.join();
             testObserver.awaitCount(2).assertValueCount(2);
             testObserver.assertValues(
                     new MemberLeftMessage(publicKey, msg.getGroup()),

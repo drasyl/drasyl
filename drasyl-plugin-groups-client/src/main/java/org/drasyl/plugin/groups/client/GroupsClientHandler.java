@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -102,7 +102,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                                          final NodeOnlineEvent event,
                                          final CompletableFuture<Void> future) {
         // join every group
-        ctx.scheduler().scheduleDirect(() -> groups.values().forEach(group -> joinGroup(ctx, group)));
+        ctx.independentScheduler().scheduleDirect(() -> groups.values().forEach(group -> joinGroup(ctx, group)));
         ctx.fireEventTriggered(event, future);
     }
 
@@ -112,16 +112,16 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                                final GroupsServerMessage msg,
                                final CompletableFuture<Void> future) {
         if (msg instanceof MemberJoinedMessage) {
-            ctx.scheduler().scheduleDirect(() -> onMemberJoined(ctx, (MemberJoinedMessage) msg, future));
+            ctx.independentScheduler().scheduleDirect(() -> onMemberJoined(ctx, (MemberJoinedMessage) msg, future));
         }
         else if (msg instanceof MemberLeftMessage) {
-            ctx.scheduler().scheduleDirect(() -> onMemberLeft(ctx, (MemberLeftMessage) msg, future));
+            ctx.independentScheduler().scheduleDirect(() -> onMemberLeft(ctx, (MemberLeftMessage) msg, future));
         }
         else if (msg instanceof GroupWelcomeMessage) {
-            ctx.scheduler().scheduleDirect(() -> onWelcome(ctx, sender, (GroupWelcomeMessage) msg, future));
+            ctx.independentScheduler().scheduleDirect(() -> onWelcome(ctx, sender, (GroupWelcomeMessage) msg, future));
         }
         else if (msg instanceof GroupJoinFailedMessage) {
-            ctx.scheduler().scheduleDirect(() -> onJoinFailed(ctx, (GroupJoinFailedMessage) msg, future));
+            ctx.independentScheduler().scheduleDirect(() -> onJoinFailed(ctx, (GroupJoinFailedMessage) msg, future));
         }
     }
 
@@ -193,7 +193,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         final Duration timeout = groups.get(group).getTimeout();
 
         // Add renew task
-        renewTasks.add(ctx.scheduler().schedulePeriodicallyDirect(() ->
+        renewTasks.add(ctx.independentScheduler().schedulePeriodicallyDirect(() ->
                         this.joinGroup(ctx, groups.get(group)),
                 timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
 

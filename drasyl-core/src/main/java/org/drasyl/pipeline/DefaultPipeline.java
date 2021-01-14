@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -41,7 +41,8 @@ public abstract class DefaultPipeline implements Pipeline {
     protected Map<String, AbstractHandlerContext> handlerNames;
     protected AbstractEndHandler head;
     protected AbstractEndHandler tail;
-    protected Scheduler scheduler;
+    protected Scheduler dependentScheduler;
+    protected Scheduler independentScheduler;
     protected DrasylConfig config;
     protected Identity identity;
     protected PeersManager peersManager;
@@ -69,7 +70,7 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.head);
             newCtx.setNextHandlerContext(this.head.getNext());
@@ -120,7 +121,7 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.tail.getPrev());
             newCtx.setNextHandlerContext(this.tail);
@@ -148,7 +149,7 @@ public abstract class DefaultPipeline implements Pipeline {
             final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx.getPrev());
             newCtx.setNextHandlerContext(baseCtx);
@@ -176,7 +177,7 @@ public abstract class DefaultPipeline implements Pipeline {
             final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx);
             newCtx.setNextHandlerContext(baseCtx.getNext());
@@ -243,7 +244,7 @@ public abstract class DefaultPipeline implements Pipeline {
             // call remove action
             removeHandlerAction(oldCtx);
 
-            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(prev);
             newCtx.setNextHandlerContext(next);
@@ -281,7 +282,7 @@ public abstract class DefaultPipeline implements Pipeline {
                                                   final Object msg) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.scheduler.scheduleDirect(() -> this.head.fireRead(sender, msg, rtn));
+        this.dependentScheduler.scheduleDirect(() -> this.head.fireRead(sender, msg, rtn));
 
         return rtn;
     }
@@ -290,7 +291,7 @@ public abstract class DefaultPipeline implements Pipeline {
     public CompletableFuture<Void> processInbound(final Event event) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.scheduler.scheduleDirect(() -> this.head.fireEventTriggered(event, rtn));
+        this.dependentScheduler.scheduleDirect(() -> this.head.fireEventTriggered(event, rtn));
 
         return rtn;
     }
@@ -300,7 +301,7 @@ public abstract class DefaultPipeline implements Pipeline {
                                                    final Object msg) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.scheduler.scheduleDirect(() -> this.tail.write(recipient, msg, rtn));
+        this.dependentScheduler.scheduleDirect(() -> this.tail.write(recipient, msg, rtn));
 
         return rtn;
     }

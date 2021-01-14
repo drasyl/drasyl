@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -113,12 +113,23 @@ public interface HandlerContext {
     Pipeline pipeline();
 
     /**
-     * <i>Implementation Note: This method should always return a scheduler, that differs from the
+     * <i>Implementation Note: This method must always return a scheduler, that differs from the
      * normal pipeline scheduler. E.g. the {@link DrasylScheduler#getInstanceHeavy()}</i>
+     * <p>
+     * This method returns an <strong>independent</strong> scheduler that does <strong>not</strong>
+     * add the given task to the same pool as the normal pipeline thread pool.
      *
-     * @return the corresponding {@link Scheduler}
+     * @return independent scheduler {@link Scheduler}
      */
-    Scheduler scheduler();
+    Scheduler independentScheduler();
+
+    /**
+     * This method returns the same thread pool that is used by the normal pipeline processing.
+     * Tasks given to this scheduler should be short living.
+     *
+     * @return normal pipeline processing thread pool
+     */
+    Scheduler dependentScheduler();
 
     /**
      * Returns the identity of this node.

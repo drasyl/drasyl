@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -31,17 +31,18 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Skeleton implementation for end handler of the {@link Pipeline}.
  */
-@SuppressWarnings({ "common-java:DuplicatedBlocks" })
+@SuppressWarnings({ "common-java:DuplicatedBlocks", "java:S107" })
 abstract class AbstractEndHandler extends AbstractHandlerContext implements Handler {
     protected AbstractEndHandler(final String name,
                                  final DrasylConfig config,
                                  final Pipeline pipeline,
-                                 final Scheduler scheduler,
+                                 final Scheduler dependentScheduler,
+                                 final Scheduler independentScheduler,
                                  final Identity identity,
                                  final PeersManager peersManager,
                                  final TypeValidator inboundValidator,
                                  final TypeValidator outboundValidator) {
-        super(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+        super(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
     }
 
     @Override

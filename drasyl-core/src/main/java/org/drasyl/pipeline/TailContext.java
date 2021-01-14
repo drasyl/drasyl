@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -46,12 +46,13 @@ class TailContext extends AbstractEndHandler {
     public TailContext(final Consumer<Event> eventConsumer,
                        final DrasylConfig config,
                        final Pipeline pipeline,
-                       final Scheduler scheduler,
+                       final Scheduler dependentScheduler,
+                       final Scheduler independentScheduler,
                        final Identity identity,
                        final PeersManager peersManager,
                        final TypeValidator inboundValidator,
                        final TypeValidator outboundValidator) {
-        super(DRASYL_TAIL_HANDLER, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+        super(DRASYL_TAIL_HANDLER, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
         this.eventConsumer = eventConsumer;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -79,17 +79,19 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
         outboundMessages = ReplaySubject.create();
 
         this.handlerNames = new ConcurrentHashMap<>();
-        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, DrasylScheduler.getInstanceHeavy(), identity, peersManager, inboundValidator, outboundValidator) {
+        this.dependentScheduler = DrasylScheduler.getInstanceLight();
+        this.independentScheduler = DrasylScheduler.getInstanceHeavy();
+        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public void write(final HandlerContext ctx,
                               final Address recipient,
                               final Object msg,
                               final CompletableFuture<Void> future) {
-                    outboundMessages.onNext(Pair.of(recipient, msg));
-                    future.complete(null);
+                outboundMessages.onNext(Pair.of(recipient, msg));
+                future.complete(null);
             }
         };
-        this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, peersManager, inboundValidator, outboundValidator) {
+        this.tail = new TailContext(inboundEvents::onNext, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public void read(final HandlerContext ctx,
                              final Address sender,
@@ -104,7 +106,6 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                 future.complete(null);
             }
         };
-        this.scheduler = DrasylScheduler.getInstanceLight();
         this.identity = identity;
         this.peersManager = peersManager;
         this.inboundValidator = inboundValidator;
