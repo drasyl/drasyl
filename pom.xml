@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2020.
+  ~ Copyright (c) 2021.
   ~
   ~ This file is part of drasyl.
   ~
@@ -124,7 +124,6 @@
         <micrometer.version>1.6.2</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
         <nexus.staging>1.6.8</nexus.staging>
-        <portmapper.version>2.0.5</portmapper.version>
         <slf4j.version>1.7.30</slf4j.version>
         <typesafe.config.version>1.4.1</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
@@ -280,11 +279,6 @@
                 <groupId>io.micrometer</groupId>
                 <artifactId>micrometer-registry-influx</artifactId>
                 <version>${micrometer.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.offbynull.portmapper</groupId>
-                <artifactId>portmapper</artifactId>
-                <version>${portmapper.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>

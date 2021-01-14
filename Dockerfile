@@ -36,9 +36,6 @@ RUN echo '<configuration>\n\
     <logger name="io.netty" level="WARN">\n\
     </logger>\n\
 \n\
-    <logger name="com.offbynull.portmapper" level="OFF">\n\
-    </logger>\n\
-\n\
     <root level="WARN">\n\
         <appender-ref ref="Console"/>\n\
         <appender-ref ref="Sentry"/>\n\

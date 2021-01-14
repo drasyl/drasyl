@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -41,8 +41,6 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.Pair;
-import org.drasyl.util.PortMappingUtil.PortMapping;
-import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +51,6 @@ import org.mockito.stubbing.Answer;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Set;
-import java.util.function.Function;
 
 import static java.net.InetSocketAddress.createUnresolved;
 import static org.drasyl.remote.handler.UdpServer.determineActualEndpoints;
@@ -80,10 +77,6 @@ class UdpServerTest {
     private TypeValidator outboundValidator;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Bootstrap bootstrap;
-    @Mock
-    private DrasylScheduler scheduler;
-    @Mock
-    private Function<InetSocketAddress, Set<PortMapping>> portExposer;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Channel channel;
     @Mock
@@ -99,37 +92,12 @@ class UdpServerTest {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
             when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://localhost:22527#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
 
-            final UdpServer handler = new UdpServer(bootstrap, scheduler, portExposer, null);
+            final UdpServer handler = new UdpServer(bootstrap, null);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
             pipeline.processInbound(event).join();
 
             verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
-            pipeline.close();
-        }
-
-        @Test
-        void shouldExposeServerOnNodeUpEvent(@Mock final NodeUpEvent event,
-                                             @Mock final Set<PortMapping> mappings,
-                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
-            when(bootstrap.handler(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
-            when(channelFuture.isSuccess()).thenReturn(true);
-            when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(config.isRemoteExposeEnabled()).thenReturn(true);
-            when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://localhost:22527#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
-            when(scheduler.scheduleDirect(any())).then(invocation -> {
-                final Runnable argument = invocation.getArgument(0, Runnable.class);
-                argument.run();
-                return null;
-            });
-            when(portExposer.apply(any())).thenReturn(mappings);
-
-            final UdpServer handler = new UdpServer(bootstrap, scheduler, portExposer, null);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-
-            pipeline.processInbound(event).join();
-
-            verify(portExposer).apply(any());
             pipeline.close();
         }
 
@@ -168,7 +136,7 @@ class UdpServerTest {
         void shouldStopServerOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(bootstrap, scheduler, portExposer, channel);
+            final UdpServer handler = new UdpServer(bootstrap, channel);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
             pipeline.processInbound(event).join();
@@ -181,7 +149,7 @@ class UdpServerTest {
         void shouldStopServerOnNodeDownEvent(@Mock final NodeDownEvent event) {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(bootstrap, scheduler, portExposer, channel);
+            final UdpServer handler = new UdpServer(bootstrap, channel);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
             pipeline.processInbound(event).join();
@@ -201,7 +169,7 @@ class UdpServerTest {
             when(channel.writeAndFlush(any()).isDone()).thenReturn(true);
             when(channel.writeAndFlush(any()).isSuccess()).thenReturn(true);
 
-            final UdpServer handler = new UdpServer(bootstrap, scheduler, portExposer, channel);
+            final UdpServer handler = new UdpServer(bootstrap, channel);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
             pipeline.processOutbound(recipient, msg).join();
@@ -225,7 +193,7 @@ class UdpServerTest {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
             when(config.getRemoteEndpoints()).thenReturn(Set.of());
 
-            final UdpServer handler = new UdpServer(bootstrap, scheduler, portExposer, null);
+            final UdpServer handler = new UdpServer(bootstrap, null);
 
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
             final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();

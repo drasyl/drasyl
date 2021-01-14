@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -55,6 +55,7 @@ import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.remote.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.remote.handler.UdpDiscoveryHandler.UDP_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
+import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -97,6 +98,7 @@ class DrasylPipelineTest {
     @Test
     void shouldCreateNewPipeline() {
         when(config.isRemoteEnabled()).thenReturn(true);
+        when(config.isRemoteExposeEnabled()).thenReturn(true);
 
         final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, started, workerGroup);
 
@@ -118,6 +120,7 @@ class DrasylPipelineTest {
         assertNotNull(pipeline.get(CHUNKING_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(MESSAGE_2_BYTE_BUF_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(BYTE_BUF_2_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(PORT_MAPPER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(UDP_SERVER), "This handler is required in the DrasylPipeline");
     }
 

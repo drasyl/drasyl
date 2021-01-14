@@ -30,19 +30,8 @@ Gradle : compile "ch.qos.logback:logback-classic:1.2.3" // build.gradle
     </encoder>
   </appender>
 
-  <!-- The errors sent by this library can/should be ignored... -->
-  <logger name="com.offbynull.portmapper" level="off" />
-
   <root level="debug">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>
 ```
-
-!!! important "Exceptions in `com.offbynull.portmapper` package"
-
-    To enable port forwarding on NAT-enabled routers, drasyl uses the
-    [Port Mapper](https://github.com/offbynull/portmapper) library. Sadly, it is "normal behavior"
-    for this library to throw exceptions during operation and log them. This is annoying, but does
-    not indicate a problem or error and should therefore be ignored by setting the log-level to
-    `OFF` for packages in `com.offbynull.portmapper` (see example configuration above).

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import static org.drasyl.util.UrlUtil.createUrl;
 
@@ -418,5 +419,60 @@ public final class NetworkUtil {
         }
 
         return mask;
+    }
+
+    public static InetAddress getDefaultGateway() {
+        // get line with default gateway address from "netstat"
+        String line;
+        try {
+            final Process result = Runtime.getRuntime().exec("netstat -rn");
+            final BufferedReader output = new BufferedReader(new InputStreamReader(result.getInputStream()));
+
+            while ((line = output.readLine()) != null) {
+                line = line.trim();
+                if (line.startsWith("default") || line.startsWith("0.0.0.0")) {
+                    break;
+                }
+            }
+        }
+        catch (final IOException e) {
+            LOG.warn("Unable to determine default gateway address.", e);
+            return null;
+        }
+
+        if (line == null) {
+            return null;
+        }
+
+        // get token with default gateway address
+        final StringTokenizer tokenizer = new StringTokenizer(line);
+        while (tokenizer.hasMoreTokens()) {
+            final String token = tokenizer.nextToken();
+            try {
+                final InetAddress address = InetAddress.getByName(token);
+                if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && address.isSiteLocalAddress()) {
+                    return address;
+                }
+            }
+            catch (final UnknownHostException e) {
+                // do nothing
+            }
+        }
+
+        return null;
+    }
+
+    public static byte[] getIpv4MappedIPv6AddressBytes(final InetAddress address) {
+        if (address instanceof Inet4Address) {
+            // create IPv4-mapped IPv6 address
+            final byte[] addr = new byte[16];
+            addr[10] = (byte) 0xff;
+            addr[11] = (byte) 0xff;
+            System.arraycopy(address.getAddress(), 0, addr, 12, 4);
+            return addr;
+        }
+        else {
+            return address.getAddress();
+        }
     }
 }
