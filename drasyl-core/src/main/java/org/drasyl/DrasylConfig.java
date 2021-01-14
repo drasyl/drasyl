@@ -158,7 +158,7 @@ public class DrasylConfig {
         this.networkId = config.getInt(NETWORK_ID);
 
         // init identity config
-        if (config.getInt(IDENTITY_PROOF_OF_WORK) >= 0) {
+        if (!config.getIsNull(IDENTITY_PROOF_OF_WORK)) {
             this.identityProofOfWork = getProofOfWork(config, IDENTITY_PROOF_OF_WORK);
         }
         else {
