@@ -25,7 +25,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
@@ -43,6 +42,7 @@ import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.Pair;
 import org.drasyl.util.PortMappingUtil.PortMapping;
+import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,7 +81,7 @@ class UdpServerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Bootstrap bootstrap;
     @Mock
-    private Scheduler scheduler;
+    private DrasylScheduler scheduler;
     @Mock
     private Function<InetSocketAddress, Set<PortMapping>> portExposer;
     @Mock(answer = RETURNS_DEEP_STUBS)

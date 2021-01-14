@@ -18,7 +18,6 @@
  */
 package org.drasyl.localhost;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
@@ -32,7 +31,8 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.util.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -77,7 +77,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
     private final Duration leaseTime;
     private final CompressedPublicKey ownPublicKey;
     private final AtomicBoolean doScan;
-    private final Scheduler scheduler;
+    private final DrasylScheduler scheduler;
     private Disposable watchDisposable;
     private Disposable postDisposable;
     private WatchService watchService; // NOSONAR
@@ -90,7 +90,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
                 config.getLocalHostDiscoveryLeaseTime(),
                 ownPublicKey,
                 new AtomicBoolean(),
-                DrasylScheduler.getInstanceLight(),
+                DrasylSchedulerUtil.getInstanceLight(),
                 null,
                 null
         );
@@ -101,7 +101,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
                        final Duration leaseTime,
                        final CompressedPublicKey ownPublicKey,
                        final AtomicBoolean doScan,
-                       final Scheduler scheduler,
+                       final DrasylScheduler scheduler,
                        final Disposable watchDisposable,
                        final Disposable postDisposable) {
         this.discoveryPath = discoveryPath;

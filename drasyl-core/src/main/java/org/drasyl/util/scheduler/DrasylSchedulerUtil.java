@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -16,12 +16,12 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.util;
+package org.drasyl.util.scheduler;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -40,9 +40,9 @@ import java.util.concurrent.TimeUnit;
  * the workQueue limit is never reached, the schedule would never start processing the already
  * submitted tasks.
  */
-public class DrasylScheduler {
+public class DrasylSchedulerUtil {
     public static final long SHUTDOWN_TIMEOUT = 10_000L; // 10s until the schedulers are stopped immediately
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylScheduler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylSchedulerUtil.class);
     protected static volatile boolean lightSchedulerCreated = false;
     protected static volatile boolean heavySchedulerCreated = false;
 
@@ -54,25 +54,26 @@ public class DrasylScheduler {
         });
     }
 
-    private DrasylScheduler() {
+    private DrasylSchedulerUtil() {
         // util class
     }
 
     /**
-     * Use this {@link Scheduler} for fast and light task that does not do heavy computations.
+     * Use this {@link DrasylScheduler} for fast and light task that does not do heavy
+     * computations.
      *
-     * @return a {@link Scheduler} for fast and light tasks
+     * @return a {@link DrasylScheduler} for fast and light tasks
      */
-    public static Scheduler getInstanceLight() {
+    public static DrasylScheduler getInstanceLight() {
         return LazyLightSchedulerHolder.INSTANCE.scheduler;
     }
 
     /**
-     * Use this {@link Scheduler} for slow and heavy task that does do longer computations.
+     * Use this {@link DrasylScheduler} for slow and heavy task that does do longer computations.
      *
-     * @return a {@link Scheduler} for slow and heavy tasks
+     * @return a {@link DrasylScheduler} for slow and heavy tasks
      */
-    public static Scheduler getInstanceHeavy() {
+    public static DrasylScheduler getInstanceHeavy() {
         return LazyHeavySchedulerHolder.INSTANCE.scheduler;
     }
 
@@ -106,7 +107,8 @@ public class DrasylScheduler {
     }
 
     private static class LazyLightSchedulerHolder {
-        static final DrasylExecutor INSTANCE = new DrasylExecutor("drasyl-L-%d");
+        static final String BASE_NAME = "drasyl-L-";
+        static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME);
         static final boolean LOCK = lightSchedulerCreated = true;
 
         private LazyLightSchedulerHolder() {
@@ -114,34 +116,35 @@ public class DrasylScheduler {
     }
 
     private static class LazyHeavySchedulerHolder {
-        static final DrasylExecutor INSTANCE = new DrasylExecutor("drasyl-H-%d");
+        static final String BASE_NAME = "drasyl-H-";
+        static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME);
         static final boolean LOCK = heavySchedulerCreated = true;
 
         private LazyHeavySchedulerHolder() {
         }
     }
 
-    private static class DrasylExecutor {
-        final Scheduler scheduler;
+    public static final class DrasylExecutor {
+        final DrasylScheduler scheduler;
         final ThreadPoolExecutor executor;
 
         /**
          * Generates an executor and scheduler.
          *
-         * @param name the name format for the created threads
+         * @param basename the basename for the created threads
          */
-        DrasylExecutor(final String name) {
+        DrasylExecutor(final String basename) {
             final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                    .setNameFormat(name)
+                    .setNameFormat(basename + "%d")
                     .build();
             this.executor = new ThreadPoolExecutor(
                     Math.min(1, Math.max(1, (Runtime.getRuntime().availableProcessors() / 2) - 1)),  //corePoolSize
                     Math.min(2, Math.max(1, (Runtime.getRuntime().availableProcessors() / 2) - 1)),  //maximumPoolSize
                     60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
-                    new LinkedBlockingQueue<>(1000),  //workQueue
+                    new LinkedBlockingQueue<>(10_000),  //workQueue
                     threadFactory
             );
-            this.scheduler = Schedulers.from(executor);
+            this.scheduler = DrasylScheduler.wrap(Schedulers.from(executor), basename);
         }
 
         private CompletableFuture<Void> shutdown() {

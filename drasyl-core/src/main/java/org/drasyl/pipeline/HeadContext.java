@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -27,6 +26,7 @@ import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -41,8 +41,8 @@ class HeadContext extends AbstractEndHandler {
 
     public HeadContext(final DrasylConfig config,
                        final Pipeline pipeline,
-                       final Scheduler dependentScheduler,
-                       final Scheduler independentScheduler,
+                       final DrasylScheduler dependentScheduler,
+                       final DrasylScheduler independentScheduler,
                        final Identity identity,
                        final PeersManager peersManager,
                        final TypeValidator inboundValidator,

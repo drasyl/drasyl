@@ -19,7 +19,6 @@
 package org.drasyl.pipeline;
 
 import io.netty.channel.EventLoopGroup;
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -40,7 +39,8 @@ import org.drasyl.remote.handler.OtherNetworkFilter;
 import org.drasyl.remote.handler.SignatureHandler;
 import org.drasyl.remote.handler.UdpDiscoveryHandler;
 import org.drasyl.remote.handler.UdpServer;
-import org.drasyl.util.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,8 +77,8 @@ public class DrasylPipeline extends DefaultPipeline {
         this.handlerNames = new ConcurrentHashMap<>();
         this.inboundValidator = TypeValidator.ofInboundValidator(config);
         this.outboundValidator = TypeValidator.ofOutboundValidator(config);
-        this.dependentScheduler = DrasylScheduler.getInstanceLight();
-        this.independentScheduler = DrasylScheduler.getInstanceHeavy();
+        this.dependentScheduler = DrasylSchedulerUtil.getInstanceLight();
+        this.independentScheduler = DrasylSchedulerUtil.getInstanceHeavy();
         this.head = new HeadContext(config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
         this.tail = new TailContext(eventConsumer, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
         this.config = config;
@@ -133,7 +133,7 @@ public class DrasylPipeline extends DefaultPipeline {
     DrasylPipeline(final Map<String, AbstractHandlerContext> handlerNames,
                    final AbstractEndHandler head,
                    final AbstractEndHandler tail,
-                   final Scheduler scheduler,
+                   final DrasylScheduler scheduler,
                    final DrasylConfig config,
                    final Identity identity) {
         this.handlerNames = handlerNames;

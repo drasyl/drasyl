@@ -18,14 +18,14 @@
  */
 package org.drasyl.pipeline;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -54,6 +54,9 @@ public interface HandlerContext {
      * <p>
      * This will result in having the  {@link Handler#exceptionCaught(HandlerContext, Exception)}
      * method  called of the next  {@link Handler} contained in the  {@link Pipeline}.
+     * <p>
+     * Note: It is guaranteed that this method will always be executed inside the {@link
+     * #dependentScheduler()}.
      *
      * @param cause the cause
      */
@@ -65,6 +68,9 @@ public interface HandlerContext {
      * This will result in having the {@link Handler#read(HandlerContext, Address, Object,
      * CompletableFuture)} method called of the next {@link Handler} contained in the {@link
      * Pipeline}.
+     * <p>
+     * Note: It is guaranteed that this method will always be executed inside the {@link
+     * #dependentScheduler()}.
      *
      * @param sender the sender of the message
      * @param msg    the message
@@ -80,6 +86,9 @@ public interface HandlerContext {
      * This will result in having the  {@link Handler#eventTriggered(HandlerContext, Event,
      * CompletableFuture)} method  called of the next  {@link Handler} contained in the  {@link
      * Pipeline}.
+     * <p>
+     * Note: It is guaranteed that this method will always be executed inside the {@link
+     * #dependentScheduler()}.
      *
      * @param event  the event
      * @param future the future of the message
@@ -89,6 +98,13 @@ public interface HandlerContext {
 
     /**
      * Request to write a message via this {@link HandlerContext} through the {@link Pipeline}.
+     * <p>
+     * This will result in having the  {@link Handler#write(HandlerContext, Address, Object,
+     * CompletableFuture)} method  called of the next  {@link Handler} contained in the  {@link
+     * Pipeline}.
+     * <p>
+     * Note: It is guaranteed that this method will always be executed inside the {@link
+     * #dependentScheduler()}.
      *
      * @param recipient the recipient of the message
      * @param msg       the message
@@ -114,14 +130,14 @@ public interface HandlerContext {
 
     /**
      * <i>Implementation Note: This method must always return a scheduler, that differs from the
-     * normal pipeline scheduler. E.g. the {@link DrasylScheduler#getInstanceHeavy()}</i>
+     * normal pipeline scheduler. E.g. the {@link DrasylSchedulerUtil#getInstanceHeavy()}</i>
      * <p>
      * This method returns an <strong>independent</strong> scheduler that does <strong>not</strong>
      * add the given task to the same pool as the normal pipeline thread pool.
      *
-     * @return independent scheduler {@link Scheduler}
+     * @return independent scheduler {@link DrasylScheduler}
      */
-    Scheduler independentScheduler();
+    DrasylScheduler independentScheduler();
 
     /**
      * This method returns the same thread pool that is used by the normal pipeline processing.
@@ -129,7 +145,7 @@ public interface HandlerContext {
      *
      * @return normal pipeline processing thread pool
      */
-    Scheduler dependentScheduler();
+    DrasylScheduler dependentScheduler();
 
     /**
      * Returns the identity of this node.

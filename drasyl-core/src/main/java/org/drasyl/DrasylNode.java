@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
-import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
+import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 
 /**
  * Represents a node in the drasyl Overlay Network. Applications that want to run on drasyl must

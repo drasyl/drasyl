@@ -21,12 +21,12 @@ package org.drasyl.util;
 
 import com.offbynull.portmapper.mapper.MappedPort;
 import com.offbynull.portmapper.mapper.PortType;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.util.PortMappingUtil.PortMapping;
 import org.drasyl.util.PortMappingUtil.Protocol;
+import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,7 +56,7 @@ class PortMappingUtilTest {
         @Mock
         Subject<Optional<InetSocketAddress>> externalAddressObservable;
         @Mock
-        Scheduler scheduler;
+        DrasylScheduler scheduler;
         @Mock(answer = RETURNS_DEEP_STUBS)
         MappedPort mappedPort;
         @Mock

@@ -20,7 +20,6 @@ package org.drasyl.pipeline;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
@@ -28,6 +27,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,9 +55,9 @@ class HeadContextTest {
     @Mock
     private Pipeline pipeline;
     @Mock
-    private Scheduler dependentScheduler;
+    private DrasylScheduler dependentScheduler;
     @Mock
-    private Scheduler independentScheduler;
+    private DrasylScheduler independentScheduler;
     @Mock
     private Identity identity;
     @Mock

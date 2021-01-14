@@ -30,7 +30,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
 
@@ -79,8 +79,8 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
         outboundMessages = ReplaySubject.create();
 
         this.handlerNames = new ConcurrentHashMap<>();
-        this.dependentScheduler = DrasylScheduler.getInstanceLight();
-        this.independentScheduler = DrasylScheduler.getInstanceHeavy();
+        this.dependentScheduler = DrasylSchedulerUtil.getInstanceLight();
+        this.independentScheduler = DrasylSchedulerUtil.getInstanceHeavy();
         this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public void write(final HandlerContext ctx,

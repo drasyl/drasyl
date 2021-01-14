@@ -32,7 +32,6 @@ import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -46,7 +45,8 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.AddressedByteBuf;
-import org.drasyl.util.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.PortMappingUtil;
 import org.drasyl.util.PortMappingUtil.PortMapping;
@@ -74,13 +74,13 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
     public static final String UDP_SERVER = "UDP_SERVER";
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private final Bootstrap bootstrap;
-    private final Scheduler scheduler;
+    private final DrasylScheduler scheduler;
     private final Function<InetSocketAddress, Set<PortMapping>> portExposer;
     private Channel channel;
     private Set<PortMapping> portMappings;
 
     UdpServer(final Bootstrap bootstrap,
-              final Scheduler scheduler,
+              final DrasylScheduler scheduler,
               final Function<InetSocketAddress, Set<PortMapping>> portExposer,
               final Channel channel) {
         this.bootstrap = bootstrap;
@@ -95,7 +95,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                         .group(bossGroup)
                         .channel(getBestDatagramChannel())
                         .option(ChannelOption.SO_BROADCAST, false),
-                DrasylScheduler.getInstanceHeavy(),
+                DrasylSchedulerUtil.getInstanceHeavy(),
                 address -> PortMappingUtil.expose(address, UDP),
                 null
         );

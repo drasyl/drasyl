@@ -27,12 +27,13 @@ import com.offbynull.portmapper.mapper.MappedPort;
 import com.offbynull.portmapper.mapper.PortMapper;
 import com.offbynull.portmapper.mapper.PortType;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.scheduler.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -156,7 +157,7 @@ public class PortMappingUtil {
         private final InetSocketAddress address;
         private final Protocol protocol;
         private final Subject<Optional<InetSocketAddress>> externalAddressObservable;
-        private final Scheduler scheduler;
+        private final DrasylScheduler scheduler;
         private MappedPort mappedPort;
         private Disposable refreshDisposable;
 
@@ -164,7 +165,7 @@ public class PortMappingUtil {
                     final InetSocketAddress address,
                     final Protocol protocol,
                     final Subject<Optional<InetSocketAddress>> externalAddressObservable,
-                    final Scheduler scheduler,
+                    final DrasylScheduler scheduler,
                     final MappedPort mappedPort,
                     final Disposable refreshDisposable) {
             this.mapper = mapper;
@@ -180,7 +181,7 @@ public class PortMappingUtil {
                     final InetSocketAddress address,
                     final Protocol protocol,
                     final Subject<Optional<InetSocketAddress>> externalAddressObservable,
-                    final Scheduler scheduler) {
+                    final DrasylScheduler scheduler) {
             this(mapper, address, protocol, externalAddressObservable, scheduler, null, null);
 
             try {
@@ -202,7 +203,7 @@ public class PortMappingUtil {
         public PortMapping(final PortMapper mapper,
                            final InetSocketAddress address,
                            final Protocol protocol) {
-            this(mapper, address, protocol, BehaviorSubject.createDefault(Optional.empty()), DrasylScheduler.getInstanceHeavy());
+            this(mapper, address, protocol, BehaviorSubject.createDefault(Optional.empty()), DrasylSchedulerUtil.getInstanceHeavy());
         }
 
         /**
