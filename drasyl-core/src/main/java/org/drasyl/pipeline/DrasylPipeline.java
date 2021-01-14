@@ -39,6 +39,7 @@ import org.drasyl.remote.handler.OtherNetworkFilter;
 import org.drasyl.remote.handler.SignatureHandler;
 import org.drasyl.remote.handler.UdpDiscoveryHandler;
 import org.drasyl.remote.handler.UdpServer;
+import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
@@ -62,6 +63,7 @@ import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.remote.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.remote.handler.UdpDiscoveryHandler.UDP_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
+import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
 
 /**
  * The default {@link Pipeline} implementation. Used to implement plugins for drasyl.
@@ -126,6 +128,9 @@ public class DrasylPipeline extends DefaultPipeline {
             addFirst(BYTE_BUF_2_MESSAGE_HANDLER, ByteBuf2MessageHandler.INSTANCE);
 
             // udp server
+            if (config.isRemoteExposeEnabled()) {
+                addFirst(PORT_MAPPER, new PortMapper());
+            }
             addFirst(UDP_SERVER, new UdpServer(bossGroup));
         }
     }

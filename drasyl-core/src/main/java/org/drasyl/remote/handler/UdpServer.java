@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -45,11 +45,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.AddressedByteBuf;
-import org.drasyl.util.scheduler.DrasylScheduler;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 import org.drasyl.util.FutureUtil;
-import org.drasyl.util.PortMappingUtil;
-import org.drasyl.util.PortMappingUtil.PortMapping;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -58,11 +54,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.drasyl.util.NetworkUtil.getAddresses;
-import static org.drasyl.util.PortMappingUtil.Protocol.UDP;
 import static org.drasyl.util.UriUtil.createUri;
 import static org.drasyl.util.UriUtil.overridePort;
 
@@ -74,18 +68,11 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
     public static final String UDP_SERVER = "UDP_SERVER";
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private final Bootstrap bootstrap;
-    private final DrasylScheduler scheduler;
-    private final Function<InetSocketAddress, Set<PortMapping>> portExposer;
     private Channel channel;
-    private Set<PortMapping> portMappings;
 
     UdpServer(final Bootstrap bootstrap,
-              final DrasylScheduler scheduler,
-              final Function<InetSocketAddress, Set<PortMapping>> portExposer,
               final Channel channel) {
         this.bootstrap = bootstrap;
-        this.scheduler = scheduler;
-        this.portExposer = portExposer;
         this.channel = channel;
     }
 
@@ -95,8 +82,6 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                         .group(bossGroup)
                         .channel(getBestDatagramChannel())
                         .option(ChannelOption.SO_BROADCAST, false),
-                DrasylSchedulerUtil.getInstanceHeavy(),
-                address -> PortMappingUtil.expose(address, UDP),
                 null
         );
     }
@@ -204,10 +189,6 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                 final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
                 LOG.debug("Server started and listening at {}", socketAddress);
 
-                if (ctx.config().isRemoteExposeEnabled()) {
-                    createPortMappings(socketAddress);
-                }
-
                 // consume NodeUpEvent and publish NodeUpEvent with port
                 ctx.fireEventTriggered(new NodeUpEvent(Node.of(ctx.identity(), socketAddress.getPort())), future);
             }
@@ -231,7 +212,6 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
             final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
             LOG.debug("Stop Server listening at {}...", socketAddress);
             // shutdown server
-            closePortMappings();
             channel.close().awaitUninterruptibly();
             channel = null;
             LOG.debug("Server stopped");
@@ -255,18 +235,5 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
             ReferenceCountUtil.safeRelease(addressedByteBuf);
             future.completeExceptionally(new Exception("Udp Channel is not present or is not writable."));
         }
-    }
-
-    void createPortMappings(final InetSocketAddress socketAddress) {
-        scheduler.scheduleDirect(() -> portMappings = portExposer.apply(socketAddress));
-    }
-
-    private void closePortMappings() {
-        scheduler.scheduleDirect(() -> {
-            if (portMappings != null) {
-                portMappings.forEach(PortMapping::close);
-                portMappings = null;
-            }
-        });
     }
 }

@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright (c) 2020.
+  ~ Copyright (c) 2021.
   ~
   ~ This file is part of drasyl.
   ~
@@ -51,9 +51,6 @@
     </logger>
 
     <logger name="io.netty" level="WARN">
-    </logger>
-
-    <logger name="com.offbynull.portmapper" level="OFF">
     </logger>
 
     <!-- available levels: off, error, warn, info, debug, trace -->

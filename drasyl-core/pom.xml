@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2020.
+  ~ Copyright (c) 2021.
   ~
   ~ This file is part of drasyl.
   ~
@@ -141,10 +141,6 @@
         <dependency>
             <groupId>io.reactivex.rxjava3</groupId>
             <artifactId>rxjava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.offbynull.portmapper</groupId>
-            <artifactId>portmapper</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>

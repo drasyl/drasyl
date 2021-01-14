@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -66,6 +66,7 @@ class NetworkUtilTest {
         }
     }
 
+    @SuppressWarnings({ "CatchMayIgnoreException", "unused" })
     @Nested
     class Available {
         @Test
@@ -86,6 +87,7 @@ class NetworkUtilTest {
         }
     }
 
+    @SuppressWarnings({ "CatchMayIgnoreException", "unused" })
     @Nested
     class Alive {
         @Test
@@ -173,6 +175,7 @@ class NetworkUtilTest {
         }
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Nested
     class SameNetwork {
         @Test
@@ -227,6 +230,31 @@ class NetworkUtilTest {
             assertFalse(NetworkUtil.sameNetwork(lastNotIncludedIP, currentIP, netmask));
             assertFalse(NetworkUtil.sameNetwork(firstNotIncludedIP, currentIP, netmask));
             assertFalse(NetworkUtil.sameNetwork(currentIPBytes, new byte[]{}, netmask));
+        }
+    }
+
+    @Nested
+    class GetDefaultGateway {
+        @Test
+        void shouldNotThrowException() {
+            assertDoesNotThrow(NetworkUtil::getDefaultGateway);
+        }
+    }
+
+    @Nested
+    class GetIpv4MappedIPv6AddressBytes {
+        @Test
+        void shouldReturnUnchangedInet6Address() throws UnknownHostException {
+            final InetAddress address = InetAddress.getByName("2001:0db8:85a3:08d3:1319:8a2e:0370:7347");
+
+            assertArrayEquals(new byte[] { 32, 1, 13, -72, -123, -93, 8, -45, 19, 25, -118, 46, 3, 112, 115, 71 }, NetworkUtil.getIpv4MappedIPv6AddressBytes(address));
+        }
+
+        @Test
+        void shouldReturnMappedInet6Address() throws UnknownHostException {
+            final InetAddress address = InetAddress.getByName("192.168.1.129");
+
+            assertArrayEquals(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -64, -88, 1, -127 }, NetworkUtil.getIpv4MappedIPv6AddressBytes(address));
         }
     }
 }
