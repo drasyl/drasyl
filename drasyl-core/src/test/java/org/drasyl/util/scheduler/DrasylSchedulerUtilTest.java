@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.util;
+package org.drasyl.util.scheduler;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -29,52 +29,52 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 @Disabled("This tests runs only when started in own JVM")
-class DrasylSchedulerTest {
+class DrasylSchedulerUtilTest {
     @Test
     void shouldReturnImmediatelyWhenSchedulerIsNotInstantiated() {
-        assertFalse(DrasylScheduler.lightSchedulerCreated);
-        assertFalse(DrasylScheduler.heavySchedulerCreated);
+        assertFalse(DrasylSchedulerUtil.lightSchedulerCreated);
+        assertFalse(DrasylSchedulerUtil.heavySchedulerCreated);
     }
 
     @Test
     void shouldReturnImmediatelyWhenSchedulerIsNotInstantiatedAndShutdownIsCalled() {
-        DrasylScheduler.shutdown().join();
+        DrasylSchedulerUtil.shutdown().join();
 
-        assertFalse(DrasylScheduler.lightSchedulerCreated);
-        assertFalse(DrasylScheduler.heavySchedulerCreated);
+        assertFalse(DrasylSchedulerUtil.lightSchedulerCreated);
+        assertFalse(DrasylSchedulerUtil.heavySchedulerCreated);
     }
 
     @Test
     void shouldNotReturnImmediatelyWhenLightSchedulerIsInstantiated() {
-        assertNotNull(DrasylScheduler.getInstanceLight());
+        assertNotNull(DrasylSchedulerUtil.getInstanceLight());
 
-        assertTrue(DrasylScheduler.lightSchedulerCreated);
-        assertFalse(DrasylScheduler.heavySchedulerCreated);
+        assertTrue(DrasylSchedulerUtil.lightSchedulerCreated);
+        assertFalse(DrasylSchedulerUtil.heavySchedulerCreated);
 
         // shutdown
-        DrasylScheduler.shutdown().join();
+        DrasylSchedulerUtil.shutdown().join();
     }
 
     @Test
     void shouldNotReturnImmediatelyWhenHeavySchedulerIsInstantiated() {
-        assertNotNull(DrasylScheduler.getInstanceHeavy());
+        assertNotNull(DrasylSchedulerUtil.getInstanceHeavy());
 
-        assertFalse(DrasylScheduler.lightSchedulerCreated);
-        assertTrue(DrasylScheduler.heavySchedulerCreated);
+        assertFalse(DrasylSchedulerUtil.lightSchedulerCreated);
+        assertTrue(DrasylSchedulerUtil.heavySchedulerCreated);
 
         // shutdown
-        DrasylScheduler.shutdown().join();
+        DrasylSchedulerUtil.shutdown().join();
     }
 
     @Test
     void shouldNotReturnImmediatelyWhenSchedulerIsInstantiated() {
-        assertNotNull(DrasylScheduler.getInstanceLight());
-        assertNotNull(DrasylScheduler.getInstanceHeavy());
+        assertNotNull(DrasylSchedulerUtil.getInstanceLight());
+        assertNotNull(DrasylSchedulerUtil.getInstanceHeavy());
 
-        assertTrue(DrasylScheduler.lightSchedulerCreated);
-        assertTrue(DrasylScheduler.heavySchedulerCreated);
+        assertTrue(DrasylSchedulerUtil.lightSchedulerCreated);
+        assertTrue(DrasylSchedulerUtil.heavySchedulerCreated);
 
         // shutdown
-        DrasylScheduler.shutdown().join();
+        DrasylSchedulerUtil.shutdown().join();
     }
 }

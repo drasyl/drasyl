@@ -18,7 +18,6 @@
  */
 package org.drasyl.localhost;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
@@ -33,6 +32,7 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.ApplicationMessage;
+import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,7 +83,7 @@ class LocalHostDiscoveryTest {
     @Mock
     private CompressedPublicKey ownPublicKey;
     @Mock
-    private Scheduler scheduler;
+    private DrasylScheduler scheduler;
     @Mock
     private Disposable watchDisposable;
     @Mock

@@ -22,7 +22,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.event.Event;
-import org.drasyl.util.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 /**
  * This particular Implementation of a drasyl Node shows exemplary how incoming Events can be
@@ -49,7 +49,7 @@ public class ObservableDrasylNode extends DrasylNode {
 
     public static void main(final String[] args) throws DrasylException {
         final ObservableDrasylNode node = new ObservableDrasylNode(DrasylConfig.newBuilder().localHostDiscoveryEnabled(false).remoteExposeEnabled(false).build());
-        node.events().subscribeOn(DrasylScheduler.getInstanceLight()).subscribe(System.out::println, System.err::println); // NOSONAR
+        node.events().subscribeOn(DrasylSchedulerUtil.getInstanceLight()).subscribe(System.out::println, System.err::println); // NOSONAR
         node.start().join();
     }
 

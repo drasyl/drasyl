@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.util.DrasylScheduler.getInstanceLight;
+import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
 @SuppressWarnings({ "java:S107" })

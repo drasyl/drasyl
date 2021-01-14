@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -27,6 +26,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -41,8 +41,8 @@ public abstract class DefaultPipeline implements Pipeline {
     protected Map<String, AbstractHandlerContext> handlerNames;
     protected AbstractEndHandler head;
     protected AbstractEndHandler tail;
-    protected Scheduler dependentScheduler;
-    protected Scheduler independentScheduler;
+    protected DrasylScheduler dependentScheduler;
+    protected DrasylScheduler independentScheduler;
     protected DrasylConfig config;
     protected Identity identity;
     protected PeersManager peersManager;

@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -27,6 +26,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -44,8 +44,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private Integer mask;
     private final String name;
     private final Pipeline pipeline;
-    private final Scheduler dependentScheduler;
-    private final Scheduler independentScheduler;
+    private final DrasylScheduler dependentScheduler;
+    private final DrasylScheduler independentScheduler;
     private final Identity identity;
     private final PeersManager peersManager;
     private final TypeValidator inboundValidator;
@@ -56,8 +56,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
     protected AbstractHandlerContext(final String name,
                                      final DrasylConfig config,
                                      final Pipeline pipeline,
-                                     final Scheduler dependentScheduler,
-                                     final Scheduler independentScheduler,
+                                     final DrasylScheduler dependentScheduler,
+                                     final DrasylScheduler independentScheduler,
                                      final Identity identity,
                                      final PeersManager peersManager,
                                      final TypeValidator inboundValidator,
@@ -70,8 +70,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
                            final String name,
                            final DrasylConfig config,
                            final Pipeline pipeline,
-                           final Scheduler dependentScheduler,
-                           final Scheduler independentScheduler,
+                           final DrasylScheduler dependentScheduler,
+                           final DrasylScheduler independentScheduler,
                            final Identity identity,
                            final PeersManager peersManager,
                            final TypeValidator inboundValidator,
@@ -116,7 +116,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
 
     @Override
     public HandlerContext fireExceptionCaught(final Exception cause) {
-        invokeExceptionCaught(cause);
+        executeOnDependentScheduler(() -> invokeExceptionCaught(cause));
 
         return this;
     }
@@ -176,12 +176,14 @@ abstract class AbstractHandlerContext implements HandlerContext {
     public CompletableFuture<Void> fireRead(final Address sender,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
-        return invokeRead(sender, msg, future);
+        executeOnDependentScheduler(() -> invokeRead(sender, msg, future));
+
+        return future;
     }
 
-    private CompletableFuture<Void> invokeRead(final Address sender,
-                                               final Object msg,
-                                               final CompletableFuture<Void> future) {
+    private void invokeRead(final Address sender,
+                            final Object msg,
+                            final CompletableFuture<Void> future) {
         final AbstractHandlerContext inboundCtx = findNextInbound(READ_MASK);
         try {
             if (inboundCtx != null) {
@@ -193,18 +195,18 @@ abstract class AbstractHandlerContext implements HandlerContext {
             future.completeExceptionally(e);
             inboundCtx.fireExceptionCaught(e);
         }
-
-        return future;
     }
 
     @Override
     public CompletableFuture<Void> fireEventTriggered(final Event event,
                                                       final CompletableFuture<Void> future) {
-        return invokeEventTriggered(event, future);
+        executeOnDependentScheduler(() -> invokeEventTriggered(event, future));
+
+        return future;
     }
 
-    private CompletableFuture<Void> invokeEventTriggered(final Event event,
-                                                         final CompletableFuture<Void> future) {
+    private void invokeEventTriggered(final Event event,
+                                      final CompletableFuture<Void> future) {
         final AbstractHandlerContext inboundCtx = findNextInbound(EVENT_TRIGGERED_MASK);
         try {
             if (inboundCtx != null) {
@@ -216,20 +218,20 @@ abstract class AbstractHandlerContext implements HandlerContext {
             future.completeExceptionally(e);
             inboundCtx.fireExceptionCaught(e);
         }
-
-        return future;
     }
 
     @Override
     public CompletableFuture<Void> write(final Address recipient,
                                          final Object msg,
                                          final CompletableFuture<Void> future) {
-        return invokeWrite(recipient, msg, future);
+        executeOnDependentScheduler(() -> invokeWrite(recipient, msg, future));
+
+        return future;
     }
 
-    private CompletableFuture<Void> invokeWrite(final Address recipient,
-                                                final Object msg,
-                                                final CompletableFuture<Void> future) {
+    private void invokeWrite(final Address recipient,
+                             final Object msg,
+                             final CompletableFuture<Void> future) {
         final AbstractHandlerContext outboundCtx = findPrevOutbound(WRITE_MASK);
         try {
             if (outboundCtx != null) {
@@ -241,8 +243,15 @@ abstract class AbstractHandlerContext implements HandlerContext {
             future.completeExceptionally(e);
             outboundCtx.fireExceptionCaught(e);
         }
+    }
 
-        return future;
+    void executeOnDependentScheduler(final Runnable task) {
+        if (this.dependentScheduler().isCalledFromThisScheduler()) {
+            task.run();
+        }
+        else {
+            this.dependentScheduler().scheduleDirect(task);
+        }
     }
 
     @Override
@@ -256,12 +265,12 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public Scheduler dependentScheduler() {
+    public DrasylScheduler dependentScheduler() {
         return this.dependentScheduler;
     }
 
     @Override
-    public Scheduler independentScheduler() {
+    public DrasylScheduler independentScheduler() {
         return this.independentScheduler;
     }
 

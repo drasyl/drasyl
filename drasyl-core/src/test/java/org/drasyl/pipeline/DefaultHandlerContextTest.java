@@ -18,11 +18,11 @@
  */
 package org.drasyl.pipeline;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -39,9 +39,9 @@ class DefaultHandlerContextTest {
     @Mock
     private Pipeline pipeline;
     @Mock
-    private Scheduler dependentScheduler;
+    private DrasylScheduler dependentScheduler;
     @Mock
-    private Scheduler independentScheduler;
+    private DrasylScheduler independentScheduler;
     @Mock
     private Identity identity;
     @Mock

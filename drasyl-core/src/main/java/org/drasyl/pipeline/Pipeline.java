@@ -20,6 +20,7 @@ package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
@@ -136,7 +137,7 @@ import java.util.concurrent.CompletableFuture;
  *       <li>{@link Pipeline#processOutbound(Address, Object)}</li>
  *       </ul>
  * </li>
- * the invocation is scheduled in the {@link org.drasyl.util.DrasylScheduler}, therefore the order of
+ * the invocation is scheduled in the {@link DrasylSchedulerUtil}, therefore the order of
  * invocations can't be guaranteed. You have to ensure by yourself, that your handlers are thread-safe
  * if you need it. Also, you have to ensure the order of messages, if you need it.
  */

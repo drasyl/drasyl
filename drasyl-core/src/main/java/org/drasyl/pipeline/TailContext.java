@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -29,6 +28,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -46,8 +46,8 @@ class TailContext extends AbstractEndHandler {
     public TailContext(final Consumer<Event> eventConsumer,
                        final DrasylConfig config,
                        final Pipeline pipeline,
-                       final Scheduler dependentScheduler,
-                       final Scheduler independentScheduler,
+                       final DrasylScheduler dependentScheduler,
+                       final DrasylScheduler independentScheduler,
                        final Identity identity,
                        final PeersManager peersManager,
                        final TypeValidator inboundValidator,

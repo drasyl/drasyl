@@ -18,13 +18,13 @@
  */
 package org.drasyl.pipeline;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -63,9 +63,9 @@ class AbstractHandlerContextTest {
     @Mock
     private Pipeline pipeline;
     @Mock
-    private Scheduler dependentScheduler;
+    private DrasylScheduler dependentScheduler;
     @Mock
-    private Scheduler independentScheduler;
+    private DrasylScheduler independentScheduler;
     @Mock
     private Identity identity;
     @Mock
@@ -217,6 +217,7 @@ class AbstractHandlerContextTest {
     void shouldInvokeExceptionCaught() {
         final Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
@@ -254,6 +255,7 @@ class AbstractHandlerContextTest {
     void shouldInvokeRead() {
         final Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
@@ -276,6 +278,8 @@ class AbstractHandlerContextTest {
         final Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).read(any(), any(), any(), any());
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
+        when(next.dependentScheduler()).thenReturn(dependentScheduler);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
@@ -298,6 +302,7 @@ class AbstractHandlerContextTest {
     void shouldFireEventTriggered() {
         final Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
@@ -319,6 +324,8 @@ class AbstractHandlerContextTest {
         final Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).eventTriggered(any(), any(), any());
+        when(next.dependentScheduler()).thenReturn(dependentScheduler);
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
@@ -340,6 +347,7 @@ class AbstractHandlerContextTest {
     void shouldWrite() {
         final Handler newHandler = mock(Handler.class);
         when(prev.handler()).thenReturn(newHandler);
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
@@ -362,6 +370,8 @@ class AbstractHandlerContextTest {
         final Handler newHandler = mock(Handler.class);
         when(prev.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).write(any(), any(), any(), any());
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
+        when(prev.dependentScheduler()).thenReturn(dependentScheduler);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
@@ -382,6 +392,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldThrowExceptionOnPipelineException() {
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
         final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
@@ -396,6 +407,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldThrowExceptionOnPipelineExceptionOnNextHandler() {
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
         final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
@@ -416,6 +428,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldNotThrowExceptionOnNextHandler() {
+        when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
         final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
