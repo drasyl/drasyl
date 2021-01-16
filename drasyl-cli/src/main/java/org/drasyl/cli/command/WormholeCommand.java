@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -37,7 +37,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 /**
- * Inspired by https://github.com/warner/magic-wormhole.
+ * Inspired by <a href="https://github.com/warner/magic-wormhole">https://github.com/warner/magic-wormhole</a>.
  */
 public class WormholeCommand extends AbstractCommand {
     private final Supplier<Scanner> scannerSupplier;
