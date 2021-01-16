@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -39,6 +39,7 @@ import org.drasyl.remote.protocol.Protocol.MessageType;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
+import org.drasyl.util.ByteBufUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedShort;
 
@@ -61,18 +62,15 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
  * translated into a Java object.
  */
 public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCounted {
-    private ByteBuf originalMessage;
     private ByteBuf message;
     private PublicHeader publicHeader;
     private PrivateHeader privateHeader;
     private T body;
 
-    IntermediateEnvelope(final ByteBuf originalMessage,
-                         final ByteBuf message,
+    IntermediateEnvelope(final ByteBuf message,
                          final PublicHeader publicHeader,
                          final PrivateHeader privateHeader,
                          final T body) {
-        this.originalMessage = originalMessage;
         this.message = message;
         this.publicHeader = publicHeader;
         this.privateHeader = privateHeader;
@@ -81,11 +79,15 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
 
     private IntermediateEnvelope(final ByteBuf message) {
         if (!message.isReadable()) {
-            throw new IllegalArgumentException("The given message has no readable data.");
+            try {
+                throw new IllegalArgumentException("The given message has no readable data.");
+            }
+            finally {
+                ReferenceCountUtil.safeRelease(message);
+            }
         }
 
-        this.originalMessage = message;
-        this.message = originalMessage.duplicate();
+        this.message = message.duplicate();
         this.publicHeader = null;
         this.privateHeader = null;
         this.body = null;
@@ -94,8 +96,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     private IntermediateEnvelope(final PublicHeader publicHeader,
                                  final PrivateHeader privateHeader,
                                  final T body) {
-        this.originalMessage = PooledByteBufAllocator.DEFAULT.buffer();
-        this.message = originalMessage.duplicate();
+        this.message = null;
         this.publicHeader = publicHeader;
         this.privateHeader = privateHeader;
         this.body = body;
@@ -104,7 +105,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     @Override
     public String toString() {
         return "IntermediateEnvelope{" +
-                "originalMessage=" + originalMessage +
+                "message=" + message +
                 ", publicHeader=" + (publicHeader != null ? TextFormat.shortDebugString(publicHeader) : null) +
                 ", privateHeader=" + (privateHeader != null ? TextFormat.shortDebugString(privateHeader) : null) +
                 ", body=" + (body instanceof MessageOrBuilder ? TextFormat.shortDebugString((MessageOrBuilder) body) : null) +
@@ -112,10 +113,16 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     }
 
     /**
+     * Wraps the given {@link ByteBuf} into an {@link IntermediateEnvelope}.
+     * <p>
      * <b>Note: The given {@code message} {@link ByteBuf} will not be modified. This object
      * uses a duplicate of the given {@link ByteBuf}.</b>
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code message} is transferred to this {@link
+     * IntermediateEnvelope}.
      *
-     * @param message the message that should be wrapped
+     * @param message the message that should be wrapped. {@link ByteBuf#release()} ownership is
+     *                transferred to this {@link IntermediateEnvelope}.
      * @return an IntermediateEnvelope
      * @throws IllegalArgumentException if the given {@link ByteBuf} is not readable
      */
@@ -162,10 +169,15 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     }
 
     /**
-     * Creates a message envelope from {@code publicHeader} and {@code bytes}
+     * Creates a message envelope from {@code publicHeader} and {@code bytes}.
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code bytes} is transferred to this {@link
+     * IntermediateEnvelope}.
      *
      * @param publicHeader message's public header
-     * @param bytes        message's remainder as bytes (may be encrypted)
+     * @param bytes        message's remainder as bytes (may be encrypted). {@link
+     *                     ByteBuf#release()} ownership is transferred to this {@link
+     *                     IntermediateEnvelope}.
      * @return an IntermediateEnvelope
      * @throws IOException if {@code publicHeader} and {@code bytes} can not be serialized
      */
@@ -273,12 +285,28 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    public ByteBuf getByteBuf() {
+    /**
+     * This method returns a copy of the {@link IntermediateEnvelope} and resets the reader index to
+     * 0.
+     *
+     * @return the wrapped {@link ByteBuf} of this envelope
+     */
+    public ByteBuf copy() {
         synchronized (this) {
-            return originalMessage;
+            if (message != null) {
+                return message.duplicate().readerIndex(0);
+            }
+
+            return null;
         }
     }
 
+    /**
+     * This method returns the internal wrapped {@link ByteBuf} of this {@link
+     * IntermediateEnvelope}.
+     *
+     * @return the internal wrapped {@link ByteBuf}
+     */
     public ByteBuf getInternalByteBuf() {
         synchronized (this) {
             return message;
@@ -293,12 +321,11 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      */
     public ByteBuf getOrBuildByteBuf() throws IOException {
         synchronized (this) {
-            if (originalMessage == null || !originalMessage.isReadable()) {
-                this.originalMessage = proto2ByteBuf(originalMessage);
-                this.message = originalMessage.duplicate();
+            if (message == null || message.writerIndex() == 0) {
+                this.message = proto2ByteBuf();
             }
 
-            return originalMessage;
+            return copy();
         }
     }
 
@@ -318,8 +345,8 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
 
     @Override
     public int refCnt() {
-        if (originalMessage != null) {
-            return originalMessage.refCnt();
+        if (message != null) {
+            return message.refCnt();
         }
 
         return 0;
@@ -327,48 +354,46 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
 
     @Override
     public ReferenceCounted retain() {
-        return originalMessage.retain();
+        return message.retain();
     }
 
     @Override
     public ReferenceCounted retain(final int increment) {
-        return originalMessage.retain(increment);
+        return message.retain(increment);
     }
 
     @Override
     public ReferenceCounted touch() {
-        return originalMessage.touch();
+        return message.touch();
     }
 
     @Override
     public ReferenceCounted touch(final Object hint) {
-        return originalMessage.touch(hint);
+        return message.touch(hint);
     }
 
     @Override
     public boolean release() {
-        return ReferenceCountUtil.release(originalMessage);
+        return ReferenceCountUtil.release(message);
     }
 
     @Override
     public boolean release(final int decrement) {
-        if (originalMessage != null) {
-            return originalMessage.release(decrement);
+        if (message != null) {
+            return message.release(decrement);
         }
 
         return true;
     }
 
     /**
-     * This method does release all used {@link ByteBuf}s. In concrete {@link #message} and {@link
-     * #originalMessage}. The corresponding elements where also set to {@code null}.
+     * This method does release all used {@link ByteBuf}s. The corresponding elements where also set
+     * to {@code null}.
      */
     public void releaseAll() {
         ReferenceCountUtil.safeRelease(message);
-        ReferenceCountUtil.safeRelease(originalMessage);
 
         message = null;
-        originalMessage = null;
     }
 
     /**
@@ -455,8 +480,34 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    public void incrementHopCount() {
-        // FIXME: implement
+    /**
+     * @throws IOException if the public header cannot be read
+     */
+    public void incrementHopCount() throws IOException {
+        synchronized (this) {
+            final PublicHeader existingPublicHeader = getPublicHeader();
+            final byte newHopCount = (byte) (existingPublicHeader.getHopCount().byteAt(0) + 1);
+
+            if (newHopCount == 0) {
+                throw new IllegalStateException("hop count overflow");
+            }
+
+            this.publicHeader = PublicHeader.newBuilder(existingPublicHeader)
+                    .setHopCount(ByteString.copyFrom(new byte[]{
+                            newHopCount
+                    }))
+                    .build();
+
+            if (message != null) {
+                final ByteBuf publicHeaderByteBuf = PooledByteBufAllocator.DEFAULT.buffer();
+
+                try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(publicHeaderByteBuf)) {
+                    publicHeader.writeDelimitedTo(outputStream);
+                }
+
+                this.message = ByteBufUtil.appendFirst(message, publicHeaderByteBuf);
+            }
+        }
     }
 
     /**
@@ -646,14 +697,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    private ByteBuf proto2ByteBuf(ByteBuf byteBuf) throws IOException {
-        if (byteBuf == null) {
-            byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-        }
-        else {
-            byteBuf.resetReaderIndex();
-            byteBuf.resetWriterIndex();
-        }
+    private ByteBuf proto2ByteBuf() throws IOException {
+        final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
+
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
             publicHeader.writeDelimitedTo(outputStream);
             privateHeader.writeDelimitedTo(outputStream);
@@ -691,10 +737,10 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         );
     }
 
-    private static Protocol.PublicHeader buildPublicHeader(final int networkId,
-                                                           final CompressedPublicKey sender,
-                                                           final ProofOfWork proofOfWork,
-                                                           final CompressedPublicKey recipient) {
+    static Protocol.PublicHeader buildPublicHeader(final int networkId,
+                                                   final CompressedPublicKey sender,
+                                                   final ProofOfWork proofOfWork,
+                                                   final CompressedPublicKey recipient) {
         return PublicHeader.newBuilder()
                 .setId(ByteString.copyFrom(randomMessageId().byteArrayValue()))
                 .setUserAgent(ByteString.copyFrom(UserAgent.generate().getVersion().toBytes()))

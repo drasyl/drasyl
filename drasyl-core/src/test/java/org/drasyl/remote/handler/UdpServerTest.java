@@ -182,16 +182,18 @@ class UdpServerTest {
         @SuppressWarnings("unchecked")
         void shouldPassIngoingMessagesToPipeline(@Mock final NodeUpEvent event,
                                                  @Mock final ChannelHandlerContext channelCtx,
-                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
+                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
+                                                 @Mock final ByteBuf message) {
             when(bootstrap.handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
-                handler.channelRead(channelCtx, new DatagramPacket(mock(ByteBuf.class), new InetSocketAddress(22527), new InetSocketAddress(25421)));
+                handler.channelRead(channelCtx, new DatagramPacket(message, new InetSocketAddress(22527), new InetSocketAddress(25421)));
                 return bootstrap;
             });
             when(bootstrap.bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
             when(config.getRemoteEndpoints()).thenReturn(Set.of());
+            when(message.retain()).thenReturn(message);
 
             final UdpServer handler = new UdpServer(bootstrap, null);
 

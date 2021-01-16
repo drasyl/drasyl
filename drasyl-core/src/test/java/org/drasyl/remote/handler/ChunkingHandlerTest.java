@@ -213,7 +213,7 @@ class ChunkingHandlerTest {
                                 final AddressedIntermediateEnvelope<?> envelope = (AddressedIntermediateEnvelope<?>) p.second();
 
                                 try {
-                                    return Objects.deepEquals(Bytes.concat(headChunkBytes, chunkBytes), ByteBufUtil.getBytes(envelope.getContent().getByteBuf()));
+                                    return Objects.deepEquals(Bytes.concat(headChunkBytes, chunkBytes), ByteBufUtil.getBytes(envelope.getContent().copy()));
                                 }
                                 finally {
                                     ReferenceCountUtil.safeRelease(envelope);
@@ -436,15 +436,15 @@ class ChunkingHandlerTest {
                         .assertValueCount(3)
                         .assertValueAt(0, p -> {
                             final AddressedIntermediateEnvelope<?> addressedEnvelope = (AddressedIntermediateEnvelope<?>) p.second();
-                            return addressedEnvelope.getContent().getTotalChunks().getValue() == 3 && addressedEnvelope.getContent().getByteBuf().readableBytes() == remoteMessageMtu;
+                            return addressedEnvelope.getContent().getTotalChunks().getValue() == 3 && addressedEnvelope.getContent().copy().readableBytes() == remoteMessageMtu;
                         })
                         .assertValueAt(1, p -> {
                             final AddressedIntermediateEnvelope<?> addressedEnvelope = (AddressedIntermediateEnvelope<?>) p.second();
-                            return addressedEnvelope.getContent().getChunkNo().getValue() == 1 && addressedEnvelope.getContent().getByteBuf().readableBytes() == remoteMessageMtu;
+                            return addressedEnvelope.getContent().getChunkNo().getValue() == 1 && addressedEnvelope.getContent().copy().readableBytes() == remoteMessageMtu;
                         })
                         .assertValueAt(2, p -> {
                             final AddressedIntermediateEnvelope<?> addressedEnvelope = (AddressedIntermediateEnvelope<?>) p.second();
-                            return addressedEnvelope.getContent().getChunkNo().getValue() == 2 && addressedEnvelope.getContent().getByteBuf().readableBytes() < remoteMessageMtu;
+                            return addressedEnvelope.getContent().getChunkNo().getValue() == 2 && addressedEnvelope.getContent().copy().readableBytes() < remoteMessageMtu;
                         });
 
                 pipeline.close();

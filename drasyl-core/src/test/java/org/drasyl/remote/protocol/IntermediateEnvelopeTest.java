@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -22,8 +22,10 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -49,7 +51,11 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -119,7 +125,7 @@ class IntermediateEnvelopeTest {
                     assertEquals(publicHeader, envelope.getPublicHeader());
                     assertEquals((privateHeaderLength + bodyLength), envelope.getInternalByteBuf().readableBytes());
                     assertEquals(backedByte, envelope.getInternalByteBuf().array());
-                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.getByteBuf().readableBytes());
+                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
                     assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
                 }
                 finally {
@@ -134,7 +140,7 @@ class IntermediateEnvelopeTest {
 
                     assertEquals(privateHeader, envelope.getPrivateHeader());
                     assertEquals(bodyLength, envelope.getInternalByteBuf().readableBytes());
-                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.getByteBuf().readableBytes());
+                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
                     assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
                 }
                 finally {
@@ -149,7 +155,7 @@ class IntermediateEnvelopeTest {
 
                     assertEquals(body, envelope.getBody());
                     assertEquals(0, envelope.getInternalByteBuf().readableBytes());
-                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.getByteBuf().readableBytes());
+                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
                     assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
                 }
                 finally {
@@ -162,15 +168,15 @@ class IntermediateEnvelopeTest {
                 try {
                     final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                    assertNotNull(envelope.getByteBuf());
+                    assertNotNull(envelope.copy());
                     assertNotNull(envelope.getInternalByteBuf());
                     assertNotNull(envelope.getBodyAndRelease());
 
-                    assertNull(envelope.getByteBuf());
+                    assertNull(envelope.copy());
                     assertNull(envelope.getInternalByteBuf());
 
                     assertNotNull(envelope.getOrBuildInternalByteBuf());
-                    assertNotNull(envelope.getByteBuf());
+                    assertNotNull(envelope.copy());
                     assertNotNull(envelope.getInternalByteBuf());
                     assertNotNull(envelope.getBodyAndRelease());
                 }
@@ -183,13 +189,17 @@ class IntermediateEnvelopeTest {
             void shouldShareRefCnt() {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                assertEquals(envelope.getByteBuf().refCnt(), envelope.getInternalByteBuf().refCnt());
-                assertEquals(1, envelope.getInternalByteBuf().refCnt());
-                assertEquals(1, envelope.getByteBuf().refCnt());
-                envelope.release();
-                assertEquals(envelope.getByteBuf().refCnt(), envelope.getInternalByteBuf().refCnt());
-                assertEquals(0, envelope.getInternalByteBuf().refCnt());
-                assertEquals(0, envelope.getByteBuf().refCnt());
+                final ByteBuf original = envelope.getInternalByteBuf();
+                final ByteBuf copy = envelope.copy();
+
+                assertEquals(original.refCnt(), copy.refCnt());
+                assertEquals(1, original.refCnt());
+                assertEquals(1, copy.refCnt());
+                envelope.retain();
+                assertEquals(original.refCnt(), copy.refCnt());
+                assertEquals(2, original.refCnt());
+                assertEquals(2, copy.refCnt());
+                envelope.releaseAll();
             }
 
             @Test
@@ -202,50 +212,48 @@ class IntermediateEnvelopeTest {
     @Nested
     class ReferenceCounted {
         @Mock
-        ByteBuf originalMessage;
-        @Mock
-        ByteBuf message;
+        CompositeByteBuf message;
         MessageLite body;
         IntermediateEnvelope<MessageLite> underTest;
 
         @BeforeEach
         void setUp() {
-            underTest = new IntermediateEnvelope<>(originalMessage, message, publicHeader, privateHeader, body);
+            underTest = new IntermediateEnvelope<>(message, publicHeader, privateHeader, body);
         }
 
         @Test
         void refCntShouldBeCalledOnOriginalMessage() {
             underTest.refCnt();
 
-            verify(originalMessage).refCnt();
+            verify(message).refCnt();
         }
 
         @Test
         void retainShouldBeCalledOnOriginalMessage() {
             underTest.retain();
 
-            verify(originalMessage).retain();
+            verify(message).retain();
         }
 
         @Test
         void retainWithIncrementShouldBeCalledOnOriginalMessage() {
             underTest.retain(1337);
 
-            verify(originalMessage).retain(1337);
+            verify(message).retain(1337);
         }
 
         @Test
         void touchShouldBeCalledOnOriginalMessage() {
             underTest.touch();
 
-            verify(originalMessage).touch();
+            verify(message).touch();
         }
 
         @Test
         void touchWithHintShouldBeCalledOnOriginalMessage(@Mock final Object hint) {
             underTest.touch(hint);
 
-            verify(originalMessage).touch(hint);
+            verify(message).touch(hint);
         }
 
         @Test
@@ -253,14 +261,14 @@ class IntermediateEnvelopeTest {
             when(underTest.refCnt()).thenReturn(1);
             underTest.release();
 
-            verify(originalMessage).release();
+            verify(message).release();
         }
 
         @Test
         void releaseWithDecrementShouldBeCalledOnOriginalMessage() {
             underTest.release(1337);
 
-            verify(originalMessage).release(1337);
+            verify(message).release(1337);
         }
     }
 
@@ -460,6 +468,75 @@ class IntermediateEnvelopeTest {
             finally {
                 ReferenceCountUtil.safeRelease(message);
             }
+        }
+    }
+
+    @Nested
+    class IncrementHopCount {
+        @Test
+        void shouldIncrementIfMessageIsPresentOnlyInByteBuf() throws IOException {
+            IntermediateEnvelope<Application> envelope = null;
+            try {
+                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("600a0c9e5457c123bfd9d2b10c0d44120200012221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22288eee8d033221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42")));
+                envelope = new IntermediateEnvelope<>(message, null, null, null);
+
+                envelope.incrementHopCount();
+
+                assertEquals(1, envelope.getPublicHeader().getHopCount().byteAt(0));
+                assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
+            }
+            finally {
+                if (envelope != null) {
+                    ReferenceCountUtil.safeRelease(envelope);
+                }
+            }
+        }
+
+        @Test
+        void shouldIncrementIfMessageIsPresentInByteBufAndEnvelope() throws IOException, CryptoException {
+            IntermediateEnvelope<Application> envelope = null;
+            try {
+                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("600a0c9e5457c123bfd9d2b10c0d44120200012221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22288eee8d033221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42")));
+                final PublicHeader publicHeader = IntermediateEnvelope.buildPublicHeader(0, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
+                final PrivateHeader privateHeader = PrivateHeader.newBuilder()
+                        .setType(APPLICATION)
+                        .build();
+                final Application body = Application.newBuilder()
+                        .setType(byte[].class.getName())
+                        .setPayload(ByteString.copyFrom("Hallo Welt".getBytes()))
+                        .build();
+                envelope = new IntermediateEnvelope<>(message, publicHeader, privateHeader, body);
+
+                envelope.incrementHopCount();
+
+                assertEquals(1, envelope.getPublicHeader().getHopCount().byteAt(0));
+                assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
+            }
+            finally {
+                if (envelope != null) {
+                    ReferenceCountUtil.safeRelease(envelope);
+                }
+            }
+        }
+
+        @Test
+        void shouldIncrementIfMessageIsPresentOnlyInEnvelope() throws CryptoException, IOException {
+            final PublicHeader publicHeader = IntermediateEnvelope.buildPublicHeader(0, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
+            final PrivateHeader privateHeader = PrivateHeader.newBuilder()
+                    .setType(APPLICATION)
+                    .build();
+            final Application body = Application.newBuilder()
+                    .setType(byte[].class.getName())
+                    .setPayload(ByteString.copyFrom("Hallo Welt".getBytes()))
+                    .build();
+
+            final IntermediateEnvelope<Application> envelope = new IntermediateEnvelope<>(null, publicHeader, privateHeader, body);
+
+            envelope.incrementHopCount();
+
+            assertEquals(1, envelope.getPublicHeader().getHopCount().byteAt(0));
+            assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
+            envelope.releaseAll();
         }
     }
 
