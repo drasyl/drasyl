@@ -79,6 +79,23 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
         }
     }
 
+    @SuppressWarnings("unused")
+    protected BehavioralDrasylNode(final DrasylConfig config,
+                                   final Identity identity,
+                                   final PeersManager peersManager,
+                                   final AtomicBoolean acceptNewConnections,
+                                   final Pipeline pipeline,
+                                   final PluginManager pluginManager,
+                                   final AtomicBoolean started,
+                                   final CompletableFuture<Void> startSequence,
+                                   final CompletableFuture<Void> shutdownSequence) {
+        super(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        behavior = requireNonNull(created(), "initial behavior must not be null");
+        if (behavior instanceof DeferredBehavior) {
+            behavior = ((DeferredBehavior) behavior).apply(this);
+        }
+    }
+
     @Override
     public final void onEvent(final Event event) {
         Behavior result = behavior.receive(event);
