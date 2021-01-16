@@ -174,9 +174,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                         protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                     final DatagramPacket packet) {
                             LOG.trace("Datagram received {}", packet);
-                            final ByteBuf byteBuf = packet.content();
-                            byteBuf.retain();
-                            final AddressedByteBuf addressedByteBuf = new AddressedByteBuf(packet.sender(), packet.recipient(), byteBuf);
+                            final AddressedByteBuf addressedByteBuf = new AddressedByteBuf(packet.sender(), packet.recipient(), packet.content().retain());
                             ctx.pipeline().processInbound(addressedByteBuf.getSender(), addressedByteBuf);
                         }
                     })

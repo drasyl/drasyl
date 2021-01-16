@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -29,6 +29,7 @@ import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
@@ -66,10 +67,10 @@ public class HopCountGuard extends SimpleOutboundHandler<AddressedIntermediateEn
                 future.completeExceptionally(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
             }
         }
-        catch (final IllegalArgumentException e) {
-            LOG.error("Unable to read hop count from message '{}': {}", () -> sanitizeLogArg(msg.getContent()), e::getMessage);
+        catch (final IllegalArgumentException | IOException e) {
+            LOG.error("Unable to read/increment hop count from message '{}': {}", () -> sanitizeLogArg(msg.getContent()), e::getMessage);
             ReferenceCountUtil.safeRelease(msg);
-            future.completeExceptionally(new Exception("Unable to read hop count from message.", e));
+            future.completeExceptionally(new Exception("Unable to read/increment hop count from message.", e));
         }
     }
 }

@@ -53,7 +53,7 @@ public class Message2ByteBufHandler extends SimpleOutboundHandler<AddressedInter
                                 final AddressedIntermediateEnvelope<MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         try {
-            ByteBuf byteBuf = msg.getContent().getOrBuildByteBuf();
+            final ByteBuf byteBuf = msg.getContent().getOrBuildByteBuf();
 
             ctx.write(recipient, new AddressedByteBuf(msg.getSender(), msg.getRecipient(), byteBuf), future);
         }
