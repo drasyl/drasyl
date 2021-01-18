@@ -118,8 +118,8 @@
         <bouncycastle.version>1.67</bouncycastle.version>
         <awaitility.version>4.0.3</awaitility.version>
         <netty.version>4.1.56.Final</netty.version>
-        <guava.version>30.0-jre</guava.version>
-        <rxjava.version>3.0.8</rxjava.version>
+        <guava.version>30.1-jre</guava.version>
+        <rxjava.version>3.0.9</rxjava.version>
         <commons.version>4.4</commons.version>
         <micrometer.version>1.6.2</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
@@ -313,7 +313,7 @@
                 <plugin>
                     <groupId>pl.project13.maven</groupId>
                     <artifactId>git-commit-id-plugin</artifactId>
-                    <version>4.0.2</version>
+                    <version>4.0.3</version>
                 </plugin>
                 <plugin>
                     <groupId>org.sonarsource.scanner.maven</groupId>
