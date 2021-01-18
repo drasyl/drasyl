@@ -36,6 +36,9 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Describes a {@link DrasylNode} as a finite state machine.
+ * <p>
+ * Note: Unlike the default {@link DrasylNode}, this node can only process one event at a time.
+ * Please consider to run long-running operations asynchronously in a separate thread.
  */
 @SuppressWarnings({ "java:S107", "java:S1192" })
 public abstract class BehavioralDrasylNode extends DrasylNode {
@@ -97,7 +100,7 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     }
 
     @Override
-    public final void onEvent(final Event event) {
+    public final synchronized void onEvent(final Event event) {
         Behavior result = behavior.receive(event);
 
         if (result instanceof DeferredBehavior) {
