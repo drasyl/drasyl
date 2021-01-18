@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
@@ -94,7 +95,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         else {
             uniteAttemptsCache = null;
         }
-        peers = new HashMap<>();
+        peers = new ConcurrentHashMap<>();
     }
 
     UdpDiscoveryHandler(final Map<MessageId, OpenPing> openPingsCache,
