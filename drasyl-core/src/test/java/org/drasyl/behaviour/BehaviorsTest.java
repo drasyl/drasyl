@@ -18,6 +18,7 @@
  */
 package org.drasyl.behaviour;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.event.Event;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -84,10 +85,10 @@ class BehaviorsTest {
     @Nested
     class WithScheduler {
         @Test
-        void shouldReturnDeferredBehavior(@Mock final Function factory) {
-            final Behavior behavior = Behaviors.withScheduler(factory);
-
-            assertThat(behavior, instanceOf(DeferredBehavior.class));
+        void shouldReturnDeferredBehavior(@Mock final Function factory,
+                                          @Mock final Scheduler scheduler) {
+            assertThat(Behaviors.withScheduler(factory), instanceOf(DeferredBehavior.class));
+            assertThat(Behaviors.withScheduler(factory, scheduler), instanceOf(DeferredBehavior.class));
         }
     }
 }

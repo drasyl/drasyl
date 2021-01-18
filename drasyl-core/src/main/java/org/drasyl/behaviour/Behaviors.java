@@ -18,6 +18,7 @@
  */
 package org.drasyl.behaviour;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.behaviour.Behavior.BehaviorBuilder;
 import org.drasyl.event.Event;
@@ -26,6 +27,7 @@ import java.time.Duration;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
 
@@ -78,17 +80,31 @@ public class Behaviors {
     /**
      * A behavior with support for scheduled self events in a node.
      *
+     * @param factory   function that returns the behavior that should react to scheduled self
+     *                  events
+     * @param scheduler the {@code Scheduler} to perform scheduled events on
+     */
+    public static Behavior withScheduler(final Function<EventScheduler, Behavior> factory,
+                                         final Scheduler scheduler) {
+        return new DeferredBehavior(node -> factory.apply(new EventScheduler(node::onEvent, scheduler)));
+    }
+
+    /**
+     * A behavior with support for scheduled self events in a node.
+     *
      * @param factory function that returns the behavior that should react to scheduled self events
      */
     public static Behavior withScheduler(final Function<EventScheduler, Behavior> factory) {
-        return new DeferredBehavior(node -> factory.apply(new EventScheduler(node::onEvent)));
+        return withScheduler(factory, getInstanceLight());
     }
 
     public static class EventScheduler {
         private final Consumer<Event> consumer;
+        private final Scheduler scheduler;
 
-        EventScheduler(final Consumer<Event> consumer) {
-            this.consumer = consumer;
+        EventScheduler(final Consumer<Event> consumer, final Scheduler scheduler) {
+            this.consumer = requireNonNull(consumer);
+            this.scheduler = requireNonNull(scheduler);
         }
 
         /**
@@ -98,9 +114,9 @@ public class Behaviors {
          * @param delay delay before emitting the event
          * @return {@link Disposable} allowing to cancel the scheduled event
          */
-        @SuppressWarnings("UnusedReturnValue")
+        @SuppressWarnings({ "UnusedReturnValue", "unused" })
         public Disposable scheduleEvent(final Event event, final Duration delay) {
-            return getInstanceLight().scheduleDirect(() -> consumer.accept(event), delay.toMillis(), MILLISECONDS);
+            return scheduler.scheduleDirect(() -> consumer.accept(event), delay.toMillis(), MILLISECONDS);
         }
 
         /**
@@ -112,10 +128,11 @@ public class Behaviors {
          * @param period       the period at which the event should be re-emitted
          * @return {@link Disposable} allowing to cancel the scheduled event
          */
+        @SuppressWarnings({ "UnusedReturnValue", "unused" })
         public Disposable schedulePeriodicallyEvent(final Event event,
                                                     final Duration initialDelay,
                                                     final Duration period) {
-            return getInstanceLight().schedulePeriodicallyDirect(() -> consumer.accept(event), initialDelay.toMillis(), period.toMillis(), MILLISECONDS);
+            return scheduler.schedulePeriodicallyDirect(() -> consumer.accept(event), initialDelay.toMillis(), period.toMillis(), MILLISECONDS);
         }
     }
 }
