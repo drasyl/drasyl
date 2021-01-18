@@ -25,12 +25,16 @@ import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+
+import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * It is an intentional behavior that this scheduler ensures that the JVM is not automatically
@@ -41,7 +45,7 @@ import java.util.concurrent.TimeUnit;
  * submitted tasks.
  */
 public class DrasylSchedulerUtil {
-    public static final long SHUTDOWN_TIMEOUT = 10_000L; // 10s until the schedulers are stopped immediately
+    public static final Duration SHUTDOWN_TIMEOUT = ofSeconds(10); // 10s until the schedulers are stopped immediately
     private static final Logger LOG = LoggerFactory.getLogger(DrasylSchedulerUtil.class);
     protected static volatile boolean lightSchedulerCreated = false;
     protected static volatile boolean heavySchedulerCreated = false;
@@ -137,10 +141,13 @@ public class DrasylSchedulerUtil {
             final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                     .setNameFormat(basename + "%d")
                     .build();
+            // pool should have at least "50% of available processors minus one" threads (but at
+            // least one) and a maximum of "50% of available processors minus one" (but at least
+            // two) threads
             this.executor = new ThreadPoolExecutor(
-                    Math.min(1, Math.max(1, (Runtime.getRuntime().availableProcessors() / 2) - 1)),  //corePoolSize
-                    Math.min(2, Math.max(1, (Runtime.getRuntime().availableProcessors() / 2) - 1)),  //maximumPoolSize
-                    60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
+                    Math.max(1, Runtime.getRuntime().availableProcessors() / 2 - 1), // corePoolSize
+                    Math.max(2, Runtime.getRuntime().availableProcessors() / 2 - 1), //maximumPoolSize
+                    60, SECONDS, //keepAliveTime, unit
                     new LinkedBlockingQueue<>(10_000),  //workQueue
                     threadFactory
             );
@@ -154,7 +161,7 @@ public class DrasylSchedulerUtil {
                 executor.shutdown();
 
                 try {
-                    if (!executor.awaitTermination(SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    if (!executor.awaitTermination(SHUTDOWN_TIMEOUT.toMillis(), MILLISECONDS)) {
                         executor.shutdownNow();
                     }
                 }
