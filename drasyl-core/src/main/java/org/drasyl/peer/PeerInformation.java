@@ -74,6 +74,9 @@ public class PeerInformation {
         return endpoints;
     }
 
+    /**
+     * @throws NullPointerException if {@code endpoints} is {@code null}, or if it contains any {@code null} values
+     */
     public static PeerInformation of(final Set<Endpoint> endpoints) {
         return new PeerInformation(Set.copyOf(endpoints)).intern();
     }
