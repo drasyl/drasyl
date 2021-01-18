@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -66,7 +66,7 @@ class MonitoringTest {
     private final Map<String, Counter> counters = new HashMap<>();
     @Mock
     private Function<HandlerContext, MeterRegistry> registrySupplier;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private MeterRegistry registry;
 
     @Nested
