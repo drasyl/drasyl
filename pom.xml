@@ -115,7 +115,7 @@
         <mockito.version>3.7.7</mockito.version>
         <jackson.version>2.12.1</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <bouncycastle.version>1.67</bouncycastle.version>
+        <bouncycastle.version>1.68</bouncycastle.version>
         <awaitility.version>4.0.3</awaitility.version>
         <netty.version>4.1.58.Final</netty.version>
         <guava.version>30.1-jre</guava.version>
