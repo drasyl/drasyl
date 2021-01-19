@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline;
 
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.exceptions.UndeliverableException;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
@@ -50,9 +49,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
+import static org.drasyl.DrasylNode.getBestEventLoop;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,8 +90,7 @@ class DrasylPipelineIT {
                 .build();
 
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
-        final AtomicBoolean started = new AtomicBoolean(true);
-        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, new NioEventLoopGroup());
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, getBestEventLoop(2));
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
