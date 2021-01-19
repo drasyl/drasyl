@@ -53,13 +53,12 @@ public class SendingWormholeNode extends DrasylNode {
                         final DrasylConfig config,
                         final Identity identity,
                         final PeersManager peersManager,
-                        final AtomicBoolean acceptNewConnections,
                         final Pipeline pipeline,
                         final PluginManager pluginManager,
                         final AtomicBoolean started,
                         final CompletableFuture<Void> startSequence,
                         final CompletableFuture<Void> shutdownSequence) {
-        super(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        super(config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.password = password;

@@ -41,8 +41,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
 import static org.drasyl.util.SecretUtil.maskSecret;
+import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
 
 @SuppressWarnings({ "java:S107" })
 public class ReceivingWormholeNode extends DrasylNode {
@@ -61,13 +61,12 @@ public class ReceivingWormholeNode extends DrasylNode {
                           final DrasylConfig config,
                           final Identity identity,
                           final PeersManager peersManager,
-                          final AtomicBoolean acceptNewConnections,
                           final Pipeline pipeline,
                           final PluginManager pluginManager,
                           final AtomicBoolean started,
                           final CompletableFuture<Void> startSequence,
                           final CompletableFuture<Void> shutdownSequence) {
-        super(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        super(config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.received = received;

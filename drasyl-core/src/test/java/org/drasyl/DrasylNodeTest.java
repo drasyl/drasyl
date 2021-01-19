@@ -65,15 +65,13 @@ class DrasylNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
     @Mock
-    private AtomicBoolean acceptNewConnections;
-    @Mock
     private PluginManager pluginManager;
 
     @Nested
     class Start {
         @Test
         void shouldEmitUpEventOnSuccessfulStart() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -88,7 +86,7 @@ class DrasylNodeTest {
         void shouldEmitNodeUnrecoverableErrorEventOnFailedStart() {
             when(pipeline.processInbound(any(NodeUpEvent.class))).thenReturn(CompletableFuture.failedFuture(new DrasylException("error")));
 
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -103,7 +101,7 @@ class DrasylNodeTest {
 
         @Test
         void shouldStartPlugins() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -119,7 +117,7 @@ class DrasylNodeTest {
     class Shutdown {
         @Test
         void shouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
-            final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -129,7 +127,7 @@ class DrasylNodeTest {
 
         @Test
         void shouldStopPlugins() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -147,7 +145,7 @@ class DrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            underTest = spy(new DrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -196,7 +194,7 @@ class DrasylNodeTest {
     class PipelineTest {
         @Test
         void shouldReturnPipeline() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -210,7 +208,7 @@ class DrasylNodeTest {
     class IdentityMethod {
         @Test
         void shouldReturnIdentity() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }

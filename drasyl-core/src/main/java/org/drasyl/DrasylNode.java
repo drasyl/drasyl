@@ -117,7 +117,6 @@ public abstract class DrasylNode {
     private final DrasylConfig config;
     private final Identity identity;
     private final PeersManager peersManager;
-    private final AtomicBoolean acceptNewConnections;
     private final Pipeline pipeline;
     private final AtomicBoolean started;
     private final PluginManager pluginManager;
@@ -153,7 +152,6 @@ public abstract class DrasylNode {
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent, identity);
-            this.acceptNewConnections = new AtomicBoolean();
             this.started = new AtomicBoolean();
             this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager, started, LazyBossGroupHolder.INSTANCE);
             this.pluginManager = new PluginManager(config, identity, pipeline);
@@ -168,7 +166,6 @@ public abstract class DrasylNode {
     protected DrasylNode(final DrasylConfig config,
                          final Identity identity,
                          final PeersManager peersManager,
-                         final AtomicBoolean acceptNewConnections,
                          final Pipeline pipeline,
                          final PluginManager pluginManager,
                          final AtomicBoolean started,
@@ -177,7 +174,6 @@ public abstract class DrasylNode {
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
-        this.acceptNewConnections = acceptNewConnections;
         this.pipeline = pipeline;
         this.pluginManager = pluginManager;
         this.started = started;
@@ -341,7 +337,6 @@ public abstract class DrasylNode {
             startSequence.whenComplete((t, exp) -> getInstanceHeavy().scheduleDirect(() -> {
                 onInternalEvent(new NodeDownEvent(Node.of(identity))).join();
                 pluginManager.beforeShutdown();
-                rejectNewConnections();
                 final CompletableFuture<Void> voidCompletableFuture = onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity)));
                 voidCompletableFuture.join();
 
@@ -353,10 +348,6 @@ public abstract class DrasylNode {
         }
 
         return shutdownSequence;
-    }
-
-    private void rejectNewConnections() {
-        acceptNewConnections.set(false);
     }
 
     /**
@@ -381,7 +372,6 @@ public abstract class DrasylNode {
             startSequence = new CompletableFuture<>();
             shutdownSequence.whenComplete((t, ex) -> getInstanceHeavy().scheduleDirect(() -> {
                 pluginManager.beforeStart();
-                acceptNewConnections();
                 try {
                     onInternalEvent(new NodeUpEvent(Node.of(identity))).get();
                     LOG.info("drasyl Node with Identity '{}' has started", identity);
@@ -403,10 +393,6 @@ public abstract class DrasylNode {
         }
 
         return startSequence;
-    }
-
-    private void acceptNewConnections() {
-        acceptNewConnections.set(true);
     }
 
     /**

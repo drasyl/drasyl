@@ -67,8 +67,6 @@ class SendingWormholeNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
     @Mock
-    private AtomicBoolean acceptNewConnections;
-    @Mock
     private PluginManager pluginManager;
     private SendingWormholeNode underTest;
 
@@ -76,7 +74,7 @@ class SendingWormholeNodeTest {
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new SendingWormholeNode(doneFuture, printStream, password, sent, config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        underTest = new SendingWormholeNode(doneFuture, printStream, password, sent, config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
     }
 
     @Nested

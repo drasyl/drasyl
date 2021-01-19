@@ -73,7 +73,7 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
                                    final CompletableFuture<Void> startSequence,
                                    final CompletableFuture<Void> shutdownSequence,
                                    final Behavior behavior) {
-        super(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        super(config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
         if (behavior instanceof DeferredBehavior) {
             this.behavior = ((DeferredBehavior) behavior).apply(this);
         }
@@ -92,7 +92,7 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
                                    final AtomicBoolean started,
                                    final CompletableFuture<Void> startSequence,
                                    final CompletableFuture<Void> shutdownSequence) {
-        super(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        super(config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {
             behavior = ((DeferredBehavior) behavior).apply(this);
