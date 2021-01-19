@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -35,7 +35,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.mockito.Mockito.when;
 
@@ -60,7 +59,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(false))
+                new LoopbackOutboundMessageSinkHandler()
         );
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
@@ -78,7 +77,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true))
+                new LoopbackOutboundMessageSinkHandler(true)
         );
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
@@ -100,7 +99,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true))
+                new LoopbackOutboundMessageSinkHandler(true)
         );
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
         final CompletableFuture<Void> future = pipeline.processInbound(message.getSender(), message);

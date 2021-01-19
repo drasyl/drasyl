@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -18,6 +18,10 @@
  */
 package org.drasyl.loopback.handler;
 
+import org.drasyl.event.Event;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
@@ -27,14 +31,35 @@ import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * This handler processes outbound messages addressed to the local node.
+ * This handler converts outgoing messages addressed to the local node to incoming messages
+ * addressed to the local node.
  */
 @Stateless
 public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<ApplicationMessage, Address> {
-    public static final LoopbackOutboundMessageSinkHandler INSTANCE = new LoopbackOutboundMessageSinkHandler();
     public static final String LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
+    private boolean started;
 
-    private LoopbackOutboundMessageSinkHandler() {
+    LoopbackOutboundMessageSinkHandler(final boolean started) {
+        this.started = started;
+    }
+
+    public LoopbackOutboundMessageSinkHandler() {
+        this(false);
+    }
+
+    @Override
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
+        if (event instanceof NodeUpEvent) {
+            started = true;
+        }
+        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+            started = false;
+        }
+
+        // passthrough event
+        ctx.fireEventTriggered(event, future);
     }
 
     @Override
@@ -42,7 +67,7 @@ public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<Ap
                                 final Address recipient,
                                 final ApplicationMessage msg,
                                 final CompletableFuture<Void> future) {
-        if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
+        if (started && ctx.identity().getPublicKey().equals(msg.getRecipient())) {
             ctx.fireRead(msg.getSender(), msg, future);
         }
         else {

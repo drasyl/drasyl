@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -18,23 +18,37 @@
  */
 package org.drasyl.loopback.handler;
 
+import org.drasyl.event.Event;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * This handler processes inbound messages addressed to the local node.
+ * This handler filters incoming messages not addressed to the local node.
  */
 public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<ApplicationMessage, Address> {
     public static final String LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER";
-    private final AtomicBoolean started;
+    private boolean started;
 
-    public LoopbackInboundMessageSinkHandler(final AtomicBoolean started) {
-        this.started = started;
+    @Override
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
+        if (event instanceof NodeUpEvent) {
+            started = true;
+        }
+        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+            started = false;
+        }
+
+        // passthrough event
+        ctx.fireEventTriggered(event, future);
     }
 
     @Override
@@ -45,10 +59,11 @@ public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Appl
         if (!ctx.identity().getPublicKey().equals(msg.getRecipient())) {
             future.completeExceptionally(new Exception("I'm not the recipient"));
         }
-        else if (!started.get()) {
+        else if (!started) {
             future.completeExceptionally(new Exception("Node is not running"));
         }
         else {
+            // passthrough message
             ctx.fireRead(sender, msg, future);
         }
     }

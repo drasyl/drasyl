@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -53,7 +53,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
                 identity,
                 peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                LoopbackOutboundMessageSinkHandler.INSTANCE
+                new LoopbackOutboundMessageSinkHandler()
         );
         final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
@@ -74,7 +74,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
                 identity,
                 peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                LoopbackOutboundMessageSinkHandler.INSTANCE
+                new LoopbackOutboundMessageSinkHandler(true)
         );
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 

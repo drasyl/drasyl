@@ -153,7 +153,7 @@ public abstract class DrasylNode {
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent, identity);
             this.started = new AtomicBoolean();
-            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager, started, LazyBossGroupHolder.INSTANCE);
+            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager, LazyBossGroupHolder.INSTANCE);
             this.pluginManager = new PluginManager(config, identity, pipeline);
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = completedFuture(null);

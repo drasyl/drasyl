@@ -45,7 +45,6 @@ import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static org.drasyl.intravm.IntraVmDiscovery.INTRA_VM_DISCOVERY;
@@ -74,7 +73,6 @@ public class DrasylPipeline extends DefaultPipeline {
                           final DrasylConfig config,
                           final Identity identity,
                           final PeersManager peersManager,
-                          final AtomicBoolean started,
                           final EventLoopGroup bossGroup) {
         this.handlerNames = new ConcurrentHashMap<>();
         this.inboundValidator = TypeValidator.ofInboundValidator(config);
@@ -93,8 +91,8 @@ public class DrasylPipeline extends DefaultPipeline {
         addFirst(DEFAULT_CODEC, DefaultCodec.INSTANCE);
 
         // local message delivery
-        addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler(started));
-        addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, LoopbackOutboundMessageSinkHandler.INSTANCE);
+        addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler());
+        addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, new LoopbackOutboundMessageSinkHandler());
 
         if (config.isLocalHostDiscoveryEnabled()) {
             addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(config, identity.getPublicKey()));

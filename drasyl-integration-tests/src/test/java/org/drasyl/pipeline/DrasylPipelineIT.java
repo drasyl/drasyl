@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -27,6 +27,8 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
+import org.drasyl.event.Node;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -87,7 +89,7 @@ class DrasylPipelineIT {
 
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
         final AtomicBoolean started = new AtomicBoolean(true);
-        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, started, new NioEventLoopGroup());
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, new NioEventLoopGroup());
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
@@ -140,6 +142,7 @@ class DrasylPipelineIT {
         final Event testEvent = new Event() {
         };
 
+        pipeline.processInbound(new NodeUpEvent(Node.of(identity1)));
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
         pipeline.addLast("eventProducer", new HandlerAdapter() {
@@ -158,9 +161,9 @@ class DrasylPipelineIT {
 
         pipeline.processInbound(message.getSender(), addressedMessage);
 
-        events.awaitCount(2);
-        events.assertValueAt(0, new MessageEvent(message.getSender(), "Hallo Welt".getBytes()));
-        events.assertValueAt(1, testEvent);
+        events.awaitCount(3);
+        events.assertValueAt(1, new MessageEvent(message.getSender(), "Hallo Welt".getBytes()));
+        events.assertValueAt(2, testEvent);
 
         ReferenceCountUtil.safeRelease(message);
     }
