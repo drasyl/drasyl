@@ -28,6 +28,7 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.Node;
+import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -39,6 +40,7 @@ import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.ReferenceCountUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
@@ -104,6 +107,11 @@ class DrasylPipelineIT {
         });
     }
 
+    @AfterEach
+    void tearDown() throws ExecutionException, InterruptedException {
+        pipeline.processInbound(new NodeDownEvent(Node.of(identity1))).get();
+    }
+
     @Test
     void passMessageThroughThePipeline() {
         final TestObserver<Event> events = receivedEvents.test();
@@ -136,13 +144,14 @@ class DrasylPipelineIT {
 
     @Test
     void passEventThroughThePipeline(@Mock final InetSocketAddressWrapper senderAddress,
-                                     @Mock final InetSocketAddressWrapper recipientAddress) {
+                                     @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final Event testEvent = new Event() {
         };
 
-        pipeline.processInbound(new NodeUpEvent(Node.of(identity1)));
+        // we need to start the node, otherwise LoopbackInboundMessageSinkHandler will drop our message
+        pipeline.processInbound(new NodeUpEvent(Node.of(identity1))).get();
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
         pipeline.addLast("eventProducer", new HandlerAdapter() {
