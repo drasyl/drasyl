@@ -36,6 +36,14 @@ public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Appl
     public static final String LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER";
     private boolean started;
 
+    LoopbackInboundMessageSinkHandler(final boolean started) {
+        this.started = started;
+    }
+
+    public LoopbackInboundMessageSinkHandler() {
+        this(false);
+    }
+
     @Override
     public void eventTriggered(final HandlerContext ctx,
                                final Event event,
