@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -96,9 +96,10 @@ class SimpleInboundHandlerTest {
                 handler);
         final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
 
-        pipeline.processInbound(sender, 1337);
+        pipeline.processInbound(sender, 1337).join();
 
-        inboundMessageTestObserver.assertNoValues();
+        inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
+        inboundMessageTestObserver.assertValue(Pair.of(sender, 1337));
         pipeline.close();
     }
 
