@@ -59,8 +59,6 @@ class BehavioralDrasylNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
     @Mock
-    private AtomicBoolean acceptNewConnections;
-    @Mock
     private PluginManager pluginManager;
     @Mock
     private Scheduler scheduler;
@@ -73,7 +71,7 @@ class BehavioralDrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            node = spy(new BehavioralDrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, startFuture, shutdownFuture, scheduler, behavior) {
+            node = spy(new BehavioralDrasylNode(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler, behavior) {
                 @Override
                 protected Behavior created() {
                     return null;

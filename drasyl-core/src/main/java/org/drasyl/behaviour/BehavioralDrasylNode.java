@@ -31,7 +31,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
@@ -68,7 +67,6 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     protected BehavioralDrasylNode(final DrasylConfig config,
                                    final Identity identity,
                                    final PeersManager peersManager,
-                                   final AtomicBoolean acceptNewConnections,
                                    final Pipeline pipeline,
                                    final PluginManager pluginManager,
                                    final AtomicReference<CompletableFuture<Void>> startFuture,
@@ -88,7 +86,6 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     protected BehavioralDrasylNode(final DrasylConfig config,
                                    final Identity identity,
                                    final PeersManager peersManager,
-                                   final AtomicBoolean acceptNewConnections,
                                    final Pipeline pipeline,
                                    final PluginManager pluginManager,
                                    final AtomicReference<CompletableFuture<Void>> startFuture,
