@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -101,25 +100,25 @@ public class PeersManager {
         }
     }
 
-    public Map<CompressedPublicKey, PeerInformation> getPeers() {
+    public Set<CompressedPublicKey> getPeers() {
         try {
             lock.readLock().lock();
 
-            return Map.copyOf(peers);
+            return Set.copyOf(peers.keySet());
         }
         finally {
             lock.readLock().unlock();
         }
     }
 
-    public Map<CompressedPublicKey, PeerInformation> getChildren() {
+    public Set<CompressedPublicKey> getChildren() {
         try {
             lock.readLock().lock();
 
             // It is necessary to create a new HashMap because otherwise, this can raise a
             // ConcurrentModificationException.
             // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
-            return new HashSet<>(children).stream().collect(Collectors.toMap(c -> c, peers::get));
+            return Set.copyOf(children);
         }
         finally {
             lock.readLock().unlock();
@@ -127,26 +126,9 @@ public class PeersManager {
     }
 
     /**
-     * @return public key and information about Super Peer. If no Super Peer is defined, then
+     * @return public key  of Super Peer. If no Super Peer is defined, then
      * <code>null</code> is returned
      */
-    public Pair<CompressedPublicKey, PeerInformation> getSuperPeer() {
-        try {
-            lock.readLock().lock();
-
-            if (superPeer == null) {
-                return null;
-            }
-            else {
-                final PeerInformation peerInformation = peers.getOrDefault(superPeer, PeerInformation.of());
-                return Pair.of(superPeer, peerInformation);
-            }
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
     public CompressedPublicKey getSuperPeerKey() {
         try {
             lock.readLock().lock();

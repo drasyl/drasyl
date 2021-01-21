@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -89,7 +89,7 @@ class PeersManagerTest {
                                @Mock final PeerInformation peerInformation) {
             peers.put(publicKey, peerInformation);
 
-            assertEquals(Map.of(publicKey, peerInformation), underTest.getPeers());
+            assertEquals(Set.of(publicKey), underTest.getPeers());
         }
 
         @AfterEach
@@ -107,25 +107,7 @@ class PeersManagerTest {
             peers.put(publicKey, peerInformation);
             children.add(publicKey);
 
-            assertEquals(Map.of(publicKey, peerInformation), underTest.getChildren());
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.readLock()).lock();
-            verify(lock.readLock()).unlock();
-        }
-    }
-
-    @Nested
-    class GetSuperPeer {
-        @Test
-        void shouldReturnSuperPeer(@Mock final PeerInformation peerInformation,
-                                   @Mock final Object path) {
-            peers.put(superPeer, peerInformation);
-            paths.put(superPeer, path);
-
-            assertEquals(Pair.of(superPeer, peerInformation), underTest.getSuperPeer());
+            assertEquals(Set.of(publicKey), underTest.getChildren());
         }
 
         @AfterEach
@@ -280,7 +262,7 @@ class PeersManagerTest {
 
             underTest.unsetSuperPeer();
 
-            assertNull(underTest.getSuperPeer());
+            assertNull(underTest.getSuperPeerKey());
         }
 
         @Test
@@ -308,7 +290,7 @@ class PeersManagerTest {
 
             underTest.unsetSuperPeerAndRemovePath(path);
 
-            assertNull(underTest.getSuperPeer());
+            assertNull(underTest.getSuperPeerKey());
         }
 
         @Test
@@ -347,9 +329,8 @@ class PeersManagerTest {
                                                                @Mock final Object path) {
             underTest.setPeerInformationAndAddPathAndSetSuperPeer(publicKey, peerInformation, path);
 
-            final Pair<CompressedPublicKey, PeerInformation> superPeer = underTest.getSuperPeer();
-            assertEquals(publicKey, superPeer.first());
-            assertEquals(PeerInformation.of(), superPeer.second());
+            final CompressedPublicKey superPeerKey = underTest.getSuperPeerKey();
+            assertEquals(publicKey, superPeerKey);
         }
 
         @Test
@@ -380,7 +361,7 @@ class PeersManagerTest {
 
             underTest.removeChildrenAndPath(publicKey, path);
 
-            assertThat(underTest.getPeers(), hasKey(publicKey));
+            assertThat(underTest.getPeers(), hasItem(publicKey));
             assertEquals(Set.of(), underTest.getChildrenKeys());
         }
 
@@ -407,7 +388,7 @@ class PeersManagerTest {
                                                            @Mock final Object path) {
             underTest.setPeerInformationAndAddPathAndChildren(publicKey, peerInformation, path);
 
-            assertThat(underTest.getPeers(), hasKey(publicKey));
+            assertThat(underTest.getPeers(), hasItem(publicKey));
             assertEquals(Set.of(publicKey), underTest.getChildrenKeys());
         }
 
