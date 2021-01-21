@@ -22,8 +22,11 @@ package org.drasyl.cli.command.wormhole;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
+import org.drasyl.behaviour.Behavior;
+import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.RequestText;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -57,12 +60,11 @@ class ReceivingWormholeNodeTest {
     private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
     private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     private ByteArrayOutputStream outputStream;
+    @Mock
+    private CompletableFuture<Void> doneFuture;
     private PrintStream printStream;
-    private final AtomicBoolean received = new AtomicBoolean();
-    @Mock
-    private CompressedPublicKey sender;
-    @Mock
-    private Disposable timeoutGuard;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private RequestText request;
     @Mock
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -74,8 +76,6 @@ class ReceivingWormholeNodeTest {
     @Mock
     private PluginManager pluginManager;
     @Mock
-    private CompletableFuture<Void> doneFuture;
-    @Mock
     private Scheduler scheduler;
     private ReceivingWormholeNode underTest;
 
@@ -83,7 +83,7 @@ class ReceivingWormholeNodeTest {
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new ReceivingWormholeNode(doneFuture, printStream, received, sender, timeoutGuard, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        underTest = new ReceivingWormholeNode(doneFuture, printStream, request, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
     }
 
     @Nested
@@ -103,10 +103,14 @@ class ReceivingWormholeNodeTest {
         }
 
         @Test
-        void shouldPrintTextOnTextMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+        void shouldPrintTextOnTextMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final NodeOnlineEvent nodeOnline,
+                                          @Mock final CompressedPublicKey publicKey) {
             when(event.getPayload()).thenReturn(new TextMessage("Hi"));
-            when(event.getSender()).thenReturn(sender);
+            when(event.getSender()).thenReturn(publicKey);
+            when(request.getSender()).thenReturn(publicKey);
 
+            underTest.onEvent(nodeOnline);
             underTest.onEvent(event);
 
             final String output = outputStream.toString();
@@ -114,23 +118,17 @@ class ReceivingWormholeNodeTest {
         }
 
         @Test
-        void shouldFailOnWrongPasswordMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+        void shouldFailOnWrongPasswordMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final NodeOnlineEvent nodeOnline,
+                                              @Mock final CompressedPublicKey publicKey) {
             when(event.getPayload()).thenReturn(new WrongPasswordMessage());
-            when(event.getSender()).thenReturn(sender);
+            when(event.getSender()).thenReturn(publicKey);
+            when(request.getSender()).thenReturn(publicKey);
 
+            underTest.onEvent(nodeOnline);
             underTest.onEvent(event);
 
             verify(doneFuture).completeExceptionally(any());
-        }
-    }
-
-    @Nested
-    class Shutdown {
-        @Test
-        void shouldDisposeTimeoutGuard() {
-            underTest.shutdown();
-
-            verify(timeoutGuard).dispose();
         }
     }
 
@@ -139,16 +137,6 @@ class ReceivingWormholeNodeTest {
         @Test
         void shouldReturnDoneFuture() {
             assertEquals(doneFuture, underTest.doneFuture());
-        }
-    }
-
-    @Nested
-    class RequestText {
-        @Test
-        void shouldRequestText() {
-            underTest.requestText(sender, password);
-
-            verify(pipeline).processOutbound(sender, new PasswordMessage(password));
         }
     }
 }

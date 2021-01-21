@@ -19,13 +19,15 @@
 package org.drasyl.cli.command.wormhole;
 
 import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
-import org.drasyl.DrasylNode;
+import org.drasyl.behaviour.Behavior;
+import org.drasyl.behaviour.BehavioralDrasylNode;
+import org.drasyl.behaviour.Behaviors;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeOfflineEvent;
+import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -36,30 +38,27 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.time.Duration.ofSeconds;
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.SecretUtil.maskSecret;
-import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
 
 @SuppressWarnings({ "java:S107" })
-public class ReceivingWormholeNode extends DrasylNode {
+public class ReceivingWormholeNode extends BehavioralDrasylNode {
+    public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
+    public static final Duration REQUEST_TEXT_TIMEOUT = ofSeconds(10);
     private static final Logger log = LoggerFactory.getLogger(ReceivingWormholeNode.class);
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream printStream;
-    private final AtomicBoolean received;
-    private CompressedPublicKey sender;
-    private Disposable timeoutGuard;
+    private RequestText request;
 
     ReceivingWormholeNode(final CompletableFuture<Void> doneFuture,
                           final PrintStream printStream,
-                          final AtomicBoolean received,
-                          final CompressedPublicKey sender,
-                          final Disposable timeoutGuard,
+                          final RequestText request,
                           final DrasylConfig config,
                           final Identity identity,
                           final PeersManager peersManager,
@@ -71,91 +70,164 @@ public class ReceivingWormholeNode extends DrasylNode {
         super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
-        this.received = received;
-        this.sender = sender;
-        this.timeoutGuard = timeoutGuard;
+        this.request = request;
     }
 
     public ReceivingWormholeNode(final DrasylConfig config,
                                  final PrintStream printStream) throws DrasylException {
         super(DrasylConfig.newBuilder(config)
-                .remoteBindPort(0)
                 .marshallingInboundAllowedTypes(List.of(WormholeMessage.class.getName()))
                 .marshallingOutboundAllowedTypes(List.of(WormholeMessage.class.getName()))
                 .build());
         this.doneFuture = new CompletableFuture<>();
         this.printStream = printStream;
-        this.received = new AtomicBoolean();
     }
 
     @Override
-    public void onEvent(final Event event) {
-        if (event instanceof NodeUnrecoverableErrorEvent) {
-            doneFuture.completeExceptionally(((NodeUnrecoverableErrorEvent) event).getError());
-        }
-        else if (event instanceof NodeNormalTerminationEvent) {
-            doneFuture.complete(null);
-        }
-        else if (event instanceof MessageEvent) {
-            final CompressedPublicKey messageSender = ((MessageEvent) event).getSender();
-            final Object message = ((MessageEvent) event).getPayload();
-
-            if (message instanceof TextMessage && messageSender.equals(this.sender) && received.compareAndSet(false, true)) {
-                receivedText((TextMessage) message);
-            }
-            else if (message instanceof WrongPasswordMessage && messageSender.equals(this.sender) && received.compareAndSet(false, true)) {
-                fail();
-            }
-        }
-    }
-
-    @Override
-    public CompletableFuture<Void> shutdown() {
-        if (timeoutGuard != null && !timeoutGuard.isDisposed()) {
-            timeoutGuard.dispose();
-        }
-        return super.shutdown();
-    }
-
-    private void receivedText(final TextMessage message) {
-        printStream.println(message.getText());
-        doneFuture.complete(null);
-    }
-
-    private void fail() {
-        doneFuture.completeExceptionally(new Exception(
-                "Code confirmation failed. Either you or your correspondent\n" +
-                        "typed the code wrong, or a would-be man-in-the-middle attacker guessed\n" +
-                        "incorrectly. You could try again, giving both your correspondent and\n" +
-                        "the attacker another chance."
-        ));
+    protected Behavior created() {
+        return offline();
     }
 
     public CompletableFuture<Void> doneFuture() {
         return doneFuture;
     }
 
+    /**
+     * @throws NullPointerException if {@code sender} or {@code text} is {@code null}
+     */
     public void requestText(final CompressedPublicKey sender, final String password) {
-        this.sender = sender;
-        requestText(sender, password, new AtomicInteger(10));
+        onEvent(new RequestText(sender, password));
     }
 
-    public void requestText(final CompressedPublicKey sender,
-                            final String password,
-                            final AtomicInteger remainingRetries) {
-        log.debug("Requesting text from '{}' with password '{}'", () -> sender, () -> maskSecret(password));
-        send(sender, new PasswordMessage(password)).whenComplete((result, e) -> {
-            if (e != null) {
-                if (remainingRetries.decrementAndGet() > 0) {
-                    getInstanceLight().scheduleDirect(() -> requestText(sender, password, remainingRetries), 1, SECONDS);
-                }
-                else {
-                    fail();
-                }
+    /**
+     * Node is not connected to super peer.
+     */
+    private Behavior offline() {
+        return Behaviors.withScheduler(scheduler -> {
+            if (request != null) {
+                scheduler.scheduleEvent(new OnlineTimeout(), ONLINE_TIMEOUT);
             }
-            else {
-                timeoutGuard = getInstanceLight().scheduleDirect(this::fail, 10, SECONDS);
-            }
+
+            return Behaviors.receive()
+                    .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
+                        doneFuture.completeExceptionally(event.getError());
+                        return Behaviors.ignore();
+                    })
+                    .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
+                    .onEvent(NodeOnlineEvent.class, event -> online())
+                    .onEvent(OnlineTimeout.class, event -> {
+                        printStream.println("Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable.");
+                        return terminate();
+                    })
+                    .onEvent(RequestText.class, event -> request == null, event -> {
+                        // we are not online (yet), remember for later
+                        this.request = event;
+                        return offline();
+                    })
+                    .onAnyEvent(event -> Behaviors.same())
+                    .build();
         });
+    }
+
+    /**
+     * Node is connected to super peer.
+     */
+    private Behavior online() {
+        if (request != null) {
+            // sender and password are known, we can request text
+            return requestText(request);
+        }
+        else {
+            // sender and password are not known yet, wait for both
+            return Behaviors.receive()
+                    .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
+                    .onEvent(NodeOfflineEvent.class, event -> offline())
+                    .onEvent(RequestText.class, event -> request == null, event -> {
+                        this.request = event;
+                        return requestText(request);
+                    })
+                    .onAnyEvent(event -> Behaviors.same())
+                    .build();
+        }
+    }
+
+    /**
+     * Node is requesting text from {@link SendingWormholeNode} and waiting for the response.
+     */
+    private Behavior requestText(final RequestText request) {
+        log.debug("Requesting text from '{}' with password '{}'", request::getSender, () -> maskSecret(request.getPassword()));
+        send(request.getSender(), new PasswordMessage(request.getPassword()));
+
+        return Behaviors.withScheduler(scheduler -> {
+            scheduler.scheduleEvent(new RequestTextTimeout(), REQUEST_TEXT_TIMEOUT);
+
+            return Behaviors.receive()
+                    .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
+                    .onEvent(RequestTextTimeout.class, event -> fail())
+                    .onMessage(TextMessage.class, (sender, payload) -> sender.equals(request.getSender()), (sender, payload) -> {
+                        printStream.println(payload.getText());
+                        return terminate();
+                    })
+                    .onMessage(WrongPasswordMessage.class, (sender, payload) -> sender.equals(request.getSender()), (sender, message) -> fail())
+                    .onAnyEvent(event -> Behaviors.same())
+                    .build();
+        });
+    }
+
+    /**
+     * Terminate this node.
+     */
+    private Behavior terminate() {
+        doneFuture.complete(null);
+        return Behaviors.ignore();
+    }
+
+    /**
+     * Transfer failed.
+     */
+    private Behavior fail() {
+        doneFuture.completeExceptionally(new Exception(
+                "Code confirmation failed. Either you or your correspondent\n" +
+                        "typed the code wrong, or a would-be man-in-the-middle attacker guessed\n" +
+                        "incorrectly. You could try again, giving both your correspondent and\n" +
+                        "the attacker another chance."
+        ));
+        return Behaviors.ignore();
+    }
+
+    /**
+     * Signals that text has should be requested.
+     */
+    static class RequestText implements Event {
+        private final CompressedPublicKey sender;
+        private final String password;
+
+        /**
+         * @throws NullPointerException if {@code sender} or {@code text} is {@code null}
+         */
+        public RequestText(final CompressedPublicKey sender, final String password) {
+            this.sender = requireNonNull(sender);
+            this.password = requireNonNull(password);
+        }
+
+        CompressedPublicKey getSender() {
+            return sender;
+        }
+
+        String getPassword() {
+            return password;
+        }
+    }
+
+    /**
+     * Signals that the node could not go online.
+     */
+    private static class OnlineTimeout implements Event {
+    }
+
+    /**
+     * Signals that sending node has not send the requested text.
+     */
+    private static class RequestTextTimeout implements Event {
     }
 }
