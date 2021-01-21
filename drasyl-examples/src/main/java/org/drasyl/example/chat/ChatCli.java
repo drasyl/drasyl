@@ -21,17 +21,28 @@ package org.drasyl.example.chat;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.behaviour.Behavior;
+import org.drasyl.behaviour.BehavioralDrasylNode;
+import org.drasyl.behaviour.Behaviors;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.event.PeerDirectEvent;
+import org.drasyl.event.PeerEvent;
+import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.time.Duration.ofSeconds;
 
 /**
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
@@ -39,6 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @SuppressWarnings({ "squid:S106", "java:S1141", "java:S3776" })
 public class ChatCli {
+    public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     private static final Scanner scanner = new Scanner(System.in);
     private static String prompt;
 
@@ -51,32 +63,98 @@ public class ChatCli {
             config = new DrasylConfig();
         }
 
-        final AtomicBoolean online = new AtomicBoolean();
-        final DrasylNode node = new DrasylNode(config) {
-            @SuppressWarnings("StatementWithEmptyBody")
+        final DrasylNode node = new BehavioralDrasylNode(config) {
             @Override
-            public void onEvent(final Event event) {
-                if (event instanceof MessageEvent) {
-                    final CompressedPublicKey sender = ((MessageEvent) event).getSender();
-                    final Object message = ((MessageEvent) event).getPayload();
-                    if (message instanceof String) {
-                        addBeforePrompt("From " + sender + ": " + message);
-                    }
+            protected Behavior created() {
+                return offline();
+            }
+
+            /**
+             * Node is not connected to super peer.
+             */
+            private Behavior offline() {
+                return Behaviors.receive()
+                        .onEvent(NodeUpEvent.class, event -> {
+                            System.out.println("drasyl Node started. Connecting to super peer...");
+                            return Behaviors.withScheduler(scheduler -> {
+                                scheduler.scheduleEvent(new OnlineTimeout(), ONLINE_TIMEOUT);
+                                return offline();
+                            });
+                        })
+                        .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
+                            System.err.println("drasyl Node encountered an unrecoverable error: " + event.getError().getMessage());
+                            return Behaviors.shutdown();
+                        })
+                        .onEvent(NodeNormalTerminationEvent.class, this::terminationEvent)
+                        .onEvent(NodeDownEvent.class, this::downEvent)
+                        .onEvent(NodeOnlineEvent.class, event -> {
+                            addBeforePrompt("drasyl Node is connected to super peer. Relayed communication and discovery available.");
+                            return online();
+                        })
+                        .onEvent(PeerEvent.class, this::peerEvent)
+                        .onMessage(String.class, this::messageEvent)
+                        .onAnyEvent(event -> Behaviors.same())
+                        .build();
+            }
+
+            /**
+             * Node is connected to super peer.
+             */
+            private Behavior online() {
+                return Behaviors.receive()
+                        .onEvent(NodeNormalTerminationEvent.class, this::terminationEvent)
+                        .onEvent(NodeDownEvent.class, this::downEvent)
+                        .onEvent(NodeOfflineEvent.class, event -> {
+                            addBeforePrompt("drasyl Node lost connection to super peer. Relayed communication and discovery not available.");
+                            return offline();
+                        })
+                        .onEvent(PeerEvent.class, this::peerEvent)
+                        .onMessage(String.class, this::messageEvent)
+                        .onAnyEvent(event -> Behaviors.same())
+                        .build();
+            }
+
+            /**
+             * Reaction to a {@link NodeDownEvent}.
+             */
+            private Behavior downEvent(final NodeDownEvent event) {
+                System.err.append("drasyl Node is shutting down. No more communication possible.\n");
+                return Behaviors.same();
+            }
+
+            /**
+             * Reaction to a {@link NodeNormalTerminationEvent}.
+             */
+            private Behavior terminationEvent(final NodeNormalTerminationEvent event) {
+                System.err.append("drasyl Node has been shut down.\n");
+                return Behaviors.ignore();
+            }
+
+            /**
+             * Reaction to a {@link org.drasyl.event.MessageEvent}.
+             */
+            private Behavior messageEvent(final CompressedPublicKey sender, final String payload) {
+                addBeforePrompt("From " + sender + ": " + payload);
+                return Behaviors.same();
+            }
+
+            /**
+             * Reaction to a {@link PeerEvent}.
+             */
+            private Behavior peerEvent(final PeerEvent event) {
+                if (event instanceof PeerDirectEvent) {
+                    addBeforePrompt("Direct connection to " + event.getPeer().getPublicKey() + " available.");
                 }
-                else if (event instanceof NodeOnlineEvent) {
-                    addBeforePrompt("drasyl Node is connected to super peer. Relayed communication and discovery available.");
-                    online.set(true);
+                else if (event instanceof PeerRelayEvent) {
+                    addBeforePrompt("Relayed connection to " + event.getPeer().getPublicKey() + " available.");
                 }
-                else if (event instanceof NodeOfflineEvent) {
-                    addBeforePrompt("drasyl Node lost connection to super peer. Relayed communication and discovery not available.");
-                    online.set(false);
-                }
-                else if (event instanceof NodeUpEvent) {
-                    // ignore
-                }
-                else {
-                    addBeforePrompt(event);
-                }
+                return Behaviors.same();
+            }
+
+            /**
+             * Signals that the node could not go online.
+             */
+            class OnlineTimeout implements Event {
             }
         };
 
@@ -88,7 +166,6 @@ public class ChatCli {
         System.out.println("****************************************************************************************");
         System.out.println();
 
-        System.out.println("drasyl Node started. Only communication with direct connected peers possible. Connecting to super peer...");
         node.start().join();
 
         String recipient = "";
@@ -113,7 +190,7 @@ public class ChatCli {
             }
 
             node.send(recipient, message).exceptionally(e -> {
-                System.out.println("ERR: Unable to sent message: " + e.getMessage());
+                System.err.println("ERR: Unable to sent message: " + e.getMessage());
                 return null;
             });
             System.out.println("To " + recipient + ": " + message);

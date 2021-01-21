@@ -23,6 +23,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -51,13 +52,12 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SendingWormholeNodeTest {
     private final String password = "123";
-    private final AtomicBoolean sent = new AtomicBoolean();
     private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
     private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     private ByteArrayOutputStream outputStream;
-    private PrintStream printStream;
     @Mock
     private CompletableFuture<Void> doneFuture;
+    private PrintStream printStream;
     @Mock
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -76,7 +76,7 @@ class SendingWormholeNodeTest {
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new SendingWormholeNode(doneFuture, printStream, password, sent, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        underTest = new SendingWormholeNode(doneFuture, printStream, password, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
     }
 
     @Nested
@@ -96,20 +96,24 @@ class SendingWormholeNodeTest {
         }
 
         @Test
-        void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+        void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                                                @Mock final NodeOnlineEvent nodeOnline) {
             when(event.getPayload()).thenReturn(new PasswordMessage("123"));
             underTest.setText("Hi");
 
+            underTest.onEvent(nodeOnline);
             underTest.onEvent(event);
 
             verify(pipeline).processOutbound(eq(event.getSender()), any(TextMessage.class));
         }
 
         @Test
-        void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+        void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                                              @Mock final NodeOnlineEvent nodeOnline) {
             when(event.getPayload()).thenReturn(new PasswordMessage("456"));
             underTest.setText("Hi");
 
+            underTest.onEvent(nodeOnline);
             underTest.onEvent(event);
 
             verify(pipeline).processOutbound(eq(event.getSender()), any(WrongPasswordMessage.class));
