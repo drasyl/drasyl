@@ -18,6 +18,7 @@
  */
 package org.drasyl.cli.command.wormhole;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.util.SecretUtil.maskSecret;
@@ -63,10 +65,10 @@ public class ReceivingWormholeNode extends DrasylNode {
                           final PeersManager peersManager,
                           final Pipeline pipeline,
                           final PluginManager pluginManager,
-                          final AtomicBoolean started,
-                          final CompletableFuture<Void> startSequence,
-                          final CompletableFuture<Void> shutdownSequence) {
-        super(config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
+                          final AtomicReference<CompletableFuture<Void>> startFuture,
+                          final AtomicReference<CompletableFuture<Void>> shutdownFuture,
+                          final Scheduler scheduler) {
+        super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.received = received;

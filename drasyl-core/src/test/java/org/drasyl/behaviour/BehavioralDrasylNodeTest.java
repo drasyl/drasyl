@@ -18,6 +18,7 @@
  */
 package org.drasyl.behaviour;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -33,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.drasyl.behaviour.Behavior.SAME;
 import static org.drasyl.behaviour.Behavior.SHUTDOWN;
@@ -46,8 +48,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class BehavioralDrasylNodeTest {
-    private final CompletableFuture<Void> startSequence = new CompletableFuture<>();
-    private final CompletableFuture<Void> shutdownSequence = new CompletableFuture<>();
+    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
+    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     @Mock
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -61,6 +63,8 @@ class BehavioralDrasylNodeTest {
     @Mock
     private PluginManager pluginManager;
     @Mock
+    private Scheduler scheduler;
+    @Mock
     private Behavior behavior;
 
     @Nested
@@ -69,7 +73,7 @@ class BehavioralDrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            node = spy(new BehavioralDrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence, behavior) {
+            node = spy(new BehavioralDrasylNode(config, identity, peersManager, acceptNewConnections, pipeline, pluginManager, startFuture, shutdownFuture, scheduler, behavior) {
                 @Override
                 protected Behavior created() {
                     return null;

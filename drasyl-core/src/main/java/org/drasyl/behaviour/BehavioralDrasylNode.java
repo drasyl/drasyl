@@ -18,6 +18,7 @@
  */
 package org.drasyl.behaviour;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
@@ -31,6 +32,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 
@@ -69,11 +71,11 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
                                    final AtomicBoolean acceptNewConnections,
                                    final Pipeline pipeline,
                                    final PluginManager pluginManager,
-                                   final AtomicBoolean started,
-                                   final CompletableFuture<Void> startSequence,
-                                   final CompletableFuture<Void> shutdownSequence,
+                                   final AtomicReference<CompletableFuture<Void>> startFuture,
+                                   final AtomicReference<CompletableFuture<Void>> shutdownFuture,
+                                   final Scheduler scheduler,
                                    final Behavior behavior) {
-        super(config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
         if (behavior instanceof DeferredBehavior) {
             this.behavior = ((DeferredBehavior) behavior).apply(this);
         }
@@ -89,10 +91,10 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
                                    final AtomicBoolean acceptNewConnections,
                                    final Pipeline pipeline,
                                    final PluginManager pluginManager,
-                                   final AtomicBoolean started,
-                                   final CompletableFuture<Void> startSequence,
-                                   final CompletableFuture<Void> shutdownSequence) {
-        super(config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
+                                   final AtomicReference<CompletableFuture<Void>> startFuture,
+                                   final AtomicReference<CompletableFuture<Void>> shutdownFuture,
+                                   final Scheduler scheduler) {
+        super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {
             behavior = ((DeferredBehavior) behavior).apply(this);

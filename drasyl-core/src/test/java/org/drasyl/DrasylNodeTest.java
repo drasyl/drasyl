@@ -18,6 +18,7 @@
  */
 package org.drasyl;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -38,9 +39,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,8 +55,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DrasylNodeTest {
-    private final CompletableFuture<Void> startSequence = new CompletableFuture<>();
-    private final CompletableFuture<Void> shutdownSequence = new CompletableFuture<>();
     private final byte[] payload = new byte[]{ 0x4f };
     @Mock
     private DrasylConfig config;
@@ -60,38 +62,49 @@ class DrasylNodeTest {
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private PeersManager peersManager;
-    @Mock
-    private AtomicBoolean started;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
     @Mock
     private PluginManager pluginManager;
+    @Mock
+    private Scheduler scheduler;
 
     @Nested
     class Start {
         @Test
         void shouldEmitUpEventOnSuccessfulStart() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            when(scheduler.scheduleDirect(any())).then(invocation -> {
+                final Runnable runnable = invocation.getArgument(0, Runnable.class);
+                runnable.run();
+                return null;
+            });
+            when(pipeline.processInbound(any())).thenReturn(completedFuture(null));
+
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(null), new AtomicReference<>(), scheduler) {
                 @Override
                 public void onEvent(final Event event) {
                 }
             });
-            shutdownSequence.complete(null);
-            underTest.start().join();
+            underTest.start();
 
             verify(underTest).onInternalEvent(new NodeUpEvent(Node.of(identity)));
         }
 
         @Test
         void shouldEmitNodeUnrecoverableErrorEventOnFailedStart() {
-            when(pipeline.processInbound(any(NodeUpEvent.class))).thenReturn(CompletableFuture.failedFuture(new DrasylException("error")));
+            when(scheduler.scheduleDirect(any())).then(invocation -> {
+                final Runnable runnable = invocation.getArgument(0, Runnable.class);
+                runnable.run();
+                return null;
+            });
+            when(pipeline.processInbound(any(NodeUpEvent.class))).thenReturn(failedFuture(new DrasylException("error")));
+            when(pipeline.processInbound(any(NodeUnrecoverableErrorEvent.class))).thenReturn(completedFuture(null));
 
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(null), new AtomicReference<>(), scheduler) {
                 @Override
                 public void onEvent(final Event event) {
                 }
             });
-            shutdownSequence.complete(null);
             assertThrows(ExecutionException.class, underTest.start()::get);
 
             final InOrder inOrder = inOrder(underTest);
@@ -100,14 +113,29 @@ class DrasylNodeTest {
         }
 
         @Test
-        void shouldStartPlugins() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+        void shouldReturnSameFutureIfStartHasAlreadyBeenTriggered(@Mock final CompletableFuture<Void> startFuture) {
+            final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(startFuture), new AtomicReference<>(), scheduler) {
                 @Override
                 public void onEvent(final Event event) {
                 }
             });
-            shutdownSequence.complete(null);
-            underTest.start().join();
+            assertSame(startFuture, drasylNode.start());
+        }
+
+        @Test
+        void shouldStartPlugins() {
+            when(scheduler.scheduleDirect(any())).then(invocation -> {
+                final Runnable runnable = invocation.getArgument(0, Runnable.class);
+                runnable.run();
+                return null;
+            });
+
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(null), new AtomicReference<>(), scheduler) {
+                @Override
+                public void onEvent(final Event event) {
+                }
+            });
+            underTest.start();
 
             verify(pluginManager).beforeStart();
         }
@@ -116,24 +144,30 @@ class DrasylNodeTest {
     @Nested
     class Shutdown {
         @Test
-        void shouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
-            final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+        void shouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered(@Mock final CompletableFuture<Void> shutdownFuture) {
+            final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(shutdownFuture), scheduler) {
                 @Override
                 public void onEvent(final Event event) {
                 }
             });
-            assertEquals(shutdownSequence, drasylNode.shutdown());
+            assertSame(shutdownFuture, drasylNode.shutdown());
         }
 
         @Test
         void shouldStopPlugins() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            when(scheduler.scheduleDirect(any())).then(invocation -> {
+                final Runnable runnable = invocation.getArgument(0, Runnable.class);
+                runnable.run();
+                return null;
+            });
+            when(pipeline.processInbound(any())).thenReturn(completedFuture(null));
+
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(null), scheduler) {
                 @Override
                 public void onEvent(final Event event) {
                 }
             });
-            startSequence.complete(null);
-            underTest.shutdown().join();
+            underTest.shutdown();
 
             verify(pluginManager).afterShutdown();
         }
@@ -145,7 +179,7 @@ class DrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(), scheduler) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -194,7 +228,7 @@ class DrasylNodeTest {
     class PipelineTest {
         @Test
         void shouldReturnPipeline() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(), scheduler) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -208,7 +242,7 @@ class DrasylNodeTest {
     class IdentityMethod {
         @Test
         void shouldReturnIdentity() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(), scheduler) {
                 @Override
                 public void onEvent(final Event event) {
                 }
