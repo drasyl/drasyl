@@ -251,7 +251,6 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
                         };
                         final Set<InetSocketAddress> addresses = JACKSON_READER.forType(typeRef).readValue(file);
                         LOG.trace("Addresses '{}' for peer '{}' discovered by file '{}'", addresses, publicKey, fileName);
-                        ctx.peersManager().setPeerInformation(publicKey, PeerInformation.of());
                     }
                 }
                 catch (final CryptoException | IOException e) {

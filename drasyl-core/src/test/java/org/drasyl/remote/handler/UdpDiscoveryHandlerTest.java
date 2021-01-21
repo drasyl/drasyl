@@ -188,7 +188,7 @@ class UdpDiscoveryHandlerTest {
 
             outboundMessages.awaitCount(1).assertValueCount(1);
             outboundMessages.assertValue(m -> m instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) m).getContent().getPrivateHeader().getType() == ACKNOWLEDGEMENT);
-            verify(peersManager, never()).setPeerInformationAndAddPath(any(), any(), any());
+            verify(peersManager, never()).addPath(any(), any());
             pipeline.close();
         }
 
@@ -209,7 +209,7 @@ class UdpDiscoveryHandlerTest {
 
             pipeline.processInbound(address, addressedAcknowledgementMessage).join();
 
-            verify(peersManager).setPeerInformationAndAddPath(any(), any(), any());
+            verify(peersManager).addPath(any(), any());
             pipeline.close();
         }
 
@@ -231,7 +231,7 @@ class UdpDiscoveryHandlerTest {
 
             pipeline.processInbound(address, addressedAcknowledgementMessage).join();
 
-            verify(peersManager).setPeerInformationAndAddPathAndSetSuperPeer(any(), any(), any());
+            verify(peersManager).addPathAndSetSuperPeer(any(), any());
             pipeline.close();
         }
 

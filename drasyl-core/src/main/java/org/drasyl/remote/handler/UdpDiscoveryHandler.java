@@ -28,7 +28,6 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.PeerInformation;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -410,10 +409,10 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         if (childrenJoin) {
             peer.inboundPongOccurred();
             // store peer information
-            if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(sender) && !ctx.peersManager().getPeer(sender).second().contains(path)) {
+            if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
                 LOG.debug("PING! Add {} as children", sender);
             }
-            ctx.peersManager().setPeerInformationAndAddPathAndChildren(sender, PeerInformation.of(), path);
+            ctx.peersManager().addPathAndChildren(sender, path);
         }
 
         // reply with pong
@@ -440,17 +439,17 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             peer.inboundPongOccurred();
             if (openPing.isChildrenJoin()) {
                 // store peer information
-                if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(sender) && !ctx.peersManager().getPeer(sender).second().contains(path)) {
+                if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
                     LOG.debug("PONG! Add {} as super peer", sender);
                 }
-                ctx.peersManager().setPeerInformationAndAddPathAndSetSuperPeer(sender, PeerInformation.of(), path);
+                ctx.peersManager().addPathAndSetSuperPeer(sender, path);
             }
             else {
                 // store peer information
-                if (LOG.isDebugEnabled() && !ctx.peersManager().getPeer(sender).second().contains(path)) {
+                if (LOG.isDebugEnabled() && !ctx.peersManager().getPaths(sender).contains(path)) {
                     LOG.debug("PONG! Add {} as peer", sender);
                 }
-                ctx.peersManager().setPeerInformationAndAddPath(sender, PeerInformation.of(), path);
+                ctx.peersManager().addPath(sender, path);
             }
         }
         future.complete(null);

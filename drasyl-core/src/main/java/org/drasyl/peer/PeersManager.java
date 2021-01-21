@@ -29,14 +29,10 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.util.Pair;
 import org.drasyl.util.SetUtil;
 
 import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -55,7 +51,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class PeersManager {
     private final ReadWriteLock lock;
-    private final Map<CompressedPublicKey, PeerInformation> peers;
+    private final Set<CompressedPublicKey> peers;
     private final SetMultimap<CompressedPublicKey, Object> paths;
     private final Set<CompressedPublicKey> children;
     private final Consumer<Event> eventConsumer;
@@ -63,11 +59,11 @@ public class PeersManager {
     private CompressedPublicKey superPeer;
 
     public PeersManager(final Consumer<Event> eventConsumer, final Identity identity) {
-        this(new ReentrantReadWriteLock(true), new ConcurrentHashMap<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer, identity);
+        this(new ReentrantReadWriteLock(true), new HashSet<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer, identity);
     }
 
     PeersManager(final ReadWriteLock lock,
-                 final Map<CompressedPublicKey, PeerInformation> peers,
+                 final Set<CompressedPublicKey> peers,
                  final SetMultimap<CompressedPublicKey, Object> paths,
                  final Set<CompressedPublicKey> children,
                  final CompressedPublicKey superPeer,
@@ -104,7 +100,7 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            return Set.copyOf(peers.keySet());
+            return Set.copyOf(peers);
         }
         finally {
             lock.readLock().unlock();
@@ -151,36 +147,31 @@ public class PeersManager {
         }
     }
 
-    public Pair<PeerInformation, Set<Object>> getPeer(final CompressedPublicKey publicKey) {
+    public Set<Object> getPaths(final CompressedPublicKey publicKey) {
         requireNonNull(publicKey);
 
         try {
             lock.readLock().lock();
 
-            final PeerInformation peerInformation = peers.get(publicKey);
-            final Set<Object> myPaths = Set.copyOf(this.paths.get(publicKey));
-
-            return Pair.of(Objects.requireNonNullElseGet(peerInformation, PeerInformation::of), myPaths);
+            return Set.copyOf(paths.get(publicKey));
         }
         finally {
             lock.readLock().unlock();
         }
     }
 
-    public void setPeerInformationAndAddPath(final CompressedPublicKey publicKey,
-                                             final PeerInformation peerInformation,
-                                             final Object path) {
+    public void addPath(final CompressedPublicKey publicKey,
+                        final Object path) {
         requireNonNull(publicKey);
-        requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
             handlePeerStateTransition(
                     publicKey,
-                    peers.get(publicKey),
+                    peers.contains(publicKey),
                     paths.get(publicKey),
-                    peerInformation,
+                    true,
                     SetUtil.merge(paths.get(publicKey), path)
             );
         }
@@ -190,71 +181,24 @@ public class PeersManager {
     }
 
     private void handlePeerStateTransition(final CompressedPublicKey publicKey,
-                                           final PeerInformation existingInformation,
+                                           final boolean existingInformation,
                                            final Set<Object> existingPaths,
-                                           final PeerInformation newInformation,
+                                           final boolean newInformation,
                                            final Set<Object> newPaths) {
-        final int existingPathCount;
-        if (existingInformation == null) {
-            existingPathCount = 0;
-        }
-        else {
-            existingPathCount = existingPaths.size();
-        }
+        final int existingPathCount = existingPaths.size();
         final int newPathCount = newPaths.size();
-        if (newInformation != null) {
-            peers.put(publicKey, PeerInformation.of(newInformation.getEndpoints()));
-        }
+        peers.add(publicKey);
         paths.replaceValues(publicKey, newPaths);
 
         if (existingPathCount == 0 && newPathCount > 0) {
             eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
         }
-        else if ((existingInformation == null || existingPathCount > 0) && newPathCount == 0 && (!publicKey.equals(superPeer) && superPeer != null || children.contains(publicKey)) && !(existingInformation == null && newInformation == null)) {
+        else if ((!existingInformation || existingPathCount > 0) && newPathCount == 0 && (!publicKey.equals(superPeer) && superPeer != null || children.contains(publicKey)) && !(!existingInformation && !newInformation)) {
             eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
         }
-    }
 
-    public void setPeerInformation(final CompressedPublicKey publicKey,
-                                   final PeerInformation peerInformation) {
-        requireNonNull(publicKey);
-        requireNonNull(peerInformation);
-
-        try {
-            lock.writeLock().lock();
-
-            handlePeerStateTransition(
-                    publicKey,
-                    peers.get(publicKey),
-                    paths.get(publicKey),
-                    peerInformation,
-                    paths.get(publicKey)
-            );
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public void addPeer(final CompressedPublicKey publicKey) {
-        requireNonNull(publicKey);
-
-        try {
-            lock.writeLock().lock();
-
-            final PeerInformation existingInformation = peers.get(publicKey);
-            if (existingInformation == null) {
-                handlePeerStateTransition(
-                        publicKey,
-                        null,
-                        paths.get(publicKey),
-                        PeerInformation.of(),
-                        paths.get(publicKey)
-                );
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
+        if (newPathCount == 0) {
+            peers.remove(publicKey);
         }
     }
 
@@ -267,9 +211,9 @@ public class PeersManager {
 
             handlePeerStateTransition(
                     publicKey,
-                    peers.get(publicKey),
+                    peers.contains(publicKey),
                     paths.get(publicKey),
-                    peers.get(publicKey),
+                    peers.contains(publicKey),
                     SetUtil.difference(paths.get(publicKey), path)
             );
         }
@@ -304,9 +248,9 @@ public class PeersManager {
 
                 handlePeerStateTransition(
                         superPeer,
-                        peers.get(superPeer),
+                        peers.contains(superPeer),
                         paths.get(superPeer),
-                        peers.get(superPeer),
+                        peers.contains(superPeer),
                         SetUtil.difference(paths.get(superPeer), path)
                 );
                 superPeer = null;
@@ -317,11 +261,9 @@ public class PeersManager {
         }
     }
 
-    public void setPeerInformationAndAddPathAndSetSuperPeer(final CompressedPublicKey publicKey,
-                                                            final PeerInformation peerInformation,
-                                                            final Object path) {
+    public void addPathAndSetSuperPeer(final CompressedPublicKey publicKey,
+                                       final Object path) {
         requireNonNull(publicKey);
-        requireNonNull(peerInformation);
         requireNonNull(path);
 
         try {
@@ -329,9 +271,9 @@ public class PeersManager {
 
             handlePeerStateTransition(
                     publicKey,
-                    peers.get(publicKey),
+                    peers.contains(publicKey),
                     paths.get(publicKey),
-                    peerInformation,
+                    true,
                     SetUtil.merge(paths.get(publicKey), path)
             );
             if (superPeer == null) {
@@ -354,9 +296,9 @@ public class PeersManager {
 
             handlePeerStateTransition(
                     publicKey,
-                    peers.get(publicKey),
+                    peers.contains(publicKey),
                     paths.get(publicKey),
-                    peers.get(publicKey),
+                    peers.contains(publicKey),
                     SetUtil.difference(paths.get(publicKey), path)
             );
             children.remove(publicKey);
@@ -366,11 +308,9 @@ public class PeersManager {
         }
     }
 
-    public void setPeerInformationAndAddPathAndChildren(final CompressedPublicKey publicKey,
-                                                        final PeerInformation peerInformation,
-                                                        final Object path) {
+    public void addPathAndChildren(final CompressedPublicKey publicKey,
+                                   final Object path) {
         requireNonNull(publicKey);
-        requireNonNull(peerInformation);
         requireNonNull(path);
 
         try {
@@ -378,9 +318,9 @@ public class PeersManager {
 
             handlePeerStateTransition(
                     publicKey,
-                    peers.get(publicKey),
+                    peers.contains(publicKey),
                     paths.get(publicKey),
-                    peerInformation,
+                    true,
                     SetUtil.merge(paths.get(publicKey), path)
             );
             children.add(publicKey);

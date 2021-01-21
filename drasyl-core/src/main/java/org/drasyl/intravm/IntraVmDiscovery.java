@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -23,7 +23,6 @@ import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.PeerInformation;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.ApplicationMessage;
@@ -48,7 +47,6 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
     public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
     public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
-    private static final PeerInformation peerInformation = PeerInformation.of();
     private static final Object path = IntraVmDiscovery.class;
     private final Map<Pair<Integer, CompressedPublicKey>, HandlerContext> discoveries;
     private final ReadWriteLock lock;
@@ -78,6 +76,7 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
         ctx.fireEventTriggered(event, future);
     }
 
+    @SuppressWarnings("ReplaceNullCheck")
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
@@ -127,8 +126,8 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
                 final Integer networkId = key.first();
                 final CompressedPublicKey publicKey = key.second();
                 if (myCtx.config().getNetworkId() == networkId) {
-                    otherCtx.peersManager().setPeerInformationAndAddPath(myCtx.identity().getPublicKey(), peerInformation, path);
-                    myCtx.peersManager().setPeerInformationAndAddPath(publicKey, peerInformation, path);
+                    otherCtx.peersManager().addPath(myCtx.identity().getPublicKey(), path);
+                    myCtx.peersManager().addPath(publicKey, path);
                 }
             });
             discoveries.put(
