@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -28,7 +28,7 @@ import org.drasyl.util.scheduler.DrasylSchedulerUtil;
  * This particular Implementation of a drasyl Node shows exemplary how incoming Events can be
  * processed using the Observer Pattern.
  */
-@SuppressWarnings({ "java:S107" })
+@SuppressWarnings({ "java:S106", "java:S107", "unused", "ResultOfMethodCallIgnored" })
 public class ObservableDrasylNode extends DrasylNode {
     private final Subject<Event> events;
 
@@ -49,7 +49,7 @@ public class ObservableDrasylNode extends DrasylNode {
 
     public static void main(final String[] args) throws DrasylException {
         final ObservableDrasylNode node = new ObservableDrasylNode(DrasylConfig.newBuilder().localHostDiscoveryEnabled(false).remoteExposeEnabled(false).build());
-        node.events().subscribeOn(DrasylSchedulerUtil.getInstanceLight()).subscribe(System.out::println, System.err::println); // NOSONAR
+        node.events().subscribeOn(DrasylSchedulerUtil.getInstanceLight()).subscribe(System.out::println, System.err::println);
         node.start().join();
     }
 

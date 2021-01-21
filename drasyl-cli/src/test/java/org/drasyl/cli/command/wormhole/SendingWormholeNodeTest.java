@@ -19,6 +19,7 @@
 
 package org.drasyl.cli.command.wormhole;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
@@ -38,6 +39,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -50,8 +52,8 @@ import static org.mockito.Mockito.when;
 class SendingWormholeNodeTest {
     private final String password = "123";
     private final AtomicBoolean sent = new AtomicBoolean();
-    private final CompletableFuture<Void> startSequence = new CompletableFuture<>();
-    private final CompletableFuture<Void> shutdownSequence = new CompletableFuture<>();
+    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
+    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
     @Mock
@@ -62,19 +64,19 @@ class SendingWormholeNodeTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private AtomicBoolean started;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
     @Mock
     private PluginManager pluginManager;
+    @Mock
+    private Scheduler scheduler;
     private SendingWormholeNode underTest;
 
     @BeforeEach
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new SendingWormholeNode(doneFuture, printStream, password, sent, config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        underTest = new SendingWormholeNode(doneFuture, printStream, password, sent, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
     }
 
     @Nested

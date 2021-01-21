@@ -19,6 +19,7 @@
 
 package org.drasyl.cli.command.wormhole;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.MessageEvent;
@@ -40,6 +41,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -52,8 +54,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ReceivingWormholeNodeTest {
     private final String password = "123";
-    private final CompletableFuture<Void> startSequence = new CompletableFuture<>();
-    private final CompletableFuture<Void> shutdownSequence = new CompletableFuture<>();
+    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
+    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
     private final AtomicBoolean received = new AtomicBoolean();
@@ -67,21 +69,21 @@ class ReceivingWormholeNodeTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private AtomicBoolean started;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
     @Mock
     private PluginManager pluginManager;
     @Mock
     private CompletableFuture<Void> doneFuture;
+    @Mock
+    private Scheduler scheduler;
     private ReceivingWormholeNode underTest;
 
     @BeforeEach
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new ReceivingWormholeNode(doneFuture, printStream, received, sender, timeoutGuard, config, identity, peersManager, pipeline, pluginManager, started, startSequence, shutdownSequence);
+        underTest = new ReceivingWormholeNode(doneFuture, printStream, received, sender, timeoutGuard, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
     }
 
     @Nested
