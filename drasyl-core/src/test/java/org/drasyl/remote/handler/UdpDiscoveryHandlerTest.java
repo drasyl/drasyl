@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -209,6 +209,7 @@ class UdpDiscoveryHandlerTest {
             final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
             final AddressedIntermediateEnvelope<Acknowledgement> addressedAcknowledgementMessage = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, acknowledgementMessage);
 
+            when(peer.getAddress().getAddress()).thenReturn(new InetSocketAddress(22527));
             when(identity.getPublicKey()).thenReturn(recipient);
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address, true))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
@@ -465,7 +466,7 @@ class UdpDiscoveryHandlerTest {
             }
 
             @Test
-            void shouldRelayMessageToSuperPeerForUnknownRecipient(@Mock final InetSocketAddressWrapper superPeerSocketAddress,
+            void shouldRelayMessageToSuperPeerForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper superPeerSocketAddress,
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeerPeer) throws CryptoException {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
