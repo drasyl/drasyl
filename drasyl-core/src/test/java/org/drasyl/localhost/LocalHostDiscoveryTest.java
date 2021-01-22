@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -218,7 +218,7 @@ class LocalHostDiscoveryTest {
                                  @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws IOException, CryptoException {
             when(discoveryPath.toFile()).thenReturn(dir.toFile());
             final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
-            Files.writeString(path, "{\"endpoints\":[]}", StandardOpenOption.CREATE);
+            Files.writeString(path, "[\"192.168.188.42:12345\",\"192.168.188.23:12345\"]", StandardOpenOption.CREATE);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, new AtomicBoolean(true), scheduler, watchDisposable, postDisposable);
             handler.scan(ctx);

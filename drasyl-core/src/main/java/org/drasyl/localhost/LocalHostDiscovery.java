@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -18,6 +18,7 @@
  */
 package org.drasyl.localhost;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
@@ -31,19 +32,24 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.util.scheduler.DrasylScheduler;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
+import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.scheduler.DrasylScheduler;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -81,7 +87,6 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
     private Disposable watchDisposable;
     private Disposable postDisposable;
     private WatchService watchService; // NOSONAR
-    private PeerInformation postedPeerInformation;
 
     public LocalHostDiscovery(final DrasylConfig config,
                               final CompressedPublicKey ownPublicKey) {
@@ -152,7 +157,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
         else {
             tryWatchDirectory();
             scan(ctx);
-            keepOwnInformationUpToDate(port);
+            keepOwnInformationUpToDate(ctx, port);
         }
         LOG.debug("Local Host Discovery started.");
     }
@@ -197,7 +202,19 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
     /**
      * Writes periodically the actual own information to {@link #discoveryPath}.
      */
-    private void keepOwnInformationUpToDate(final int port) {
+    private void keepOwnInformationUpToDate(final HandlerContext ctx, final int port) {
+        // get own address(es)
+        final Set<InetAddress> addresses;
+        if (ctx.config().getRemoteBindHost().isAnyLocalAddress()) {
+            // use all available addresses
+            addresses = NetworkUtil.getAddresses();
+        }
+        else {
+            // use given host
+            addresses = Set.of(ctx.config().getRemoteBindHost());
+        }
+        final Set<InetSocketAddress> socketAddresses = addresses.stream().map(a -> new InetSocketAddress(a, port)).collect(Collectors.toSet());
+
         final Duration refreshInterval;
         if (leaseTime.toSeconds() > 5) {
             refreshInterval = leaseTime.minus(ofSeconds(5));
@@ -210,12 +227,12 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
             if (watchService == null) {
                 doScan.set(true);
             }
-            postInformation(port);
+            postInformation(socketAddresses);
         }, 0, refreshInterval.toMillis(), MILLISECONDS);
     }
 
     /**
-     * Scans in {@link #discoveryPath} for peer information of other drasyl nodes.
+     * Scans in {@link #discoveryPath} for ports of other drasyl nodes.
      *
      * @param ctx handler's context
      */
@@ -230,9 +247,11 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
                     final String fileName = file.getName();
                     if (file.lastModified() >= maxAge && fileName.length() == 71 && fileName.endsWith(".json") && !fileName.startsWith(ownPublicKeyString)) {
                         final CompressedPublicKey publicKey = CompressedPublicKey.of(fileName.replace(".json", ""));
-                        final PeerInformation peerInformation = JACKSON_READER.readValue(file, PeerInformation.class);
-                        LOG.trace("Information for peer {} discovered by file '{}'", publicKey, fileName);
-                        ctx.peersManager().setPeerInformation(publicKey, peerInformation);
+                        final TypeReference<Set<InetSocketAddress>> typeRef = new TypeReference<>() {
+                        };
+                        final Set<InetSocketAddress> addresses = JACKSON_READER.forType(typeRef).readValue(file);
+                        LOG.trace("Addresses '{}' for peer '{}' discovered by file '{}'", addresses, publicKey, fileName);
+                        ctx.peersManager().setPeerInformation(publicKey, PeerInformation.of());
                     }
                 }
                 catch (final CryptoException | IOException e) {
@@ -243,22 +262,17 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
     }
 
     /**
-     * Posts own {@link PeerInformation} to {@link #discoveryPath}.
+     * Posts own port to {@link #discoveryPath}.
      */
-    private void postInformation(final int port) {
-        final PeerInformation peerInformation = PeerInformation.of(); // TODO: add port here
-
+    private void postInformation(final Set<InetSocketAddress> addresses) {
         final Path filePath = discoveryPath.resolve(ownPublicKey.toString() + ".json");
         LOG.trace("Post own Peer Information to {}", filePath);
         final File file = filePath.toFile();
         try {
-            // (re)write file on information change. otherwise just touch
-            if (!(peerInformation.equals(postedPeerInformation) && file.setLastModified(System.currentTimeMillis()))) {
-                JACKSON_WRITER.writeValue(file, peerInformation);
+            if (!file.setLastModified(System.currentTimeMillis())) {
+                JACKSON_WRITER.writeValue(file, addresses);
                 file.deleteOnExit();
             }
-
-            postedPeerInformation = peerInformation;
         }
         catch (final IOException e) {
             LOG.warn("Unable to write peer information to '{}': {}", filePath::toAbsolutePath, e::getMessage);
