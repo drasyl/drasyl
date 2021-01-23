@@ -46,6 +46,7 @@ import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
+import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -161,8 +162,8 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                  a completely random port would have the disadvantage that every time the node is
                  started it would use a new port and this would make discovery more difficult
                 */
-                final int identityHash = Hashing.murmur3_32().hashBytes(ctx.identity().getPublicKey().byteArrayValue()).asInt();
-                bindPort = 22528 + identityHash % 43000;
+                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.identity().getPublicKey().byteArrayValue()).asBytes()).getValue();
+                bindPort = (int) (22528 + identityHash % 43000);
             }
             else {
                 bindPort = ctx.config().getRemoteBindPort();
