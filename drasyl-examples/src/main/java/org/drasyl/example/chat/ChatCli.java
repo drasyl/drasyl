@@ -91,6 +91,10 @@ public class ChatCli {
                             addBeforePrompt("drasyl Node is connected to super peer. Relayed communication and discovery available.");
                             return online();
                         })
+                        .onEvent(OnlineTimeout.class, event -> {
+                            addBeforePrompt("No response from the Super Peer within " + ONLINE_TIMEOUT.toSeconds() + "s. Probably the Super Peer is unavailable or your configuration is faulty.");
+                            return Behaviors.same();
+                        })
                         .onEvent(PeerEvent.class, this::peerEvent)
                         .onMessage(String.class, this::messageEvent)
                         .onAnyEvent(event -> Behaviors.same())
