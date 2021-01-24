@@ -64,7 +64,7 @@ public class DefaultCodec extends Codec<ApplicationMessage, Object, Address> {
 
             LOG.trace("[{}]: Encoded Message '{}'", ctx::name, () -> msg);
         }
-        else if (recipient instanceof CompressedPublicKey && ctx.outboundValidator().validate(msg.getClass()) && JSONUtil.JACKSON_WRITER.canSerialize(msg.getClass())) {
+        else if (recipient instanceof CompressedPublicKey && ctx.outboundValidator().validate(msg.getClass())) {
             final ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
             try (final ByteBufOutputStream bos = new ByteBufOutputStream(buf)) {
 
@@ -103,7 +103,7 @@ public class DefaultCodec extends Codec<ApplicationMessage, Object, Address> {
 
                 LOG.trace("[{}]: Decoded Message '{}'", ctx::name, msg::getContent);
             }
-            else if (ctx.inboundValidator().validate(msg.getTypeClazz()) && JSONUtil.JACKSON_WRITER.canSerialize(msg.getTypeClazz())) {
+            else if (ctx.inboundValidator().validate(msg.getTypeClazz())) {
                 decodeObjectHolder(ctx, msg, passOnConsumer);
             }
             else {
