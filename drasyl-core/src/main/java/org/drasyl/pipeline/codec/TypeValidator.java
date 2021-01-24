@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline.codec;
 
-import com.google.common.primitives.Primitives;
 import org.drasyl.DrasylConfig;
 
 import java.util.ArrayList;
@@ -35,6 +34,28 @@ public class TypeValidator {
     private final List<String> packages;
     private final boolean allowAllPrimitives;
     private final boolean allowArrayOfTypes;
+    private static final Class<?>[] primitiveTypes;
+
+    static {
+        primitiveTypes = new Class[]{
+                boolean.class,
+                char.class,
+                double.class,
+                float.class,
+                int.class,
+                long.class,
+                short.class,
+                void.class,
+                Boolean.class,
+                Character.class,
+                Double.class,
+                Float.class,
+                Integer.class,
+                Long.class,
+                Short.class,
+                Void.class
+        };
+    }
 
     @SuppressWarnings("java:S1172")
     TypeValidator(final List<Class<?>> classes,
@@ -58,7 +79,24 @@ public class TypeValidator {
 
         // Always include byte and byte array
         this.classes.add(byte.class);
+        this.classes.add(Byte.class);
         this.classes.add(byte[].class);
+    }
+
+    /**
+     * Returns {@code true} if the {@code clazz} is a primitive type except of type {@code Void}.
+     *
+     * @param clazz the class to check
+     * @return true if the type is a primitive type
+     */
+    public static boolean isPrimitive(final Class<?> clazz) {
+        for (final Class<?> primitiveType : primitiveTypes) {
+            if (primitiveType.equals(clazz)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private List<Class<?>> string2Class(final List<String> classes) {
@@ -131,7 +169,7 @@ public class TypeValidator {
         clazzToTest = unwrap(clazzToTest, allowArrayOfTypes);
 
         // Check if class is primitive
-        if (allowAllPrimitives && (clazzToTest.isPrimitive() || Primitives.isWrapperType(clazzToTest))) {
+        if (allowAllPrimitives && isPrimitive(clazzToTest)) {
             return true;
         }
 
@@ -180,8 +218,9 @@ public class TypeValidator {
      * array, otherwise the input is returned
      */
     public static Class<?> unwrapArrayComponentType(final Class<?> clazzToUnwrap) {
-        if (clazzToUnwrap.isArray()) {
-            return clazzToUnwrap.getComponentType();
+        final Class<?> unwrapped = clazzToUnwrap.getComponentType();
+        if (unwrapped != null) {
+            return unwrapped;
         }
 
         return clazzToUnwrap;
