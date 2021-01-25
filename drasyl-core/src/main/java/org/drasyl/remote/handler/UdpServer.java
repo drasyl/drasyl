@@ -182,7 +182,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                 // server successfully started
                 this.channel = channelFuture.channel();
                 final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-                LOG.debug("Server started and listening at {}", socketAddress);
+                LOG.info("Server started and listening at {}", socketAddress);
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
                 ctx.fireEventTriggered(new NodeUpEvent(Node.of(ctx.identity(), socketAddress.getPort())), future);
