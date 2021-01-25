@@ -21,6 +21,7 @@ package org.drasyl.identity;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.util.InternPool;
 
 import java.security.PublicKey;
 
@@ -30,13 +31,15 @@ import java.security.PublicKey;
  * This is an immutable object.
  */
 public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
+    public static final InternPool<CompressedPublicKey> POOL = new InternPool<>();
+
     /**
      * Creates a new compressed public key from the given string.
      *
      * @param compressedKey compressed public key
      * @throws CryptoException if the string parameter does not conform to a valid key
      */
-    public CompressedPublicKey(final String compressedKey) throws CryptoException {
+    private CompressedPublicKey(final String compressedKey) throws CryptoException {
         super(compressedKey);
     }
 
@@ -44,9 +47,8 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      * Creates a new compressed public key from the given byte array.
      *
      * @param compressedKey compressed public key
-     * @throws CryptoException if the byte parameter does not conform to a valid key
      */
-    private CompressedPublicKey(final byte[] compressedKey) throws CryptoException {
+    private CompressedPublicKey(final byte[] compressedKey) {
         super(compressedKey);
     }
 
@@ -59,6 +61,41 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      */
     public CompressedPublicKey(final PublicKey key) throws CryptoException {
         super(Crypto.compressedKey(key), key);
+    }
+
+    /**
+     * Converts a {@link String} into a {@link CompressedPublicKey}.
+     *
+     * @param compressedKey compressed key as String
+     * @return {@link CompressedPublicKey}
+     * @throws CryptoException          if string parameter does not conform to a valid key
+     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
+     *                                  string
+     */
+    public static CompressedPublicKey of(final String compressedKey) throws CryptoException {
+        return new CompressedPublicKey(compressedKey).intern();
+    }
+
+    /**
+     * Converts a {@link PublicKey} into a {@link CompressedPublicKey}.
+     *
+     * @param key public key
+     * @return {@link CompressedPublicKey}
+     * @throws CryptoException if string parameter does not conform to a valid key
+     */
+    public static CompressedPublicKey of(final PublicKey key) throws CryptoException {
+        return new CompressedPublicKey(key).intern();
+    }
+
+    /**
+     * Converts a byte[] into a {@link CompressedPublicKey}.
+     *
+     * @param compressedKey public key
+     * @return {@link CompressedPublicKey}
+     */
+    @JsonCreator
+    public static CompressedPublicKey of(final byte[] compressedKey) {
+        return new CompressedPublicKey(compressedKey).intern();
     }
 
     /**
@@ -77,38 +114,9 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
     }
 
     /**
-     * Converts a {@link String} into a {@link CompressedPublicKey}.
-     *
-     * @param compressedKey compressed key as String
-     * @return {@link CompressedPublicKey}
-     * @throws CryptoException          if string parameter does not conform to a valid key
-     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
-     *                                  string
+     * See {@link InternPool#intern(Object)}
      */
-    public static CompressedPublicKey of(final String compressedKey) throws CryptoException {
-        return new CompressedPublicKey(compressedKey);
-    }
-
-    /**
-     * Converts a {@link PublicKey} into a {@link CompressedPublicKey}.
-     *
-     * @param key public key
-     * @return {@link CompressedPublicKey}
-     * @throws CryptoException if string parameter does not conform to a valid key
-     */
-    public static CompressedPublicKey of(final PublicKey key) throws CryptoException {
-        return new CompressedPublicKey(key);
-    }
-
-    /**
-     * Converts a byte[] into a {@link CompressedPublicKey}.
-     *
-     * @param compressedKey public key
-     * @return {@link CompressedPublicKey}
-     * @throws CryptoException if string parameter does not conform to a valid key
-     */
-    @JsonCreator
-    public static CompressedPublicKey of(final byte[] compressedKey) throws CryptoException {
-        return new CompressedPublicKey(compressedKey);
+    public CompressedPublicKey intern() {
+        return POOL.intern(this);
     }
 }

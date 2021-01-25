@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.util.Arrays;
 
 abstract class AbstractCompressedKey<K> implements Address {
+
+
     @JsonValue
     protected final byte[] compressedKey;
     @JsonIgnore
@@ -40,9 +42,9 @@ abstract class AbstractCompressedKey<K> implements Address {
         key = null;
     }
 
-    protected AbstractCompressedKey(final byte[] compressedKey) throws CryptoException {
+    protected AbstractCompressedKey(final byte[] compressedKey) {
         this.compressedKey = compressedKey;
-        this.key = toUncompressedKey();
+        this.key = null;
     }
 
     @JsonCreator
@@ -60,7 +62,7 @@ abstract class AbstractCompressedKey<K> implements Address {
         else {
             this.compressedKey = HexUtil.fromString(compressedKey);
         }
-        this.key = toUncompressedKey();
+        this.key = null;
     }
 
     protected AbstractCompressedKey(final byte[] compressedKey, final K key) {
