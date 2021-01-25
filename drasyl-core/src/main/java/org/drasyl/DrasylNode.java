@@ -89,6 +89,8 @@ public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
     private static volatile boolean bossGroupCreated = false;
+    private static String version;
+    private static int protocolVersion;
 
     static {
         // https://github.com/netty/netty/issues/7817
@@ -188,19 +190,21 @@ public abstract class DrasylNode {
      * @return the version of the node. If the version could not be read, {@code null} is returned
      */
     public static String getVersion() {
-        final InputStream inputStream = DrasylNode.class.getClassLoader().getResourceAsStream("project.properties");
-        if (inputStream == null) {
-            return null;
+        if (version == null) {
+            final InputStream inputStream = DrasylNode.class.getClassLoader().getResourceAsStream("project.properties");
+            if (inputStream != null) {
+                try {
+                    final Properties properties = new Properties();
+                    properties.load(inputStream);
+                    version = properties.getProperty("version");
+                }
+                catch (final IOException e) {
+                    // do nothing
+                }
+            }
         }
 
-        try {
-            final Properties properties = new Properties();
-            properties.load(inputStream);
-            return properties.getProperty("version");
-        }
-        catch (final IOException e) {
-            return null;
-        }
+        return version;
     }
 
     /**
@@ -211,19 +215,21 @@ public abstract class DrasylNode {
      * -1} is returned
      */
     public static int getProtocolVersion() {
-        final InputStream inputStream = DrasylNode.class.getClassLoader().getResourceAsStream("project.properties");
-        if (inputStream == null) {
-            return -1;
+        if (protocolVersion == -1) {
+            final InputStream inputStream = DrasylNode.class.getClassLoader().getResourceAsStream("project.properties");
+            if (inputStream != null) {
+                try {
+                    final Properties properties = new Properties();
+                    properties.load(inputStream);
+                    protocolVersion = Integer.parseInt(properties.getProperty("protocol_version"));
+                }
+                catch (final IOException | NumberFormatException e) {
+                    // do nothing
+                }
+            }
         }
 
-        try {
-            final Properties properties = new Properties();
-            properties.load(inputStream);
-            return Integer.parseInt(properties.getProperty("protocol_version"));
-        }
-        catch (final IOException | NumberFormatException e) {
-            return -1;
-        }
+        return protocolVersion;
     }
 
     /**
