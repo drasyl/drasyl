@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -225,7 +227,7 @@ class DrasylNodeTest {
     }
 
     @Nested
-    class PipelineTest {
+    class TestPipeline {
         @Test
         void shouldReturnPipeline() {
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(), scheduler) {
@@ -239,7 +241,7 @@ class DrasylNodeTest {
     }
 
     @Nested
-    class IdentityMethod {
+    class TestIdentity {
         @Test
         void shouldReturnIdentity() {
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(), scheduler) {
@@ -249,6 +251,22 @@ class DrasylNodeTest {
             });
 
             assertEquals(identity, underTest.identity());
+        }
+    }
+
+    @Nested
+    class GetVersion {
+        @Test
+        void shouldNotReturnNull() {
+            assertNotNull(DrasylNode.getVersion());
+        }
+    }
+
+    @Nested
+    class GetProtocol {
+        @Test
+        void shouldNotReturnNull() {
+            assertNotEquals(-1, DrasylNode.getProtocolVersion());
         }
     }
 }

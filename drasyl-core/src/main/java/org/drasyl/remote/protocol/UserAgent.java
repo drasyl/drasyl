@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -21,9 +21,7 @@ package org.drasyl.remote.protocol;
 import org.drasyl.DrasylNode;
 import org.drasyl.util.UnsignedShort;
 
-import java.io.IOException;
 import java.util.Objects;
-import java.util.Properties;
 
 /**
  * This UserAgent is attached to each message and allows the recipient to learn about the
@@ -75,14 +73,7 @@ public class UserAgent {
      * @return the generated user agent
      */
     public static UserAgent generate() {
-        final Properties properties = new Properties();
-        try {
-            properties.load(DrasylNode.class.getClassLoader().getResourceAsStream("project.properties"));
-            return new UserAgent(Integer.parseInt(properties.getProperty("protocol_version")));
-        }
-        catch (final IOException e) {
-            return new UserAgent(0);
-        }
+        return new UserAgent(DrasylNode.getProtocolVersion());
     }
 
     public UnsignedShort getVersion() {

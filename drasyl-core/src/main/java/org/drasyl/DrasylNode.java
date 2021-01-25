@@ -45,6 +45,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -182,19 +183,46 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Returns the version of the node. If the version could not be read, <code>null</code> is
-     * returned.
+     * Returns the version of the node. If the version could not be read, {@code null} is returned.
      *
-     * @return the version of the node
+     * @return the version of the node. If the version could not be read, {@code null} is returned
      */
     public static String getVersion() {
-        final Properties properties = new Properties();
+        final InputStream inputStream = DrasylNode.class.getClassLoader().getResourceAsStream("project.properties");
+        if (inputStream == null) {
+            return null;
+        }
+
         try {
-            properties.load(DrasylNode.class.getClassLoader().getResourceAsStream("project.properties"));
+            final Properties properties = new Properties();
+            properties.load(inputStream);
             return properties.getProperty("version");
         }
         catch (final IOException e) {
             return null;
+        }
+    }
+
+    /**
+     * Returns the protocol version of the node. If the protocol version could not be read, {@code
+     * -1} is returned.
+     *
+     * @return the protocol version of the node. If the protocol version could not be read, {@code
+     * -1} is returned
+     */
+    public static int getProtocolVersion() {
+        final InputStream inputStream = DrasylNode.class.getClassLoader().getResourceAsStream("project.properties");
+        if (inputStream == null) {
+            return -1;
+        }
+
+        try {
+            final Properties properties = new Properties();
+            properties.load(inputStream);
+            return Integer.parseInt(properties.getProperty("protocol_version"));
+        }
+        catch (final IOException | NumberFormatException e) {
+            return -1;
         }
     }
 
