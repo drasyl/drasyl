@@ -72,7 +72,7 @@ public class ApplicationMessage extends DefaultAddressedEnvelope<CompressedPubli
                 "sender='" + getSender() + "'," +
                 "recipient='" + getRecipient() + "'," +
                 "type='" + getRecipient() + "'," +
-                "content='" + Arrays.toString(getContent()) + '\'' +
+                "content=byte[" + getContent().length + "]" +
                 '}';
     }
 
