@@ -133,24 +133,38 @@ class UdpDiscoveryHandlerTest {
         }
 
         @Test
-        void shouldStopHeartbeatingOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
+        void shouldStopHeartbeatingOnNodeUnrecoverableErrorEvent(@Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey publicKey,
+                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
+                                                                 @Mock final NodeUnrecoverableErrorEvent event) {
+            final HashMap<CompressedPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final UdpDiscoveryHandler handler = spy(new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
             pipeline.processInbound(event).join();
 
             verify(handler).stopHeartbeat();
+            verify(openPingsCache).clear();
+            verify(uniteAttemptsCache).clear();
+            verify(rendezvousPeers).remove(publicKey);
+            assertTrue(peers.isEmpty());
             pipeline.close();
         }
 
         @Test
-        void shouldStopHeartbeatingOnNodeDownEvent(@Mock final NodeDownEvent event) {
+        void shouldStopHeartbeatingOnNodeDownEvent(@Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey publicKey,
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
+                                                   @Mock final NodeDownEvent event) {
+            final HashMap<CompressedPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final UdpDiscoveryHandler handler = spy(new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
             pipeline.processInbound(event).join();
 
             verify(handler).stopHeartbeat();
+            verify(openPingsCache).clear();
+            verify(uniteAttemptsCache).clear();
+            verify(rendezvousPeers).remove(publicKey);
+            assertTrue(peers.isEmpty());
             pipeline.close();
         }
 

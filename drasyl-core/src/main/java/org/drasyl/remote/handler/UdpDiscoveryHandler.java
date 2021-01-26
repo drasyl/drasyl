@@ -22,7 +22,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -117,6 +116,9 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         }
         else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
             stopHeartbeat();
+            openPingsCache.clear();
+            uniteAttemptsCache.clear();
+            removeAllPeers(ctx);
         }
 
         // passthrough event
@@ -208,6 +210,20 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                 directConnectionPeers.remove(publicKey);
             }
         });
+    }
+
+    private void removeAllPeers(final HandlerContext ctx) {
+        final CompressedPublicKey superPeerKey = ctx.config().getRemoteSuperPeerEndpoint().getPublicKey();
+        new HashMap<>(peers).forEach(((publicKey, peer) -> {
+            if (publicKey.equals(superPeerKey)) {
+                ctx.peersManager().unsetSuperPeerAndRemovePath(path);
+            }
+            else {
+                ctx.peersManager().removeChildrenAndPath(publicKey, path);
+            }
+            peers.remove(publicKey);
+            directConnectionPeers.remove(publicKey);
+        }));
     }
 
     @Override
@@ -344,7 +360,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                 }
             }
         }
-        catch (final IOException | CryptoException | IllegalArgumentException e) {
+        catch (final IOException | IllegalArgumentException e) {
             LOG.warn("Unable to deserialize '{}': {}", () -> sanitizeLogArg(envelope.getContent().copy()), e::getMessage);
             future.completeExceptionally(new Exception("Message could not be deserialized.", e));
             ReferenceCountUtil.safeRelease(envelope);
@@ -355,7 +371,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     private void handleMessage(final HandlerContext ctx,
                                final Address sender,
                                final AddressedIntermediateEnvelope<? extends MessageLite> envelope,
-                               final CompletableFuture<Void> future) throws IOException, CryptoException {
+                               final CompletableFuture<Void> future) throws IOException {
         try {
             if (envelope.getContent().getPrivateHeader().getType() == DISCOVERY) {
                 handlePing(ctx, (AddressedIntermediateEnvelope<Discovery>) envelope, future);
@@ -382,7 +398,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
 
     private void handlePing(final HandlerContext ctx,
                             final AddressedIntermediateEnvelope<Discovery> envelope,
-                            final CompletableFuture<Void> future) throws IOException, CryptoException {
+                            final CompletableFuture<Void> future) throws IOException {
         final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getContent().getPublicHeader().getSender().toByteArray()));
         final MessageId id = requireNonNull(MessageId.of(envelope.getContent().getPublicHeader().getId().toByteArray()));
         final boolean childrenJoin = envelope.getContent().getBodyAndRelease().getChildrenTime() > 0;
@@ -412,7 +428,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
 
     private void handlePong(final HandlerContext ctx,
                             final AddressedIntermediateEnvelope<Acknowledgement> envelope,
-                            final CompletableFuture<Void> future) throws IOException, CryptoException {
+                            final CompletableFuture<Void> future) throws IOException {
         final MessageId correspondingId = requireNonNull(MessageId.of(envelope.getContent().getBodyAndRelease().getCorrespondingId().toByteArray()));
         final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getContent().getPublicHeader().getSender().toByteArray()));
         LOG.trace("Got {} from {}", envelope.getContent(), envelope.getSender());
@@ -442,7 +458,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
 
     private void handleUnite(final HandlerContext ctx,
                              final AddressedIntermediateEnvelope<Unite> envelope,
-                             final CompletableFuture<Void> future) throws IOException, CryptoException {
+                             final CompletableFuture<Void> future) throws IOException {
         final CompressedPublicKey publicKey = requireNonNull(CompressedPublicKey.of(envelope.getContent().getBodyAndRelease().getPublicKey().toByteArray()));
         final InetSocketAddress address = new InetSocketAddress(envelope.getContent().getBodyAndRelease().getAddress(), UnsignedShort.of(envelope.getContent().getBodyAndRelease().getPort().toByteArray()).getValue());
         LOG.trace("Got {}", envelope.getContent());
