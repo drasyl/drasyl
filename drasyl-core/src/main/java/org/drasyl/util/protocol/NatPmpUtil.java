@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -148,7 +150,11 @@ public class NatPmpUtil {
             final int op = in.readByte() & 0xFF;
 
             // result code
-            final int resultCode = in.readUnsignedShort();
+            final short number = (short) in.readUnsignedShort();
+            final ResultCode resultCode = ResultCode.from(number);
+            if (resultCode == null) {
+                throw new IOException("Unknown result code: " + number);
+            }
 
             switch (op) {
                 case EXTERNAL_ADDRESS_RESPONSE_OP:
@@ -195,7 +201,7 @@ public class NatPmpUtil {
      * </pre>
      */
     @SuppressWarnings("unused")
-    private static ExternalAddressResponseMessage readExternalAddressMessage(final int resultCode,
+    private static ExternalAddressResponseMessage readExternalAddressMessage(final ResultCode resultCode,
                                                                              final DataInputStream in) throws IOException {
         final int secondsSinceStartOfEpoch = in.readInt();
         final InetAddress externalAddress = InetAddress.getByAddress(new byte[]{
@@ -239,13 +245,15 @@ public class NatPmpUtil {
      * </pre>
      */
     @SuppressWarnings("unused")
-    private static MappingUdpResponseMessage readMappingResponseMessage(final int resultCode,
+    private static MappingUdpResponseMessage readMappingResponseMessage(final ResultCode resultCode,
                                                                         final DataInputStream in) throws IOException {
         final int secondsSinceStartOfEpoch = in.readInt();
         final int internalPort = in.readUnsignedShort();
         final int externalPort = in.readUnsignedShort();
         final byte[] unsignedLifetime = new byte[4];
-        in.read(unsignedLifetime);
+        if (in.read(unsignedLifetime) != 4) {
+            throw new IOException("Message is incomplete.");
+        }
         final long lifetime = UnsignedInteger.of(unsignedLifetime).getValue();
         return new MappingUdpResponseMessage(resultCode, secondsSinceStartOfEpoch, internalPort, externalPort, lifetime);
     }
@@ -254,13 +262,13 @@ public class NatPmpUtil {
     }
 
     static class AbstractMessage implements Message {
-        private final int resultCode;
+        private final ResultCode resultCode;
 
-        public AbstractMessage(final int resultCode) {
+        public AbstractMessage(final ResultCode resultCode) {
             this.resultCode = resultCode;
         }
 
-        public int getResultCode() {
+        public ResultCode getResultCode() {
             return resultCode;
         }
 
@@ -289,7 +297,7 @@ public class NatPmpUtil {
         private final int externalPort;
         private final long lifetime;
 
-        public MappingUdpResponseMessage(final int resultCode,
+        public MappingUdpResponseMessage(final ResultCode resultCode,
                                          final int secondsSinceStartOfEpoch,
                                          final int internalPort,
                                          final int externalPort,
@@ -343,7 +351,7 @@ public class NatPmpUtil {
         private final int secondsSinceStartOfEpoch;
         private final InetAddress externalAddress;
 
-        public ExternalAddressResponseMessage(final int resultCode,
+        public ExternalAddressResponseMessage(final ResultCode resultCode,
                                               final int secondsSinceStartOfEpoch,
                                               final InetAddress externalAddress) {
             super(resultCode);
@@ -377,6 +385,36 @@ public class NatPmpUtil {
         @Override
         public int hashCode() {
             return Objects.hash(super.hashCode(), secondsSinceStartOfEpoch, externalAddress);
+        }
+    }
+
+    public enum ResultCode {
+        SUCCESS((short) 0),
+        UNSUPPORTED_VERSION((short) 1),
+        NOT_AUTHORIZED((short) 2),
+        NETWORK_FAILURE((short) 3),
+        OUT_OF_RESOURCES((short) 4),
+        UNSUPPORTED_OPCODE((short) 5);
+        private static final Map<Short, ResultCode> codes = new HashMap<>();
+
+        static {
+            for (final ResultCode code : values()) {
+                codes.put(code.getNumber(), code);
+            }
+        }
+
+        private final short number;
+
+        ResultCode(final short number) {
+            this.number = number;
+        }
+
+        public short getNumber() {
+            return number;
+        }
+
+        public static ResultCode from(final short number) {
+            return codes.get(number);
         }
     }
 }

@@ -48,6 +48,7 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.remote.handler.portmapper.PortMapper.MAPPING_LIFETIME;
+import static org.drasyl.util.protocol.NatPmpUtil.ResultCode.SUCCESS;
 
 /**
  * Port Forwarding on NAT-enabled routers via NAT-PMP.
@@ -201,7 +202,7 @@ public class NatPmpPortMapping implements PortMapping {
     private void handleExternalAddress(final HandlerContext ctx,
                                        final ExternalAddressResponseMessage message) {
         if (externalAddressRequested.compareAndSet(true, false)) {
-            if (message.getResultCode() == 0) {
+            if (message.getResultCode() == SUCCESS) {
                 externalAddress = message.getExternalAddress();
                 LOG.debug("Gateway `{}` reported external address `{}`.", defaultGateway.getAddress()::getHostName, externalAddress::getHostAddress);
 
@@ -227,7 +228,7 @@ public class NatPmpPortMapping implements PortMapping {
     private void handleMapping(final HandlerContext ctx,
                                final MappingUdpResponseMessage message) {
         if (mappingRequested.compareAndSet(true, false)) {
-            if (message.getResultCode() == 0) {
+            if (message.getResultCode() == SUCCESS) {
                 timeoutGuard.dispose();
                 if (message.getExternalPort() == port) {
                     LOG.info("Got port mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, message::getExternalPort, message::getInternalPort, message::getLifetime, defaultGateway.getAddress()::getHostName);

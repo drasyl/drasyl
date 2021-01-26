@@ -47,6 +47,7 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.remote.handler.portmapper.PortMapper.MAPPING_LIFETIME;
+import static org.drasyl.util.protocol.PcpPortUtil.ResultCode.SUCCESS;
 
 /**
  * Port Forwarding on NAT-enabled routers via PCP.
@@ -211,7 +212,7 @@ public class PcpPortMapping implements PortMapping {
     private void handleMapping(final HandlerContext ctx,
                                final MappingResponseMessage message) {
         if (mappingRequested.getAndIncrement() > 0) {
-            if (message.getResultCode() == 0) {
+            if (message.getResultCode() == SUCCESS) {
                 timeoutGuard.dispose();
                 if (message.getExternalSuggestedPort() == port) {
                     mappingRequested.set(0);

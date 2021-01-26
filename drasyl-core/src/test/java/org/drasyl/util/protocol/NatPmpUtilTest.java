@@ -33,6 +33,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.util.protocol.NatPmpUtil.ResultCode.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,7 +66,7 @@ public class NatPmpUtilTest {
 
             final Message message = NatPmpUtil.readMessage(new ByteArrayInputStream(bytes));
 
-            assertEquals(new ExternalAddressResponseMessage(0, 325535, InetAddress.getByName("192.168.178.2")), message);
+            assertEquals(new ExternalAddressResponseMessage(SUCCESS, 325535, InetAddress.getByName("192.168.178.2")), message);
         }
 
         @Test
@@ -74,7 +75,7 @@ public class NatPmpUtilTest {
 
             final Message message = NatPmpUtil.readMessage(new ByteArrayInputStream(bytes));
 
-            assertEquals(new MappingUdpResponseMessage(0, 326079, 25585, 25585, 600), message);
+            assertEquals(new MappingUdpResponseMessage(SUCCESS, 326079, 25585, 25585, 600), message);
         }
     }
 
@@ -82,9 +83,9 @@ public class NatPmpUtilTest {
     class TestMappingUdpResponseMessage {
         @Test
         void getterShouldReturnCorrectValues() {
-            final MappingUdpResponseMessage response = new MappingUdpResponseMessage(0, 326079, 25585, 25585, 600);
+            final MappingUdpResponseMessage response = new MappingUdpResponseMessage(SUCCESS, 326079, 25585, 25585, 600);
 
-            assertEquals(0, response.getResultCode());
+            assertEquals(SUCCESS, response.getResultCode());
             assertEquals(326079, response.getSecondsSinceStartOfEpoch());
             assertEquals(25585, response.getInternalPort());
             assertEquals(25585, response.getExternalPort());
@@ -96,9 +97,9 @@ public class NatPmpUtilTest {
     class TestExternalAddressResponseMessage {
         @Test
         void getterShouldReturnCorrectValues() throws UnknownHostException {
-            final ExternalAddressResponseMessage response = new ExternalAddressResponseMessage(0, 325535, InetAddress.getByName("192.168.178.2"));
+            final ExternalAddressResponseMessage response = new ExternalAddressResponseMessage(SUCCESS, 325535, InetAddress.getByName("192.168.178.2"));
 
-            assertEquals(0, response.getResultCode());
+            assertEquals(SUCCESS, response.getResultCode());
             assertEquals(325535, response.getSecondsSinceStartOfEpoch());
             assertEquals(InetAddress.getByName("192.168.178.2"), response.getExternalAddress());
         }

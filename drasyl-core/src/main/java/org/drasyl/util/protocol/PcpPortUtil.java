@@ -31,6 +31,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -338,7 +340,11 @@ public class PcpPortUtil {
         in.readByte();
 
         // result code
-        final short resultCode = (short) (in.readByte() & 0xFF);
+        final short number = (short) (in.readByte() & 0xFF);
+        final ResultCode resultCode = ResultCode.from(number);
+        if (resultCode == null) {
+            throw new IOException("Unknown result code: " + number);
+        }
 
         // lifetime
         final byte[] unsignedLifetime = new byte[4];
@@ -393,13 +399,13 @@ public class PcpPortUtil {
     }
 
     static class AbstractMessage implements Message {
-        private final int resultCode;
+        private final ResultCode resultCode;
 
-        public AbstractMessage(final int resultCode) {
+        public AbstractMessage(final ResultCode resultCode) {
             this.resultCode = resultCode;
         }
 
-        public int getResultCode() {
+        public ResultCode getResultCode() {
             return resultCode;
         }
     }
@@ -415,7 +421,7 @@ public class PcpPortUtil {
         private final InetAddress externalSuggestedAddress;
 
         @SuppressWarnings({ "java:S107" })
-        public MappingResponseMessage(final short resultCode,
+        public MappingResponseMessage(final ResultCode resultCode,
                                       final long lifetime,
                                       final long epochTime,
                                       final byte[] mappingNonce,
@@ -478,6 +484,44 @@ public class PcpPortUtil {
             int result = Objects.hash(lifetime, epochTime, protocol, internalPort, externalSuggestedPort, externalSuggestedAddress);
             result = 31 * result + Arrays.hashCode(mappingNonce);
             return result;
+        }
+    }
+
+    public enum ResultCode {
+        SUCCESS((short) 0),
+        UNSUPP_VERSION((short) 1),
+        NOT_AUTHORIZED((short) 2),
+        MALFORMED_REQUEST((short) 3),
+        UNSUPP_OPCODE((short) 4),
+        UNSUPP_OPTION((short) 5),
+        MALFORMED_OPTION((short) 6),
+        NETWORK_FAILURE((short) 7),
+        NO_RESOURCES((short) 8),
+        UNSUPP_PROTOCOL((short) 9),
+        USER_EX_QUOTA((short) 10),
+        CANNOT_PROVIDE_EXTERNAL((short) 11),
+        ADDRESS_MISMATCH((short) 12),
+        EXCESSIVE_REMOTE_PEERS((short) 13);
+        private static final Map<Short, ResultCode> codes = new HashMap<>();
+
+        static {
+            for (final ResultCode code : values()) {
+                codes.put(code.getNumber(), code);
+            }
+        }
+
+        private final short number;
+
+        ResultCode(final short number) {
+            this.number = number;
+        }
+
+        public short getNumber() {
+            return number;
+        }
+
+        public static ResultCode from(final short number) {
+            return codes.get(number);
         }
     }
 }

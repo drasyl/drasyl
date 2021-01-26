@@ -34,6 +34,7 @@ import java.net.UnknownHostException;
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.util.protocol.PcpPortUtil.PROTO_TCP;
 import static org.drasyl.util.protocol.PcpPortUtil.PROTO_UDP;
+import static org.drasyl.util.protocol.PcpPortUtil.ResultCode.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -58,7 +59,7 @@ class PcpPortUtilTest {
             final Message message = PcpPortUtil.readMessage(new ByteArrayInputStream(bytes));
 
             assertEquals(new MappingResponseMessage(
-                    (short) 0,
+                    SUCCESS,
                     600,
                     322048,
                     new byte[]{ 2, 124, 42, -16, 1, 43, 41, 68, 94, 104, -89, 126 },
@@ -75,7 +76,7 @@ class PcpPortUtilTest {
         @Test
         void getterShouldReturnCorrectValues() throws UnknownHostException {
             final MappingResponseMessage message = new MappingResponseMessage(
-                    (short) 0,
+                    SUCCESS,
                     600,
                     322048,
                     new byte[]{ 2, 124, 42, -16, 1, 43, 41, 68, 94, 104, -89, 126 },
@@ -85,7 +86,7 @@ class PcpPortUtilTest {
                     InetAddress.getByName("192.168.178.2")
             );
 
-            assertEquals((short) 0, message.getResultCode());
+            assertEquals(SUCCESS, message.getResultCode());
             assertEquals(600, message.getLifetime());
             assertEquals(322048, message.getEpochTime());
             assertArrayEquals(new byte[]{
