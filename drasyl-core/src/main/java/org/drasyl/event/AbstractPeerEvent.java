@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -19,6 +19,8 @@
 
 package org.drasyl.event;
 
+import org.drasyl.annotation.NonNull;
+
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -26,6 +28,9 @@ import static java.util.Objects.requireNonNull;
 class AbstractPeerEvent implements PeerEvent {
     protected final Peer peer;
 
+    /**
+     * @throws NullPointerException if {@code peer} is {@code null}
+     */
     public AbstractPeerEvent(final Peer peer) {
         this.peer = requireNonNull(peer);
     }
@@ -47,6 +52,7 @@ class AbstractPeerEvent implements PeerEvent {
         return Objects.equals(peer, that.peer);
     }
 
+    @NonNull
     @Override
     public Peer getPeer() {
         return peer;

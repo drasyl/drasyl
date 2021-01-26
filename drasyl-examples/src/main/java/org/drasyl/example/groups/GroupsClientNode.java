@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -22,6 +22,7 @@ package org.drasyl.example.groups;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.plugin.groups.client.GroupUri;
 import org.drasyl.plugin.groups.client.GroupsClientConfig;
@@ -56,7 +57,7 @@ public class GroupsClientNode {
 
         final DrasylNode node = new DrasylNode(config) {
             @Override
-            public void onEvent(final Event event) {
+            public void onEvent(final @NonNull Event event) {
                 System.out.println("event = " + event);
                 if (event instanceof GroupJoinedEvent) {
                     System.out.println("Node has successfully joined group '" + ((GroupJoinedEvent) event).getGroup().getName() + "'");

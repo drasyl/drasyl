@@ -18,13 +18,15 @@
  */
 package org.drasyl;
 
-import com.google.common.annotations.Beta;
 import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Scheduler;
+import org.drasyl.annotation.Beta;
+import org.drasyl.annotation.NonNull;
+import org.drasyl.annotation.Nullable;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -55,6 +57,7 @@ import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
@@ -146,11 +149,12 @@ public abstract class DrasylNode {
      * identity must be created. This can take up to a minute because of the proof of work.
      *
      * @param config custom configuration used for this node
+     * @throws NullPointerException if {@code config} is {@code null}
      */
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
-            this.config = config;
+            this.config = requireNonNull(config);
             final IdentityManager identityManager = new IdentityManager(this.config);
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
@@ -189,6 +193,7 @@ public abstract class DrasylNode {
      *
      * @return the version of the node. If the version could not be read, {@code null} is returned
      */
+    @Nullable
     public static String getVersion() {
         if (version == null) {
             final InputStream inputStream = DrasylNode.class.getClassLoader().getResourceAsStream("project.properties");
@@ -253,6 +258,7 @@ public abstract class DrasylNode {
      *
      * @return {@link EventLoopGroup} that fits best to the current environment
      */
+    @NonNull
     public static EventLoopGroup getBestEventLoop(final int poolSize) {
         if (Epoll.isAvailable()) {
             return new EpollEventLoopGroup(poolSize);
@@ -281,7 +287,7 @@ public abstract class DrasylNode {
      *
      * @param event the event
      */
-    public abstract void onEvent(Event event);
+    public abstract void onEvent(@NonNull Event event);
 
     /**
      * Sends the content of {@code payload} to the identity {@code recipient}. Returns a failed
@@ -309,11 +315,13 @@ public abstract class DrasylNode {
      * @see org.drasyl.pipeline.codec.TypeValidator
      * @since 0.1.3-SNAPSHOT
      */
-    public CompletableFuture<Void> send(final String recipient, final Object payload) {
+    @NonNull
+    public CompletableFuture<Void> send(@NonNull final String recipient,
+                                        @NonNull final Object payload) {
         try {
             return send(CompressedPublicKey.of(recipient), payload);
         }
-        catch (final CryptoException | IllegalArgumentException e) {
+        catch (final CryptoException | NullPointerException | IllegalArgumentException e) {
             return failedFuture(new DrasylException("Unable to parse recipient's public key: " + e.getMessage()));
         }
     }
@@ -344,8 +352,9 @@ public abstract class DrasylNode {
      * @see org.drasyl.pipeline.codec.TypeValidator
      * @since 0.1.3-SNAPSHOT
      */
-    public CompletableFuture<Void> send(final CompressedPublicKey recipient,
-                                        final Object payload) {
+    @NonNull
+    public CompletableFuture<Void> send(@Nullable final CompressedPublicKey recipient,
+                                        @NonNull final Object payload) {
         return pipeline.processOutbound(recipient, payload);
     }
 
@@ -363,6 +372,7 @@ public abstract class DrasylNode {
      * @return this method returns a future, which complements if all shutdown steps have been
      * completed.
      */
+    @NonNull
     public CompletableFuture<Void> shutdown() {
         final CompletableFuture<Void> newShutdownFuture = new CompletableFuture<>();
         final CompletableFuture<Void> previousShutdownFuture = shutdownFuture.compareAndExchange(null, newShutdownFuture);
@@ -410,6 +420,7 @@ public abstract class DrasylNode {
      * @return this method returns a future, which complements if all components necessary for the
      * operation have been started.
      */
+    @NonNull
     public CompletableFuture<Void> start() {
         final CompletableFuture<Void> newStartFuture = new CompletableFuture<>();
         final CompletableFuture<Void> previousStartFuture = startFuture.compareAndExchange(null, newStartFuture);
@@ -457,6 +468,7 @@ public abstract class DrasylNode {
      *
      * @return the pipeline
      */
+    @NonNull
     public Pipeline pipeline() {
         return this.pipeline;
     }
@@ -466,6 +478,7 @@ public abstract class DrasylNode {
      *
      * @return the {@link Identity} of this node
      */
+    @NonNull
     public Identity identity() {
         return identity;
     }

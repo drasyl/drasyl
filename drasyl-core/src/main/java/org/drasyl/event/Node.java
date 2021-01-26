@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -18,6 +18,7 @@
  */
 package org.drasyl.event;
 
+import org.drasyl.annotation.NonNull;
 import org.drasyl.identity.Identity;
 
 import java.util.Objects;
@@ -73,6 +74,7 @@ public class Node {
      *
      * @return the node's identity
      */
+    @NonNull
     public Identity getIdentity() {
         return identity;
     }

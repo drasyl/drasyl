@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -22,6 +22,7 @@ package org.drasyl.example.groups;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.plugin.groups.client.GroupsClientPlugin;
@@ -53,7 +54,7 @@ public class GroupsManagerNode {
 
         final DrasylNode node = new DrasylNode(config) {
             @Override
-            public void onEvent(final Event event) {
+            public void onEvent(final @NonNull Event event) {
                 System.out.println("event = " + event);
                 if (event instanceof NodeOnlineEvent) {
                     System.out.println("Node is online! Nodes can now join the group '" + group.getName() + "' by adding '" + group.getUri(identity().getPublicKey()).toUri() + "' to your config (drasyl.config.plugins.\"" + GroupsClientPlugin.class.getName() + "\".groups).");

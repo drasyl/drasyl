@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -18,6 +18,8 @@
  */
 package org.drasyl.event;
 
+import org.drasyl.annotation.NonNull;
+
 /**
  * Events that refer to a {@link Node}.
  */
@@ -27,5 +29,6 @@ public interface NodeEvent extends Event {
      *
      * @return the node to which this event refers.
      */
+    @NonNull
     Node getNode();
 }

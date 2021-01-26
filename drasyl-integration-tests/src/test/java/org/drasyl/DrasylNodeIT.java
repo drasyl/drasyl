@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -90,7 +91,7 @@ class DrasylNodeIT {
         final Subject<Event> subject = ReplaySubject.<Event>create().toSerialized();
         final DrasylNode node = new DrasylNode(config) {
             @Override
-            public void onEvent(final Event event) {
+            public void onEvent(final @NonNull Event event) {
                 subject.onNext(event);
                 if (event instanceof NodeNormalTerminationEvent) {
                     subject.onComplete();

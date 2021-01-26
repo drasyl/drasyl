@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -16,8 +16,9 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.event;
+
+import org.drasyl.annotation.NonNull;
 
 /**
  * Events that refer to a {@link Peer}.
@@ -28,5 +29,6 @@ public interface PeerEvent extends Event {
      *
      * @return the peer to which this event refers.
      */
+    @NonNull
     Peer getPeer();
 }

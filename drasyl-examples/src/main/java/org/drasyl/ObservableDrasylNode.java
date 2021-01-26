@@ -21,6 +21,7 @@ package org.drasyl;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
@@ -43,7 +44,7 @@ public class ObservableDrasylNode extends DrasylNode {
     }
 
     @Override
-    public void onEvent(final Event event) {
+    public void onEvent(final @NonNull Event event) {
         events.onNext(event);
     }
 
