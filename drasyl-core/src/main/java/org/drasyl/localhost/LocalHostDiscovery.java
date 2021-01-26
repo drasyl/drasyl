@@ -27,8 +27,6 @@ import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.PeerInformation;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -69,9 +67,9 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * <p>
  * The discovery directory is scanned whenever communication with another peer occur.
  * <p>
- * This discovery mechanism does not itself establish connections to other peers. Only {@link
- * PeerInformation} are discovered and passed to the {@link PeersManager}. These information can
- * then be used to establish p2p connections.
+ * This discovery mechanism does not itself establish connections to other peers. Only ip addresses
+ * and ports are discovered. These information can then be used to establish direct peer
+ * connections.
  * <p>
  * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java
  */
