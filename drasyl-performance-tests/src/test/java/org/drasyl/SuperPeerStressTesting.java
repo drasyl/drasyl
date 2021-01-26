@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -21,6 +21,7 @@ package org.drasyl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -67,7 +68,7 @@ public class SuperPeerStressTesting {
                 .build();
         final DrasylNode node = new DrasylNode(config) {
             @Override
-            public void onEvent(final Event event) {
+            public void onEvent(final @NonNull Event event) {
                 System.out.println(event);
             }
         };

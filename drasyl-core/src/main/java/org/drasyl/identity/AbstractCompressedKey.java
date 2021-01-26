@@ -47,6 +47,13 @@ abstract class AbstractCompressedKey<K> implements Address {
         this.key = null;
     }
 
+    /**
+     * @throws NullPointerException     if {@code compressedKey} is {@code null}
+     * @throws IllegalArgumentException if {@code compressedKey} does not conform to a valid
+     *                                  hexadecimal
+     * @throws CryptoException          if {@code compressedKey} does not conform to a valid key
+     *                                  string
+     */
     @JsonCreator
     protected AbstractCompressedKey(final String compressedKey) throws CryptoException {
         // For backwards compatibility we check if the given string represents a base64 (new) or

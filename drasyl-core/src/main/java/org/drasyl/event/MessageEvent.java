@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -18,6 +18,8 @@
  */
 package org.drasyl.event;
 
+import org.drasyl.annotation.NonNull;
+import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Objects;
@@ -50,6 +52,7 @@ public class MessageEvent implements Event {
      *
      * @return the message's sender
      */
+    @Nullable
     public CompressedPublicKey getSender() {
         return sender;
     }
@@ -59,6 +62,7 @@ public class MessageEvent implements Event {
      *
      * @return the message's payload
      */
+    @NonNull
     public Object getPayload() {
         return payload;
     }

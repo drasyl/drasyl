@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -18,6 +18,8 @@
  */
 
 package org.drasyl.event;
+
+import org.drasyl.annotation.NonNull;
 
 import java.util.Objects;
 
@@ -44,6 +46,7 @@ public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
      *
      * @return the exception that crashed the node
      */
+    @NonNull
     public Throwable getError() {
         return error;
     }

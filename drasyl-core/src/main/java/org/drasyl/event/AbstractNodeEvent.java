@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -19,6 +19,8 @@
 
 package org.drasyl.event;
 
+import org.drasyl.annotation.NonNull;
+
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -26,10 +28,14 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractNodeEvent implements NodeEvent {
     protected final Node node;
 
+    /**
+     * @throws NullPointerException if {@code node} is {@code null}
+     */
     protected AbstractNodeEvent(final Node node) {
         this.node = requireNonNull(node);
     }
 
+    @NonNull
     @Override
     public Node getNode() {
         return node;

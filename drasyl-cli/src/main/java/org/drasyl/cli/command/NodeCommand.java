@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -24,6 +24,7 @@ import org.apache.commons.cli.CommandLine;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.cli.CliException;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;
@@ -64,7 +65,7 @@ public class NodeCommand extends AbstractCommand {
                         final CompletableFuture<Void> running = new CompletableFuture<>();
                         final DrasylNode myNode = new DrasylNode(config) {
                             @Override
-                            public void onEvent(final Event event) {
+                            public void onEvent(final @NonNull Event event) {
                                 log.info("Event received: {}", event);
                                 if (event instanceof NodeNormalTerminationEvent) {
                                     running.complete(null);

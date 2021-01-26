@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -99,7 +100,7 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     }
 
     @Override
-    public final synchronized void onEvent(final Event event) {
+    public final synchronized void onEvent(final @NonNull Event event) {
         Behavior result = behavior.receive(event);
 
         if (result instanceof DeferredBehavior) {

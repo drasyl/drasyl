@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -68,7 +69,7 @@ class PluginsIT {
 
         node = new DrasylNode(config) {
             @Override
-            public void onEvent(final Event event) {
+            public void onEvent(final @NonNull Event event) {
                 receivedEvents.onNext(event);
             }
         };

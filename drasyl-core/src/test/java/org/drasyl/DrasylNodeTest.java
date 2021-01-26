@@ -19,6 +19,7 @@
 package org.drasyl;
 
 import io.reactivex.rxjava3.core.Scheduler;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -84,7 +85,7 @@ class DrasylNodeTest {
 
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(null), new AtomicReference<>(), scheduler) {
                 @Override
-                public void onEvent(final Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             });
             underTest.start();
@@ -104,7 +105,7 @@ class DrasylNodeTest {
 
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(null), new AtomicReference<>(), scheduler) {
                 @Override
-                public void onEvent(final Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             });
             assertThrows(ExecutionException.class, underTest.start()::get);
@@ -118,7 +119,7 @@ class DrasylNodeTest {
         void shouldReturnSameFutureIfStartHasAlreadyBeenTriggered(@Mock final CompletableFuture<Void> startFuture) {
             final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(startFuture), new AtomicReference<>(), scheduler) {
                 @Override
-                public void onEvent(final Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             });
             assertSame(startFuture, drasylNode.start());
@@ -134,7 +135,7 @@ class DrasylNodeTest {
 
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(null), new AtomicReference<>(), scheduler) {
                 @Override
-                public void onEvent(final Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             });
             underTest.start();
@@ -149,7 +150,7 @@ class DrasylNodeTest {
         void shouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered(@Mock final CompletableFuture<Void> shutdownFuture) {
             final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(shutdownFuture), scheduler) {
                 @Override
-                public void onEvent(final Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             });
             assertSame(shutdownFuture, drasylNode.shutdown());
@@ -166,7 +167,7 @@ class DrasylNodeTest {
 
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(null), scheduler) {
                 @Override
-                public void onEvent(final Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             });
             underTest.shutdown();
@@ -183,7 +184,7 @@ class DrasylNodeTest {
         void setUp() {
             underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(), scheduler) {
                 @Override
-                public void onEvent(final Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             });
         }
@@ -232,7 +233,7 @@ class DrasylNodeTest {
         void shouldReturnPipeline() {
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(), scheduler) {
                 @Override
-                public void onEvent(final Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             });
 
@@ -246,7 +247,7 @@ class DrasylNodeTest {
         void shouldReturnIdentity() {
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, pipeline, pluginManager, new AtomicReference<>(), new AtomicReference<>(), scheduler) {
                 @Override
-                public void onEvent(final Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             });
 
