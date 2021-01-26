@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -48,6 +48,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -316,6 +318,42 @@ class DrasylConfigTest {
                     marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.toString())));
+        }
+    }
+
+    @Nested
+    class Immutable {
+        @SuppressWarnings("java:S5778")
+        @Test
+        void constructorShouldCreateImmutableConfig() {
+            final DrasylConfig config = new DrasylConfig();
+
+            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingInboundAllowedPackages().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingInboundAllowedTypes().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingOutboundAllowedPackages().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingOutboundAllowedTypes().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getPlugins().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getRemoteEndpoints().add(null));
+        }
+
+        @SuppressWarnings("java:S5778")
+        @Test
+        void builderShouldCreateImmutableConfig() {
+            final DrasylConfig config = DrasylConfig.newBuilder()
+                    .marshallingInboundAllowedPackages(new ArrayList<>())
+                    .marshallingInboundAllowedTypes(new ArrayList<>())
+                    .marshallingOutboundAllowedPackages(new ArrayList<>())
+                    .marshallingOutboundAllowedTypes(new ArrayList<>())
+                    .plugins(new HashSet<>())
+                    .remoteEndpoints(new HashSet<>())
+                    .build();
+
+            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingInboundAllowedPackages().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingInboundAllowedTypes().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingOutboundAllowedPackages().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingOutboundAllowedTypes().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getPlugins().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getRemoteEndpoints().add(null));
         }
     }
 

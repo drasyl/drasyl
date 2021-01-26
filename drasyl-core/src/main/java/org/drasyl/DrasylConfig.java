@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -1102,7 +1102,7 @@ public class DrasylConfig {
         }
 
         public Builder remoteEndpoints(final Set<Endpoint> remoteEndpoints) {
-            this.remoteEndpoints = remoteEndpoints;
+            this.remoteEndpoints = Set.copyOf(remoteEndpoints);
             return this;
         }
 
@@ -1197,12 +1197,12 @@ public class DrasylConfig {
         }
 
         public Builder plugins(final Set<DrasylPlugin> pluginSet) {
-            this.pluginSet = pluginSet;
+            this.pluginSet = Set.copyOf(pluginSet);
             return this;
         }
 
         public Builder marshallingInboundAllowedTypes(final List<String> marshallingInboundAllowedTypes) {
-            this.marshallingInboundAllowedTypes = marshallingInboundAllowedTypes;
+            this.marshallingInboundAllowedTypes = List.copyOf(marshallingInboundAllowedTypes);
             return this;
         }
 
@@ -1217,12 +1217,12 @@ public class DrasylConfig {
         }
 
         public Builder marshallingInboundAllowedPackages(final List<String> marshallingInboundAllowedPackages) {
-            this.marshallingInboundAllowedPackages = marshallingInboundAllowedPackages;
+            this.marshallingInboundAllowedPackages = List.copyOf(marshallingInboundAllowedPackages);
             return this;
         }
 
         public Builder marshallingOutboundAllowedTypes(final List<String> marshallingOutboundAllowedTypes) {
-            this.marshallingOutboundAllowedTypes = marshallingOutboundAllowedTypes;
+            this.marshallingOutboundAllowedTypes = List.copyOf(marshallingOutboundAllowedTypes);
             return this;
         }
 
@@ -1237,7 +1237,7 @@ public class DrasylConfig {
         }
 
         public Builder marshallingOutboundAllowedPackages(final List<String> marshallingOutboundAllowedPackages) {
-            this.marshallingOutboundAllowedPackages = marshallingOutboundAllowedPackages;
+            this.marshallingOutboundAllowedPackages = List.copyOf(marshallingOutboundAllowedPackages);
             return this;
         }
 
