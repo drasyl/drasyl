@@ -360,7 +360,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             }
         }
         catch (final IOException | IllegalArgumentException e) {
-            LOG.warn("Unable to deserialize '{}': {}", () -> sanitizeLogArg(envelope.getContent().copy()), e::getMessage);
+            LOG.warn("Unable to deserialize '{}': {}", () -> sanitizeLogArg(envelope.getContent()), e::getMessage);
             future.completeExceptionally(new Exception("Message could not be deserialized.", e));
             ReferenceCountUtil.safeRelease(envelope);
         }
