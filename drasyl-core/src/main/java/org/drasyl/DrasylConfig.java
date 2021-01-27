@@ -151,6 +151,7 @@ public class DrasylConfig {
      * Creates a new config for a drasyl node.
      *
      * @param config config to be loaded
+     * @throws ConfigException if config is invalid
      */
     public DrasylConfig(final Config config) {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
@@ -191,6 +192,9 @@ public class DrasylConfig {
         this.remoteUniteMinInterval = config.getDuration(REMOTE_UNITE_MIN_INTERVAL);
         this.remoteSuperPeerEnabled = config.getBoolean(REMOTE_SUPER_PEER_ENABLED);
         this.remoteSuperPeerEndpoint = getEndpoint(config, REMOTE_SUPER_PEER_ENDPOINT);
+        if (remoteSuperPeerEndpoint.getNetworkId() != null && remoteSuperPeerEndpoint.getNetworkId() != networkId) {
+            throw new ConfigException.BadValue(config.getValue(REMOTE_SUPER_PEER_ENDPOINT).origin(), REMOTE_SUPER_PEER_ENDPOINT, "super peer network id mismatch", new Exception("super peer's network id `" + remoteSuperPeerEndpoint.getNetworkId() + "` does not match your network id `" + networkId + "`"));
+        }
         this.remoteMessageMtu = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MTU).toBytes(), Integer.MAX_VALUE);
         this.remoteMessageMaxContentLength = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
         this.remoteMessageComposedMessageTransferTimeout = config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);

@@ -28,7 +28,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URI;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -159,10 +158,17 @@ class EndpointTest {
         }
 
         @Test
-        void shouldCreateCorrectEndpointFromString() throws CryptoException {
+        void shouldCreateCorrectEndpointWithoutNetworkIdFromString() throws CryptoException {
             final Endpoint endpoint = Endpoint.of("udp://localhost:123?publicKey=030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
 
-            assertEquals(Endpoint.of(new InetSocketAddress("localhost", 123), CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")), endpoint);
+            assertEquals(Endpoint.of("localhost", 123, CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")), endpoint);
+        }
+
+        @Test
+        void shouldCreateCorrectEndpointFromString() throws CryptoException {
+            final Endpoint endpoint = Endpoint.of("udp://localhost:123?publicKey=030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb&networkId=1337");
+
+            assertEquals(Endpoint.of("localhost", 123, CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb"), 1337), endpoint);
         }
     }
 

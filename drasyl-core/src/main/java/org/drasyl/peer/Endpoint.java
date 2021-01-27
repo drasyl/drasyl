@@ -25,7 +25,6 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.UriUtil;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -43,6 +42,30 @@ public class Endpoint {
     private final String host;
     private final int port;
     private final CompressedPublicKey publicKey;
+    private final Integer networkId;
+
+    /**
+     * Creates a new {@code Endpoint}.
+     *
+     * @param host      the hostname part of the endpoint
+     * @param port      the port number of the endpoint
+     * @param publicKey the public key of the endpoint
+     * @param networkId the network id of the endpoint
+     * @throws NullPointerException     if {@code host} or {@code publicKey} is {@code null}
+     * @throws IllegalArgumentException if {@code port} is out of range [0,65536]
+     */
+    private Endpoint(final String host,
+                     final int port,
+                     final CompressedPublicKey publicKey,
+                     final Integer networkId) {
+        this.host = requireNonNull(host);
+        this.port = port;
+        if (port < -1 || port > 65536) {
+            throw new IllegalArgumentException("port out of range: " + port);
+        }
+        this.publicKey = requireNonNull(publicKey);
+        this.networkId = networkId;
+    }
 
     /**
      * Creates a new {@code Endpoint}.
@@ -54,12 +77,7 @@ public class Endpoint {
      * @throws IllegalArgumentException if {@code port} is out of range [0,65536]
      */
     private Endpoint(final String host, final int port, final CompressedPublicKey publicKey) {
-        this.host = requireNonNull(host);
-        this.port = port;
-        if (port < -1 || port > 65536) {
-            throw new IllegalArgumentException("port out of range: " + port);
-        }
-        this.publicKey = requireNonNull(publicKey);
+        this(host, port, publicKey, null);
     }
 
     /**
@@ -69,7 +87,7 @@ public class Endpoint {
      * @throws IllegalArgumentException If the created {@link URI} violates RFC&nbsp;2396
      */
     public URI getURI() {
-        return URI.create("udp://" + host + ":" + port + "?publicKey=" + publicKey);
+        return URI.create("udp://" + host + ":" + port + "?publicKey=" + publicKey + (networkId != null ? "&networkId=" + networkId : ""));
     }
 
     /**
@@ -99,6 +117,15 @@ public class Endpoint {
         return publicKey;
     }
 
+    /**
+     * Returns the network id of this endpoint.
+     *
+     * @return The network id of this endpoint
+     */
+    public Integer getNetworkId() {
+        return networkId;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -108,18 +135,39 @@ public class Endpoint {
             return false;
         }
         final Endpoint endpoint = (Endpoint) o;
-        return port == endpoint.port && Objects.equals(host, endpoint.host) && Objects.equals(publicKey, endpoint.publicKey);
+        return port == endpoint.port && Objects.equals(host, endpoint.host) && Objects.equals(publicKey, endpoint.publicKey) && Objects.equals(networkId, endpoint.networkId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(host, port, publicKey);
+        return Objects.hash(host, port, publicKey, networkId);
     }
 
     @JsonValue
     @Override
     public String toString() {
         return getURI().toString();
+    }
+
+    /**
+     * Converts the given {@code host}, {@code port}, {@code publicKey}, and {@code networkId} into
+     * an {@code Endpoint}.
+     *
+     * @param host      the hostname part of the endpoint
+     * @param port      the port number of the endpoint
+     * @param publicKey the public key of the endpoint
+     * @param networkId the network id of the endpoint
+     * @return {@code Endpoint} converted from {@code endpoint}
+     * @throws NullPointerException     if {@code endpoint} is {@code null} or contains no public
+     *                                  key
+     * @throws IllegalArgumentException if {@code host}, {@code port}, and {@code publicKey} creates
+     *                                  an invalid {@code Endpoint}
+     */
+    public static Endpoint of(final String host,
+                              final int port,
+                              final CompressedPublicKey publicKey,
+                              final Integer networkId) {
+        return new Endpoint(host, port, publicKey, networkId);
     }
 
     /**
@@ -139,22 +187,6 @@ public class Endpoint {
                               final int port,
                               final CompressedPublicKey publicKey) {
         return new Endpoint(host, port, publicKey);
-    }
-
-    /**
-     * Converts an {@link InetSocketAddress} and {@link CompressedPublicKey} into an {@code
-     * Endpoint}.
-     *
-     * @param address   socket address of the endpoint
-     * @param publicKey public key component of the endpoint
-     * @return {@code Endpoint} converted from {@code uri} and {@code publicKey}
-     * @throws NullPointerException     if {@code publicKey} is {@code null}
-     * @throws IllegalArgumentException if {@code address} and {@code publicKey} creates an invalid
-     *                                  {@code Endpoint}
-     */
-    public static Endpoint of(final InetSocketAddress address,
-                              final CompressedPublicKey publicKey) {
-        return of(address.getHostName(), address.getPort(), publicKey);
     }
 
     /**
@@ -178,9 +210,17 @@ public class Endpoint {
         if (publicKey == null) {
             throw new IllegalArgumentException("URI must contain public key.");
         }
+        final String networkIdString = queryMap.get("networkId");
+        final Integer networkId;
+        if (networkIdString != null) {
+            networkId = Integer.valueOf(networkIdString);
+        }
+        else {
+            networkId = null;
+        }
 
         try {
-            return of(endpoint.getHost(), endpoint.getPort(), CompressedPublicKey.of(publicKey));
+            return of(endpoint.getHost(), endpoint.getPort(), CompressedPublicKey.of(publicKey), networkId);
         }
         catch (final CryptoException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
