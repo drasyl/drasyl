@@ -55,12 +55,10 @@ import java.util.Set;
 import static java.net.InetSocketAddress.createUnresolved;
 import static org.drasyl.remote.handler.UdpServer.determineActualEndpoints;
 import static org.drasyl.util.NetworkUtil.getAddresses;
-import static org.drasyl.util.UriUtil.createUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -90,7 +88,7 @@ class UdpServerTest {
             when(bootstrap.handler(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://localhost:22527#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+            when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
 
             final UdpServer handler = new UdpServer(bootstrap, null);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -105,10 +103,10 @@ class UdpServerTest {
         class DetermineActualEndpoints {
             @Test
             void shouldReturnConfigEndpointsIfSpecified() {
-                when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://foo.bar:22527#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+                when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://foo.bar:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
 
                 assertEquals(
-                        Set.of(Endpoint.of("udp://foo.bar:22527#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")),
+                        Set.of(Endpoint.of("udp://foo.bar:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")),
                         determineActualEndpoints(identity, config, new InetSocketAddress(22527))
                 );
             }
@@ -122,7 +120,7 @@ class UdpServerTest {
                     when(config.getRemoteEndpoints().isEmpty()).thenReturn(true);
 
                     assertEquals(
-                            Set.of(Endpoint.of(createUri("udp", firstAddress.getHostAddress(), 22527), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))),
+                            Set.of(Endpoint.of(firstAddress.getHostAddress(), 22527, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))),
                             determineActualEndpoints(identity, config, new InetSocketAddress(firstAddress, 22527))
                     );
                 }

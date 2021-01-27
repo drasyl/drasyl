@@ -175,7 +175,7 @@ class DrasylConfigTest {
         remoteMessageMaxContentLength = 1024;
         remoteMessageHopLimit = (byte) 64;
         superPeerEnabled = true;
-        superPeerEndpoint = Endpoint.of("udp://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
+        superPeerEndpoint = Endpoint.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
         identityPathAsString = "drasyl.identity.json";
         intraVmDiscoveryEnabled = true;
         localHostDiscoveryEnabled = true;
@@ -236,7 +236,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getStringList(REMOTE_ENDPOINTS)).thenReturn(List.of());
             when(typesafeConfig.getBoolean(REMOTE_EXPOSE_ENABLED)).thenReturn(remoteExposeEnabled);
             when(typesafeConfig.getBoolean(REMOTE_SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
-            when(typesafeConfig.getString(REMOTE_SUPER_PEER_ENDPOINT)).thenReturn("udp://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
+            when(typesafeConfig.getString(REMOTE_SUPER_PEER_ENDPOINT)).thenReturn("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
             when(typesafeConfig.getBoolean(LOCAL_HOST_DISCOVERY_ENABLED)).thenReturn(localHostDiscoveryEnabled);
             when(typesafeConfig.getString(LOCAL_HOST_DISCOVERY_PATH)).thenReturn(localHostDiscoveryPathAsString);

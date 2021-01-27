@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -167,6 +167,7 @@ public class UriUtil {
      *
      * @param uri the URI
      * @return query parameters as map
+     * @throws NullPointerException if {@code uri} is {@code null}
      * @see <a href="https://stackoverflow.com/a/11733697">https://stackoverflow.com/a/11733697</a>
      */
     public static Map<String, String> getQueryMap(final URI uri) {

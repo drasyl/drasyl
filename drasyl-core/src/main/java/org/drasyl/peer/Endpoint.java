@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -23,14 +23,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.util.UriUtil;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.UriUtil.overrideFragment;
-import static org.drasyl.util.UriUtil.removeFragment;
 
 /**
  * Represents an endpoint of a drasyl node. This is a {@link URI} that must use the WebSocket
@@ -38,38 +39,61 @@ import static org.drasyl.util.UriUtil.removeFragment;
  * <p>
  * This is an immutable object.
  */
-public class Endpoint implements Comparable<Endpoint> {
-    private final URI uri;
+public class Endpoint {
+    private final String host;
+    private final int port;
     private final CompressedPublicKey publicKey;
 
     /**
      * Creates a new {@code Endpoint}.
      *
-     * @param uri a drasyl node endpoint represented as {@code URI}
-     * @throws NullPointerException     if {@code uri} or {@code publicKey} is {@code null}
-     * @throws IllegalArgumentException if {@code uri} is an invalid {@code Endpoint}
+     * @param host      the hostname part of the endpoint
+     * @param port      the port number of the endpoint
+     * @param publicKey the public key of the endpoint
+     * @throws NullPointerException     if {@code host} or {@code publicKey} is {@code null}
+     * @throws IllegalArgumentException if {@code port} is out of range [0,65536]
      */
-    Endpoint(final URI uri, final CompressedPublicKey publicKey) {
-        if (!isUdpURI(uri)) {
-            throw new IllegalArgumentException("URI must use the UDP protocol.");
+    private Endpoint(final String host, final int port, final CompressedPublicKey publicKey) {
+        this.host = requireNonNull(host);
+        this.port = port;
+        if (port < -1 || port > 65536) {
+            throw new IllegalArgumentException("port out of range: " + port);
         }
-        this.uri = requireNonNull(uri);
         this.publicKey = requireNonNull(publicKey);
     }
 
     /**
-     * Returns the {@link URI} of this {@code Endpoint}.
+     * Returns an {@link URI} representing this {@code Endpoint}.
      *
-     * @return a {@link URI} contained in this {@code Endpoint}
+     * @return The {@link URI} representing this {@code Endpoint}.
+     * @throws IllegalArgumentException If the created {@link URI} violates RFC&nbsp;2396
      */
     public URI getURI() {
-        return uri;
+        return URI.create("udp://" + host + ":" + port + "?publicKey=" + publicKey);
+    }
+
+    /**
+     * Returns the hostname of this endpoint.
+     *
+     * @return The hostname of this endpoint.
+     */
+    public String getHost() {
+        return host;
+    }
+
+    /**
+     * Returns the port of this endpoint.
+     *
+     * @return The port of this endpoint
+     */
+    public int getPort() {
+        return port;
     }
 
     /**
      * Returns the {@link CompressedPublicKey} of this {@code Endpoint}.
      *
-     * @return a {@link CompressedPublicKey}
+     * @return The public key of this endpoint.
      */
     public CompressedPublicKey getPublicKey() {
         return publicKey;
@@ -84,127 +108,92 @@ public class Endpoint implements Comparable<Endpoint> {
             return false;
         }
         final Endpoint endpoint = (Endpoint) o;
-        return Objects.equals(uri, endpoint.uri) &&
-                Objects.equals(publicKey, endpoint.publicKey);
+        return port == endpoint.port && Objects.equals(host, endpoint.host) && Objects.equals(publicKey, endpoint.publicKey);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(uri, publicKey);
+        return Objects.hash(host, port, publicKey);
     }
 
     @JsonValue
     @Override
     public String toString() {
-        if (publicKey == null) {
-            return uri.toString();
-        }
-        else {
-            return overrideFragment(uri, publicKey.toString()).toString();
-        }
+        return getURI().toString();
     }
 
     /**
-     * Returns the host component of this endpoint.
+     * Converts the given {@code host}, {@code port}, and {@code publicKey} into an {@code
+     * Endpoint}.
      *
-     * @return The host component of this URI, or {@code null} if the host is undefined
+     * @param host      the hostname part of the endpoint
+     * @param port      the port number of the endpoint
+     * @param publicKey the public key of the endpoint
+     * @return {@code Endpoint} converted from {@code endpoint}
+     * @throws NullPointerException     if {@code endpoint} is {@code null} or contains no public
+     *                                  key
+     * @throws IllegalArgumentException if {@code host}, {@code port}, and {@code publicKey} creates
+     *                                  an invalid {@code Endpoint}
      */
-    public String getHost() {
-        return uri.getHost();
+    public static Endpoint of(final String host,
+                              final int port,
+                              final CompressedPublicKey publicKey) {
+        return new Endpoint(host, port, publicKey);
     }
 
     /**
-     * Returns the port of this endpoint.
+     * Converts an {@link InetSocketAddress} and {@link CompressedPublicKey} into an {@code
+     * Endpoint}.
      *
-     * @return The port of this endpoint
-     */
-    public int getPort() {
-        final int port = uri.getPort();
-
-        // port was included in URI
-        if (port != -1) {
-            return port;
-        }
-        else {
-            return 22527;
-        }
-    }
-
-    /**
-     * Compares this {@code Endpoint} to another object, which must be a {@code Endpoint}.
-     *
-     * @param that The object to which this {@code Endpoint} is to be compared
-     * @return A negative integer, zero, or a positive integer as this {@code Endpoint} is less
-     * than, equal to, or greater than the given {@code Endpoint}
-     */
-    @Override
-    public int compareTo(final Endpoint that) {
-        return uri.compareTo(that.uri);
-    }
-
-    /**
-     * Converts an {@link URI} and {@link CompressedPublicKey} into {@code Endpoint}.
-     *
-     * @param uri       uri component of the endpoint
+     * @param address   socket address of the endpoint
      * @param publicKey public key component of the endpoint
      * @return {@code Endpoint} converted from {@code uri} and {@code publicKey}
-     * @throws NullPointerException     if {@code uri} is {@code null}
-     * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid
+     * @throws NullPointerException     if {@code publicKey} is {@code null}
+     * @throws IllegalArgumentException if {@code address} and {@code publicKey} creates an invalid
      *                                  {@code Endpoint}
      */
-    public static Endpoint of(final URI uri, final CompressedPublicKey publicKey) {
-        return new Endpoint(removeFragment(uri), publicKey);
+    public static Endpoint of(final InetSocketAddress address,
+                              final CompressedPublicKey publicKey) {
+        return of(address.getHostName(), address.getPort(), publicKey);
     }
 
     /**
-     * Converts an {@link String} and {@link CompressedPublicKey} into {@code Endpoint}.
-     *
-     * @param uri       uri component of the endpoint
-     * @param publicKey public key component of the endpoint
-     * @return {@code Endpoint} converted from {@code endpoint}
-     * @throws NullPointerException     if {@code uri} is {@code null}
-     * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid
-     *                                  {@code Endpoint} or violates RFC&nbsp;2396
-     */
-    public static Endpoint of(final String uri, final CompressedPublicKey publicKey) {
-        try {
-            return of(new URI(uri), publicKey);
-        }
-        catch (final URISyntaxException x) {
-            throw new IllegalArgumentException(x.getMessage(), x);
-        }
-    }
-
-    /**
-     * Converts an {@link URI} into {@code Endpoint}.
+     * Converts an {@link URI} into an {@code Endpoint}.
      *
      * @param endpoint a drasyl node endpoint represented as {@code URI}
      * @return {@code Endpoint} converted from {@code endpoint}
-     * @throws NullPointerException     if {@code endpoint} is {@code null}
-     * @throws IllegalArgumentException if {@code endpoint} is an invalid {@code Endpoint}
+     * @throws NullPointerException     if {@code endpoint} is {@code null} or contains no public
+     *                                  key
+     * @throws IllegalArgumentException if {@code endpoint} creates an invalid {@code Endpoint}
      */
     public static Endpoint of(final URI endpoint) {
-        if (endpoint.getFragment() != null && !endpoint.getFragment().isEmpty()) {
-            try {
-                return of(endpoint, CompressedPublicKey.of(endpoint.getFragment()));
-            }
-            catch (final CryptoException e) {
-                throw new IllegalArgumentException(e.getMessage(), e);
-            }
+        if (!isUdpURI(endpoint)) {
+            throw new IllegalArgumentException("URI must use the UDP protocol.");
         }
-        else {
-            throw new IllegalArgumentException("Public key must be specified as URI fragment.");
+        if (endpoint.getPort() == -1) {
+            throw new IllegalArgumentException("URI must contain port.");
+        }
+        final Map<String, String> queryMap = UriUtil.getQueryMap(endpoint);
+        final String publicKey = queryMap.get("publicKey");
+        if (publicKey == null) {
+            throw new IllegalArgumentException("URI must contain public key.");
+        }
+
+        try {
+            return of(endpoint.getHost(), endpoint.getPort(), CompressedPublicKey.of(publicKey));
+        }
+        catch (final CryptoException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
 
     /**
-     * Converts a {@link String} to a {@code Endpoint}.
+     * Converts a {@link String} into an {@code Endpoint}.
      *
      * @param endpoint a drasyl node endpoint represented as {@code URI}
      * @return {@code Endpoint} converted from {@code endpoint}
      * @throws NullPointerException     if {@code endpoint} is {@code null}
-     * @throws IllegalArgumentException if {@code endpoint} is an invalid {@code Endpoint} or
-     *                                  violates RFC&nbsp;2396
+     * @throws IllegalArgumentException if {@code endpoint} creates an invalid {@code Endpoint}
      */
     @JsonCreator
     public static Endpoint of(final String endpoint) {

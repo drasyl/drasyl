@@ -57,8 +57,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static org.drasyl.util.NetworkUtil.getAddresses;
-import static org.drasyl.util.UriUtil.createUri;
-import static org.drasyl.util.UriUtil.overridePort;
 
 /**
  * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the
@@ -109,7 +107,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
             // read endpoints from config
             return configEndpoints.stream().map(endpoint -> {
                 if (endpoint.getPort() == 0) {
-                    return Endpoint.of(overridePort(endpoint.getURI(), listenAddress.getPort()), identity.getPublicKey());
+                    return Endpoint.of(endpoint.getHost(), listenAddress.getPort(), identity.getPublicKey());
                 }
                 return endpoint;
             }).collect(Collectors.toSet());
@@ -125,8 +123,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
             addresses = Set.of(listenAddress.getAddress());
         }
         return addresses.stream()
-                .map(address -> createUri("udp", address.getHostAddress(), listenAddress.getPort()))
-                .map(address -> Endpoint.of(address, identity.getPublicKey()))
+                .map(address -> Endpoint.of(address.getHostAddress(), listenAddress.getPort(), identity.getPublicKey()))
                 .collect(Collectors.toSet());
     }
 
