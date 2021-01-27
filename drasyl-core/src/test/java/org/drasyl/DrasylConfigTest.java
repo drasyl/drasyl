@@ -523,7 +523,7 @@ class DrasylConfigTest {
         @Test
         void shouldReadConfigFromFile(@TempDir final Path dir) throws IOException {
             final Path path = Paths.get(dir.toString(), "drasyl.conf");
-            Files.writeString(path, "drasyl.network.id = 1337", StandardOpenOption.CREATE);
+            Files.writeString(path, "drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoint = \"udp://example.org:22527?publicKey=07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f&networkId=1337\"", StandardOpenOption.CREATE);
 
             assertEquals(1337, DrasylConfig.parseFile(path.toFile()).getNetworkId());
         }
@@ -533,7 +533,7 @@ class DrasylConfigTest {
     class ParseString {
         @Test
         void shouldReadConfigFromString() {
-            assertEquals(1337, DrasylConfig.parseString("drasyl.network.id = 1337").getNetworkId());
+            assertEquals(1337, DrasylConfig.parseString("drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoint = \"udp://example.org:22527?publicKey=07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f&networkId=1337\"").getNetworkId());
         }
     }
 

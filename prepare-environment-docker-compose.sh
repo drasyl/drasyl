@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2020.
+# Copyright (c) 2021.
 #
 # This file is part of drasyl.
 #
@@ -46,7 +46,7 @@ services:
       CONFIG_FORCE_drasyl_identity_proof__of__work: $DRASYL_PROOF_OF_WORK
       CONFIG_FORCE_drasyl_identity_public__key: $DRASYL_PUBLIC_KEY
       CONFIG_FORCE_drasyl_identity_private__key: $DRASYL_PRIVATE_KEY
-      CONFIG_FORCE_drasyl_remote_endpoints_0: udp://${APP_DEPLOY_HOST}:${PORT}#${DRASYL_PUBLIC_KEY}
+      CONFIG_FORCE_drasyl_remote_endpoints_0: udp://${APP_DEPLOY_HOST}:${PORT}?publicKey=${DRASYL_PUBLIC_KEY}&networkId=${DRASYL_NETWORK_ID}
       CONFIG_FORCE_drasyl_remote_expose_enabled: "false"
       CONFIG_FORCE_drasyl_remote_super__peer_enabled: "false"
       CONFIG_FORCE_drasyl_monitoring_enabled: "true"
