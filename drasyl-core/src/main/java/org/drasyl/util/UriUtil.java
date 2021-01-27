@@ -105,63 +105,6 @@ public class UriUtil {
     }
 
     /**
-     * This method sets the port in <code>uri</code> to <code>port</code> and returns the resulting
-     * URI.
-     *
-     * @param uri  the base URI
-     * @param port the port
-     * @return a combined URI and port URI
-     * @throws IllegalArgumentException if resulting URI violates RFC&nbsp;2396
-     */
-    public static URI overridePort(final URI uri, final int port) {
-        try {
-            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), port, uri.getPath(), uri.getQuery(), uri.getFragment());
-        }
-        catch (final URISyntaxException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * This method sets the fragment in {@code uri} to {@code fragment} and returns the resulting
-     * URI.
-     *
-     * @param uri      the base URI
-     * @param fragment the fragment
-     * @return a combined URI and fragment URI
-     * @throws IllegalArgumentException if resulting URI violates RFC&nbsp;2396
-     */
-    public static URI overrideFragment(final URI uri, final String fragment) {
-        try {
-            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), fragment);
-        }
-        catch (final URISyntaxException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * This method removes the fragment in {@code uri} and returns the resulting URI.
-     *
-     * @param uri the base URI
-     * @return URI without fragment
-     * @throws IllegalArgumentException if resulting URI violates RFC&nbsp;2396
-     */
-    public static URI removeFragment(final URI uri) {
-        if (uri.getFragment() != null) {
-            try {
-                return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), null);
-            }
-            catch (final URISyntaxException e) {
-                throw new IllegalArgumentException(e.getMessage(), e);
-            }
-        }
-        else {
-            return uri;
-        }
-    }
-
-    /**
      * Returns the query parameters of the given {@code uri} or an empty map if the query is {@code
      * null}.
      *
