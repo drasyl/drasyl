@@ -26,8 +26,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -79,13 +80,13 @@ class InvalidProofOfWorkFilterTest {
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
+        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
         pipeline.processInbound(message.getSender(), message);
 
         inboundMessages.awaitCount(1)
                 .assertValueCount(1)
-                .assertValue(Pair.of(message.getSender(), message));
+                .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
         pipeline.close();
     }
 
@@ -95,7 +96,7 @@ class InvalidProofOfWorkFilterTest {
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
+        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         final CompletableFuture<Void> future = pipeline.processInbound(message.getSender(), message);
 

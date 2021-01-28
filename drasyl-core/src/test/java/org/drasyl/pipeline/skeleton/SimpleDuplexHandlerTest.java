@@ -35,8 +35,8 @@ import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.util.JSONUtil;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -109,13 +109,13 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
                     DefaultCodec.INSTANCE, handler);
-            final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
             pipeline.processOutbound(recipient, payload);
 
             inboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(Pair.of(sender, payload));
+                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, payload));
             outboundMessageTestObserver.assertNoValues();
             pipeline.close();
         }
@@ -262,7 +262,7 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
                     handler);
-            final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
@@ -273,7 +273,7 @@ class SimpleDuplexHandlerTest {
 
             inboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(Pair.of(msg.getSender(), msg));
+                    .assertValue(new DefaultAddressedEnvelope<>(msg.getSender(), null, msg));
             eventTestObserver.awaitCount(1)
                     .assertValueCount(1)
                     .assertValue(new MessageEvent(msg.getSender(), msg));

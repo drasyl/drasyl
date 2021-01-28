@@ -28,8 +28,9 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.util.Pair;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -150,7 +151,7 @@ class HandlerAdapterTest {
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler() {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
-            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             final ApplicationMessage msg = mock(ApplicationMessage.class);
@@ -160,7 +161,7 @@ class HandlerAdapterTest {
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(Pair.of(sender, msg));
+                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
             pipeline.close();
         }
     }

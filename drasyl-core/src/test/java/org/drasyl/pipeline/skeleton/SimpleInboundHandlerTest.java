@@ -28,7 +28,8 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.Pair;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -66,13 +67,13 @@ class SimpleInboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 handler);
-        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
 
         pipeline.processInbound(sender, "Hallo Welt".getBytes());
 
         inboundMessageTestObserver.awaitCount(1)
                 .assertValueCount(1)
-                .assertValue(Pair.of(sender, "Hallo Welt"));
+                .assertValue(new DefaultAddressedEnvelope<>(sender, null, "Hallo Welt"));
         pipeline.close();
     }
 
@@ -95,13 +96,13 @@ class SimpleInboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 handler);
-        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
 
         pipeline.processInbound(sender, 1337).join();
 
         inboundMessageTestObserver.awaitCount(1)
                 .assertValueCount(1)
-                .assertValue(Pair.of(sender, 1337));
+                .assertValue(new DefaultAddressedEnvelope<>(sender, null, 1337));
         pipeline.close();
     }
 

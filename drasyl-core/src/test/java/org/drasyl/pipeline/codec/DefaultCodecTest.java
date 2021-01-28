@@ -28,8 +28,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.util.Pair;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -156,13 +157,13 @@ class DefaultCodecTest {
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofInboundValidator(config),
                     DefaultCodec.INSTANCE);
-            final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessagesWithRecipient().test();
+            final TestObserver<AddressedEnvelope<Address, Object>> testObserver = pipeline.inboundMessagesWithRecipient().test();
 
             pipeline.processInbound(msg.getSender(), msg);
 
             testObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(Pair.of(sender, new byte[]{}));
+                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, new byte[]{}));
             pipeline.close();
         }
 
@@ -210,13 +211,13 @@ class DefaultCodecTest {
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
                     DefaultCodec.INSTANCE);
-            final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessagesWithRecipient().test();
+            final TestObserver<AddressedEnvelope<Address, Object>> testObserver = pipeline.inboundMessagesWithRecipient().test();
 
             pipeline.processInbound(msg.getSender(), msg);
 
             testObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(Pair.of(sender, integer));
+                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, integer));
             pipeline.close();
         }
     }

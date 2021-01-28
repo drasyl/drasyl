@@ -30,7 +30,8 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.Pair;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
@@ -46,9 +47,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @SuppressWarnings({ "java:S107" })
 public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
-    private final Subject<Pair<Address, Object>> inboundMessages;
+    private final ReplaySubject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
-    private final Subject<Pair<Address, Object>> outboundMessages;
+    private final ReplaySubject<Object> outboundMessages;
 
     /**
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
@@ -90,7 +91,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                               final Address recipient,
                               final Object msg,
                               final CompletableFuture<Void> future) {
-                outboundMessages.onNext(Pair.of(recipient, msg));
+                outboundMessages.onNext(msg);
                 future.complete(null);
             }
         };
@@ -104,7 +105,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                     final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
                     inboundEvents.onNext(new MessageEvent(senderAddress, msg));
                 }
-                inboundMessages.onNext(Pair.of(sender, msg));
+                inboundMessages.onNext(new DefaultAddressedEnvelope<>(sender, null, msg));
 
                 future.complete(null);
             }
@@ -122,7 +123,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public <T> Observable<T> inboundMessages(final Class<T> clazz) {
-        return (Observable<T>) inboundMessages.map(Pair::second).filter(clazz::isInstance);
+        return (Observable<T>) inboundMessages.map(AddressedEnvelope::getContent).filter(clazz::isInstance);
     }
 
     /**
@@ -130,17 +131,17 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public <T> Observable<T> inboundMessages(final TypeReference<T> typeReference) {
-        return (Observable<T>) inboundMessages.map(Pair::second).filter(m -> isInstance(typeReference.getType(), m));
+        return (Observable<T>) inboundMessages.map(AddressedEnvelope::getContent).filter(m -> isInstance(typeReference.getType(), m));
     }
 
     public Observable<Object> inboundMessages() {
-        return inboundMessages.map(Pair::second);
+        return inboundMessages.map(AddressedEnvelope::getContent);
     }
 
     /**
      * @return all messages that passes the pipeline until the end
      */
-    public Observable<Pair<Address, Object>> inboundMessagesWithRecipient() {
+    public Observable<AddressedEnvelope<Address, Object>> inboundMessagesWithRecipient() {
         return inboundMessages;
     }
 
@@ -156,7 +157,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public <T> Observable<T> outboundMessages(final Class<T> clazz) {
-        return (Observable<T>) outboundMessages.map(Pair::second).filter(clazz::isInstance);
+        return (Observable<T>) outboundMessages.filter(clazz::isInstance);
     }
 
     /**
@@ -164,14 +165,14 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public <T> Observable<T> outboundMessages(final TypeReference<T> typeReference) {
-        return (Observable<T>) outboundMessages.map(Pair::second).filter(m -> isInstance(typeReference.getType(), m));
+        return (Observable<T>) outboundMessages.filter(m -> isInstance(typeReference.getType(), m));
     }
 
     /**
      * @return all messages that passes the pipeline until the end
      */
     public Observable<Object> outboundMessages() {
-        return outboundMessages.map(Pair::second);
+        return outboundMessages;
     }
 
     /**
@@ -181,12 +182,12 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
     @SuppressWarnings("unchecked")
     @Override
     public void close() {
-        for (final Pair<?, ?> o : ((ReplaySubject<Pair<Address, Object>>) outboundMessages).getValues(new Pair[]{})) {
-            ReferenceCountUtil.safeRelease(o.second());
+        for (final Object o : outboundMessages.getValues()) {
+            ReferenceCountUtil.safeRelease(o);
         }
 
-        for (final Pair<?, ?> o : ((ReplaySubject<Pair<Address, Object>>) inboundMessages).getValues(new Pair[]{})) {
-            ReferenceCountUtil.safeRelease(o.second());
+        for (final AddressedEnvelope<?, ?> o : inboundMessages.getValues(new AddressedEnvelope[]{})) {
+            ReferenceCountUtil.safeRelease(o.getContent());
         }
     }
 

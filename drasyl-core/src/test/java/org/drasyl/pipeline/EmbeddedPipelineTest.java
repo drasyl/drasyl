@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -28,9 +29,10 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,7 +67,7 @@ class EmbeddedPipelineTest {
                 peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.of(List.of(), List.of(), false, false));
-        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+        final @NonNull TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
@@ -78,7 +80,7 @@ class EmbeddedPipelineTest {
 
         inboundMessageTestObserver.awaitCount(1)
                 .assertValueCount(1)
-                .assertValue(Pair.of(sender, msg));
+                .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
         eventTestObserver.awaitCount(1)
                 .assertValueCount(1)
                 .assertValue(new MessageEvent(sender, msg));
