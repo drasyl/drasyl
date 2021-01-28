@@ -103,7 +103,7 @@ class ChunkingHandlerTest {
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, addressedMsg);
+                        .assertValue(addressedMsg);
 
                 pipeline.close();
             }
@@ -210,7 +210,7 @@ class ChunkingHandlerTest {
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
-                            .assertValueAt(0, m -> {
+                            .assertValue(m -> {
                                 try {
                                     return Objects.deepEquals(Bytes.concat(headChunkBytes, chunkBytes), ByteBufUtil.getBytes(m.getContent().copy()));
                                 }
@@ -314,7 +314,7 @@ class ChunkingHandlerTest {
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, addressedMsg);
+                        .assertValue(addressedMsg);
 
                 pipeline.close();
             }
@@ -349,7 +349,7 @@ class ChunkingHandlerTest {
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, p -> p.getContent().isChunk());
+                        .assertValue(p -> p.getContent().isChunk());
 
                 pipeline.close();
             }
@@ -382,7 +382,7 @@ class ChunkingHandlerTest {
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, addressedMsg);
+                        .assertValue(addressedMsg);
 
                 pipeline.close();
             }
@@ -464,7 +464,7 @@ class ChunkingHandlerTest {
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, m -> m.equals(addressedMsg));
+                        .assertValue(m -> m.equals(addressedMsg));
 
                 pipeline.close();
             }
