@@ -371,27 +371,22 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                                final Address sender,
                                final AddressedIntermediateEnvelope<? extends MessageLite> envelope,
                                final CompletableFuture<Void> future) throws IOException {
-        try {
-            if (envelope.getContent().getPrivateHeader().getType() == DISCOVERY) {
-                handlePing(ctx, (AddressedIntermediateEnvelope<Discovery>) envelope, future);
-            }
-            else if (envelope.getContent().getPrivateHeader().getType() == ACKNOWLEDGEMENT) {
-                handlePong(ctx, (AddressedIntermediateEnvelope<Acknowledgement>) envelope, future);
-            }
-            else if (envelope.getContent().getPrivateHeader().getType() == UNITE && ctx.config().getRemoteSuperPeerEndpoint().getPublicKey().equals(envelope.getContent().getSender())) {
-                handleUnite(ctx, (AddressedIntermediateEnvelope<Unite>) envelope, future);
-            }
-            else if (envelope.getContent().getPrivateHeader().getType() == APPLICATION) {
-                handleApplication(ctx, (AddressedIntermediateEnvelope<Application>) envelope, future);
-            }
-            else {
-                envelope.getContent().retain();
-                // passthrough message
-                ctx.fireRead(sender, envelope, future);
-            }
+        if (envelope.getContent().getPrivateHeader().getType() == DISCOVERY) {
+            handlePing(ctx, (AddressedIntermediateEnvelope<Discovery>) envelope, future);
         }
-        finally {
-            ReferenceCountUtil.safeRelease(envelope);
+        else if (envelope.getContent().getPrivateHeader().getType() == ACKNOWLEDGEMENT) {
+            handlePong(ctx, (AddressedIntermediateEnvelope<Acknowledgement>) envelope, future);
+        }
+        else if (envelope.getContent().getPrivateHeader().getType() == UNITE && ctx.config().getRemoteSuperPeerEndpoint().getPublicKey().equals(envelope.getContent().getSender())) {
+            handleUnite(ctx, (AddressedIntermediateEnvelope<Unite>) envelope, future);
+        }
+        else if (envelope.getContent().getPrivateHeader().getType() == APPLICATION) {
+            handleApplication(ctx, (AddressedIntermediateEnvelope<Application>) envelope, future);
+        }
+        else {
+            envelope.getContent().retain();
+            // passthrough message
+            ctx.fireRead(sender, envelope, future);
         }
     }
 
@@ -400,7 +395,8 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                             final CompletableFuture<Void> future) throws IOException {
         final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getContent().getPublicHeader().getSender().toByteArray()));
         final MessageId id = requireNonNull(MessageId.of(envelope.getContent().getPublicHeader().getId().toByteArray()));
-        final boolean childrenJoin = envelope.getContent().getBodyAndRelease().getChildrenTime() > 0;
+        final Discovery body = envelope.getContent().getBodyAndRelease();
+        final boolean childrenJoin = body.getChildrenTime() > 0;
         LOG.trace("Got {} from {}", envelope.getContent(), envelope.getSender());
         final Peer peer = peers.computeIfAbsent(sender, key -> new Peer());
         peer.setAddress(envelope.getSender());
@@ -428,7 +424,8 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     private void handlePong(final HandlerContext ctx,
                             final AddressedIntermediateEnvelope<Acknowledgement> envelope,
                             final CompletableFuture<Void> future) throws IOException {
-        final MessageId correspondingId = requireNonNull(MessageId.of(envelope.getContent().getBodyAndRelease().getCorrespondingId().toByteArray()));
+        final Acknowledgement body = envelope.getContent().getBodyAndRelease();
+        final MessageId correspondingId = requireNonNull(MessageId.of(body.getCorrespondingId().toByteArray()));
         final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getContent().getPublicHeader().getSender().toByteArray()));
         LOG.trace("Got {} from {}", envelope.getContent(), envelope.getSender());
         final OpenPing openPing = openPingsCache.remove(correspondingId);
@@ -458,8 +455,9 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     private void handleUnite(final HandlerContext ctx,
                              final AddressedIntermediateEnvelope<Unite> envelope,
                              final CompletableFuture<Void> future) throws IOException {
-        final CompressedPublicKey publicKey = requireNonNull(CompressedPublicKey.of(envelope.getContent().getBodyAndRelease().getPublicKey().toByteArray()));
-        final InetSocketAddress address = new InetSocketAddress(envelope.getContent().getBodyAndRelease().getAddress(), UnsignedShort.of(envelope.getContent().getBodyAndRelease().getPort().toByteArray()).getValue());
+        final Unite body = envelope.getContent().getBodyAndRelease();
+        final CompressedPublicKey publicKey = requireNonNull(CompressedPublicKey.of(body.getPublicKey().toByteArray()));
+        final InetSocketAddress address = new InetSocketAddress(body.getAddress(), UnsignedShort.of(body.getPort().toByteArray()).getValue());
         LOG.trace("Got {}", envelope.getContent());
         final InetSocketAddressWrapper socketAddress = InetSocketAddressWrapper.of(address);
         final Peer peer = peers.computeIfAbsent(publicKey, key -> new Peer());

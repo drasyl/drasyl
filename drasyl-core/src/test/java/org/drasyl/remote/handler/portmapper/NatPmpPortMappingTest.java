@@ -98,6 +98,7 @@ class NatPmpPortMappingTest {
                 try {
                     byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008000000004f79fc0a8b202"));
                     when(msg.getContent()).thenReturn(byteBuf);
+                    when(msg.refCnt()).thenReturn(1);
                     final AtomicBoolean externalAddressRequested = new AtomicBoolean(true);
                     final AtomicBoolean mappingRequested = new AtomicBoolean();
                     new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, defaultGateway, null, null, null, null, defaultGatewaySupplier).handleMessage(ctx, msg);
@@ -120,6 +121,7 @@ class NatPmpPortMappingTest {
                 try {
                     byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008100000004f9bf63f163f100000258"));
                     when(msg.getContent()).thenReturn(byteBuf);
+                    when(msg.refCnt()).thenReturn(1);
                     final AtomicBoolean externalAddressRequested = new AtomicBoolean();
                     final AtomicBoolean mappingRequested = new AtomicBoolean(true);
                     new NatPmpPortMapping(externalAddressRequested, mappingRequested, 25585, defaultGateway, externalAddress, timeoutGuard, null, null, defaultGatewaySupplier).handleMessage(ctx, msg);

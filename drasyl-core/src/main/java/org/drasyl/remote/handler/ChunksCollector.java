@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -53,6 +53,12 @@ class ChunksCollector {
     }
 
     /**
+     * This method collects chunks and returns a message if {@code chunk} was the last missing part
+     * of the message. Otherwise {@code chunk} is temporarily cached, waits for the missing parts,
+     * and returns {@code null}.
+     * <p>
+     * This method will release {@code chunk} even in case of an exception.
+     *
      * @param chunk chunk to collect
      * @return the message if all chunks were collected, otherwise {@code null}
      * @throws IOException           if chunk could not be read
@@ -84,7 +90,6 @@ class ChunksCollector {
         // add chunk
         if (messageSize + chunkSize > maxContentLength) {
             ReferenceCountUtil.safeRelease(chunk);
-            chunks.values().forEach(ReferenceCountUtil::safeRelease);
             LOG.debug("The chunked message with id `{}` has exhausted the max allowed size of {} bytes and was therefore dropped (tried to allocate additional {} bytes).", messageId, maxContentLength, chunkSize);
             throw new IllegalStateException("The chunked message with id `" + messageId + "` has exhausted the max allowed size of " + maxContentLength + " bytes and was therefore dropped (tried to allocate additional " + chunkSize + " bytes).");
         }

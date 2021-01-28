@@ -171,8 +171,6 @@ class DrasylPipelineIT {
         events.awaitCount(3);
         events.assertValueAt(1, new MessageEvent(message.getSender(), "Hallo Welt".getBytes()));
         events.assertValueAt(2, testEvent);
-
-        ReferenceCountUtil.safeRelease(message);
     }
 
     @Test
@@ -274,8 +272,6 @@ class DrasylPipelineIT {
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
         assertFalse(future.isCompletedExceptionally());
-
-        ReferenceCountUtil.safeRelease(msg);
     }
 
     @Test
@@ -303,7 +299,5 @@ class DrasylPipelineIT {
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
         assertTrue(future.isCompletedExceptionally());
-
-        ReferenceCountUtil.safeRelease(msg);
     }
 }

@@ -46,7 +46,6 @@ import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.Pair;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -286,10 +285,6 @@ class UdpDiscoveryHandlerTest {
             when(ctx.config().getRemoteSuperPeerEndpoint().getHost()).thenReturn("127.0.0.1");
             when(ctx.identity().getPublicKey()).thenReturn(myPublicKey);
             when(ctx.config().getRemoteSuperPeerEndpoint().getPublicKey()).thenReturn(publicKey);
-            when(ctx.write(any(), any(AddressedIntermediateEnvelope.class), any())).then(invocation -> {
-                ReferenceCountUtil.safeRelease(invocation.getArgument(1, AddressedIntermediateEnvelope.class));
-                return null;
-            });
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, new HashSet<>());
             handler.doHeartbeat(ctx);
@@ -306,10 +301,6 @@ class UdpDiscoveryHandlerTest {
             when(peer.hasControlTraffic(any())).thenReturn(true);
             when(peer.hasApplicationTraffic(any())).thenReturn(true);
             when(ctx.identity().getPublicKey()).thenReturn(myPublicKey);
-            when(ctx.write(any(), any(AddressedIntermediateEnvelope.class), any())).then(invocation -> {
-                ReferenceCountUtil.safeRelease(invocation.getArgument(1, AddressedIntermediateEnvelope.class));
-                return null;
-            });
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)));
             handler.doHeartbeat(ctx);
@@ -354,7 +345,6 @@ class UdpDiscoveryHandlerTest {
 
             verify(rendezvousPeers).add(any());
 
-            ReferenceCountUtil.safeRelease(uniteMessage);
             pipeline.close();
         }
 
@@ -420,6 +410,7 @@ class UdpDiscoveryHandlerTest {
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey recipient) throws InterruptedException {
                 when(message.getContent().getRecipient()).thenThrow(IllegalArgumentException.class);
+                when(message.refCnt()).thenReturn(1);
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -456,7 +447,6 @@ class UdpDiscoveryHandlerTest {
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);
 
-                ReferenceCountUtil.safeRelease(applicationMessage);
                 pipeline.close();
             }
         }

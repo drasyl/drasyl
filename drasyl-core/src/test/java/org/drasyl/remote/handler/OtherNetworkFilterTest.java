@@ -55,6 +55,7 @@ class OtherNetworkFilterTest {
     void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getContent().getNetworkId()).thenReturn(456);
+        when(message.refCnt()).thenReturn(1);
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);

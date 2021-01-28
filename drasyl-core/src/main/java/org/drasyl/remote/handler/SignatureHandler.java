@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -24,7 +24,6 @@ import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -63,7 +62,6 @@ public class SignatureHandler extends SimpleDuplexHandler<AddressedIntermediateE
         }
         catch (final IllegalStateException e) {
             LOG.debug("Can't disarm message `{}` due to the following error: ", msg, e);
-            ReferenceCountUtil.safeRelease(msg);
             future.completeExceptionally(new Exception("Unable to disarm message", e));
         }
     }
@@ -85,7 +83,6 @@ public class SignatureHandler extends SimpleDuplexHandler<AddressedIntermediateE
         }
         catch (final IllegalStateException e) {
             LOG.debug("Can't arm message `{}` due to the following error: ", msg, e);
-            ReferenceCountUtil.safeRelease(msg);
             future.completeExceptionally(new Exception("Unable to arm message", e));
         }
     }

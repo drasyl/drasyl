@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -78,7 +78,6 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
         catch (final IllegalStateException | IllegalArgumentException | IOException e) {
             future.completeExceptionally(new Exception("Unable to read message", e));
             LOG.debug("Can't read message `{}` due to the following error: ", msg, e);
-            ReferenceCountUtil.safeRelease(msg);
         }
     }
 
@@ -103,7 +102,6 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
         }
         catch (final IllegalStateException e) {
             getChunksCollectors(ctx.config()).remove(chunk.getContent().getId());
-            ReferenceCountUtil.safeRelease(chunk);
             throw e;
         }
     }

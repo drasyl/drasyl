@@ -573,6 +573,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * <li>encrypted {@link #privateHeader} and encrypted {@link #body} will be signed with {@code privateKey}</li>
      * <li>{@link #privateHeader} and {@link #body} will be encrypted with recipient's public key (not implemented!)</li>
      * </ul>
+     * <p>This method will release all resources even in case of an exception.
      *
      * @param privateKey message is signed with this key
      * @return the armed version of this envelope
@@ -618,7 +619,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                 if (Crypto.verifySignature(sender, bytes, signature)) {
                     // FIXME: decrypt payload
                     reverse(bytes);
-                    
+
                     try (final ByteArrayInputStream decryptedIn = new ByteArrayInputStream(bytes)) {
                         final PrivateHeader decryptedPrivateHeader = PrivateHeader.parseDelimitedFrom(decryptedIn);
                         final T decryptedBody = bodyFromInputStream(decryptedPrivateHeader.getType(), decryptedIn);
@@ -646,6 +647,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * <li>the encrypted {@link #privateHeader} and encrypted {@link #body} will be decrypted with {@code privateKey} (not implemented yet!)
      * <li>the signed portions of the message ({@link #privateHeader} and {@link #body}) are verified against sender's public key.
      * </ul>
+     * <p>This method will release all resources even in case of an exception.
      *
      * @return the disarmed version of this envelope
      * @throws IllegalStateException if disarming was not possible

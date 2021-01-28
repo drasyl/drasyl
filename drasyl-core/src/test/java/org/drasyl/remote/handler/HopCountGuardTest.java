@@ -76,6 +76,7 @@ class HopCountGuardTest {
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException {
         when(config.getRemoteMessageHopLimit()).thenReturn((byte) 1);
         when(message.getContent().getHopCount()).thenReturn((byte) 1);
+        when(message.refCnt()).thenReturn(1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);

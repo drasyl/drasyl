@@ -165,24 +165,19 @@ class IntermediateEnvelopeTest {
 
             @Test
             void shouldBuildByteBufOnMissingByteBuf() throws IOException {
-                try {
-                    final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                    assertNotNull(envelope.copy());
-                    assertNotNull(envelope.getInternalByteBuf());
-                    assertNotNull(envelope.getBodyAndRelease());
+                assertNotNull(envelope.copy());
+                assertNotNull(envelope.getInternalByteBuf());
+                assertNotNull(envelope.getBodyAndRelease());
 
-                    assertNull(envelope.copy());
-                    assertNull(envelope.getInternalByteBuf());
+                assertNull(envelope.copy());
+                assertNull(envelope.getInternalByteBuf());
 
-                    assertNotNull(envelope.getOrBuildInternalByteBuf());
-                    assertNotNull(envelope.copy());
-                    assertNotNull(envelope.getInternalByteBuf());
-                    assertNotNull(envelope.getBodyAndRelease());
-                }
-                finally {
-                    ReferenceCountUtil.safeRelease(message);
-                }
+                assertNotNull(envelope.getOrBuildInternalByteBuf());
+                assertNotNull(envelope.copy());
+                assertNotNull(envelope.getInternalByteBuf());
+                assertNotNull(envelope.getBodyAndRelease());
             }
 
             @Test
@@ -204,6 +199,8 @@ class IntermediateEnvelopeTest {
 
             @Test
             void shouldThrowExceptionForNonReadableByteBuf(@Mock final ByteBuf message) {
+                when(message.refCnt()).thenReturn(1);
+
                 assertThrows(IllegalArgumentException.class, () -> IntermediateEnvelope.of(message));
             }
         }
@@ -579,7 +576,6 @@ class IntermediateEnvelopeTest {
                 assertNotNull(armedEnvelop.getPublicHeader().getSignature());
             }
             finally {
-                ReferenceCountUtil.safeRelease(message);
                 ReferenceCountUtil.safeRelease(armedEnvelop);
             }
         }
@@ -593,7 +589,6 @@ class IntermediateEnvelopeTest {
                 assertThrows(IOException.class, armedEnvelop::getPrivateHeader);
             }
             finally {
-                ReferenceCountUtil.safeRelease(message);
                 ReferenceCountUtil.safeRelease(armedEnvelop);
             }
         }
@@ -607,7 +602,6 @@ class IntermediateEnvelopeTest {
                 assertThrows(IOException.class, armedEnvelop::getBody);
             }
             finally {
-                ReferenceCountUtil.safeRelease(message);
                 ReferenceCountUtil.safeRelease(armedEnvelop);
             }
         }
@@ -628,14 +622,7 @@ class IntermediateEnvelopeTest {
         void shouldReturnDisarmedMessageIfSignatureIsValid() {
             final IntermediateEnvelope<MessageLite> disarmedMessage = armedEnvelop.disarmAndRelease(senderPrivateKey);
 
-            try {
-                assertNotNull(disarmedMessage);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-                ReferenceCountUtil.safeRelease(armedEnvelop);
-                ReferenceCountUtil.safeRelease(disarmedMessage);
-            }
+            assertNotNull(disarmedMessage);
         }
 
         @Test
@@ -646,9 +633,7 @@ class IntermediateEnvelopeTest {
                 assertThrows(IllegalStateException.class, () -> rearmed.disarmAndRelease(recipientPrivateKey));
             }
             finally {
-                ReferenceCountUtil.safeRelease(message);
                 ReferenceCountUtil.safeRelease(armedEnvelop);
-                ReferenceCountUtil.safeRelease(rearmed);
             }
         }
 
@@ -660,7 +645,6 @@ class IntermediateEnvelopeTest {
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
-                ReferenceCountUtil.safeRelease(armedEnvelop);
             }
         }
 
@@ -668,27 +652,14 @@ class IntermediateEnvelopeTest {
         void getPrivatHeaderShouldNotFailOnDisarmedMessage() throws IOException {
             final IntermediateEnvelope<MessageLite> disarmedEnvelope = armedEnvelop.disarmAndRelease(recipientPrivateKey);
 
-            try {
-                assertNotNull(disarmedEnvelope.getPrivateHeader());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-                ReferenceCountUtil.safeRelease(armedEnvelop);
-                ReferenceCountUtil.safeRelease(disarmedEnvelope);
-            }
+            assertNotNull(disarmedEnvelope.getPrivateHeader());
         }
 
         @Test
         void getBodyShouldNotFailOnDisarmedMessage() throws IOException {
             final IntermediateEnvelope<MessageLite> disarmedEnvelope = armedEnvelop.disarmAndRelease(recipientPrivateKey);
 
-            try {
-                assertNotNull(disarmedEnvelope.getBodyAndRelease());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-                ReferenceCountUtil.safeRelease(disarmedEnvelope);
-            }
+            assertNotNull(disarmedEnvelope.getBodyAndRelease());
         }
     }
 
