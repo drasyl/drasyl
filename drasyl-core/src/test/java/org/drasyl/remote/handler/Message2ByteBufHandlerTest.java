@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -68,11 +68,12 @@ class Message2ByteBufHandlerTest {
 
         final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<AddressedByteBuf> outboundMessages = pipeline.outboundOnlyMessages(AddressedByteBuf.class).test();
+        final TestObserver<AddressedByteBuf> outboundMessages = pipeline.outboundMessages(AddressedByteBuf.class).test();
         pipeline.processOutbound(recipient, addressedEnvelope);
 
-        outboundMessages.awaitCount(1).assertValueCount(1);
-        outboundMessages.assertValue(new AddressedByteBuf(sender, recipient, messageEnvelope.getOrBuildByteBuf()));
+        outboundMessages.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(new AddressedByteBuf(sender, recipient, messageEnvelope.getOrBuildByteBuf()));
 
         ReferenceCountUtil.safeRelease(addressedEnvelope);
         pipeline.close();

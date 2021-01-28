@@ -24,10 +24,8 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -62,7 +60,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackInboundMessageSinkHandler()
         );
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
 
@@ -80,7 +78,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackInboundMessageSinkHandler(true)
         );
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
 
@@ -102,11 +100,12 @@ class LoopbackInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackInboundMessageSinkHandler(true)
         );
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message.getSender(), message).join();
 
-        inboundMessages.awaitCount(1).assertValueCount(1);
+        inboundMessages.awaitCount(1)
+                .assertValueCount(1);
         pipeline.close();
     }
 }

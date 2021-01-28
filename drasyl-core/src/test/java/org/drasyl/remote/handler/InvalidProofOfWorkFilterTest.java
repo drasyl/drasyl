@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -63,7 +63,7 @@ class InvalidProofOfWorkFilterTest {
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message.getSender(), message);
 
@@ -79,12 +79,13 @@ class InvalidProofOfWorkFilterTest {
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
         pipeline.processInbound(message.getSender(), message);
 
-        inboundMessages.awaitCount(1).assertValueCount(1);
-        inboundMessages.assertValue(Pair.of(message.getSender(), message));
+        inboundMessages.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(Pair.of(message.getSender(), message));
         pipeline.close();
     }
 
@@ -94,7 +95,7 @@ class InvalidProofOfWorkFilterTest {
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
         final CompletableFuture<Void> future = pipeline.processInbound(message.getSender(), message);
 

@@ -30,10 +30,13 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
+import org.drasyl.util.TypeReference;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -115,9 +118,29 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
     }
 
     /**
+     * @return all messages of type {@code T} that passes the pipeline until the end
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Observable<T> inboundMessages(final Class<T> clazz) {
+        return (Observable<T>) inboundMessages.map(Pair::second).filter(clazz::isInstance);
+    }
+
+    /**
+     * @return all messages of type {@code T} that passes the pipeline until the end
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Observable<T> inboundMessages(final TypeReference<T> typeReference) {
+        return (Observable<T>) inboundMessages.map(Pair::second).filter(m -> isInstance(typeReference.getType(), m));
+    }
+
+    public Observable<Object> inboundMessages() {
+        return inboundMessages.map(Pair::second);
+    }
+
+    /**
      * @return all messages that passes the pipeline until the end
      */
-    public Observable<Pair<Address, Object>> inboundMessages() {
+    public Observable<Pair<Address, Object>> inboundMessagesWithRecipient() {
         return inboundMessages;
     }
 
@@ -129,25 +152,26 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
     }
 
     /**
-     * @return all messages that passes the pipeline until the end
+     * @return all messages of type {@code T} that passes the pipeline until the end
      */
-    public <T> Observable<T> outboundOnlyMessages(final Class<T> clazz) {
-        @SuppressWarnings("unchecked") final Observable<T> result = (Observable<T>) outboundMessages.map(Pair::second).filter(clazz::isInstance);
-        return result;
+    @SuppressWarnings("unchecked")
+    public <T> Observable<T> outboundMessages(final Class<T> clazz) {
+        return (Observable<T>) outboundMessages.map(Pair::second).filter(clazz::isInstance);
+    }
+
+    /**
+     * @return all messages of type {@code T} that passes the pipeline until the end
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Observable<T> outboundMessages(final TypeReference<T> typeReference) {
+        return (Observable<T>) outboundMessages.map(Pair::second).filter(m -> isInstance(typeReference.getType(), m));
     }
 
     /**
      * @return all messages that passes the pipeline until the end
      */
-    public Observable<Object> outboundOnlyMessages() {
+    public Observable<Object> outboundMessages() {
         return outboundMessages.map(Pair::second);
-    }
-
-    /**
-     * @return all messages that passes the pipeline until the end
-     */
-    public Observable<Pair<Address, Object>> outboundMessages() {
-        return outboundMessages;
     }
 
     /**
@@ -164,5 +188,16 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
         for (final Pair<?, ?> o : ((ReplaySubject<Pair<Address, Object>>) inboundMessages).getValues(new Pair[]{})) {
             ReferenceCountUtil.safeRelease(o.second());
         }
+    }
+
+    private static boolean isInstance(final Type type, final Object obj) {
+        if (type instanceof Class<?>) {
+            return ((Class<?>) type).isInstance(obj);
+        }
+        else if (type instanceof ParameterizedType) {
+            final Type rawType = ((ParameterizedType) type).getRawType();
+            return isInstance(rawType, obj);
+        }
+        return false;
     }
 }

@@ -60,12 +60,13 @@ class HopCountGuardTest {
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
         pipeline.processOutbound(address, message);
 
-        outboundMessages.awaitCount(1).assertValueCount(1);
-        outboundMessages.assertValue(m -> m instanceof AddressedIntermediateEnvelope);
+        outboundMessages.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(m -> m instanceof AddressedIntermediateEnvelope);
         verify(message.getContent()).incrementHopCount();
         pipeline.close();
     }
@@ -78,7 +79,7 @@ class HopCountGuardTest {
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
         pipeline.processOutbound(address, message);
 

@@ -36,11 +36,9 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedByteBuf;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -196,11 +194,12 @@ class UdpServerTest {
             final UdpServer handler = new UdpServer(bootstrap, null);
 
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<AddressedByteBuf> inboundMessages = pipeline.inboundMessages(AddressedByteBuf.class).test();
 
             pipeline.processInbound(event).join();
 
-            inboundMessages.awaitCount(1).assertValueCount(1).assertValue(p -> p.second() instanceof AddressedByteBuf);
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1);
             pipeline.close();
         }
     }

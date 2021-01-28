@@ -24,10 +24,8 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -55,11 +53,12 @@ class LoopbackOutboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackOutboundMessageSinkHandler()
         );
-        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
         pipeline.processOutbound(recipient, message);
 
-        outboundMessages.awaitCount(1).assertValueCount(1);
+        outboundMessages.awaitCount(1)
+                .assertValueCount(1);
         pipeline.close();
     }
 
@@ -76,11 +75,12 @@ class LoopbackOutboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackOutboundMessageSinkHandler(true)
         );
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processOutbound(recipient, message);
 
-        inboundMessages.awaitCount(1).assertValueCount(1);
+        inboundMessages.awaitCount(1)
+                .assertValueCount(1);
         pipeline.close();
     }
 }

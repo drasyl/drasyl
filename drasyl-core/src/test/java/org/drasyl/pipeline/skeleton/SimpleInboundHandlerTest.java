@@ -66,12 +66,13 @@ class SimpleInboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 handler);
-        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
 
         pipeline.processInbound(sender, "Hallo Welt".getBytes());
 
-        inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        inboundMessageTestObserver.assertValue(Pair.of(sender, "Hallo Welt"));
+        inboundMessageTestObserver.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(Pair.of(sender, "Hallo Welt"));
         pipeline.close();
     }
 
@@ -94,12 +95,13 @@ class SimpleInboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 handler);
-        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
 
         pipeline.processInbound(sender, 1337).join();
 
-        inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        inboundMessageTestObserver.assertValue(Pair.of(sender, 1337));
+        inboundMessageTestObserver.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(Pair.of(sender, 1337));
         pipeline.close();
     }
 

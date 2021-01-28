@@ -33,7 +33,6 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.ApplicationMessage;
@@ -48,6 +47,7 @@ import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
+import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -112,8 +112,9 @@ class UdpDiscoveryHandlerTest {
 
         pipeline.processInbound(event).join();
 
-        inboundEvents.awaitCount(1).assertValueCount(1);
-        inboundEvents.assertValue(m -> m instanceof NodeEvent);
+        inboundEvents.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(m -> m instanceof NodeEvent);
         pipeline.close();
     }
 
@@ -182,12 +183,13 @@ class UdpDiscoveryHandlerTest {
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
+            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
             pipeline.processInbound(address, addressedDiscoveryMessage);
 
-            outboundMessages.awaitCount(1).assertValueCount(1);
-            outboundMessages.assertValue(m -> m instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) m).getContent().getPrivateHeader().getType() == ACKNOWLEDGEMENT);
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(m -> m instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) m).getContent().getPrivateHeader().getType() == ACKNOWLEDGEMENT);
             verify(peersManager, never()).addPath(any(), any());
             pipeline.close();
         }
@@ -376,13 +378,15 @@ class UdpDiscoveryHandlerTest {
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getContent().getSender(), senderPeer, message.getContent().getRecipient(), recipientPeer), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+            final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+            }).test();
 
             pipeline.processInbound(sender, message).join();
 
-            outboundMessages.awaitCount(3).assertValueCount(3);
-            outboundMessages.assertValueAt(1, p -> p.first().equals(senderSocketAddress) && p.second() instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().getPrivateHeader().getType() == UNITE);
-            outboundMessages.assertValueAt(2, p -> p.first().equals(recipientSocketAddress) && p.second() instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().getPrivateHeader().getType() == UNITE);
+            outboundMessages.awaitCount(3)
+                    .assertValueCount(3)
+                    .assertValueAt(1, m -> m.getRecipient().equals(senderSocketAddress) && m.getContent().getPrivateHeader().getType() == UNITE)
+                    .assertValueAt(2, m -> m.getRecipient().equals(recipientSocketAddress) && m.getContent().getPrivateHeader().getType() == UNITE);
             pipeline.close();
         }
     }
@@ -399,12 +403,14 @@ class UdpDiscoveryHandlerTest {
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getContent().getRecipient(), recipientPeer), rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                }).test();
 
                 pipeline.processInbound(sender, message).join();
 
-                outboundMessages.awaitCount(1).assertValueCount(1);
-                outboundMessages.assertValue(p -> p.first().equals(recipientPeer.getAddress()) && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().equals(message.getContent()));
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m.getRecipient().equals(recipientPeer.getAddress()) && m.getContent().equals(message.getContent()));
                 pipeline.close();
             }
 
@@ -417,7 +423,7 @@ class UdpDiscoveryHandlerTest {
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
                 outboundMessages.await(1, SECONDS);
@@ -442,13 +448,13 @@ class UdpDiscoveryHandlerTest {
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(applicationMessage.getSender(), peer)), rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<ApplicationMessage> inboundMessages = pipeline.inboundMessages(ApplicationMessage.class).test();
 
                 pipeline.processInbound(address, addressedApplicationMessage).join();
 
                 verify(peer).applicationTrafficOccurred();
-                inboundMessages.awaitCount(1).assertValueCount(1);
-                inboundMessages.assertValue(p -> p.second() instanceof ApplicationMessage);
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1);
 
                 ReferenceCountUtil.safeRelease(applicationMessage);
                 pipeline.close();
@@ -470,12 +476,14 @@ class UdpDiscoveryHandlerTest {
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                }).test();
 
                 pipeline.processOutbound(recipient, message).join();
 
-                outboundMessages.awaitCount(1).assertValueCount(1);
-                outboundMessages.assertValue(p -> p.first().equals(recipientSocketAddress) && p.second() instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().getPrivateHeader().getType() == APPLICATION);
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m.getRecipient().equals(recipientSocketAddress) && m.getContent().getPrivateHeader().getType() == APPLICATION);
                 pipeline.close();
             }
 
@@ -492,12 +500,14 @@ class UdpDiscoveryHandlerTest {
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                }).test();
 
                 pipeline.processOutbound(recipient, message).join();
 
-                outboundMessages.awaitCount(1).assertValueCount(1);
-                outboundMessages.assertValue(p -> p.first().equals(superPeerSocketAddress) && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().getPrivateHeader().getType() == APPLICATION);
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m.getRecipient().equals(superPeerSocketAddress) && m.getContent().getPrivateHeader().getType() == APPLICATION);
                 pipeline.close();
             }
 
@@ -511,12 +521,14 @@ class UdpDiscoveryHandlerTest {
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<IntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<IntermediateEnvelope<?>>() {
+                }).test();
 
                 pipeline.processOutbound(recipient, message).join();
 
-                outboundMessages.awaitCount(1).assertValueCount(1);
-                outboundMessages.assertValue(p -> p.first().equals(recipient) && ((IntermediateEnvelope<?>) p.second()).getPrivateHeader().getType() == APPLICATION);
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m.getRecipient().equals(recipient) && m.getPrivateHeader().getType() == APPLICATION);
                 pipeline.close();
             }
 

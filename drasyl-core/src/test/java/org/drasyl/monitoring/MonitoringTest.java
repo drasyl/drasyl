@@ -34,7 +34,6 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -121,7 +120,8 @@ class MonitoringTest {
 
             pipeline.processInbound(event);
 
-            inboundEvents.awaitCount(1).assertValue(event);
+            inboundEvents.awaitCount(1)
+                    .assertValue(event);
             pipeline.close();
         }
 
@@ -130,11 +130,12 @@ class MonitoringTest {
                                               @Mock final IntermediateEnvelope<MessageLite> message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             pipeline.processInbound(sender, message);
 
-            inboundMessages.awaitCount(1).assertValueCount(1);
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1);
             pipeline.close();
         }
 
@@ -143,11 +144,12 @@ class MonitoringTest {
                                                @Mock final IntermediateEnvelope<MessageLite> message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
             pipeline.processOutbound(recipient, message);
 
-            outboundMessages.awaitCount(1).assertValueCount(1);
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1);
             pipeline.close();
         }
     }

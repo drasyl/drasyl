@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -27,14 +27,13 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
+import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,15 +81,16 @@ class SignatureHandlerTest {
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundOnlyMessages(AddressedIntermediateEnvelope.class).test();
+            final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
             pipeline.processOutbound(recipient, addressedMessageEnvelope);
 
-            outboundMessages.awaitCount(1).assertValueCount(1);
-            outboundMessages.assertValue(m -> {
-                final IntermediateEnvelope<?> content = (IntermediateEnvelope<?>) m.getContent();
-                return content.getSignature().length != 0;
-            });
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(m -> {
+                        final IntermediateEnvelope<?> content = (IntermediateEnvelope<?>) m.getContent();
+                        return content.getSignature().length != 0;
+                    });
 
             ReferenceCountUtil.safeRelease(messageEnvelope);
             pipeline.close();
@@ -109,15 +109,16 @@ class SignatureHandlerTest {
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundOnlyMessages(AddressedIntermediateEnvelope.class).test();
+            final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
             pipeline.processOutbound(recipient, addressedMessageEnvelope);
 
-            outboundMessages.awaitCount(1).assertValueCount(1);
-            outboundMessages.assertValue(m -> {
-                final IntermediateEnvelope<?> content = (IntermediateEnvelope<?>) m.getContent();
-                return content.getSignature().length == 0;
-            });
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(m -> {
+                        final IntermediateEnvelope<?> content = (IntermediateEnvelope<?>) m.getContent();
+                        return content.getSignature().length == 0;
+                    });
 
             ReferenceCountUtil.safeRelease(messageEnvelope);
             pipeline.close();
@@ -137,7 +138,7 @@ class SignatureHandlerTest {
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundOnlyMessages(AddressedIntermediateEnvelope.class).test();
+            final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
             assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, addressedMessageEnvelope).get());
             outboundMessages.await(1, SECONDS);
@@ -163,12 +164,14 @@ class SignatureHandlerTest {
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+            }).test();
 
             pipeline.processInbound(sender, addressedMessageEnvelope);
 
-            inboundMessages.awaitCount(1).assertValueCount(1);
-            inboundMessages.assertValue(p -> p.second() instanceof AddressedIntermediateEnvelope && ((AddressedIntermediateEnvelope<?>) p.second()).getContent().getPrivateHeader() != null);
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(m -> m.getContent().getPrivateHeader() != null);
 
             ReferenceCountUtil.safeRelease(messageEnvelope);
             pipeline.close();
@@ -186,12 +189,13 @@ class SignatureHandlerTest {
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             pipeline.processInbound(sender, addressedMessageEnvelope);
 
-            inboundMessages.awaitCount(1).assertValueCount(1);
-            inboundMessages.assertValue(p -> p.second().equals(addressedMessageEnvelope));
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(addressedMessageEnvelope);
 
             ReferenceCountUtil.safeRelease(messageEnvelope);
             pipeline.close();
@@ -211,7 +215,7 @@ class SignatureHandlerTest {
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, addressedMessageEnvelope).get());
             inboundMessages.await(1, SECONDS);

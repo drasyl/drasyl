@@ -31,7 +31,6 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedByteBuf;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -123,7 +121,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             pipeline.processInbound(sender, msg).join();
 
@@ -140,7 +138,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             pipeline.processInbound(sender, msg).join();
 

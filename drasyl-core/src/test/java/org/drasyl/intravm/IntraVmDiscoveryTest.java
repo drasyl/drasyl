@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -28,7 +28,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.util.Pair;
@@ -135,7 +134,7 @@ class IntraVmDiscoveryTest {
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
             pipeline.processOutbound(recipient, message).join();
 
@@ -168,7 +167,7 @@ class IntraVmDiscoveryTest {
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             pipeline.processInbound(sender, message).join();
 

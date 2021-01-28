@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -85,13 +85,14 @@ class DefaultCodecTest {
                     TypeValidator.ofOutboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
                     DefaultCodec.INSTANCE);
-            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
+            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
             pipeline.processOutbound(recipient, msg);
 
-            testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValue(new ApplicationMessage(sender, recipient, byte[].class, msg));
+            testObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new ApplicationMessage(sender, recipient, byte[].class, msg));
             pipeline.close();
         }
 
@@ -129,13 +130,14 @@ class DefaultCodecTest {
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofOutboundValidator(config),
                     DefaultCodec.INSTANCE);
-            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
+            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
             final CompletableFuture<Void> future = pipeline.processOutbound(recipient, msg);
 
-            testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValue(new ApplicationMessage(sender, recipient, Integer.class, JACKSON_WRITER.writeValueAsBytes(msg)));
+            testObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new ApplicationMessage(sender, recipient, Integer.class, JACKSON_WRITER.writeValueAsBytes(msg)));
             future.join();
             assertTrue(future.isDone());
             pipeline.close();
@@ -154,12 +156,13 @@ class DefaultCodecTest {
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofInboundValidator(config),
                     DefaultCodec.INSTANCE);
-            final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessages().test();
+            final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessagesWithRecipient().test();
 
             pipeline.processInbound(msg.getSender(), msg);
 
-            testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValue(Pair.of(sender, new byte[]{}));
+            testObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(Pair.of(sender, new byte[]{}));
             pipeline.close();
         }
 
@@ -207,12 +210,13 @@ class DefaultCodecTest {
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
                     DefaultCodec.INSTANCE);
-            final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessages().test();
+            final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessagesWithRecipient().test();
 
             pipeline.processInbound(msg.getSender(), msg);
 
-            testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValue(Pair.of(sender, integer));
+            testObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(Pair.of(sender, integer));
             pipeline.close();
         }
     }
@@ -233,8 +237,9 @@ class DefaultCodecTest {
 
             pipeline.processInbound(event);
 
-            testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValue(event);
+            testObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(event);
             pipeline.close();
         }
     }

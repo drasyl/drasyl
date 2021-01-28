@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -65,12 +65,13 @@ class SimpleOutboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 handler);
-        final TestObserver<String> outboundMessageTestObserver = pipeline.outboundOnlyMessages(String.class).test();
+        final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
 
         pipeline.processOutbound(recipient, "Hallo Welt".getBytes());
 
-        outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue("Hallo Welt");
+        outboundMessageTestObserver.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue("Hallo Welt");
         pipeline.close();
     }
 
@@ -93,7 +94,7 @@ class SimpleOutboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 handler);
-        final TestObserver<String> outboundMessageTestObserver = pipeline.outboundOnlyMessages(String.class).test();
+        final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
 
         pipeline.processOutbound(recipient, 1337);
 

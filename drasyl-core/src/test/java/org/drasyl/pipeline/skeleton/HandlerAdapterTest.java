@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -141,15 +141,16 @@ class HandlerAdapterTest {
             final Event event = mock(Event.class);
             pipeline.processInbound(event);
 
-            events.awaitCount(1).assertValueCount(1);
-            events.assertValue(event);
+            events.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(event);
             pipeline.close();
         }
 
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler() {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
-            final TestObserver<Pair<Address, Object>> events = pipeline.inboundMessages().test();
+            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             final ApplicationMessage msg = mock(ApplicationMessage.class);
@@ -157,8 +158,9 @@ class HandlerAdapterTest {
 
             pipeline.processInbound(msg.getSender(), msg);
 
-            events.awaitCount(1).assertValueCount(1);
-            events.assertValue(Pair.of(sender, msg));
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(Pair.of(sender, msg));
             pipeline.close();
         }
     }

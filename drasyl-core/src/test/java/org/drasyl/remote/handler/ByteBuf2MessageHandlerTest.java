@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -26,7 +26,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedByteBuf;
@@ -34,8 +33,8 @@ import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
-import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
+import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,11 +75,12 @@ class ByteBuf2MessageHandlerTest {
 
         final ByteBuf2MessageHandler handler = ByteBuf2MessageHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+        }).test();
         pipeline.processInbound(senderPublicKey, byteBuf);
 
-        inboundMessages.awaitCount(1).assertValueCount(1);
-        inboundMessages.assertValue(pair -> pair.second() instanceof AddressedIntermediateEnvelope);
+        inboundMessages.awaitCount(1)
+                .assertValueCount(1);
 
         ReferenceCountUtil.safeRelease(byteBuf);
         pipeline.close();

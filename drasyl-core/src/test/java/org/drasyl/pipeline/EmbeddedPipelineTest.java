@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -65,8 +65,8 @@ class EmbeddedPipelineTest {
                 peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.of(List.of(), List.of(), false, false));
-        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
+        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
@@ -76,10 +76,12 @@ class EmbeddedPipelineTest {
 
         pipeline.processInbound(msg.getSender(), msg);
 
-        inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        inboundMessageTestObserver.assertValue(Pair.of(sender, msg));
-        eventTestObserver.awaitCount(1).assertValueCount(1);
-        eventTestObserver.assertValue(new MessageEvent(sender, msg));
+        inboundMessageTestObserver.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(Pair.of(sender, msg));
+        eventTestObserver.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(new MessageEvent(sender, msg));
         outboundMessageTestObserver.assertNoValues();
         pipeline.close();
     }
@@ -95,8 +97,8 @@ class EmbeddedPipelineTest {
                 new HandlerAdapter(),
                 new HandlerAdapter()
         );
-        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
+        final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
@@ -105,8 +107,9 @@ class EmbeddedPipelineTest {
         final byte[] msg = new byte[]{};
         pipeline.processOutbound(recipient, msg);
 
-        outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, byte[].class, msg));
+        outboundMessageTestObserver.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(new ApplicationMessage(sender, recipient, byte[].class, msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
         pipeline.close();

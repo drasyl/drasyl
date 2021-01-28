@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -43,8 +43,8 @@ import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.UserAgent;
-import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
+import org.drasyl.util.TypeReference;
 import org.drasyl.util.UnsignedShort;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -97,13 +97,13 @@ class ChunkingHandlerTest {
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, addressedMsg).join();
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, p -> p.second().equals(addressedMsg));
+                        .assertValueAt(0, addressedMsg);
 
                 pipeline.close();
             }
@@ -122,7 +122,7 @@ class ChunkingHandlerTest {
 
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 ByteBuf headChunkPayload = null;
                 try {
@@ -171,7 +171,8 @@ class ChunkingHandlerTest {
                 try {
                     final Handler handler = new ChunkingHandler();
                     final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                    final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+                    final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                    }).test();
 
                     // normal chunk
                     final PublicHeader chunkHeader = PublicHeader.newBuilder()
@@ -209,14 +210,12 @@ class ChunkingHandlerTest {
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
-                            .assertValueAt(0, p -> {
-                                final AddressedIntermediateEnvelope<?> envelope = (AddressedIntermediateEnvelope<?>) p.second();
-
+                            .assertValueAt(0, m -> {
                                 try {
-                                    return Objects.deepEquals(Bytes.concat(headChunkBytes, chunkBytes), ByteBufUtil.getBytes(envelope.getContent().copy()));
+                                    return Objects.deepEquals(Bytes.concat(headChunkBytes, chunkBytes), ByteBufUtil.getBytes(m.getContent().copy()));
                                 }
                                 finally {
-                                    ReferenceCountUtil.safeRelease(envelope);
+                                    ReferenceCountUtil.safeRelease(m);
                                 }
                             });
                     pipeline.close();
@@ -248,7 +247,7 @@ class ChunkingHandlerTest {
                 try {
                     final Handler handler = new ChunkingHandler();
                     final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                    final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+                    final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
@@ -309,13 +308,13 @@ class ChunkingHandlerTest {
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, addressedMsg).join();
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, p -> p.second().equals(addressedMsg));
+                        .assertValueAt(0, addressedMsg);
 
                 pipeline.close();
             }
@@ -331,7 +330,8 @@ class ChunkingHandlerTest {
 
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                }).test();
 
                 final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                         .setId(ByteString.copyFrom(messageId.byteArrayValue()))
@@ -349,7 +349,7 @@ class ChunkingHandlerTest {
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, p -> ((AddressedIntermediateEnvelope<?>) p.second()).getContent().isChunk());
+                        .assertValueAt(0, p -> p.getContent().isChunk());
 
                 pipeline.close();
             }
@@ -376,13 +376,13 @@ class ChunkingHandlerTest {
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processOutbound(address, addressedMsg).join();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, p -> p.second().equals(addressedMsg));
+                        .assertValueAt(0, addressedMsg);
 
                 pipeline.close();
             }
@@ -402,7 +402,7 @@ class ChunkingHandlerTest {
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(address, addressedMsg).get());
                 outboundMessages.await(1, SECONDS);
@@ -428,24 +428,16 @@ class ChunkingHandlerTest {
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                }).test();
 
                 pipeline.processOutbound(address, addressedMsg).join();
 
                 outboundMessages.awaitCount(3)
                         .assertValueCount(3)
-                        .assertValueAt(0, p -> {
-                            final AddressedIntermediateEnvelope<?> addressedEnvelope = (AddressedIntermediateEnvelope<?>) p.second();
-                            return addressedEnvelope.getContent().getTotalChunks().getValue() == 3 && addressedEnvelope.getContent().copy().readableBytes() == remoteMessageMtu;
-                        })
-                        .assertValueAt(1, p -> {
-                            final AddressedIntermediateEnvelope<?> addressedEnvelope = (AddressedIntermediateEnvelope<?>) p.second();
-                            return addressedEnvelope.getContent().getChunkNo().getValue() == 1 && addressedEnvelope.getContent().copy().readableBytes() == remoteMessageMtu;
-                        })
-                        .assertValueAt(2, p -> {
-                            final AddressedIntermediateEnvelope<?> addressedEnvelope = (AddressedIntermediateEnvelope<?>) p.second();
-                            return addressedEnvelope.getContent().getChunkNo().getValue() == 2 && addressedEnvelope.getContent().copy().readableBytes() < remoteMessageMtu;
-                        });
+                        .assertValueAt(0, m -> m.getContent().getTotalChunks().getValue() == 3 && m.getContent().copy().readableBytes() == remoteMessageMtu)
+                        .assertValueAt(1, m -> m.getContent().getChunkNo().getValue() == 1 && m.getContent().copy().readableBytes() == remoteMessageMtu)
+                        .assertValueAt(2, m -> m.getContent().getChunkNo().getValue() == 2 && m.getContent().copy().readableBytes() < remoteMessageMtu);
 
                 pipeline.close();
             }
@@ -466,13 +458,13 @@ class ChunkingHandlerTest {
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-                final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processOutbound(address, addressedMsg).join();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValueAt(0, p -> p.second().equals(addressedMsg));
+                        .assertValueAt(0, m -> m.equals(addressedMsg));
 
                 pipeline.close();
             }
