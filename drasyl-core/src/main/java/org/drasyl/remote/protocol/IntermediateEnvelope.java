@@ -547,14 +547,14 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
 
             final byte[] bytes = outputStream.toByteArray();
 
-            // First sign and then encrypt. See: Krawczyk, Hugo. (2001). The Order of Encryption and Authentication for Protecting Communications (or: How Secure Is SSL?). 2139. 10.1007/3-540-44647-8_19.
-            final byte[] signature = Crypto.signMessage(privateKey.toUncompressedKey(), bytes);
-            final PublicHeader newPublicHeader = PublicHeader.newBuilder(getPublicHeader()).setSignature(ByteString.copyFrom(signature)).build();
-
             // FIXME: encrypt payload (message's id is currently not covered by signature and can
             //  therefore be forged. maybe we can prevent this by using the id as an initialisation
             //  vector for our encryption?)
             reverse(bytes);
+
+            // First encrypt and then sign. See: Krawczyk, Hugo. (2001). The Order of Encryption and Authentication for Protecting Communications (or: How Secure Is SSL?). 2139. 10.1007/3-540-44647-8_19.
+            final byte[] signature = Crypto.signMessage(privateKey.toUncompressedKey(), bytes);
+            final PublicHeader newPublicHeader = PublicHeader.newBuilder(getPublicHeader()).setSignature(ByteString.copyFrom(signature)).build();
 
             return of(newPublicHeader, bytes);
         }
@@ -611,14 +611,14 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
             try (final ByteBufInputStream in = new ByteBufInputStream(getOrBuildInternalByteBuf())) {
                 final byte[] bytes = in.readAllBytes();
 
-                // FIXME: decrypt payload
-                reverse(bytes);
-
                 // verify signature
                 if (signature.length == 0) {
                     throw new IllegalStateException("No signature");
                 }
                 if (Crypto.verifySignature(sender, bytes, signature)) {
+                    // FIXME: decrypt payload
+                    reverse(bytes);
+                    
                     try (final ByteArrayInputStream decryptedIn = new ByteArrayInputStream(bytes)) {
                         final PrivateHeader decryptedPrivateHeader = PrivateHeader.parseDelimitedFrom(decryptedIn);
                         final T decryptedBody = bodyFromInputStream(decryptedPrivateHeader.getType(), decryptedIn);
