@@ -112,7 +112,9 @@ public class DrasylSchedulerUtil {
 
     private static class LazyLightSchedulerHolder {
         static final String BASE_NAME = "drasyl-L-";
-        static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME);
+        static final int SIZE = Runtime.getRuntime().availableProcessors() - 2;
+        // pool should have at least all available processors minus two threads
+        static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME, SIZE, SIZE);
         static final boolean LOCK = lightSchedulerCreated = true;
 
         private LazyLightSchedulerHolder() {
@@ -121,7 +123,10 @@ public class DrasylSchedulerUtil {
 
     private static class LazyHeavySchedulerHolder {
         static final String BASE_NAME = "drasyl-H-";
-        static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME);
+        static final int CORE_SIZE = 1;
+        static final int MAX_SIZE = (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1);
+        // pool should have at least 1 and max 10% of available processors
+        static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME, CORE_SIZE, MAX_SIZE);
         static final boolean LOCK = heavySchedulerCreated = true;
 
         private LazyHeavySchedulerHolder() {
@@ -137,16 +142,16 @@ public class DrasylSchedulerUtil {
          *
          * @param basename the basename for the created threads
          */
-        DrasylExecutor(final String basename) {
+        DrasylExecutor(final String basename, final int corePoolSize, final int maxPoolSize) {
             final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                     .setNameFormat(basename + "%d")
                     .build();
-            // pool should have at least "50% of available processors minus one" threads (but at
-            // least one) and a maximum of "50% of available processors minus one" (but at least
+            // pool should have at least "corePoolSize of available processors" threads (but at
+            // least one) and a maximum of "maxPoolSize of available processors" (but at least
             // two) threads
             this.executor = new ThreadPoolExecutor(
-                    Math.max(1, Runtime.getRuntime().availableProcessors() / 2 - 1), // corePoolSize
-                    Math.max(2, Runtime.getRuntime().availableProcessors() / 2 - 1), //maximumPoolSize
+                    Math.max(1, corePoolSize), // corePoolSize
+                    Math.max(2, maxPoolSize), //maximumPoolSize
                     60, SECONDS, //keepAliveTime, unit
                     new LinkedBlockingQueue<>(10_000),  //workQueue
                     threadFactory
