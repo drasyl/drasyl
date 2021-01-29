@@ -18,12 +18,12 @@
  */
 package org.drasyl.util.scheduler;
 
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Function;
+import org.drasyl.annotation.NonNull;
 
 import java.util.concurrent.TimeUnit;
 
