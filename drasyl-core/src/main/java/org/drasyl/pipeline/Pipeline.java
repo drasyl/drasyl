@@ -235,6 +235,9 @@ public interface Pipeline {
 
     /**
      * Processes an inbound message by the pipeline.
+     * <p>
+     * If an exception occurs during the execution of this method, the given {@code msg} is
+     * automatically released when it is of type {@link io.netty.util.ReferenceCounted}.
      *
      * @param sender the sender of the message
      * @param msg    the inbound message
@@ -250,6 +253,9 @@ public interface Pipeline {
 
     /**
      * Processes an outbound message by the pipeline.
+     * <p>
+     * If an exception occurs during the execution of this method, the given {@code msg} is
+     * automatically released when it is of type {@link io.netty.util.ReferenceCounted}.
      *
      * @param recipient the recipient of the message
      * @param msg       the outbound message
