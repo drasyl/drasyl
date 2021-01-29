@@ -24,6 +24,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
@@ -194,6 +195,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
             LOG.warn("Failed to invoke read() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
             future.completeExceptionally(e);
             inboundCtx.fireExceptionCaught(e);
+            ReferenceCountUtil.safeRelease(msg);
         }
     }
 
@@ -242,6 +244,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
             LOG.warn("Failed to invoke write() on next handler `{}` do to the following error: ", outboundCtx::name, () -> e);
             future.completeExceptionally(e);
             outboundCtx.fireExceptionCaught(e);
+            ReferenceCountUtil.safeRelease(msg);
         }
     }
 

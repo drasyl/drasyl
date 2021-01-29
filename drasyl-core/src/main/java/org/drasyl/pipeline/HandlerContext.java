@@ -71,6 +71,9 @@ public interface HandlerContext {
      * <p>
      * Note: It is guaranteed that this method will always be executed inside the {@link
      * #dependentScheduler()}.
+     * <p>
+     * If an exception occurs during the execution of this method, the given {@code msg} is
+     * automatically released when it is of type {@link io.netty.util.ReferenceCounted}.
      *
      * @param sender the sender of the message
      * @param msg    the message
@@ -105,6 +108,9 @@ public interface HandlerContext {
      * <p>
      * Note: It is guaranteed that this method will always be executed inside the {@link
      * #dependentScheduler()}.
+     * <p>
+     * If an exception occurs during the execution of this method, the given {@code msg} is
+     * automatically released when it is of type {@link io.netty.util.ReferenceCounted}.
      *
      * @param recipient the recipient of the message
      * @param msg       the message
