@@ -146,6 +146,7 @@ class SignatureHandlerTest {
             outboundMessages.await(1, SECONDS);
             outboundMessages.assertNoValues();
 
+            ReferenceCountUtil.safeRelease(armedMessage);
             pipeline.close();
         }
     }
