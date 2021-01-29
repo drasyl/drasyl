@@ -172,7 +172,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                                                     final DatagramPacket packet) {
                             LOG.trace("Datagram received {}", packet);
                             final AddressedByteBuf addressedByteBuf = new AddressedByteBuf(packet.sender(), packet.recipient(), packet.content().retain());
-                            ctx.pipeline().processInbound(addressedByteBuf.getSender(), addressedByteBuf);
+                            ctx.fireRead(addressedByteBuf.getSender(), addressedByteBuf, new CompletableFuture<>());
                         }
                     })
                     .bind(ctx.config().getRemoteBindHost(), bindPort);
