@@ -75,9 +75,10 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                 ctx.fireRead(sender, msg, future);
             }
         }
-        catch (final IllegalStateException | IllegalArgumentException | IOException e) {
+        catch (final IllegalArgumentException | IOException e) {
             future.completeExceptionally(new Exception("Unable to read message", e));
             LOG.debug("Can't read message `{}` due to the following error: ", msg, e);
+            ReferenceCountUtil.safeRelease(msg);
         }
     }
 

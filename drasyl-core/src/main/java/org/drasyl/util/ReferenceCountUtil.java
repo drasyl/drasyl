@@ -19,8 +19,8 @@
 package org.drasyl.util;
 
 import io.netty.util.ReferenceCounted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 public final class ReferenceCountUtil {
     private static final Logger LOG = LoggerFactory.getLogger(ReferenceCountUtil.class);
