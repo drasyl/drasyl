@@ -16,26 +16,24 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline.codec;
+package org.drasyl.remote.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.util.JSONUtil;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.remote.protocol.AddressedByteBuf;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -47,8 +45,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
@@ -56,70 +53,33 @@ import java.util.concurrent.CompletableFuture;
 @Fork(value = 1)
 @Warmup(iterations = 3)
 @Measurement(iterations = 3)
-public class DefaultCodecBenchmark {
-    private final HandlerContext ctx;
-    private final String msg;
-    private ApplicationMessage msgEncoded;
-    private CompressedPublicKey sender;
-    private CompressedPublicKey recipient;
+public class ByteBuf2MessageHandlerBenchmark {
+    private HandlerContext ctx;
+    private Address sender;
+    private AddressedByteBuf msg;
+    private CompletableFuture<Void> future;
 
-    public DefaultCodecBenchmark() {
-        ctx = new MyHandlerContext();
-        final byte[] bytes = new byte[1024];
-        new Random().nextBytes(bytes);
-        msg = new String(bytes);
+    public ByteBuf2MessageHandlerBenchmark() {
         try {
-            sender = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            recipient = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            msgEncoded = new ApplicationMessage(sender, recipient, msg.getClass(), JSONUtil.JACKSON_WRITER.writeValueAsBytes(msg));
+            ctx = new MyHandlerContext();
+            sender = new MyAddress();
+            final InetSocketAddressWrapper msgSender = InetSocketAddressWrapper.of(InetSocketAddress.createUnresolved("127.0.0.1", 25527));
+            final InetSocketAddressWrapper msgRecipient = InetSocketAddressWrapper.of(InetSocketAddress.createUnresolved("127.0.0.1", 25527));
+            final byte[] payload = new byte[1024];
+            new Random().nextBytes(payload);
+            final IntermediateEnvelope<Application> acknowledgementMessage = IntermediateEnvelope.application(1337, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class.getName(), payload);
+            msg = new AddressedByteBuf(msgSender, msgRecipient, acknowledgementMessage.getOrBuildByteBuf());
+            future = new CompletableFuture<>();
         }
-        catch (final JsonProcessingException | CryptoException e) {
+        catch (final IOException | CryptoException e) {
             e.printStackTrace();
         }
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void encode() {
-        DefaultCodec.INSTANCE.encode(ctx, recipient, msg, msgEncoded -> {
-        });
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void decode() {
-        DefaultCodec.INSTANCE.decode(ctx, sender, msgEncoded, (sender, msg) -> {
-        });
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void pureJacksonEncode() {
-        final ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
-        try (final ByteBufOutputStream bos = new ByteBufOutputStream(buf)) {
-            JSONUtil.JACKSON_WRITER.writeValue((OutputStream) bos, msg);
-        }
-        catch (final IOException e) {
-            e.printStackTrace();
-        }
-        finally {
-            buf.release();
-        }
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void pureJacksonDecode() {
-        final ByteBuf buf = Unpooled.wrappedBuffer(msgEncoded.getContent());
-        try (final ByteBufInputStream bis = new ByteBufInputStream(buf)) {
-            JSONUtil.JACKSON_READER.readValue((InputStream) bis, msgEncoded.getTypeClazz());
-        }
-        catch (final IOException | IllegalArgumentException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        finally {
-            buf.release();
-        }
+    public void matchedRead() {
+        ByteBuf2MessageHandler.INSTANCE.matchedRead(ctx, sender, msg, future);
     }
 
     private static class MyHandlerContext implements HandlerContext {
@@ -190,12 +150,15 @@ public class DefaultCodecBenchmark {
 
         @Override
         public TypeValidator inboundValidator() {
-            return TypeValidator.ofInboundValidator(DrasylConfig.newBuilder().build());
+            return null;
         }
 
         @Override
         public TypeValidator outboundValidator() {
-            return TypeValidator.ofOutboundValidator(DrasylConfig.newBuilder().build());
+            return null;
         }
+    }
+
+    private static class MyAddress implements Address {
     }
 }

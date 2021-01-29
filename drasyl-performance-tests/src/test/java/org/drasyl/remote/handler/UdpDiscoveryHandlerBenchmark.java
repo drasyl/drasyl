@@ -16,26 +16,26 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline.codec;
+package org.drasyl.remote.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.util.JSONUtil;
+import org.drasyl.remote.handler.UdpDiscoveryHandler.Peer;
+import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.util.Pair;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -44,85 +44,84 @@ import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+
+import static java.time.Duration.ofDays;
 
 @State(Scope.Benchmark)
 @Fork(value = 1)
 @Warmup(iterations = 3)
 @Measurement(iterations = 3)
-public class DefaultCodecBenchmark {
-    private final HandlerContext ctx;
-    private final String msg;
-    private ApplicationMessage msgEncoded;
-    private CompressedPublicKey sender;
-    private CompressedPublicKey recipient;
+public class UdpDiscoveryHandlerBenchmark {
+    private Map<MessageId, UdpDiscoveryHandler.OpenPing> openPingsCache;
+    private Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
+    private Map<CompressedPublicKey, Peer> peers;
+    private Set<CompressedPublicKey> directConnectionPeers;
+    private UdpDiscoveryHandler handler;
+    private HandlerContext ctx;
+    private Address recipient;
+    private ApplicationMessage msg;
+    private CompletableFuture<Void> future;
 
-    public DefaultCodecBenchmark() {
-        ctx = new MyHandlerContext();
-        final byte[] bytes = new byte[1024];
-        new Random().nextBytes(bytes);
-        msg = new String(bytes);
+    public UdpDiscoveryHandlerBenchmark() {
         try {
-            sender = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            recipient = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            msgEncoded = new ApplicationMessage(sender, recipient, msg.getClass(), JSONUtil.JACKSON_WRITER.writeValueAsBytes(msg));
+            openPingsCache = new HashMap<>();
+            uniteAttemptsCache = new HashMap<>();
+            peers = new HashMap<>();
+            directConnectionPeers = new HashSet<>();
+            handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, directConnectionPeers);
+
+            ctx = new MyHandlerContext();
+            recipient = new MyAddress();
+            final byte[] payload = new byte[1024];
+            new Random().nextBytes(payload);
+            msg = new ApplicationMessage(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class, payload);
+            future = new CompletableFuture<>();
+
+            directConnectionPeers.add(msg.getRecipient());
+            final Peer peer = new Peer();
+            peer.inboundPongOccurred();
+            peer.setAddress(InetSocketAddressWrapper.of(InetSocketAddress.createUnresolved("127.0.0.1", 25527)));
+            peers.put(msg.getRecipient(), peer);
         }
-        catch (final JsonProcessingException | CryptoException e) {
+        catch (final CryptoException e) {
             e.printStackTrace();
         }
     }
 
     @Benchmark
+    @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void encode() {
-        DefaultCodec.INSTANCE.encode(ctx, recipient, msg, msgEncoded -> {
-        });
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void decode() {
-        DefaultCodec.INSTANCE.decode(ctx, sender, msgEncoded, (sender, msg) -> {
-        });
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void pureJacksonEncode() {
-        final ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
-        try (final ByteBufOutputStream bos = new ByteBufOutputStream(buf)) {
-            JSONUtil.JACKSON_WRITER.writeValue((OutputStream) bos, msg);
-        }
-        catch (final IOException e) {
-            e.printStackTrace();
-        }
-        finally {
-            buf.release();
-        }
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void pureJacksonDecode() {
-        final ByteBuf buf = Unpooled.wrappedBuffer(msgEncoded.getContent());
-        try (final ByteBufInputStream bis = new ByteBufInputStream(buf)) {
-            JSONUtil.JACKSON_READER.readValue((InputStream) bis, msgEncoded.getTypeClazz());
-        }
-        catch (final IOException | IllegalArgumentException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        finally {
-            buf.release();
-        }
+    public void matchedWrite() {
+        handler.matchedWrite(ctx, msg.getRecipient(), msg, future);
     }
 
     private static class MyHandlerContext implements HandlerContext {
+        private final DrasylConfig config;
+        private final Identity identity;
+        private final PeersManager peersManager;
+
+        public MyHandlerContext() throws CryptoException {
+            config = DrasylConfig.newBuilder()
+                    .remotePingTimeout(ofDays(1))
+                    .remotePingCommunicationTimeout(ofDays(1))
+                    .build();
+            identity = Identity.of(ProofOfWork.of(-2109504681),
+                    CompressedKeyPair.of("AhqX0pwBbAthIabf+05czWQjaxb5mmqWU4IdG3RHOuQh",
+                            "BRRzAewqH0MnNvidynNzpOwdfbXYzOjBHhWEO/ZcgsU="));
+            peersManager = new PeersManager(event -> {
+            }, identity);
+        }
+
         @Override
         public String name() {
             return null;
@@ -160,7 +159,7 @@ public class DefaultCodecBenchmark {
 
         @Override
         public DrasylConfig config() {
-            return null;
+            return config;
         }
 
         @Override
@@ -180,22 +179,25 @@ public class DefaultCodecBenchmark {
 
         @Override
         public Identity identity() {
-            return null;
+            return identity;
         }
 
         @Override
         public PeersManager peersManager() {
-            return null;
+            return peersManager;
         }
 
         @Override
         public TypeValidator inboundValidator() {
-            return TypeValidator.ofInboundValidator(DrasylConfig.newBuilder().build());
+            return null;
         }
 
         @Override
         public TypeValidator outboundValidator() {
-            return TypeValidator.ofOutboundValidator(DrasylConfig.newBuilder().build());
+            return null;
         }
+    }
+
+    private static class MyAddress implements Address {
     }
 }
