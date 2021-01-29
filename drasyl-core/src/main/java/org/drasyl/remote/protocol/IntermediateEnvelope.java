@@ -506,7 +506,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                 }
 
                 this.message = ByteBufUtil.appendFirst(message, publicHeaderByteBuf);
-                ReferenceCountUtil.safeRelease(publicHeaderByteBuf);
             }
         }
     }
