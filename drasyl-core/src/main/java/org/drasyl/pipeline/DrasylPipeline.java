@@ -52,6 +52,7 @@ import static org.drasyl.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
 import static org.drasyl.loopback.handler.InboundMessageGuard.INBOUND_MESSAGE_GUARD;
 import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
 import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
+import static org.drasyl.pipeline.AddressedEnvelopeHandler.ADDRESSED_ENVELOPE_HANDLER;
 import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
 import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
@@ -86,6 +87,9 @@ public class DrasylPipeline extends DefaultPipeline {
         this.peersManager = peersManager;
 
         initPointer();
+
+        // convert msg <-> AddressedEnvelopeHandler(msg)
+        addFirst(ADDRESSED_ENVELOPE_HANDLER, AddressedEnvelopeHandler.INSTANCE);
 
         // add default codec
         addFirst(DEFAULT_CODEC, DefaultCodec.INSTANCE);

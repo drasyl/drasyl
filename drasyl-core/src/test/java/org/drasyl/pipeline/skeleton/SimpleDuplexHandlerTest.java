@@ -27,15 +27,16 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.AddressedEnvelopeHandler;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.pipeline.message.UnserializedApplicationMessage;
 import org.drasyl.util.JSONUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -108,7 +109,8 @@ class SimpleDuplexHandlerTest {
                     peersManager,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
-                    DefaultCodec.INSTANCE, handler);
+                    AddressedEnvelopeHandler.INSTANCE,
+                    handler);
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
             pipeline.processOutbound(recipient, payload);
@@ -154,9 +156,10 @@ class SimpleDuplexHandlerTest {
                     peersManager,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
-                    DefaultCodec.INSTANCE, handler);
+                    AddressedEnvelopeHandler.INSTANCE,
+                    handler);
             final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            final TestObserver<UnserializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(UnserializedApplicationMessage.class).test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
@@ -166,7 +169,7 @@ class SimpleDuplexHandlerTest {
 
             outboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(new ApplicationMessage(sender, recipient, byte[].class, payload));
+                    .assertValue(new UnserializedApplicationMessage(sender, recipient, payload));
             inboundMessageTestObserver.assertNoValues();
             pipeline.close();
         }
@@ -208,9 +211,10 @@ class SimpleDuplexHandlerTest {
                     peersManager,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
-                    DefaultCodec.INSTANCE, handler);
+                    AddressedEnvelopeHandler.INSTANCE,
+                    handler);
             final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            final TestObserver<UnserializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(UnserializedApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
@@ -221,7 +225,7 @@ class SimpleDuplexHandlerTest {
 
             outboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(new ApplicationMessage(sender, sender, byte[].class, msg));
+                    .assertValue(new UnserializedApplicationMessage(sender, sender, msg));
             inboundMessageTestObserver.assertNoValues();
             eventTestObserver.assertNoValues();
             pipeline.close();

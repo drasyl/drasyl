@@ -26,11 +26,11 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.pipeline.message.UnserializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,12 +94,12 @@ class EmbeddedPipelineTest {
                 identity,
                 peersManager, TypeValidator.of(List.of(), List.of(), false, false),
                 TypeValidator.ofOutboundValidator(config),
-                DefaultCodec.INSTANCE,
+                AddressedEnvelopeHandler.INSTANCE,
                 new HandlerAdapter(),
                 new HandlerAdapter()
         );
         final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+        final TestObserver<UnserializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(UnserializedApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
@@ -110,7 +110,7 @@ class EmbeddedPipelineTest {
 
         outboundMessageTestObserver.awaitCount(1)
                 .assertValueCount(1)
-                .assertValue(new ApplicationMessage(sender, recipient, byte[].class, msg));
+                .assertValue(new UnserializedApplicationMessage(sender, recipient, msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
         pipeline.close();
