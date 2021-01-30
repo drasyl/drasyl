@@ -38,8 +38,8 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import static org.drasyl.loopback.handler.LoopbackInboundMessageSinkHandler.LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.loopback.handler.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.loopback.handler.InboundMessageGuard.INBOUND_MESSAGE_GUARD;
+import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
 import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
@@ -104,8 +104,8 @@ class DrasylPipelineTest {
         // Test if default handler are added
         assertNotNull(pipeline.get(DEFAULT_CODEC), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(INBOUND_MESSAGE_GUARD), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(LOOPBACK_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(UDP_DISCOVERY_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(SIGNATURE_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");

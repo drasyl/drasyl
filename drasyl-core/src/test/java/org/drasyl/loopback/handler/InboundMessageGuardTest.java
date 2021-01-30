@@ -38,7 +38,7 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class LoopbackInboundMessageSinkHandlerTest {
+class InboundMessageGuardTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -58,7 +58,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler()
+                new InboundMessageGuard()
         );
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
@@ -76,7 +76,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(true)
+                new InboundMessageGuard(true)
         );
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
@@ -98,7 +98,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(true)
+                new InboundMessageGuard(true)
         );
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 

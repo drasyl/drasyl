@@ -24,8 +24,8 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
-import org.drasyl.loopback.handler.LoopbackInboundMessageSinkHandler;
-import org.drasyl.loopback.handler.LoopbackOutboundMessageSinkHandler;
+import org.drasyl.loopback.handler.InboundMessageGuard;
+import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.codec.DefaultCodec;
@@ -49,8 +49,8 @@ import java.util.function.Consumer;
 
 import static org.drasyl.intravm.IntraVmDiscovery.INTRA_VM_DISCOVERY;
 import static org.drasyl.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
-import static org.drasyl.loopback.handler.LoopbackInboundMessageSinkHandler.LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.loopback.handler.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.loopback.handler.InboundMessageGuard.INBOUND_MESSAGE_GUARD;
+import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
 import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
 import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
 import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
@@ -90,9 +90,10 @@ public class DrasylPipeline extends DefaultPipeline {
         // add default codec
         addFirst(DEFAULT_CODEC, DefaultCodec.INSTANCE);
 
+        addFirst(INBOUND_MESSAGE_GUARD, new InboundMessageGuard());
+
         // local message delivery
-        addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler());
-        addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, new LoopbackOutboundMessageSinkHandler());
+        addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
 
         if (config.isLocalHostDiscoveryEnabled()) {
             addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(config, identity.getPublicKey()));

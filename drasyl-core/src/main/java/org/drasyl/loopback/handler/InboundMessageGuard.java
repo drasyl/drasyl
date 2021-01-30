@@ -23,27 +23,25 @@ import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * This handler converts outgoing messages addressed to the local node to incoming messages
- * addressed to the local node.
+ * This handler filters incoming messages not addressed to the local node. If the node is not
+ * started, all messages will be rejected.
  */
-@Stateless
-public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<ApplicationMessage, Address> {
-    public static final String LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
+public class InboundMessageGuard extends SimpleInboundHandler<ApplicationMessage, Address> {
+    public static final String INBOUND_MESSAGE_GUARD = "LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER";
     private boolean started;
 
-    LoopbackOutboundMessageSinkHandler(final boolean started) {
+    InboundMessageGuard(final boolean started) {
         this.started = started;
     }
 
-    public LoopbackOutboundMessageSinkHandler() {
+    public InboundMessageGuard() {
         this(false);
     }
 
@@ -63,15 +61,19 @@ public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<Ap
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final ApplicationMessage msg,
-                                final CompletableFuture<Void> future) {
-        if (started && ctx.identity().getPublicKey().equals(msg.getRecipient())) {
-            ctx.fireRead(msg.getSender(), msg, future);
+    protected void matchedRead(final HandlerContext ctx,
+                               final Address sender,
+                               final ApplicationMessage msg,
+                               final CompletableFuture<Void> future) {
+        if (!ctx.identity().getPublicKey().equals(msg.getRecipient())) {
+            future.completeExceptionally(new Exception("I'm not the recipient"));
+        }
+        else if (!started) {
+            future.completeExceptionally(new Exception("Node is not running"));
         }
         else {
-            ctx.write(recipient, msg, future);
+            // passthrough message
+            ctx.fireRead(sender, msg, future);
         }
     }
 }

@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class LoopbackOutboundMessageSinkHandlerTest {
+class LoopbackMessageHandlerTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock
@@ -51,7 +51,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
                 identity,
                 peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackOutboundMessageSinkHandler()
+                new LoopbackMessageHandler()
         );
         final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
@@ -73,7 +73,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
                 identity,
                 peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackOutboundMessageSinkHandler(true)
+                new LoopbackMessageHandler(true)
         );
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
