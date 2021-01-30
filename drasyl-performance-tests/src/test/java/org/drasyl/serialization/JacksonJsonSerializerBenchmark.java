@@ -18,6 +18,7 @@
  */
 package org.drasyl.serialization;
 
+import org.drasyl.crypto.Crypto;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -36,11 +37,13 @@ import java.io.IOException;
 @Measurement(iterations = 3)
 public class JacksonJsonSerializerBenchmark {
     private final JacksonJsonSerializer serializer;
+    private final String string;
     private final byte[] bytes;
 
     public JacksonJsonSerializerBenchmark() {
         serializer = new JacksonJsonSerializer();
-        bytes = "\"Hallo Welt\"".getBytes();
+        string = Crypto.randomString(100_000);
+        this.bytes = ("\"" + Crypto.randomString(100_000) + "\"").getBytes();
     }
 
     @Benchmark
@@ -48,7 +51,7 @@ public class JacksonJsonSerializerBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void toByteArray() {
         try {
-            serializer.toByteArray("Hallo Welt");
+            serializer.toByteArray(string);
         }
         catch (final IOException e) {
             e.printStackTrace();
