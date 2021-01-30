@@ -30,39 +30,29 @@ import java.util.Optional;
 /**
  * This Serializer (de)serializes {@link Message} objects.
  */
-public class ProtobufSerializer implements Serializer {
+public class ProtobufSerializer extends BoundedSerializer<Message> {
     private static final Map<Class<?>, Optional<Method>> typeMethods = new HashMap<>();
 
     @Override
-    public byte[] toByteArray(final Object o) throws IOException {
-        if (o instanceof Message) {
-            return new byte[0];
-        }
-        else {
-            throw new IOException("Object must be of type `" + Message.class.getName() + "`");
-        }
+    protected byte[] matchedToByArray(final Message o) {
+        return o.toByteArray();
     }
 
-    @SuppressWarnings({ "unchecked", "PrimitiveArrayArgumentToVarargsMethod" })
     @Override
-    public <T> T fromByteArray(final byte[] bytes, final Class<T> type) throws IOException {
-        if (Message.class.isAssignableFrom(type)) {
-            final Optional<Method> method = getParseFromMethod(type);
+    protected Message matchedFromByteArray(final byte[] bytes,
+                                           final Class<Message> type) throws IOException {
+        final Optional<Method> method = getParseFromMethod(type);
 
-            if (method.isPresent()) {
-                try {
-                    return (T) method.get().invoke(null, bytes);
-                }
-                catch (final IllegalAccessException | InvocationTargetException e) {
-                    throw new IOException(e);
-                }
+        if (method.isPresent()) {
+            try {
+                return (Message) method.get().invoke(null, new Object[]{ bytes });
             }
-            else {
-                throw new IOException("parseFrom method for `" + type.getName() + "` not found");
+            catch (final IllegalAccessException | InvocationTargetException e) {
+                throw new IOException(e);
             }
         }
         else {
-            throw new IOException("Type must be a subclass of `" + Message.class.getName() + "`");
+            throw new IOException("parseFrom method for `" + type.getName() + "` not found");
         }
     }
 
