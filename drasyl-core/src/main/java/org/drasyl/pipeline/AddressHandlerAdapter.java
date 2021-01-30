@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -18,9 +18,9 @@
  */
 package org.drasyl.pipeline;
 
-import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
+import org.drasyl.util.TypeParameterMatcher;
 
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of address.
