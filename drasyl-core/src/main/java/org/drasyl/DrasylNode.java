@@ -41,7 +41,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.codec.Codec;
 import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -303,14 +302,14 @@ public abstract class DrasylNode {
      * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
      * HandlerContext#inboundValidator()} or {@link HandlerContext#outboundValidator()}. If the
      * {@link org.drasyl.pipeline.codec.DefaultCodec} does not support these objects, a custom
-     * {@link Codec} can be added to the beginning of the {@link Pipeline}.
+     * {@link org.drasyl.pipeline.Handler} can be added to the beginning of the {@link Pipeline}.
      * </p>
      *
      * @param recipient the recipient of a message as compressed public key
      * @param payload   the payload of a message
      * @return a completed future if the message was successfully processed, otherwise an
      * exceptionally future
-     * @see org.drasyl.pipeline.codec.Codec
+     * @see org.drasyl.pipeline.Handler
      * @see org.drasyl.pipeline.codec.DefaultCodec
      * @see org.drasyl.pipeline.codec.TypeValidator
      * @since 0.1.3-SNAPSHOT
@@ -340,14 +339,14 @@ public abstract class DrasylNode {
      * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
      * HandlerContext#inboundValidator()} or {@link HandlerContext#outboundValidator()}. If the
      * {@link org.drasyl.pipeline.codec.DefaultCodec} does not support these objects, a custom
-     * {@link Codec} can be added to the beginning of the {@link Pipeline}.
+     * {@link org.drasyl.pipeline.Handler} can be added to the beginning of the {@link Pipeline}.
      * </p>
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
      * @return a completed future if the message was successfully processed, otherwise an
      * exceptionally future
-     * @see org.drasyl.pipeline.codec.Codec
+     * @see org.drasyl.pipeline.Handler
      * @see org.drasyl.pipeline.codec.DefaultCodec
      * @see org.drasyl.pipeline.codec.TypeValidator
      * @since 0.1.3-SNAPSHOT

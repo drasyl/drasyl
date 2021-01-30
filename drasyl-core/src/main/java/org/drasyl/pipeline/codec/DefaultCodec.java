@@ -23,99 +23,89 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.ApplicationMessage;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
+import org.drasyl.serialization.ByteArraySerializer;
 import org.drasyl.serialization.JacksonJsonSerializer;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * This default codec allows to encode/decode all supported objects by Jackson.
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public class DefaultCodec extends Codec<ApplicationMessage, Object, Address> {
+public class DefaultCodec extends SimpleDuplexHandler<ApplicationMessage, Object, Address> {
     public static final DefaultCodec INSTANCE = new DefaultCodec();
     public static final String DEFAULT_CODEC = "defaultCodec";
     private static final Logger LOG = LoggerFactory.getLogger(DefaultCodec.class);
-    private final Serializer serializer;
-
-    private DefaultCodec() {
-        serializer = new JacksonJsonSerializer();
-    }
 
     @Override
-    void encode(final HandlerContext ctx,
-                final Address recipient,
-                final Object msg,
-                final Consumer<Object> passOnConsumer) {
-        if (recipient instanceof CompressedPublicKey && msg instanceof byte[]) {
-            // skip byte arrays
-            passOnConsumer.accept(new ApplicationMessage(ctx.identity().getPublicKey(), (CompressedPublicKey) recipient, byte[].class, (byte[]) msg));
-
-            LOG.trace("[{}]: Encoded Message '{}'", ctx::name, () -> msg);
-        }
-        else if (recipient instanceof CompressedPublicKey && ctx.outboundValidator().validate(msg.getClass())) {
-            try {
-                final byte[] bytes = serializer.toByteArray(msg);
-
-                passOnConsumer.accept(new ApplicationMessage(ctx.identity().getPublicKey(), (CompressedPublicKey) recipient, msg.getClass(), bytes));
-
-                LOG.trace("[{}]: Encoded Message '{}'", ctx::name, () -> msg);
-            }
-            catch (final IOException e) {
-                LOG.warn("[{}]: Unable to serialize '{}': ", ctx::name, () -> msg, () -> e);
-                passOnConsumer.accept(msg);
-            }
-        }
-        else {
-            // can't encode, pass message to the next handler in the pipeline
-            passOnConsumer.accept(msg);
-        }
-    }
-
-    @Override
-    void decode(final HandlerContext ctx,
-                final Address sender,
-                final ApplicationMessage msg,
-                final BiConsumer<Address, Object> passOnConsumer) {
+    protected void matchedRead(final HandlerContext ctx,
+                               final Address sender,
+                               final ApplicationMessage msg,
+                               final CompletableFuture<Void> future) {
         try {
+            final Serializer serializer;
             if (byte[].class == msg.getTypeClazz()) {
-                // skip byte arrays
-                passOnConsumer.accept(msg.getSender(), msg.getContent());
-
-                LOG.trace("[{}]: Decoded Message '{}'", ctx::name, msg::getContent);
+                serializer = new ByteArraySerializer();
             }
             else if (ctx.inboundValidator().validate(msg.getTypeClazz())) {
-                decodeObjectHolder(ctx, msg, passOnConsumer);
+                serializer = new JacksonJsonSerializer();
+            }
+            else {
+                serializer = null;
+            }
+
+            if (serializer != null) {
+                final Object decodedMessage = serializer.fromByteArray(msg.getContent(), msg.getTypeClazz());
+                ctx.fireRead(msg.getSender(), decodedMessage, future);
+                LOG.trace("[{}]: Decoded Message '{}'", ctx::name, () -> decodedMessage);
             }
             else {
                 // can't decode, pass message to the next handler in the pipeline
-                passOnConsumer.accept(sender, msg);
+                ctx.fireRead(sender, msg, future);
             }
         }
-        catch (final ClassNotFoundException e) {
+        catch (final IOException | IllegalArgumentException | ClassNotFoundException e) {
             LOG.warn("[{}]: Unable to deserialize '{}': ", ctx::name, () -> msg, () -> e);
-            // can't decode, pass message to the next handler in the pipeline
-            passOnConsumer.accept(sender, msg);
+            ctx.fireRead(sender, msg, future);
         }
     }
 
-    void decodeObjectHolder(final HandlerContext ctx,
-                            final ApplicationMessage msg,
-                            final BiConsumer<Address, Object> passOnConsumer) throws ClassNotFoundException {
+    @Override
+    protected void matchedWrite(final HandlerContext ctx,
+                                final Address recipient,
+                                final Object msg,
+                                final CompletableFuture<Void> future) {
         try {
-            final Object decodedMessage = serializer.fromByteArray(msg.getContent(), msg.getTypeClazz());
-            passOnConsumer.accept(msg.getSender(), decodedMessage);
+            final Serializer serializer;
+            if (msg instanceof byte[]) {
+                serializer = new ByteArraySerializer();
+            }
+            else if (ctx.outboundValidator().validate(msg.getClass())) {
+                serializer = new JacksonJsonSerializer();
+            }
+            else {
+                serializer = null;
+            }
 
-            LOG.trace("[{}]: Decoded Message '{}'", ctx::name, () -> decodedMessage);
+            if (serializer != null && recipient instanceof CompressedPublicKey) {
+                final byte[] bytes = serializer.toByteArray(msg);
+                ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), (CompressedPublicKey) recipient, msg.getClass(), bytes), future);
+                LOG.trace("[{}]: Encoded Message '{}'", ctx::name, () -> msg);
+            }
+            else {
+                // can't encode, pass message to the next handler in the pipeline
+                ctx.write(recipient, msg, future);
+            }
         }
-        catch (final IOException | IllegalArgumentException e) {
-            LOG.warn("[{}]: Unable to deserialize '{}': ", ctx::name, () -> msg, () -> e);
-            passOnConsumer.accept(msg.getSender(), msg);
+        catch (final IOException e) {
+            LOG.warn("[{}]: Unable to serialize '{}': ", ctx::name, () -> msg, () -> e);
+            ctx.write(recipient, msg, future);
         }
     }
 }
