@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -18,27 +18,19 @@
  */
 package org.drasyl.pipeline.codec;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.util.JSONUtil;
+import org.drasyl.serialization.JacksonJsonSerializer;
+import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This default codec allows to encode/decode all supported objects by Jackson.
@@ -49,8 +41,10 @@ public class DefaultCodec extends Codec<ApplicationMessage, Object, Address> {
     public static final DefaultCodec INSTANCE = new DefaultCodec();
     public static final String DEFAULT_CODEC = "defaultCodec";
     private static final Logger LOG = LoggerFactory.getLogger(DefaultCodec.class);
+    private final Serializer serializer;
 
     private DefaultCodec() {
+        serializer = new JacksonJsonSerializer();
     }
 
     @Override
@@ -65,24 +59,16 @@ public class DefaultCodec extends Codec<ApplicationMessage, Object, Address> {
             LOG.trace("[{}]: Encoded Message '{}'", ctx::name, () -> msg);
         }
         else if (recipient instanceof CompressedPublicKey && ctx.outboundValidator().validate(msg.getClass())) {
-            final ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
-            try (final ByteBufOutputStream bos = new ByteBufOutputStream(buf)) {
+            try {
+                final byte[] bytes = serializer.toByteArray(msg);
 
-                JSONUtil.JACKSON_WRITER.writeValue((OutputStream) bos, msg);
-
-                final byte[] b = new byte[buf.readableBytes()];
-                buf.getBytes(buf.readerIndex(), b);
-
-                passOnConsumer.accept(new ApplicationMessage(ctx.identity().getPublicKey(), (CompressedPublicKey) recipient, msg.getClass(), b));
+                passOnConsumer.accept(new ApplicationMessage(ctx.identity().getPublicKey(), (CompressedPublicKey) recipient, msg.getClass(), bytes));
 
                 LOG.trace("[{}]: Encoded Message '{}'", ctx::name, () -> msg);
             }
             catch (final IOException e) {
                 LOG.warn("[{}]: Unable to serialize '{}': ", ctx::name, () -> msg, () -> e);
                 passOnConsumer.accept(msg);
-            }
-            finally {
-                buf.release();
             }
         }
         else {
@@ -121,9 +107,8 @@ public class DefaultCodec extends Codec<ApplicationMessage, Object, Address> {
     void decodeObjectHolder(final HandlerContext ctx,
                             final ApplicationMessage msg,
                             final BiConsumer<Address, Object> passOnConsumer) throws ClassNotFoundException {
-        final ByteBuf buf = Unpooled.wrappedBuffer(msg.getContent());
-        try (final ByteBufInputStream bis = new ByteBufInputStream(buf)) {
-            final Object decodedMessage = requireNonNull(JSONUtil.JACKSON_READER.readValue((InputStream) bis, msg.getTypeClazz()));
+        try {
+            final Object decodedMessage = serializer.fromByteArray(msg.getContent(), msg.getTypeClazz());
             passOnConsumer.accept(msg.getSender(), decodedMessage);
 
             LOG.trace("[{}]: Decoded Message '{}'", ctx::name, () -> decodedMessage);
@@ -131,9 +116,6 @@ public class DefaultCodec extends Codec<ApplicationMessage, Object, Address> {
         catch (final IOException | IllegalArgumentException e) {
             LOG.warn("[{}]: Unable to deserialize '{}': ", ctx::name, () -> msg, () -> e);
             passOnConsumer.accept(msg.getSender(), msg);
-        }
-        finally {
-            buf.release();
         }
     }
 }
