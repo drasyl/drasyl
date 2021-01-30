@@ -43,6 +43,9 @@ public class DefaultCodec extends SimpleDuplexHandler<ApplicationMessage, Object
     public static final String DEFAULT_CODEC = "defaultCodec";
     private static final Logger LOG = LoggerFactory.getLogger(DefaultCodec.class);
 
+    private DefaultCodec() {
+    }
+
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
