@@ -29,6 +29,8 @@ import org.drasyl.cli.CliException;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.pipeline.DefaultPipeline;
+import org.drasyl.pipeline.VisualPipeline;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -39,6 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static org.drasyl.pipeline.HandlerMask.ALL;
 
 /**
  * Run a drasyl node.
@@ -75,6 +78,8 @@ public class NodeCommand extends AbstractCommand {
                                 }
                             }
                         };
+                        VisualPipeline.printInboundOrder((DefaultPipeline) myNode.pipeline(), ALL);
+                        VisualPipeline.printOutboundOrder((DefaultPipeline) myNode.pipeline(), ALL);
                         myNode.start();
                         return Pair.of(myNode, running);
                     }
