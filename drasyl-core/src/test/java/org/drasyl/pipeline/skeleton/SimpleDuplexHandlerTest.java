@@ -32,11 +32,11 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.codec.SerializedApplicationMessage;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.pipeline.message.UnserializedApplicationMessage;
 import org.drasyl.util.JSONUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -99,7 +99,7 @@ class SimpleDuplexHandlerTest {
                                             final byte[] msg,
                                             final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.pipeline().processInbound(identity.getPublicKey(), new ApplicationMessage(identity.getPublicKey(), recipient, byte[].class, msg));
+                    ctx.pipeline().processInbound(identity.getPublicKey(), new SerializedApplicationMessage(identity.getPublicKey(), recipient, byte[].class, msg));
                 }
             };
 
@@ -112,7 +112,7 @@ class SimpleDuplexHandlerTest {
                     AddressedEnvelopeHandler.INSTANCE,
                     handler);
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
             pipeline.processOutbound(recipient, payload);
 
             inboundMessageTestObserver.awaitCount(1)
@@ -159,7 +159,7 @@ class SimpleDuplexHandlerTest {
                     AddressedEnvelopeHandler.INSTANCE,
                     handler);
             final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<UnserializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(UnserializedApplicationMessage.class).test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
@@ -169,7 +169,7 @@ class SimpleDuplexHandlerTest {
 
             outboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(new UnserializedApplicationMessage(sender, recipient, payload));
+                    .assertValue(new ApplicationMessage(sender, recipient, payload));
             inboundMessageTestObserver.assertNoValues();
             pipeline.close();
         }
@@ -214,18 +214,18 @@ class SimpleDuplexHandlerTest {
                     AddressedEnvelopeHandler.INSTANCE,
                     handler);
             final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<UnserializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(UnserializedApplicationMessage.class).test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
             final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
-            final ApplicationMessage msg1 = new ApplicationMessage(sender, sender, byte[].class, msg);
+            final SerializedApplicationMessage msg1 = new SerializedApplicationMessage(sender, sender, byte[].class, msg);
             pipeline.processInbound(msg1.getSender(), msg1);
 
             outboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(new UnserializedApplicationMessage(sender, sender, msg));
+                    .assertValue(new ApplicationMessage(sender, sender, msg));
             inboundMessageTestObserver.assertNoValues();
             eventTestObserver.assertNoValues();
             pipeline.close();
@@ -267,10 +267,10 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofOutboundValidator(config),
                     handler);
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            final ApplicationMessage msg = mock(ApplicationMessage.class);
+            final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
             when(msg.getSender()).thenReturn(mock(CompressedPublicKey.class));
 
             pipeline.processInbound(msg.getSender(), msg);
@@ -287,7 +287,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldTriggerOnMatchedEvent() throws InterruptedException {
-            final SimpleDuplexEventAwareHandler<ApplicationMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>(ApplicationMessage.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
+            final SimpleDuplexEventAwareHandler<SerializedApplicationMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>(SerializedApplicationMessage.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final Address recipient,
@@ -306,7 +306,7 @@ class SimpleDuplexHandlerTest {
                 @Override
                 protected void matchedRead(final HandlerContext ctx,
                                            final Address sender,
-                                           final ApplicationMessage msg,
+                                           final SerializedApplicationMessage msg,
                                            final CompletableFuture<Void> future) {
                     ctx.fireRead(sender, msg, future);
                 }

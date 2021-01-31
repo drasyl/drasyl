@@ -1,6 +1,13 @@
 # Marshalling
 
-drasyl can automatically (un-) marshall given objects using [Jackson](https://github.com/FasterXML/jackson). To prevent security risks through unrestricted marshalling, types and packages can be defined in the config that are handled automatically.
+The messages that drasyl nodes send to each other are JVM objects. Message passing between nodes
+living on the same JVM is straightforward. It is done via reference passing. However, messages that
+must leave the JVM to reach a node running on a different host must go through some form of
+serialization (i.e., the objects must be converted to and from byte arrays).
+
+drasyl can (un-) marshall given objects using [Jackson](https://github.com/FasterXML/jackson). To
+prevent security risks through unrestricted marshalling, types and packages can be defined in the
+config that are handled automatically.
 
 !!! info
 
@@ -10,10 +17,12 @@ drasyl can automatically (un-) marshall given objects using [Jackson](https://gi
 
 This property is a list of all types that are supported by the codec for the drasyl pipeline.
 
-With this list, a developer guarantees that all classes are secure and cannot be misused as a deserialization gadget in the context of the marshaller.
-A reckless implementation of a permitted class can leave the entire application and all executing machines vulnerable to remote code execution.
+With this list, a developer guarantees that all classes are secure and cannot be misused as a
+deserialization gadget in the context of the marshaller. A reckless implementation of a permitted
+class can leave the entire application and all executing machines vulnerable to remote code
+execution.
 
-!!! important 
+!!! important
 
     An attacker is in general interested in all "non-pure" methods, which have promising side
     effects. A method is "pure" if:

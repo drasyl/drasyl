@@ -91,9 +91,6 @@ public class DrasylPipeline extends DefaultPipeline {
         // convert msg <-> AddressedEnvelopeHandler(msg)
         addFirst(ADDRESSED_ENVELOPE_HANDLER, AddressedEnvelopeHandler.INSTANCE);
 
-        // add default codec
-        addFirst(DEFAULT_CODEC, DefaultCodec.INSTANCE);
-
         addFirst(INBOUND_MESSAGE_GUARD, new InboundMessageGuard());
 
         // local message delivery
@@ -109,6 +106,9 @@ public class DrasylPipeline extends DefaultPipeline {
         }
 
         if (config.isRemoteEnabled()) {
+            // add default codec
+            addFirst(DEFAULT_CODEC, DefaultCodec.INSTANCE);
+
             addFirst(UDP_DISCOVERY_HANDLER, new UdpDiscoveryHandler(config));
 
             // outbound message guards

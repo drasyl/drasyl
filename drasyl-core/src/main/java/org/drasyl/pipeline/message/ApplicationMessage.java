@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -20,67 +20,13 @@ package org.drasyl.pipeline.message;
 
 import org.drasyl.identity.CompressedPublicKey;
 
-import java.util.Arrays;
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
-
 /**
- * A message that is sent by an application running on drasyl.
+ * A message from or to the application.
  */
-public class ApplicationMessage extends DefaultAddressedEnvelope<CompressedPublicKey, byte[]> {
-    private final String type;
-
+public class ApplicationMessage extends DefaultAddressedEnvelope<CompressedPublicKey, Object> {
     public ApplicationMessage(final CompressedPublicKey sender,
                               final CompressedPublicKey recipient,
-                              final Class<?> type,
-                              final byte[] content) {
-        this(sender, recipient, type.getName(), content);
-    }
-
-    public ApplicationMessage(final CompressedPublicKey sender,
-                              final CompressedPublicKey recipient,
-                              final String type,
-                              final byte[] content) {
+                              final Object content) {
         super(sender, recipient, content);
-        this.type = requireNonNull(type);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final ApplicationMessage that = (ApplicationMessage) o;
-        return Objects.equals(type, that.type);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), type);
-    }
-
-    @Override
-    public String toString() {
-        return "ApplicationMessage{" +
-                "sender='" + getSender() + "'," +
-                "recipient='" + getRecipient() + "'," +
-                "type='" + getRecipient() + "'," +
-                "content=byte[" + getContent().length + "]" +
-                '}';
-    }
-
-    public Class<?> getTypeClazz() throws ClassNotFoundException {
-        return Class.forName(type);
-    }
-
-    public String getType() {
-        return type;
     }
 }

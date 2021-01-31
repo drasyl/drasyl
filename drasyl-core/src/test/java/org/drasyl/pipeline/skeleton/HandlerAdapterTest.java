@@ -27,9 +27,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.codec.SerializedApplicationMessage;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -154,7 +154,7 @@ class HandlerAdapterTest {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            final ApplicationMessage msg = mock(ApplicationMessage.class);
+            final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
             when(msg.getSender()).thenReturn(sender);
 
             pipeline.processInbound(msg.getSender(), msg);
