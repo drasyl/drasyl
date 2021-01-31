@@ -174,8 +174,9 @@ class GroupsManagerHandlerTest {
 
             pipeline.processInbound(event);
 
-            testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValue(event);
+            testObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(event);
             pipeline.close();
         }
     }
@@ -229,9 +230,10 @@ class GroupsManagerHandlerTest {
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
             assertThrows(CompletionException.class, future::join);
-            testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValues(
-                    new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND));
+            testObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValues(
+                            new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND));
             assertTrue(future.isCompletedExceptionally());
             pipeline.close();
         }
@@ -331,10 +333,11 @@ class GroupsManagerHandlerTest {
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
             future.join();
-            testObserver.awaitCount(2).assertValueCount(2);
-            testObserver.assertValues(
-                    new MemberLeftMessage(publicKey, msg.getGroup()),
-                    new MemberLeftMessage(publicKey, msg.getGroup()));
+            testObserver.awaitCount(2)
+                    .assertValueCount(2)
+                    .assertValues(
+                            new MemberLeftMessage(publicKey, msg.getGroup()),
+                            new MemberLeftMessage(publicKey, msg.getGroup()));
 
             assertTrue(future.isDone());
             pipeline.close();
