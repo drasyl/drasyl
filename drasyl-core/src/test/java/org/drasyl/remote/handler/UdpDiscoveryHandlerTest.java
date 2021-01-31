@@ -68,6 +68,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -587,9 +588,7 @@ class UdpDiscoveryHandlerTest {
                 final long lastApplicationTrafficTime = System.currentTimeMillis();
                 final Peer peer = new Peer(address, lastInboundControlTrafficTime, lastInboundPongTime, lastApplicationTrafficTime);
 
-                peer.inboundPongOccurred();
-
-                assertTrue(true);
+                assertDoesNotThrow(peer::inboundPongOccurred);
             }
         }
 

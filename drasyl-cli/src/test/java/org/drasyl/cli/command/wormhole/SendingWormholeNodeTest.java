@@ -43,8 +43,8 @@ import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -135,10 +135,10 @@ class SendingWormholeNodeTest {
             class OnSetText {
                 @Test
                 void shouldNotFail(@Mock(answer = RETURNS_DEEP_STUBS) final SetText event) {
-                    underTest.onEvent(nodeOnline);
-                    underTest.onEvent(event);
-
-                    assertTrue(true);
+                    assertDoesNotThrow(() -> {
+                        underTest.onEvent(nodeOnline);
+                        underTest.onEvent(event);
+                    });
                 }
             }
         }
@@ -166,9 +166,7 @@ class SendingWormholeNodeTest {
     class TestSetText {
         @Test
         void shouldNotFail() {
-            underTest.setText("Hello you!");
-
-            assertTrue(true);
+            assertDoesNotThrow(() -> underTest.setText("Hello you!"));
         }
     }
 }

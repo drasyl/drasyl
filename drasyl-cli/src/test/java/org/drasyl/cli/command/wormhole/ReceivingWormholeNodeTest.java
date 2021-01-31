@@ -46,8 +46,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -193,9 +193,7 @@ class ReceivingWormholeNodeTest {
     class TestRequestText {
         @Test
         void shouldNotFail(@Mock final CompressedPublicKey sender) {
-            underTest.requestText(sender, "s3cr3t");
-
-            assertTrue(true);
+            assertDoesNotThrow(() -> underTest.requestText(sender, "s3cr3t"));
         }
     }
 }
