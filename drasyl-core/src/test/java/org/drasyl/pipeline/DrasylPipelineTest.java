@@ -24,8 +24,8 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.codec.SerializedApplicationMessage;
 import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -270,7 +270,7 @@ class DrasylPipelineTest {
         final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity);
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        final ApplicationMessage msg = mock(ApplicationMessage.class);
+        final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
         when(msg.getSender()).thenReturn(sender);
 
         final CompletableFuture<Void> future = pipeline.processInbound(msg.getSender(), msg);

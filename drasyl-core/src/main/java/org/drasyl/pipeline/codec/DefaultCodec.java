@@ -23,7 +23,6 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.pipeline.message.UnserializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.serialization.ByteArraySerializer;
 import org.drasyl.serialization.JacksonJsonSerializer;
@@ -39,7 +38,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public class DefaultCodec extends SimpleDuplexHandler<ApplicationMessage, UnserializedApplicationMessage, Address> {
+public class DefaultCodec extends SimpleDuplexHandler<SerializedApplicationMessage, ApplicationMessage, Address> {
     public static final DefaultCodec INSTANCE = new DefaultCodec();
     public static final String DEFAULT_CODEC = "defaultCodec";
     private static final Logger LOG = LoggerFactory.getLogger(DefaultCodec.class);
@@ -50,7 +49,7 @@ public class DefaultCodec extends SimpleDuplexHandler<ApplicationMessage, Unseri
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
-                               final ApplicationMessage msg,
+                               final SerializedApplicationMessage msg,
                                final CompletableFuture<Void> future) {
         try {
             final Serializer serializer;
@@ -66,7 +65,7 @@ public class DefaultCodec extends SimpleDuplexHandler<ApplicationMessage, Unseri
 
             if (serializer != null) {
                 final Object decodedMessage = serializer.fromByteArray(msg.getContent(), msg.getTypeClazz());
-                ctx.fireRead(msg.getSender(), new UnserializedApplicationMessage(msg.getSender(), msg.getRecipient(), decodedMessage), future);
+                ctx.fireRead(msg.getSender(), new ApplicationMessage(msg.getSender(), msg.getRecipient(), decodedMessage), future);
                 LOG.trace("[{}]: Decoded Message '{}'", ctx::name, () -> decodedMessage);
             }
             else {
@@ -83,7 +82,7 @@ public class DefaultCodec extends SimpleDuplexHandler<ApplicationMessage, Unseri
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final UnserializedApplicationMessage envelope,
+                                final ApplicationMessage envelope,
                                 final CompletableFuture<Void> future) {
         final Object msg = envelope.getContent();
         try {
@@ -100,7 +99,7 @@ public class DefaultCodec extends SimpleDuplexHandler<ApplicationMessage, Unseri
 
             if (serializer != null && recipient instanceof CompressedPublicKey) {
                 final byte[] bytes = serializer.toByteArray(msg);
-                ctx.write(recipient, new ApplicationMessage(envelope.getSender(), envelope.getRecipient(), msg.getClass(), bytes), future);
+                ctx.write(recipient, new SerializedApplicationMessage(envelope.getSender(), envelope.getRecipient(), msg.getClass(), bytes), future);
                 LOG.trace("[{}]: Encoded Message '{}'", ctx::name, () -> msg);
             }
             else {

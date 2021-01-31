@@ -31,8 +31,8 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.codec.SerializedApplicationMessage;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.remote.handler.UdpDiscoveryHandler.Peer;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.util.Pair;
@@ -69,7 +69,7 @@ public class UdpDiscoveryHandlerBenchmark {
     private UdpDiscoveryHandler handler;
     private HandlerContext ctx;
     private Address recipient;
-    private ApplicationMessage msg;
+    private SerializedApplicationMessage msg;
     private CompletableFuture<Void> future;
 
     public UdpDiscoveryHandlerBenchmark() {
@@ -84,7 +84,7 @@ public class UdpDiscoveryHandlerBenchmark {
             recipient = new MyAddress();
             final byte[] payload = new byte[1024];
             new Random().nextBytes(payload);
-            msg = new ApplicationMessage(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class, payload);
+            msg = new SerializedApplicationMessage(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class, payload);
             future = new CompletableFuture<>();
 
             directConnectionPeers.add(msg.getRecipient());

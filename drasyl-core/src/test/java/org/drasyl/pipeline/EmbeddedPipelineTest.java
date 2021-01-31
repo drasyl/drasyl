@@ -26,11 +26,11 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.codec.SerializedApplicationMessage;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.pipeline.message.UnserializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,11 +67,11 @@ class EmbeddedPipelineTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.of(List.of(), List.of(), false, false));
         final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+        final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        final ApplicationMessage msg = mock(ApplicationMessage.class);
+        final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
 
         when(msg.getSender()).thenReturn(sender);
 
@@ -99,7 +99,7 @@ class EmbeddedPipelineTest {
                 new HandlerAdapter()
         );
         final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<UnserializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(UnserializedApplicationMessage.class).test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
@@ -110,7 +110,7 @@ class EmbeddedPipelineTest {
 
         outboundMessageTestObserver.awaitCount(1)
                 .assertValueCount(1)
-                .assertValue(new UnserializedApplicationMessage(sender, recipient, msg));
+                .assertValue(new ApplicationMessage(sender, recipient, msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
         pipeline.close();

@@ -31,7 +31,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
@@ -66,7 +66,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 @SuppressWarnings({ "java:S110", "java:S1192" })
-public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<? extends MessageLite>, ApplicationMessage, Address> {
+public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<? extends MessageLite>, SerializedApplicationMessage, Address> {
     public static final String UDP_DISCOVERY_HANDLER = "UDP_DISCOVERY_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(UdpDiscoveryHandler.class);
     private static final Object path = UdpDiscoveryHandler.class;
@@ -228,7 +228,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final ApplicationMessage msg,
+                                final SerializedApplicationMessage msg,
                                 final CompletableFuture<Void> future) {
         // record communication to keep active connections alive
         if (directConnectionPeers.contains(msg.getRecipient())) {
@@ -478,7 +478,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
 
         // convert to ApplicationMessage
         final Application application = envelope.getContent().getBodyAndRelease();
-        final ApplicationMessage applicationMessage = new ApplicationMessage(envelope.getContent().getSender(), envelope.getContent().getRecipient(), application.getType(), application.getPayload().toByteArray());
+        final SerializedApplicationMessage applicationMessage = new SerializedApplicationMessage(envelope.getContent().getSender(), envelope.getContent().getRecipient(), application.getType(), application.getPayload().toByteArray());
         ctx.fireRead(envelope.getSender(), applicationMessage, future);
     }
 

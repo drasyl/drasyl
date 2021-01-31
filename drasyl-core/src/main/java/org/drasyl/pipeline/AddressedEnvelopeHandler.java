@@ -20,7 +20,7 @@ package org.drasyl.pipeline;
 
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.UnserializedApplicationMessage;
+import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 
 import java.util.concurrent.CompletableFuture;
@@ -45,7 +45,7 @@ public class AddressedEnvelopeHandler extends SimpleDuplexHandler<AddressedEnvel
                                 final CompletableFuture<Void> future) {
         // use recipient of the pipeline as recipient of the envelope
         // add own public key as sender
-        ctx.write(recipient, new UnserializedApplicationMessage(ctx.identity().getPublicKey(), recipient, msg), future);
+        ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), recipient, msg), future);
     }
 
     @Override
