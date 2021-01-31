@@ -21,6 +21,8 @@ package org.drasyl.cli.command.wormhole;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.cli.command.wormhole.SendingWormholeNode.OnlineTimeout;
+import org.drasyl.cli.command.wormhole.SendingWormholeNode.SetText;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -39,10 +41,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -57,6 +59,7 @@ class SendingWormholeNodeTest {
     private ByteArrayOutputStream outputStream;
     @Mock
     private CompletableFuture<Void> doneFuture;
+    @Mock
     private PrintStream printStream;
     @Mock
     private DrasylConfig config;
@@ -81,42 +84,73 @@ class SendingWormholeNodeTest {
 
     @Nested
     class OnEvent {
-        @Test
-        void shouldCompleteExceptionallyOnError(@Mock final NodeUnrecoverableErrorEvent event) {
-            underTest.onEvent(event);
+        @Nested
+        class OnNodeUnrecoverableErrorEvent {
+            @Test
+            void shouldCompleteExceptionally(@Mock final NodeUnrecoverableErrorEvent event) {
+                underTest.onEvent(event);
 
-            verify(doneFuture).completeExceptionally(any());
+                verify(doneFuture).completeExceptionally(any());
+            }
         }
 
-        @Test
-        void shouldCompleteOnTerminationEvent(@Mock final NodeNormalTerminationEvent event) {
-            underTest.onEvent(event);
+        @Nested
+        class OnNodeNormalTerminationEvent {
+            @Test
+            void shouldComplete(@Mock final NodeNormalTerminationEvent event) {
+                underTest.onEvent(event);
 
-            verify(doneFuture).complete(null);
+                verify(doneFuture).complete(null);
+            }
         }
 
-        @Test
-        void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
-                                                                @Mock final NodeOnlineEvent nodeOnline) {
-            when(event.getPayload()).thenReturn(new PasswordMessage("123"));
-            underTest.setText("Hi");
+        @Nested
+        class OnNodeOnlineEvent {
+            @Mock(answer = RETURNS_DEEP_STUBS)
+            private NodeOnlineEvent nodeOnline;
 
-            underTest.onEvent(nodeOnline);
-            underTest.onEvent(event);
+            @Test
+            void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+                when(event.getPayload()).thenReturn(new PasswordMessage("123"));
+                underTest.setText("Hi");
 
-            verify(pipeline).processOutbound(eq(event.getSender()), any(TextMessage.class));
+                underTest.onEvent(nodeOnline);
+                underTest.onEvent(event);
+
+                verify(pipeline).processOutbound(eq(event.getSender()), any(TextMessage.class));
+            }
+
+            @Test
+            void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+                when(event.getPayload()).thenReturn(new PasswordMessage("456"));
+                underTest.setText("Hi");
+
+                underTest.onEvent(nodeOnline);
+                underTest.onEvent(event);
+
+                verify(pipeline).processOutbound(eq(event.getSender()), any(WrongPasswordMessage.class));
+            }
+
+            @Nested
+            class OnSetText {
+                @Test
+                void shouldNotFail(@Mock(answer = RETURNS_DEEP_STUBS) final SetText event) {
+                    underTest.onEvent(nodeOnline);
+                    underTest.onEvent(event);
+
+                    assertTrue(true);
+                }
+            }
         }
 
-        @Test
-        void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
-                                                              @Mock final NodeOnlineEvent nodeOnline) {
-            when(event.getPayload()).thenReturn(new PasswordMessage("456"));
-            underTest.setText("Hi");
+        @Nested
+        class OnOnlineTimeout {
+            @Test
+            void shouldComplete(@Mock(answer = RETURNS_DEEP_STUBS) final OnlineTimeout event) {
+                underTest.onEvent(event);
 
-            underTest.onEvent(nodeOnline);
-            underTest.onEvent(event);
-
-            verify(pipeline).processOutbound(eq(event.getSender()), any(WrongPasswordMessage.class));
+                verify(doneFuture).complete(null);
+            }
         }
     }
 
@@ -125,6 +159,16 @@ class SendingWormholeNodeTest {
         @Test
         void shouldReturnDoneFuture() {
             assertEquals(doneFuture, underTest.doneFuture());
+        }
+    }
+
+    @Nested
+    class TestSetText {
+        @Test
+        void shouldNotFail() {
+            underTest.setText("Hello you!");
+
+            assertTrue(true);
         }
     }
 }

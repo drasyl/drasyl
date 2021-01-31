@@ -191,7 +191,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
     /**
      * Signals that the text has been set.
      */
-    private static class SetText implements Event {
+    static class SetText implements Event {
         private final String text;
 
         /**
@@ -205,6 +205,6 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
     /**
      * Signals that the node could not go online.
      */
-    private static class OnlineTimeout implements Event {
+    static class OnlineTimeout implements Event {
     }
 }

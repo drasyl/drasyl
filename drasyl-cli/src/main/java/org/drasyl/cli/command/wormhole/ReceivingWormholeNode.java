@@ -222,7 +222,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
     /**
      * Signals that the node could not go online.
      */
-    private static class OnlineTimeout implements Event {
+    static class OnlineTimeout implements Event {
     }
 
     /**

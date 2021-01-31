@@ -20,9 +20,8 @@
 package org.drasyl.cli.command.wormhole;
 
 import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
-import org.drasyl.behaviour.Behavior;
+import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.RequestText;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
@@ -43,14 +42,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +62,7 @@ class ReceivingWormholeNodeTest {
     private ByteArrayOutputStream outputStream;
     @Mock
     private CompletableFuture<Void> doneFuture;
+    @Mock
     private PrintStream printStream;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private RequestText request;
@@ -88,47 +89,95 @@ class ReceivingWormholeNodeTest {
 
     @Nested
     class OnEvent {
-        @Test
-        void shouldCompleteExceptionallyOnError(@Mock final NodeUnrecoverableErrorEvent event) {
-            underTest.onEvent(event);
+        @Nested
+        class OnNodeUnrecoverableErrorEvent {
+            @Test
+            void shouldCompleteExceptionally(@Mock final NodeUnrecoverableErrorEvent event) {
+                underTest.onEvent(event);
 
-            verify(doneFuture).completeExceptionally(any());
+                verify(doneFuture).completeExceptionally(any());
+            }
         }
 
-        @Test
-        void shouldCompleteOnTerminationEvent(@Mock final NodeNormalTerminationEvent event) {
-            underTest.onEvent(event);
+        @Nested
+        class OnNodeNormalTerminationEvent {
+            @Test
+            void shouldComplete(@Mock final NodeNormalTerminationEvent event) {
+                underTest.onEvent(event);
 
-            verify(doneFuture).complete(null);
+                verify(doneFuture).complete(null);
+            }
         }
 
-        @Test
-        void shouldPrintTextOnTextMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final NodeOnlineEvent nodeOnline,
-                                          @Mock final CompressedPublicKey publicKey) {
-            when(event.getPayload()).thenReturn(new TextMessage("Hi"));
-            when(event.getSender()).thenReturn(publicKey);
-            when(request.getSender()).thenReturn(publicKey);
+        @Nested
+        class OnNodeOnlineEvent {
+            @Mock(answer = RETURNS_DEEP_STUBS)
+            private NodeOnlineEvent nodeOnline;
 
-            underTest.onEvent(nodeOnline);
-            underTest.onEvent(event);
+            @Nested
+            class OnMessageEvent {
+                @Test
+                void shouldPrintTextOnTextMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                                  @Mock final CompressedPublicKey publicKey) {
+                    when(event.getPayload()).thenReturn(new TextMessage("Hi"));
+                    when(event.getSender()).thenReturn(publicKey);
+                    when(request.getSender()).thenReturn(publicKey);
 
-            final String output = outputStream.toString();
-            assertThat(output, containsString("Hi"));
+                    underTest.onEvent(nodeOnline);
+                    underTest.onEvent(event);
+
+                    final String output = outputStream.toString();
+                    assertThat(output, containsString("Hi"));
+                }
+
+                @Test
+                void shouldFailOnWrongPasswordMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                                      @Mock final CompressedPublicKey publicKey) {
+                    when(event.getPayload()).thenReturn(new WrongPasswordMessage());
+                    when(event.getSender()).thenReturn(publicKey);
+                    when(request.getSender()).thenReturn(publicKey);
+
+                    underTest.onEvent(nodeOnline);
+                    underTest.onEvent(event);
+
+                    verify(doneFuture).completeExceptionally(any());
+                }
+            }
+
+            @Nested
+            class OnRequestText {
+                @Test
+                void shouldRequestText(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
+                    underTest = new ReceivingWormholeNode(doneFuture, printStream, null, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+
+                    underTest.onEvent(nodeOnline);
+                    underTest.onEvent(event);
+
+                    verify(pipeline).processOutbound(any(), any());
+                }
+            }
         }
 
-        @Test
-        void shouldFailOnWrongPasswordMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
-                                              @Mock(answer = RETURNS_DEEP_STUBS) final NodeOnlineEvent nodeOnline,
-                                              @Mock final CompressedPublicKey publicKey) {
-            when(event.getPayload()).thenReturn(new WrongPasswordMessage());
-            when(event.getSender()).thenReturn(publicKey);
-            when(request.getSender()).thenReturn(publicKey);
+        @Nested
+        class OnRequestText {
+            @Test
+            void shouldNotRequestTextBecauseNotOffline(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
+                underTest = new ReceivingWormholeNode(doneFuture, printStream, null, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
 
-            underTest.onEvent(nodeOnline);
-            underTest.onEvent(event);
+                underTest.onEvent(event);
 
-            verify(doneFuture).completeExceptionally(any());
+                verify(pipeline, never()).processOutbound(any(), any());
+            }
+        }
+
+        @Nested
+        class OnOnlineTimeout {
+            @Test
+            void shouldComplete(@Mock(answer = RETURNS_DEEP_STUBS) final OnlineTimeout event) {
+                underTest.onEvent(event);
+
+                verify(doneFuture).complete(null);
+            }
         }
     }
 
@@ -137,6 +186,16 @@ class ReceivingWormholeNodeTest {
         @Test
         void shouldReturnDoneFuture() {
             assertEquals(doneFuture, underTest.doneFuture());
+        }
+    }
+
+    @Nested
+    class TestRequestText {
+        @Test
+        void shouldNotFail(@Mock final CompressedPublicKey sender) {
+            underTest.requestText(sender, "s3cr3t");
+
+            assertTrue(true);
         }
     }
 }
