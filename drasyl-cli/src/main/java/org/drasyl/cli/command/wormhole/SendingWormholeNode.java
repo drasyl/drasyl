@@ -114,8 +114,8 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                     .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                     .onEvent(NodeOnlineEvent.class, event -> online())
                     .onEvent(OnlineTimeout.class, event -> {
-                        printStream.println("Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable.");
-                        return terminate();
+                        doneFuture.completeExceptionally(new Exception("Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable."));
+                        return Behaviors.ignore();
                     })
                     .onEvent(SetText.class, event -> text == null, event -> {
                         this.handleSetText(event);

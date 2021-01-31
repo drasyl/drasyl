@@ -56,14 +56,10 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ReceivingWormholeNodeTest {
-    private final String password = "123";
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     private ByteArrayOutputStream outputStream;
+    private PrintStream printStream;
     @Mock
     private CompletableFuture<Void> doneFuture;
-    @Mock
-    private PrintStream printStream;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private RequestText request;
     @Mock
@@ -76,6 +72,8 @@ class ReceivingWormholeNodeTest {
     private Pipeline pipeline;
     @Mock
     private PluginManager pluginManager;
+    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
+    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     @Mock
     private Scheduler scheduler;
     private ReceivingWormholeNode underTest;
@@ -176,7 +174,7 @@ class ReceivingWormholeNodeTest {
             void shouldComplete(@Mock(answer = RETURNS_DEEP_STUBS) final OnlineTimeout event) {
                 underTest.onEvent(event);
 
-                verify(doneFuture).complete(null);
+                verify(doneFuture).completeExceptionally(any());
             }
         }
     }

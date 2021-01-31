@@ -53,14 +53,14 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SendingWormholeNodeTest {
-    private final String password = "123";
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
-    private ByteArrayOutputStream outputStream;
     @Mock
     private CompletableFuture<Void> doneFuture;
-    @Mock
+    @SuppressWarnings("FieldCanBeLocal")
     private PrintStream printStream;
+    @SuppressWarnings("FieldCanBeLocal")
+    private ByteArrayOutputStream outputStream;
+    @SuppressWarnings("FieldCanBeLocal")
+    private final String password = "123";
     @Mock
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -71,6 +71,8 @@ class SendingWormholeNodeTest {
     private Pipeline pipeline;
     @Mock
     private PluginManager pluginManager;
+    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
+    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     @Mock
     private Scheduler scheduler;
     private SendingWormholeNode underTest;
@@ -149,7 +151,7 @@ class SendingWormholeNodeTest {
             void shouldComplete(@Mock(answer = RETURNS_DEEP_STUBS) final OnlineTimeout event) {
                 underTest.onEvent(event);
 
-                verify(doneFuture).complete(null);
+                verify(doneFuture).completeExceptionally(any());
             }
         }
     }

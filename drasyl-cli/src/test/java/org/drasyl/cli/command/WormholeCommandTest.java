@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -50,6 +50,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class WormholeCommandTest {
     private ByteArrayOutputStream outputStream;
+    @SuppressWarnings("FieldCanBeLocal")
     private PrintStream printStream;
     @Mock
     private Supplier<Scanner> scannerSupplier;
