@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - visualize
   - deploy
   - docker-build
   - docker-test
@@ -21,6 +22,7 @@ include:
   - local: /.gitlab-ci/Maven.gitlab-ci.yml # we have to use our own template, since GitLab's template uses JDK8, but we need JDK11
   - local: /.gitlab-ci/Deployments.gitlab-ci.yml
   - local: /.gitlab-ci/Docker.gitlab-ci.yml
+  - local: /.gitlab-ci/VisualCoverage.gitlab-ci.yml
 
 #sast:
 #  variables:

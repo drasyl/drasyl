@@ -84,11 +84,11 @@
     <modules>
         <module>drasyl-cli</module>
         <module>drasyl-core</module>
-        <module>drasyl-integration-tests</module>
         <module>drasyl-examples</module>
         <module>drasyl-performance-tests</module>
         <module>drasyl-plugin-groups-client</module>
         <module>drasyl-plugin-groups-manager</module>
+        <module>drasyl-integration-tests</module>
     </modules>
 
     <distributionManagement>
