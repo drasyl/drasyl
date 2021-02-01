@@ -23,6 +23,7 @@ cache:
         - "*/target/failsafe-reports/TEST-*.xml"
     paths:
       - "drasyl-*.zip"
+      - "drasyl-integration-tests/target/site/jacoco-aggregate/jacoco.xml"
   needs: []
 
 maven-verify:
