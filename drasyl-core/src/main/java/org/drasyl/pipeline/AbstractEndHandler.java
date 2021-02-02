@@ -23,7 +23,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
@@ -40,9 +39,9 @@ abstract class AbstractEndHandler extends AbstractHandlerContext implements Hand
                                  final DrasylScheduler independentScheduler,
                                  final Identity identity,
                                  final PeersManager peersManager,
-                                 final TypeValidator inboundValidator,
-                                 final TypeValidator outboundValidator) {
-        super(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+                                 final Serialization inboundSerialization,
+                                 final Serialization outboundSerialization) {
+        super(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
     }
 
     @Override

@@ -28,7 +28,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -53,10 +52,6 @@ class MessagesThroughputHandlerTest {
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
-    @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
     @Mock
     private PeersManager peersManager;
     @Mock
@@ -83,7 +78,7 @@ class MessagesThroughputHandlerTest {
         });
 
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
         pipeline.processInbound(nodeUp).join();
 
@@ -93,7 +88,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldStopTaskOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, disposable);
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
         pipeline.processInbound(event).join();
 
@@ -103,7 +98,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldStopTaskOnNodeDownEvent(@Mock final NodeDownEvent event) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, disposable);
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
         pipeline.processInbound(event).join();
 
@@ -113,7 +108,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldRecordOutboundMessage(@Mock final Address address) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
         pipeline.processOutbound(address, new Object()).join();
 
@@ -124,7 +119,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldRecordInboundMessage(@Mock final Address address) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
         pipeline.processInbound(address, new Object()).join();
 
@@ -135,7 +130,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldConsumeMatchingOutboundMessage(@Mock final Address address) {
         final Handler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<Object> observable = pipeline.outboundMessages().test();
 
         pipeline.processOutbound(address, new Object()).join();
@@ -146,7 +141,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldConsumeMatchingInboundMessage(@Mock final Address address) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, scheduler, printStream, null);
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<Object> observable = pipeline.inboundMessages().test();
 
         pipeline.processInbound(address, new Object()).join();

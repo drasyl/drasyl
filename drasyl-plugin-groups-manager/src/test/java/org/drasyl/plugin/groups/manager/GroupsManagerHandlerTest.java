@@ -29,7 +29,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
@@ -44,6 +44,7 @@ import org.drasyl.plugin.groups.manager.data.Member;
 import org.drasyl.plugin.groups.manager.data.Membership;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
+import org.drasyl.serialization.JacksonJsonSerializer;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -80,9 +81,9 @@ class GroupsManagerHandlerTest {
     @Mock
     private HandlerContext ctx;
     @Mock
-    private TypeValidator inboundValidator;
+    private Serialization inboundSerialization;
     @Mock
-    private TypeValidator outboundValidator;
+    private Serialization outboundSerialization;
     @Mock
     private DatabaseAdapter databaseAdapter;
     @Mock
@@ -116,16 +117,16 @@ class GroupsManagerHandlerTest {
     class HandlerAdded {
         @Test
         void shouldAddClassesToValidatorAndAddStaleTask() {
-            when(ctx.inboundValidator()).thenReturn(inboundValidator);
-            when(ctx.outboundValidator()).thenReturn(outboundValidator);
+            when(ctx.inboundSerialization()).thenReturn(inboundSerialization);
+            when(ctx.outboundSerialization()).thenReturn(outboundSerialization);
             when(ctx.independentScheduler()).thenReturn(scheduler);
 
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
 
             handler.handlerAdded(ctx);
 
-            verify(inboundValidator).addClass(eq(GroupsClientMessage.class));
-            verify(outboundValidator).addClass(eq(GroupsServerMessage.class));
+            verify(inboundSerialization).addSerializer(eq(GroupsClientMessage.class), any(JacksonJsonSerializer.class));
+            verify(outboundSerialization).addSerializer(eq(GroupsServerMessage.class), any(JacksonJsonSerializer.class));
             verify(scheduler).schedulePeriodicallyDirect(any(), eq(1L), eq(1L), eq(TimeUnit.MINUTES));
         }
     }
@@ -167,8 +168,8 @@ class GroupsManagerHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
@@ -190,8 +191,8 @@ class GroupsManagerHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
@@ -219,8 +220,8 @@ class GroupsManagerHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
@@ -245,8 +246,8 @@ class GroupsManagerHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
@@ -271,8 +272,8 @@ class GroupsManagerHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
@@ -299,8 +300,8 @@ class GroupsManagerHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
@@ -322,8 +323,8 @@ class GroupsManagerHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
             final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
@@ -350,8 +351,8 @@ class GroupsManagerHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
             final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));

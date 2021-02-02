@@ -23,7 +23,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -49,8 +48,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private final DrasylScheduler independentScheduler;
     private final Identity identity;
     private final PeersManager peersManager;
-    private final TypeValidator inboundValidator;
-    private final TypeValidator outboundValidator;
+    private final Serialization inboundSerialization;
+    private final Serialization outboundSerialization;
     private volatile AbstractHandlerContext prev;
     private volatile AbstractHandlerContext next;
 
@@ -61,9 +60,9 @@ abstract class AbstractHandlerContext implements HandlerContext {
                                      final DrasylScheduler independentScheduler,
                                      final Identity identity,
                                      final PeersManager peersManager,
-                                     final TypeValidator inboundValidator,
-                                     final TypeValidator outboundValidator) {
-        this(null, null, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+                                     final Serialization inboundSerialization,
+                                     final Serialization outboundSerialization) {
+        this(null, null, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
     }
 
     AbstractHandlerContext(final AbstractHandlerContext prev,
@@ -75,8 +74,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
                            final DrasylScheduler independentScheduler,
                            final Identity identity,
                            final PeersManager peersManager,
-                           final TypeValidator inboundValidator,
-                           final TypeValidator outboundValidator) {
+                           final Serialization inboundSerialization,
+                           final Serialization outboundSerialization) {
         this.prev = prev;
         this.next = next;
         this.name = name;
@@ -86,8 +85,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
         this.independentScheduler = independentScheduler;
         this.identity = identity;
         this.peersManager = peersManager;
-        this.inboundValidator = inboundValidator;
-        this.outboundValidator = outboundValidator;
+        this.inboundSerialization = inboundSerialization;
+        this.outboundSerialization = outboundSerialization;
     }
 
     void setPrevHandlerContext(final AbstractHandlerContext prev) {
@@ -288,13 +287,13 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public TypeValidator inboundValidator() {
-        return this.inboundValidator;
+    public Serialization inboundSerialization() {
+        return this.inboundSerialization;
     }
 
     @Override
-    public TypeValidator outboundValidator() {
-        return this.outboundValidator;
+    public Serialization outboundSerialization() {
+        return this.outboundSerialization;
     }
 
     Integer getMask() {

@@ -30,7 +30,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.event.GroupMemberJoinedEvent;
@@ -43,6 +43,7 @@ import org.drasyl.plugin.groups.client.message.GroupsClientMessage;
 import org.drasyl.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
+import org.drasyl.serialization.JacksonJsonSerializer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,9 +70,9 @@ class GroupsClientHandlerTest {
     @Mock
     private HandlerContext ctx;
     @Mock
-    private TypeValidator inboundValidator;
+    private Serialization inboundSerialization;
     @Mock
-    private TypeValidator outboundValidator;
+    private Serialization outboundSerialization;
     @Mock
     private List<Disposable> renewTasks;
     @Mock
@@ -95,15 +96,15 @@ class GroupsClientHandlerTest {
     class HandlerAdded {
         @Test
         void shouldAddClassesToValidator() {
-            when(ctx.inboundValidator()).thenReturn(inboundValidator);
-            when(ctx.outboundValidator()).thenReturn(outboundValidator);
+            when(ctx.inboundSerialization()).thenReturn(inboundSerialization);
+            when(ctx.outboundSerialization()).thenReturn(outboundSerialization);
 
             final GroupsClientHandler handler = new GroupsClientHandler(Set.of());
 
             handler.handlerAdded(ctx);
 
-            verify(inboundValidator).addClass(eq(GroupsServerMessage.class));
-            verify(outboundValidator).addClass(eq(GroupsClientMessage.class));
+            verify(inboundSerialization).addSerializer(eq(GroupsServerMessage.class), any(JacksonJsonSerializer.class));
+            verify(outboundSerialization).addSerializer(eq(GroupsClientMessage.class), any(JacksonJsonSerializer.class));
         }
     }
 
@@ -129,8 +130,8 @@ class GroupsClientHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator);
+                    inboundSerialization,
+                    outboundSerialization);
             final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundMessages(GroupLeaveMessage.class).test();
 
             pipeline.addLast("handler", handler);
@@ -153,8 +154,8 @@ class GroupsClientHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
@@ -176,8 +177,8 @@ class GroupsClientHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
             final TestObserver<GroupJoinMessage> outboundObserver = pipeline.outboundMessages(GroupJoinMessage.class).test();
@@ -207,8 +208,8 @@ class GroupsClientHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
             final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
@@ -229,8 +230,8 @@ class GroupsClientHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
             final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
@@ -251,8 +252,8 @@ class GroupsClientHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
             final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
@@ -280,8 +281,8 @@ class GroupsClientHandlerTest {
                     config,
                     identity,
                     peersManager,
-                    inboundValidator,
-                    outboundValidator,
+                    inboundSerialization,
+                    outboundSerialization,
                     handler);
             final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
             final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;

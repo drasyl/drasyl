@@ -27,7 +27,6 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -58,13 +57,7 @@ class SimpleOutboundHandlerTest {
             }
         };
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                peersManager,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
 
         pipeline.processOutbound(recipient, "Hallo Welt".getBytes());
@@ -87,13 +80,7 @@ class SimpleOutboundHandlerTest {
             }
         };
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                peersManager,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
 
         pipeline.processOutbound(recipient, 1337);

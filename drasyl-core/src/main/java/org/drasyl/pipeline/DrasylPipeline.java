@@ -28,8 +28,7 @@ import org.drasyl.loopback.handler.InboundMessageGuard;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.codec.DefaultCodec;
-import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.remote.handler.ByteBuf2MessageHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
@@ -53,7 +52,7 @@ import static org.drasyl.loopback.handler.InboundMessageGuard.INBOUND_MESSAGE_GU
 import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
 import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
 import static org.drasyl.pipeline.AddressedEnvelopeHandler.ADDRESSED_ENVELOPE_HANDLER;
-import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
+import static org.drasyl.pipeline.serialization.MessageSerializer.MESSAGE_SERIALIZER;
 import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
 import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
@@ -76,12 +75,12 @@ public class DrasylPipeline extends DefaultPipeline {
                           final PeersManager peersManager,
                           final EventLoopGroup bossGroup) {
         this.handlerNames = new ConcurrentHashMap<>();
-        this.inboundValidator = TypeValidator.ofInboundValidator(config);
-        this.outboundValidator = TypeValidator.ofOutboundValidator(config);
+        this.inboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound());
+        this.outboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound());
         this.dependentScheduler = DrasylSchedulerUtil.getInstanceLight();
         this.independentScheduler = DrasylSchedulerUtil.getInstanceHeavy();
-        this.head = new HeadContext(config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
-        this.tail = new TailContext(eventConsumer, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+        this.head = new HeadContext(config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
+        this.tail = new TailContext(eventConsumer, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
@@ -106,8 +105,7 @@ public class DrasylPipeline extends DefaultPipeline {
         }
 
         if (config.isRemoteEnabled()) {
-            // add default codec
-            addFirst(DEFAULT_CODEC, DefaultCodec.INSTANCE);
+            addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
             addFirst(UDP_DISCOVERY_HANDLER, new UdpDiscoveryHandler(config));
 

@@ -25,7 +25,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,10 +46,6 @@ class HopCountGuardTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
 
     @Test
     void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final CompressedPublicKey address,
@@ -59,7 +54,7 @@ class HopCountGuardTest {
         when(message.getContent().getHopCount()).thenReturn((byte) 1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
         pipeline.processOutbound(address, message);
@@ -79,7 +74,7 @@ class HopCountGuardTest {
         when(message.refCnt()).thenReturn(1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
         pipeline.processOutbound(address, message);

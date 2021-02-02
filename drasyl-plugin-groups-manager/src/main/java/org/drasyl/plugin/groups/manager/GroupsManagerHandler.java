@@ -36,6 +36,7 @@ import org.drasyl.plugin.groups.manager.data.Member;
 import org.drasyl.plugin.groups.manager.data.Membership;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
+import org.drasyl.serialization.JacksonJsonSerializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -48,7 +49,6 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
 
-@SuppressWarnings("RedundantThrows")
 public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, CompressedPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
@@ -66,8 +66,8 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
 
     @Override
     public void handlerAdded(final HandlerContext ctx) {
-        ctx.inboundValidator().addClass(GroupsClientMessage.class);
-        ctx.outboundValidator().addClass(GroupsServerMessage.class);
+        ctx.inboundSerialization().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
+        ctx.outboundSerialization().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
 
         // Register stale task timer
         staleTask = ctx.independentScheduler().schedulePeriodicallyDirect(() -> staleTask(ctx), 1L, 1L, MINUTES);

@@ -32,11 +32,10 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.SerializedApplicationMessage;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.util.JSONUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -103,14 +102,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    TypeValidator.ofInboundValidator(config),
-                    TypeValidator.ofOutboundValidator(config),
-                    AddressedEnvelopeHandler.INSTANCE,
-                    handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler);
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
             final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
             pipeline.processOutbound(recipient, payload);
@@ -150,14 +142,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    TypeValidator.ofInboundValidator(config),
-                    TypeValidator.ofOutboundValidator(config),
-                    AddressedEnvelopeHandler.INSTANCE,
-                    handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler);
             final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
@@ -205,14 +190,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    TypeValidator.ofInboundValidator(config),
-                    TypeValidator.ofOutboundValidator(config),
-                    AddressedEnvelopeHandler.INSTANCE,
-                    handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler);
             final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -259,13 +237,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    TypeValidator.ofInboundValidator(config),
-                    TypeValidator.ofOutboundValidator(config),
-                    handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
             final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -312,7 +284,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final NodeUpEvent event = mock(NodeUpEvent.class);
@@ -350,7 +322,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final Event event = mock(Event.class);

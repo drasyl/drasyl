@@ -24,8 +24,8 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.codec.SerializedApplicationMessage;
 import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +42,7 @@ import static org.drasyl.loopback.handler.InboundMessageGuard.INBOUND_MESSAGE_GU
 import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
-import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
+import static org.drasyl.pipeline.serialization.MessageSerializer.MESSAGE_SERIALIZER;
 import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
 import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
@@ -102,7 +102,7 @@ class DrasylPipelineTest {
         assertNull(pipeline.context(DRASYL_TAIL_HANDLER));
 
         // Test if default handler are added
-        assertNotNull(pipeline.get(DEFAULT_CODEC), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(MESSAGE_SERIALIZER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(INBOUND_MESSAGE_GUARD), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(LOOPBACK_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");

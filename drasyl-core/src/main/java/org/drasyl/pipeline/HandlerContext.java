@@ -23,7 +23,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
@@ -168,16 +167,16 @@ public interface HandlerContext {
     PeersManager peersManager();
 
     /**
-     * Returns the inbound type validator of this pipeline.
+     * Returns the inbound {@link Serialization} of this pipeline.
      *
-     * @return the inbound type validator
+     * @return the inbound {@link Serialization}
      */
-    TypeValidator inboundValidator();
+    Serialization inboundSerialization();
 
     /**
-     * Returns the outbound type validator of this pipeline.
+     * Returns the outbound {@link Serialization} of this pipeline.
      *
-     * @return the outbound type validator
+     * @return the outbound {@link Serialization}
      */
-    TypeValidator outboundValidator();
+    Serialization outboundSerialization();
 }

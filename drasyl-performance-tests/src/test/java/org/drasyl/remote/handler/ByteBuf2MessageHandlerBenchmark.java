@@ -28,9 +28,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
+import org.drasyl.pipeline.Serialization;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
@@ -149,12 +149,12 @@ public class ByteBuf2MessageHandlerBenchmark {
         }
 
         @Override
-        public TypeValidator inboundValidator() {
+        public Serialization inboundSerialization() {
             return null;
         }
 
         @Override
-        public TypeValidator outboundValidator() {
+        public Serialization outboundSerialization() {
             return null;
         }
     }

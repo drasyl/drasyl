@@ -24,7 +24,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,13 +45,7 @@ class LoopbackMessageHandlerTest {
     @Test
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final CompressedPublicKey recipient,
                                                     @Mock final ApplicationMessage message) {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                peersManager, TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new LoopbackMessageHandler()
-        );
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler());
         final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
         pipeline.processOutbound(recipient, message);
@@ -68,13 +61,7 @@ class LoopbackMessageHandlerTest {
         when(identity.getPublicKey()).thenReturn(recipient);
         when(message.getRecipient()).thenReturn(recipient);
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                peersManager, TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new LoopbackMessageHandler(true)
-        );
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler(true));
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processOutbound(recipient, message);

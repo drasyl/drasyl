@@ -41,6 +41,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
+import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -297,12 +298,9 @@ public abstract class DrasylNode {
      *
      * <p>
      * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
-     * not sent and the future is fulfilled with an exception. By default, drasyl allows the
-     * serialization of Java's primitive types, as well as {@link String} and {@link Number}.
-     * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
-     * HandlerContext#inboundValidator()} or {@link HandlerContext#outboundValidator()}. If the
-     * {@link org.drasyl.pipeline.codec.DefaultCodec} does not support these objects, a custom
-     * {@link org.drasyl.pipeline.Handler} can be added to the beginning of the {@link Pipeline}.
+     * not sent and the future is fulfilled with an exception. Serializable objects can be added on
+     * start via the {@link DrasylConfig} or on demand via {@link HandlerContext#inboundSerialization()}
+     * or {@link HandlerContext#outboundSerialization()}.
      * </p>
      *
      * @param recipient the recipient of a message as compressed public key
@@ -310,8 +308,7 @@ public abstract class DrasylNode {
      * @return a completed future if the message was successfully processed, otherwise an
      * exceptionally future
      * @see org.drasyl.pipeline.Handler
-     * @see org.drasyl.pipeline.codec.DefaultCodec
-     * @see org.drasyl.pipeline.codec.TypeValidator
+     * @see MessageSerializer
      * @since 0.1.3-SNAPSHOT
      */
     @NonNull
@@ -334,12 +331,9 @@ public abstract class DrasylNode {
      *
      * <p>
      * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
-     * not sent and the future is fulfilled with an exception. By default, drasyl allows the
-     * serialization of Java's primitive types, as well as {@link String} and {@link Number}.
-     * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
-     * HandlerContext#inboundValidator()} or {@link HandlerContext#outboundValidator()}. If the
-     * {@link org.drasyl.pipeline.codec.DefaultCodec} does not support these objects, a custom
-     * {@link org.drasyl.pipeline.Handler} can be added to the beginning of the {@link Pipeline}.
+     * not sent and the future is fulfilled with an exception. Serializable objects can be added on
+     * start via the {@link DrasylConfig} or on demand via {@link HandlerContext#inboundSerialization()}
+     * or {@link HandlerContext#outboundSerialization()}.
      * </p>
      *
      * @param recipient the recipient of a message
@@ -347,8 +341,7 @@ public abstract class DrasylNode {
      * @return a completed future if the message was successfully processed, otherwise an
      * exceptionally future
      * @see org.drasyl.pipeline.Handler
-     * @see org.drasyl.pipeline.codec.DefaultCodec
-     * @see org.drasyl.pipeline.codec.TypeValidator
+     * @see MessageSerializer
      * @since 0.1.3-SNAPSHOT
      */
     @NonNull

@@ -25,7 +25,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
@@ -50,9 +49,9 @@ class TailContext extends AbstractEndHandler {
                        final DrasylScheduler independentScheduler,
                        final Identity identity,
                        final PeersManager peersManager,
-                       final TypeValidator inboundValidator,
-                       final TypeValidator outboundValidator) {
-        super(DRASYL_TAIL_HANDLER, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+                       final Serialization inboundSerialization,
+                       final Serialization outboundSerialization) {
+        super(DRASYL_TAIL_HANDLER, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
         this.eventConsumer = eventConsumer;
     }
 

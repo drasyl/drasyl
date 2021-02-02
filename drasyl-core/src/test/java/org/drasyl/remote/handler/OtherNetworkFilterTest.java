@@ -25,7 +25,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
@@ -46,10 +45,6 @@ class OtherNetworkFilterTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
 
     @Test
     void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException {
@@ -58,7 +53,7 @@ class OtherNetworkFilterTest {
         when(message.refCnt()).thenReturn(1);
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message.getSender(), message);
@@ -74,7 +69,7 @@ class OtherNetworkFilterTest {
         when(message.getContent().getNetworkId()).thenReturn(123);
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
         pipeline.processInbound(message.getSender(), message);

@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline.codec;
+package org.drasyl.pipeline.serialization;
 
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
