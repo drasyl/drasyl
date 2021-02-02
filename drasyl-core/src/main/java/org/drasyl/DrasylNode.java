@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021.
+ * Copyright (c) 2020-2021.
  *
  * This file is part of drasyl.
  *
@@ -441,7 +441,7 @@ public abstract class DrasylNode {
                                 pluginManager.afterShutdown();
                                 INSTANCES.remove(DrasylNode.this);
                                 newStartFuture.completeExceptionally(new Exception("Node start failed:", e));
-                                shutdownFuture.set(null);
+                                startFuture.set(null);
                             });
                         }
                     });
