@@ -78,8 +78,6 @@ public class NodeCommand extends AbstractCommand {
                                 }
                             }
                         };
-                        VisualPipeline.printInboundOrder((DefaultPipeline) myNode.pipeline(), ALL);
-                        VisualPipeline.printOutboundOrder((DefaultPipeline) myNode.pipeline(), ALL);
                         myNode.start();
                         return Pair.of(myNode, running);
                     }
