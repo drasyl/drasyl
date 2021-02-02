@@ -23,7 +23,7 @@ import org.drasyl.DrasylNode;
 import java.util.List;
 import java.util.function.Function;
 
-class DeferredBehavior extends Behavior {
+public class DeferredBehavior extends Behavior {
     private final Function<DrasylNode, Behavior> factory;
 
     public DeferredBehavior(final Function<DrasylNode, Behavior> factory) {
