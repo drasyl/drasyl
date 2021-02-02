@@ -18,7 +18,6 @@
  */
 package org.drasyl.util;
 
-import org.hamcrest.collection.IsMapContaining;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +26,7 @@ import java.util.Map;
 
 import static org.drasyl.util.UriUtil.createUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -51,8 +51,8 @@ class UriUtilTest {
             final URI uri = URI.create("schema://host/path?param1=a&param2=b");
             final Map<String, String> queryMap = UriUtil.getQueryMap(uri);
 
-            assertThat(queryMap, IsMapContaining.hasEntry("param1", "a"));
-            assertThat(queryMap, IsMapContaining.hasEntry("param2", "b"));
+            assertThat(queryMap, hasEntry("param1", "a"));
+            assertThat(queryMap, hasEntry("param2", "b"));
         }
 
         @Test
@@ -63,6 +63,7 @@ class UriUtilTest {
             assertEquals(0, queryMap.size());
         }
 
+        @SuppressWarnings("ConstantConditions")
         @Test
         void shouldThrowExceptionOnNull() {
             assertThrows(NullPointerException.class, () -> UriUtil.getQueryMap(null));
