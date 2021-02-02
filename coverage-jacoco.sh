@@ -2,7 +2,7 @@
 
 
 #
-# Copyright (c) 2020.
+# Copyright (c) 2020-2021.
 #
 # This file is part of drasyl.
 #

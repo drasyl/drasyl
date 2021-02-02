@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021.
+ * Copyright (c) 2020-2021.
  *
  * This file is part of drasyl.
  *
@@ -104,7 +104,8 @@ public class NatPmpUtil {
      *    listening.
      * </pre>
      *
-     * @throws IllegalArgumentException if {@code internalPort} or {@code externalPort} is not in range of [0, 2^16 - 1]
+     * @throws IllegalArgumentException if {@code internalPort} or {@code externalPort} is not in
+     *                                  range of [0, 2^16 - 1]
      */
     public static byte[] buildMappingRequestMessage(final int internalPort,
                                                     final int externalPort,

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (c) 2020.
+# Copyright (c) 2020-2021.
 #
 # This file is part of drasyl.
 #
@@ -25,7 +25,7 @@
 ##
 ##############################################################################
 
-die ( ) {
+die() {
     echo
     echo "$*"
     echo
@@ -36,52 +36,52 @@ die ( ) {
 cygwin=false
 msys=false
 darwin=false
-case "`uname`" in
-  CYGWIN* )
+case "$(uname)" in
+CYGWIN*)
     cygwin=true
     ;;
-  Darwin* )
+Darwin*)
     darwin=true
     ;;
-  MINGW* )
+MINGW*)
     msys=true
     ;;
 esac
 
 # For Cygwin, ensure paths are in UNIX format before anything is touched.
-if $cygwin ; then
-    [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
+if $cygwin; then
+    [ -n "$JAVA_HOME" ] && JAVA_HOME=$(cygpath --unix "$JAVA_HOME")
 fi
 
 # Attempt to set SERVIENT_HOME
 # Resolve links: $0 may be a link
 PRG="$0"
 # Need this for relative symlinks.
-while [ -h "$PRG" ] ; do
-    ls=`ls -ld "$PRG"`
-    link=`expr "$ls" : '.*-> \(.*\)$'`
-    if expr "$link" : '/.*' > /dev/null; then
+while [ -h "$PRG" ]; do
+    ls=$(ls -ld "$PRG")
+    link=$(expr "$ls" : '.*-> \(.*\)$')
+    if expr "$link" : '/.*' >/dev/null; then
         PRG="$link"
     else
-        PRG=`dirname "$PRG"`"/$link"
+        PRG=$(dirname "$PRG")"/$link"
     fi
 done
-SAVED="`pwd`"
-cd "`dirname \"$PRG\"`/.."
-SERVIENT_HOME="`pwd -P`"
+SAVED="$(pwd)"
+cd "$(dirname "$PRG")/.."
+SERVIENT_HOME="$(pwd -P)"
 cd "$SAVED"
 
 CLASSPATH=${CLASSPATH}:${SERVIENT_HOME}/lib/*
 
 # Determine the Java command to use to start the JVM.
-if [ -n "$JAVA_HOME" ] ; then
-    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+if [ -n "$JAVA_HOME" ]; then
+    if [ -x "$JAVA_HOME/jre/sh/java" ]; then
         # IBM's JDK on AIX uses strange locations for the executables
         JAVACMD="$JAVA_HOME/jre/sh/java"
     else
         JAVACMD="$JAVA_HOME/bin/java"
     fi
-    if [ ! -x "$JAVACMD" ] ; then
+    if [ ! -x "$JAVACMD" ]; then
         die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
 
 Please set the JAVA_HOME variable in your environment to match the
@@ -96,7 +96,7 @@ location of your Java installation."
 fi
 
 # Split up the JVM_OPTS And VERTX_OPTS values into an array, following the shell quoting and substitution rules
-function splitJvmOpts ( ) {
+function splitJvmOpts() {
     JVM_OPTS=("$@")
 }
 eval splitJvmOpts $JVM_OPTS $JAVA_OPTS $JMX_OPTS

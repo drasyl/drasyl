@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2021.
+# Copyright (c) 2020-2021.
 #
 # This file is part of drasyl.
 #
