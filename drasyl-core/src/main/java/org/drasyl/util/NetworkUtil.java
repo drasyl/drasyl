@@ -50,6 +50,7 @@ import static org.drasyl.util.UrlUtil.createUrl;
  * Utility class for network-related operations.
  */
 public final class NetworkUtil {
+    private static final NetworkUtilImpl impl = new NetworkUtilImpl();
     /**
      * The minimum server port number.
      */
@@ -93,46 +94,7 @@ public final class NetworkUtil {
      * @return the external IPv4 address or {@code null} in case of error
      */
     public static Inet4Address getExternalIPv4Address() {
-        return getExternalIPAddress(EXTERNAL_IPV4_ADDRESS_SERVICES);
-    }
-
-    /**
-     * Determines the external IP address.
-     * <p>
-     * Note: This is a blocking method, because it connects to external server that may react slowly
-     * or not at all.
-     *
-     * @return the external IP address or {@code null} in case of error
-     */
-    private static <T extends InetAddress> T getExternalIPAddress(final URL[] providers) {
-        // distribute requests across all available ip check tools
-        final int randomOffset = Crypto.randomNumber(providers.length);
-        for (int i = 0; i < providers.length; i++) {
-            final URL provider = providers[(i + randomOffset) % providers.length];
-
-            try {
-                final URLConnection connection = provider.openConnection();
-                connection.setConnectTimeout(5000);
-                connection.setReadTimeout(5000);
-
-                LOG.debug("Request external ip address from service '{}'...", provider);
-
-                try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                    final String response = reader.readLine();
-                    @SuppressWarnings("unchecked") final T address = (T) InetAddress.getByName(response);
-                    if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && !address.isSiteLocalAddress()) {
-                        LOG.debug("Got external ip address '{}' from service '{}'", address, provider);
-                        return address;
-                    }
-                }
-            }
-            catch (final IOException | ClassCastException e) {
-                // do nothing, skip to next provider
-            }
-        }
-
-        // no provider was successful
-        return null;
+        return impl.getExternalIPAddress(EXTERNAL_IPV4_ADDRESS_SERVICES);
     }
 
     /**
@@ -144,7 +106,7 @@ public final class NetworkUtil {
      * @return the external IPv6 address or {@code null} in case of error
      */
     public static Inet6Address getExternalIPv6Address() {
-        return getExternalIPAddress(EXTERNAL_IPV6_ADDRESS_SERVICES);
+        return impl.getExternalIPAddress(EXTERNAL_IPV6_ADDRESS_SERVICES);
     }
 
     /**
@@ -161,20 +123,7 @@ public final class NetworkUtil {
      */
     @SuppressWarnings("java:S4818")
     public static boolean available(final int port) {
-        if (!isValidPort(port)) {
-            throw new IllegalArgumentException("Invalid port: " + port);
-        }
-
-        try (final ServerSocket ss = new ServerSocket(port)) {
-            ss.setReuseAddress(true);
-
-            return true;
-        }
-        catch (final IOException e) {
-            // Do nothing
-        }
-
-        return false;
+        return impl.available(port);
     }
 
     /**
@@ -183,9 +132,8 @@ public final class NetworkUtil {
      * @param port port that should be validated.
      * @return true if valid, otherwise false
      */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isValidPort(final int port) {
-        return port >= MIN_PORT_NUMBER && port <= MAX_PORT_NUMBER;
+        return impl.isValidPort(port);
     }
 
     /**
@@ -197,21 +145,7 @@ public final class NetworkUtil {
      * @throws IllegalArgumentException is thrown if the port number is out of range
      */
     public static boolean alive(final String host, final int port) {
-        if (!isValidPort(port)) {
-            throw new IllegalArgumentException("Invalid port: " + port);
-        }
-
-        try (final Socket s = new Socket(host, port)) {
-            final PrintWriter out = new PrintWriter(s.getOutputStream(), true, StandardCharsets.UTF_8);
-            out.println("GET / HTTP/1.1");
-
-            return true;
-        }
-        catch (final IOException e) {
-            // Do nothing
-        }
-
-        return false;
+        return impl.alive(host, port);
     }
 
     /**
@@ -222,31 +156,7 @@ public final class NetworkUtil {
      * if no address can be obtained
      */
     public static Set<InetAddress> getAddresses() {
-        try {
-            final Set<InetAddress> addresses = new HashSet<>();
-
-            final Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-            while (ifaces.hasMoreElements()) {
-                final NetworkInterface iface = ifaces.nextElement();
-
-                if (!iface.isUp() || iface.isLoopback() || iface.isPointToPoint()) {
-                    continue;
-                }
-
-                final Enumeration<InetAddress> ifaceAddresses = iface.getInetAddresses();
-                while (ifaceAddresses.hasMoreElements()) {
-                    final InetAddress address = ifaceAddresses.nextElement();
-                    if (isValidNonSpecialIPAddress(address)) {
-                        addresses.add(address);
-                    }
-                }
-            }
-
-            return addresses;
-        }
-        catch (final SocketException e) {
-            return Set.of(InetAddress.getLoopbackAddress());
-        }
+        return impl.getAddresses();
     }
 
     /**
@@ -279,12 +189,7 @@ public final class NetworkUtil {
      * @return the local host name. If no host name can be determined, {@code null} is returned.
      */
     public static String getLocalHostName() {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        }
-        catch (final UnknownHostException e) {
-            return null;
-        }
+        return impl.getLocalHostName();
     }
 
     /**
@@ -308,12 +213,7 @@ public final class NetworkUtil {
      *                                  scope_id was specified for a global IPv6 address.
      */
     public static InetAddress createInetAddress(final String str) {
-        try {
-            return InetAddress.getByName(str);
-        }
-        catch (final UnknownHostException x) {
-            throw new IllegalArgumentException(x.getMessage(), x);
-        }
+        return impl.createInetAddress(str);
     }
 
     /**
@@ -329,23 +229,7 @@ public final class NetworkUtil {
      * @throws NullPointerException If the specified address is {@code null}.
      */
     public static short getNetworkPrefixLength(final InetAddress address) {
-        try {
-            final NetworkInterface networkInterface = NetworkInterface.getByInetAddress(address);
-            if (networkInterface != null) {
-                for (final InterfaceAddress ifaceAddress : networkInterface.getInterfaceAddresses()) {
-                    if (address.equals(ifaceAddress.getAddress())) {
-                        return ifaceAddress.getNetworkPrefixLength();
-                    }
-                }
-            }
-
-            // no network interface with the specified IP address found
-            return -1;
-        }
-        catch (final SocketException e) {
-            // I/O error occurs
-            return -1;
-        }
+        return impl.getNetworkPrefixLength(address);
     }
 
     /**
@@ -422,44 +306,7 @@ public final class NetworkUtil {
     }
 
     public static InetAddress getDefaultGateway() {
-        // get line with default gateway address from "netstat"
-        String line;
-        try {
-            final Process result = Runtime.getRuntime().exec("netstat -rn");
-            final BufferedReader output = new BufferedReader(new InputStreamReader(result.getInputStream()));
-
-            while ((line = output.readLine()) != null) {
-                line = line.trim();
-                if (line.startsWith("default") || line.startsWith("0.0.0.0")) {
-                    break;
-                }
-            }
-        }
-        catch (final IOException e) {
-            LOG.warn("Unable to determine default gateway address.", e);
-            return null;
-        }
-
-        if (line == null) {
-            return null;
-        }
-
-        // get token with default gateway address
-        final StringTokenizer tokenizer = new StringTokenizer(line);
-        while (tokenizer.hasMoreTokens()) {
-            final String token = tokenizer.nextToken();
-            try {
-                final InetAddress address = InetAddress.getByName(token);
-                if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && address.isSiteLocalAddress()) {
-                    return address;
-                }
-            }
-            catch (final UnknownHostException e) {
-                // do nothing
-            }
-        }
-
-        return null;
+        return impl.getDefaultGateway();
     }
 
     public static byte[] getIpv4MappedIPv6AddressBytes(final InetAddress address) {
@@ -473,6 +320,189 @@ public final class NetworkUtil {
         }
         else {
             return address.getAddress();
+        }
+    }
+
+    /**
+     * Private implementation class pointed to some static methods.
+     */
+    static class NetworkUtilImpl {
+        <T extends InetAddress> T getExternalIPAddress(final URL[] providers) {
+            // distribute requests across all available ip check tools
+            final int randomOffset = Crypto.randomNumber(providers.length);
+            for (int i = 0; i < providers.length; i++) {
+                final URL provider = providers[(i + randomOffset) % providers.length];
+
+                try {
+                    final URLConnection connection = provider.openConnection();
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(5000);
+
+                    LOG.debug("Request external ip address from service '{}'...", provider);
+
+                    try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                        final String response = reader.readLine();
+                        @SuppressWarnings("unchecked") final T address = (T) InetAddress.getByName(response);
+                        if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && !address.isSiteLocalAddress()) {
+                            LOG.debug("Got external ip address '{}' from service '{}'", address, provider);
+                            return address;
+                        }
+                    }
+                }
+                catch (final IOException | ClassCastException e) {
+                    // do nothing, skip to next provider
+                }
+            }
+
+            // no provider was successful
+            return null;
+        }
+
+        boolean available(final int port) {
+            if (!isValidPort(port)) {
+                throw new IllegalArgumentException("Invalid port: " + port);
+            }
+
+            try (final ServerSocket ss = new ServerSocket(port)) {
+                ss.setReuseAddress(true);
+
+                return true;
+            }
+            catch (final IOException e) {
+                // Do nothing
+            }
+
+            return false;
+        }
+
+        @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+        boolean isValidPort(final int port) {
+            return port >= MIN_PORT_NUMBER && port <= MAX_PORT_NUMBER;
+        }
+
+        boolean alive(final String host, final int port) {
+            if (!isValidPort(port)) {
+                throw new IllegalArgumentException("Invalid port: " + port);
+            }
+
+            try (final Socket s = new Socket(host, port)) {
+                final PrintWriter out = new PrintWriter(s.getOutputStream(), true, StandardCharsets.UTF_8);
+                out.println("GET / HTTP/1.1");
+
+                return true;
+            }
+            catch (final IOException e) {
+                // Do nothing
+            }
+
+            return false;
+        }
+
+        Set<InetAddress> getAddresses() {
+            try {
+                final Set<InetAddress> addresses = new HashSet<>();
+
+                final Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+                while (ifaces.hasMoreElements()) {
+                    final NetworkInterface iface = ifaces.nextElement();
+
+                    if (!iface.isUp() || iface.isLoopback() || iface.isPointToPoint()) {
+                        continue;
+                    }
+
+                    final Enumeration<InetAddress> ifaceAddresses = iface.getInetAddresses();
+                    while (ifaceAddresses.hasMoreElements()) {
+                        final InetAddress address = ifaceAddresses.nextElement();
+                        if (isValidNonSpecialIPAddress(address)) {
+                            addresses.add(address);
+                        }
+                    }
+                }
+
+                return addresses;
+            }
+            catch (final SocketException e) {
+                return Set.of(InetAddress.getLoopbackAddress());
+            }
+        }
+
+        String getLocalHostName() {
+            try {
+                return InetAddress.getLocalHost().getHostName();
+            }
+            catch (final UnknownHostException e) {
+                return null;
+            }
+        }
+
+        InetAddress createInetAddress(final String str) {
+            try {
+                return InetAddress.getByName(str);
+            }
+            catch (final UnknownHostException x) {
+                throw new IllegalArgumentException(x.getMessage(), x);
+            }
+        }
+
+        short getNetworkPrefixLength(final InetAddress address) {
+            try {
+                final NetworkInterface networkInterface = NetworkInterface.getByInetAddress(address);
+                if (networkInterface != null) {
+                    for (final InterfaceAddress ifaceAddress : networkInterface.getInterfaceAddresses()) {
+                        if (address.equals(ifaceAddress.getAddress())) {
+                            return ifaceAddress.getNetworkPrefixLength();
+                        }
+                    }
+                }
+
+                // no network interface with the specified IP address found
+                return -1;
+            }
+            catch (final SocketException e) {
+                // I/O error occurs
+                return -1;
+            }
+        }
+
+        InetAddress getDefaultGateway() {
+            // get line with default gateway address from "netstat"
+            String line;
+            try {
+                final Process result = Runtime.getRuntime().exec("netstat -rn");
+                final BufferedReader output = new BufferedReader(new InputStreamReader(result.getInputStream()));
+
+                while ((line = output.readLine()) != null) {
+                    line = line.trim();
+                    if (line.startsWith("default") || line.startsWith("0.0.0.0")) {
+                        break;
+                    }
+                }
+            }
+            catch (final IOException e) {
+                LOG.warn("Unable to determine default gateway address.", e);
+                return null;
+            }
+
+            if (line == null) {
+                return null;
+            }
+
+            // get token with default gateway address
+            final StringTokenizer tokenizer = new StringTokenizer(line);
+            while (tokenizer.hasMoreTokens()) {
+                final String token = tokenizer.nextToken();
+                try {
+                    final InetAddress address = InetAddress.getByName(token);
+                    if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && address.isSiteLocalAddress()) {
+                        return address;
+                    }
+                }
+                catch (final UnknownHostException e) {
+                    // do nothing
+                }
+            }
+
+            return null;
         }
     }
 }
