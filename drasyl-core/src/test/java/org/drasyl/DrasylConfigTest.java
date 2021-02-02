@@ -29,6 +29,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.plugin.DrasylPlugin;
+import org.drasyl.serialization.Serializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,9 +49,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
@@ -63,14 +65,6 @@ import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.LOCAL_HOST_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.LOCAL_HOST_DISCOVERY_LEASE_TIME;
 import static org.drasyl.DrasylConfig.LOCAL_HOST_DISCOVERY_PATH;
-import static org.drasyl.DrasylConfig.MARSHALLING_INBOUND_ALLOWED_PACKAGES;
-import static org.drasyl.DrasylConfig.MARSHALLING_INBOUND_ALLOWED_TYPES;
-import static org.drasyl.DrasylConfig.MARSHALLING_INBOUND_ALLOW_ALL_PRIMITIVES;
-import static org.drasyl.DrasylConfig.MARSHALLING_INBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES;
-import static org.drasyl.DrasylConfig.MARSHALLING_OUTBOUND_ALLOWED_PACKAGES;
-import static org.drasyl.DrasylConfig.MARSHALLING_OUTBOUND_ALLOWED_TYPES;
-import static org.drasyl.DrasylConfig.MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES;
-import static org.drasyl.DrasylConfig.MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES;
 import static org.drasyl.DrasylConfig.MONITORING_ENABLED;
 import static org.drasyl.DrasylConfig.MONITORING_HOST_TAG;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_DATABASE;
@@ -92,6 +86,9 @@ import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_MTU;
 import static org.drasyl.DrasylConfig.REMOTE_PING_INTERVAL;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINT;
+import static org.drasyl.DrasylConfig.SERIALIZATION_BINDINGS_INBOUND;
+import static org.drasyl.DrasylConfig.SERIALIZATION_BINDINGS_OUTBOUND;
+import static org.drasyl.DrasylConfig.SERIALIZATION_SERIALIZERS;
 import static org.drasyl.DrasylConfig.getByte;
 import static org.drasyl.DrasylConfig.getEndpointList;
 import static org.drasyl.DrasylConfig.getInetAddress;
@@ -100,6 +97,8 @@ import static org.drasyl.DrasylConfig.getPath;
 import static org.drasyl.DrasylConfig.getPlugins;
 import static org.drasyl.DrasylConfig.getPrivateKey;
 import static org.drasyl.DrasylConfig.getPublicKey;
+import static org.drasyl.DrasylConfig.getSerializationBindings;
+import static org.drasyl.DrasylConfig.getSerializationSerializers;
 import static org.drasyl.DrasylConfig.getURI;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -129,6 +128,7 @@ class DrasylConfigTest {
     private Duration serverHandshakeTimeout;
     private Set<Endpoint> serverEndpoints;
     private boolean remoteExposeEnabled;
+    @SuppressWarnings("unused")
     private int remoteMessageMtu;
     private int remoteMessageMaxContentLength;
     private byte remoteMessageHopLimit;
@@ -150,17 +150,16 @@ class DrasylConfigTest {
     private String monitoringInfluxDatabase;
     private Duration monitoringInfluxReportingFrequency;
     private Set<DrasylPlugin> plugins;
-    private List<String> marshallingInboundAllowedTypes;
-    private boolean marshallingInboundAllowAllPrimitives;
-    private boolean marshallingInboundAllowArrayOfDefinedTypes;
-    private List<String> marshallingInboundAllowedPackages;
-    private List<String> marshallingOutboundAllowedTypes;
-    private boolean marshallingOutboundAllowAllPrimitives;
-    private boolean marshallingOutboundAllowArrayOfDefinedTypes;
-    private List<String> marshallingOutboundAllowedPackages;
+    private Map<String, Serializer> serializationSerializers;
+    private Map<Class<?>, String> serializationsBindingsInbound;
+    private Map<Class<?>, String> serializationsBindingsOutbound;
+    @SuppressWarnings("unused")
     private Duration remotePingTimeout;
+    @SuppressWarnings("unused")
     private Duration remotePingCommunicationTimeout;
+    @SuppressWarnings("unused")
     private Duration remoteUniteMinInterval;
+    @SuppressWarnings("unused")
     private int remotePingMaxPeers;
 
     @BeforeEach
@@ -175,7 +174,7 @@ class DrasylConfigTest {
         remoteMessageMaxContentLength = 1024;
         remoteMessageHopLimit = (byte) 64;
         superPeerEnabled = true;
-        superPeerEndpoint = Endpoint.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
+        superPeerEndpoint = Endpoint.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337");
         identityPathAsString = "drasyl.identity.json";
         intraVmDiscoveryEnabled = true;
         localHostDiscoveryEnabled = true;
@@ -190,29 +189,9 @@ class DrasylConfigTest {
         monitoringInfluxDatabase = "drasyl";
         monitoringInfluxReportingFrequency = ofSeconds(60);
         plugins = Set.of();
-        marshallingInboundAllowedTypes = List.of();
-        marshallingInboundAllowAllPrimitives = true;
-        marshallingInboundAllowArrayOfDefinedTypes = true;
-        marshallingInboundAllowedPackages = List.of();
-        marshallingOutboundAllowedTypes = List.of();
-        marshallingOutboundAllowAllPrimitives = true;
-        marshallingOutboundAllowArrayOfDefinedTypes = true;
-        marshallingOutboundAllowedPackages = List.of();
-    }
-
-    static class MyPlugin implements DrasylPlugin {
-        // do not alter constructor signature. We need that for testing
-        public MyPlugin(final Config config) {
-        }
-    }
-
-    static class MyPluginWithMissingMethod implements DrasylPlugin {
-    }
-
-    static class MyPluginWithInvocationTargetException implements DrasylPlugin {
-        public MyPluginWithInvocationTargetException(final Config config) throws IllegalAccessException {
-            throw new IllegalAccessException("boom");
-        }
+        serializationSerializers = Map.of("string", new MySerializer());
+        serializationsBindingsInbound = Map.of();
+        serializationsBindingsOutbound = Map.of();
     }
 
     @Nested
@@ -236,7 +215,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getStringList(REMOTE_ENDPOINTS)).thenReturn(List.of());
             when(typesafeConfig.getBoolean(REMOTE_EXPOSE_ENABLED)).thenReturn(remoteExposeEnabled);
             when(typesafeConfig.getBoolean(REMOTE_SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
-            when(typesafeConfig.getString(REMOTE_SUPER_PEER_ENDPOINT)).thenReturn("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
+            when(typesafeConfig.getString(REMOTE_SUPER_PEER_ENDPOINT)).thenReturn("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337");
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
             when(typesafeConfig.getBoolean(LOCAL_HOST_DISCOVERY_ENABLED)).thenReturn(localHostDiscoveryEnabled);
             when(typesafeConfig.getString(LOCAL_HOST_DISCOVERY_PATH)).thenReturn(localHostDiscoveryPathAsString);
@@ -249,15 +228,9 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(MONITORING_INFLUX_PASSWORD)).thenReturn(monitoringInfluxPassword);
             when(typesafeConfig.getString(MONITORING_INFLUX_DATABASE)).thenReturn(monitoringInfluxDatabase);
             when(typesafeConfig.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY)).thenReturn(monitoringInfluxReportingFrequency);
-            when(typesafeConfig.getObject(PLUGINS)).thenReturn(mock(ConfigObject.class));
-            when(typesafeConfig.getStringList(MARSHALLING_INBOUND_ALLOWED_TYPES)).thenReturn(marshallingInboundAllowedTypes);
-            when(typesafeConfig.getBoolean(MARSHALLING_INBOUND_ALLOW_ALL_PRIMITIVES)).thenReturn(marshallingInboundAllowAllPrimitives);
-            when(typesafeConfig.getBoolean(MARSHALLING_INBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES)).thenReturn(marshallingInboundAllowArrayOfDefinedTypes);
-            when(typesafeConfig.getStringList(MARSHALLING_INBOUND_ALLOWED_PACKAGES)).thenReturn(marshallingInboundAllowedPackages);
-            when(typesafeConfig.getStringList(MARSHALLING_OUTBOUND_ALLOWED_TYPES)).thenReturn(marshallingOutboundAllowedTypes);
-            when(typesafeConfig.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES)).thenReturn(marshallingOutboundAllowAllPrimitives);
-            when(typesafeConfig.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES)).thenReturn(marshallingOutboundAllowArrayOfDefinedTypes);
-            when(typesafeConfig.getStringList(MARSHALLING_OUTBOUND_ALLOWED_PACKAGES)).thenReturn(marshallingOutboundAllowedPackages);
+            when(typesafeConfig.getObject(SERIALIZATION_SERIALIZERS)).thenReturn(ConfigFactory.parseString("serializers { string = \"" + MySerializer.class.getName() + "\" }").getObject("serializers"));
+            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_INBOUND)).thenReturn(mock(ConfigObject.class));
+            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_OUTBOUND)).thenReturn(mock(ConfigObject.class));
             when(typesafeConfig.getObject(PLUGINS)).thenReturn(ConfigFactory.parseString("plugins { \"" + MyPlugin.class.getName() + "\" { enabled = true } }").getObject("plugins"));
 
             final DrasylConfig config = new DrasylConfig(typesafeConfig);
@@ -290,14 +263,16 @@ class DrasylConfigTest {
             assertEquals(monitoringInfluxPassword, config.getMonitoringInfluxPassword());
             assertEquals(monitoringInfluxDatabase, config.getMonitoringInfluxDatabase());
             assertEquals(monitoringInfluxReportingFrequency, config.getMonitoringInfluxReportingFrequency());
-            assertEquals(marshallingInboundAllowedTypes, config.getMarshallingInboundAllowedTypes());
-            assertEquals(marshallingInboundAllowAllPrimitives, config.isMarshallingInboundAllowAllPrimitives());
-            assertEquals(marshallingInboundAllowArrayOfDefinedTypes, config.isMarshallingInboundAllowArrayOfDefinedTypes());
-            assertEquals(marshallingInboundAllowedPackages, config.getMarshallingInboundAllowedPackages());
-            assertEquals(marshallingOutboundAllowedTypes, config.getMarshallingOutboundAllowedTypes());
-            assertEquals(marshallingOutboundAllowAllPrimitives, config.isMarshallingOutboundAllowAllPrimitives());
-            assertEquals(marshallingOutboundAllowArrayOfDefinedTypes, config.isMarshallingOutboundAllowArrayOfDefinedTypes());
-            assertEquals(marshallingOutboundAllowedPackages, config.getMarshallingOutboundAllowedPackages());
+            assertEquals(serializationSerializers, config.getSerializationSerializers());
+            assertEquals(serializationsBindingsInbound, config.getSerializationsBindingsInbound());
+            assertEquals(serializationsBindingsOutbound, config.getSerializationsBindingsOutbound());
+        }
+
+        @Test
+        void shouldThrowExceptionIfSuperPeerNetworkidMismatch() {
+            final Config config = ConfigFactory.parseString("drasyl.network-id = 1\ndrasyl.remote.super-peer.endoint = \"http://localhost.de\"");
+
+            assertThrows(ConfigException.class, () -> new DrasylConfig(config));
         }
     }
 
@@ -307,15 +282,44 @@ class DrasylConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            final DrasylConfig config = new DrasylConfig(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath,
-                    serverBindHost, serverEnabled, serverBindPort,
-                    serverHandshakeTimeout, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, serverEndpoints,
-                    remoteExposeEnabled, superPeerEnabled, superPeerEndpoint, remoteMessageMaxContentLength, remoteMessageHopLimit, composedMessageTransferTimeout,
-                    remoteMessageMtu, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, Path.of(localHostDiscoveryPathAsString),
-                    localHostDiscoveryLeaseTime, monitoringEnabled, monitoringHostTag, monitoringInfluxUri, monitoringInfluxUser,
-                    monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, plugins,
-                    marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages,
-                    marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
+            final DrasylConfig config = new DrasylConfig(
+                    networkId,
+                    identityProofOfWork,
+                    identityPublicKey,
+                    identityPrivateKey,
+                    identityPath,
+                    serverBindHost,
+                    serverEnabled,
+                    serverBindPort,
+                    serverHandshakeTimeout,
+                    remotePingTimeout,
+                    remotePingCommunicationTimeout,
+                    remoteUniteMinInterval,
+                    remotePingMaxPeers,
+                    serverEndpoints,
+                    remoteExposeEnabled,
+                    superPeerEnabled,
+                    superPeerEndpoint,
+                    remoteMessageMaxContentLength,
+                    remoteMessageHopLimit,
+                    composedMessageTransferTimeout,
+                    remoteMessageMtu,
+                    intraVmDiscoveryEnabled,
+                    localHostDiscoveryEnabled,
+                    Path.of(localHostDiscoveryPathAsString),
+                    localHostDiscoveryLeaseTime,
+                    monitoringEnabled,
+                    monitoringHostTag,
+                    monitoringInfluxUri,
+                    monitoringInfluxUser,
+                    monitoringInfluxPassword,
+                    monitoringInfluxDatabase,
+                    monitoringInfluxReportingFrequency,
+                    plugins,
+                    serializationSerializers,
+                    serializationsBindingsInbound,
+                    serializationsBindingsOutbound
+            );
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.toString())));
         }
@@ -328,10 +332,9 @@ class DrasylConfigTest {
         void constructorShouldCreateImmutableConfig() {
             final DrasylConfig config = new DrasylConfig();
 
-            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingInboundAllowedPackages().add(null));
-            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingInboundAllowedTypes().add(null));
-            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingOutboundAllowedPackages().add(null));
-            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingOutboundAllowedTypes().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getSerializationSerializers().put("foo", null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getSerializationsBindingsInbound().put(String.class, "foo"));
+            assertThrows(UnsupportedOperationException.class, () -> config.getSerializationsBindingsOutbound().put(String.class, "foo"));
             assertThrows(UnsupportedOperationException.class, () -> config.getPlugins().add(null));
             assertThrows(UnsupportedOperationException.class, () -> config.getRemoteEndpoints().add(null));
         }
@@ -340,18 +343,16 @@ class DrasylConfigTest {
         @Test
         void builderShouldCreateImmutableConfig() {
             final DrasylConfig config = DrasylConfig.newBuilder()
-                    .marshallingInboundAllowedPackages(new ArrayList<>())
-                    .marshallingInboundAllowedTypes(new ArrayList<>())
-                    .marshallingOutboundAllowedPackages(new ArrayList<>())
-                    .marshallingOutboundAllowedTypes(new ArrayList<>())
+                    .serializationSerializers(new HashMap<>())
+                    .serializationsBindingsInbound(new HashMap<>())
+                    .serializationsBindingsOutbound(new HashMap<>())
                     .plugins(new HashSet<>())
                     .remoteEndpoints(new HashSet<>())
                     .build();
 
-            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingInboundAllowedPackages().add(null));
-            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingInboundAllowedTypes().add(null));
-            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingOutboundAllowedPackages().add(null));
-            assertThrows(UnsupportedOperationException.class, () -> config.getMarshallingOutboundAllowedTypes().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getSerializationSerializers().put("foo", null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getSerializationsBindingsInbound().put(String.class, "foo"));
+            assertThrows(UnsupportedOperationException.class, () -> config.getSerializationsBindingsOutbound().put(String.class, "foo"));
             assertThrows(UnsupportedOperationException.class, () -> config.getPlugins().add(null));
             assertThrows(UnsupportedOperationException.class, () -> config.getRemoteEndpoints().add(null));
         }
@@ -518,6 +519,120 @@ class DrasylConfigTest {
         }
     }
 
+    static class MyPlugin implements DrasylPlugin {
+        @SuppressWarnings("unused")
+        public MyPlugin(final Config config) {
+        }
+    }
+
+    static class MyPluginWithMissingMethod implements DrasylPlugin {
+    }
+
+    static class MyPluginWithInvocationTargetException implements DrasylPlugin {
+        @SuppressWarnings("unused")
+        public MyPluginWithInvocationTargetException(final Config config) throws IllegalAccessException {
+            throw new IllegalAccessException("boom");
+        }
+    }
+
+    @Nested
+    class GetSerializationSerializers {
+        @Test
+        void shouldThrowExceptionForNonExistingClasses() {
+            final Config config = ConfigFactory.parseString("foo.bar { string = \"org.drasyl.serialization.NotExistingSerializer\" }");
+
+            assertThrows(ConfigException.class, () -> getSerializationSerializers(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldThrowExceptionForClassWithMissingMethod() {
+            final Config config = ConfigFactory.parseString("foo.bar { string = \"" + MySerializerWithMissingMethod.class.getName() + "\" }");
+
+            assertThrows(ConfigException.class, () -> getSerializationSerializers(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldThrowExceptionForClassWithInvocationTargetException() {
+            final Config config = ConfigFactory.parseString("foo.bar { string = \"" + MySerializerWithInvocationTargetException.class.getName() + "\" }");
+
+            assertThrows(ConfigException.class, () -> getSerializationSerializers(config, "foo.bar"));
+        }
+    }
+
+    static class MySerializer implements Serializer {
+        public MySerializer() {
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            return o != null && getClass() == o.getClass();
+        }
+
+        @Override
+        public byte[] toByteArray(final Object o) throws IOException {
+            return new byte[0];
+        }
+
+        @Override
+        public <T> T fromByteArray(final byte[] bytes, final Class<T> type) throws IOException {
+            return null;
+        }
+    }
+
+    static class MySerializerWithMissingMethod implements Serializer {
+        @SuppressWarnings("unused")
+        public MySerializerWithMissingMethod(final String foo) {
+        }
+
+        @Override
+        public byte[] toByteArray(final Object o) throws IOException {
+            return new byte[0];
+        }
+
+        @Override
+        public <T> T fromByteArray(final byte[] bytes, final Class<T> type) throws IOException {
+            return null;
+        }
+    }
+
+    static class MySerializerWithInvocationTargetException implements Serializer {
+        public MySerializerWithInvocationTargetException() throws IllegalAccessException {
+            throw new IllegalAccessException("boom");
+        }
+
+        @Override
+        public byte[] toByteArray(final Object o) throws IOException {
+            return new byte[0];
+        }
+
+        @Override
+        public <T> T fromByteArray(final byte[] bytes, final Class<T> type) throws IOException {
+            return null;
+        }
+    }
+
+    @Nested
+    class GetSerializationBindings {
+        @Test
+        void shouldThrowExceptionForNonExistingClasses() {
+            final Config config = ConfigFactory.parseString("foo.bar { \"testing.NotExisting\" = string }");
+
+            final Set<String> serializers = Set.of("string");
+            assertThrows(ConfigException.class, () -> getSerializationBindings(config, "foo.bar", serializers));
+        }
+
+        @Test
+        void shouldThrowExceptionForNonExistingSerializer() {
+            final Config config = ConfigFactory.parseString("foo.bar { \"" + String.class.getName() + "\" = string }");
+
+            final Set<String> serializers = Set.of();
+            assertThrows(ConfigException.class, () -> getSerializationBindings(config, "foo.bar", serializers));
+        }
+    }
+
     @Nested
     class ParseFile {
         @Test
@@ -574,14 +689,9 @@ class DrasylConfigTest {
                     .monitoringInfluxDatabase(DEFAULT.getMonitoringInfluxDatabase())
                     .monitoringInfluxReportingFrequency(DEFAULT.getMonitoringInfluxReportingFrequency())
                     .plugins(DEFAULT.getPlugins())
-                    .marshallingInboundAllowedTypes(DEFAULT.getMarshallingInboundAllowedTypes())
-                    .marshallingInboundAllowAllPrimitives(DEFAULT.isMarshallingInboundAllowAllPrimitives())
-                    .marshallingInboundAllowArrayOfDefinedTypes(DEFAULT.isMarshallingInboundAllowArrayOfDefinedTypes())
-                    .marshallingInboundAllowedPackages(DEFAULT.getMarshallingInboundAllowedPackages())
-                    .marshallingOutboundAllowedTypes(DEFAULT.getMarshallingOutboundAllowedTypes())
-                    .marshallingOutboundAllowAllPrimitives(DEFAULT.isMarshallingOutboundAllowAllPrimitives())
-                    .marshallingOutboundAllowArrayOfDefinedTypes(DEFAULT.isMarshallingOutboundAllowArrayOfDefinedTypes())
-                    .marshallingOutboundAllowedPackages(DEFAULT.getMarshallingOutboundAllowedPackages())
+                    .serializationSerializers(DEFAULT.getSerializationSerializers())
+                    .serializationsBindingsInbound(DEFAULT.getSerializationsBindingsInbound())
+                    .serializationsBindingsOutbound(DEFAULT.getSerializationsBindingsOutbound())
                     .build();
 
             assertEquals(DEFAULT, config);

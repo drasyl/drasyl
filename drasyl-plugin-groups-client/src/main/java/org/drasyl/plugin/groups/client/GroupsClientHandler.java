@@ -38,6 +38,7 @@ import org.drasyl.plugin.groups.client.message.GroupsClientMessage;
 import org.drasyl.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
+import org.drasyl.serialization.JacksonJsonSerializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -68,8 +69,8 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
 
     @Override
     public void handlerAdded(final HandlerContext ctx) {
-        ctx.inboundValidator().addClass(GroupsServerMessage.class);
-        ctx.outboundValidator().addClass(GroupsClientMessage.class);
+        ctx.inboundSerialization().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
+        ctx.outboundSerialization().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
     }
 
     @Override

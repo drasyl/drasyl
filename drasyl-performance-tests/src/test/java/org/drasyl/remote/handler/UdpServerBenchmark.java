@@ -28,7 +28,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.ReferenceCountUtil;
@@ -81,8 +80,6 @@ public class UdpServerBenchmark {
 
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config2, identity2, new PeersManager((e) -> {
             }, identity2),
-                    TypeValidator.ofInboundValidator(config2),
-                    TypeValidator.ofOutboundValidator(config2),
                     new SimpleInboundHandler<AddressedByteBuf, Address>() {
                         @Override
                         protected void matchedRead(final HandlerContext ctx,

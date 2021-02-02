@@ -29,7 +29,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
@@ -55,10 +54,6 @@ class Message2ByteBufHandlerTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
 
     @Test
     void shouldConvertEnvelopeToByteBuf(@Mock final InetSocketAddressWrapper sender,
@@ -67,7 +62,7 @@ class Message2ByteBufHandlerTest {
         final AddressedIntermediateEnvelope<Application> addressedEnvelope = new AddressedIntermediateEnvelope<>(sender, recipient, messageEnvelope);
 
         final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<AddressedByteBuf> outboundMessages = pipeline.outboundMessages(AddressedByteBuf.class).test();
         pipeline.processOutbound(recipient, addressedEnvelope);
 
@@ -85,7 +80,7 @@ class Message2ByteBufHandlerTest {
         when(messageEnvelope.getContent().getOrBuildByteBuf()).thenThrow(RuntimeException.class);
 
         final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
         assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, messageEnvelope).get());
         pipeline.close();

@@ -28,6 +28,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.plugin.DrasylPlugin;
+import org.drasyl.serialization.Serializer;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -42,6 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -92,14 +94,9 @@ public class DrasylConfig {
     static final String MONITORING_INFLUX_DATABASE = "drasyl.monitoring.influx.database";
     static final String MONITORING_INFLUX_REPORTING_FREQUENCY = "drasyl.monitoring.influx.reporting-frequency";
     static final String PLUGINS = "drasyl.plugins";
-    static final String MARSHALLING_INBOUND_ALLOWED_TYPES = "drasyl.marshalling.inbound.allowed-types";
-    static final String MARSHALLING_INBOUND_ALLOW_ALL_PRIMITIVES = "drasyl.marshalling.inbound.allow-all-primitives";
-    static final String MARSHALLING_INBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES = "drasyl.marshalling.inbound.allow-array-of-defined-types";
-    static final String MARSHALLING_INBOUND_ALLOWED_PACKAGES = "drasyl.marshalling.inbound.allowed-packages";
-    static final String MARSHALLING_OUTBOUND_ALLOWED_TYPES = "drasyl.marshalling.outbound.allowed-types";
-    static final String MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES = "drasyl.marshalling.outbound.allow-all-primitives";
-    static final String MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES = "drasyl.marshalling.outbound.allow-array-of-defined-types";
-    static final String MARSHALLING_OUTBOUND_ALLOWED_PACKAGES = "drasyl.marshalling.outbound.allowed-packages";
+    static final String SERIALIZATION_SERIALIZERS = "drasyl.serialization.serializers";
+    static final String SERIALIZATION_BINDINGS_INBOUND = "drasyl.serialization.bindings.inbound";
+    static final String SERIALIZATION_BINDINGS_OUTBOUND = "drasyl.serialization.bindings.outbound";
     //======================================= Config Values ========================================
     private final int networkId;
     private final ProofOfWork identityProofOfWork;
@@ -134,14 +131,9 @@ public class DrasylConfig {
     private final String monitoringInfluxDatabase;
     private final Duration monitoringInfluxReportingFrequency;
     private final Set<DrasylPlugin> pluginSet;
-    private final List<String> marshallingInboundAllowedTypes;
-    private final boolean marshallingInboundAllowAllPrimitives;
-    private final boolean marshallingInboundAllowArrayOfDefinedTypes;
-    private final List<String> marshallingInboundAllowedPackages;
-    private final List<String> marshallingOutboundAllowedTypes;
-    private final boolean marshallingOutboundAllowAllPrimitives;
-    private final boolean marshallingOutboundAllowArrayOfDefinedTypes;
-    private final List<String> marshallingOutboundAllowedPackages;
+    private final Map<String, Serializer> serializationSerializers;
+    private final Map<Class<?>, String> serializationsBindingsInbound;
+    private final Map<Class<?>, String> serializationsBindingsOutbound;
 
     public DrasylConfig() {
         this(ConfigFactory.load());
@@ -224,15 +216,10 @@ public class DrasylConfig {
         // Load plugins
         this.pluginSet = Set.copyOf(getPlugins(config, PLUGINS));
 
-        // Load marshalling config
-        this.marshallingInboundAllowedTypes = List.copyOf(config.getStringList(MARSHALLING_INBOUND_ALLOWED_TYPES));
-        this.marshallingInboundAllowAllPrimitives = config.getBoolean(MARSHALLING_INBOUND_ALLOW_ALL_PRIMITIVES);
-        this.marshallingInboundAllowArrayOfDefinedTypes = config.getBoolean(MARSHALLING_INBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES);
-        this.marshallingInboundAllowedPackages = List.copyOf(config.getStringList(MARSHALLING_INBOUND_ALLOWED_PACKAGES));
-        this.marshallingOutboundAllowedTypes = List.copyOf(config.getStringList(MARSHALLING_OUTBOUND_ALLOWED_TYPES));
-        this.marshallingOutboundAllowAllPrimitives = config.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES);
-        this.marshallingOutboundAllowArrayOfDefinedTypes = config.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES);
-        this.marshallingOutboundAllowedPackages = List.copyOf(config.getStringList(MARSHALLING_OUTBOUND_ALLOWED_PACKAGES));
+        // Load serialization config
+        this.serializationSerializers = Map.copyOf(getSerializationSerializers(config, SERIALIZATION_SERIALIZERS));
+        this.serializationsBindingsInbound = Map.copyOf(getSerializationBindings(config, SERIALIZATION_BINDINGS_INBOUND, serializationSerializers.keySet()));
+        this.serializationsBindingsOutbound = Map.copyOf(getSerializationBindings(config, SERIALIZATION_BINDINGS_OUTBOUND, serializationSerializers.keySet()));
     }
 
     @SuppressWarnings({ "java:S107" })
@@ -269,14 +256,9 @@ public class DrasylConfig {
                  final String monitoringInfluxDatabase,
                  final Duration monitoringInfluxReportingFrequency,
                  final Set<DrasylPlugin> pluginSet,
-                 final List<String> marshallingInboundAllowedTypes,
-                 final boolean marshallingInboundAllowAllPrimitives,
-                 final boolean marshallingInboundAllowArrayOfDefinedTypes,
-                 final List<String> marshallingInboundAllowedPackages,
-                 final List<String> marshallingOutboundAllowedTypes,
-                 final boolean marshallingOutboundAllowAllPrimitives,
-                 final boolean marshallingOutboundAllowArrayOfDefinedTypes,
-                 final List<String> marshallingOutboundAllowedPackages) {
+                 final Map<String, Serializer> serializationSerializers,
+                 final Map<Class<?>, String> serializationsBindingsInbound,
+                 final Map<Class<?>, String> serializationsBindingsOutbound) {
         this.networkId = networkId;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -310,14 +292,9 @@ public class DrasylConfig {
         this.monitoringInfluxDatabase = monitoringInfluxDatabase;
         this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
         this.pluginSet = pluginSet;
-        this.marshallingInboundAllowedTypes = marshallingInboundAllowedTypes;
-        this.marshallingInboundAllowAllPrimitives = marshallingInboundAllowAllPrimitives;
-        this.marshallingInboundAllowArrayOfDefinedTypes = marshallingInboundAllowArrayOfDefinedTypes;
-        this.marshallingInboundAllowedPackages = marshallingInboundAllowedPackages;
-        this.marshallingOutboundAllowedTypes = marshallingOutboundAllowedTypes;
-        this.marshallingOutboundAllowAllPrimitives = marshallingOutboundAllowAllPrimitives;
-        this.marshallingOutboundAllowArrayOfDefinedTypes = marshallingOutboundAllowArrayOfDefinedTypes;
-        this.marshallingOutboundAllowedPackages = marshallingOutboundAllowedPackages;
+        this.serializationSerializers = serializationSerializers;
+        this.serializationsBindingsInbound = serializationsBindingsInbound;
+        this.serializationsBindingsOutbound = serializationsBindingsOutbound;
     }
 
     /**
@@ -547,6 +524,72 @@ public class DrasylConfig {
         }
     }
 
+    @SuppressWarnings("SameParameterValue")
+    public static Map<String, Serializer> getSerializationSerializers(final Config config,
+                                                                      final String path) {
+        final Map<String, Serializer> serializers = new HashMap<>();
+
+        for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+            final String binding = entry.getKey();
+            final String clazzName = entry.getValue().atKey("clazzName").getString("clazzName");
+            final Serializer serializer = initiateSerializer(path, clazzName, entry.getValue());
+            serializers.put(binding, serializer);
+        }
+        return serializers;
+    }
+
+    @SuppressWarnings({ "java:S1192" })
+    private static Serializer initiateSerializer(final String path,
+                                                 final String clazzName,
+                                                 final ConfigValue config) {
+        try {
+            @SuppressWarnings("unchecked") final Class<? extends Serializer> clazz = (Class<? extends Serializer>) Class.forName(clazzName);
+            final Constructor<? extends Serializer> constructor = clazz.getConstructor();
+            constructor.setAccessible(true); // NOSONAR
+
+            return constructor.newInstance();
+        }
+        catch (final ClassNotFoundException e) {
+            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "class-not-found: " + e.getMessage());
+        }
+        catch (final NoSuchMethodException e) {
+            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "no-such-method: " + e.getMessage());
+        }
+        catch (final IllegalAccessException e) {
+            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "illegal-access: " + e.getMessage());
+        }
+        catch (final InstantiationException e) {
+            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "instantiation: " + e.getMessage());
+        }
+        catch (final InvocationTargetException e) {
+            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "invocation-target: " + e.getTargetException().getMessage());
+        }
+    }
+
+    public static Map<Class<?>, String> getSerializationBindings(final Config config,
+                                                                 final String path,
+                                                                 final Set<String> serializers) {
+        final Map<Class<?>, String> bindings = new HashMap<>();
+
+        for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+            try {
+                final String binding = entry.getKey();
+                final String serializer = entry.getValue().atKey("serializer").getString("serializer");
+                if (serializers.contains(serializer)) {
+                    final Class<?> bindingClazz = Class.forName(binding);
+                    bindings.put(bindingClazz, serializer);
+                }
+                else {
+                    throw new ConfigException.WrongType(config.origin(), path, "serialization-binding", "serializer-not-found: " + serializer);
+                }
+            }
+            catch (final ClassNotFoundException e) {
+                throw new ConfigException.WrongType(config.origin(), path, "serialization-binding", "class-not-found: " + e.getMessage());
+            }
+        }
+        return bindings;
+    }
+
     /**
      * @throws ConfigException if value at path is invalid
      */
@@ -632,20 +675,52 @@ public class DrasylConfig {
                 config.monitoringInfluxDatabase,
                 config.monitoringInfluxReportingFrequency,
                 config.pluginSet,
-                config.marshallingInboundAllowedTypes,
-                config.marshallingInboundAllowAllPrimitives,
-                config.marshallingInboundAllowArrayOfDefinedTypes,
-                config.marshallingInboundAllowedPackages,
-                config.marshallingOutboundAllowedTypes,
-                config.marshallingOutboundAllowAllPrimitives,
-                config.marshallingOutboundAllowArrayOfDefinedTypes,
-                config.marshallingOutboundAllowedPackages
+                config.serializationSerializers,
+                config.serializationsBindingsInbound,
+                config.serializationsBindingsOutbound
         );
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, remoteBindHost, remoteEnabled, remoteBindPort, remotePingInterval, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, remoteEndpoints, remoteExposeEnabled, remoteMessageMtu, remoteMessageMaxContentLength, remoteMessageComposedMessageTransferTimeout, remoteMessageHopLimit, remoteSuperPeerEnabled, remoteSuperPeerEndpoint, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime, monitoringEnabled, monitoringHostTag, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
+        return Objects.hash(
+                networkId,
+                identityProofOfWork,
+                identityPublicKey,
+                identityPrivateKey,
+                identityPath,
+                remoteBindHost,
+                remoteEnabled,
+                remoteBindPort,
+                remotePingInterval,
+                remotePingTimeout,
+                remotePingCommunicationTimeout,
+                remoteUniteMinInterval,
+                remotePingMaxPeers,
+                remoteEndpoints,
+                remoteExposeEnabled,
+                remoteMessageMtu,
+                remoteMessageMaxContentLength,
+                remoteMessageComposedMessageTransferTimeout,
+                remoteMessageHopLimit,
+                remoteSuperPeerEnabled,
+                remoteSuperPeerEndpoint,
+                intraVmDiscoveryEnabled,
+                localHostDiscoveryEnabled,
+                localHostDiscoveryPath,
+                localHostDiscoveryLeaseTime,
+                monitoringEnabled,
+                monitoringHostTag,
+                monitoringInfluxUri,
+                monitoringInfluxUser,
+                monitoringInfluxPassword,
+                monitoringInfluxDatabase,
+                monitoringInfluxReportingFrequency,
+                pluginSet,
+                serializationSerializers,
+                serializationsBindingsInbound,
+                serializationsBindingsOutbound
+        );
     }
 
     @Override
@@ -669,10 +744,6 @@ public class DrasylConfig {
                 intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
                 localHostDiscoveryEnabled == that.localHostDiscoveryEnabled &&
                 monitoringEnabled == that.monitoringEnabled &&
-                marshallingInboundAllowAllPrimitives == that.marshallingInboundAllowAllPrimitives &&
-                marshallingInboundAllowArrayOfDefinedTypes == that.marshallingInboundAllowArrayOfDefinedTypes &&
-                marshallingOutboundAllowAllPrimitives == that.marshallingOutboundAllowAllPrimitives &&
-                marshallingOutboundAllowArrayOfDefinedTypes == that.marshallingOutboundAllowArrayOfDefinedTypes &&
                 Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
                 Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
@@ -694,10 +765,9 @@ public class DrasylConfig {
                 Objects.equals(monitoringInfluxDatabase, that.monitoringInfluxDatabase) &&
                 Objects.equals(monitoringInfluxReportingFrequency, that.monitoringInfluxReportingFrequency) &&
                 Objects.equals(pluginSet, that.pluginSet) &&
-                Objects.equals(marshallingInboundAllowedTypes, that.marshallingInboundAllowedTypes) &&
-                Objects.equals(marshallingInboundAllowedPackages, that.marshallingInboundAllowedPackages) &&
-                Objects.equals(marshallingOutboundAllowedTypes, that.marshallingOutboundAllowedTypes) &&
-                Objects.equals(marshallingOutboundAllowedPackages, that.marshallingOutboundAllowedPackages);
+                Objects.equals(serializationSerializers, that.serializationSerializers) &&
+                Objects.equals(serializationsBindingsInbound, that.serializationsBindingsInbound) &&
+                Objects.equals(serializationsBindingsOutbound, that.serializationsBindingsOutbound);
     }
 
     @Override
@@ -736,14 +806,9 @@ public class DrasylConfig {
                 ", monitoringInfluxDatabase='" + monitoringInfluxDatabase + '\'' +
                 ", monitoringInfluxReportingFrequency=" + monitoringInfluxReportingFrequency +
                 ", pluginSet=" + pluginSet +
-                ", marshallingInboundAllowedTypes=" + marshallingInboundAllowedTypes +
-                ", marshallingInboundAllowAllPrimitives=" + marshallingInboundAllowAllPrimitives +
-                ", marshallingInboundAllowArrayOfDefinedTypes=" + marshallingInboundAllowArrayOfDefinedTypes +
-                ", marshallingInboundAllowedPackages=" + marshallingInboundAllowedPackages +
-                ", marshallingOutboundAllowedTypes=" + marshallingOutboundAllowedTypes +
-                ", marshallingOutboundAllowAllPrimitives=" + marshallingOutboundAllowAllPrimitives +
-                ", marshallingOutboundAllowArrayOfDefinedTypes=" + marshallingOutboundAllowArrayOfDefinedTypes +
-                ", marshallingOutboundAllowedPackages=" + marshallingOutboundAllowedPackages +
+                ", serializationSerializers=" + serializationSerializers +
+                ", serializationsBindingsInbound=" + serializationsBindingsInbound +
+                ", serializationsBindingsOutbound=" + serializationsBindingsOutbound +
                 '}';
     }
 
@@ -879,36 +944,16 @@ public class DrasylConfig {
         return pluginSet;
     }
 
-    public List<String> getMarshallingInboundAllowedTypes() {
-        return marshallingInboundAllowedTypes;
+    public Map<String, Serializer> getSerializationSerializers() {
+        return serializationSerializers;
     }
 
-    public boolean isMarshallingInboundAllowAllPrimitives() {
-        return marshallingInboundAllowAllPrimitives;
+    public Map<Class<?>, String> getSerializationsBindingsInbound() {
+        return serializationsBindingsInbound;
     }
 
-    public boolean isMarshallingInboundAllowArrayOfDefinedTypes() {
-        return marshallingInboundAllowArrayOfDefinedTypes;
-    }
-
-    public List<String> getMarshallingInboundAllowedPackages() {
-        return marshallingInboundAllowedPackages;
-    }
-
-    public List<String> getMarshallingOutboundAllowedTypes() {
-        return marshallingOutboundAllowedTypes;
-    }
-
-    public boolean isMarshallingOutboundAllowAllPrimitives() {
-        return marshallingOutboundAllowAllPrimitives;
-    }
-
-    public boolean isMarshallingOutboundAllowArrayOfDefinedTypes() {
-        return marshallingOutboundAllowArrayOfDefinedTypes;
-    }
-
-    public List<String> getMarshallingOutboundAllowedPackages() {
-        return marshallingOutboundAllowedPackages;
+    public Map<Class<?>, String> getSerializationsBindingsOutbound() {
+        return serializationsBindingsOutbound;
     }
 
     public static final class Builder {
@@ -946,14 +991,9 @@ public class DrasylConfig {
         private String monitoringInfluxDatabase;
         private Duration monitoringInfluxReportingFrequency;
         private Set<DrasylPlugin> pluginSet;
-        private List<String> marshallingInboundAllowedTypes;
-        private boolean marshallingInboundAllowAllPrimitives;
-        private boolean marshallingInboundAllowArrayOfDefinedTypes;
-        private List<String> marshallingInboundAllowedPackages;
-        private List<String> marshallingOutboundAllowedTypes;
-        private boolean marshallingOutboundAllowAllPrimitives;
-        private boolean marshallingOutboundAllowArrayOfDefinedTypes;
-        private List<String> marshallingOutboundAllowedPackages;
+        private Map<String, Serializer> serializationSerializers;
+        private Map<Class<?>, String> serializationsBindingsInbound;
+        private Map<Class<?>, String> serializationsBindingsOutbound;
 
         @SuppressWarnings({ "java:S107" })
         public Builder(final int networkId,
@@ -989,14 +1029,9 @@ public class DrasylConfig {
                        final String monitoringInfluxDatabase,
                        final Duration monitoringInfluxReportingFrequency,
                        final Set<DrasylPlugin> pluginSet,
-                       final List<String> marshallingInboundAllowedTypes,
-                       final boolean marshallingInboundAllowAllPrimitives,
-                       final boolean marshallingInboundAllowArrayOfDefinedTypes,
-                       final List<String> marshallingInboundAllowedPackages,
-                       final List<String> marshallingOutboundAllowedTypes,
-                       final boolean marshallingOutboundAllowAllPrimitives,
-                       final boolean marshallingOutboundAllowArrayOfDefinedTypes,
-                       final List<String> marshallingOutboundAllowedPackages) {
+                       final Map<String, Serializer> serializationSerializers,
+                       final Map<Class<?>, String> serializationsBindingsInbound,
+                       final Map<Class<?>, String> serializationsBindingsOutbound) {
             this.networkId = networkId;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
@@ -1030,14 +1065,9 @@ public class DrasylConfig {
             this.monitoringInfluxDatabase = monitoringInfluxDatabase;
             this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
             this.pluginSet = pluginSet;
-            this.marshallingInboundAllowedTypes = marshallingInboundAllowedTypes;
-            this.marshallingInboundAllowAllPrimitives = marshallingInboundAllowAllPrimitives;
-            this.marshallingInboundAllowArrayOfDefinedTypes = marshallingInboundAllowArrayOfDefinedTypes;
-            this.marshallingInboundAllowedPackages = marshallingInboundAllowedPackages;
-            this.marshallingOutboundAllowedTypes = marshallingOutboundAllowedTypes;
-            this.marshallingOutboundAllowAllPrimitives = marshallingOutboundAllowAllPrimitives;
-            this.marshallingOutboundAllowArrayOfDefinedTypes = marshallingOutboundAllowArrayOfDefinedTypes;
-            this.marshallingOutboundAllowedPackages = marshallingOutboundAllowedPackages;
+            this.serializationSerializers = serializationSerializers;
+            this.serializationsBindingsInbound = serializationsBindingsInbound;
+            this.serializationsBindingsOutbound = serializationsBindingsOutbound;
         }
 
         public Builder networkId(final int networkId) {
@@ -1205,48 +1235,72 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder marshallingInboundAllowedTypes(final List<String> marshallingInboundAllowedTypes) {
-            this.marshallingInboundAllowedTypes = List.copyOf(marshallingInboundAllowedTypes);
+        public Builder serializationSerializers(final Map<String, Serializer> serializationSerializers) {
+            this.serializationSerializers = Map.copyOf(serializationSerializers);
             return this;
         }
 
-        public Builder marshallingInboundAllowAllPrimitives(final boolean marshallingInboundAllowAllPrimitives) {
-            this.marshallingInboundAllowAllPrimitives = marshallingInboundAllowAllPrimitives;
+        public Builder serializationsBindingsInbound(final Map<Class<?>, String> serializationsBindingsInbound) {
+            this.serializationsBindingsInbound = Map.copyOf(serializationsBindingsInbound);
             return this;
         }
 
-        public Builder marshallingInboundAllowArrayOfDefinedTypes(final boolean marshallingInboundAllowArrayOfDefinedTypes) {
-            this.marshallingInboundAllowArrayOfDefinedTypes = marshallingInboundAllowArrayOfDefinedTypes;
+        public Builder addSerializationsBindingsInbound(final Class<?> clazz, final String name) {
+            final Map<Class<?>, String> bindings = new HashMap<>(this.serializationsBindingsInbound);
+            bindings.put(clazz, name);
+            return serializationsBindingsInbound(bindings);
+        }
+
+        public Builder serializationsBindingsOutbound(final Map<Class<?>, String> serializationsBindingsOutbound) {
+            this.serializationsBindingsOutbound = Map.copyOf(serializationsBindingsOutbound);
             return this;
         }
 
-        public Builder marshallingInboundAllowedPackages(final List<String> marshallingInboundAllowedPackages) {
-            this.marshallingInboundAllowedPackages = List.copyOf(marshallingInboundAllowedPackages);
-            return this;
-        }
-
-        public Builder marshallingOutboundAllowedTypes(final List<String> marshallingOutboundAllowedTypes) {
-            this.marshallingOutboundAllowedTypes = List.copyOf(marshallingOutboundAllowedTypes);
-            return this;
-        }
-
-        public Builder marshallingOutboundAllowAllPrimitives(final boolean marshallingOutboundAllowAllPrimitives) {
-            this.marshallingOutboundAllowAllPrimitives = marshallingOutboundAllowAllPrimitives;
-            return this;
-        }
-
-        public Builder marshallingOutboundAllowArrayOfDefinedTypes(final boolean marshallingOutboundAllowArrayOfDefinedTypes) {
-            this.marshallingOutboundAllowArrayOfDefinedTypes = marshallingOutboundAllowArrayOfDefinedTypes;
-            return this;
-        }
-
-        public Builder marshallingOutboundAllowedPackages(final List<String> marshallingOutboundAllowedPackages) {
-            this.marshallingOutboundAllowedPackages = List.copyOf(marshallingOutboundAllowedPackages);
-            return this;
+        public Builder addSerializationsBindingsOutbound(final Class<?> clazz, final String name) {
+            final Map<Class<?>, String> bindings = new HashMap<>(this.serializationsBindingsOutbound);
+            bindings.put(clazz, name);
+            return serializationsBindingsOutbound(bindings);
         }
 
         public DrasylConfig build() {
-            return new DrasylConfig(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, remoteBindHost, remoteEnabled, remoteBindPort, remotePingInterval, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, remoteEndpoints, remoteExposeEnabled, remoteSuperPeerEnabled, remoteSuperPeerEndpoint, remoteMessageMaxContentLength, remoteMessageHopLimit, remoteMessageComposedMessageTransferTimeout, remoteMessageMtu, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime, monitoringEnabled, monitoringHost, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
+            return new DrasylConfig(
+                    networkId,
+                    identityProofOfWork,
+                    identityPublicKey,
+                    identityPrivateKey,
+                    identityPath,
+                    remoteBindHost,
+                    remoteEnabled,
+                    remoteBindPort,
+                    remotePingInterval,
+                    remotePingTimeout,
+                    remotePingCommunicationTimeout,
+                    remoteUniteMinInterval,
+                    remotePingMaxPeers,
+                    remoteEndpoints,
+                    remoteExposeEnabled,
+                    remoteSuperPeerEnabled,
+                    remoteSuperPeerEndpoint,
+                    remoteMessageMaxContentLength,
+                    remoteMessageHopLimit,
+                    remoteMessageComposedMessageTransferTimeout,
+                    remoteMessageMtu,
+                    intraVmDiscoveryEnabled,
+                    localHostDiscoveryEnabled,
+                    localHostDiscoveryPath,
+                    localHostDiscoveryLeaseTime,
+                    monitoringEnabled,
+                    monitoringHost,
+                    monitoringInfluxUri,
+                    monitoringInfluxUser,
+                    monitoringInfluxPassword,
+                    monitoringInfluxDatabase,
+                    monitoringInfluxReportingFrequency,
+                    pluginSet,
+                    serializationSerializers,
+                    serializationsBindingsInbound,
+                    serializationsBindingsOutbound
+            );
         }
     }
 }

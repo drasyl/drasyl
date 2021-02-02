@@ -37,7 +37,6 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -67,10 +66,6 @@ class UdpServerTest {
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
-    @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Bootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -89,7 +84,7 @@ class UdpServerTest {
             when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
 
             final UdpServer handler = new UdpServer(bootstrap, null);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
 
@@ -133,7 +128,7 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
 
@@ -146,7 +141,7 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
 
@@ -166,7 +161,7 @@ class UdpServerTest {
             when(channel.writeAndFlush(any()).isSuccess()).thenReturn(true);
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processOutbound(recipient, msg).join();
 
@@ -193,7 +188,7 @@ class UdpServerTest {
 
             final UdpServer handler = new UdpServer(bootstrap, null);
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedByteBuf> inboundMessages = pipeline.inboundMessages(AddressedByteBuf.class).test();
 
             pipeline.processInbound(event).join();

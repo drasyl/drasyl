@@ -36,7 +36,6 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
@@ -74,10 +73,6 @@ class ChunkingHandlerTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
     private final int remoteMessageMtu = 1024;
     private final int remoteMaxContentLength = 10 * 1024;
     private final Duration messageComposedMessageTransferTimeout = ofSeconds(10);
@@ -96,7 +91,7 @@ class ChunkingHandlerTest {
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, addressedMsg).join();
@@ -121,7 +116,7 @@ class ChunkingHandlerTest {
                 when(identity.getPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 // head chunk
@@ -159,7 +154,7 @@ class ChunkingHandlerTest {
                 when(identity.getPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
                 }).test();
 
@@ -223,7 +218,7 @@ class ChunkingHandlerTest {
                 when(identity.getPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 // head chunk
@@ -275,7 +270,7 @@ class ChunkingHandlerTest {
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, addressedMsg).join();
@@ -297,7 +292,7 @@ class ChunkingHandlerTest {
                 when(identity.getPublicKey()).thenReturn(sender);
 
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
                 }).test();
 
@@ -344,7 +339,7 @@ class ChunkingHandlerTest {
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processOutbound(address, addressedMsg).join();
@@ -371,7 +366,7 @@ class ChunkingHandlerTest {
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMaxContentLength]);
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(address, addressedMsg).get());
@@ -396,7 +391,7 @@ class ChunkingHandlerTest {
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), Crypto.randomBytes(remoteMessageMtu * 2));
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
                 }).test();
 
@@ -447,7 +442,7 @@ class ChunkingHandlerTest {
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
-                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+                final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processOutbound(address, addressedMsg).join();

@@ -29,7 +29,6 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
@@ -58,10 +57,6 @@ class SignatureHandlerTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
-    @Mock
     private ProofOfWork proofOfWork;
     @Mock
     private CompressedPublicKey recipient;
@@ -79,7 +74,7 @@ class SignatureHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
             }).test();
 
@@ -111,7 +106,7 @@ class SignatureHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
             pipeline.processOutbound(recipient, addressedMessageEnvelope);
@@ -139,7 +134,7 @@ class SignatureHandlerTest {
             when(armedMessage).thenThrow(IllegalStateException.class);
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
             assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, addressedMessageEnvelope).get());
@@ -164,7 +159,7 @@ class SignatureHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
             }).test();
 
@@ -188,7 +183,7 @@ class SignatureHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             pipeline.processInbound(sender, addressedMessageEnvelope);
@@ -216,7 +211,7 @@ class SignatureHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final SignatureHandler handler = SignatureHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, addressedMessageEnvelope).get());

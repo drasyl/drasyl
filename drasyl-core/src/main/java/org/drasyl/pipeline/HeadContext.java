@@ -22,7 +22,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -45,9 +44,9 @@ class HeadContext extends AbstractEndHandler {
                        final DrasylScheduler independentScheduler,
                        final Identity identity,
                        final PeersManager peersManager,
-                       final TypeValidator inboundValidator,
-                       final TypeValidator outboundValidator) {
-        super(DRASYL_HEAD_HANDLER, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+                       final Serialization inboundSerialization,
+                       final Serialization outboundSerialization) {
+        super(DRASYL_HEAD_HANDLER, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
     }
 
     @Override
@@ -76,9 +75,8 @@ class HeadContext extends AbstractEndHandler {
             }
             else {
                 LOG.warn("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped.\n" +
-                        "This can happen due to a missing codec. You can find more information regarding this here: " +
-                        "https://docs.drasyl.org/configuration/marshalling/", msg, recipient);
-                future.completeExceptionally(new IllegalStateException("Message has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped. This can happen due to a missing codec. You can find more information regarding this here: https://docs.drasyl.org/configuration/marshalling/"));
+                        "This can happen if none of the handlers in the pipeline can process this message or have no route to the recipient.", msg, recipient);
+                future.completeExceptionally(new IllegalStateException("Message has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped. This can happen if none of the handlers in the pipeline can process this message or have no route to the recipient."));
             }
         }
         finally {

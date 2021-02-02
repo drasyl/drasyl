@@ -21,7 +21,6 @@ package org.drasyl.pipeline;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.scheduler.DrasylScheduler;
 
 /**
@@ -42,8 +41,8 @@ public class DefaultHandlerContext extends AbstractHandlerContext {
      * @param independentScheduler the independent scheduler
      * @param identity             the identity of the corresponding node
      * @param peersManager         the peers manager of the corresponding node
-     * @param inboundValidator     the inbound validator of the pipeline
-     * @param outboundValidator    the outbound validator of the pipeline
+     * @param inboundSerialization   the inbound serialization of the pipeline
+     * @param outboundSerialization  the outbound serialization of the pipeline
      */
     public DefaultHandlerContext(final String name,
                                  final Handler handler,
@@ -53,9 +52,9 @@ public class DefaultHandlerContext extends AbstractHandlerContext {
                                  final DrasylScheduler independentScheduler,
                                  final Identity identity,
                                  final PeersManager peersManager,
-                                 final TypeValidator inboundValidator,
-                                 final TypeValidator outboundValidator) {
-        super(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+                                 final Serialization inboundSerialization,
+                                 final Serialization outboundSerialization) {
+        super(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
         this.handler = handler;
     }
 

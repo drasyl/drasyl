@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2021.
  *
  * This file is part of drasyl.
  *
@@ -16,8 +16,27 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.drasyl.serialization;
+
+import java.io.IOException;
 
 /**
- * Package contains classes that are used for encoding/decoding objects.
+ * This Serializer (de)serializes {@link Byte} objects.
  */
-package org.drasyl.pipeline.codec;
+public class ByteSerializer extends BoundedSerializer<Byte> {
+    @Override
+    protected byte[] matchedToByArray(final Byte o) throws IOException {
+        return new byte[]{ o };
+    }
+
+    @Override
+    protected Byte matchedFromByteArray(final byte[] bytes,
+                                        final Class<Byte> type) throws IOException {
+        if (bytes.length == 1) {
+            return bytes[0];
+        }
+        else {
+            throw new IOException("bytes must have a length of 1");
+        }
+    }
+}

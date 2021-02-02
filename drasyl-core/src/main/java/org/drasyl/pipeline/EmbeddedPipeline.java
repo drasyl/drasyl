@@ -29,7 +29,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
@@ -55,28 +54,45 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
      * their simple class name.
      *
-     * @param config            the config
-     * @param identity          the identity
-     * @param peersManager      the peers manager
-     * @param inboundValidator  the inbound validator
-     * @param outboundValidator the outbound validator
-     * @param handlers          the handlers
+     * @param config                the config
+     * @param identity              the identity
+     * @param peersManager          the peers manager
+     * @param inboundSerialization  the inbound serialization
+     * @param outboundSerialization the outbound serialization
+     * @param handlers              the handlers
      */
     public EmbeddedPipeline(final DrasylConfig config,
                             final Identity identity,
                             final PeersManager peersManager,
-                            final TypeValidator inboundValidator,
-                            final TypeValidator outboundValidator,
+                            final Serialization inboundSerialization,
+                            final Serialization outboundSerialization,
                             final Handler... handlers) {
-        this(config, identity, peersManager, inboundValidator, outboundValidator);
+        this(config, identity, peersManager, inboundSerialization, outboundSerialization);
+        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
+    }
+
+    /**
+     * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
+     * their simple class name.
+     *
+     * @param config       the config
+     * @param identity     the identity
+     * @param peersManager the peers manager
+     * @param handlers     the handlers
+     */
+    public EmbeddedPipeline(final DrasylConfig config,
+                            final Identity identity,
+                            final PeersManager peersManager,
+                            final Handler... handlers) {
+        this(config, identity, peersManager, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()));
         List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
     }
 
     public EmbeddedPipeline(final DrasylConfig config,
                             final Identity identity,
                             final PeersManager peersManager,
-                            final TypeValidator inboundValidator,
-                            final TypeValidator outboundValidator) {
+                            final Serialization inboundSerialization,
+                            final Serialization outboundSerialization) {
         this.config = config;
         inboundMessages = ReplaySubject.create();
         inboundEvents = ReplaySubject.create();
@@ -85,7 +101,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
         this.handlerNames = new ConcurrentHashMap<>();
         this.dependentScheduler = DrasylSchedulerUtil.getInstanceLight();
         this.independentScheduler = DrasylSchedulerUtil.getInstanceHeavy();
-        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
+        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             public void write(final HandlerContext ctx,
                               final Address recipient,
@@ -95,7 +111,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                 future.complete(null);
             }
         };
-        this.tail = new TailContext(inboundEvents::onNext, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator) {
+        this.tail = new TailContext(inboundEvents::onNext, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             public void read(final HandlerContext ctx,
                              final Address sender,
@@ -112,8 +128,8 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
         };
         this.identity = identity;
         this.peersManager = peersManager;
-        this.inboundValidator = inboundValidator;
-        this.outboundValidator = outboundValidator;
+        this.inboundSerialization = inboundSerialization;
+        this.outboundSerialization = outboundSerialization;
 
         initPointer();
     }

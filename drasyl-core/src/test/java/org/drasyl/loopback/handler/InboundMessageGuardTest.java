@@ -24,7 +24,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,14 +51,7 @@ class InboundMessageGuardTest {
         when(message.getRecipient()).thenReturn(recipient);
         when(identity.getPublicKey()).thenReturn(recipient);
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                peersManager,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new InboundMessageGuard()
-        );
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new InboundMessageGuard());
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
@@ -70,14 +62,7 @@ class InboundMessageGuardTest {
 
     @Test
     void shouldConsumeMessageIfRecipientIsNotLocalNode(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                peersManager,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new InboundMessageGuard(true)
-        );
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new InboundMessageGuard(true));
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
@@ -92,14 +77,7 @@ class InboundMessageGuardTest {
         when(message.getRecipient()).thenReturn(recipient);
         when(identity.getPublicKey()).thenReturn(recipient);
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                peersManager,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new InboundMessageGuard(true)
-        );
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new InboundMessageGuard(true));
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message.getSender(), message).join();

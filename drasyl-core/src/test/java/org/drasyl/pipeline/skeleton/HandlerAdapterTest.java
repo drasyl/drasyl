@@ -27,10 +27,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.SerializedApplicationMessage;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,10 +55,6 @@ class HandlerAdapterTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
     @Mock
     private CompletableFuture<Void> future;
 
@@ -136,7 +131,7 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnEventTriggeredWithMultipleHandler() {
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
             final TestObserver<Event> events = pipeline.inboundEvents().test();
 
             final Event event = mock(Event.class);
@@ -150,7 +145,7 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler() {
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);

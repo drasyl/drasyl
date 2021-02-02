@@ -25,7 +25,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
@@ -51,10 +50,6 @@ class InvalidProofOfWorkFilterTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
-    @Mock
     private DrasylConfig config;
 
     @Test
@@ -64,7 +59,7 @@ class InvalidProofOfWorkFilterTest {
         when(message.refCnt()).thenReturn(1);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message.getSender(), message);
@@ -80,7 +75,7 @@ class InvalidProofOfWorkFilterTest {
         when(message.getContent().isChunk()).thenReturn(false);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
         pipeline.processInbound(message.getSender(), message);
@@ -97,7 +92,7 @@ class InvalidProofOfWorkFilterTest {
         when(message.refCnt()).thenReturn(1);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
         final CompletableFuture<Void> future = pipeline.processInbound(message.getSender(), message);

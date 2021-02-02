@@ -23,6 +23,8 @@ import java.io.IOException;
 /**
  * A Serializer represents a bimap between an object and an array of bytes representing that
  * object.
+ *
+ * <p>Make sure that your implementation implements the standard constructor!
  */
 public interface Serializer {
     /**

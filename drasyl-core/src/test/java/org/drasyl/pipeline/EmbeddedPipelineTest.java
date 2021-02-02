@@ -26,19 +26,16 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.SerializedApplicationMessage;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -60,12 +57,7 @@ class EmbeddedPipelineTest {
 
     @Test
     void shouldReturnInboundMessagesAndEvents() {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                peersManager,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.of(List.of(), List.of(), false, false));
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager);
         final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
         final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -92,8 +84,7 @@ class EmbeddedPipelineTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                peersManager, TypeValidator.of(List.of(), List.of(), false, false),
-                TypeValidator.ofOutboundValidator(config),
+                peersManager,
                 AddressedEnvelopeHandler.INSTANCE,
                 new HandlerAdapter(),
                 new HandlerAdapter()

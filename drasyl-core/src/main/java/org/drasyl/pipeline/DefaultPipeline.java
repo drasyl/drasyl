@@ -23,7 +23,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
@@ -46,8 +45,8 @@ public abstract class DefaultPipeline implements Pipeline {
     protected DrasylConfig config;
     protected Identity identity;
     protected PeersManager peersManager;
-    protected TypeValidator inboundValidator;
-    protected TypeValidator outboundValidator;
+    protected Serialization inboundSerialization;
+    protected Serialization outboundSerialization;
 
     protected void initPointer() {
         this.head.setNextHandlerContext(this.tail);
@@ -70,7 +69,7 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.head);
             newCtx.setNextHandlerContext(this.head.getNext());
@@ -121,7 +120,7 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.tail.getPrev());
             newCtx.setNextHandlerContext(this.tail);
@@ -149,7 +148,7 @@ public abstract class DefaultPipeline implements Pipeline {
             final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx.getPrev());
             newCtx.setNextHandlerContext(baseCtx);
@@ -177,7 +176,7 @@ public abstract class DefaultPipeline implements Pipeline {
             final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx);
             newCtx.setNextHandlerContext(baseCtx.getNext());
@@ -244,7 +243,7 @@ public abstract class DefaultPipeline implements Pipeline {
             // call remove action
             removeHandlerAction(oldCtx);
 
-            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundValidator, outboundValidator);
+            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(prev);
             newCtx.setNextHandlerContext(next);

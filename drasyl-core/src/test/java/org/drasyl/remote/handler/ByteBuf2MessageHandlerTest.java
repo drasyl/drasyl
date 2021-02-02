@@ -27,7 +27,6 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
@@ -52,10 +51,6 @@ class ByteBuf2MessageHandlerTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private TypeValidator inboundValidator;
-    @Mock
-    private TypeValidator outboundValidator;
     private CompressedPublicKey senderPublicKey;
     private ProofOfWork proofOfWork;
     private CompressedPublicKey recipientPublicKey;
@@ -74,7 +69,7 @@ class ByteBuf2MessageHandlerTest {
         final AddressedByteBuf byteBuf = new AddressedByteBuf(senderAddress, recipientAddress, acknowledgementMessage.getOrBuildByteBuf());
 
         final ByteBuf2MessageHandler handler = ByteBuf2MessageHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
         }).test();
         pipeline.processInbound(senderPublicKey, byteBuf);

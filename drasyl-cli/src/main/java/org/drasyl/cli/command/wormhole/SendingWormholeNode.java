@@ -37,12 +37,12 @@ import org.drasyl.plugin.PluginManager;
 
 import java.io.PrintStream;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.serialization.Serializers.SERIALIZER_JACKSON_JSON;
 
 @SuppressWarnings({ "java:S107" })
 public class SendingWormholeNode extends BehavioralDrasylNode {
@@ -73,8 +73,8 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
     public SendingWormholeNode(final DrasylConfig config,
                                final PrintStream printStream) throws DrasylException {
         super(DrasylConfig.newBuilder(config)
-                .marshallingInboundAllowedTypes(List.of(WormholeMessage.class.getName()))
-                .marshallingOutboundAllowedTypes(List.of(WormholeMessage.class.getName()))
+                .addSerializationsBindingsInbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
+                .addSerializationsBindingsOutbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
                 .build());
         this.doneFuture = new CompletableFuture<>();
         this.printStream = printStream;
