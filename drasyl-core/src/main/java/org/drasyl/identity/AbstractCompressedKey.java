@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021.
+ * Copyright (c) 2020-2021.
  *
  * This file is part of drasyl.
  *
@@ -30,8 +30,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 abstract class AbstractCompressedKey<K> implements Address {
-
-
     @JsonValue
     protected final byte[] compressedKey;
     @JsonIgnore

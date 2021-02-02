@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.
+ * Copyright (c) 2020-2021.
  *
  * This file is part of drasyl.
  *
@@ -31,8 +31,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages.
  * <p>
- * For example here is an implementation which only handle {@code MyMessage}s
- * of type {@code MyMessage}.
+ * For example here is an implementation which only handle {@code MyMessage}s of type {@code
+ * MyMessage}.
  *
  * <pre>
  *     public class ChunkedHandler extends

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2021.
+  ~ Copyright (c) 2020-2021.
   ~
   ~ This file is part of drasyl.
   ~
@@ -38,6 +38,8 @@
     </description>
     <url>https://drasyl.org/</url>
 
+    <inceptionYear>2020</inceptionYear>
+
     <organization>
         <name>The drasyl Project</name>
         <url>https://drasyl.org/</url>
@@ -49,11 +51,6 @@
             <url>https://www.gnu.org/licenses/lgpl-3.0.de.html</url>
         </license>
     </licenses>
-
-    <issueManagement>
-        <system>GitLab</system>
-        <url>https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues</url>
-    </issueManagement>
 
     <developers>
         <developer>
@@ -72,15 +69,6 @@
         </developer>
     </developers>
 
-    <inceptionYear>2020</inceptionYear>
-
-    <scm>
-        <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
-        <developerConnection>scm:git:ssh://git@git.informatik.uni-hamburg.de/sane-public/drasyl.git</developerConnection>
-        <url>https://github.com/drasyl-overlay/drasyl</url>
-        <tag>HEAD</tag>
-    </scm>
-
     <modules>
         <module>drasyl-cli</module>
         <module>drasyl-core</module>
@@ -90,6 +78,18 @@
         <module>drasyl-plugin-groups-manager</module>
         <module>drasyl-integration-tests</module>
     </modules>
+
+    <scm>
+        <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
+        <developerConnection>scm:git:ssh://git@git.informatik.uni-hamburg.de/sane-public/drasyl.git</developerConnection>
+        <url>https://github.com/drasyl-overlay/drasyl</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>GitLab</system>
+        <url>https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues</url>
+    </issueManagement>
 
     <distributionManagement>
         <repository>
@@ -287,6 +287,40 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <pluginManagement>
@@ -517,40 +551,6 @@
             </plugin>
         </plugins>
     </reporting>
-
-    <dependencies>
-        <!-- Test dependencies -->
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
     <profiles>
         <profile>

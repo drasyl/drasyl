@@ -165,6 +165,10 @@ public final class Protocol {
     com.google.protobuf.ByteString getUserAgent();
 
     /**
+     * <pre>
+     * 4 bytes
+     * </pre>
+     *
      * <code>int32 networkId = 3;</code>
      * @return The networkId.
      */
@@ -181,6 +185,10 @@ public final class Protocol {
     com.google.protobuf.ByteString getSender();
 
     /**
+     * <pre>
+     * 4 bytes
+     * </pre>
+     *
      * <code>int32 proofOfWork = 5;</code>
      * @return The proofOfWork.
      */
@@ -198,7 +206,7 @@ public final class Protocol {
 
     /**
      * <pre>
-     * 1 byte
+     * 1 byte fix
      * </pre>
      *
      * <code>bytes hopCount = 7;</code>
@@ -218,7 +226,7 @@ public final class Protocol {
 
     /**
      * <pre>
-     * 1 byte
+     * 2 bytes fix
      * </pre>
      *
      * <code>bytes chunkNo = 9;</code>
@@ -228,7 +236,7 @@ public final class Protocol {
 
     /**
      * <pre>
-     * 1 byte
+     * 2 bytes fix
      * </pre>
      *
      * <code>bytes totalChunks = 10;</code>
@@ -404,6 +412,10 @@ public final class Protocol {
     public static final int NETWORKID_FIELD_NUMBER = 3;
     private int networkId_;
     /**
+     * <pre>
+     * 4 bytes
+     * </pre>
+     *
      * <code>int32 networkId = 3;</code>
      * @return The networkId.
      */
@@ -430,6 +442,10 @@ public final class Protocol {
     public static final int PROOFOFWORK_FIELD_NUMBER = 5;
     private int proofOfWork_;
     /**
+     * <pre>
+     * 4 bytes
+     * </pre>
+     *
      * <code>int32 proofOfWork = 5;</code>
      * @return The proofOfWork.
      */
@@ -457,7 +473,7 @@ public final class Protocol {
     private com.google.protobuf.ByteString hopCount_;
     /**
      * <pre>
-     * 1 byte
+     * 1 byte fix
      * </pre>
      *
      * <code>bytes hopCount = 7;</code>
@@ -487,7 +503,7 @@ public final class Protocol {
     private com.google.protobuf.ByteString chunkNo_;
     /**
      * <pre>
-     * 1 byte
+     * 2 bytes fix
      * </pre>
      *
      * <code>bytes chunkNo = 9;</code>
@@ -502,7 +518,7 @@ public final class Protocol {
     private com.google.protobuf.ByteString totalChunks_;
     /**
      * <pre>
-     * 1 byte
+     * 2 bytes fix
      * </pre>
      *
      * <code>bytes totalChunks = 10;</code>
@@ -1062,6 +1078,10 @@ public final class Protocol {
 
       private int networkId_ ;
       /**
+       * <pre>
+       * 4 bytes
+       * </pre>
+       *
        * <code>int32 networkId = 3;</code>
        * @return The networkId.
        */
@@ -1070,6 +1090,10 @@ public final class Protocol {
         return networkId_;
       }
       /**
+       * <pre>
+       * 4 bytes
+       * </pre>
+       *
        * <code>int32 networkId = 3;</code>
        * @param value The networkId to set.
        * @return This builder for chaining.
@@ -1081,6 +1105,10 @@ public final class Protocol {
         return this;
       }
       /**
+       * <pre>
+       * 4 bytes
+       * </pre>
+       *
        * <code>int32 networkId = 3;</code>
        * @return This builder for chaining.
        */
@@ -1139,6 +1167,10 @@ public final class Protocol {
 
       private int proofOfWork_ ;
       /**
+       * <pre>
+       * 4 bytes
+       * </pre>
+       *
        * <code>int32 proofOfWork = 5;</code>
        * @return The proofOfWork.
        */
@@ -1147,6 +1179,10 @@ public final class Protocol {
         return proofOfWork_;
       }
       /**
+       * <pre>
+       * 4 bytes
+       * </pre>
+       *
        * <code>int32 proofOfWork = 5;</code>
        * @param value The proofOfWork to set.
        * @return This builder for chaining.
@@ -1158,6 +1194,10 @@ public final class Protocol {
         return this;
       }
       /**
+       * <pre>
+       * 4 bytes
+       * </pre>
+       *
        * <code>int32 proofOfWork = 5;</code>
        * @return This builder for chaining.
        */
@@ -1217,7 +1257,7 @@ public final class Protocol {
       private com.google.protobuf.ByteString hopCount_ = com.google.protobuf.ByteString.EMPTY;
       /**
        * <pre>
-       * 1 byte
+       * 1 byte fix
        * </pre>
        *
        * <code>bytes hopCount = 7;</code>
@@ -1229,7 +1269,7 @@ public final class Protocol {
       }
       /**
        * <pre>
-       * 1 byte
+       * 1 byte fix
        * </pre>
        *
        * <code>bytes hopCount = 7;</code>
@@ -1247,7 +1287,7 @@ public final class Protocol {
       }
       /**
        * <pre>
-       * 1 byte
+       * 1 byte fix
        * </pre>
        *
        * <code>bytes hopCount = 7;</code>
@@ -1309,7 +1349,7 @@ public final class Protocol {
       private com.google.protobuf.ByteString chunkNo_ = com.google.protobuf.ByteString.EMPTY;
       /**
        * <pre>
-       * 1 byte
+       * 2 bytes fix
        * </pre>
        *
        * <code>bytes chunkNo = 9;</code>
@@ -1321,7 +1361,7 @@ public final class Protocol {
       }
       /**
        * <pre>
-       * 1 byte
+       * 2 bytes fix
        * </pre>
        *
        * <code>bytes chunkNo = 9;</code>
@@ -1339,7 +1379,7 @@ public final class Protocol {
       }
       /**
        * <pre>
-       * 1 byte
+       * 2 bytes fix
        * </pre>
        *
        * <code>bytes chunkNo = 9;</code>
@@ -1355,7 +1395,7 @@ public final class Protocol {
       private com.google.protobuf.ByteString totalChunks_ = com.google.protobuf.ByteString.EMPTY;
       /**
        * <pre>
-       * 1 byte
+       * 2 bytes fix
        * </pre>
        *
        * <code>bytes totalChunks = 10;</code>
@@ -1367,7 +1407,7 @@ public final class Protocol {
       }
       /**
        * <pre>
-       * 1 byte
+       * 2 bytes fix
        * </pre>
        *
        * <code>bytes totalChunks = 10;</code>
@@ -1385,7 +1425,7 @@ public final class Protocol {
       }
       /**
        * <pre>
-       * 1 byte
+       * 2 bytes fix
        * </pre>
        *
        * <code>bytes totalChunks = 10;</code>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021.
+ * Copyright (c) 2020-2021.
  *
  * This file is part of drasyl.
  *
@@ -58,7 +58,8 @@ public class DrasylScheduler extends Scheduler {
     }
 
     @Override
-    public @NonNull Worker createWorker() {
+    public @NonNull
+    Worker createWorker() {
         return this.wrappedScheduler.createWorker();
     }
 
@@ -78,27 +79,31 @@ public class DrasylScheduler extends Scheduler {
     }
 
     @Override
-    public @NonNull Disposable scheduleDirect(@NonNull final Runnable run) {
+    public @NonNull
+    Disposable scheduleDirect(@NonNull final Runnable run) {
         return this.wrappedScheduler.scheduleDirect(run);
     }
 
     @Override
-    public @NonNull Disposable scheduleDirect(@NonNull final Runnable run,
-                                              final long delay,
-                                              @NonNull final TimeUnit unit) {
+    public @NonNull
+    Disposable scheduleDirect(@NonNull final Runnable run,
+                              final long delay,
+                              @NonNull final TimeUnit unit) {
         return this.wrappedScheduler.scheduleDirect(run, delay, unit);
     }
 
     @Override
-    public @NonNull Disposable schedulePeriodicallyDirect(@NonNull final Runnable run,
-                                                          final long initialDelay,
-                                                          final long period,
-                                                          @NonNull final TimeUnit unit) {
+    public @NonNull
+    Disposable schedulePeriodicallyDirect(@NonNull final Runnable run,
+                                          final long initialDelay,
+                                          final long period,
+                                          @NonNull final TimeUnit unit) {
         return this.wrappedScheduler.schedulePeriodicallyDirect(run, initialDelay, period, unit);
     }
 
     @Override
-    public @NonNull <S extends Scheduler & Disposable> S when(@NonNull final Function<Flowable<Flowable<Completable>>, Completable> combine) {
+    public @NonNull
+    <S extends Scheduler & Disposable> S when(@NonNull final Function<Flowable<Flowable<Completable>>, Completable> combine) {
         return this.wrappedScheduler.when(combine);
     }
 }

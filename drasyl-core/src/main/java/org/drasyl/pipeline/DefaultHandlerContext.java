@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021.
+ * Copyright (c) 2020-2021.
  *
  * This file is part of drasyl.
  *
@@ -33,16 +33,16 @@ public class DefaultHandlerContext extends AbstractHandlerContext {
     /**
      * Generates a new default handler context for the given {@code handler}.
      *
-     * @param name                 the name of the handler
-     * @param handler              the handler
-     * @param config               the config of the drasyl node
-     * @param pipeline             the corresponding pipeline object
-     * @param dependentScheduler   the dependent scheduler
-     * @param independentScheduler the independent scheduler
-     * @param identity             the identity of the corresponding node
-     * @param peersManager         the peers manager of the corresponding node
-     * @param inboundSerialization   the inbound serialization of the pipeline
-     * @param outboundSerialization  the outbound serialization of the pipeline
+     * @param name                  the name of the handler
+     * @param handler               the handler
+     * @param config                the config of the drasyl node
+     * @param pipeline              the corresponding pipeline object
+     * @param dependentScheduler    the dependent scheduler
+     * @param independentScheduler  the independent scheduler
+     * @param identity              the identity of the corresponding node
+     * @param peersManager          the peers manager of the corresponding node
+     * @param inboundSerialization  the inbound serialization of the pipeline
+     * @param outboundSerialization the outbound serialization of the pipeline
      */
     public DefaultHandlerContext(final String name,
                                  final Handler handler,
