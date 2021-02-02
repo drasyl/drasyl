@@ -40,7 +40,7 @@ Make sure you
     * Use `final` keyword where possible.
     * Each file must have the following copyright notice in the header: 
 ```
-Copyright (c) $today.year.
+Copyright (c) 2020-$today.year.
 
 This file is part of drasyl.
 
