@@ -122,6 +122,17 @@ public class Behaviors {
         /**
          * Schedules a self event.
          *
+         * @param event event to schedule
+         * @return {@link Disposable} allowing to cancel the scheduled event
+         */
+        @SuppressWarnings({ "UnusedReturnValue", "unused" })
+        public Disposable scheduleEvent(final Event event) {
+            return scheduler.scheduleDirect(() -> consumer.accept(event));
+        }
+
+        /**
+         * Schedules a self event.
+         *
          * @param event        event to schedule
          * @param initialDelay the initial delay amount, non-positive values indicate non-delayed
          *                     scheduling
