@@ -431,7 +431,7 @@ public abstract class DrasylNode {
                             shutdownFuture.set(null);
                         }
                         else {
-                            LOG.warn("Could not start drasyl Node: {}", e);
+                            LOG.warn("Could not start drasyl Node:", e);
                             pluginManager.beforeShutdown();
                             onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity), e)).whenComplete((result2, e2) -> {
                                 if (e2 != null) {
