@@ -479,7 +479,7 @@ public final class NetworkUtil {
                 }
             }
             catch (final IOException e) {
-                LOG.warn("Unable to determine default gateway address.", e);
+                LOG.debug("Unable to determine default gateway address.", e);
                 return null;
             }
 
