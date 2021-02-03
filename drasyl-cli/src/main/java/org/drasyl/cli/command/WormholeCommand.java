@@ -27,7 +27,7 @@ import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.DrasylBiFunction;
+import org.drasyl.util.ThrowingBiFunction;
 
 import java.io.PrintStream;
 import java.util.List;
@@ -41,8 +41,8 @@ import java.util.function.Supplier;
  */
 public class WormholeCommand extends AbstractCommand {
     private final Supplier<Scanner> scannerSupplier;
-    private final DrasylBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
-    private final DrasylBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
+    private final ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
+    private final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
 
     public WormholeCommand() {
         this(
@@ -55,8 +55,8 @@ public class WormholeCommand extends AbstractCommand {
 
     WormholeCommand(final PrintStream printStream,
                     final Supplier<Scanner> scannerSupplier,
-                    final DrasylBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier,
-                    final DrasylBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier) {
+                    final ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier,
+                    final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier) {
         super(printStream);
         this.scannerSupplier = scannerSupplier;
         this.sendingNodeSupplier = sendingNodeSupplier;

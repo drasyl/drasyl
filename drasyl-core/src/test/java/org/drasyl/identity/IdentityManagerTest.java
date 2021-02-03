@@ -20,7 +20,7 @@ package org.drasyl.identity;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.util.DrasylSupplier;
+import org.drasyl.util.ThrowingSupplier;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,7 +52,7 @@ class IdentityManagerTest {
     @Mock
     private DrasylConfig config;
     @Mock
-    private DrasylSupplier<Identity, IdentityManagerException> identityGenerator;
+    private ThrowingSupplier<Identity, IdentityManagerException> identityGenerator;
 
     @Nested
     class LoadOrCreateIdentity {
@@ -142,6 +142,7 @@ class IdentityManagerTest {
 
     @Nested
     class DeleteIdentityFile {
+        @SuppressWarnings("ResultOfMethodCallIgnored")
         @Test
         void shouldDeleteFile(@TempDir final Path dir) throws IdentityManagerException, IOException {
             final Path path = Paths.get(dir.toString(), "my-identity.json");

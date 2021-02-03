@@ -18,19 +18,19 @@
  */
 package org.drasyl.util;
 
-import org.drasyl.DrasylException;
-
 /**
- * {@link java.util.function.Consumer} that can throw a {@link org.drasyl.DrasylException}.
+ * {@link java.util.function.Function} that can throw checked {@link Exception}s.
  *
- * @param <T> the type of the input to the operation
+ * @param <T> the type of the input to the function
+ * @param <R> the type of the result of the function
  */
 @FunctionalInterface
-public interface DrasylConsumer<T, E extends DrasylException> {
+public interface ThrowingFunction<T, R, E extends Exception> {
     /**
-     * Performs this operation on the given argument.
+     * Applies this function to the given argument.
      *
-     * @param t the input argument
+     * @param t the function argument
+     * @return the function result
      */
-    void accept(T t) throws E;
+    R apply(T t) throws E;
 }

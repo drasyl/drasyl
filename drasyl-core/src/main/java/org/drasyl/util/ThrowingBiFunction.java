@@ -19,18 +19,20 @@
 package org.drasyl.util;
 
 /**
- * {@link java.util.function.Function} that can throw a {@link Exception}.
+ * {@link java.util.function.BiFunction} that can throw checked {@link Exception}s.
  *
- * @param <T> the type of the input to the function
+ * @param <T> the type of the first argument to the function
+ * @param <U> the type of the second argument to the function
  * @param <R> the type of the result of the function
  */
 @FunctionalInterface
-public interface DrasylFunction<T, R, E extends Exception> {
+public interface ThrowingBiFunction<T, U, R, E extends Exception> {
     /**
-     * Applies this function to the given argument.
+     * Applies this function to the given arguments.
      *
-     * @param t the function argument
+     * @param t the first function argument
+     * @param u the second function argument
      * @return the function result
      */
-    R apply(T t) throws E;
+    R apply(T t, U u) throws E;
 }

@@ -19,14 +19,14 @@
 package org.drasyl.plugin.groups.manager.database;
 
 import org.drasyl.plugin.groups.manager.database.jdbc.JDBCDatabaseAdapter;
-import org.drasyl.util.DrasylFunction;
+import org.drasyl.util.ThrowingFunction;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
 public class DatabaseAdapterManager {
-    private static final Map<String, DrasylFunction<URI, DatabaseAdapter, DatabaseException>> ADAPTERS = new HashMap<>();
+    private static final Map<String, ThrowingFunction<URI, DatabaseAdapter, DatabaseException>> ADAPTERS = new HashMap<>();
 
     static {
         addAdapter(JDBCDatabaseAdapter.SCHEME, JDBCDatabaseAdapter::new);
@@ -38,13 +38,13 @@ public class DatabaseAdapterManager {
 
     public static DatabaseAdapter initAdapter(final URI uri) throws DatabaseException {
         final String scheme = uri.getScheme();
-        final DrasylFunction<URI, DatabaseAdapter, DatabaseException> adapter = ADAPTERS.get(scheme);
+        final ThrowingFunction<URI, DatabaseAdapter, DatabaseException> adapter = ADAPTERS.get(scheme);
 
         return adapter.apply(uri);
     }
 
     public static void addAdapter(final String scheme,
-                                  final DrasylFunction<URI, DatabaseAdapter, DatabaseException> adapter) {
+                                  final ThrowingFunction<URI, DatabaseAdapter, DatabaseException> adapter) {
         ADAPTERS.put(scheme, adapter);
     }
 }

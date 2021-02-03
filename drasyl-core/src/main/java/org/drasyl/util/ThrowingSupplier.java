@@ -18,15 +18,13 @@
  */
 package org.drasyl.util;
 
-import org.drasyl.DrasylException;
-
 /**
- * {@link java.util.function.Supplier} that can throw a {@link org.drasyl.DrasylException}.
+ * {@link java.util.function.Supplier} that can throw checked {@link Exception}s.
  *
  * @param <T> the type of results supplied by this supplier
  */
 @FunctionalInterface
-public interface DrasylSupplier<T, E extends DrasylException> {
+public interface ThrowingSupplier<T, E extends Exception> {
     /**
      * Gets a result.
      *

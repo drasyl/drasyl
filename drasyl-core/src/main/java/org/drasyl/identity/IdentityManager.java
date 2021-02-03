@@ -23,7 +23,7 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.util.DrasylSupplier;
+import org.drasyl.util.ThrowingSupplier;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -57,7 +57,7 @@ import static org.drasyl.util.PathUtil.hasPosixSupport;
 public class IdentityManager {
     public static final byte POW_DIFFICULTY = 6;
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
-    private final DrasylSupplier<Identity, IdentityManagerException> identityGenerator;
+    private final ThrowingSupplier<Identity, IdentityManagerException> identityGenerator;
     private final DrasylConfig config;
     private Identity identity;
 
@@ -70,7 +70,7 @@ public class IdentityManager {
     }
 
     @SuppressWarnings("SameParameterValue")
-    IdentityManager(final DrasylSupplier<Identity, IdentityManagerException> identityGenerator,
+    IdentityManager(final ThrowingSupplier<Identity, IdentityManagerException> identityGenerator,
                     final DrasylConfig config,
                     final Identity identity) {
         this.identityGenerator = identityGenerator;
