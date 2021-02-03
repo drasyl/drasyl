@@ -184,7 +184,7 @@ public class DrasylConfig {
         this.remoteUniteMinInterval = config.getDuration(REMOTE_UNITE_MIN_INTERVAL);
         this.remoteSuperPeerEnabled = config.getBoolean(REMOTE_SUPER_PEER_ENABLED);
         this.remoteSuperPeerEndpoint = getEndpoint(config, REMOTE_SUPER_PEER_ENDPOINT);
-        if (remoteSuperPeerEndpoint.getNetworkId() != null && remoteSuperPeerEndpoint.getNetworkId() != networkId) {
+        if (remoteSuperPeerEnabled && remoteSuperPeerEndpoint.getNetworkId() != null && remoteSuperPeerEndpoint.getNetworkId() != networkId) {
             throw new ConfigException.BadValue(config.getValue(REMOTE_SUPER_PEER_ENDPOINT).origin(), REMOTE_SUPER_PEER_ENDPOINT, "super peer network id mismatch", new Exception("super peer's network id `" + remoteSuperPeerEndpoint.getNetworkId() + "` does not match your network id `" + networkId + "`"));
         }
         this.remoteMessageMtu = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MTU).toBytes(), Integer.MAX_VALUE);
