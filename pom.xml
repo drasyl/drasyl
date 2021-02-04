@@ -466,7 +466,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <parallel>all</parallel>
+                    <!-- Currently not supported by JUnit5: https://github.com/junit-team/junit5/issues/1424#issuecomment-390313944 -->
+                    <!--<parallel>all</parallel>-->
                     <!-- Sets the VM argument line used when unit tests are run. -->
                     <argLine>-Dio.netty.leakDetectionLevel=PARANOID ${surefireArgLine}</argLine>
                 </configuration>
