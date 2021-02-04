@@ -24,6 +24,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Inet4Address;
@@ -37,13 +38,13 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.drasyl.util.UrlUtil.createUrl;
 
 /**
@@ -132,6 +133,7 @@ public final class NetworkUtil {
      * @param port port that should be validated.
      * @return true if valid, otherwise false
      */
+    @SuppressWarnings("unused")
     public static boolean isValidPort(final int port) {
         return impl.isValidPort(port);
     }
@@ -327,6 +329,25 @@ public final class NetworkUtil {
      * Private implementation class pointed to some static methods.
      */
     static class NetworkUtilImpl {
+        private final ThrowingSupplier<InputStream, IOException> defaultGatewayProvider;
+        private final ThrowingFunction<URL, URLConnection, IOException> urlConnectionProvider;
+
+        NetworkUtilImpl(final ThrowingSupplier<InputStream, IOException> defaultGatewayProvider,
+                        final ThrowingFunction<URL, URLConnection, IOException> urlConnectionProvider) {
+            this.defaultGatewayProvider = defaultGatewayProvider;
+            this.urlConnectionProvider = urlConnectionProvider;
+        }
+
+        NetworkUtilImpl() {
+            this(
+                    () -> {
+                        final Process result = Runtime.getRuntime().exec("netstat -rn");
+                        return result.getInputStream();
+                    },
+                    URL::openConnection
+            );
+        }
+
         <T extends InetAddress> T getExternalIPAddress(final URL[] providers) {
             // distribute requests across all available ip check tools
             final int randomOffset = Crypto.randomNumber(providers.length);
@@ -334,7 +355,7 @@ public final class NetworkUtil {
                 final URL provider = providers[(i + randomOffset) % providers.length];
 
                 try {
-                    final URLConnection connection = provider.openConnection();
+                    final URLConnection connection = urlConnectionProvider.apply(provider);
                     connection.setConnectTimeout(5000);
                     connection.setReadTimeout(5000);
 
@@ -375,7 +396,6 @@ public final class NetworkUtil {
             return false;
         }
 
-        @SuppressWarnings("BooleanMethodIsAlwaysInverted")
         boolean isValidPort(final int port) {
             return port >= MIN_PORT_NUMBER && port <= MAX_PORT_NUMBER;
         }
@@ -386,7 +406,7 @@ public final class NetworkUtil {
             }
 
             try (final Socket s = new Socket(host, port)) {
-                final PrintWriter out = new PrintWriter(s.getOutputStream(), true, StandardCharsets.UTF_8);
+                final PrintWriter out = new PrintWriter(s.getOutputStream(), true, UTF_8);
                 out.println("GET / HTTP/1.1");
 
                 return true;
@@ -468,8 +488,8 @@ public final class NetworkUtil {
             // get line with default gateway address from "netstat"
             String line;
             try {
-                final Process result = Runtime.getRuntime().exec("netstat -rn");
-                final BufferedReader output = new BufferedReader(new InputStreamReader(result.getInputStream()));
+                final InputStream inputStream = defaultGatewayProvider.get();
+                final BufferedReader output = new BufferedReader(new InputStreamReader(inputStream));
 
                 while ((line = output.readLine()) != null) {
                     line = line.trim();

@@ -18,21 +18,26 @@
  */
 package org.drasyl.util;
 
+import org.drasyl.util.NetworkUtil.NetworkUtilImpl;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.UnknownHostException;
 
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.drasyl.util.NetworkUtil.getAddresses;
 import static org.drasyl.util.NetworkUtil.getNetworkPrefixLength;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,29 +45,41 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class NetworkUtilTest {
+    @Mock
+    private ThrowingSupplier<InputStream, IOException> defaultGatewayProvider;
+    @Mock
+    private ThrowingFunction<URL, URLConnection, IOException> urlConnectionProvider;
+
     @Nested
     class GetExternalIPv4Address {
         @Test
-        void shouldReturnExternalIPv4Address() {
-            final InetAddress address = NetworkUtil.getExternalIPv4Address();
+        void shouldReturnIPv4AddressReportedByProvider(@Mock(answer = RETURNS_DEEP_STUBS) final URLConnection urlConnection) throws IOException {
+            final URL provider = new URL("https://4.example.com");
+            when(urlConnectionProvider.apply(any())).thenReturn(urlConnection);
+            when(urlConnection.getInputStream()).thenReturn(new ByteArrayInputStream("84.81.69.200".getBytes()));
 
-            if (address != null) {
-                assertThat(address, instanceOf(Inet4Address.class));
-            }
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider);
+            final InetAddress address = util.getExternalIPAddress(new URL[]{ provider });
+
+            assertEquals(InetAddress.getByName("84.81.69.200"), address);
         }
-    }
 
-    @Nested
-    class GetExternalIPv6Address {
         @Test
-        void shouldReturnExternalIPv6Address() {
-            final InetAddress address = NetworkUtil.getExternalIPv6Address();
+        void shouldReturnIPv6AddressReportedByProvider(@Mock(answer = RETURNS_DEEP_STUBS) final URLConnection urlConnection) throws IOException {
+            final URL provider = new URL("https://6.example.com");
+            when(urlConnectionProvider.apply(any())).thenReturn(urlConnection);
+            when(urlConnection.getInputStream()).thenReturn(new ByteArrayInputStream("bb95:2626:bbdc:dbac:c81:1018:347e:7f9c".getBytes()));
 
-            if (address != null) {
-                assertThat(address, instanceOf(Inet6Address.class));
-            }
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider);
+            final InetAddress address = util.getExternalIPAddress(new URL[]{ provider });
+
+            assertEquals(InetAddress.getByName("bb95:2626:bbdc:dbac:c81:1018:347e:7f9c"), address);
         }
     }
 
@@ -235,9 +252,31 @@ class NetworkUtilTest {
 
     @Nested
     class GetDefaultGateway {
+        static final String NETSTAT_MACOS = "Routing tables\n" +
+                "\n" +
+                "Internet:\n" +
+                "Destination        Gateway            Flags        Netif Expire\n" +
+                "default            192.168.188.1      UGSc           en0";
+        static final String NETSTAT_WIN = "Aktive Routen:\n" +
+                "     Netzwerkziel    Netzwerkmaske          Gateway    Schnittstelle Metrik\n" +
+                "          0.0.0.0          0.0.0.0         10.0.2.2        10.0.2.15     25";
+
         @Test
-        void shouldNotThrowException() {
-            assertDoesNotThrow(NetworkUtil::getDefaultGateway);
+        void shouldParseCorrectAddressOnMacOS(@Mock final ThrowingSupplier<InputStream, IOException> defaultGatewayProvider) throws Exception {
+            when(defaultGatewayProvider.get()).thenReturn(new ByteArrayInputStream(NETSTAT_MACOS.getBytes()));
+
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider);
+
+            assertEquals(Inet4Address.getByName("192.168.188.1"), util.getDefaultGateway());
+        }
+
+        @Test
+        void shouldParseCorrectAddressOnWindows(@Mock final ThrowingSupplier<InputStream, IOException> defaultGatewayProvider) throws Exception {
+            when(defaultGatewayProvider.get()).thenReturn(new ByteArrayInputStream(NETSTAT_WIN.getBytes()));
+
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider);
+
+            assertEquals(Inet4Address.getByName("10.0.2.2"), util.getDefaultGateway());
         }
     }
 
