@@ -222,7 +222,7 @@ public class Endpoint {
             return of(endpoint.getHost(), endpoint.getPort(), CompressedPublicKey.of(publicKey), networkId);
         }
         catch (final CryptoException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
+            throw new IllegalArgumentException("Invalid public key", e);
         }
     }
 
@@ -240,7 +240,7 @@ public class Endpoint {
             return of(new URI(endpoint));
         }
         catch (final URISyntaxException x) {
-            throw new IllegalArgumentException(x.getMessage(), x);
+            throw new IllegalArgumentException("Invalid uri", x);
         }
     }
 

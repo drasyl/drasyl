@@ -166,7 +166,7 @@ public abstract class DrasylNode {
             this.scheduler = getInstanceHeavy();
         }
         catch (final ConfigException e) {
-            throw new DrasylException("Couldn't load config: " + e.getMessage());
+            throw new DrasylException("Couldn't load config", e);
         }
     }
 

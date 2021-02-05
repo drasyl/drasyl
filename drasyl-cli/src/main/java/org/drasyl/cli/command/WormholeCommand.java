@@ -118,13 +118,13 @@ public class WormholeCommand extends AbstractCommand {
             node.doneFuture().get();
         }
         catch (final DrasylException e) {
-            throw new CliException("Unable to create/run sending wormhole node: " + e.getMessage());
+            throw new CliException("Unable to create/run sending wormhole node", e);
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         catch (final ExecutionException e) {
-            throw new CliException(e.getCause().getMessage());
+            throw new CliException(e.getCause());
         }
         finally {
             if (node != null) {
@@ -160,19 +160,19 @@ public class WormholeCommand extends AbstractCommand {
             node.doneFuture().get();
         }
         catch (final CryptoException | IllegalArgumentException e) {
-            throw new CliException("Invalid wormhole code supplied: " + e.getMessage());
+            throw new CliException("Invalid wormhole code supplied", e);
         }
         catch (final StringIndexOutOfBoundsException e) {
             throw new CliException("Invalid wormhole code supplied: must be at least 64 characters long");
         }
         catch (final DrasylException e) {
-            throw new CliException("Unable to create/run receiving wormhole node: " + e.getMessage());
+            throw new CliException("Unable to create/run receiving wormhole node", e);
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         catch (final ExecutionException e) {
-            throw new CliException(e.getCause().getMessage());
+            throw new CliException(e.getCause());
         }
         finally {
             if (node != null) {

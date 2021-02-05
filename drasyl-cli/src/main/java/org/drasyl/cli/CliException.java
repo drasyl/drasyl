@@ -29,4 +29,8 @@ public class CliException extends Exception {
     public CliException(final Throwable cause) {
         super(cause);
     }
+
+    public CliException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

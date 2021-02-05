@@ -94,7 +94,7 @@ public class IdentityManager {
                 this.identity = Identity.of(config.getIdentityProofOfWork(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
             }
             catch (final IllegalArgumentException e) {
-                throw new IdentityManagerException("Identity read from configuration seems invalid: " + e.getMessage());
+                throw new IdentityManagerException("Identity read from configuration seems invalid", e);
             }
         }
         else {
@@ -171,7 +171,7 @@ public class IdentityManager {
             return Identity.of(proofOfWork, publicKey, privateKey);
         }
         catch (final CryptoException e) {
-            throw new IdentityManagerException("Unable to generate new identity: " + e.getMessage());
+            throw new IdentityManagerException("Unable to generate new identity", e);
         }
     }
 
@@ -203,7 +203,7 @@ public class IdentityManager {
                 JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(file, identity);
             }
             catch (final IOException e) {
-                throw new IdentityManagerException("Unable to write identity to file '" + path + "': " + e.getMessage());
+                throw new IdentityManagerException("Unable to write identity to file '" + path + "'", e);
             }
         }
     }
@@ -246,7 +246,7 @@ public class IdentityManager {
             Files.delete(path);
         }
         catch (final IOException e) {
-            throw new IdentityManagerException("Unable to delete identity file '" + path + "': " + e.getMessage());
+            throw new IdentityManagerException("Unable to delete identity file '" + path + "'", e);
         }
     }
 }

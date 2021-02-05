@@ -460,7 +460,7 @@ public final class NetworkUtil {
                 return InetAddress.getByName(str);
             }
             catch (final UnknownHostException x) {
-                throw new IllegalArgumentException(x.getMessage(), x);
+                throw new IllegalArgumentException("Host could not be resolved", x);
             }
         }
 
