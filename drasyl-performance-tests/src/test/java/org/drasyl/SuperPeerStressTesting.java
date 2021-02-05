@@ -33,7 +33,7 @@ import java.time.Duration;
 import static java.time.Duration.ofSeconds;
 
 @SuppressWarnings("InfiniteLoopStatement")
-public class SuperPeerStressTesting {
+public class SuperPeerStressTesting extends AbstractBenchmark {
     private final Cache<CompressedPublicKey, DrasylNode> clients;
 
     public SuperPeerStressTesting(final long maxClients, final Duration shutdownAfter) {

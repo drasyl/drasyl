@@ -18,6 +18,7 @@
  */
 package org.drasyl.util;
 
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -32,10 +33,7 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.util.concurrent.CompletableFuture;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class DrasylSchedulerUtilBenchmark {
+public class DrasylSchedulerUtilBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)

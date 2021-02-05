@@ -470,6 +470,7 @@
                     <!--<parallel>all</parallel>-->
                     <!-- Sets the VM argument line used when unit tests are run. -->
                     <argLine>-Dio.netty.leakDetectionLevel=PARANOID ${surefireArgLine}</argLine>
+                    <runOrder>random</runOrder>
                 </configuration>
             </plugin>
             <plugin>

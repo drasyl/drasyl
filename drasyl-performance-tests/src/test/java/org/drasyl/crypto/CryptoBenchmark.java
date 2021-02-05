@@ -18,6 +18,7 @@
  */
 package org.drasyl.crypto;
 
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -26,25 +27,25 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Random;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class CryptoBenchmark {
+public class CryptoBenchmark extends AbstractBenchmark {
     private byte[] message;
     private PublicKey publicKey;
     private PrivateKey privateKey;
     private byte[] signature;
 
-    public CryptoBenchmark() {
+    @Setup
+    public void setup() {
         try {
             message = new byte[1024];
             new Random().nextBytes(message);
@@ -53,26 +54,26 @@ public class CryptoBenchmark {
             signature = HexUtil.fromString("304402200525a8e662d3f11fa28524de4bb83812765255db9a4d09ee5b8ede7880a54534022009416ea30daab4f8de3008c31b4ec831a0c163d08f0504b2632a2e7febdcbe06");
         }
         catch (final CryptoException e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void signMessage() {
+    public void signMessage(Blackhole blackhole) {
         try {
-            Crypto.signMessage(privateKey, message);
+            blackhole.consume(Crypto.signMessage(privateKey, message));
         }
         catch (final CryptoException e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void verifySignature() {
-        Crypto.verifySignature(publicKey, message, signature);
+    public void verifySignature(Blackhole blackhole) {
+        blackhole.consume(Crypto.verifySignature(publicKey, message, signature));
     }
 }

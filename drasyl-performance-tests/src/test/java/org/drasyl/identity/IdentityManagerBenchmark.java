@@ -27,16 +27,14 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3, time = 30)
-@Measurement(iterations = 3, time = 30)
 public class IdentityManagerBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
     @Threads(1)
-    public void generateIdentity() throws IdentityManagerException {
-        IdentityManager.generateIdentity();
+    public void generateIdentity(Blackhole blackhole) throws IdentityManagerException {
+        blackhole.consume(IdentityManager.generateIdentity());
     }
 }

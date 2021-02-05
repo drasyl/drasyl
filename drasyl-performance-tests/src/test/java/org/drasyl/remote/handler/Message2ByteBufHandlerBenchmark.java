@@ -19,6 +19,7 @@
 package org.drasyl.remote.handler;
 
 import com.google.protobuf.MessageLite;
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -42,6 +43,7 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
@@ -51,16 +53,14 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class Message2ByteBufHandlerBenchmark {
+public class Message2ByteBufHandlerBenchmark extends AbstractBenchmark {
     private HandlerContext ctx;
     private Address recipient;
     private AddressedIntermediateEnvelope<MessageLite> msg;
     private CompletableFuture<Void> future;
 
-    public Message2ByteBufHandlerBenchmark() {
+    @Setup
+    public void setup() {
         try {
             ctx = new MyHandlerContext();
             recipient = new MyAddress();
@@ -73,7 +73,7 @@ public class Message2ByteBufHandlerBenchmark {
             future = new CompletableFuture<>();
         }
         catch (final CryptoException | IOException e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 
