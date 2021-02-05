@@ -36,6 +36,8 @@
     <url>https://drasyl.org/</url>
 
     <properties>
+        <!-- Skip tests by default; run only if -DskipTests=false is specified -->
+        <skipTests>true</skipTests>
         <jmh.version>1.27</jmh.version>
     </properties>
 
@@ -44,11 +46,13 @@
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-core</artifactId>
             <version>${jmh.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-generator-annprocess</artifactId>
             <version>${jmh.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -56,5 +60,32 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <!-- downgraded to 3.0.0-M4 because in 3.0.0-M5 STDOUT will only be printed after test is finished. This is annoying for long running tests (benchmarks) -->
+                <version>3.0.0-M4</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Benchmark.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <perfReportDir>${project.build.directory}/reports/performance/</perfReportDir>
+                    </systemPropertyVariables>
+                    <argLine>-Dio.netty.leakDetectionLevel=disabled</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

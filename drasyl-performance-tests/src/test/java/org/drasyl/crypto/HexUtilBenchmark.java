@@ -19,31 +19,32 @@
 package org.drasyl.crypto;
 
 import org.bouncycastle.util.encoders.Hex;
+import org.drasyl.AbstractBenchmark;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class HexUtilBenchmark {
-    private final byte[] byteArray;
+public class HexUtilBenchmark extends AbstractBenchmark {
+    private byte[] byteArray;
 
-    public HexUtilBenchmark() {
+    @Setup
+    public void setup() {
         byteArray = new byte[]{ 0x4f, 0x00, 0x10, 0x0d };
     }
 
     @Benchmark
-    public void ownByteToString() {
-        HexUtil.toString(byteArray);
+    public void ownByteToString(Blackhole blackhole) {
+        blackhole.consume(HexUtil.toString(byteArray));
     }
 
     @Benchmark
-    public void bouncycastleByteToString() {
-        Hex.toHexString(byteArray);
+    public void bouncycastleByteToString(Blackhole blackhole) {
+        blackhole.consume(Hex.toHexString(byteArray));
     }
 }

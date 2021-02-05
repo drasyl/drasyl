@@ -18,6 +18,7 @@
  */
 package org.drasyl.serialization;
 
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.crypto.Crypto;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -25,22 +26,22 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class StringSerializerBenchmark {
-    private final StringSerializer serializer;
-    private final String string;
-    private final byte[] bytes;
+public class StringSerializerBenchmark extends AbstractBenchmark {
+    private StringSerializer serializer;
+    private String string;
+    private byte[] bytes;
 
-    public StringSerializerBenchmark() {
+    @Setup
+    public void setup() {
         serializer = new StringSerializer();
         string = Crypto.randomString(100_000);
         this.bytes = string.getBytes();
@@ -49,24 +50,24 @@ public class StringSerializerBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void toByteArray() {
+    public void toByteArray(Blackhole blackhole) {
         try {
-            serializer.toByteArray(string);
+            blackhole.consume(serializer.toByteArray(string));
         }
         catch (final IOException e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void fromByteArray() {
+    public void fromByteArray(Blackhole blackhole) {
         try {
-            serializer.fromByteArray(bytes, String.class);
+            blackhole.consume(serializer.fromByteArray(bytes, String.class));
         }
         catch (final IOException e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 }

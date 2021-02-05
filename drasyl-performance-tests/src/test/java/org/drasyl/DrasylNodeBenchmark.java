@@ -27,23 +27,21 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class DrasylNodeBenchmark {
+public class DrasylNodeBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void getVersion() {
-        DrasylNode.getVersion();
+    public void getVersion(Blackhole blackhole) {
+        blackhole.consume(DrasylNode.getVersion());
     }
 
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void getProtocolVersion() {
-        DrasylNode.getProtocolVersion();
+    public void getProtocolVersion(Blackhole blackhole) {
+        blackhole.consume(DrasylNode.getProtocolVersion());
     }
 }

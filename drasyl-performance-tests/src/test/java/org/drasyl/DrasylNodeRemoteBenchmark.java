@@ -20,7 +20,6 @@ package org.drasyl;
 
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.Identity;
@@ -28,30 +27,30 @@ import org.drasyl.identity.ProofOfWork;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class DrasylNodeRemoteBenchmark {
+public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
     private DrasylNode node1;
     private DrasylNode node2;
     private static CompletableFuture<Void>[] futures;
     private final static AtomicInteger THREAD_INDEX = new AtomicInteger(0);
 
     @SuppressWarnings("unchecked")
-    public DrasylNodeRemoteBenchmark() {
+    @Setup
+    public void setup() {
         try {
             futures = new CompletableFuture[Runtime.getRuntime().availableProcessors()];
 
@@ -69,6 +68,10 @@ public class DrasylNodeRemoteBenchmark {
                     .intraVmDiscoveryEnabled(false)
                     .localHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
+                    .remoteBindHost(InetAddress.getByName("127.0.0.1"))
+                    .remoteBindPort(22528)
+                    .remoteSuperPeerEnabled(false)
+                    .remoteStaticRoutes(Map.of(identity2.getPublicKey(), new InetSocketAddress("127.0.0.1", 22529)))
                     .monitoringEnabled(false)
                     .build();
             final DrasylConfig config2 = DrasylConfig.newBuilder()
@@ -76,23 +79,26 @@ public class DrasylNodeRemoteBenchmark {
                     .identityPublicKey(identity2.getPublicKey())
                     .identityPrivateKey(identity2.getPrivateKey())
                     .intraVmDiscoveryEnabled(false)
+                    .remoteBindHost(InetAddress.getByName("127.0.0.1"))
+                    .remoteBindPort(22529)
+                    .remoteSuperPeerEnabled(false)
+                    .remoteStaticRoutes(Map.of(identity1.getPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
                     .localHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
                     .monitoringEnabled(false)
                     .build();
 
-            final CompletableFuture<Void> node1Online = new CompletableFuture<>();
+            final CompletableFuture<Void> node1Ready = new CompletableFuture<>();
             node1 = new DrasylNode(config1) {
                 @Override
                 public void onEvent(final @NotNull Event event) {
-                    if (event instanceof NodeOnlineEvent && !node1Online.isDone()) {
-                        node1Online.complete(null);
+                    if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getPublicKey().equals(identity2.getPublicKey()) && !node1Ready.isDone()) {
+                        node1Ready.complete(null);
                     }
                 }
             };
 
-            final CompletableFuture<Void> node2Online = new CompletableFuture<>();
-            final CompletableFuture<Void> directConnection = new CompletableFuture<>();
+            final CompletableFuture<Void> node2Ready = new CompletableFuture<>();
             node2 = new DrasylNode(config2) {
                 @Override
                 public void onEvent(final @NotNull Event event) {
@@ -100,26 +106,27 @@ public class DrasylNodeRemoteBenchmark {
                         final int index = (int) ((MessageEvent) event).getPayload();
                         futures[index].complete(null);
                     }
-                    else if (event instanceof NodeOnlineEvent && !node2Online.isDone()) {
-                        node2Online.complete(null);
-                    }
-                    else if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getPublicKey().equals(node1.identity().getPublicKey()) && !directConnection.isDone()) {
-                        directConnection.complete(null);
+                    else if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getPublicKey().equals(identity1.getPublicKey()) && !node2Ready.isDone()) {
+                        node2Ready.complete(null);
                     }
                 }
             };
 
             node1.start().join();
             node2.start().join();
-            node1Online.join();
-            node2Online.join();
-            node1.send(node2.identity().getPublicKey(), new byte[0]);
-            directConnection.join();
+            node1Ready.join();
+            node2Ready.join();
             System.err.println("Benchmark started.");
         }
         catch (final Exception e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
+    }
+
+    @TearDown
+    public void teardown() {
+        node1.shutdown().join();
+        node2.shutdown().join();
     }
 
     @State(Scope.Thread)
@@ -131,7 +138,7 @@ public class DrasylNodeRemoteBenchmark {
                 index = THREAD_INDEX.getAndIncrement();
             }
             catch (final Exception e) {
-                e.printStackTrace();
+                handleUnexpectedException(e);
             }
         }
     }
@@ -143,5 +150,10 @@ public class DrasylNodeRemoteBenchmark {
         futures[state.index] = new CompletableFuture<>();
         node1.send(node2.identity().getPublicKey(), state.index);
         futures[state.index].join();
+    }
+
+    @Override
+    protected int getForks() {
+        return 1;
     }
 }

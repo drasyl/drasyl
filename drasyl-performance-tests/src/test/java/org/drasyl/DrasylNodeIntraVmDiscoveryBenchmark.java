@@ -29,21 +29,20 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class DrasylNodeIntraVmDiscoveryBenchmark {
+public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
     private static final byte[] testPayload = new byte[1432];
     private DrasylNode node1;
     private DrasylNode node2;
 
-    public DrasylNodeIntraVmDiscoveryBenchmark() {
+    @Setup
+    public void setup() {
         try {
             final Identity identity1 = Identity.of(ProofOfWork.of(-2109504681),
                     CompressedKeyPair.of("AhqX0pwBbAthIabf+05czWQjaxb5mmqWU4IdG3RHOuQh",
@@ -88,7 +87,7 @@ public class DrasylNodeIntraVmDiscoveryBenchmark {
             System.err.println("Benchmark started.");
         }
         catch (final Exception e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 

@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -25,18 +26,18 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class SerializationBenchmark {
-    private final Serialization serializer;
+public class SerializationBenchmark extends AbstractBenchmark {
+    private Serialization serializer;
 
-    public SerializationBenchmark() {
+    @Setup
+    public void setup() {
         final DrasylConfig config = new DrasylConfig();
         serializer = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound());
     }
@@ -44,7 +45,7 @@ public class SerializationBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void findSerializerFor() {
-        serializer.findSerializerFor("Hello");
+    public void findSerializerFor(Blackhole blackhole) {
+        blackhole.consume(serializer.findSerializerFor("Hello"));
     }
 }

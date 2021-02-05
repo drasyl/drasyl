@@ -1,6 +1,7 @@
-# drasyl Benchmark Test
+# drasyl performance tests
 
-## Usage
+Each benchmark must have a class name ending with `Benchmark` and inherit from [`AbstractBenchmark`](src/test/java/org/drasyl/AbstractBenchmark.java).
 
-- **Run specific benchmark test:** Add simple class name as first program argument.
-- **Define Fork, Warmup & Measurement iterations:** Add `-f 1 -wi 1 -i 1` as program argument.
+```shell
+mvn -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 test
+```

@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -43,6 +44,7 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
@@ -58,10 +60,7 @@ import java.util.concurrent.CompletableFuture;
 import static java.time.Duration.ofDays;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class UdpDiscoveryHandlerBenchmark {
+public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
     private Map<MessageId, UdpDiscoveryHandler.OpenPing> openPingsCache;
     private Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
     private Map<CompressedPublicKey, Peer> peers;
@@ -72,7 +71,8 @@ public class UdpDiscoveryHandlerBenchmark {
     private SerializedApplicationMessage msg;
     private CompletableFuture<Void> future;
 
-    public UdpDiscoveryHandlerBenchmark() {
+    @Setup
+    public void setup() {
         try {
             openPingsCache = new HashMap<>();
             uniteAttemptsCache = new HashMap<>();
@@ -94,7 +94,7 @@ public class UdpDiscoveryHandlerBenchmark {
             peers.put(msg.getRecipient(), peer);
         }
         catch (final CryptoException e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 

@@ -18,8 +18,11 @@
  */
 package org.drasyl.remote.handler;
 
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
+import org.drasyl.event.Event;
 import org.drasyl.event.Node;
+import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.Identity;
@@ -37,7 +40,9 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
@@ -51,35 +56,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.drasyl.DrasylNode.getBestEventLoop;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class UdpServerBenchmark {
+public class UdpServerBenchmark extends AbstractBenchmark {
     private DatagramSocket socket;
     private static CompletableFuture<Void>[] futures;
     private final static AtomicInteger THREAD_INDEX = new AtomicInteger(0);
+    private InetAddress localHost;
+    private int port;
+    private EmbeddedPipeline pipeline;
+    private Identity identity2;
 
     @SuppressWarnings("unchecked")
-    public UdpServerBenchmark() {
+    @Setup
+    public void setup() {
         try {
             futures = new CompletableFuture[Runtime.getRuntime().availableProcessors()];
             socket = new DatagramSocket();
 
-            final Identity identity2 = Identity.of(ProofOfWork.of(-2145822673),
+            identity2 = Identity.of(ProofOfWork.of(-2145822673),
                     CompressedKeyPair.of("AgUAcj2PUQ8jqQpF4yANhFuPUlwSWpuzb9gIX6rzkc6g",
                             "DkEGET4hDK87hwVhGN8wl9SIL0cSKcY0MRsa3LrV0/U="));
 
             final UdpServer handler = new UdpServer(getBestEventLoop(2));
 
             final DrasylConfig config2 = DrasylConfig.newBuilder()
-                    .remoteBindPort(22528)
+                    .remoteBindPort(0)
                     .identityProofOfWork(identity2.getProofOfWork())
                     .identityPublicKey(identity2.getPublicKey())
                     .identityPrivateKey(identity2.getPrivateKey())
                     .build();
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config2, identity2, new PeersManager((e) -> {
+            pipeline = new EmbeddedPipeline(config2, identity2, new PeersManager((e) -> {
             }, identity2),
+                    handler,
                     new SimpleInboundHandler<AddressedByteBuf, Address>() {
                         @Override
                         protected void matchedRead(final HandlerContext ctx,
@@ -95,27 +103,34 @@ public class UdpServerBenchmark {
                                 ReferenceCountUtil.safeRelease(msg);
                             }
                         }
-                    }, handler);
+                    });
 
             pipeline.processInbound(new NodeUpEvent(Node.of(identity2))).join();
+            final NodeUpEvent event = (NodeUpEvent) pipeline.inboundEvents().filter(e -> e instanceof NodeUpEvent).blockingFirst();
+
+            port = event.getNode().getPort();
+            localHost = InetAddress.getLocalHost();
         }
         catch (final Exception e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
+    }
+
+    @TearDown
+    public void teardown() {
+        pipeline.processInbound(new NodeDownEvent(Node.of(identity2))).join();
     }
 
     @State(Scope.Thread)
     public static class ThreadState {
-        private DatagramPacket packet;
         private int index;
 
         public ThreadState() {
             try {
                 index = THREAD_INDEX.getAndIncrement();
-                packet = new DatagramPacket(new byte[index], index, InetAddress.getLocalHost(), 22528);
             }
             catch (final Exception e) {
-                e.printStackTrace();
+                handleUnexpectedException(e);
             }
         }
     }
@@ -126,11 +141,11 @@ public class UdpServerBenchmark {
     public void receiveMaxThreads(final ThreadState state) {
         try {
             futures[state.index] = new CompletableFuture<>();
-            socket.send(state.packet);
+            socket.send(new DatagramPacket(new byte[state.index], state.index, localHost, port));
             futures[state.index].join();
         }
         catch (final IOException e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 
@@ -140,11 +155,11 @@ public class UdpServerBenchmark {
     public void receiveSingleThread(final ThreadState state) {
         try {
             futures[state.index] = new CompletableFuture<>();
-            socket.send(state.packet);
+            socket.send(new DatagramPacket(new byte[state.index], state.index, localHost, port));
             futures[state.index].join();
         }
         catch (final IOException e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 }

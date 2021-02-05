@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -41,8 +42,10 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -50,16 +53,14 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 @State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-public class ByteBuf2MessageHandlerBenchmark {
+public class ByteBuf2MessageHandlerBenchmark extends AbstractBenchmark {
     private HandlerContext ctx;
     private Address sender;
     private AddressedByteBuf msg;
     private CompletableFuture<Void> future;
 
-    public ByteBuf2MessageHandlerBenchmark() {
+    @Setup
+    public void setup() {
         try {
             ctx = new MyHandlerContext();
             sender = new MyAddress();
@@ -72,13 +73,13 @@ public class ByteBuf2MessageHandlerBenchmark {
             future = new CompletableFuture<>();
         }
         catch (final IOException | CryptoException e) {
-            e.printStackTrace();
+            handleUnexpectedException(e);
         }
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void matchedRead() {
+    public void matchedRead(Blackhole blackhole) {
         ByteBuf2MessageHandler.INSTANCE.matchedRead(ctx, sender, msg, future);
     }
 
