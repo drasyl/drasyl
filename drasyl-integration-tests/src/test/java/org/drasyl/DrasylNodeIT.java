@@ -47,8 +47,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -322,6 +324,97 @@ class DrasylNodeIT {
 
                 client1Events.awaitCount(1).assertValueCount(1);
                 client2Events.awaitCount(1).assertValueCount(1);
+            }
+        }
+
+        /**
+         * Network Layout:
+         * <pre>
+         * +---+----+   +----+---+
+         * |Client 1|   |Client 2|
+         * +--------+   +--------+
+         * </pre>
+         */
+        @Nested
+        class TwoClientWithStaticRoutesAndWithoutSuperPeerWhenOnlyRemoteIsEnabled {
+            private Pair<DrasylNode, Observable<Event>> client1;
+            private Pair<DrasylNode, Observable<Event>> client2;
+
+            @BeforeEach
+            void setUp() throws DrasylException, CryptoException {
+                //
+                // create nodes
+                //
+                DrasylConfig config;
+
+                // client1
+                config = DrasylConfig.newBuilder()
+                        .networkId(0)
+                        .identityProofOfWork(ProofOfWork.of(12304070))
+                        .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
+                        .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("127.0.0.1"))
+                        .remoteBindPort(22528)
+                        .remotePingInterval(ofSeconds(1))
+                        .remotePingTimeout(ofSeconds(2))
+                        .remoteSuperPeerEnabled(false)
+                        .remoteStaticRoutes(Map.of(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"), new InetSocketAddress("127.0.0.1", 22529)))
+                        .intraVmDiscoveryEnabled(false)
+                        .localHostDiscoveryEnabled(false)
+                        .remoteMessageMtu(MESSAGE_MTU)
+                        .build();
+                client1 = createStartedNode(config);
+                colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
+
+                // client2
+                config = DrasylConfig.newBuilder()
+                        .networkId(0)
+                        .identityProofOfWork(ProofOfWork.of(33957767))
+                        .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
+                        .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("127.0.0.1"))
+                        .remoteBindPort(22529)
+                        .remotePingInterval(ofSeconds(1))
+                        .remotePingTimeout(ofSeconds(2))
+                        .remoteSuperPeerEnabled(false)
+                        .remoteStaticRoutes(Map.of(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), new InetSocketAddress("127.0.0.1", 22528)))
+                        .intraVmDiscoveryEnabled(false)
+                        .localHostDiscoveryEnabled(false)
+                        .remoteMessageMtu(MESSAGE_MTU)
+                        .build();
+                client2 = createStartedNode(config);
+                colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
+
+                client1.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(1).assertValueCount(1);
+                client2.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(1).assertValueCount(1);
+            }
+
+            /**
+             * This test ensures that sent application messages are delivered to the recipient.
+             */
+            @Test
+            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            void applicationMessagesShouldBeDelivered() {
+                final TestObserver<Event> client1Messages = client1.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> client2Messages = client2.second().filter(e -> e instanceof MessageEvent).test();
+
+                //
+                // send messages
+                //
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
+
+                //
+                // verify
+                //
+                client1Messages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                client2Messages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
             }
         }
     }
