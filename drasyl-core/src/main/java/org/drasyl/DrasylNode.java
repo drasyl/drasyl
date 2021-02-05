@@ -318,7 +318,7 @@ public abstract class DrasylNode {
             return send(CompressedPublicKey.of(recipient), payload);
         }
         catch (final CryptoException | NullPointerException | IllegalArgumentException e) {
-            return failedFuture(new DrasylException("Unable to parse recipient's public key: " + e.getMessage()));
+            return failedFuture(new DrasylException("Unable to parse recipient's public key", e));
         }
     }
 
