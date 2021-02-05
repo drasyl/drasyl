@@ -29,6 +29,7 @@ import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -50,6 +51,7 @@ import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_O
 import static org.drasyl.remote.handler.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
 import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.remote.handler.SignatureHandler.SIGNATURE_HANDLER;
+import static org.drasyl.remote.handler.StaticRoutesHandler.STATIC_ROUTES_HANDLER;
 import static org.drasyl.remote.handler.UdpDiscoveryHandler.UDP_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
 import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
@@ -58,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.same;
@@ -79,7 +82,7 @@ class DrasylPipelineTest {
     private Consumer<Event> eventConsumer;
     @Mock
     private DrasylScheduler scheduler;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Identity identity;
@@ -92,6 +95,7 @@ class DrasylPipelineTest {
     void shouldCreateNewPipeline() {
         when(config.isRemoteEnabled()).thenReturn(true);
         when(config.isRemoteExposeEnabled()).thenReturn(true);
+        when(config.getRemoteStaticRoutes().isEmpty()).thenReturn(false);
 
         final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, workerGroup);
 
@@ -106,6 +110,7 @@ class DrasylPipelineTest {
         assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(INBOUND_MESSAGE_GUARD), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(LOOPBACK_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(STATIC_ROUTES_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(UDP_DISCOVERY_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(SIGNATURE_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");

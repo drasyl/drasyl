@@ -99,6 +99,7 @@ import static org.drasyl.DrasylConfig.getPrivateKey;
 import static org.drasyl.DrasylConfig.getPublicKey;
 import static org.drasyl.DrasylConfig.getSerializationBindings;
 import static org.drasyl.DrasylConfig.getSerializationSerializers;
+import static org.drasyl.DrasylConfig.getStaticRoutes;
 import static org.drasyl.DrasylConfig.getURI;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -134,6 +135,7 @@ class DrasylConfigTest {
     private byte remoteMessageHopLimit;
     private boolean superPeerEnabled;
     private Endpoint superPeerEndpoint;
+    private Map<CompressedPublicKey, InetSocketAddress> remoteStaticRoutes;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Config typesafeConfig;
     private String identityPathAsString;
@@ -175,6 +177,7 @@ class DrasylConfigTest {
         remoteMessageHopLimit = (byte) 64;
         superPeerEnabled = true;
         superPeerEndpoint = Endpoint.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337");
+        remoteStaticRoutes = Map.of();
         identityPathAsString = "drasyl.identity.json";
         intraVmDiscoveryEnabled = true;
         localHostDiscoveryEnabled = true;
@@ -300,6 +303,7 @@ class DrasylConfigTest {
                     remoteExposeEnabled,
                     superPeerEnabled,
                     superPeerEndpoint,
+                    remoteStaticRoutes,
                     remoteMessageMaxContentLength,
                     remoteMessageHopLimit,
                     composedMessageTransferTimeout,
@@ -634,6 +638,33 @@ class DrasylConfigTest {
     }
 
     @Nested
+    class GetStaticRoutes {
+        @Test
+        void shouldReturnCorrectRoutes() throws CryptoException {
+            final Config config = ConfigFactory.parseString("foo.bar { 033e8af97c541a5479e11b2860f9053e12df85f402cee33ebe0b55aa068a936a4b = \"140.211.24.157:22527\" }");
+
+            assertEquals(
+                    Map.of(CompressedPublicKey.of("033e8af97c541a5479e11b2860f9053e12df85f402cee33ebe0b55aa068a936a4b"), new InetSocketAddress("140.211.24.157", 22527)),
+                    getStaticRoutes(config, "foo.bar")
+            );
+        }
+
+        @Test
+        void shouldThrowExceptionForInvalidPublicKey() {
+            final Config config = ConfigFactory.parseString("foo.bar { 033e8af97c541aee33ebe0b55aa068a936a4b = \"140.211.24.157:22527\" }");
+
+            assertThrows(ConfigException.class, () -> getStaticRoutes(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldThrowExceptionForInvalidAddress() {
+            final Config config = ConfigFactory.parseString("foo.bar { 033e8af97c541a5479e11b2860f9053e12df85f402cee33ebe0b55aa068a936a4b = \"140.211.24.157\" }");
+
+            assertThrows(ConfigException.class, () -> getStaticRoutes(config, "foo.bar"));
+        }
+    }
+
+    @Nested
     class ParseFile {
         @Test
         void shouldReadConfigFromFile(@TempDir final Path dir) throws IOException {
@@ -669,8 +700,10 @@ class DrasylConfigTest {
                     .remotePingTimeout(DEFAULT.getRemotePingTimeout())
                     .remotePingCommunicationTimeout(DEFAULT.getRemotePingCommunicationTimeout())
                     .remoteUniteMinInterval(DEFAULT.getRemoteUniteMinInterval())
+                    .remotePingMaxPeers(DEFAULT.getRemotePingMaxPeers())
                     .remoteEndpoints(DEFAULT.getRemoteEndpoints())
                     .remoteExposeEnabled(DEFAULT.isRemoteExposeEnabled())
+                    .remoteStaticRoutes(DEFAULT.getRemoteStaticRoutes())
                     .remoteMessageMtu(DEFAULT.getRemoteMessageMtu())
                     .remoteMessageMaxContentLength(DEFAULT.getRemoteMessageMaxContentLength())
                     .remoteMessageComposedMessageTransferTimeout(DEFAULT.getRemoteMessageComposedMessageTransferTimeout())

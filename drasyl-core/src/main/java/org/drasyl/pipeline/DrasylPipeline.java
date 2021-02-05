@@ -36,6 +36,7 @@ import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
 import org.drasyl.remote.handler.Message2ByteBufHandler;
 import org.drasyl.remote.handler.OtherNetworkFilter;
 import org.drasyl.remote.handler.SignatureHandler;
+import org.drasyl.remote.handler.StaticRoutesHandler;
 import org.drasyl.remote.handler.UdpDiscoveryHandler;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.portmapper.PortMapper;
@@ -60,6 +61,7 @@ import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_O
 import static org.drasyl.remote.handler.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
 import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.remote.handler.SignatureHandler.SIGNATURE_HANDLER;
+import static org.drasyl.remote.handler.StaticRoutesHandler.STATIC_ROUTES_HANDLER;
 import static org.drasyl.remote.handler.UdpDiscoveryHandler.UDP_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
 import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
@@ -106,6 +108,10 @@ public class DrasylPipeline extends DefaultPipeline {
 
         if (config.isRemoteEnabled()) {
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
+
+            if (!config.getRemoteStaticRoutes().isEmpty()) {
+                addFirst(STATIC_ROUTES_HANDLER, new StaticRoutesHandler());
+            }
 
             addFirst(UDP_DISCOVERY_HANDLER, new UdpDiscoveryHandler(config));
 
