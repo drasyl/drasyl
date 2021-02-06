@@ -28,6 +28,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.Endpoint;
 
+import java.io.IOException;
 import java.time.Duration;
 
 import static java.time.Duration.ofSeconds;
@@ -44,7 +45,7 @@ public class SuperPeerStressTesting extends AbstractBenchmark {
                 .build();
     }
 
-    public static void main(final String[] args) throws DrasylException {
+    public static void main(final String[] args) throws DrasylException, IOException {
         final DrasylConfig baseConfig = DrasylConfig.newBuilder()
                 .remoteSuperPeerEndpoint(Endpoint.of("udp://review-monitoring-md6yhe.env.drasyl.org"))
                 .remoteEnabled(false)
@@ -57,7 +58,7 @@ public class SuperPeerStressTesting extends AbstractBenchmark {
         }
     }
 
-    public DrasylNode create(final DrasylConfig baseConfig) throws DrasylException {
+    public DrasylNode create(final DrasylConfig baseConfig) throws DrasylException, IOException {
         final Identity identity = IdentityManager.generateIdentity();
 
         final DrasylConfig config = DrasylConfig.newBuilder(baseConfig)
