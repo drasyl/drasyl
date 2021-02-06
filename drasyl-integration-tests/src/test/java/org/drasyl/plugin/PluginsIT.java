@@ -26,7 +26,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -49,7 +48,7 @@ class PluginsIT {
     private DrasylNode node;
 
     @BeforeEach
-    void setup() throws CryptoException, DrasylException {
+    void setup() throws DrasylException {
         receivedEvents = PublishSubject.create();
 
         final Identity identity = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");

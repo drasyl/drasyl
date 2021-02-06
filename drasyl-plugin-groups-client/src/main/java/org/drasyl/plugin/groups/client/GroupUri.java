@@ -18,7 +18,6 @@
  */
 package org.drasyl.plugin.groups.client;
 
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.UriUtil;
 
@@ -158,9 +157,6 @@ public class GroupUri {
             final Duration timeout = Duration.ofSeconds(timeoutSeconds);
 
             return new GroupUri(manager, credentials, name, timeout);
-        }
-        catch (final CryptoException e) {
-            throw new IllegalArgumentException("Host contains invalid public key: ", e);
         }
         catch (final NumberFormatException e) {
             throw new IllegalArgumentException("The given URI '" + uri + "' contains an invalid timeout value: ", e);

@@ -20,7 +20,6 @@ package org.drasyl.peer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.UriUtil;
 
@@ -218,12 +217,7 @@ public class Endpoint {
             networkId = null;
         }
 
-        try {
-            return of(endpoint.getHost(), endpoint.getPort(), CompressedPublicKey.of(publicKey), networkId);
-        }
-        catch (final CryptoException e) {
-            throw new IllegalArgumentException("Invalid public key", e);
-        }
+        return of(endpoint.getHost(), endpoint.getPort(), CompressedPublicKey.of(publicKey), networkId);
     }
 
     /**

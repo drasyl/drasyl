@@ -20,11 +20,8 @@ package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.crypto.CryptoException;
 
 import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.util.Objects;
 
 import static org.drasyl.util.SecretUtil.maskSecret;
@@ -55,7 +52,10 @@ public class CompressedKeyPair {
         return privateKey;
     }
 
-    public KeyPair toUncompressedKeyPair() throws CryptoException {
+    /**
+     * @throws IllegalStateException if uncompressed public or private keys could not be generated
+     */
+    public KeyPair toUncompressedKeyPair() {
         return new KeyPair(publicKey.toUncompressedKey(), privateKey.toUncompressedKey());
     }
 
@@ -91,21 +91,12 @@ public class CompressedKeyPair {
     }
 
     public static CompressedKeyPair of(final String publicKey,
-                                       final String privateKey) throws CryptoException {
+                                       final String privateKey) {
         return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
     }
 
     public static CompressedKeyPair of(final byte[] publicKey,
-                                       final byte[] privateKey) throws CryptoException {
-        return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
-    }
-
-    public static CompressedKeyPair of(final KeyPair keyPair) throws CryptoException {
-        return of(keyPair.getPublic(), keyPair.getPrivate());
-    }
-
-    public static CompressedKeyPair of(final PublicKey publicKey,
-                                       final PrivateKey privateKey) throws CryptoException {
+                                       final byte[] privateKey) {
         return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
     }
 }

@@ -23,7 +23,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.Node;
@@ -69,7 +68,7 @@ class DrasylPipelineIT {
     private byte[] payload;
 
     @BeforeEach
-    void setup() throws CryptoException {
+    void setup() {
         receivedEvents = PublishSubject.create();
         outboundMessages = PublishSubject.create();
 

@@ -20,7 +20,6 @@ package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.crypto.CryptoException;
 
 import java.util.Objects;
 
@@ -38,7 +37,7 @@ public class Identity {
 
     protected Identity(@JsonProperty("proofOfWork") final int proofOfWork,
                        @JsonProperty("publicKey") final String publicKey,
-                       @JsonProperty("privateKey") final String privateKey) throws CryptoException {
+                       @JsonProperty("privateKey") final String privateKey) {
         this(ProofOfWork.of(proofOfWork), CompressedKeyPair.of(publicKey, privateKey));
     }
 
@@ -112,13 +111,13 @@ public class Identity {
 
     public static Identity of(final ProofOfWork proofOfWork,
                               final String publicKey,
-                              final String privateKey) throws CryptoException {
+                              final String privateKey) {
         return of(proofOfWork, CompressedKeyPair.of(publicKey, privateKey));
     }
 
     public static Identity of(final int proofOfWork,
                               final String publicKey,
-                              final String privateKey) throws CryptoException {
+                              final String privateKey) {
         return of(ProofOfWork.of(proofOfWork), CompressedKeyPair.of(publicKey, privateKey));
     }
 }

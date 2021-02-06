@@ -27,7 +27,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -105,7 +104,7 @@ class UdpServerTest {
             }
 
             @Test
-            void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() throws CryptoException {
+            void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() {
                 when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
 
                 final InetAddress firstAddress = getAddresses().iterator().next();

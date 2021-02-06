@@ -19,7 +19,6 @@
 package org.drasyl.identity;
 
 import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,17 +34,17 @@ class CompressedPrivateKeyTest {
     private CompressedPrivateKey privateKey;
 
     @BeforeEach
-    void setUp() throws CryptoException {
+    void setUp() {
         privateKey = CompressedPrivateKey.of("03a3c01d41b6a7c31b081c9f1ee0f8cd5d11e7ceb784359b57388c752d38f581");
     }
 
     @Nested
     class Of {
         @Test
-        void shouldReturnCorrectKeys() throws CryptoException {
+        void shouldReturnCorrectKeys() {
             final CompressedPrivateKey compressedPrivateKey1 = privateKey;
             final CompressedPrivateKey compressedPrivateKey2 = CompressedPrivateKey.of(compressedPrivateKey1.byteArrayValue());
-            final CompressedPrivateKey compressedPrivateKey3 = CompressedPrivateKey.of(compressedPrivateKey2.toUncompressedKey());
+            final CompressedPrivateKey compressedPrivateKey3 = CompressedPrivateKey.of(compressedPrivateKey2.byteArrayValue());
 
             assertEquals(compressedPrivateKey1, compressedPrivateKey2);
             assertEquals(compressedPrivateKey1, compressedPrivateKey3);
@@ -59,7 +58,7 @@ class CompressedPrivateKeyTest {
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+        void shouldDeserializeToCorrectObject() throws IOException {
             final String json = "\"A6PAHUG2p8MbCByfHuD4zV0R5863hDWbVziMdS049YE=\"";
 
             assertEquals(

@@ -25,7 +25,6 @@ import org.drasyl.DrasylException;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.ThrowingBiFunction;
 
@@ -159,7 +158,7 @@ public class WormholeCommand extends AbstractCommand {
             // wait for node to finish
             node.doneFuture().get();
         }
-        catch (final CryptoException | IllegalArgumentException e) {
+        catch (final IllegalArgumentException e) {
             throw new CliException("Invalid wormhole code supplied", e);
         }
         catch (final StringIndexOutOfBoundsException e) {

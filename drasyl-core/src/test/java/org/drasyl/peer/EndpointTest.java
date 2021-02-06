@@ -19,7 +19,6 @@
 package org.drasyl.peer;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -157,14 +156,14 @@ class EndpointTest {
         }
 
         @Test
-        void shouldCreateCorrectEndpointWithoutNetworkIdFromString() throws CryptoException {
+        void shouldCreateCorrectEndpointWithoutNetworkIdFromString() {
             final Endpoint endpoint = Endpoint.of("udp://localhost:123?publicKey=030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
 
             assertEquals(Endpoint.of("localhost", 123, CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")), endpoint);
         }
 
         @Test
-        void shouldCreateCorrectEndpointFromString() throws CryptoException {
+        void shouldCreateCorrectEndpointFromString() {
             final Endpoint endpoint = Endpoint.of("udp://localhost:123?publicKey=030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb&networkId=1337");
 
             assertEquals(Endpoint.of("localhost", 123, CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb"), 1337), endpoint);

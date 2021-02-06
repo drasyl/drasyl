@@ -21,7 +21,6 @@ package org.drasyl.localhost;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -251,7 +250,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
                         LOG.trace("Addresses '{}' for peer '{}' discovered by file '{}'", addresses, publicKey, fileName);
                     }
                 }
-                catch (final CryptoException | IOException e) {
+                catch (final IllegalArgumentException | IOException e) {
                     LOG.warn("Unable to read peer information from '{}': ", file.getAbsolutePath(), e);
                 }
             }

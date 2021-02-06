@@ -18,7 +18,6 @@
  */
 package org.drasyl.plugin.groups.manager.database.jdbc;
 
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.data.Member;
@@ -51,7 +50,7 @@ class JDBCDatabaseAdapterTest {
     private CompressedPublicKey publicKey;
 
     @BeforeEach
-    void setUp() throws DatabaseException, CryptoException {
+    void setUp() throws DatabaseException {
         database = new JDBCDatabaseAdapter(URI.create("jdbc:sqlite::memory:"));
         publicKey = CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff");
     }
@@ -61,6 +60,7 @@ class JDBCDatabaseAdapterTest {
         database.close();
     }
 
+    @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
     @Nested
     class Create {
         @Test

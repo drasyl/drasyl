@@ -632,7 +632,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                 }
             }
         }
-        catch (final IOException | CryptoException | IllegalArgumentException e) {
+        catch (final IOException | IllegalArgumentException e) {
             throw new IllegalStateException("Unable to arm message", e);
         }
     }
