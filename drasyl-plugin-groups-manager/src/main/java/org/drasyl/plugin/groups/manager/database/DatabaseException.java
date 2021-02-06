@@ -18,13 +18,13 @@
  */
 package org.drasyl.plugin.groups.manager.database;
 
-import org.drasyl.DrasylException;
+import java.io.IOException;
 
 /**
  * This exception signals an error occurred during execution in {@link DatabaseAdapter}
  * implementations.
  */
-public class DatabaseException extends DrasylException {
+public class DatabaseException extends IOException {
     /**
      * @param message the detail message. The detail message is saved for later retrieval by the
      *                {@link #getMessage()} method.

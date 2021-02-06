@@ -57,7 +57,7 @@ import static org.drasyl.util.PathUtil.hasPosixSupport;
 public class IdentityManager {
     public static final byte POW_DIFFICULTY = 6;
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
-    private final ThrowingSupplier<Identity, IdentityManagerException> identityGenerator;
+    private final ThrowingSupplier<Identity, IOException> identityGenerator;
     private final DrasylConfig config;
     private Identity identity;
 
@@ -70,7 +70,7 @@ public class IdentityManager {
     }
 
     @SuppressWarnings("SameParameterValue")
-    IdentityManager(final ThrowingSupplier<Identity, IdentityManagerException> identityGenerator,
+    IdentityManager(final ThrowingSupplier<Identity, IOException> identityGenerator,
                     final DrasylConfig config,
                     final Identity identity) {
         this.identityGenerator = identityGenerator;
@@ -83,18 +83,18 @@ public class IdentityManager {
      * pair directly from the configuration. If no key pair is specified there, the identity is
      * loaded from the identity file path specified in the configuration. If the file does not
      * exist, a new identity is generated and written to the file. If all this fails and no identity
-     * can be loaded, an {@link IdentityManagerException} is thrown.
+     * can be loaded, an {@link IOException} is thrown.
      *
-     * @throws IdentityManagerException if identity could not be loaded or created
+     * @throws IOException if identity could not be loaded or created
      */
-    public void loadOrCreateIdentity() throws IdentityManagerException {
+    public void loadOrCreateIdentity() throws IOException {
         if (config.getIdentityProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
             LOG.debug("Load identity specified in config");
             try {
                 this.identity = Identity.of(config.getIdentityProofOfWork(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
             }
             catch (final IllegalArgumentException e) {
-                throw new IdentityManagerException("Identity read from configuration seems invalid", e);
+                throw new IOException("Identity read from configuration seems invalid", e);
             }
         }
         else {
@@ -113,7 +113,7 @@ public class IdentityManager {
         }
 
         if (!this.identity.isValid()) {
-            throw new IdentityManagerException("Loaded or Created Identity is invalid.");
+            throw new IOException("Loaded or Created Identity is invalid.");
         }
     }
 
@@ -129,30 +129,27 @@ public class IdentityManager {
     }
 
     /**
-     * Reads the identity from <code>path</code>. Throws <code>IdentityManagerException</code> if
+     * Reads the identity from {@code code}. Throws {@code IOException} if
      * file cannot be read or file has unexpected content.
      *
      * @param path path to identity file
      * @return The identity contained in the file
-     * @throws IdentityManagerException if identity could not be read from file
+     * @throws IOException if identity could not be read from file
      */
-    private static Identity readIdentityFile(final Path path) throws IdentityManagerException {
+    private static Identity readIdentityFile(final Path path) throws IOException {
         try {
             // check if file permissions are too open
             if (hasPosixSupport(path)) {
                 final Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(path);
                 if (!Collections.disjoint(permissions, Set.of(GROUP_EXECUTE, GROUP_WRITE, GROUP_READ, OTHERS_EXECUTE, OTHERS_WRITE, OTHERS_READ))) {
-                    throw new IdentityManagerException("Unprotected private key: It is required that your identity file '" + path + "' is NOT accessible by others.'");
+                    throw new IOException("Unprotected private key: It is required that your identity file '" + path + "' is NOT accessible by others.'");
                 }
             }
 
             return JACKSON_READER.readValue(path.toFile(), Identity.class);
         }
         catch (final JsonProcessingException e) {
-            throw new IdentityManagerException("Unable to load identity from file '" + path + "': ", e);
-        }
-        catch (final IOException e) {
-            throw new IdentityManagerException("Unable to access identity file '" + path + "': ", e);
+            throw new IOException("Unable to load identity from file '" + path + "': ", e);
         }
     }
 
@@ -160,9 +157,9 @@ public class IdentityManager {
      * Generates a new random identity.
      *
      * @return the generated identity
-     * @throws IdentityManagerException if an identity could not be generated
+     * @throws IOException if an identity could not be generated
      */
-    public static Identity generateIdentity() throws IdentityManagerException {
+    public static Identity generateIdentity() throws IOException {
         try {
             final KeyPair newKeyPair = Crypto.generateKeys();
             final CompressedPublicKey publicKey = CompressedPublicKey.of(Crypto.compressedKey(newKeyPair.getPublic()));
@@ -171,7 +168,7 @@ public class IdentityManager {
             return Identity.of(proofOfWork, publicKey, privateKey);
         }
         catch (final CryptoException e) {
-            throw new IdentityManagerException("Unable to generate new identity", e);
+            throw new IOException("Unable to generate new identity", e);
         }
     }
 
@@ -181,30 +178,25 @@ public class IdentityManager {
      *
      * @param path     path where the identity should be written to
      * @param identity this identity is written to the file
-     * @throws IdentityManagerException if the identity could not be written to the file
+     * @throws IOException if the identity could not be written to the file
      */
     private static void writeIdentityFile(final Path path,
-                                          final Identity identity) throws IdentityManagerException {
+                                          final Identity identity) throws IOException {
         final File file = path.toFile();
 
         if (Files.isDirectory(path) || (file.getParentFile() != null && !file.getParentFile().exists())) {
-            throw new IdentityManagerException("Identity path '" + path + "' is a directory or path does not exist");
+            throw new IOException("Identity path '" + path + "' is a directory or path does not exist");
         }
         else if (file.exists() && !file.canWrite()) {
-            throw new IdentityManagerException("Identity path '" + path + "' is not writable");
+            throw new IOException("Identity path '" + path + "' is not writable");
         }
         else {
-            try {
-                // ensure that file permissions will not be too open
-                if (hasPosixSupport(path) && file.createNewFile()) {
-                    Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
-                }
+            // ensure that file permissions will not be too open
+            if (hasPosixSupport(path) && file.createNewFile()) {
+                Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
+            }
 
-                JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(file, identity);
-            }
-            catch (final IOException e) {
-                throw new IdentityManagerException("Unable to write identity to file '" + path + "'", e);
-            }
+            JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(file, identity);
         }
     }
 
@@ -233,8 +225,10 @@ public class IdentityManager {
      * ATTENTION: Messages directed to the present identity can then no longer be decrypted and
      * read. This step is irreversible. Should only be used if the present identity should never be
      * used again!
+     *
+     * @throws IOException if identity file could not be deleted
      */
-    public static void deleteIdentityFile(final Path path) throws IdentityManagerException {
+    public static void deleteIdentityFile(final Path path) throws IOException {
         final File file = path.toFile();
 
         if (!file.exists()) {
@@ -242,11 +236,6 @@ public class IdentityManager {
             return;
         }
 
-        try {
-            Files.delete(path);
-        }
-        catch (final IOException e) {
-            throw new IdentityManagerException("Unable to delete identity file '" + path + "'", e);
-        }
+        Files.delete(path);
     }
 }

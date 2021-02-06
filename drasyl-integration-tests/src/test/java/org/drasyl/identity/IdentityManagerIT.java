@@ -25,6 +25,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -45,6 +46,6 @@ class IdentityManagerIT {
 
         final IdentityManager identityManager = new IdentityManager(() -> identity, config, null);
 
-        assertThrows(IdentityManagerException.class, identityManager::loadOrCreateIdentity);
+        assertThrows(IOException.class, identityManager::loadOrCreateIdentity);
     }
 }

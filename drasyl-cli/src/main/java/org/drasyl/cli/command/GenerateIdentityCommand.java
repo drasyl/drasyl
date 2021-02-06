@@ -24,7 +24,6 @@ import org.apache.commons.cli.CommandLine;
 import org.drasyl.cli.CliException;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.identity.IdentityManagerException;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -54,7 +53,7 @@ public class GenerateIdentityCommand extends AbstractCommand {
             final Identity identity = IdentityManager.generateIdentity();
             JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(printStream, identity);
         }
-        catch (final IdentityManagerException | IOException e) {
+        catch (final IOException e) {
             throw new CliException(e);
         }
     }

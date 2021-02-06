@@ -148,6 +148,7 @@ public abstract class DrasylNode {
      *
      * @param config custom configuration used for this node
      * @throws NullPointerException if {@code config} is {@code null}
+     * @throws DrasylException      if config or identity is not valid
      */
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
@@ -165,6 +166,9 @@ public abstract class DrasylNode {
         }
         catch (final DrasylConfigException e) {
             throw new DrasylException("Couldn't load config", e);
+        }
+        catch (final IOException e) {
+            throw new DrasylException("Couldn't load or create identity", e);
         }
     }
 
