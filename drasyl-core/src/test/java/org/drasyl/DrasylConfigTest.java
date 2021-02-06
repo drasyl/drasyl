@@ -19,11 +19,9 @@
 package org.drasyl;
 
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigMemorySize;
 import com.typesafe.config.ConfigObject;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -201,7 +199,7 @@ class DrasylConfigTest {
     class Constructor {
         @Test
         @SuppressWarnings("java:S5961")
-        void shouldReadConfigProperly() throws CryptoException {
+        void shouldReadConfigProperly() {
             when(typesafeConfig.getInt(NETWORK_ID)).thenReturn(networkId);
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(-1);
             when(typesafeConfig.getString(IDENTITY_PUBLIC_KEY)).thenReturn("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
@@ -275,14 +273,14 @@ class DrasylConfigTest {
         void shouldThrowExceptionIfSuperPeerNetworkidMismatch() {
             final Config config = ConfigFactory.parseString("drasyl.network-id = 1\ndrasyl.remote.super-peer.endoint = \"http://localhost.de\"");
 
-            assertThrows(ConfigException.class, () -> new DrasylConfig(config));
+            assertThrows(DrasylConfigException.class, () -> new DrasylConfig(config));
         }
     }
 
     @Nested
     class ToString {
         @Test
-        void shouldMaskSecrets() throws CryptoException {
+        void shouldMaskSecrets() {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
             final DrasylConfig config = new DrasylConfig(
@@ -397,7 +395,7 @@ class DrasylConfigTest {
         void shouldThrowExceptionForInvalidValue() {
             final Config config = ConfigFactory.parseString("foo.bar = \"hallo world\"");
 
-            assertThrows(ConfigException.class, () -> getURI(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getURI(config, "foo.bar"));
         }
     }
 
@@ -407,7 +405,7 @@ class DrasylConfigTest {
         void shouldThrowExceptionForInvalidValue() {
             final Config config = ConfigFactory.parseString("foo.bar = bla");
 
-            assertThrows(ConfigException.class, () -> getPublicKey(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getPublicKey(config, "foo.bar"));
         }
     }
 
@@ -417,7 +415,7 @@ class DrasylConfigTest {
         void shouldThrowExceptionForInvalidValue() {
             final Config config = ConfigFactory.parseString("foo.bar = bla");
 
-            assertThrows(ConfigException.class, () -> getPrivateKey(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getPrivateKey(config, "foo.bar"));
         }
     }
 
@@ -427,7 +425,7 @@ class DrasylConfigTest {
         void shouldThrowExceptionForInvalidValue() {
             final Config config = ConfigFactory.parseString("");
 
-            assertThrows(ConfigException.class, () -> getPath(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getPath(config, "foo.bar"));
         }
     }
 
@@ -437,7 +435,7 @@ class DrasylConfigTest {
         void shouldThrowExceptionForInvalidValue() {
             final Config config = ConfigFactory.parseString("foo.bar = 123456789");
 
-            assertThrows(ConfigException.class, () -> getByte(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getByte(config, "foo.bar"));
         }
     }
 
@@ -447,7 +445,7 @@ class DrasylConfigTest {
         void shouldThrowExceptionForInvalidValue() {
             final Config config = ConfigFactory.parseString("foo.bar = [\"http://foo.bar\"]");
 
-            assertThrows(ConfigException.class, () -> getEndpointList(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getEndpointList(config, "foo.bar"));
         }
     }
 
@@ -457,7 +455,7 @@ class DrasylConfigTest {
         void shouldThrowExceptionForInvalidValue() {
             final Config config = ConfigFactory.parseString("foo.bar = baz");
 
-            assertThrows(ConfigException.class, () -> getInetAddress(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getInetAddress(config, "foo.bar"));
         }
     }
 
@@ -488,14 +486,14 @@ class DrasylConfigTest {
         void shouldThrowExceptionAddressWithoutHostname() {
             final Config config = ConfigFactory.parseString("foo.bar = \"1234\"");
 
-            assertThrows(ConfigException.class, () -> getInetSocketAddress(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getInetSocketAddress(config, "foo.bar"));
         }
 
         @Test
         void shouldThrowExceptionAddressWithoutPort() {
             final Config config = ConfigFactory.parseString("foo.bar = \"production.env.drasyl.org\"");
 
-            assertThrows(ConfigException.class, () -> getInetSocketAddress(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getInetSocketAddress(config, "foo.bar"));
         }
     }
 
@@ -505,21 +503,21 @@ class DrasylConfigTest {
         void shouldThrowExceptionForNonExistingClasses() {
             final Config config = ConfigFactory.parseString("foo.bar { \"non.existing.class\" { enabled = true } }");
 
-            assertThrows(ConfigException.class, () -> getPlugins(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getPlugins(config, "foo.bar"));
         }
 
         @Test
         void shouldThrowExceptionForClassWithMissingMethod() {
             final Config config = ConfigFactory.parseString("foo.bar { \"" + MyPluginWithMissingMethod.class.getName() + "\" { enabled = true } }");
 
-            assertThrows(ConfigException.class, () -> getPlugins(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getPlugins(config, "foo.bar"));
         }
 
         @Test
         void shouldThrowExceptionForClassWithInvocationTargetException() {
             final Config config = ConfigFactory.parseString("foo.bar { \"" + MyPluginWithInvocationTargetException.class.getName() + "\" { enabled = true } }");
 
-            assertThrows(ConfigException.class, () -> getPlugins(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getPlugins(config, "foo.bar"));
         }
     }
 
@@ -545,21 +543,21 @@ class DrasylConfigTest {
         void shouldThrowExceptionForNonExistingClasses() {
             final Config config = ConfigFactory.parseString("foo.bar { string = \"org.drasyl.serialization.NotExistingSerializer\" }");
 
-            assertThrows(ConfigException.class, () -> getSerializationSerializers(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getSerializationSerializers(config, "foo.bar"));
         }
 
         @Test
         void shouldThrowExceptionForClassWithMissingMethod() {
             final Config config = ConfigFactory.parseString("foo.bar { string = \"" + MySerializerWithMissingMethod.class.getName() + "\" }");
 
-            assertThrows(ConfigException.class, () -> getSerializationSerializers(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getSerializationSerializers(config, "foo.bar"));
         }
 
         @Test
         void shouldThrowExceptionForClassWithInvocationTargetException() {
             final Config config = ConfigFactory.parseString("foo.bar { string = \"" + MySerializerWithInvocationTargetException.class.getName() + "\" }");
 
-            assertThrows(ConfigException.class, () -> getSerializationSerializers(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getSerializationSerializers(config, "foo.bar"));
         }
     }
 
@@ -576,12 +574,12 @@ class DrasylConfigTest {
         }
 
         @Override
-        public byte[] toByteArray(final Object o) throws IOException {
+        public byte[] toByteArray(final Object o) {
             return new byte[0];
         }
 
         @Override
-        public <T> T fromByteArray(final byte[] bytes, final Class<T> type) throws IOException {
+        public <T> T fromByteArray(final byte[] bytes, final Class<T> type) {
             return null;
         }
     }
@@ -592,12 +590,12 @@ class DrasylConfigTest {
         }
 
         @Override
-        public byte[] toByteArray(final Object o) throws IOException {
+        public byte[] toByteArray(final Object o) {
             return new byte[0];
         }
 
         @Override
-        public <T> T fromByteArray(final byte[] bytes, final Class<T> type) throws IOException {
+        public <T> T fromByteArray(final byte[] bytes, final Class<T> type) {
             return null;
         }
     }
@@ -608,12 +606,12 @@ class DrasylConfigTest {
         }
 
         @Override
-        public byte[] toByteArray(final Object o) throws IOException {
+        public byte[] toByteArray(final Object o) {
             return new byte[0];
         }
 
         @Override
-        public <T> T fromByteArray(final byte[] bytes, final Class<T> type) throws IOException {
+        public <T> T fromByteArray(final byte[] bytes, final Class<T> type) {
             return null;
         }
     }
@@ -625,7 +623,7 @@ class DrasylConfigTest {
             final Config config = ConfigFactory.parseString("foo.bar { \"testing.NotExisting\" = string }");
 
             final Set<String> serializers = Set.of("string");
-            assertThrows(ConfigException.class, () -> getSerializationBindings(config, "foo.bar", serializers));
+            assertThrows(DrasylConfigException.class, () -> getSerializationBindings(config, "foo.bar", serializers));
         }
 
         @Test
@@ -633,14 +631,14 @@ class DrasylConfigTest {
             final Config config = ConfigFactory.parseString("foo.bar { \"" + String.class.getName() + "\" = string }");
 
             final Set<String> serializers = Set.of();
-            assertThrows(ConfigException.class, () -> getSerializationBindings(config, "foo.bar", serializers));
+            assertThrows(DrasylConfigException.class, () -> getSerializationBindings(config, "foo.bar", serializers));
         }
     }
 
     @Nested
     class GetStaticRoutes {
         @Test
-        void shouldReturnCorrectRoutes() throws CryptoException {
+        void shouldReturnCorrectRoutes() {
             final Config config = ConfigFactory.parseString("foo.bar { 033e8af97c541a5479e11b2860f9053e12df85f402cee33ebe0b55aa068a936a4b = \"140.211.24.157:22527\" }");
 
             assertEquals(
@@ -653,14 +651,14 @@ class DrasylConfigTest {
         void shouldThrowExceptionForInvalidPublicKey() {
             final Config config = ConfigFactory.parseString("foo.bar { 033e8af97c541aee33ebe0b55aa068a936a4b = \"140.211.24.157:22527\" }");
 
-            assertThrows(ConfigException.class, () -> getStaticRoutes(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getStaticRoutes(config, "foo.bar"));
         }
 
         @Test
         void shouldThrowExceptionForInvalidAddress() {
             final Config config = ConfigFactory.parseString("foo.bar { 033e8af97c541a5479e11b2860f9053e12df85f402cee33ebe0b55aa068a936a4b = \"140.211.24.157\" }");
 
-            assertThrows(ConfigException.class, () -> getStaticRoutes(config, "foo.bar"));
+            assertThrows(DrasylConfigException.class, () -> getStaticRoutes(config, "foo.bar"));
         }
     }
 

@@ -18,20 +18,14 @@
  */
 package org.drasyl.identity;
 
-import org.drasyl.crypto.CryptoException;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-
-import static org.drasyl.AbstractBenchmark.handleUnexpectedException;
 
 @State(Scope.Benchmark)
 public class ProofOfWorkBenchmark {
@@ -39,12 +33,7 @@ public class ProofOfWorkBenchmark {
 
     @Setup
     public void setup() {
-        try {
-            publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
-        }
-        catch (final CryptoException e) {
-            handleUnexpectedException(e);
-        }
+        publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
     }
 
     @Benchmark

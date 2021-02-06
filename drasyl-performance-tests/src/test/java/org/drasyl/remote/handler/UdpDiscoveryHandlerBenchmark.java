@@ -20,7 +20,6 @@ package org.drasyl.remote.handler;
 
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
@@ -40,14 +39,11 @@ import org.drasyl.util.Pair;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -73,29 +69,24 @@ public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
 
     @Setup
     public void setup() {
-        try {
-            openPingsCache = new HashMap<>();
-            uniteAttemptsCache = new HashMap<>();
-            peers = new HashMap<>();
-            directConnectionPeers = new HashSet<>();
-            handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, directConnectionPeers);
+        openPingsCache = new HashMap<>();
+        uniteAttemptsCache = new HashMap<>();
+        peers = new HashMap<>();
+        directConnectionPeers = new HashSet<>();
+        handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, directConnectionPeers);
 
-            ctx = new MyHandlerContext();
-            recipient = new MyAddress();
-            final byte[] payload = new byte[1024];
-            new Random().nextBytes(payload);
-            msg = new SerializedApplicationMessage(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class, payload);
-            future = new CompletableFuture<>();
+        ctx = new MyHandlerContext();
+        recipient = new MyAddress();
+        final byte[] payload = new byte[1024];
+        new Random().nextBytes(payload);
+        msg = new SerializedApplicationMessage(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class, payload);
+        future = new CompletableFuture<>();
 
-            directConnectionPeers.add(msg.getRecipient());
-            final Peer peer = new Peer();
-            peer.inboundPongOccurred();
-            peer.setAddress(InetSocketAddressWrapper.of(InetSocketAddress.createUnresolved("127.0.0.1", 25527)));
-            peers.put(msg.getRecipient(), peer);
-        }
-        catch (final CryptoException e) {
-            handleUnexpectedException(e);
-        }
+        directConnectionPeers.add(msg.getRecipient());
+        final Peer peer = new Peer();
+        peer.inboundPongOccurred();
+        peer.setAddress(InetSocketAddressWrapper.of(InetSocketAddress.createUnresolved("127.0.0.1", 25527)));
+        peers.put(msg.getRecipient(), peer);
     }
 
     @Benchmark
@@ -110,7 +101,7 @@ public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
         private final Identity identity;
         private final PeersManager peersManager;
 
-        public MyHandlerContext() throws CryptoException {
+        public MyHandlerContext() {
             config = DrasylConfig.newBuilder()
                     .remotePingTimeout(ofDays(1))
                     .remotePingCommunicationTimeout(ofDays(1))

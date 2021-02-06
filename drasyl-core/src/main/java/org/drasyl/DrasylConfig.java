@@ -22,7 +22,6 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -146,84 +145,89 @@ public class DrasylConfig {
      * Creates a new config for a drasyl node.
      *
      * @param config config to be loaded
-     * @throws ConfigException if config is invalid
+     * @throws DrasylConfigException if config is invalid
      */
     public DrasylConfig(final Config config) {
-        config.checkValid(ConfigFactory.defaultReference(), "drasyl");
+        try {
+            config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
-        this.networkId = config.getInt(NETWORK_ID);
+            this.networkId = config.getInt(NETWORK_ID);
 
-        // init identity config
-        if (!config.getIsNull(IDENTITY_PROOF_OF_WORK)) {
-            this.identityProofOfWork = getProofOfWork(config, IDENTITY_PROOF_OF_WORK);
-        }
-        else {
-            this.identityProofOfWork = null;
-        }
-        if (!config.getString(IDENTITY_PUBLIC_KEY).isEmpty()) {
-            this.identityPublicKey = getPublicKey(config, IDENTITY_PUBLIC_KEY);
-        }
-        else {
-            this.identityPublicKey = null;
-        }
-        if (!config.getString(IDENTITY_PRIVATE_KEY).isEmpty()) {
-            this.identityPrivateKey = getPrivateKey(config, IDENTITY_PRIVATE_KEY);
-        }
-        else {
-            this.identityPrivateKey = null;
-        }
-        this.identityPath = getPath(config, IDENTITY_PATH);
+            // init identity config
+            if (!config.getIsNull(IDENTITY_PROOF_OF_WORK)) {
+                this.identityProofOfWork = getProofOfWork(config, IDENTITY_PROOF_OF_WORK);
+            }
+            else {
+                this.identityProofOfWork = null;
+            }
+            if (!config.getString(IDENTITY_PUBLIC_KEY).isEmpty()) {
+                this.identityPublicKey = getPublicKey(config, IDENTITY_PUBLIC_KEY);
+            }
+            else {
+                this.identityPublicKey = null;
+            }
+            if (!config.getString(IDENTITY_PRIVATE_KEY).isEmpty()) {
+                this.identityPrivateKey = getPrivateKey(config, IDENTITY_PRIVATE_KEY);
+            }
+            else {
+                this.identityPrivateKey = null;
+            }
+            this.identityPath = getPath(config, IDENTITY_PATH);
 
-        // Init remote config
-        this.remoteEnabled = config.getBoolean(REMOTE_ENABLED);
-        this.remoteBindHost = getInetAddress(config, REMOTE_BIND_HOST);
-        this.remoteBindPort = config.getInt(REMOTE_BIND_PORT);
-        this.remoteEndpoints = Set.copyOf(getEndpointList(config, REMOTE_ENDPOINTS));
-        this.remoteExposeEnabled = config.getBoolean(REMOTE_EXPOSE_ENABLED);
-        this.remotePingInterval = config.getDuration(REMOTE_PING_INTERVAL);
-        this.remotePingTimeout = config.getDuration(REMOTE_PING_TIMEOUT);
-        this.remotePingCommunicationTimeout = config.getDuration(REMOTE_PING_COMMUNICATION_TIMEOUT);
-        this.remotePingMaxPeers = config.getInt(REMOTE_PING_MAX_PEERS);
-        this.remoteUniteMinInterval = config.getDuration(REMOTE_UNITE_MIN_INTERVAL);
-        this.remoteSuperPeerEnabled = config.getBoolean(REMOTE_SUPER_PEER_ENABLED);
-        this.remoteSuperPeerEndpoint = getEndpoint(config, REMOTE_SUPER_PEER_ENDPOINT);
-        if (remoteSuperPeerEnabled && remoteSuperPeerEndpoint.getNetworkId() != null && remoteSuperPeerEndpoint.getNetworkId() != networkId) {
-            throw new ConfigException.BadValue(config.getValue(REMOTE_SUPER_PEER_ENDPOINT).origin(), REMOTE_SUPER_PEER_ENDPOINT, "super peer network id mismatch", new Exception("super peer's network id `" + remoteSuperPeerEndpoint.getNetworkId() + "` does not match your network id `" + networkId + "`"));
+            // Init remote config
+            this.remoteEnabled = config.getBoolean(REMOTE_ENABLED);
+            this.remoteBindHost = getInetAddress(config, REMOTE_BIND_HOST);
+            this.remoteBindPort = config.getInt(REMOTE_BIND_PORT);
+            this.remoteEndpoints = Set.copyOf(getEndpointList(config, REMOTE_ENDPOINTS));
+            this.remoteExposeEnabled = config.getBoolean(REMOTE_EXPOSE_ENABLED);
+            this.remotePingInterval = config.getDuration(REMOTE_PING_INTERVAL);
+            this.remotePingTimeout = config.getDuration(REMOTE_PING_TIMEOUT);
+            this.remotePingCommunicationTimeout = config.getDuration(REMOTE_PING_COMMUNICATION_TIMEOUT);
+            this.remotePingMaxPeers = config.getInt(REMOTE_PING_MAX_PEERS);
+            this.remoteUniteMinInterval = config.getDuration(REMOTE_UNITE_MIN_INTERVAL);
+            this.remoteSuperPeerEnabled = config.getBoolean(REMOTE_SUPER_PEER_ENABLED);
+            this.remoteSuperPeerEndpoint = getEndpoint(config, REMOTE_SUPER_PEER_ENDPOINT);
+            if (remoteSuperPeerEnabled && remoteSuperPeerEndpoint.getNetworkId() != null && remoteSuperPeerEndpoint.getNetworkId() != networkId) {
+                throw new DrasylConfigException(REMOTE_SUPER_PEER_ENDPOINT, "super peer's network id `" + remoteSuperPeerEndpoint.getNetworkId() + "` does not match your network id `" + networkId + "`");
+            }
+            this.remoteStaticRoutes = getStaticRoutes(config, REMOTE_STATIC_ROUTES);
+            this.remoteMessageMtu = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MTU).toBytes(), Integer.MAX_VALUE);
+            this.remoteMessageMaxContentLength = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
+            this.remoteMessageComposedMessageTransferTimeout = config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
+            this.remoteMessageHopLimit = getByte(config, REMOTE_MESSAGE_HOP_LIMIT);
+
+            this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
+
+            // Init local host discovery config
+            this.localHostDiscoveryEnabled = config.getBoolean(LOCAL_HOST_DISCOVERY_ENABLED);
+            if (!config.getString(LOCAL_HOST_DISCOVERY_PATH).equals("")) {
+                this.localHostDiscoveryPath = getPath(config, LOCAL_HOST_DISCOVERY_PATH);
+            }
+            else {
+                this.localHostDiscoveryPath = Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery");
+            }
+            this.localHostDiscoveryLeaseTime = config.getDuration(LOCAL_HOST_DISCOVERY_LEASE_TIME);
+
+            // Init monitoring config
+            monitoringEnabled = config.getBoolean(MONITORING_ENABLED);
+            monitoringHostTag = config.getString(MONITORING_HOST_TAG);
+            monitoringInfluxUri = getURI(config, MONITORING_INFLUX_URI);
+            monitoringInfluxUser = config.getString(MONITORING_INFLUX_USER);
+            monitoringInfluxPassword = config.getString(MONITORING_INFLUX_PASSWORD);
+            monitoringInfluxDatabase = config.getString(MONITORING_INFLUX_DATABASE);
+            monitoringInfluxReportingFrequency = config.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY);
+
+            // Load plugins
+            this.pluginSet = Set.copyOf(getPlugins(config, PLUGINS));
+
+            // Load serialization config
+            this.serializationSerializers = Map.copyOf(getSerializationSerializers(config, SERIALIZATION_SERIALIZERS));
+            this.serializationsBindingsInbound = Map.copyOf(getSerializationBindings(config, SERIALIZATION_BINDINGS_INBOUND, serializationSerializers.keySet()));
+            this.serializationsBindingsOutbound = Map.copyOf(getSerializationBindings(config, SERIALIZATION_BINDINGS_OUTBOUND, serializationSerializers.keySet()));
         }
-        this.remoteStaticRoutes = getStaticRoutes(config, REMOTE_STATIC_ROUTES);
-        this.remoteMessageMtu = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MTU).toBytes(), Integer.MAX_VALUE);
-        this.remoteMessageMaxContentLength = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
-        this.remoteMessageComposedMessageTransferTimeout = config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
-        this.remoteMessageHopLimit = getByte(config, REMOTE_MESSAGE_HOP_LIMIT);
-
-        this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
-
-        // Init local host discovery config
-        this.localHostDiscoveryEnabled = config.getBoolean(LOCAL_HOST_DISCOVERY_ENABLED);
-        if (!config.getString(LOCAL_HOST_DISCOVERY_PATH).equals("")) {
-            this.localHostDiscoveryPath = getPath(config, LOCAL_HOST_DISCOVERY_PATH);
+        catch (final ConfigException e) {
+            throw new DrasylConfigException(e);
         }
-        else {
-            this.localHostDiscoveryPath = Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery");
-        }
-        this.localHostDiscoveryLeaseTime = config.getDuration(LOCAL_HOST_DISCOVERY_LEASE_TIME);
-
-        // Init monitoring config
-        monitoringEnabled = config.getBoolean(MONITORING_ENABLED);
-        monitoringHostTag = config.getString(MONITORING_HOST_TAG);
-        monitoringInfluxUri = getURI(config, MONITORING_INFLUX_URI);
-        monitoringInfluxUser = config.getString(MONITORING_INFLUX_USER);
-        monitoringInfluxPassword = config.getString(MONITORING_INFLUX_PASSWORD);
-        monitoringInfluxDatabase = config.getString(MONITORING_INFLUX_DATABASE);
-        monitoringInfluxReportingFrequency = config.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY);
-
-        // Load plugins
-        this.pluginSet = Set.copyOf(getPlugins(config, PLUGINS));
-
-        // Load serialization config
-        this.serializationSerializers = Map.copyOf(getSerializationSerializers(config, SERIALIZATION_SERIALIZERS));
-        this.serializationsBindingsInbound = Map.copyOf(getSerializationBindings(config, SERIALIZATION_BINDINGS_INBOUND, serializationSerializers.keySet()));
-        this.serializationsBindingsOutbound = Map.copyOf(getSerializationBindings(config, SERIALIZATION_BINDINGS_OUTBOUND, serializationSerializers.keySet()));
     }
 
     @SuppressWarnings({ "java:S107" })
@@ -310,12 +314,17 @@ public class DrasylConfig {
      * @param config the application's portion of the configuration
      * @param path   path expression
      * @return the {@link ProofOfWork} value at the requested path
-     * @throws ConfigException.Missing if value is absent or null
+     * @throws DrasylConfigException if value is absent or null
      */
     @SuppressWarnings({ "java:S1192" })
     public static ProofOfWork getProofOfWork(final Config config, final String path) {
-        final int intValue = config.getInt(path);
-        return ProofOfWork.of(intValue);
+        try {
+            final int intValue = config.getInt(path);
+            return ProofOfWork.of(intValue);
+        }
+        catch (final ConfigException e) {
+            throw new DrasylConfigException(path, e);
+        }
     }
 
     /**
@@ -325,8 +334,7 @@ public class DrasylConfig {
      * @param config the application's portion of the configuration
      * @param path   path expression
      * @return the {@link CompressedPublicKey} value at the requested path
-     * @throws ConfigException.Missing   if value is absent or null
-     * @throws ConfigException.WrongType if value is not convertible to a {@link CompressedPublicKey}
+     * @throws DrasylConfigException if value is not convertible to a {@link CompressedPublicKey}
      */
     @SuppressWarnings({ "java:S1192" })
     public static CompressedPublicKey getPublicKey(final Config config, final String path) {
@@ -334,8 +342,8 @@ public class DrasylConfig {
             final String stringValue = config.getString(path);
             return CompressedPublicKey.of(stringValue);
         }
-        catch (final CryptoException | IllegalArgumentException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "compressed public key", "invalid-value: " + e.getMessage());
+        catch (final IllegalArgumentException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
         }
     }
 
@@ -346,8 +354,7 @@ public class DrasylConfig {
      * @param config the application's portion of the configuration
      * @param path   path expression
      * @return the {@link CompressedPrivateKey} value at the requested path
-     * @throws ConfigException.Missing   if value is absent or null
-     * @throws ConfigException.WrongType if value is not convertible to a {@link CompressedPrivateKey}
+     * @throws DrasylConfigException if value is not convertible to a {@link CompressedPrivateKey}
      */
     @SuppressWarnings({ "java:S1192" })
     public static CompressedPrivateKey getPrivateKey(final Config config, final String path) {
@@ -355,8 +362,8 @@ public class DrasylConfig {
             final String stringValue = config.getString(path);
             return CompressedPrivateKey.of(stringValue);
         }
-        catch (final CryptoException | IllegalArgumentException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "compressed private key", "invalid-value: " + e.getMessage());
+        catch (final ConfigException | IllegalArgumentException e) {
+            throw new DrasylConfigException(path, e);
         }
     }
 
@@ -366,57 +373,57 @@ public class DrasylConfig {
      * @param config the application's portion of the configuration
      * @param path   path expression
      * @return the {@link Path} value at the requested path
-     * @throws ConfigException if value at path is invalid
+     * @throws DrasylConfigException if value at path is invalid
      */
     public static Path getPath(final Config config, final String path) {
         try {
             return Paths.get(config.getString(path));
         }
-        catch (final InvalidPathException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "path", "invalid: " + e.getMessage());
+        catch (final InvalidPathException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
         }
     }
 
     /**
-     * @throws ConfigException if value at path is invalid
+     * @throws DrasylConfigException if value at path is invalid
      */
     public static InetAddress getInetAddress(final Config config, final String path) {
-        final String stringValue = config.getString(path);
         try {
+            final String stringValue = config.getString(path);
             return InetAddress.getByName(stringValue);
         }
-        catch (final UnknownHostException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "unknown-host: " + e.getMessage());
+        catch (final UnknownHostException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
         }
     }
 
     /**
-     * @throws ConfigException if value at path is invalid
+     * @throws DrasylConfigException if value at path is invalid
      */
     public static List<Endpoint> getEndpointList(final Config config, final String path) {
-        final List<String> stringListValue = config.getStringList(path);
-        final List<Endpoint> endpointList = new ArrayList<>();
         try {
+            final List<String> stringListValue = config.getStringList(path);
+            final List<Endpoint> endpointList = new ArrayList<>();
             for (final String stringValue : stringListValue) {
                 endpointList.add(Endpoint.of(stringValue));
             }
+            return endpointList;
         }
-        catch (final IllegalArgumentException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "endpoint", "invalid-value: " + e.getMessage());
+        catch (final IllegalArgumentException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
         }
-        return endpointList;
     }
 
     /**
-     * @throws ConfigException if value at path is invalid
+     * @throws DrasylConfigException if value at path is invalid
      */
     public static Endpoint getEndpoint(final Config config, final String path) {
-        final String stringValue = config.getString(path);
         try {
+            final String stringValue = config.getString(path);
             return Endpoint.of(stringValue);
         }
-        catch (final IllegalArgumentException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "endpoint", "invalid-value: " + e.getMessage());
+        catch (final IllegalArgumentException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
         }
     }
 
@@ -427,17 +434,21 @@ public class DrasylConfig {
      * @param config the application's portion of the configuration
      * @param path   path expression
      * @return the short value at the requested path
-     * @throws ConfigException.Missing   if value is absent or null
-     * @throws ConfigException.WrongType if value is not convertible to a short
+     * @throws DrasylConfigException if value is not convertible to a short
      */
     @SuppressWarnings("unused")
     public static short getShort(final Config config, final String path) {
-        final int integerValue = config.getInt(path);
-        if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "short", "out-of-range-value " + integerValue);
-        }
+        try {
+            final int integerValue = config.getInt(path);
+            if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
+                throw new DrasylConfigException(path, "value is out of range: " + integerValue);
+            }
 
-        return (short) integerValue;
+            return (short) integerValue;
+        }
+        catch (final ConfigException e) {
+            throw new DrasylConfigException(path, e);
+        }
     }
 
     /**
@@ -447,16 +458,20 @@ public class DrasylConfig {
      * @param config the application's portion of the configuration
      * @param path   path expression
      * @return the byte value at the requested path
-     * @throws ConfigException.Missing   if value is absent or null
-     * @throws ConfigException.WrongType if value is not convertible to a short
+     * @throws DrasylConfigException if value is not convertible to a short
      */
     public static byte getByte(final Config config, final String path) {
-        final int integerValue = config.getInt(path);
-        if (integerValue > Byte.MAX_VALUE || integerValue < Byte.MIN_VALUE) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "byte", "out-of-range-value " + integerValue);
-        }
+        try {
+            final int integerValue = config.getInt(path);
+            if (integerValue > Byte.MAX_VALUE || integerValue < Byte.MIN_VALUE) {
+                throw new DrasylConfigException(path, "value is out of range: " + integerValue);
+            }
 
-        return (byte) integerValue;
+            return (byte) integerValue;
+        }
+        catch (final ConfigException e) {
+            throw new DrasylConfigException(path, e);
+        }
     }
 
     /**
@@ -465,41 +480,42 @@ public class DrasylConfig {
      * @param config the application's portion of the configuration
      * @param path   path expression
      * @return the {@link URI} value at the requested path
-     * @throws ConfigException if value at path is invalid
+     * @throws DrasylConfigException if value at path is invalid
      */
     public static URI getURI(final Config config, final String path) {
-        final String stringValue = config.getString(path);
         try {
+            final String stringValue = config.getString(path);
             return new URI(stringValue);
         }
-        catch (final NullPointerException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "uri", "null");
-        }
-        catch (final URISyntaxException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "violates RFC 2396: " + e.getMessage());
+        catch (final NullPointerException | URISyntaxException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
         }
     }
 
     /**
-     * @throws ConfigException if value at path is invalid
+     * @throws DrasylConfigException if value at path is invalid
      */
     public static Set<DrasylPlugin> getPlugins(final Config config, final String path) {
-        final Set<DrasylPlugin> plugins = new HashSet<>();
+        try {
+            final Set<DrasylPlugin> plugins = new HashSet<>();
+            for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+                final String clazzName = entry.getKey();
+                /*
+                 * Here a key is intentionally used and immediately deleted. atPath() could throw an
+                 * exception if the class name contains a $ character for an inner class.
+                 */
+                final Config pluginConfig = entry.getValue().atKey("plugin").getConfig("plugin"); // NOSONAR
 
-        for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
-            final String clazzName = entry.getKey();
-            /*
-             * Here a key is intentionally used and immediately deleted. atPath() could throw an
-             * exception if the class name contains a $ character for an inner class.
-             */
-            final Config pluginConfig = entry.getValue().atKey("plugin").getConfig("plugin"); // NOSONAR
-
-            if (pluginConfig.getBoolean("enabled")) {
-                final DrasylPlugin plugin = initiatePlugin(path, clazzName, pluginConfig);
-                plugins.add(plugin);
+                if (pluginConfig.getBoolean("enabled")) {
+                    final DrasylPlugin plugin = initiatePlugin(path, clazzName, pluginConfig);
+                    plugins.add(plugin);
+                }
             }
+            return plugins;
         }
-        return plugins;
+        catch (final ConfigException e) {
+            throw new DrasylConfigException(path, e);
+        }
     }
 
     @SuppressWarnings({ "java:S1192" })
@@ -513,41 +529,33 @@ public class DrasylConfig {
 
             return constructor.newInstance(pluginConfig);
         }
-        catch (final ClassNotFoundException e) {
-            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "class-not-found: " + e.getMessage());
-        }
-        catch (final NoSuchMethodException e) {
-            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "no-such-method: " + e.getMessage());
-        }
-        catch (final IllegalAccessException e) {
-            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "illegal-access: " + e.getMessage());
-        }
-        catch (final InstantiationException e) {
-            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "instantiation: " + e.getMessage());
-        }
-        catch (final InvocationTargetException e) {
-            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "invocation-target: " + e.getTargetException().getMessage());
+        catch (final ClassNotFoundException | NoSuchMethodException | InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new DrasylConfigException(path, e);
         }
     }
 
     @SuppressWarnings("SameParameterValue")
     public static Map<String, Serializer> getSerializationSerializers(final Config config,
                                                                       final String path) {
-        final Map<String, Serializer> serializers = new HashMap<>();
+        try {
+            final Map<String, Serializer> serializers = new HashMap<>();
 
-        for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
-            final String binding = entry.getKey();
-            final String clazzName = entry.getValue().atKey("clazzName").getString("clazzName");
-            final Serializer serializer = initiateSerializer(path, clazzName, entry.getValue());
-            serializers.put(binding, serializer);
+            for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+                final String binding = entry.getKey();
+                final String clazzName = entry.getValue().atKey("clazzName").getString("clazzName");
+                final Serializer serializer = initiateSerializer(path, clazzName);
+                serializers.put(binding, serializer);
+            }
+            return serializers;
         }
-        return serializers;
+        catch (final ConfigException e) {
+            throw new DrasylConfigException(path, e);
+        }
     }
 
     @SuppressWarnings({ "java:S1192" })
     private static Serializer initiateSerializer(final String path,
-                                                 final String clazzName,
-                                                 final ConfigValue config) {
+                                                 final String clazzName) {
         try {
             @SuppressWarnings("unchecked") final Class<? extends Serializer> clazz = (Class<? extends Serializer>) Class.forName(clazzName);
             final Constructor<? extends Serializer> constructor = clazz.getConstructor();
@@ -555,30 +563,17 @@ public class DrasylConfig {
 
             return constructor.newInstance();
         }
-        catch (final ClassNotFoundException e) {
-            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "class-not-found: " + e.getMessage());
-        }
-        catch (final NoSuchMethodException e) {
-            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "no-such-method: " + e.getMessage());
-        }
-        catch (final IllegalAccessException e) {
-            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "illegal-access: " + e.getMessage());
-        }
-        catch (final InstantiationException e) {
-            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "instantiation: " + e.getMessage());
-        }
-        catch (final InvocationTargetException e) {
-            throw new ConfigException.WrongType(config.origin(), path, "serialization-serializer", "invocation-target: " + e.getTargetException().getMessage());
+        catch (final ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new DrasylConfigException(path, e);
         }
     }
 
     public static Map<Class<?>, String> getSerializationBindings(final Config config,
                                                                  final String path,
                                                                  final Set<String> serializers) {
-        final Map<Class<?>, String> bindings = new HashMap<>();
-
-        for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
-            try {
+        try {
+            final Map<Class<?>, String> bindings = new HashMap<>();
+            for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final String binding = entry.getKey();
                 final String serializer = entry.getValue().atKey("serializer").getString("serializer");
                 if (serializers.contains(serializer)) {
@@ -586,52 +581,51 @@ public class DrasylConfig {
                     bindings.put(bindingClazz, serializer);
                 }
                 else {
-                    throw new ConfigException.WrongType(config.origin(), path, "serialization-binding", "serializer-not-found: " + serializer);
+                    throw new DrasylConfigException(path, "serializer not found: " + serializer);
                 }
             }
-            catch (final ClassNotFoundException e) {
-                throw new ConfigException.WrongType(config.origin(), path, "serialization-binding", "class-not-found: " + e.getMessage());
-            }
+            return bindings;
         }
-        return bindings;
+        catch (final ClassNotFoundException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
+        }
     }
 
     /**
-     * @throws ConfigException if value at path is invalid
+     * @throws DrasylConfigException if value at path is invalid
      */
     public static InetSocketAddress getInetSocketAddress(final Config config, final String path) {
-        final String stringValue = config.getString(path);
         try {
+            final String stringValue = config.getString(path);
             final URI uriValue = new URI("my://" + stringValue);
             final String host = uriValue.getHost();
             final int port = uriValue.getPort();
 
             return InetSocketAddress.createUnresolved(host, port);
         }
-        catch (final URISyntaxException | IllegalArgumentException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet socket address", e.getMessage());
+        catch (final URISyntaxException | IllegalArgumentException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
         }
     }
 
     /**
-     * @throws ConfigException if value at path is invalid
+     * @throws DrasylConfigException if value at path is invalid
      */
     public static Map<CompressedPublicKey, InetSocketAddress> getStaticRoutes(final Config config,
                                                                               final String path) {
-        final Map<CompressedPublicKey, InetSocketAddress> routes = new HashMap<>();
-
-        for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
-            try {
+        try {
+            final Map<CompressedPublicKey, InetSocketAddress> routes = new HashMap<>();
+            for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final CompressedPublicKey publicKey = CompressedPublicKey.of(entry.getKey());
                 final InetSocketAddress address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
 
                 routes.put(publicKey, address);
             }
-            catch (final CryptoException | IllegalArgumentException | NullPointerException e) {
-                throw new ConfigException.WrongType(config.origin(), path, "static-route", e.getMessage());
-            }
+            return routes;
         }
-        return routes;
+        catch (final IllegalArgumentException | NullPointerException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
+        }
     }
 
     /**
@@ -639,10 +633,15 @@ public class DrasylConfig {
      *
      * @param file the file to parse
      * @return the parsed configuration
-     * @throws ConfigException on IO or parse errors
+     * @throws DrasylConfigException on IO or parse errors
      */
     public static DrasylConfig parseFile(final File file) {
-        return new DrasylConfig(ConfigFactory.parseFile(file).withFallback(ConfigFactory.load()));
+        try {
+            return new DrasylConfig(ConfigFactory.parseFile(file).withFallback(ConfigFactory.load()));
+        }
+        catch (final ConfigException e) {
+            throw new DrasylConfigException(e);
+        }
     }
 
     /**
@@ -650,10 +649,15 @@ public class DrasylConfig {
      *
      * @param s string to parse
      * @return the parsed configuration
-     * @throws ConfigException on IO or parse errors
+     * @throws DrasylConfigException on IO or parse errors
      */
     public static DrasylConfig parseString(final String s) {
-        return new DrasylConfig(ConfigFactory.parseString(s).withFallback(ConfigFactory.load()));
+        try {
+            return new DrasylConfig(ConfigFactory.parseString(s).withFallback(ConfigFactory.load()));
+        }
+        catch (final ConfigException e) {
+            throw new DrasylConfigException(e);
+        }
     }
 
     /**

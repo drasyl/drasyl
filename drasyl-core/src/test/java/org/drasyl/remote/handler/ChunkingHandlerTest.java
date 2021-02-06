@@ -27,7 +27,6 @@ import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
@@ -83,7 +82,7 @@ class ChunkingHandlerTest {
         class WhenAddressedToMe {
             @Test
             void shouldPassthroughNonChunkedMessage(@Mock final InetSocketAddressWrapper senderAddress,
-                                                    @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                                    @Mock final InetSocketAddressWrapper recipientAddress) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(recipient);
@@ -105,7 +104,7 @@ class ChunkingHandlerTest {
 
             @Test
             void shouldCacheChunkedMessageIfOtherChunksAreStillMissing(@Mock final InetSocketAddressWrapper senderAddress,
-                                                                       @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, InterruptedException, CryptoException {
+                                                                       @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, InterruptedException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
@@ -143,7 +142,7 @@ class ChunkingHandlerTest {
 
             @Test
             void shouldBuildMessageAfterReceivingLastMissingChunk(@Mock final InetSocketAddressWrapper senderAddress,
-                                                                  @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException, IOException {
+                                                                  @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
@@ -207,7 +206,7 @@ class ChunkingHandlerTest {
 
             @Test
             void shouldCompleteExceptionallyWhenChunkedMessageExceedMaxSize(@Mock final InetSocketAddressWrapper senderAddress,
-                                                                            @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException, IOException, InterruptedException {
+                                                                            @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, InterruptedException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
@@ -262,7 +261,7 @@ class ChunkingHandlerTest {
         class WhenNotAddressedToMe {
             @Test
             void shouldPassthroughNonChunkedMessage(@Mock final InetSocketAddressWrapper senderAddress,
-                                                    @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                                    @Mock final InetSocketAddressWrapper recipientAddress) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(sender);
@@ -284,7 +283,7 @@ class ChunkingHandlerTest {
 
             @Test
             void shouldPassthroughChunkedMessage(@Mock final InetSocketAddressWrapper senderAddress,
-                                                 @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException, IOException {
+                                                 @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final MessageId messageId = randomMessageId();
@@ -328,7 +327,7 @@ class ChunkingHandlerTest {
             @Timeout(value = 5_000, unit = MILLISECONDS)
             void shouldPassthroughMessageNotExceedingMtuSize(@Mock final Address address,
                                                              @Mock final InetSocketAddressWrapper senderAddress,
-                                                             @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                                             @Mock final InetSocketAddressWrapper recipientAddress) {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
@@ -356,7 +355,7 @@ class ChunkingHandlerTest {
             @Timeout(value = 5_000, unit = MILLISECONDS)
             void shouldDropMessageExceedingMaximumMessageSize(@Mock final Address address,
                                                               @Mock final InetSocketAddressWrapper senderAddress,
-                                                              @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException, InterruptedException {
+                                                              @Mock final InetSocketAddressWrapper recipientAddress) throws InterruptedException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
@@ -380,7 +379,7 @@ class ChunkingHandlerTest {
             @Timeout(value = 5_000, unit = MILLISECONDS)
             void shouldChunkMessageExceedingMtuSize(@Mock final Address address,
                                                     @Mock final InetSocketAddressWrapper senderAddress,
-                                                    @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                                    @Mock final InetSocketAddressWrapper recipientAddress) {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
@@ -434,7 +433,7 @@ class ChunkingHandlerTest {
             @Timeout(value = 5_000, unit = MILLISECONDS)
             void shouldPassthroughMessage(@Mock final Address address,
                                           @Mock final InetSocketAddressWrapper senderAddress,
-                                          @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                          @Mock final InetSocketAddressWrapper recipientAddress) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(recipient);

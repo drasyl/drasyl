@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
@@ -77,7 +76,7 @@ class IntermediateEnvelopeTest {
     private ProofOfWork senderProofOfWork;
 
     @BeforeEach
-    void setUp() throws IOException, CryptoException {
+    void setUp() throws IOException {
         senderPublicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
         senderPrivateKey = CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d");
         recipientPublicKey = CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
@@ -490,7 +489,7 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void shouldIncrementIfMessageIsPresentInByteBufAndEnvelope() throws IOException, CryptoException {
+        void shouldIncrementIfMessageIsPresentInByteBufAndEnvelope() throws IOException {
             IntermediateEnvelope<Application> envelope = null;
             try {
                 final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("600a0c9e5457c123bfd9d2b10c0d44120200012221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22288eee8d033221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42")));
@@ -517,7 +516,7 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void shouldIncrementIfMessageIsPresentOnlyInEnvelope() throws CryptoException, IOException {
+        void shouldIncrementIfMessageIsPresentOnlyInEnvelope() throws IOException {
             final PublicHeader publicHeader = IntermediateEnvelope.buildPublicHeader(0, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
             final PrivateHeader privateHeader = PrivateHeader.newBuilder()
                     .setType(APPLICATION)

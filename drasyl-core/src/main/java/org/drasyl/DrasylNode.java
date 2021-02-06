@@ -18,7 +18,6 @@
  */
 package org.drasyl;
 
-import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -27,7 +26,6 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
@@ -165,7 +163,7 @@ public abstract class DrasylNode {
             this.shutdownFuture = new AtomicReference<>(completedFuture(null));
             this.scheduler = getInstanceHeavy();
         }
-        catch (final ConfigException e) {
+        catch (final DrasylConfigException e) {
             throw new DrasylException("Couldn't load config", e);
         }
     }
@@ -317,7 +315,7 @@ public abstract class DrasylNode {
         try {
             return send(CompressedPublicKey.of(recipient), payload);
         }
-        catch (final CryptoException | NullPointerException | IllegalArgumentException e) {
+        catch (final NullPointerException | IllegalArgumentException e) {
             return failedFuture(new DrasylException("Unable to parse recipient's public key", e));
         }
     }

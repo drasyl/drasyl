@@ -2,7 +2,6 @@ package org.drasyl.remote.handler;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -20,14 +19,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
 import static java.time.Duration.ofSeconds;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.hamcrest.collection.IsMapContaining.hasKey;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -93,7 +90,7 @@ class StaticRoutesHandlerTest {
     @SuppressWarnings("rawtypes")
     @Test
     void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock InetSocketAddressWrapper address,
-                                                            @Mock(answer = RETURNS_DEEP_STUBS) SerializedApplicationMessage message) throws CryptoException {
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) SerializedApplicationMessage message) {
         CompressedPublicKey publicKey = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
         routes.put(publicKey, address);
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));

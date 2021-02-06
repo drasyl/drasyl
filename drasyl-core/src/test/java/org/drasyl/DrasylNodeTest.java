@@ -20,7 +20,6 @@ package org.drasyl;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -197,7 +196,7 @@ class DrasylNodeTest {
         }
 
         @Test
-        void recipientAsStringShouldPassMessageToPipeline() throws CryptoException {
+        void recipientAsStringShouldPassMessageToPipeline() {
             underTest.send("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", payload);
 
             verify(pipeline).processOutbound(
@@ -217,7 +216,7 @@ class DrasylNodeTest {
         }
 
         @Test
-        void recipientAndPayloadAsStringShouldPassMessageToPipeline() throws CryptoException {
+        void recipientAndPayloadAsStringShouldPassMessageToPipeline() {
             underTest.send("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "Hallo Welt");
 
             verify(pipeline).processOutbound(

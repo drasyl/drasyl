@@ -21,7 +21,6 @@ package org.drasyl.remote.handler;
 import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeEvent;
@@ -173,7 +172,7 @@ class UdpDiscoveryHandlerTest {
         void shouldReplyWithAcknowledgmentMessageToDiscoveryMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
                                                                     @Mock final InetSocketAddressWrapper senderAddress,
-                                                                    @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                                                    @Mock final InetSocketAddressWrapper recipientAddress) {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
             final IntermediateEnvelope<Discovery> discoveryMessage = IntermediateEnvelope.discovery(0, sender, ProofOfWork.of(6518542), recipient, System.currentTimeMillis());
@@ -198,7 +197,7 @@ class UdpDiscoveryHandlerTest {
         void shouldUpdatePeerInformationOnAcknowledgementMessageFromNormalPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                                                @Mock final InetSocketAddressWrapper senderAddress,
-                                                                               @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, CryptoException {
+                                                                               @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
             final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
@@ -219,7 +218,7 @@ class UdpDiscoveryHandlerTest {
         void shouldUpdatePeerInformationOnAcknowledgementMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                                               @Mock final InetSocketAddressWrapper senderAddress,
-                                                                              @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, CryptoException {
+                                                                              @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
             final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
@@ -278,7 +277,7 @@ class UdpDiscoveryHandlerTest {
         }
 
         @Test
-        void shouldPingSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws CryptoException {
+        void shouldPingSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
             final CompressedPublicKey myPublicKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey publicKey = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
@@ -295,7 +294,7 @@ class UdpDiscoveryHandlerTest {
 
         @Test
         void shouldPingPeersWithRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) throws CryptoException {
+                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             final CompressedPublicKey myPublicKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey publicKey = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
@@ -311,7 +310,7 @@ class UdpDiscoveryHandlerTest {
 
         @Test
         void shouldNotPingPeersWithoutRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                                          @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) throws CryptoException {
+                                                          @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             final CompressedPublicKey publicKey = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
             when(peer.hasControlTraffic(any())).thenReturn(true);
@@ -330,7 +329,7 @@ class UdpDiscoveryHandlerTest {
         void shouldHandleUniteMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
                                                    @Mock final InetSocketAddressWrapper senderAddress,
-                                                   @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, CryptoException {
+                                                   @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
             final IntermediateEnvelope<Unite> uniteMessage = IntermediateEnvelope.unite(0, sender, ProofOfWork.of(6518542), recipient, CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), new InetSocketAddress(22527));
@@ -353,7 +352,7 @@ class UdpDiscoveryHandlerTest {
         void shouldInitiateUniteForInboundMessageWithKnownSenderAndRecipient(@Mock final InetSocketAddressWrapper sender,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer senderPeer,
-                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) throws CryptoException {
+                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
             final InetSocketAddressWrapper senderSocketAddress = InetSocketAddressWrapper.of(new InetSocketAddress(80));
             final InetSocketAddressWrapper recipientSocketAddress = InetSocketAddressWrapper.of(new InetSocketAddress(81));
             final CompressedPublicKey myKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
@@ -429,7 +428,7 @@ class UdpDiscoveryHandlerTest {
                     @Mock final Peer peer,
                     @Mock final InetSocketAddressWrapper address,
                     @Mock final InetSocketAddressWrapper senderAddress,
-                    @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                    @Mock final InetSocketAddressWrapper recipientAddress) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final IntermediateEnvelope<Application> applicationMessage = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[]{});
@@ -456,7 +455,7 @@ class UdpDiscoveryHandlerTest {
         class Outbound {
             @Test
             void shouldRelayMessageToKnowRecipient(@Mock final InetSocketAddressWrapper recipientSocketAddress,
-                                                   @Mock final Peer recipientPeer) throws CryptoException {
+                                                   @Mock final Peer recipientPeer) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
@@ -480,7 +479,7 @@ class UdpDiscoveryHandlerTest {
 
             @Test
             void shouldRelayMessageToSuperPeerForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper superPeerSocketAddress,
-                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeerPeer) throws CryptoException {
+                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeerPeer) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
@@ -503,7 +502,7 @@ class UdpDiscoveryHandlerTest {
             }
 
             @Test
-            void shouldPassthroughForUnknownRecipientWhenNoSuperPeerIsPresent() throws CryptoException {
+            void shouldPassthroughForUnknownRecipientWhenNoSuperPeerIsPresent() {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
@@ -525,7 +524,7 @@ class UdpDiscoveryHandlerTest {
 
             @SuppressWarnings("SuspiciousMethodCalls")
             @Test
-            void shouldUpdateLastCommunicationTimeForApplicationMessages(@Mock final Peer peer) throws CryptoException {
+            void shouldUpdateLastCommunicationTimeForApplicationMessages(@Mock final Peer peer) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());

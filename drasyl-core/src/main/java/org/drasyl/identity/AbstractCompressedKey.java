@@ -21,7 +21,6 @@ package org.drasyl.identity;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.JSONUtil;
@@ -49,11 +48,9 @@ abstract class AbstractCompressedKey<K> implements Address {
      * @throws NullPointerException     if {@code compressedKey} is {@code null}
      * @throws IllegalArgumentException if {@code compressedKey} does not conform to a valid
      *                                  hexadecimal
-     * @throws CryptoException          if {@code compressedKey} does not conform to a valid key
-     *                                  string
      */
     @JsonCreator
-    protected AbstractCompressedKey(final String compressedKey) throws CryptoException {
+    protected AbstractCompressedKey(final String compressedKey) {
         // For backwards compatibility we check if the given string represents a base64 (new) or
         // a normal string.
         if (compressedKey.length() == 44) { // base64 encoded 32 up to 33 bytes long key ((4 * n / 3) + 3) & ~3
@@ -61,7 +58,7 @@ abstract class AbstractCompressedKey<K> implements Address {
                 this.compressedKey = JSONUtil.JACKSON_READER.readValue("\"" + compressedKey + "\"", byte[].class);
             }
             catch (final IOException e) {
-                throw new CryptoException(e);
+                throw new IllegalArgumentException("Given string does not conform to a valid key", e);
             }
         }
         else {
@@ -75,7 +72,7 @@ abstract class AbstractCompressedKey<K> implements Address {
         this.key = key;
     }
 
-    public abstract K toUncompressedKey() throws CryptoException;
+    public abstract K toUncompressedKey();
 
     public byte[] byteArrayValue() {
         return this.compressedKey;

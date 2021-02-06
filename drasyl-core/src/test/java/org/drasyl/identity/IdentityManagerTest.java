@@ -19,7 +19,6 @@
 package org.drasyl.identity;
 
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.util.ThrowingSupplier;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,7 +56,7 @@ class IdentityManagerTest {
     @Nested
     class LoadOrCreateIdentity {
         @Test
-        void shouldLoadValidIdentityFromConfig() throws IdentityManagerException, CryptoException {
+        void shouldLoadValidIdentityFromConfig() throws IdentityManagerException {
             when(config.getIdentityPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
             when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(15405649));
             when(config.getIdentityPrivateKey()).thenReturn(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"));
@@ -69,7 +68,7 @@ class IdentityManagerTest {
         }
 
         @Test
-        void shouldLoadIdentityIfConfigContainsNoKeysAndFileIsPresent(@TempDir final Path dir) throws IOException, IdentityManagerException, CryptoException {
+        void shouldLoadIdentityIfConfigContainsNoKeysAndFileIsPresent(@TempDir final Path dir) throws IOException, IdentityManagerException {
             final Path path = Paths.get(dir.toString(), "my-identity.json");
             when(config.getIdentityPath()).thenReturn(path);
 
@@ -97,7 +96,7 @@ class IdentityManagerTest {
         }
 
         @Test
-        void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir final Path dir) throws IdentityManagerException, CryptoException {
+        void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir final Path dir) throws IdentityManagerException {
             final Path path = Paths.get(dir.toString(), "my-identity.json");
             when(config.getIdentityPath()).thenReturn(path);
             when(identityGenerator.get()).thenReturn(Identity.of(
@@ -114,7 +113,7 @@ class IdentityManagerTest {
         }
 
         @Test
-        void shouldThrowExceptionIfIdentityFromConfigIsInvalid() throws CryptoException {
+        void shouldThrowExceptionIfIdentityFromConfigIsInvalid() {
             when(config.getIdentityPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
             when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(42));
             when(config.getIdentityPrivateKey()).thenReturn(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"));

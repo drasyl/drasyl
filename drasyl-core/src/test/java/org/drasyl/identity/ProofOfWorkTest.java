@@ -19,7 +19,6 @@
 package org.drasyl.identity;
 
 import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +48,7 @@ class ProofOfWorkTest {
     @Nested
     class GenerateProofOfWork {
         @Test
-        void shouldGenerateCorrectProof() throws CryptoException {
+        void shouldGenerateCorrectProof() {
             final byte difficulty = 1;
             final CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
             final ProofOfWork proof1 = ProofOfWork.generateProofOfWork(publicKey, difficulty);
@@ -101,7 +100,7 @@ class ProofOfWorkTest {
     @Nested
     class Invalid {
         @Test
-        void shouldThrowExceptionOnInvalidValue() throws CryptoException {
+        void shouldThrowExceptionOnInvalidValue() {
             final CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
             final ProofOfWork proof = ProofOfWork.generateProofOfWork(publicKey, (byte) 1);
 

@@ -18,7 +18,6 @@
  */
 package org.drasyl.plugin.groups.manager.database.jdbc;
 
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.data.Member;
@@ -40,7 +39,7 @@ import java.util.Set;
 /**
  * {@link DatabaseAdapter} implementation that supports SQL databases.
  */
-@SuppressWarnings({ "java:S1192" })
+@SuppressWarnings({ "java:S1192", "SqlDialectInspection", "SqlNoDataSourceInspection" })
 public class JDBCDatabaseAdapter implements DatabaseAdapter {
     public static final int QUERY_TIMEOUT = 15;
     public static final String SCHEME = "jdbc";
@@ -144,7 +143,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
             return rtn;
         }
         catch (final SQLException e) {
-            throw new DatabaseException("Could not add new member '" + membership.getMember().getPublicKey().byteArrayValue() + "' to group '" + membership.getGroup().getName() + "'", e);
+            throw new DatabaseException("Could not add new member '" + membership.getMember().getPublicKey() + "' to group '" + membership.getGroup().getName() + "'", e);
         }
     }
 
@@ -249,7 +248,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
                 }
             }
         }
-        catch (final SQLException | CryptoException e) {
+        catch (final SQLException e) {
             throw new DatabaseException("Could not get memberships of group '" + name + "'", e);
         }
 
@@ -329,7 +328,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
 
             return rtn;
         }
-        catch (final SQLException | CryptoException e) {
+        catch (final SQLException e) {
             con.rollback();
             throw new DatabaseException("Could not delete stale memberships", e);
         }
@@ -354,7 +353,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
         return groups;
     }
 
-    private Set<Membership> getGroupMembersFromResultSet(final ResultSet rs) throws SQLException, CryptoException {
+    private Set<Membership> getGroupMembersFromResultSet(final ResultSet rs) throws SQLException {
         final Set<Membership> members = new HashSet<>();
 
         while (rs.next()) {

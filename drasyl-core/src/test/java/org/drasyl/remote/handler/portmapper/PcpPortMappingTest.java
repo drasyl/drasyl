@@ -21,7 +21,6 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.Disposable;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
@@ -58,7 +57,7 @@ public class PcpPortMappingTest {
                                   @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                   @Mock(answer = RETURNS_DEEP_STUBS) final Runnable onFailure,
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier,
-                                  @Mock final Supplier<Set<InetAddress>> interfaceSupplier) throws UnknownHostException, CryptoException {
+                                  @Mock final Supplier<Set<InetAddress>> interfaceSupplier) throws UnknownHostException {
             when(ctx.identity().getPublicKey()).thenReturn(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"));
             when(defaultGatewaySupplier.get()).thenReturn(InetAddress.getByName("38.12.1.15"));
             when(interfaceSupplier.get()).thenReturn(Set.of(InetAddress.getByName("38.12.1.15")));

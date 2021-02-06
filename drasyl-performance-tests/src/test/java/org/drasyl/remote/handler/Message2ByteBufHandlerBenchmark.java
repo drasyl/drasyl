@@ -21,7 +21,6 @@ package org.drasyl.remote.handler;
 import com.google.protobuf.MessageLite;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -39,13 +38,10 @@ import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -72,7 +68,7 @@ public class Message2ByteBufHandlerBenchmark extends AbstractBenchmark {
             msg = new AddressedIntermediateEnvelope<>(msgSender, msgRecipient, content.getOrBuildByteBuf());
             future = new CompletableFuture<>();
         }
-        catch (final CryptoException | IOException e) {
+        catch (final IOException e) {
             handleUnexpectedException(e);
         }
     }

@@ -21,7 +21,6 @@ package org.drasyl.remote.handler;
 import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
@@ -57,7 +56,7 @@ class Message2ByteBufHandlerTest {
 
     @Test
     void shouldConvertEnvelopeToByteBuf(@Mock final InetSocketAddressWrapper sender,
-                                        @Mock final InetSocketAddressWrapper recipient) throws CryptoException, IOException {
+                                        @Mock final InetSocketAddressWrapper recipient) throws IOException {
         final IntermediateEnvelope<Application> messageEnvelope = IntermediateEnvelope.application(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), byte[].class.getName(), "Hello World".getBytes());
         final AddressedIntermediateEnvelope<Application> addressedEnvelope = new AddressedIntermediateEnvelope<>(sender, recipient, messageEnvelope);
 

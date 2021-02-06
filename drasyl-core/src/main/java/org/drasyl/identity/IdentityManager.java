@@ -165,8 +165,8 @@ public class IdentityManager {
     public static Identity generateIdentity() throws IdentityManagerException {
         try {
             final KeyPair newKeyPair = Crypto.generateKeys();
-            final CompressedPublicKey publicKey = CompressedPublicKey.of(newKeyPair.getPublic());
-            final CompressedPrivateKey privateKey = CompressedPrivateKey.of(newKeyPair.getPrivate());
+            final CompressedPublicKey publicKey = CompressedPublicKey.of(Crypto.compressedKey(newKeyPair.getPublic()));
+            final CompressedPrivateKey privateKey = CompressedPrivateKey.of(Crypto.compressedKey(newKeyPair.getPrivate()));
             final ProofOfWork proofOfWork = ProofOfWork.generateProofOfWork(publicKey, POW_DIFFICULTY);
             return Identity.of(proofOfWork, publicKey, privateKey);
         }

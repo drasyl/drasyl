@@ -19,7 +19,6 @@
 package org.drasyl.identity;
 
 import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +33,7 @@ class CompressedKeyPairTest {
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+        void shouldDeserializeToCorrectObject() throws IOException {
             final String json = "{\n" +
                     "  \"publicKey\": \"AnduU7DI6cLHCLZ0x5KebE5EXE+XpAdwAstnnE3QhXYJ\",\n" +
                     "  \"privateKey\": \"B5Cf44xUUxCYBd5AwkqRpfPi3kjxVLddhpSSfzyATzY=\"\n" +
@@ -50,7 +49,7 @@ class CompressedKeyPairTest {
     @Nested
     class JsonSerialization {
         @Test
-        void shouldSerializeToCorrectJson() throws IOException, CryptoException {
+        void shouldSerializeToCorrectJson() throws IOException {
             final CompressedKeyPair keyPair = CompressedKeyPair.of("02776e53b0c8e9c2c708b674c7929e6c4e445c4f97a4077002cb679c4dd0857609", "07909fe38c5453109805de40c24a91a5f3e2de48f154b75d8694927f3c804f36");
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(keyPair))

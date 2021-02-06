@@ -24,7 +24,6 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeEvent;
@@ -129,7 +128,7 @@ class DrasylNodeIT {
             private Pair<DrasylNode, Observable<Event>> client2;
 
             @BeforeEach
-            void setUp() throws DrasylException, CryptoException {
+            void setUp() throws DrasylException {
                 //
                 // create nodes
                 //
@@ -341,7 +340,7 @@ class DrasylNodeIT {
             private Pair<DrasylNode, Observable<Event>> client2;
 
             @BeforeEach
-            void setUp() throws DrasylException, CryptoException {
+            void setUp() throws DrasylException {
                 //
                 // create nodes
                 //
@@ -437,7 +436,7 @@ class DrasylNodeIT {
             private Pair<DrasylNode, Observable<Event>> node4;
 
             @BeforeEach
-            void setUp() throws DrasylException, CryptoException {
+            void setUp() throws DrasylException {
                 //
                 // create nodes
                 //
@@ -603,7 +602,7 @@ class DrasylNodeIT {
             private Pair<DrasylNode, Observable<Event>> node4;
 
             @BeforeEach
-            void setUp() throws DrasylException, CryptoException {
+            void setUp() throws DrasylException {
                 //
                 // create nodes
                 //
@@ -719,7 +718,7 @@ class DrasylNodeIT {
         private Pair<DrasylNode, Observable<Event>> node1;
 
         @BeforeEach
-        void setUp() throws DrasylException, CryptoException {
+        void setUp() throws DrasylException {
             //
             // create nodes
             //
@@ -773,7 +772,7 @@ class DrasylNodeIT {
             private Pair<DrasylNode, Observable<Event>> node1;
 
             @BeforeEach
-            void setUp() throws DrasylException, CryptoException {
+            void setUp() throws DrasylException {
                 //
                 // create nodes
                 //

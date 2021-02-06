@@ -21,7 +21,6 @@ package org.drasyl.remote.handler;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -66,7 +65,7 @@ class SignatureHandlerTest {
         @Test
         void shouldArmOutgoingMessageFromMe(@Mock final CompressedPublicKey recipient,
                                             @Mock final InetSocketAddressWrapper senderAddress,
-                                            @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                            @Mock final InetSocketAddressWrapper recipientAddress) {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -98,7 +97,7 @@ class SignatureHandlerTest {
         @Test
         void shouldPassthroughOutgoingMessageNotFromMe(@Mock final CompressedPublicKey recipient,
                                                        @Mock final InetSocketAddressWrapper senderAddress,
-                                                       @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                                       @Mock final InetSocketAddressWrapper recipientAddress) {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -124,7 +123,7 @@ class SignatureHandlerTest {
         @SuppressWarnings("rawtypes")
         @Test
         void shouldCompleteFutureExceptionallyAndNotPassOutgoingMessageIfArmingFailed(@Mock final InetSocketAddressWrapper senderAddress,
-                                                                                      @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException, InterruptedException {
+                                                                                      @Mock final InetSocketAddressWrapper recipientAddress) throws InterruptedException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -151,7 +150,7 @@ class SignatureHandlerTest {
         @Test
         void shouldDisarmIngoingMessageAddressedToMe(@Mock final CompressedPublicKey sender,
                                                      @Mock final InetSocketAddressWrapper senderAddress,
-                                                     @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                                     @Mock final InetSocketAddressWrapper recipientAddress) {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -175,7 +174,7 @@ class SignatureHandlerTest {
         @Test
         void shouldPassthroughIngoingMessageNotAddressedToMe(@Mock final CompressedPublicKey sender,
                                                              @Mock final InetSocketAddressWrapper senderAddress,
-                                                             @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException {
+                                                             @Mock final InetSocketAddressWrapper recipientAddress) {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -199,7 +198,7 @@ class SignatureHandlerTest {
         @Test
         void shouldCompleteFutureExceptionallyAndNotPassIngoingMessageIfDisarmingFailed(@Mock final CompressedPublicKey sender,
                                                                                         @Mock final InetSocketAddressWrapper senderAddress,
-                                                                                        @Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException, InterruptedException {
+                                                                                        @Mock final InetSocketAddressWrapper recipientAddress) throws InterruptedException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));

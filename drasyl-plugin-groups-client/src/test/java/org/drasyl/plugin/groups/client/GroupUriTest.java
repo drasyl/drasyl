@@ -18,7 +18,6 @@
  */
 package org.drasyl.plugin.groups.client;
 
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -37,7 +36,7 @@ class GroupUriTest {
     private CompressedPublicKey manager;
 
     @BeforeEach
-    void setUp() throws CryptoException {
+    void setUp() {
         manager = CompressedPublicKey.of("03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b");
     }
 
