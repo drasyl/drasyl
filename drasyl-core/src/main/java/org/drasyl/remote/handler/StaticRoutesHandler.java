@@ -99,7 +99,7 @@ public class StaticRoutesHandler extends SimpleOutboundHandler<SerializedApplica
     }
 
     private synchronized void clearRoutes(final HandlerContext ctx) {
-        routes.keySet().forEach(publicKey -> ctx.peersManager().removeChildrenAndPath(publicKey, path));
+        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, path));
         routes.clear();
     }
 }

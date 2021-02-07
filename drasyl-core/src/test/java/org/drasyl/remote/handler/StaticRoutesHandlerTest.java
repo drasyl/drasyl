@@ -44,9 +44,9 @@ class StaticRoutesHandlerTest {
     private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
 
     @Test
-    void shouldPopulateRoutesOnNodeUpEvent(@Mock NodeUpEvent event,
-                                           @Mock CompressedPublicKey publicKey,
-                                           @Mock InetSocketAddress address) {
+    void shouldPopulateRoutesOnNodeUpEvent(@Mock final NodeUpEvent event,
+                                           @Mock final CompressedPublicKey publicKey,
+                                           @Mock final InetSocketAddress address) {
         when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
 
         final StaticRoutesHandler handler = new StaticRoutesHandler(routes);
@@ -60,9 +60,9 @@ class StaticRoutesHandlerTest {
     }
 
     @Test
-    void shouldClearRoutesOnNodeDownEvent(@Mock NodeDownEvent event,
-                                          @Mock CompressedPublicKey publicKey,
-                                          @Mock InetSocketAddressWrapper address) {
+    void shouldClearRoutesOnNodeDownEvent(@Mock final NodeDownEvent event,
+                                          @Mock final CompressedPublicKey publicKey,
+                                          @Mock final InetSocketAddressWrapper address) {
         routes.put(publicKey, address);
 
         final StaticRoutesHandler handler = new StaticRoutesHandler(routes);
@@ -74,9 +74,9 @@ class StaticRoutesHandlerTest {
     }
 
     @Test
-    void shouldClearRoutesOnNodeUnrecoverableErrorEvent(@Mock NodeUnrecoverableErrorEvent event,
-                                                        @Mock CompressedPublicKey publicKey,
-                                                        @Mock InetSocketAddressWrapper address) {
+    void shouldClearRoutesOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
+                                                        @Mock final CompressedPublicKey publicKey,
+                                                        @Mock final InetSocketAddressWrapper address) {
         routes.put(publicKey, address);
 
         final StaticRoutesHandler handler = new StaticRoutesHandler(routes);
@@ -89,9 +89,9 @@ class StaticRoutesHandlerTest {
 
     @SuppressWarnings("rawtypes")
     @Test
-    void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock InetSocketAddressWrapper address,
-                                                            @Mock(answer = RETURNS_DEEP_STUBS) SerializedApplicationMessage message) {
-        CompressedPublicKey publicKey = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
+    void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock final InetSocketAddressWrapper address,
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
+        final CompressedPublicKey publicKey = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
         routes.put(publicKey, address);
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
@@ -110,8 +110,8 @@ class StaticRoutesHandlerTest {
     }
 
     @Test
-    void shouldRoutePassthroughMessageWhenStaticRouteIsAbsent(@Mock CompressedPublicKey publicKey,
-                                                              @Mock(answer = RETURNS_DEEP_STUBS) SerializedApplicationMessage message) {
+    void shouldRoutePassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey publicKey,
+                                                              @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
         final StaticRoutesHandler handler = new StaticRoutesHandler(routes);
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<SerializedApplicationMessage> outboundMessages = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
