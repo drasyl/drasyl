@@ -20,7 +20,6 @@ package org.drasyl.localhost;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.reactivex.rxjava3.disposables.Disposable;
-import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -76,21 +75,14 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
     public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
-    private final Path discoveryPath;
-    private final Duration leaseTime;
-    private final CompressedPublicKey ownPublicKey;
     private final AtomicBoolean doScan;
     private final DrasylScheduler scheduler;
     private Disposable watchDisposable;
     private Disposable postDisposable;
     private WatchService watchService; // NOSONAR
 
-    public LocalHostDiscovery(final DrasylConfig config,
-                              final CompressedPublicKey ownPublicKey) {
+    public LocalHostDiscovery() {
         this(
-                config.getLocalHostDiscoveryPath().resolve(String.valueOf(config.getNetworkId())),
-                config.getLocalHostDiscoveryLeaseTime(),
-                ownPublicKey,
                 new AtomicBoolean(),
                 DrasylSchedulerUtil.getInstanceLight(),
                 null,
@@ -99,16 +91,10 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
     }
 
     @SuppressWarnings({ "java:S107" })
-    LocalHostDiscovery(final Path discoveryPath,
-                       final Duration leaseTime,
-                       final CompressedPublicKey ownPublicKey,
-                       final AtomicBoolean doScan,
+    LocalHostDiscovery(final AtomicBoolean doScan,
                        final DrasylScheduler scheduler,
                        final Disposable watchDisposable,
                        final Disposable postDisposable) {
-        this.discoveryPath = discoveryPath;
-        this.leaseTime = leaseTime;
-        this.ownPublicKey = ownPublicKey;
         this.doScan = doScan;
         this.scheduler = scheduler;
         this.watchDisposable = watchDisposable;
@@ -144,6 +130,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
 
     private synchronized void startDiscovery(final HandlerContext ctx, final int port) {
         LOG.debug("Start Local Host Discovery...");
+        final Path discoveryPath = discoveryPath(ctx);
         final File directory = discoveryPath.toFile();
         if (!directory.exists() && !directory.mkdirs()) {
             LOG.warn("Discovery directory '{}' could not be created.", discoveryPath.toAbsolutePath());
@@ -152,7 +139,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
             LOG.warn("Discovery directory '{}' not accessible.", discoveryPath.toAbsolutePath());
         }
         else {
-            tryWatchDirectory();
+            tryWatchDirectory(discoveryPath);
             scan(ctx);
             keepOwnInformationUpToDate(ctx, port);
         }
@@ -174,7 +161,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
      * Tries to monitor {@link #discoveryPath} so that any changes are automatically reported. If
      * this is not possible, we have to fall back to periodical polling.
      */
-    private void tryWatchDirectory() {
+    private void tryWatchDirectory(final Path discoveryPath) {
         try {
             final File directory = discoveryPath.toFile();
             final FileSystem fileSystem = discoveryPath.getFileSystem();
@@ -200,6 +187,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
      * Writes periodically the actual own information to {@link #discoveryPath}.
      */
     private void keepOwnInformationUpToDate(final HandlerContext ctx, final int port) {
+        final Path filePath = discoveryPath(ctx).resolve(ctx.identity().getPublicKey().toString() + ".json");
         // get own address(es)
         final Set<InetAddress> addresses;
         if (ctx.config().getRemoteBindHost().isAnyLocalAddress()) {
@@ -213,8 +201,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
         final Set<InetSocketAddress> socketAddresses = addresses.stream().map(a -> new InetSocketAddress(a, port)).collect(Collectors.toSet());
 
         final Duration refreshInterval;
-        if (leaseTime.toSeconds() > 5) {
-            refreshInterval = leaseTime.minus(ofSeconds(5));
+        if (ctx.config().getLocalHostDiscoveryLeaseTime().toSeconds() > 5) {
+            refreshInterval = ctx.config().getLocalHostDiscoveryLeaseTime().minus(ofSeconds(5));
         }
         else {
             refreshInterval = ofSeconds(1);
@@ -224,7 +212,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
             if (watchService == null) {
                 doScan.set(true);
             }
-            postInformation(socketAddresses);
+            postInformation(filePath, socketAddresses);
         }, 0, refreshInterval.toMillis(), MILLISECONDS);
     }
 
@@ -234,9 +222,10 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
      * @param ctx handler's context
      */
     void scan(final HandlerContext ctx) {
+        final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
-        final String ownPublicKeyString = this.ownPublicKey.toString();
-        final long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
+        final String ownPublicKeyString = ctx.identity().getPublicKey().toString();
+        final long maxAge = System.currentTimeMillis() - ctx.config().getLocalHostDiscoveryLeaseTime().toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
         if (files != null) {
             for (final File file : files) {
@@ -260,8 +249,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
     /**
      * Posts own port to {@link #discoveryPath}.
      */
-    private void postInformation(final Set<InetSocketAddress> addresses) {
-        final Path filePath = discoveryPath.resolve(ownPublicKey.toString() + ".json");
+    private void postInformation(final Path filePath, final Set<InetSocketAddress> addresses) {
         LOG.trace("Post own Peer Information to {}", filePath);
         final File file = filePath.toFile();
         try {
@@ -273,5 +261,9 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
         catch (final IOException e) {
             LOG.warn("Unable to write peer information to '{}': {}", filePath::toAbsolutePath, e::getMessage);
         }
+    }
+
+    private Path discoveryPath(final HandlerContext ctx) {
+        return ctx.config().getLocalHostDiscoveryPath().resolve(String.valueOf(ctx.config().getNetworkId()));
     }
 }

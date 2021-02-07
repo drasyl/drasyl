@@ -92,8 +92,10 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
+            when(config.getLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
+            when(config.getLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, doScan, scheduler, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(doScan, scheduler, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
@@ -108,8 +110,10 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
+            when(config.getLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
+            when(config.getLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, doScan, scheduler, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(doScan, scheduler, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
@@ -124,8 +128,10 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
+            when(config.getLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
+            when(config.getLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, doScan, scheduler, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(doScan, scheduler, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
@@ -152,8 +158,11 @@ class LocalHostDiscoveryTest {
                 invocationOnMock.getArgument(0, Runnable.class).run();
                 return null;
             });
+            when(config.getLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
+            when(identity.getPublicKey()).thenReturn(ownPublicKey);
+            when(config.getLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, doScan, scheduler, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(doScan, scheduler, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
@@ -168,7 +177,7 @@ class LocalHostDiscoveryTest {
     class StopDiscovery {
         @Test
         void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
-            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, doScan, scheduler, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(doScan, scheduler, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
@@ -180,7 +189,7 @@ class LocalHostDiscoveryTest {
 
         @Test
         void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event) {
-            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, doScan, scheduler, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(doScan, scheduler, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
@@ -196,7 +205,7 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldScheduleScanOnOutgoingMessage(@Mock final CompressedPublicKey recipient,
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, new AtomicBoolean(true), scheduler, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(new AtomicBoolean(true), scheduler, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processOutbound(recipient, message).join();
@@ -216,7 +225,7 @@ class LocalHostDiscoveryTest {
             final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
             Files.writeString(path, "[\"192.168.188.42:12345\",\"192.168.188.23:12345\"]", StandardOpenOption.CREATE);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, new AtomicBoolean(true), scheduler, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(new AtomicBoolean(true), scheduler, watchDisposable, postDisposable);
             handler.scan(ctx);
 
             //verify(ctx.peersManager()).setPeerInformation(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"));
