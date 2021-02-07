@@ -198,7 +198,7 @@ public abstract class DrasylNode {
     @Nullable
     public static String getVersion() {
         if (version == null) {
-            final InputStream inputStream = DrasylNode.class.getClassLoader().getResourceAsStream("project.properties");
+            final InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("project.properties");
             if (inputStream != null) {
                 try {
                     final Properties properties = new Properties();
@@ -223,7 +223,7 @@ public abstract class DrasylNode {
      */
     public static int getProtocolVersion() {
         if (protocolVersion == -1) {
-            final InputStream inputStream = DrasylNode.class.getClassLoader().getResourceAsStream("project.properties");
+            final InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("project.properties");
             if (inputStream != null) {
                 try {
                     final Properties properties = new Properties();

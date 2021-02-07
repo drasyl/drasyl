@@ -129,11 +129,11 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
         disposable = scheduler.schedulePeriodicallyDirect(() -> {
             final long currentTime = System.currentTimeMillis();
 
-            final float relativeIntervalStartTime = (intervalTime.get() - startTime) / 1_000f;
-            final float relativeIntervalEndTime = (currentTime - startTime) / 1_000f;
+            final double relativeIntervalStartTime = (intervalTime.get() - startTime) / 1_000f;
+            final double relativeIntervalEndTime = (currentTime - startTime) / 1_000f;
             final long intervalDuration = currentTime - intervalTime.get();
-            final float outboundMps = outboundMessages.sumThenReset() / 1_000f * intervalDuration;
-            final float inboundMps = inboundMessages.sumThenReset() / 1_000f * intervalDuration;
+            final double outboundMps = outboundMessages.sumThenReset() / 1_000f * intervalDuration;
+            final double inboundMps = inboundMessages.sumThenReset() / 1_000f * intervalDuration;
             inboundMessages.reset();
             printStream.printf("%,6.2f - %,6.2f s; Tx: %,8.1f m/s; Rx: %,8.1f m/s;", relativeIntervalStartTime, relativeIntervalEndTime, outboundMps, inboundMps);
             intervalTime.set(currentTime);
