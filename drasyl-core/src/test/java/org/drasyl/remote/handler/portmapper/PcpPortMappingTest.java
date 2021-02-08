@@ -35,6 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,9 +76,8 @@ public class PcpPortMappingTest {
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                   @Mock final Disposable timeoutGuard,
                                   @Mock final Disposable refreshTask,
-                                  @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                  @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper defaultGateway) throws UnknownHostException {
-            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, defaultGateway, timeoutGuard, refreshTask, Set.of(InetAddress.getByName("38.12.1.15")), defaultGatewaySupplier, interfaceSupplier).stop(ctx);
+                                  @Mock final Supplier<Set<InetAddress>> interfaceSupplier) throws UnknownHostException {
+            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, InetSocketAddressWrapper.of(new InetSocketAddress(12345)), timeoutGuard, refreshTask, Set.of(InetAddress.getByName("38.12.1.15")), defaultGatewaySupplier, interfaceSupplier).stop(ctx);
 
             verify(timeoutGuard).dispose();
             verify(refreshTask).dispose();
@@ -90,8 +90,7 @@ public class PcpPortMappingTest {
         @Nested
         class FromGateway {
             @Test
-            void shouldScheduleRefreshOnMappingMessage(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper defaultGateway,
-                                                       @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+            void shouldScheduleRefreshOnMappingMessage(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                                        @Mock final AddressedByteBuf msg,
                                                        @Mock final Disposable timeoutGuard,
                                                        @Mock final Supplier<InetAddress> defaultGatewaySupplier,
@@ -101,7 +100,7 @@ public class PcpPortMappingTest {
                     byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("02810000000002580004ea00000000000000000000000000027c2af0012b29445e68a77e1100000063f163f100000000000000000000ffffc0a8b202"));
                     when(msg.getContent()).thenReturn(byteBuf);
                     when(msg.refCnt()).thenReturn(1);
-                    new PcpPortMapping(new AtomicInteger(1), 25585, null, new byte[]{}, defaultGateway, timeoutGuard, null, null, defaultGatewaySupplier, interfaceSupplier).handleMessage(ctx, msg);
+                    new PcpPortMapping(new AtomicInteger(1), 25585, null, new byte[]{}, InetSocketAddressWrapper.of(new InetSocketAddress(12345)), timeoutGuard, null, null, defaultGatewaySupplier, interfaceSupplier).handleMessage(ctx, msg);
 
                     verify(timeoutGuard).dispose();
                     verify(ctx.independentScheduler()).scheduleDirect(any(), eq((long) 300), eq(SECONDS));
