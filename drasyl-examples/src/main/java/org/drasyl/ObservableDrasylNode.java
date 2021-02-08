@@ -49,7 +49,7 @@ public class ObservableDrasylNode extends DrasylNode {
     }
 
     public static void main(final String[] args) throws DrasylException {
-        final ObservableDrasylNode node = new ObservableDrasylNode(DrasylConfig.newBuilder().localHostDiscoveryEnabled(false).remoteExposeEnabled(false).build());
+        final ObservableDrasylNode node = new ObservableDrasylNode(DrasylConfig.newBuilder().remoteLocalHostDiscoveryEnabled(false).remoteExposeEnabled(false).build());
         node.events().subscribeOn(DrasylSchedulerUtil.getInstanceLight()).subscribe(System.out::println, System.err::println);
         node.start().join();
     }

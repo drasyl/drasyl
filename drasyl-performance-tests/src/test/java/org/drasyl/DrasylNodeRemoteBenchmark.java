@@ -66,7 +66,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
                     .identityPublicKey(identity1.getPublicKey())
                     .identityPrivateKey(identity1.getPrivateKey())
                     .intraVmDiscoveryEnabled(false)
-                    .localHostDiscoveryEnabled(false)
+                    .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
                     .remoteBindHost(InetAddress.getByName("127.0.0.1"))
                     .remoteBindPort(22528)
@@ -83,7 +83,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
                     .remoteBindPort(22529)
                     .remoteSuperPeerEnabled(false)
                     .remoteStaticRoutes(Map.of(identity1.getPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
-                    .localHostDiscoveryEnabled(false)
+                    .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
                     .monitoringEnabled(false)
                     .build();

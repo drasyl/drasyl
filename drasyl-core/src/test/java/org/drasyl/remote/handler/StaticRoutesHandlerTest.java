@@ -110,8 +110,8 @@ class StaticRoutesHandlerTest {
     }
 
     @Test
-    void shouldRoutePassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey publicKey,
-                                                              @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
+    void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey publicKey,
+                                                         @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
         final StaticRoutesHandler handler = new StaticRoutesHandler(routes);
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<SerializedApplicationMessage> outboundMessages = pipeline.outboundMessages(SerializedApplicationMessage.class).test();

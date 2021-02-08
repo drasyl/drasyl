@@ -39,6 +39,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import static org.drasyl.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
 import static org.drasyl.loopback.handler.InboundMessageGuard.INBOUND_MESSAGE_GUARD;
 import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
@@ -96,6 +97,7 @@ class DrasylPipelineTest {
         when(config.isRemoteEnabled()).thenReturn(true);
         when(config.isRemoteExposeEnabled()).thenReturn(true);
         when(config.getRemoteStaticRoutes().isEmpty()).thenReturn(false);
+        when(config.isRemoteLocalHostDiscoveryEnabled()).thenReturn(true);
 
         final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, workerGroup);
 
@@ -111,6 +113,7 @@ class DrasylPipelineTest {
         assertNotNull(pipeline.get(INBOUND_MESSAGE_GUARD), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(LOOPBACK_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(STATIC_ROUTES_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(LOCAL_HOST_DISCOVERY), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(UDP_DISCOVERY_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(SIGNATURE_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");

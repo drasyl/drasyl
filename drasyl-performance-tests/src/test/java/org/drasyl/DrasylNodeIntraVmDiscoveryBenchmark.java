@@ -25,15 +25,12 @@ import org.drasyl.identity.ProofOfWork;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
 public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
@@ -56,7 +53,7 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
                     .identityPublicKey(identity1.getPublicKey())
                     .identityPrivateKey(identity1.getPrivateKey())
                     .intraVmDiscoveryEnabled(true)
-                    .localHostDiscoveryEnabled(false)
+                    .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(false)
                     .monitoringEnabled(false)
                     .build();
@@ -65,7 +62,7 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
                     .identityPublicKey(identity2.getPublicKey())
                     .identityPrivateKey(identity2.getPrivateKey())
                     .intraVmDiscoveryEnabled(true)
-                    .localHostDiscoveryEnabled(false)
+                    .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(false)
                     .monitoringEnabled(false)
                     .build();

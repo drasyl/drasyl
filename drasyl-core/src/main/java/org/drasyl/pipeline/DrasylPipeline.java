@@ -29,7 +29,16 @@ import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.MessageSerializer;
-import org.drasyl.remote.handler.*;
+import org.drasyl.remote.handler.ByteBuf2MessageHandler;
+import org.drasyl.remote.handler.ChunkingHandler;
+import org.drasyl.remote.handler.HopCountGuard;
+import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
+import org.drasyl.remote.handler.Message2ByteBufHandler;
+import org.drasyl.remote.handler.OtherNetworkFilter;
+import org.drasyl.remote.handler.SignatureHandler;
+import org.drasyl.remote.handler.StaticRoutesHandler;
+import org.drasyl.remote.handler.UdpDiscoveryHandler;
+import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
@@ -88,10 +97,6 @@ public class DrasylPipeline extends DefaultPipeline {
         // local message delivery
         addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
 
-        if (config.isLocalHostDiscoveryEnabled()) {
-            addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery());
-        }
-
         // we trust peers within the same jvm. therefore we do not use signatures
         if (config.isIntraVmDiscoveryEnabled()) {
             addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
@@ -102,6 +107,10 @@ public class DrasylPipeline extends DefaultPipeline {
 
             if (!config.getRemoteStaticRoutes().isEmpty()) {
                 addFirst(STATIC_ROUTES_HANDLER, new StaticRoutesHandler());
+            }
+
+            if (config.isRemoteLocalHostDiscoveryEnabled()) {
+                addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery());
             }
 
             addFirst(UDP_DISCOVERY_HANDLER, new UdpDiscoveryHandler(config));
