@@ -88,6 +88,7 @@ class DrasylPipelineIT {
                 .identityPrivateKey(identity1.getPrivateKey())
                 .remoteExposeEnabled(false)
                 .remoteSuperPeerEnabled(false)
+                .remoteLocalHostDiscoveryEnabled(false)
                 .build();
 
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);

@@ -26,9 +26,14 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.Protocol;
 import org.drasyl.util.NetworkUtil;
+import org.drasyl.util.SetUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
@@ -42,15 +47,18 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
@@ -59,44 +67,41 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 /**
  * Uses the file system to discover other drasyl nodes running on the local computer.
  * <p>
- * To do this, all nodes regularly write their current endpoints to the file system. At the same
- * time the file system is monitored to detect new nodes. If the file system does not support
- * monitoring, a fallback to polling is used.
+ * To do this, all nodes regularly write their {@link org.drasyl.remote.handler.UdpServer}
+ * address(es) to the file system. At the same time the file system is monitored to detect other
+ * nodes. If the file system does not support monitoring ({@link WatchService}), a fallback to
+ * polling is used.
  * <p>
- * The discovery directory is scanned whenever communication with another peer occur.
- * <p>
- * This discovery mechanism does not itself establish connections to other peers. Only ip addresses
- * and ports are discovered. These information can then be used to establish direct peer
- * connections.
- * <p>
- * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java
+ * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</>
  */
 @SuppressWarnings("java:S1192")
-public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
+public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicationMessage, CompressedPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
+    private static final Object path = LocalHostDiscovery.class;
     public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
-    private final AtomicBoolean doScan;
+    public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     private final DrasylScheduler scheduler;
+    private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes;
     private Disposable watchDisposable;
     private Disposable postDisposable;
     private WatchService watchService; // NOSONAR
 
     public LocalHostDiscovery() {
         this(
-                new AtomicBoolean(),
                 DrasylSchedulerUtil.getInstanceLight(),
+                new HashMap<>(),
                 null,
                 null
         );
     }
 
     @SuppressWarnings({ "java:S107" })
-    LocalHostDiscovery(final AtomicBoolean doScan,
-                       final DrasylScheduler scheduler,
+    LocalHostDiscovery(final DrasylScheduler scheduler,
+                       final Map<CompressedPublicKey, InetSocketAddressWrapper> routes,
                        final Disposable watchDisposable,
                        final Disposable postDisposable) {
-        this.doScan = doScan;
-        this.scheduler = scheduler;
+        this.scheduler = requireNonNull(scheduler);
+        this.routes = requireNonNull(routes);
         this.watchDisposable = watchDisposable;
         this.postDisposable = postDisposable;
     }
@@ -109,7 +114,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
             startDiscovery(ctx, ((NodeUpEvent) event).getNode().getPort());
         }
         else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopDiscovery();
+            stopDiscovery(ctx);
         }
 
         // passthrough event
@@ -118,14 +123,19 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
 
     @Override
     protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final Object msg,
+                                final CompressedPublicKey recipient,
+                                final SerializedApplicationMessage msg,
                                 final CompletableFuture<Void> future) {
-        // A scan only happens if a change in the directory was monitored or the time of last poll is too old.
-        if (doScan.compareAndSet(true, false)) {
-            scheduler.scheduleDirect(() -> LocalHostDiscovery.this.scan(ctx));
+        final InetSocketAddressWrapper localAddress = routes.get(msg.getRecipient());
+        if (localAddress != null) {
+            final IntermediateEnvelope<Protocol.Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
+            LOG.trace("Send message `{}` via local route {}.", () -> msg, localAddress::getAddress);
+            ctx.write(localAddress, new AddressedIntermediateEnvelope<>(null, localAddress, envelope), future);
         }
-        ctx.write(recipient, msg, future);
+        else {
+            // passthrough message
+            ctx.write(recipient, msg, future);
+        }
     }
 
     private synchronized void startDiscovery(final HandlerContext ctx, final int port) {
@@ -133,20 +143,20 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
         final Path discoveryPath = discoveryPath(ctx);
         final File directory = discoveryPath.toFile();
         if (!directory.exists() && !directory.mkdirs()) {
-            LOG.warn("Discovery directory '{}' could not be created.", discoveryPath.toAbsolutePath());
+            LOG.warn("Discovery directory '{}' could not be created.", discoveryPath::toAbsolutePath);
         }
         else if (!(directory.isDirectory() && directory.canRead() && directory.canWrite())) {
-            LOG.warn("Discovery directory '{}' not accessible.", discoveryPath.toAbsolutePath());
+            LOG.warn("Discovery directory '{}' not accessible.", discoveryPath::toAbsolutePath);
         }
         else {
-            tryWatchDirectory(discoveryPath);
+            tryWatchDirectory(ctx, discoveryPath);
             scan(ctx);
-            keepOwnInformationUpToDate(ctx, port);
+            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.identity().getPublicKey().toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
     }
 
-    private synchronized void stopDiscovery() {
+    private synchronized void stopDiscovery(final HandlerContext ctx) {
         LOG.debug("Stop Local Host Discovery...");
         if (watchDisposable != null) {
             watchDisposable.dispose();
@@ -154,14 +164,16 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
         if (postDisposable != null) {
             postDisposable.dispose();
         }
+        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, path));
+        routes.clear();
         LOG.debug("Local Host Discovery stopped.");
     }
 
     /**
-     * Tries to monitor {@link #discoveryPath} so that any changes are automatically reported. If
+     * Tries to monitor {@code discoveryPath} so that any changes are automatically reported. If
      * this is not possible, we have to fall back to periodical polling.
      */
-    private void tryWatchDirectory(final Path discoveryPath) {
+    private void tryWatchDirectory(final HandlerContext ctx, final Path discoveryPath) {
         try {
             final File directory = discoveryPath.toFile();
             final FileSystem fileSystem = discoveryPath.getFileSystem();
@@ -171,7 +183,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
             watchDisposable = scheduler.schedulePeriodicallyDirect(() -> {
                 if (watchService.poll() != null) {
                     // directory has been changed
-                    doScan.set(true);
+                    scan(ctx);
                 }
             }, 0, 5, SECONDS);
         }
@@ -186,8 +198,9 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
     /**
      * Writes periodically the actual own information to {@link #discoveryPath}.
      */
-    private void keepOwnInformationUpToDate(final HandlerContext ctx, final int port) {
-        final Path filePath = discoveryPath(ctx).resolve(ctx.identity().getPublicKey().toString() + ".json");
+    private void keepOwnInformationUpToDate(final HandlerContext ctx,
+                                            final Path filePath,
+                                            final int port) {
         // get own address(es)
         final Set<InetAddress> addresses;
         if (ctx.config().getRemoteBindHost().isAnyLocalAddress()) {
@@ -201,8 +214,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
         final Set<InetSocketAddress> socketAddresses = addresses.stream().map(a -> new InetSocketAddress(a, port)).collect(Collectors.toSet());
 
         final Duration refreshInterval;
-        if (ctx.config().getLocalHostDiscoveryLeaseTime().toSeconds() > 5) {
-            refreshInterval = ctx.config().getLocalHostDiscoveryLeaseTime().minus(ofSeconds(5));
+        if (ctx.config().getRemoteLocalHostDiscoveryLeaseTime().compareTo(REFRESH_INTERVAL_SAFETY_MARGIN) > 0) {
+            refreshInterval = ctx.config().getRemoteLocalHostDiscoveryLeaseTime().minus(REFRESH_INTERVAL_SAFETY_MARGIN);
         }
         else {
             refreshInterval = ofSeconds(1);
@@ -210,7 +223,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
         postDisposable = scheduler.schedulePeriodicallyDirect(() -> {
             // only scan in polling mode when watchService does not work
             if (watchService == null) {
-                doScan.set(true);
+                scan(ctx);
             }
             postInformation(filePath, socketAddresses);
         }, 0, refreshInterval.toMillis(), MILLISECONDS);
@@ -221,13 +234,14 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
      *
      * @param ctx handler's context
      */
-    void scan(final HandlerContext ctx) {
+    synchronized void scan(final HandlerContext ctx) {
         final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
         final String ownPublicKeyString = ctx.identity().getPublicKey().toString();
-        final long maxAge = System.currentTimeMillis() - ctx.config().getLocalHostDiscoveryLeaseTime().toMillis();
+        final long maxAge = System.currentTimeMillis() - ctx.config().getRemoteLocalHostDiscoveryLeaseTime().toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
         if (files != null) {
+            final Map<CompressedPublicKey, InetSocketAddress> newRoutes = new HashMap<>();
             for (final File file : files) {
                 try {
                     final String fileName = file.getName();
@@ -236,18 +250,46 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
                         final TypeReference<Set<InetSocketAddress>> typeRef = new TypeReference<>() {
                         };
                         final Set<InetSocketAddress> addresses = JACKSON_READER.forType(typeRef).readValue(file);
-                        LOG.trace("Addresses '{}' for peer '{}' discovered by file '{}'", addresses, publicKey, fileName);
+                        if (!addresses.isEmpty()) {
+                            LOG.trace("Addresses '{}' for peer '{}' discovered by file '{}'", addresses, publicKey, fileName);
+                            final InetSocketAddress firstAddress = SetUtil.nthElement(addresses, 0);
+                            newRoutes.put(publicKey, firstAddress);
+                        }
                     }
                 }
                 catch (final IllegalArgumentException | IOException e) {
                     LOG.warn("Unable to read peer information from '{}': ", file.getAbsolutePath(), e);
                 }
             }
+
+            updateRoutes(ctx, newRoutes);
         }
     }
 
+    private void updateRoutes(final HandlerContext ctx,
+                              final Map<CompressedPublicKey, InetSocketAddress> newRoutes) {
+        // remove outdated routes
+        for (final Iterator<CompressedPublicKey> i = routes.keySet().iterator();
+             i.hasNext(); ) {
+            final CompressedPublicKey publicKey = i.next();
+
+            if (!newRoutes.containsKey(publicKey)) {
+                ctx.peersManager().removePath(publicKey, path);
+                i.remove();
+            }
+        }
+
+        // add new routes
+        newRoutes.forEach(((publicKey, address) -> {
+            if (!routes.containsKey(publicKey)) {
+                routes.put(publicKey, InetSocketAddressWrapper.of(address));
+                ctx.peersManager().addPath(publicKey, path);
+            }
+        }));
+    }
+
     /**
-     * Posts own port to {@link #discoveryPath}.
+     * Posts own port to {@code filePath}.
      */
     private void postInformation(final Path filePath, final Set<InetSocketAddress> addresses) {
         LOG.trace("Post own Peer Information to {}", filePath);
@@ -264,6 +306,6 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<Object, Address> {
     }
 
     private Path discoveryPath(final HandlerContext ctx) {
-        return ctx.config().getLocalHostDiscoveryPath().resolve(String.valueOf(ctx.config().getNetworkId()));
+        return ctx.config().getRemoteLocalHostDiscoveryPath().resolve(String.valueOf(ctx.config().getNetworkId()));
     }
 }

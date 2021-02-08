@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
@@ -66,6 +67,7 @@ public class DrasylConfig {
     static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
     static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
     static final String IDENTITY_PATH = "drasyl.identity.path";
+    static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     static final String REMOTE_ENABLED = "drasyl.remote.enabled";
     static final String REMOTE_BIND_HOST = "drasyl.remote.bind-host";
     static final String REMOTE_BIND_PORT = "drasyl.remote.bind-port";
@@ -83,10 +85,9 @@ public class DrasylConfig {
     static final String REMOTE_MESSAGE_MAX_CONTENT_LENGTH = "drasyl.remote.message.max-content-length";
     static final String REMOTE_MESSAGE_HOP_LIMIT = "drasyl.remote.message.hop-limit";
     static final String REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT = "drasyl.remote.message.composed-message-transfer-timeout";
-    static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
-    static final String LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.local-host-discovery.enabled";
-    static final String LOCAL_HOST_DISCOVERY_PATH = "drasyl.local-host-discovery.path";
-    static final String LOCAL_HOST_DISCOVERY_LEASE_TIME = "drasyl.local-host-discovery.lease-time";
+    static final String REMOTE_LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.remote.local-host-discovery.enabled";
+    static final String REMOTE_LOCAL_HOST_DISCOVERY_PATH = "drasyl.remote.local-host-discovery.path";
+    static final String REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME = "drasyl.remote.local-host-discovery.lease-time";
     static final String MONITORING_ENABLED = "drasyl.monitoring.enabled";
     static final String MONITORING_HOST_TAG = "drasyl.monitoring.host-tag";
     static final String MONITORING_INFLUX_URI = "drasyl.monitoring.influx.uri";
@@ -104,6 +105,7 @@ public class DrasylConfig {
     private final CompressedPublicKey identityPublicKey;
     private final CompressedPrivateKey identityPrivateKey;
     private final Path identityPath;
+    private final boolean intraVmDiscoveryEnabled;
     private final InetAddress remoteBindHost;
     private final boolean remoteEnabled;
     private final int remoteBindPort;
@@ -121,10 +123,9 @@ public class DrasylConfig {
     private final boolean remoteSuperPeerEnabled;
     private final Endpoint remoteSuperPeerEndpoint;
     private final Map<CompressedPublicKey, InetSocketAddress> remoteStaticRoutes;
-    private final boolean intraVmDiscoveryEnabled;
-    private final boolean localHostDiscoveryEnabled;
-    private final Path localHostDiscoveryPath;
-    private final Duration localHostDiscoveryLeaseTime;
+    private final boolean remoteLocalHostDiscoveryEnabled;
+    private final Path remoteLocalHostDiscoveryPath;
+    private final Duration remoteLocalHostDiscoveryLeaseTime;
     private final boolean monitoringEnabled;
     private final String monitoringHostTag;
     private final URI monitoringInfluxUri;
@@ -174,6 +175,8 @@ public class DrasylConfig {
             }
             this.identityPath = getPath(config, IDENTITY_PATH);
 
+            this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
+
             // Init remote config
             this.remoteEnabled = config.getBoolean(REMOTE_ENABLED);
             this.remoteBindHost = getInetAddress(config, REMOTE_BIND_HOST);
@@ -195,18 +198,14 @@ public class DrasylConfig {
             this.remoteMessageMaxContentLength = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
             this.remoteMessageComposedMessageTransferTimeout = config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
             this.remoteMessageHopLimit = getByte(config, REMOTE_MESSAGE_HOP_LIMIT);
-
-            this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
-
-            // Init local host discovery config
-            this.localHostDiscoveryEnabled = config.getBoolean(LOCAL_HOST_DISCOVERY_ENABLED);
-            if (!config.getString(LOCAL_HOST_DISCOVERY_PATH).equals("")) {
-                this.localHostDiscoveryPath = getPath(config, LOCAL_HOST_DISCOVERY_PATH);
+            this.remoteLocalHostDiscoveryEnabled = config.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED);
+            if (isNullOrEmpty(config.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH))) {
+                this.remoteLocalHostDiscoveryPath = Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery");
             }
             else {
-                this.localHostDiscoveryPath = Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery");
+                this.remoteLocalHostDiscoveryPath = getPath(config, REMOTE_LOCAL_HOST_DISCOVERY_PATH);
             }
-            this.localHostDiscoveryLeaseTime = config.getDuration(LOCAL_HOST_DISCOVERY_LEASE_TIME);
+            this.remoteLocalHostDiscoveryLeaseTime = config.getDuration(REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME);
 
             // Init monitoring config
             monitoringEnabled = config.getBoolean(MONITORING_ENABLED);
@@ -236,6 +235,7 @@ public class DrasylConfig {
                  final CompressedPublicKey identityPublicKey,
                  final CompressedPrivateKey identityPrivateKey,
                  final Path identityPath,
+                 final boolean intraVmDiscoveryEnabled,
                  final InetAddress remoteBindHost,
                  final boolean remoteEnabled,
                  final int remoteBindPort,
@@ -253,10 +253,9 @@ public class DrasylConfig {
                  final byte remoteMessageHopLimit,
                  final Duration remoteMessageComposedMessageTransferTimeout,
                  final int remoteMessageMtu,
-                 final boolean intraVmDiscoveryEnabled,
-                 final boolean localHostDiscoveryEnabled,
-                 final Path localHostDiscoveryPath,
-                 final Duration localHostDiscoveryLeaseTime,
+                 final boolean remoteLocalHostDiscoveryEnabled,
+                 final Path remoteLocalHostDiscoveryPath,
+                 final Duration remoteLocalHostDiscoveryLeaseTime,
                  final boolean monitoringEnabled,
                  final String monitoringHostTag,
                  final URI monitoringInfluxUri,
@@ -273,6 +272,7 @@ public class DrasylConfig {
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
+        this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
         this.remoteBindHost = remoteBindHost;
         this.remoteEnabled = remoteEnabled;
         this.remoteBindPort = remoteBindPort;
@@ -290,10 +290,9 @@ public class DrasylConfig {
         this.remoteMessageMaxContentLength = remoteMessageMaxContentLength;
         this.remoteMessageHopLimit = remoteMessageHopLimit;
         this.remoteMessageComposedMessageTransferTimeout = remoteMessageComposedMessageTransferTimeout;
-        this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
-        this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
-        this.localHostDiscoveryPath = localHostDiscoveryPath;
-        this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
+        this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
+        this.remoteLocalHostDiscoveryPath = remoteLocalHostDiscoveryPath;
+        this.remoteLocalHostDiscoveryLeaseTime = remoteLocalHostDiscoveryLeaseTime;
         this.monitoringEnabled = monitoringEnabled;
         this.monitoringHostTag = monitoringHostTag;
         this.monitoringInfluxUri = monitoringInfluxUri;
@@ -678,6 +677,7 @@ public class DrasylConfig {
                 config.identityPublicKey,
                 config.identityPrivateKey,
                 config.identityPath,
+                config.intraVmDiscoveryEnabled,
                 config.remoteBindHost,
                 config.remoteEnabled,
                 config.remoteBindPort,
@@ -695,10 +695,9 @@ public class DrasylConfig {
                 config.remoteMessageMaxContentLength,
                 config.remoteMessageComposedMessageTransferTimeout,
                 config.remoteMessageHopLimit,
-                config.intraVmDiscoveryEnabled,
-                config.localHostDiscoveryEnabled,
-                config.localHostDiscoveryPath,
-                config.localHostDiscoveryLeaseTime,
+                config.remoteLocalHostDiscoveryEnabled,
+                config.remoteLocalHostDiscoveryPath,
+                config.remoteLocalHostDiscoveryLeaseTime,
                 config.monitoringEnabled,
                 config.monitoringHostTag,
                 config.monitoringInfluxUri,
@@ -721,6 +720,7 @@ public class DrasylConfig {
                 identityPublicKey,
                 identityPrivateKey,
                 identityPath,
+                intraVmDiscoveryEnabled,
                 remoteBindHost,
                 remoteEnabled,
                 remoteBindPort,
@@ -738,10 +738,9 @@ public class DrasylConfig {
                 remoteSuperPeerEnabled,
                 remoteSuperPeerEndpoint,
                 remoteStaticRoutes,
-                intraVmDiscoveryEnabled,
-                localHostDiscoveryEnabled,
-                localHostDiscoveryPath,
-                localHostDiscoveryLeaseTime,
+                remoteLocalHostDiscoveryEnabled,
+                remoteLocalHostDiscoveryPath,
+                remoteLocalHostDiscoveryLeaseTime,
                 monitoringEnabled,
                 monitoringHostTag,
                 monitoringInfluxUri,
@@ -766,6 +765,7 @@ public class DrasylConfig {
         }
         final DrasylConfig that = (DrasylConfig) o;
         return networkId == that.networkId &&
+                intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
                 remoteEnabled == that.remoteEnabled &&
                 remoteBindPort == that.remoteBindPort &&
                 remotePingMaxPeers == that.remotePingMaxPeers &&
@@ -774,8 +774,7 @@ public class DrasylConfig {
                 remoteMessageMaxContentLength == that.remoteMessageMaxContentLength &&
                 remoteMessageHopLimit == that.remoteMessageHopLimit &&
                 remoteSuperPeerEnabled == that.remoteSuperPeerEnabled &&
-                intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
-                localHostDiscoveryEnabled == that.localHostDiscoveryEnabled &&
+                remoteLocalHostDiscoveryEnabled == that.remoteLocalHostDiscoveryEnabled &&
                 monitoringEnabled == that.monitoringEnabled &&
                 Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
@@ -790,8 +789,8 @@ public class DrasylConfig {
                 Objects.equals(remoteMessageComposedMessageTransferTimeout, that.remoteMessageComposedMessageTransferTimeout) &&
                 Objects.equals(remoteSuperPeerEndpoint, that.remoteSuperPeerEndpoint) &&
                 Objects.equals(remoteStaticRoutes, that.remoteStaticRoutes) &&
-                Objects.equals(localHostDiscoveryPath, that.localHostDiscoveryPath) &&
-                Objects.equals(localHostDiscoveryLeaseTime, that.localHostDiscoveryLeaseTime) &&
+                Objects.equals(remoteLocalHostDiscoveryPath, that.remoteLocalHostDiscoveryPath) &&
+                Objects.equals(remoteLocalHostDiscoveryLeaseTime, that.remoteLocalHostDiscoveryLeaseTime) &&
                 Objects.equals(monitoringHostTag, that.monitoringHostTag) &&
                 Objects.equals(monitoringInfluxUri, that.monitoringInfluxUri) &&
                 Objects.equals(monitoringInfluxUser, that.monitoringInfluxUser) &&
@@ -812,6 +811,7 @@ public class DrasylConfig {
                 ", identityPublicKey=" + identityPublicKey +
                 ", identityPrivateKey=" + maskSecret(identityPrivateKey) +
                 ", identityPath=" + identityPath +
+                ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
                 ", remoteBindHost=" + remoteBindHost +
                 ", remoteEnabled=" + remoteEnabled +
                 ", remoteBindPort=" + remoteBindPort +
@@ -829,10 +829,9 @@ public class DrasylConfig {
                 ", remoteSuperPeerEnabled=" + remoteSuperPeerEnabled +
                 ", remoteSuperPeerEndpoint=" + remoteSuperPeerEndpoint +
                 ", remoteStaticRoutes=" + remoteStaticRoutes +
-                ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
-                ", localHostDiscoveryEnabled=" + localHostDiscoveryEnabled +
-                ", localHostDiscoveryPath=" + localHostDiscoveryPath +
-                ", localHostDiscoveryLeaseTime=" + localHostDiscoveryLeaseTime +
+                ", remoteLocalHostDiscoveryEnabled=" + remoteLocalHostDiscoveryEnabled +
+                ", remoteLocalHostDiscoveryPath=" + remoteLocalHostDiscoveryPath +
+                ", remoteLocalHostDiscoveryLeaseTime=" + remoteLocalHostDiscoveryLeaseTime +
                 ", monitoringEnabled=" + monitoringEnabled +
                 ", monitoringHostTag=" + monitoringHostTag +
                 ", monitoringInfluxUri=" + monitoringInfluxUri +
@@ -967,16 +966,16 @@ public class DrasylConfig {
         return intraVmDiscoveryEnabled;
     }
 
-    public boolean isLocalHostDiscoveryEnabled() {
-        return localHostDiscoveryEnabled;
+    public boolean isRemoteLocalHostDiscoveryEnabled() {
+        return remoteLocalHostDiscoveryEnabled;
     }
 
-    public Path getLocalHostDiscoveryPath() {
-        return localHostDiscoveryPath;
+    public Path getRemoteLocalHostDiscoveryPath() {
+        return remoteLocalHostDiscoveryPath;
     }
 
-    public Duration getLocalHostDiscoveryLeaseTime() {
-        return localHostDiscoveryLeaseTime;
+    public Duration getRemoteLocalHostDiscoveryLeaseTime() {
+        return remoteLocalHostDiscoveryLeaseTime;
     }
 
     public Set<DrasylPlugin> getPlugins() {
@@ -1002,6 +1001,7 @@ public class DrasylConfig {
         private CompressedPublicKey identityPublicKey;
         private CompressedPrivateKey identityPrivateKey;
         private Path identityPath;
+        private boolean intraVmDiscoveryEnabled;
         private InetAddress remoteBindHost;
         private boolean remoteEnabled;
         private int remoteBindPort;
@@ -1019,10 +1019,9 @@ public class DrasylConfig {
         private boolean remoteSuperPeerEnabled;
         private Endpoint remoteSuperPeerEndpoint;
         private Map<CompressedPublicKey, InetSocketAddress> remoteStaticRoutes;
-        private boolean intraVmDiscoveryEnabled;
-        private boolean localHostDiscoveryEnabled;
-        private Path localHostDiscoveryPath;
-        private Duration localHostDiscoveryLeaseTime;
+        private boolean remoteLocalHostDiscoveryEnabled;
+        private Path remoteLocalHostDiscoveryPath;
+        private Duration remoteLocalHostDiscoveryLeaseTime;
         private boolean monitoringEnabled;
         private String monitoringHost;
         private URI monitoringInfluxUri;
@@ -1041,6 +1040,7 @@ public class DrasylConfig {
                        final CompressedPublicKey identityPublicKey,
                        final CompressedPrivateKey identityPrivateKey,
                        final Path identityPath,
+                       final boolean intraVmDiscoveryEnabled,
                        final InetAddress remoteBindHost,
                        final boolean remoteEnabled,
                        final int remoteBindPort,
@@ -1058,10 +1058,9 @@ public class DrasylConfig {
                        final int remoteMessageMaxContentLength,
                        final Duration remoteMessageComposedMessageTransferTimeout,
                        final byte remoteMessageHopLimit,
-                       final boolean intraVmDiscoveryEnabled,
-                       final boolean localHostDiscoveryEnabled,
-                       final Path localHostDiscoveryPath,
-                       final Duration localHostDiscoveryLeaseTime,
+                       final boolean remoteLocalHostDiscoveryEnabled,
+                       final Path remoteLocalHostDiscoveryPath,
+                       final Duration remoteLocalHostDiscoveryLeaseTime,
                        final boolean monitoringEnabled,
                        final String monitoringHost,
                        final URI monitoringInfluxUri,
@@ -1097,9 +1096,9 @@ public class DrasylConfig {
             this.remoteSuperPeerEndpoint = remoteSuperPeerEndpoint;
             this.remoteStaticRoutes = remoteStaticRoutes;
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
-            this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
-            this.localHostDiscoveryPath = localHostDiscoveryPath;
-            this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
+            this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
+            this.remoteLocalHostDiscoveryPath = remoteLocalHostDiscoveryPath;
+            this.remoteLocalHostDiscoveryLeaseTime = remoteLocalHostDiscoveryLeaseTime;
             this.monitoringEnabled = monitoringEnabled;
             this.monitoringInfluxUri = monitoringInfluxUri;
             this.monitoringInfluxUser = monitoringInfluxUser;
@@ -1227,18 +1226,18 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder localHostDiscoveryEnabled(final boolean localHostDiscoveryEnabled) {
-            this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
+        public Builder remoteLocalHostDiscoveryEnabled(final boolean remoteLocalHostDiscoveryEnabled) {
+            this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
             return this;
         }
 
-        public Builder localHostDiscoveryPath(final Path localHostDiscoveryPath) {
-            this.localHostDiscoveryPath = localHostDiscoveryPath;
+        public Builder remoteLocalHostDiscoveryPath(final Path remoteLocalHostDiscoveryPath) {
+            this.remoteLocalHostDiscoveryPath = remoteLocalHostDiscoveryPath;
             return this;
         }
 
-        public Builder localHostDiscoveryLeaseTime(final Duration localHostDiscoveryLeaseTime) {
-            this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
+        public Builder remoteLocalHostDiscoveryLeaseTime(final Duration remoteLocalHostDiscoveryLeaseTime) {
+            this.remoteLocalHostDiscoveryLeaseTime = remoteLocalHostDiscoveryLeaseTime;
             return this;
         }
 
@@ -1316,6 +1315,7 @@ public class DrasylConfig {
                     identityPublicKey,
                     identityPrivateKey,
                     identityPath,
+                    intraVmDiscoveryEnabled,
                     remoteBindHost,
                     remoteEnabled,
                     remoteBindPort,
@@ -1333,10 +1333,9 @@ public class DrasylConfig {
                     remoteMessageHopLimit,
                     remoteMessageComposedMessageTransferTimeout,
                     remoteMessageMtu,
-                    intraVmDiscoveryEnabled,
-                    localHostDiscoveryEnabled,
-                    localHostDiscoveryPath,
-                    localHostDiscoveryLeaseTime,
+                    remoteLocalHostDiscoveryEnabled,
+                    remoteLocalHostDiscoveryPath,
+                    remoteLocalHostDiscoveryLeaseTime,
                     monitoringEnabled,
                     monitoringHost,
                     monitoringInfluxUri,
