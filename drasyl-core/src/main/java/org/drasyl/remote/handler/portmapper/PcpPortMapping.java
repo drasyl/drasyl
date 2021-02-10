@@ -36,7 +36,6 @@ import org.drasyl.util.protocol.PcpPortUtil.Message;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -47,7 +46,10 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.remote.handler.portmapper.PortMapper.MAPPING_LIFETIME;
+import static org.drasyl.util.protocol.PcpPortUtil.PCP_PORT;
+import static org.drasyl.util.protocol.PcpPortUtil.PROTO_UDP;
 import static org.drasyl.util.protocol.PcpPortUtil.ResultCode.SUCCESS;
+import static org.drasyl.util.protocol.PcpPortUtil.ZERO_IPV4;
 
 /**
  * Port Forwarding on NAT-enabled routers via PCP.
@@ -130,7 +132,7 @@ public class PcpPortMapping implements PortMapping {
                 handleMapping(ctx, (MappingResponseMessage) message);
             }
             else {
-                LOG.warn("Unexpected message received from `{}`. Discard it!", msg.getSender().getAddress()::getHostString);
+                LOG.warn("Unexpected message received from `{}`. Discard it!", msg.getSender()::getHostString);
             }
         }
         catch (final IOException e) {
@@ -156,11 +158,11 @@ public class PcpPortMapping implements PortMapping {
             LOG.debug("Unable to determine default gateway.");
             return;
         }
-        defaultGateway = InetSocketAddressWrapper.of(new InetSocketAddress(defaultGatewayAddress, PcpPortUtil.PCP_PORT));
+        defaultGateway = new InetSocketAddressWrapper(defaultGatewayAddress, PCP_PORT);
 
         for (final InetAddress clientAddress : interfaces) {
-            LOG.debug("Send MAP opcode request to gateway `{}` with client address `{}`.", defaultGateway.getAddress()::getHostName, clientAddress::getHostAddress);
-            requestMapping(ctx, MAPPING_LIFETIME, clientAddress, nonce, PcpPortUtil.PROTO_UDP, port, PcpPortUtil.ZERO_IPV4);
+            LOG.debug("Send MAP opcode request to gateway `{}` with client address `{}`.", defaultGateway::getHostName, clientAddress::getHostAddress);
+            requestMapping(ctx, MAPPING_LIFETIME, clientAddress, nonce, PROTO_UDP, port, ZERO_IPV4);
         }
     }
 
@@ -172,7 +174,7 @@ public class PcpPortMapping implements PortMapping {
             refreshTask.dispose();
             LOG.debug("Destroy mapping by creating a mapping request with zero lifetime.");
             for (final InetAddress clientAddress : interfaces) {
-                requestMapping(ctx, Duration.ZERO, clientAddress, nonce, PcpPortUtil.PROTO_UDP, port, PcpPortUtil.ZERO_IPV4);
+                requestMapping(ctx, Duration.ZERO, clientAddress, nonce, PROTO_UDP, port, ZERO_IPV4);
             }
         }
     }
@@ -200,7 +202,7 @@ public class PcpPortMapping implements PortMapping {
                                 final int protocol,
                                 final int port,
                                 final InetAddress externalAddress) {
-        LOG.debug("Send MAP opcode request for `{}:{}/UDP` to `{}:{}/UDP` with lifetime of {}s to gateway `{}`.", externalAddress::getHostAddress, () -> port, clientAddress::getHostAddress, () -> port, lifetime::toSeconds, defaultGateway.getAddress()::getHostName);
+        LOG.debug("Send MAP opcode request for `{}:{}/UDP` to `{}:{}/UDP` with lifetime of {}s to gateway `{}`.", externalAddress::getHostAddress, () -> port, clientAddress::getHostAddress, () -> port, lifetime::toSeconds, defaultGateway::getHostName);
 
         final byte[] content = PcpPortUtil.buildMappingRequestMessage(lifetime, clientAddress, nonce, protocol, port, externalAddress);
         final AddressedByteBuf envelope = new AddressedByteBuf(null, defaultGateway, Unpooled.wrappedBuffer(content));
@@ -216,7 +218,7 @@ public class PcpPortMapping implements PortMapping {
                 timeoutGuard.dispose();
                 if (message.getExternalSuggestedPort() == port) {
                     mappingRequested.set(0);
-                    LOG.info("Got port mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway.getAddress()::getHostName);
+                    LOG.info("Got port mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostName);
                     if (message.getLifetime() > 0) {
                         final long delay = message.getLifetime() / 2;
                         LOG.debug("Schedule refresh of mapping for in {}s.", delay);
@@ -228,7 +230,7 @@ public class PcpPortMapping implements PortMapping {
                     return;
                 }
                 else {
-                    LOG.info("Got port mapping for wrong port `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway.getAddress()::getHostName);
+                    LOG.info("Got port mapping for wrong port `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostName);
                 }
             }
             else {

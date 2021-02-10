@@ -129,7 +129,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         final InetSocketAddressWrapper localAddress = routes.get(msg.getRecipient());
         if (localAddress != null) {
             final IntermediateEnvelope<Protocol.Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
-            LOG.trace("Send message `{}` via local route {}.", () -> msg, localAddress::getAddress);
+            LOG.trace("Send message `{}` via local route {}.", () -> msg, () -> localAddress);
             ctx.write(localAddress, new AddressedIntermediateEnvelope<>(null, localAddress, envelope), future);
         }
         else {
@@ -282,7 +282,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         // add new routes
         newRoutes.forEach(((publicKey, address) -> {
             if (!routes.containsKey(publicKey)) {
-                routes.put(publicKey, InetSocketAddressWrapper.of(address));
+                routes.put(publicKey, new InetSocketAddressWrapper(address));
                 ctx.peersManager().addPath(publicKey, path);
             }
         }));

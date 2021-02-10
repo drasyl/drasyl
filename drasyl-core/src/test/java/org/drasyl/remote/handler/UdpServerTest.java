@@ -152,10 +152,10 @@ class UdpServerTest {
     @Nested
     class MessagePassing {
         @Test
-        void shouldPassOutgoingMessagesToUdp(@Mock final InetSocketAddressWrapper recipient,
-                                             @Mock(answer = RETURNS_DEEP_STUBS) final AddressedByteBuf msg) {
+        void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedByteBuf msg) {
+            final InetSocketAddressWrapper recipient = new InetSocketAddressWrapper(22527);
             when(channel.isWritable()).thenReturn(true);
-            when(msg.getRecipient().getAddress()).thenReturn(createUnresolved("example.com", 1234));
+            when(msg.getRecipient()).thenReturn(new InetSocketAddressWrapper(1234));
             when(channel.writeAndFlush(any()).isDone()).thenReturn(true);
             when(channel.writeAndFlush(any()).isSuccess()).thenReturn(true);
 

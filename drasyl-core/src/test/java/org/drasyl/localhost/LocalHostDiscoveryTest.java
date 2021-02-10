@@ -221,8 +221,8 @@ class LocalHostDiscoveryTest {
     class MessagePassing {
         @SuppressWarnings("rawtypes")
         @Test
-        void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock final InetSocketAddressWrapper address,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
+        void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
+            final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
             final CompressedPublicKey publicKey = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
             routes.put(publicKey, address);
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
@@ -274,7 +274,7 @@ class LocalHostDiscoveryTest {
 
             assertEquals(Map.of(
                     CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"),
-                    InetSocketAddressWrapper.of(new InetSocketAddress("192.168.188.23", 12345))
+                    new InetSocketAddressWrapper("192.168.188.23", 12345)
             ), routes);
 
             verify(ctx.peersManager()).addPath(eq(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a")), any());

@@ -85,7 +85,7 @@ public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
         directConnectionPeers.add(msg.getRecipient());
         final Peer peer = new Peer();
         peer.inboundPongOccurred();
-        peer.setAddress(InetSocketAddressWrapper.of(InetSocketAddress.createUnresolved("127.0.0.1", 25527)));
+        peer.setAddress(new InetSocketAddressWrapper("127.0.0.1", 25527));
         peers.put(msg.getRecipient(), peer);
     }
 

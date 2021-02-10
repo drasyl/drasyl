@@ -39,7 +39,7 @@ public class AddressedByteBuf extends ReferenceCountedAddressedEnvelope<InetSock
     public AddressedByteBuf(final InetSocketAddress sender,
                             final InetSocketAddress recipient,
                             final ByteBuf content) {
-        this(InetSocketAddressWrapper.of(sender), InetSocketAddressWrapper.of(recipient), content);
+        this(new InetSocketAddressWrapper(sender), new InetSocketAddressWrapper(recipient), content);
     }
 
     @Override

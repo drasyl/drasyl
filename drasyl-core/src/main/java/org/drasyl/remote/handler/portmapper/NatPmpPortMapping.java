@@ -38,7 +38,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,6 +47,7 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.remote.handler.portmapper.PortMapper.MAPPING_LIFETIME;
+import static org.drasyl.util.protocol.NatPmpUtil.NAT_PMP_PORT;
 import static org.drasyl.util.protocol.NatPmpUtil.ResultCode.SUCCESS;
 
 /**
@@ -129,7 +129,7 @@ public class NatPmpPortMapping implements PortMapping {
                 handleMapping(ctx, (MappingUdpResponseMessage) message);
             }
             else {
-                LOG.warn("Unexpected message received from `{}`. Discard it!", msg.getSender().getAddress()::getHostString);
+                LOG.warn("Unexpected message received from `{}`. Discard it!", msg.getSender()::getHostString);
             }
         }
         catch (final IOException e) {
@@ -155,7 +155,7 @@ public class NatPmpPortMapping implements PortMapping {
             LOG.debug("Unable to determine default gateway.");
             return;
         }
-        defaultGateway = InetSocketAddressWrapper.of(new InetSocketAddress(defaultGatewayAddress, NatPmpUtil.NAT_PMP_PORT));
+        defaultGateway = new InetSocketAddressWrapper(defaultGatewayAddress, NAT_PMP_PORT);
 
         // now we can request the external address from the gateway
         requestExternalAddress(ctx);
@@ -190,7 +190,7 @@ public class NatPmpPortMapping implements PortMapping {
     }
 
     private void requestExternalAddress(final HandlerContext ctx) {
-        LOG.debug("Request external address from gateway `{}`.", defaultGateway.getAddress()::getHostName);
+        LOG.debug("Request external address from gateway `{}`.", defaultGateway::getHostName);
 
         final byte[] content = NatPmpUtil.buildExternalAddressRequestMessage();
         final AddressedByteBuf envelope = new AddressedByteBuf(null, defaultGateway, Unpooled.wrappedBuffer(content));
@@ -204,7 +204,7 @@ public class NatPmpPortMapping implements PortMapping {
         if (externalAddressRequested.compareAndSet(true, false)) {
             if (message.getResultCode() == SUCCESS) {
                 externalAddress = message.getExternalAddress();
-                LOG.debug("Gateway `{}` reported external address `{}`.", defaultGateway.getAddress()::getHostName, externalAddress::getHostAddress);
+                LOG.debug("Gateway `{}` reported external address `{}`.", defaultGateway::getHostName, externalAddress::getHostAddress);
 
                 // after ensuring that gateway has a external address, we can request a port mapping
                 requestMapping(ctx, MAPPING_LIFETIME);
@@ -216,7 +216,7 @@ public class NatPmpPortMapping implements PortMapping {
     }
 
     private void requestMapping(final HandlerContext ctx, final Duration lifetime) {
-        LOG.debug("Request mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, () -> port, () -> port, lifetime::toSeconds, defaultGateway.getAddress()::getHostName);
+        LOG.debug("Request mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, () -> port, () -> port, lifetime::toSeconds, defaultGateway::getHostName);
 
         final byte[] content = NatPmpUtil.buildMappingRequestMessage(port, port, lifetime);
         final AddressedByteBuf envelope = new AddressedByteBuf(null, defaultGateway, Unpooled.wrappedBuffer(content));
@@ -231,7 +231,7 @@ public class NatPmpPortMapping implements PortMapping {
             if (message.getResultCode() == SUCCESS) {
                 timeoutGuard.dispose();
                 if (message.getExternalPort() == port) {
-                    LOG.info("Got port mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, message::getExternalPort, message::getInternalPort, message::getLifetime, defaultGateway.getAddress()::getHostName);
+                    LOG.info("Got port mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, message::getExternalPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostName);
                     if (message.getLifetime() > 0) {
                         final long delay = message.getLifetime() / 2;
                         LOG.debug("Schedule refresh of mapping for in {}s.", delay);
@@ -242,7 +242,7 @@ public class NatPmpPortMapping implements PortMapping {
                     }
                 }
                 else {
-                    LOG.info("Got port mapping for wrong port `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, message::getExternalPort, message::getInternalPort, message::getLifetime, defaultGateway.getAddress()::getHostName);
+                    LOG.info("Got port mapping for wrong port `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, message::getExternalPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostName);
                     fail();
                 }
             }

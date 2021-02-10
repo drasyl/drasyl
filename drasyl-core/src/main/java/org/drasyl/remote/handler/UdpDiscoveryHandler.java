@@ -47,7 +47,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -181,11 +180,13 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
      */
     private void pingSuperPeer(final HandlerContext ctx) {
         if (ctx.config().isRemoteSuperPeerEnabled()) {
-            sendPing(ctx, ctx.config().getRemoteSuperPeerEndpoint().getPublicKey(),
-                    InetSocketAddressWrapper.of(
-                            new InetSocketAddress(ctx.config().getRemoteSuperPeerEndpoint().getHost(),
-                                    ctx.config().getRemoteSuperPeerEndpoint().getPort())),
-                    true, new CompletableFuture<>());
+            sendPing(
+                    ctx,
+                    ctx.config().getRemoteSuperPeerEndpoint().getPublicKey(),
+                    new InetSocketAddressWrapper(ctx.config().getRemoteSuperPeerEndpoint().getHost(), ctx.config().getRemoteSuperPeerEndpoint().getPort()),
+                    true,
+                    new CompletableFuture<>()
+            );
         }
     }
 
@@ -313,13 +314,13 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                             final InetSocketAddressWrapper recipient,
                             final InetSocketAddressWrapper sender) {
         // send recipient's information to sender
-        final IntermediateEnvelope<Unite> senderRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient.getAddress());
+        final IntermediateEnvelope<Unite> senderRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
         final AddressedIntermediateEnvelope<Unite> addressedSenderRendezvousEnvelope = new AddressedIntermediateEnvelope<>(null, sender, senderRendezvousEnvelope);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
         ctx.write(sender, addressedSenderRendezvousEnvelope, new CompletableFuture<>());
 
         // send sender's information to recipient
-        final IntermediateEnvelope<Unite> recipientRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender.getAddress());
+        final IntermediateEnvelope<Unite> recipientRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender);
         final AddressedIntermediateEnvelope<Unite> addressedSecipientRendezvousEnvelope = new AddressedIntermediateEnvelope<>(null, recipient, recipientRendezvousEnvelope);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
         ctx.write(recipient, addressedSecipientRendezvousEnvelope, new CompletableFuture<>());
@@ -457,15 +458,14 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                              final CompletableFuture<Void> future) throws IOException {
         final Unite body = envelope.getContent().getBodyAndRelease();
         final CompressedPublicKey publicKey = requireNonNull(CompressedPublicKey.of(body.getPublicKey().toByteArray()));
-        final InetSocketAddress address = new InetSocketAddress(body.getAddress(), UnsignedShort.of(body.getPort().toByteArray()).getValue());
+        final InetSocketAddressWrapper address = new InetSocketAddressWrapper(body.getAddress(), UnsignedShort.of(body.getPort().toByteArray()).getValue());
         LOG.trace("Got {}", envelope.getContent());
-        final InetSocketAddressWrapper socketAddress = InetSocketAddressWrapper.of(address);
         final Peer peer = peers.computeIfAbsent(publicKey, key -> new Peer());
-        peer.setAddress(socketAddress);
+        peer.setAddress(address);
         peer.inboundControlTrafficOccurred();
         peer.applicationTrafficOccurred();
         directConnectionPeers.add(publicKey);
-        sendPing(ctx, publicKey, socketAddress, false, future);
+        sendPing(ctx, publicKey, address, false, future);
     }
 
     private void handleApplication(final HandlerContext ctx,

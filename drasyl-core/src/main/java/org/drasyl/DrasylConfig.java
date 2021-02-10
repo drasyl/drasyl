@@ -26,6 +26,7 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.plugin.DrasylPlugin;
 import org.drasyl.serialization.Serializer;
 
@@ -122,7 +123,7 @@ public class DrasylConfig {
     private final Duration remoteMessageComposedMessageTransferTimeout;
     private final boolean remoteSuperPeerEnabled;
     private final Endpoint remoteSuperPeerEndpoint;
-    private final Map<CompressedPublicKey, InetSocketAddress> remoteStaticRoutes;
+    private final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes;
     private final boolean remoteLocalHostDiscoveryEnabled;
     private final Path remoteLocalHostDiscoveryPath;
     private final Duration remoteLocalHostDiscoveryLeaseTime;
@@ -248,7 +249,7 @@ public class DrasylConfig {
                  final boolean remoteExposeEnabled,
                  final boolean remoteSuperPeerEnabled,
                  final Endpoint remoteSuperPeerEndpoint,
-                 final Map<CompressedPublicKey, InetSocketAddress> remoteStaticRoutes,
+                 final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes,
                  final int remoteMessageMaxContentLength,
                  final byte remoteMessageHopLimit,
                  final Duration remoteMessageComposedMessageTransferTimeout,
@@ -610,13 +611,13 @@ public class DrasylConfig {
     /**
      * @throws DrasylConfigException if value at path is invalid
      */
-    public static Map<CompressedPublicKey, InetSocketAddress> getStaticRoutes(final Config config,
+    public static Map<CompressedPublicKey, InetSocketAddressWrapper> getStaticRoutes(final Config config,
                                                                               final String path) {
         try {
-            final Map<CompressedPublicKey, InetSocketAddress> routes = new HashMap<>();
+            final Map<CompressedPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
             for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final CompressedPublicKey publicKey = CompressedPublicKey.of(entry.getKey());
-                final InetSocketAddress address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
+                final InetSocketAddressWrapper address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
 
                 routes.put(publicKey, address);
             }
@@ -958,7 +959,7 @@ public class DrasylConfig {
         return remoteMessageHopLimit;
     }
 
-    public Map<CompressedPublicKey, InetSocketAddress> getRemoteStaticRoutes() {
+    public Map<CompressedPublicKey, InetSocketAddressWrapper> getRemoteStaticRoutes() {
         return remoteStaticRoutes;
     }
 
@@ -1018,7 +1019,7 @@ public class DrasylConfig {
         private Duration remoteMessageComposedMessageTransferTimeout;
         private boolean remoteSuperPeerEnabled;
         private Endpoint remoteSuperPeerEndpoint;
-        private Map<CompressedPublicKey, InetSocketAddress> remoteStaticRoutes;
+        private Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes;
         private boolean remoteLocalHostDiscoveryEnabled;
         private Path remoteLocalHostDiscoveryPath;
         private Duration remoteLocalHostDiscoveryLeaseTime;
@@ -1053,7 +1054,7 @@ public class DrasylConfig {
                        final boolean remoteExposeEnabled,
                        final boolean remoteSuperPeerEnabled,
                        final Endpoint remoteSuperPeerEndpoint,
-                       final Map<CompressedPublicKey, InetSocketAddress> remoteStaticRoutes,
+                       final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes,
                        final int remoteMessageMtu,
                        final int remoteMessageMaxContentLength,
                        final Duration remoteMessageComposedMessageTransferTimeout,
@@ -1186,7 +1187,7 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder remoteStaticRoutes(final Map<CompressedPublicKey, InetSocketAddress> remoteStaticRoutes) {
+        public Builder remoteStaticRoutes(final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes) {
             this.remoteStaticRoutes = Map.copyOf(remoteStaticRoutes);
             return this;
         }

@@ -106,7 +106,7 @@ public class DrasylPipeline extends DefaultPipeline {
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
             if (!config.getRemoteStaticRoutes().isEmpty()) {
-                addFirst(STATIC_ROUTES_HANDLER, new StaticRoutesHandler());
+                addFirst(STATIC_ROUTES_HANDLER, StaticRoutesHandler.INSTANCE);
             }
 
             if (config.isRemoteLocalHostDiscoveryEnabled()) {

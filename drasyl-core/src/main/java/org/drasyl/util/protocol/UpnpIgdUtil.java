@@ -54,7 +54,7 @@ import static java.util.regex.Pattern.DOTALL;
  */
 @SuppressWarnings({ "java:S1192" })
 public class UpnpIgdUtil {
-    public static final InetSocketAddressWrapper SSDP_MULTICAST_ADDRESS;
+    public static final InetSocketAddressWrapper SSDP_MULTICAST_ADDRESS = new InetSocketAddressWrapper("239.255.255.250", 1900);
     public static final Duration SSDP_MAX_WAIT_TIME = ofSeconds(3);
     public static final Pattern SSDP_DISCOVERY_RESPONSE_PATTERN = Pattern.compile("^HTTP/1\\.1 [0-9]+?");
     public static final Pattern SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$");
@@ -67,15 +67,6 @@ public class UpnpIgdUtil {
     public static final Pattern UPNP_NEW_INTERNAL_CLIENT_PATTERN = Pattern.compile("<NewInternalClient>(.+?)</NewInternalClient>");
     public static final Pattern UPNP_NEW_LEASE_DURATION_PATTERN = Pattern.compile("<NewLeaseDuration>(.+?)</NewLeaseDuration>");
     private static final Logger LOG = LoggerFactory.getLogger(UpnpIgdUtil.class);
-
-    static {
-        try {
-            SSDP_MULTICAST_ADDRESS = InetSocketAddressWrapper.of(new InetSocketAddress(InetAddress.getByName("239.255.255.250"), 1900));
-        }
-        catch (final UnknownHostException e) {
-            throw new IllegalStateException(e);
-        }
-    }
 
     private final HttpClient httpClient;
     private final Supplier<Socket> socketSupplier;
@@ -317,7 +308,7 @@ public class UpnpIgdUtil {
 
     public static byte[] buildDiscoveryMessage() {
         final String content = "M-SEARCH * HTTP/1.1\r\n" +
-                "HOST: " + SSDP_MULTICAST_ADDRESS.getAddress().getAddress().getHostAddress() + ":" + SSDP_MULTICAST_ADDRESS.getAddress().getPort() + "\r\n" +
+                "HOST: " + SSDP_MULTICAST_ADDRESS.getAddress().getHostAddress() + ":" + SSDP_MULTICAST_ADDRESS.getPort() + "\r\n" +
                 "MAN: \"ssdp:discover\"\r\n" +
                 "MX: " + SSDP_MAX_WAIT_TIME.toSeconds() + "\r\n" +
                 "USER-AGENT: drasyl/" + DrasylNode.getVersion() + "\r\n" +

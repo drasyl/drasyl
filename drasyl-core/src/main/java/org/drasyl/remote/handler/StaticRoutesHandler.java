@@ -25,6 +25,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -34,28 +35,21 @@ import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This handler uses preconfigured static routes ({@link org.drasyl.DrasylConfig#getStaticRoutes(Config,
  * String)}) to deliver messages.
  */
-public class StaticRoutesHandler extends SimpleOutboundHandler<SerializedApplicationMessage, CompressedPublicKey> {
+@Stateless
+public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedApplicationMessage, CompressedPublicKey> {
+    public static final StaticRoutesHandler INSTANCE = new StaticRoutesHandler();
     public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
-    private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes;
 
-    StaticRoutesHandler(final Map<CompressedPublicKey, InetSocketAddressWrapper> routes) {
-        this.routes = requireNonNull(routes);
-    }
-
-    public StaticRoutesHandler() {
-        this(new HashMap<>());
+    private StaticRoutesHandler() {
+        // singleton
     }
 
     @Override
@@ -79,10 +73,10 @@ public class StaticRoutesHandler extends SimpleOutboundHandler<SerializedApplica
                                 final CompressedPublicKey recipient,
                                 final SerializedApplicationMessage msg,
                                 final CompletableFuture<Void> future) {
-        final InetSocketAddressWrapper staticAddress = routes.get(msg.getRecipient());
+        final InetSocketAddressWrapper staticAddress = ctx.config().getRemoteStaticRoutes().get(msg.getRecipient());
         if (staticAddress != null) {
             final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
-            LOG.trace("Send message `{}` via static route {}.", () -> msg, staticAddress::getAddress);
+            LOG.trace("Send message `{}` via static route {}.", () -> msg, () -> staticAddress);
             ctx.write(staticAddress, new AddressedIntermediateEnvelope<>(null, staticAddress, envelope), future);
         }
         else {
@@ -91,15 +85,11 @@ public class StaticRoutesHandler extends SimpleOutboundHandler<SerializedApplica
         }
     }
 
-    private synchronized void populateRoutes(final HandlerContext ctx) {
-        ctx.config().getRemoteStaticRoutes().forEach(((publicKey, address) -> {
-            routes.put(publicKey, InetSocketAddressWrapper.of(address));
-            ctx.peersManager().addPath(publicKey, path);
-        }));
+    private static synchronized void populateRoutes(final HandlerContext ctx) {
+        ctx.config().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.peersManager().addPath(publicKey, path)));
     }
 
-    private synchronized void clearRoutes(final HandlerContext ctx) {
-        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, path));
-        routes.clear();
+    private static synchronized void clearRoutes(final HandlerContext ctx) {
+        ctx.config().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, path));
     }
 }

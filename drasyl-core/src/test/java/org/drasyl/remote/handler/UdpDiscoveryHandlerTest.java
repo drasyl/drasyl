@@ -33,6 +33,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Serialization;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.remote.handler.UdpDiscoveryHandler.OpenPing;
@@ -46,6 +47,7 @@ import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.Pair;
 import org.drasyl.util.TypeReference;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -224,7 +226,7 @@ class UdpDiscoveryHandlerTest {
             final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
             final AddressedIntermediateEnvelope<Acknowledgement> addressedAcknowledgementMessage = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, acknowledgementMessage);
 
-            when(peer.getAddress().getAddress()).thenReturn(new InetSocketAddress(22527));
+            when(peer.getAddress()).thenReturn(new InetSocketAddressWrapper(22527));
             when(identity.getPublicKey()).thenReturn(recipient);
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address, true))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
@@ -353,8 +355,8 @@ class UdpDiscoveryHandlerTest {
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer senderPeer,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
-            final InetSocketAddressWrapper senderSocketAddress = InetSocketAddressWrapper.of(new InetSocketAddress(80));
-            final InetSocketAddressWrapper recipientSocketAddress = InetSocketAddressWrapper.of(new InetSocketAddress(81));
+            final InetSocketAddressWrapper senderSocketAddress = new InetSocketAddressWrapper(80);
+            final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(81);
             final CompressedPublicKey myKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey senderKey = CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
             final CompressedPublicKey recipientKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
@@ -386,10 +388,11 @@ class UdpDiscoveryHandlerTest {
         @Nested
         class Inbound {
             @Test
-            void shouldRelayMessageForKnownRecipient(@Mock final InetSocketAddressWrapper sender,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
+            void shouldRelayMessageForKnownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
+                final Address sender = new InetSocketAddressWrapper(22527);
                 when(recipientPeer.isReachable(any())).thenReturn(true);
+                when(recipientPeer.getAddress()).thenReturn(new InetSocketAddressWrapper(25421));
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getContent().getRecipient(), recipientPeer), rendezvousPeers);
                 final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
@@ -454,8 +457,8 @@ class UdpDiscoveryHandlerTest {
         @Nested
         class Outbound {
             @Test
-            void shouldRelayMessageToKnowRecipient(@Mock final InetSocketAddressWrapper recipientSocketAddress,
-                                                   @Mock final Peer recipientPeer) {
+            void shouldRelayMessageToKnowRecipient(@Mock final Peer recipientPeer) {
+                final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(22527);
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
@@ -472,14 +475,13 @@ class UdpDiscoveryHandlerTest {
                 pipeline.processOutbound(recipient, message).join();
 
                 outboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(m -> m.getRecipient().equals(recipientSocketAddress) && m.getContent().getPrivateHeader().getType() == APPLICATION);
+                        .assertValueAt(0, m -> m.getRecipient().equals(recipientSocketAddress) && m.getContent().getPrivateHeader().getType() == APPLICATION);
                 pipeline.close();
             }
 
             @Test
-            void shouldRelayMessageToSuperPeerForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper superPeerSocketAddress,
-                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeerPeer) {
+            void shouldRelayMessageToSuperPeerForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeerPeer) {
+                final InetSocketAddressWrapper superPeerSocketAddress = new InetSocketAddressWrapper(22527);
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
@@ -545,8 +547,12 @@ class UdpDiscoveryHandlerTest {
 
     @Nested
     class TestPeer {
-        @Mock
         private InetSocketAddressWrapper address;
+
+        @BeforeEach
+        void setUp() {
+            address = new InetSocketAddressWrapper(22527);
+        }
 
         @Nested
         class Getter {
@@ -644,8 +650,12 @@ class UdpDiscoveryHandlerTest {
 
     @Nested
     class TestOpenPing {
-        @Mock
         private InetSocketAddressWrapper address;
+
+        @BeforeEach
+        void setUp() {
+            address = new InetSocketAddressWrapper(22527);
+        }
 
         @Nested
         class Getter {

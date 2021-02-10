@@ -222,7 +222,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                                 final AddressedByteBuf addressedByteBuf,
                                 final CompletableFuture<Void> future) {
         if (channel != null && channel.isWritable()) {
-            final DatagramPacket packet = new DatagramPacket(addressedByteBuf.getContent(), addressedByteBuf.getRecipient().getAddress());
+            final DatagramPacket packet = new DatagramPacket(addressedByteBuf.getContent(), addressedByteBuf.getRecipient());
             LOG.trace("Send Datagram {}", packet);
             FutureUtil.completeOnAllOf(future, FutureUtil.toFuture(channel.writeAndFlush(packet)));
         }

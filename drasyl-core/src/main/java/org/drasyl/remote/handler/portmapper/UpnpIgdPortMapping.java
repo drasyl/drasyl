@@ -123,7 +123,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     @Override
     public boolean acceptMessage(final AddressedByteBuf msg) {
         return msg.getSender() != null
-                && msg.getSender().getAddress().getPort() == SSDP_MULTICAST_ADDRESS.getAddress().getPort();
+                && msg.getSender().getPort() == SSDP_MULTICAST_ADDRESS.getPort();
     }
 
     @Override
@@ -138,7 +138,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                     if (serviceType.startsWith("urn:schemas-upnp-org:service:WANCommonInterfaceConfig:")) {
                         try {
                             ssdpServices.add(new URI(location));
-                            LOG.debug("Got UPnP service of type `{}` with location `{}` reported from `{}`", () -> serviceType, () -> location, msg.getSender().getAddress()::getHostString);
+                            LOG.debug("Got UPnP service of type `{}` with location `{}` reported from `{}`", () -> serviceType, () -> location, msg.getSender()::getHostString);
                         }
                         catch (final URISyntaxException e) {
                             // ignore
@@ -146,7 +146,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                     }
                 }
                 else {
-                    LOG.warn("Unexpected message received from `{}`. Discard it!", msg.getSender().getAddress()::getHostString);
+                    LOG.warn("Unexpected message received from `{}`. Discard it!", msg.getSender()::getHostString);
                 }
             }
         }

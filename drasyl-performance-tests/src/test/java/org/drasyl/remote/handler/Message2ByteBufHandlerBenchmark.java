@@ -60,8 +60,8 @@ public class Message2ByteBufHandlerBenchmark extends AbstractBenchmark {
         try {
             ctx = new MyHandlerContext();
             recipient = new MyAddress();
-            final InetSocketAddressWrapper msgSender = InetSocketAddressWrapper.of(InetSocketAddress.createUnresolved("127.0.0.1", 25527));
-            final InetSocketAddressWrapper msgRecipient = InetSocketAddressWrapper.of(InetSocketAddress.createUnresolved("127.0.0.1", 25527));
+            final InetSocketAddressWrapper msgSender = new InetSocketAddressWrapper("127.0.0.1", 25527);
+            final InetSocketAddressWrapper msgRecipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
             final byte[] payload = new byte[1024];
             new Random().nextBytes(payload);
             final IntermediateEnvelope<Application> content = IntermediateEnvelope.application(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), byte[].class.getName(), payload);

@@ -24,6 +24,7 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -71,7 +72,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
                     .remoteBindHost(InetAddress.getByName("127.0.0.1"))
                     .remoteBindPort(22528)
                     .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(identity2.getPublicKey(), new InetSocketAddress("127.0.0.1", 22529)))
+                    .remoteStaticRoutes(Map.of(identity2.getPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22529)))
                     .monitoringEnabled(false)
                     .build();
             final DrasylConfig config2 = DrasylConfig.newBuilder()
@@ -82,7 +83,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
                     .remoteBindHost(InetAddress.getByName("127.0.0.1"))
                     .remoteBindPort(22529)
                     .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(identity1.getPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
+                    .remoteStaticRoutes(Map.of(identity1.getPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22528)))
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
                     .monitoringEnabled(false)

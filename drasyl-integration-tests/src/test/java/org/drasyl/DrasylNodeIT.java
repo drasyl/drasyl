@@ -37,6 +37,7 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -356,7 +357,7 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteStaticRoutes(Map.of(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"), new InetSocketAddress("127.0.0.1", 22529)))
+                        .remoteStaticRoutes(Map.of(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"), new InetSocketAddressWrapper("127.0.0.1", 22529)))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
@@ -376,7 +377,7 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteStaticRoutes(Map.of(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), new InetSocketAddress("127.0.0.1", 22528)))
+                        .remoteStaticRoutes(Map.of(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), new InetSocketAddressWrapper("127.0.0.1", 22528)))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)

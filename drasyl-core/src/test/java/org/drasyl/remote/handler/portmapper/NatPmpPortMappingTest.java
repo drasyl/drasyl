@@ -77,7 +77,7 @@ class NatPmpPortMappingTest {
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
             final AtomicBoolean externalAddressRequested = new AtomicBoolean();
             final AtomicBoolean mappingRequested = new AtomicBoolean();
-            new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, InetSocketAddressWrapper.of(new InetSocketAddress(12345)), externalAddress, timeoutGuard, refreshTask, null, defaultGatewaySupplier).stop(ctx);
+            new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, new InetSocketAddressWrapper(12345), externalAddress, timeoutGuard, refreshTask, null, defaultGatewaySupplier).stop(ctx);
 
             verify(timeoutGuard).dispose();
             verify(refreshTask).dispose();
@@ -100,7 +100,7 @@ class NatPmpPortMappingTest {
                     when(msg.refCnt()).thenReturn(1);
                     final AtomicBoolean externalAddressRequested = new AtomicBoolean(true);
                     final AtomicBoolean mappingRequested = new AtomicBoolean();
-                    new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, InetSocketAddressWrapper.of(new InetSocketAddress(12345)), null, null, null, null, defaultGatewaySupplier).handleMessage(ctx, msg);
+                    new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, new InetSocketAddressWrapper(12345), null, null, null, null, defaultGatewaySupplier).handleMessage(ctx, msg);
 
                     verify(ctx).write(any(), any(), any());
                 }
@@ -122,7 +122,7 @@ class NatPmpPortMappingTest {
                     when(msg.refCnt()).thenReturn(1);
                     final AtomicBoolean externalAddressRequested = new AtomicBoolean();
                     final AtomicBoolean mappingRequested = new AtomicBoolean(true);
-                    new NatPmpPortMapping(externalAddressRequested, mappingRequested, 25585, InetSocketAddressWrapper.of(new InetSocketAddress(12345)), externalAddress, timeoutGuard, null, null, defaultGatewaySupplier).handleMessage(ctx, msg);
+                    new NatPmpPortMapping(externalAddressRequested, mappingRequested, 25585, new InetSocketAddressWrapper(12345), externalAddress, timeoutGuard, null, null, defaultGatewaySupplier).handleMessage(ctx, msg);
 
                     verify(timeoutGuard).dispose();
                     verify(ctx.independentScheduler()).scheduleDirect(any(), eq((long) 300), eq(SECONDS));

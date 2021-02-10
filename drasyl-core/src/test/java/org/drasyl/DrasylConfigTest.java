@@ -26,6 +26,7 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.plugin.DrasylPlugin;
 import org.drasyl.serialization.Serializer;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,7 +134,7 @@ class DrasylConfigTest {
     private byte remoteMessageHopLimit;
     private boolean superPeerEnabled;
     private Endpoint superPeerEndpoint;
-    private Map<CompressedPublicKey, InetSocketAddress> remoteStaticRoutes;
+    private Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Config typesafeConfig;
     private String identityPathAsString;
