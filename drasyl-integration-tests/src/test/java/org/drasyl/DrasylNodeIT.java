@@ -46,7 +46,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -204,13 +203,12 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                final TestObserver<Event> superPeerMessages = superPeer.second().filter(e -> e instanceof MessageEvent).test();
-                final TestObserver<Event> client1Messages = client1.second().filter(e -> e instanceof MessageEvent).test();
-                final TestObserver<Event> client2Messages = client2.second().filter(e -> e instanceof MessageEvent).test();
-
-//        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
-//        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
-//        client2.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C2: " + e));
+                final TestObserver<MessageEvent> superPeerMessages = superPeer.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> client1Messages = client1.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> client2Messages = client2.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
 
                 //
                 // send messages
@@ -228,29 +226,28 @@ class DrasylNodeIT {
                 // verify
                 //
                 superPeerMessages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
                 client1Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
                 client2Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
             }
 
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesExceedingMtuShouldBeDelivered() {
-                final TestObserver<Event> superPeerMessages = superPeer.second().filter(e -> e instanceof MessageEvent).test();
-                final TestObserver<Event> client1Messages = client1.second().filter(e -> e instanceof MessageEvent).test();
-                final TestObserver<Event> client2Messages = client2.second().filter(e -> e instanceof MessageEvent).test();
-
-//        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
-//        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
-//        client2.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C2: " + e));
+                final TestObserver<MessageEvent> superPeerMessages = superPeer.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> client1Messages = client1.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> client2Messages = client2.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
 
                 //
                 // send messages
@@ -269,17 +266,17 @@ class DrasylNodeIT {
                 // verify
                 //
                 superPeerMessages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
-                        .assertValueAt(1, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
-                        .assertValueAt(2, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload));
+                        .assertValueAt(0, m -> Objects.deepEquals(m.getPayload(), payload))
+                        .assertValueAt(1, m -> Objects.deepEquals(m.getPayload(), payload))
+                        .assertValueAt(2, m -> Objects.deepEquals(m.getPayload(), payload));
                 client1Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
-                        .assertValueAt(1, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
-                        .assertValueAt(2, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload));
+                        .assertValueAt(0, m -> Objects.deepEquals(m.getPayload(), payload))
+                        .assertValueAt(1, m -> Objects.deepEquals(m.getPayload(), payload))
+                        .assertValueAt(2, m -> Objects.deepEquals(m.getPayload(), payload));
                 client2Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
-                        .assertValueAt(1, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
-                        .assertValueAt(2, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload));
+                        .assertValueAt(0, m -> Objects.deepEquals(m.getPayload(), payload))
+                        .assertValueAt(1, m -> Objects.deepEquals(m.getPayload(), payload))
+                        .assertValueAt(2, m -> Objects.deepEquals(m.getPayload(), payload));
             }
 
             /**
@@ -394,25 +391,48 @@ class DrasylNodeIT {
              */
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-            void applicationMessagesShouldBeDelivered() {
-                final TestObserver<Event> client1Messages = client1.second().filter(e -> e instanceof MessageEvent).test();
-                final TestObserver<Event> client2Messages = client2.second().filter(e -> e instanceof MessageEvent).test();
+            void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
+                final TestObserver<MessageEvent> client1Messages = client1.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> client2Messages = client2.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
 
                 //
                 // send messages
                 //
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", true).get();
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (byte) 23).get();
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 'C').get();
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 3.141F).get();
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 1337).get();
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 9001L).get();
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (short) 42).get();
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", new byte[]{
+                        (byte) 0,
+                        (byte) 1
+                }).get();
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "String").get();
+                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", null).get();
+
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", true).get();
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (byte) 23).get();
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 'C').get();
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 3.141F).get();
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 1337).get();
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 9001L).get();
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (short) 42).get();
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", new byte[]{
+                        (byte) 0,
+                        (byte) 1
+                }).get();
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "String").get();
+                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", null).get();
 
                 //
                 // verify
                 //
-                client1Messages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
-                client2Messages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                client1Messages.awaitCount(10).assertValueCount(10);
+                client2Messages.awaitCount(10).assertValueCount(10);
             }
         }
     }
@@ -515,15 +535,14 @@ class DrasylNodeIT {
                 node3.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
                 node4.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
 
-                final TestObserver<Event> node1Messages = node1.second().filter(e -> e instanceof MessageEvent).test();
-                final TestObserver<Event> nodes2Messages = node2.second().filter(e -> e instanceof MessageEvent).test();
-                final TestObserver<Event> node3Messages = node3.second().filter(e -> e instanceof MessageEvent).test();
-                final TestObserver<Event> node4Messages = node4.second().filter(e -> e instanceof MessageEvent).test();
-
-//        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
-//        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
-//        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
-//        client2.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C2: " + e));
+                final TestObserver<MessageEvent> node1Messages = node1.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> nodes2Messages = node2.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> node3Messages = node3.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> node4Messages = node4.second()
+                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
 
                 //
                 // send messages
@@ -543,24 +562,24 @@ class DrasylNodeIT {
                 // verify
                 //
                 node1Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(3, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(3, m -> m.getPayload().equals("Hallo Welt"));
                 nodes2Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(3, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(3, m -> m.getPayload().equals("Hallo Welt"));
                 node3Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
                 node4Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
-                        .assertValueAt(3, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"))
+                        .assertValueAt(3, m -> m.getPayload().equals("Hallo Welt"));
             }
 
             /**
@@ -730,12 +749,13 @@ class DrasylNodeIT {
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
         void applicationMessagesShouldBeDelivered() {
-            final TestObserver<Event> node1Messages = node1.second().filter(e -> e instanceof MessageEvent).test();
+            final TestObserver<MessageEvent> node1Messages = node1.second()
+                    .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
 
             node1.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
 
             node1Messages.awaitCount(1).assertValueCount(1)
-                    .assertValue(e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+                    .assertValue(m -> m.getPayload().equals("Hallo Welt"));
         }
     }
 

@@ -24,6 +24,7 @@ import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -79,11 +80,11 @@ public class SerializedApplicationMessage extends DefaultAddressedEnvelope<Compr
     }
 
     public Class<?> getTypeClazz() throws ClassNotFoundException {
-        if (type != null) {
-            return Class.forName(type);
+        if (isNullOrEmpty(type)) {
+            return null;
         }
         else {
-            return null;
+            return Class.forName(type);
         }
     }
 
