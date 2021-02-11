@@ -38,16 +38,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.WatchService;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,6 +59,7 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,6 +68,7 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,7 +81,7 @@ class LocalHostDiscoveryTest {
     @Mock
     private PeersManager peersManager;
     private final Duration leaseTime = ofSeconds(60);
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Path discoveryPath;
     @Mock
     private CompressedPublicKey ownPublicKey;
@@ -107,7 +109,7 @@ class LocalHostDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            verify(scheduler).schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS));
+            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS));
             pipeline.close();
         }
 
@@ -125,7 +127,7 @@ class LocalHostDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            verify(discoveryPath).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
+            verify(discoveryPath, timeout(1_000)).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
             pipeline.close();
         }
 
@@ -143,14 +145,16 @@ class LocalHostDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            verify(scheduler).schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS));
-            verify(scheduler).schedulePeriodicallyDirect(any(), eq(0L), eq(ofSeconds(55L).toMillis()), eq(MILLISECONDS));
+            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS));
+            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), eq(0L), eq(ofSeconds(55L).toMillis()), eq(MILLISECONDS));
             pipeline.close();
         }
 
         @Test
         void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@TempDir final Path dir,
-                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event) throws IOException {
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService) throws IOException {
             final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
@@ -168,14 +172,16 @@ class LocalHostDiscoveryTest {
             when(config.getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
             when(identity.getPublicKey()).thenReturn(ownPublicKey);
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
+            when(discoveryPath.getFileSystem()).thenReturn(fileSystem);
+            when(fileSystem.newWatchService()).thenReturn(watchService);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
 
             pipeline.processInbound(event).join();
 
-            verify(discoveryPath.getFileSystem().newWatchService()).poll();
-            assertThat(path.toFile(), anExistingFile());
+            verify(watchService, timeout(1_000)).poll();
+            await().untilAsserted(() -> assertThat(path.toFile(), anExistingFile()));
             pipeline.close();
         }
     }
@@ -193,9 +199,9 @@ class LocalHostDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            verify(watchDisposable).dispose();
-            verify(postDisposable).dispose();
-            assertTrue(routes.isEmpty());
+            verify(watchDisposable, timeout(1_000)).dispose();
+            verify(postDisposable, timeout(1_000)).dispose();
+            await().untilAsserted(() -> assertTrue(routes.isEmpty()));
             pipeline.close();
         }
 
@@ -210,9 +216,9 @@ class LocalHostDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            verify(watchDisposable).dispose();
-            verify(postDisposable).dispose();
-            assertTrue(routes.isEmpty());
+            verify(watchDisposable, timeout(1_000)).dispose();
+            verify(postDisposable, timeout(1_000)).dispose();
+            await().untilAsserted(() -> assertTrue(routes.isEmpty()));
             pipeline.close();
         }
     }

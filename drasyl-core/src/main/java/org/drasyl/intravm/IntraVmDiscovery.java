@@ -65,15 +65,15 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
     public void eventTriggered(final HandlerContext ctx,
                                final Event event,
                                final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent) {
-            startDiscovery(ctx);
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopDiscovery(ctx);
-        }
-
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.fireEventTriggered(event, future).whenComplete((result, e) -> {
+            if (event instanceof NodeUpEvent) {
+                startDiscovery(ctx);
+            }
+            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                stopDiscovery(ctx);
+            }
+        });
     }
 
     @SuppressWarnings("ReplaceNullCheck")

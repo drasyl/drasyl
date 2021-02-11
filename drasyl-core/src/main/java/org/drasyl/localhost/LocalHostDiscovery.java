@@ -110,15 +110,15 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     public void eventTriggered(final HandlerContext ctx,
                                final Event event,
                                final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent) {
-            startDiscovery(ctx, ((NodeUpEvent) event).getNode().getPort());
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopDiscovery(ctx);
-        }
-
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.fireEventTriggered(event, future).whenComplete((result, e) -> {
+            if (event instanceof NodeUpEvent) {
+                startDiscovery(ctx, ((NodeUpEvent) event).getNode().getPort());
+            }
+            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                stopDiscovery(ctx);
+            }
+        });
     }
 
     @Override

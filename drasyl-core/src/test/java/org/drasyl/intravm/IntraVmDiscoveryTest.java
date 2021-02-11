@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -74,7 +75,7 @@ class IntraVmDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            assertThat(discoveries, aMapWithSize(1));
+            await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(1)));
         }
     }
 
@@ -89,7 +90,7 @@ class IntraVmDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            assertThat(discoveries, aMapWithSize(0));
+            await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
         }
 
         @Test
@@ -102,7 +103,7 @@ class IntraVmDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            assertThat(discoveries, aMapWithSize(0));
+            await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
         }
     }
 
