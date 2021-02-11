@@ -95,6 +95,21 @@ class MessageSerializerTest {
         }
 
         @Test
+        void shouldBeAbleToDeserializeNullMessage(@Mock final CompressedPublicKey address) {
+            SerializedApplicationMessage message = new SerializedApplicationMessage(address, address, (String) null, new byte[0]);
+
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+
+            pipeline.processInbound(address, message);
+
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(m -> m instanceof ApplicationMessage && ((ApplicationMessage) m).getContent() == null);
+            pipeline.close();
+        }
+
+        @Test
         void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final CompressedPublicKey sender,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) throws ClassNotFoundException, InterruptedException {
             when(message.getTypeClazz()).then(invocation -> String.class);
@@ -115,24 +130,6 @@ class MessageSerializerTest {
             when(message.getContent()).thenReturn("Hallo Welt".getBytes());
             when(message.getTypeClazz()).then(invocation -> String.class);
             when(serializer.fromByteArray(any(), any())).thenThrow(IOException.class);
-            when(config.getSerializationSerializers()).thenReturn(Map.of("string", serializer));
-            when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(String.class, "string"));
-
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
-
-            assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
-            inboundMessages.await(1, SECONDS);
-            inboundMessages.assertNoValues();
-            pipeline.close();
-        }
-
-        @Test
-        void shouldCompleteExceptionallyIfMessageIsSerializedToNull(@Mock final CompressedPublicKey sender,
-                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message,
-                                                                    @Mock final Serializer serializer) throws ClassNotFoundException, InterruptedException {
-            when(message.getContent()).thenReturn("Hallo Welt".getBytes());
-            when(message.getTypeClazz()).then(invocation -> String.class);
             when(config.getSerializationSerializers()).thenReturn(Map.of("string", serializer));
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(String.class, "string"));
 
@@ -215,6 +212,22 @@ class MessageSerializerTest {
             assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
             outboundMessages.await(1, SECONDS);
             outboundMessages.assertNoValues();
+            pipeline.close();
+        }
+
+        @Test
+        void shouldBeAbleToSerializeNullMessage(@Mock final CompressedPublicKey address,
+                                                @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
+            when(message.getContent()).thenReturn(null);
+
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+
+            pipeline.processOutbound(address, message);
+
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new SerializedApplicationMessage(message.getSender(), message.getRecipient(), (String) null, new byte[0]));
             pipeline.close();
         }
     }
