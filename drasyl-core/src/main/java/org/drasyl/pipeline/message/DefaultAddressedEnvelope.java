@@ -22,8 +22,6 @@ import org.drasyl.pipeline.address.Address;
 
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public class DefaultAddressedEnvelope<A extends Address, M> implements AddressedEnvelope<A, M> {
     private final A sender;
     private final A recipient;
@@ -38,7 +36,7 @@ public class DefaultAddressedEnvelope<A extends Address, M> implements Addressed
         }
         this.sender = sender;
         this.recipient = recipient;
-        this.content = requireNonNull(content);
+        this.content = content;
     }
 
     @Override

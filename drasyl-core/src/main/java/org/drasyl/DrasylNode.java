@@ -315,7 +315,7 @@ public abstract class DrasylNode {
      */
     @NonNull
     public CompletableFuture<Void> send(@NonNull final String recipient,
-                                        @NonNull final Object payload) {
+                                        final Object payload) {
         try {
             return send(CompressedPublicKey.of(recipient), payload);
         }
@@ -348,7 +348,7 @@ public abstract class DrasylNode {
      */
     @NonNull
     public CompletableFuture<Void> send(@Nullable final CompressedPublicKey recipient,
-                                        @NonNull final Object payload) {
+                                        final Object payload) {
         return pipeline.processOutbound(recipient, payload);
     }
 

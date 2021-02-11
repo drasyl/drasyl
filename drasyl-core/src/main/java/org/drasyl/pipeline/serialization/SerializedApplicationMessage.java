@@ -45,7 +45,7 @@ public class SerializedApplicationMessage extends DefaultAddressedEnvelope<Compr
                                         final String type,
                                         final byte[] content) {
         super(sender, recipient, content);
-        this.type = requireNonNull(type);
+        this.type = type;
     }
 
     @Override
@@ -79,7 +79,12 @@ public class SerializedApplicationMessage extends DefaultAddressedEnvelope<Compr
     }
 
     public Class<?> getTypeClazz() throws ClassNotFoundException {
-        return Class.forName(type);
+        if (type != null) {
+            return Class.forName(type);
+        }
+        else {
+            return null;
+        }
     }
 
     public String getType() {

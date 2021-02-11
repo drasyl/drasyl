@@ -83,43 +83,48 @@ public class Serialization {
      */
     @SuppressWarnings({ "java:S2789", "OptionalAssignedToNull" })
     public Serializer findSerializerFor(final Class<?> clazz) {
-        // cached serializer?
-        Optional<Serializer> serializer = mapping.get(clazz);
-        if (serializer == null) {
-            try {
-                lock.writeLock().lock();
-
-                // no! -> do lookup for concrete class
-                String name = bindings.get(clazz);
-
-                if (name == null) {
-                    // nothing found! -> do lookup for super class or interface
-                    final Optional<String> match = bindings.entrySet().stream()
-                            .filter(entry -> entry.getKey().isAssignableFrom(clazz))
-                            .map(Entry::getValue)
-                            .findFirst();
-                    if (match.isPresent()) {
-                        // found!
-                        name = match.get();
-                    }
-                }
-
-                if (name == null) {
-                    // nothing found!
-                    serializer = Optional.empty();
-                }
-                else {
-                    serializer = Optional.ofNullable(serializers.get(name));
-                }
-
-                mapping.put(clazz, serializer);
-            }
-            finally {
-                lock.writeLock().unlock();
-            }
+        if (clazz == null) {
+            return NULL_SERIALIZER;
         }
+        else {
+            // cached serializer?
+            Optional<Serializer> serializer = mapping.get(clazz);
+            if (serializer == null) {
+                try {
+                    lock.writeLock().lock();
 
-        return serializer.orElse(null);
+                    // no! -> do lookup for concrete class
+                    String name = bindings.get(clazz);
+
+                    if (name == null) {
+                        // nothing found! -> do lookup for super class or interface
+                        final Optional<String> match = bindings.entrySet().stream()
+                                .filter(entry -> entry.getKey().isAssignableFrom(clazz))
+                                .map(Entry::getValue)
+                                .findFirst();
+                        if (match.isPresent()) {
+                            // found!
+                            name = match.get();
+                        }
+                    }
+
+                    if (name == null) {
+                        // nothing found!
+                        serializer = Optional.empty();
+                    }
+                    else {
+                        serializer = Optional.ofNullable(serializers.get(name));
+                    }
+
+                    mapping.put(clazz, serializer);
+                }
+                finally {
+                    lock.writeLock().unlock();
+                }
+            }
+
+            return serializer.orElse(null);
+        }
     }
 
     /**

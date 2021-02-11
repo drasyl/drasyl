@@ -35,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public class MessageSerializer extends SimpleDuplexHandler<SerializedApplicationMessage, ApplicationMessage, Address> {
+public final class MessageSerializer extends SimpleDuplexHandler<SerializedApplicationMessage, ApplicationMessage, Address> {
     public static final MessageSerializer INSTANCE = new MessageSerializer();
     public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
@@ -55,15 +55,10 @@ public class MessageSerializer extends SimpleDuplexHandler<SerializedApplication
 
             if (serializer != null) {
                 final Object o = serializer.fromByteArray(msg.getContent(), clazz);
-                if (o != null) {
-                    final ApplicationMessage deserializedMsg = new ApplicationMessage(msg.getSender(), msg.getRecipient(), o);
-                    ctx.fireRead(msg.getSender(), deserializedMsg, future);
-                    LOG.trace("Message has been deserialized to '{}'", () -> deserializedMsg);
-                }
-                else {
-                    LOG.warn("Deserialized message is null. That's an forbidden value. Drop message.");
-                    future.completeExceptionally(new Exception("Deserialized message is null. That's an forbidden value. Drop message."));
-                }
+
+                final ApplicationMessage deserializedMsg = new ApplicationMessage(msg.getSender(), msg.getRecipient(), o);
+                ctx.fireRead(msg.getSender(), deserializedMsg, future);
+                LOG.trace("Message has been deserialized to '{}'", () -> deserializedMsg);
             }
             else {
                 LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", clazz::getName);
@@ -84,16 +79,23 @@ public class MessageSerializer extends SimpleDuplexHandler<SerializedApplication
         try {
             final Serializer serializer = ctx.outboundSerialization().findSerializerFor(msg.getContent());
 
-            final Class<?> clazz = msg.getContent().getClass();
+            final String type;
+            if (msg.getContent() != null) {
+                type = msg.getContent().getClass().getName();
+            }
+            else {
+                type = null;
+            }
+
             if (serializer != null) {
                 final byte[] bytes = serializer.toByteArray(msg.getContent());
-                SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(msg.getSender(), msg.getRecipient(), clazz, bytes);
+                SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(msg.getSender(), msg.getRecipient(), type, bytes);
                 ctx.write(recipient, serializedMsg, future);
                 LOG.trace("Message has been serialized to '{}'", () -> serializedMsg);
             }
             else {
-                LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", clazz::getName);
-                future.completeExceptionally(new Exception("No serializer was found for type '" + clazz.getName() + "'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/"));
+                LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
+                future.completeExceptionally(new Exception("No serializer was found for type '" + type + "'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/"));
             }
         }
         catch (final IOException e) {

@@ -770,14 +770,15 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                                                                 final CompressedPublicKey recipient,
                                                                 final String type,
                                                                 final byte[] payload) {
+        final Application.Builder messageBuilder = Application.newBuilder();
+        if (type != null) {
+            messageBuilder.setType(type).setPayload(ByteString.copyFrom(payload));
+        }
+
         return of(
                 buildPublicHeader(networkId, sender, proofOfWork, recipient),
-                PrivateHeader.newBuilder()
-                        .setType(APPLICATION)
-                        .build(), Application.newBuilder()
-                        .setType(type)
-                        .setPayload(ByteString.copyFrom(payload))
-                        .build()
+                PrivateHeader.newBuilder().setType(APPLICATION).build(),
+                messageBuilder.build()
         );
     }
 

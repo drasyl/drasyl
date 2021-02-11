@@ -18,7 +18,6 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.CompressedPublicKey;
 
@@ -40,11 +39,11 @@ public class MessageEvent implements Event {
      *
      * @param sender  the message's sender
      * @param payload content of the message
-     * @throws NullPointerException if {@code sender} or {@code payload} is {@code null}
+     * @throws NullPointerException if {@code sender} is {@code null}
      */
     public MessageEvent(final CompressedPublicKey sender, final Object payload) {
         this.sender = requireNonNull(sender);
-        this.payload = requireNonNull(payload);
+        this.payload = payload;
     }
 
     /**
@@ -62,7 +61,6 @@ public class MessageEvent implements Event {
      *
      * @return the message's payload
      */
-    @NonNull
     public Object getPayload() {
         return payload;
     }
