@@ -19,6 +19,7 @@
 package org.drasyl.util.scheduler;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.netty.util.internal.SystemPropertyUtil;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.drasyl.util.FutureUtil;
@@ -44,7 +45,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * the workQueue limit is never reached, the schedule would never start processing the already
  * submitted tasks.
  */
-public class DrasylSchedulerUtil {
+public final class DrasylSchedulerUtil {
     public static final Duration SHUTDOWN_TIMEOUT = ofSeconds(10); // 10s until the schedulers are stopped immediately
     private static final Logger LOG = LoggerFactory.getLogger(DrasylSchedulerUtil.class);
     protected static volatile boolean lightSchedulerCreated = false;
@@ -112,7 +113,7 @@ public class DrasylSchedulerUtil {
 
     private static class LazyLightSchedulerHolder {
         static final String BASE_NAME = "drasyl-L-";
-        static final int SIZE = Runtime.getRuntime().availableProcessors() - 2;
+        static final int SIZE = SystemPropertyUtil.getInt("org.drasyl.scheduler.light", Runtime.getRuntime().availableProcessors() - 2);
         // pool should have at least all available processors minus two threads
         static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME, SIZE, SIZE);
         static final boolean LOCK = lightSchedulerCreated = true;
@@ -124,7 +125,7 @@ public class DrasylSchedulerUtil {
     private static class LazyHeavySchedulerHolder {
         static final String BASE_NAME = "drasyl-H-";
         static final int CORE_SIZE = 1;
-        static final int MAX_SIZE = (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1);
+        static final int MAX_SIZE = SystemPropertyUtil.getInt("org.drasyl.scheduler.heavy", (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1));
         // pool should have at least 1 and max 10% of available processors
         static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME, CORE_SIZE, MAX_SIZE);
         static final boolean LOCK = heavySchedulerCreated = true;
