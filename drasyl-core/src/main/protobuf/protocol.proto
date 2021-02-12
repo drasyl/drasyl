@@ -5,9 +5,9 @@ package org.drasyl.remote.protocol;
 message PublicHeader {
     bytes id = 1; // 8 bytes fix
     bytes userAgent = 2; // 2 bytes fix
-    int32 networkId = 3; // 4 bytes
+    sint32 networkId = 3; // 4 bytes
     bytes sender = 4; // 33 bytes fix
-    int32 proofOfWork = 5; // 4 bytes
+    sint32 proofOfWork = 5; // 4 bytes
     bytes recipient = 6; // 33 bytes fix
     bytes hopCount = 7; // 1 byte fix
     bytes signature = 8; // 32 bytes fix

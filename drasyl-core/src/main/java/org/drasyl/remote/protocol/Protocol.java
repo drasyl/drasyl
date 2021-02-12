@@ -169,7 +169,7 @@ public final class Protocol {
      * 4 bytes
      * </pre>
      *
-     * <code>int32 networkId = 3;</code>
+     * <code>sint32 networkId = 3;</code>
      * @return The networkId.
      */
     int getNetworkId();
@@ -189,7 +189,7 @@ public final class Protocol {
      * 4 bytes
      * </pre>
      *
-     * <code>int32 proofOfWork = 5;</code>
+     * <code>sint32 proofOfWork = 5;</code>
      * @return The proofOfWork.
      */
     int getProofOfWork();
@@ -309,7 +309,7 @@ public final class Protocol {
             }
             case 24: {
 
-              networkId_ = input.readInt32();
+              networkId_ = input.readSInt32();
               break;
             }
             case 34: {
@@ -319,7 +319,7 @@ public final class Protocol {
             }
             case 40: {
 
-              proofOfWork_ = input.readInt32();
+              proofOfWork_ = input.readSInt32();
               break;
             }
             case 50: {
@@ -416,7 +416,7 @@ public final class Protocol {
      * 4 bytes
      * </pre>
      *
-     * <code>int32 networkId = 3;</code>
+     * <code>sint32 networkId = 3;</code>
      * @return The networkId.
      */
     @java.lang.Override
@@ -446,7 +446,7 @@ public final class Protocol {
      * 4 bytes
      * </pre>
      *
-     * <code>int32 proofOfWork = 5;</code>
+     * <code>sint32 proofOfWork = 5;</code>
      * @return The proofOfWork.
      */
     @java.lang.Override
@@ -550,13 +550,13 @@ public final class Protocol {
         output.writeBytes(2, userAgent_);
       }
       if (networkId_ != 0) {
-        output.writeInt32(3, networkId_);
+        output.writeSInt32(3, networkId_);
       }
       if (!sender_.isEmpty()) {
         output.writeBytes(4, sender_);
       }
       if (proofOfWork_ != 0) {
-        output.writeInt32(5, proofOfWork_);
+        output.writeSInt32(5, proofOfWork_);
       }
       if (!recipient_.isEmpty()) {
         output.writeBytes(6, recipient_);
@@ -592,7 +592,7 @@ public final class Protocol {
       }
       if (networkId_ != 0) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(3, networkId_);
+          .computeSInt32Size(3, networkId_);
       }
       if (!sender_.isEmpty()) {
         size += com.google.protobuf.CodedOutputStream
@@ -600,7 +600,7 @@ public final class Protocol {
       }
       if (proofOfWork_ != 0) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(5, proofOfWork_);
+          .computeSInt32Size(5, proofOfWork_);
       }
       if (!recipient_.isEmpty()) {
         size += com.google.protobuf.CodedOutputStream
@@ -1082,7 +1082,7 @@ public final class Protocol {
        * 4 bytes
        * </pre>
        *
-       * <code>int32 networkId = 3;</code>
+       * <code>sint32 networkId = 3;</code>
        * @return The networkId.
        */
       @java.lang.Override
@@ -1094,7 +1094,7 @@ public final class Protocol {
        * 4 bytes
        * </pre>
        *
-       * <code>int32 networkId = 3;</code>
+       * <code>sint32 networkId = 3;</code>
        * @param value The networkId to set.
        * @return This builder for chaining.
        */
@@ -1109,7 +1109,7 @@ public final class Protocol {
        * 4 bytes
        * </pre>
        *
-       * <code>int32 networkId = 3;</code>
+       * <code>sint32 networkId = 3;</code>
        * @return This builder for chaining.
        */
       public Builder clearNetworkId() {
@@ -1171,7 +1171,7 @@ public final class Protocol {
        * 4 bytes
        * </pre>
        *
-       * <code>int32 proofOfWork = 5;</code>
+       * <code>sint32 proofOfWork = 5;</code>
        * @return The proofOfWork.
        */
       @java.lang.Override
@@ -1183,7 +1183,7 @@ public final class Protocol {
        * 4 bytes
        * </pre>
        *
-       * <code>int32 proofOfWork = 5;</code>
+       * <code>sint32 proofOfWork = 5;</code>
        * @param value The proofOfWork to set.
        * @return This builder for chaining.
        */
@@ -1198,7 +1198,7 @@ public final class Protocol {
        * 4 bytes
        * </pre>
        *
-       * <code>int32 proofOfWork = 5;</code>
+       * <code>sint32 proofOfWork = 5;</code>
        * @return This builder for chaining.
        */
       public Builder clearProofOfWork() {
@@ -4491,8 +4491,8 @@ public final class Protocol {
     java.lang.String[] descriptorData = {
       "\n\016protocol.proto\022\032org.drasyl.remote.prot" +
       "ocol\"\303\001\n\014PublicHeader\022\n\n\002id\030\001 \001(\014\022\021\n\tuse" +
-      "rAgent\030\002 \001(\014\022\021\n\tnetworkId\030\003 \001(\005\022\016\n\006sende" +
-      "r\030\004 \001(\014\022\023\n\013proofOfWork\030\005 \001(\005\022\021\n\trecipien" +
+      "rAgent\030\002 \001(\014\022\021\n\tnetworkId\030\003 \001(\021\022\016\n\006sende" +
+      "r\030\004 \001(\014\022\023\n\013proofOfWork\030\005 \001(\021\022\021\n\trecipien" +
       "t\030\006 \001(\014\022\020\n\010hopCount\030\007 \001(\014\022\021\n\tsignature\030\010" +
       " \001(\014\022\017\n\007chunkNo\030\t \001(\014\022\023\n\013totalChunks\030\n \001" +
       "(\014\"F\n\rPrivateHeader\0225\n\004type\030\001 \001(\0162\'.org." +
