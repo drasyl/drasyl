@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.protocol;
 
+import org.drasyl.annotation.NonNull;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -25,18 +26,20 @@ import org.drasyl.pipeline.message.AddressedEnvelope;
 import java.util.Arrays;
 
 /**
- * A {@link AddressedEnvelope} is uniquely identified by its 12 bytes identifier.
+ * A {@link AddressedEnvelope} is uniquely identified by its {@link #MESSAGE_ID_LENGTH} bytes
+ * identifier.
  * <p>
  * This is an immutable object.
  */
-public class MessageId {
+public final class MessageId {
+    public static final int MESSAGE_ID_LENGTH = 12;
     private final byte[] id;
 
-    private MessageId(final byte[] id) {
+    private MessageId(@NonNull final byte[] id) {
         if (!isValidMessageId(id)) {
-            throw new IllegalArgumentException("ID must be a 12 bit byte array: " + HexUtil.bytesToHex(id));
+            throw new IllegalArgumentException("ID must be a " + MESSAGE_ID_LENGTH + " bit byte array: " + HexUtil.bytesToHex(id));
         }
-        this.id = id;
+        this.id = id.clone();
     }
 
     @Override
@@ -62,7 +65,7 @@ public class MessageId {
     }
 
     public byte[] byteArrayValue() {
-        return id;
+        return id.clone();
     }
 
     /**
@@ -71,7 +74,7 @@ public class MessageId {
      * @return A randomly generated {@code MessageId}
      */
     public static MessageId randomMessageId() {
-        return new MessageId(Crypto.randomBytes(12));
+        return new MessageId(Crypto.randomBytes(MESSAGE_ID_LENGTH));
     }
 
     /**
@@ -81,14 +84,20 @@ public class MessageId {
      * @return {@code true} if valid. Otherwise {@code false}
      */
     public static boolean isValidMessageId(final byte[] id) {
-        return id != null && id.length == 12;
+        return id != null && id.length == MESSAGE_ID_LENGTH;
     }
 
-    public static MessageId of(final byte[] id) {
+    /**
+     * @throws NullPointerException if {@code id} is {@code null}
+     */
+    public static MessageId of(@NonNull final byte[] id) {
         return new MessageId(id);
     }
 
-    public static MessageId of(final String id) {
+    /**
+     * @throws NullPointerException if {@code id} is {@code null}
+     */
+    public static MessageId of(@NonNull final String id) {
         return new MessageId(HexUtil.parseHexBinary(id));
     }
 }

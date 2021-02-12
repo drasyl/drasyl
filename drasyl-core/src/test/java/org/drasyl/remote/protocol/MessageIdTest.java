@@ -18,11 +18,15 @@
  */
 package org.drasyl.remote.protocol;
 
+import org.drasyl.crypto.Crypto;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
+
+import static org.drasyl.remote.protocol.MessageId.MESSAGE_ID_LENGTH;
 import static org.drasyl.remote.protocol.MessageId.isValidMessageId;
 import static org.drasyl.remote.protocol.MessageId.randomMessageId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(MockitoExtension.class)
 class MessageIdTest {
     @Nested
-    class Constructor {
+    class of {
         @Test
         void shouldThrowExceptionOnInvalidId() {
             assertThrows(IllegalArgumentException.class, () -> MessageId.of("412176952b"));
@@ -49,6 +53,7 @@ class MessageIdTest {
 
     @Nested
     class Equals {
+        @SuppressWarnings("java:S2701")
         @Test
         void shouldRecognizeEqualPairs() {
             final MessageId idA = MessageId.of("412176952b5b81fd13f84a7c");
@@ -103,11 +108,6 @@ class MessageIdTest {
 
     @Nested
     class IsValidMessageId {
-        @Test
-        void shouldReturnFalseForNullString() {
-            assertFalse(isValidMessageId(null));
-        }
-
         @Test
         void shouldReturnFalseForIdWithWrongLength() {
             assertFalse(isValidMessageId(new byte[]{ 0, 0, 1 }));
