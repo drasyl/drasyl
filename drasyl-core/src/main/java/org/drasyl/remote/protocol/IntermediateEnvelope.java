@@ -505,7 +505,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                     publicHeader.writeDelimitedTo(outputStream);
                 }
 
-                this.message = ByteBufUtil.appendFirst(message, publicHeaderByteBuf);
+                this.message = ByteBufUtil.prepend(message, publicHeaderByteBuf);
             }
         }
     }

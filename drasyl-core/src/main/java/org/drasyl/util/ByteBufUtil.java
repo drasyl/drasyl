@@ -22,21 +22,28 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 
-public class ByteBufUtil {
+/**
+ * Utility class for operations on {@link ByteBuf}s.
+ */
+public final class ByteBufUtil {
     private ByteBufUtil() {
         // util class
     }
 
     /**
-     * Appends the given {@code element} at the start of the {@code byteBuf} and moves all readable
-     * bytes accordingly.
+     * Prepends the given {@code elements} at the start of the {@code byteBuf} and moves all
+     * readable bytes accordingly.
      *
-     * @param byteBuf the byteBuf to insert the element
-     * @param element the element to insert
+     * @param byteBuf  the byteBuf to append the elements
+     * @param elements the elemens to append
      * @return the composed {@code ByteBuf}
      */
-    public static CompositeByteBuf appendFirst(final ByteBuf byteBuf,
-                                               final ByteBuf element) {
-        return Unpooled.compositeBuffer(2).addComponents(true, element, byteBuf.slice());
+    public static CompositeByteBuf prepend(final ByteBuf byteBuf,
+                                           final ByteBuf... elements) {
+        final ByteBuf[] buffers = new ByteBuf[elements.length + 1];
+        System.arraycopy(elements, 0, buffers, 0, elements.length);
+        buffers[elements.length] = byteBuf;
+
+        return Unpooled.compositeBuffer(elements.length + 1).addComponents(true, buffers);
     }
 }
