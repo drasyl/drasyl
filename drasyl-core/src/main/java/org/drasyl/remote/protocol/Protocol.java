@@ -146,7 +146,7 @@ public final class Protocol {
 
     /**
      * <pre>
-     * 12 bytes fix
+     * 8 bytes fix
      * </pre>
      *
      * <code>bytes id = 1;</code>
@@ -383,7 +383,7 @@ public final class Protocol {
     private com.google.protobuf.ByteString id_;
     /**
      * <pre>
-     * 12 bytes fix
+     * 8 bytes fix
      * </pre>
      *
      * <code>bytes id = 1;</code>
@@ -987,7 +987,7 @@ public final class Protocol {
       private com.google.protobuf.ByteString id_ = com.google.protobuf.ByteString.EMPTY;
       /**
        * <pre>
-       * 12 bytes fix
+       * 8 bytes fix
        * </pre>
        *
        * <code>bytes id = 1;</code>
@@ -999,7 +999,7 @@ public final class Protocol {
       }
       /**
        * <pre>
-       * 12 bytes fix
+       * 8 bytes fix
        * </pre>
        *
        * <code>bytes id = 1;</code>
@@ -1017,7 +1017,7 @@ public final class Protocol {
       }
       /**
        * <pre>
-       * 12 bytes fix
+       * 8 bytes fix
        * </pre>
        *
        * <code>bytes id = 1;</code>

@@ -81,7 +81,7 @@ class IntermediateEnvelopeTest {
         senderPrivateKey = CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d");
         recipientPublicKey = CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
         recipientPrivateKey = CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34");
-        messageId = MessageId.of("412176952b5b81fd13f84a7c");
+        messageId = MessageId.of("412176952b5b81fd");
         senderProofOfWork = ProofOfWork.of(6657650);
         publicHeader = PublicHeader.newBuilder()
                 .setId(ByteString.copyFrom(messageId.byteArrayValue()))

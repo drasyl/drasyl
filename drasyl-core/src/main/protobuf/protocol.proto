@@ -3,7 +3,7 @@ syntax = "proto3";
 package org.drasyl.remote.protocol;
 
 message PublicHeader {
-    bytes id = 1; // 12 bytes fix
+    bytes id = 1; // 8 bytes fix
     bytes userAgent = 2; // 2 bytes fix
     int32 networkId = 3; // 4 bytes
     bytes sender = 4; // 33 bytes fix

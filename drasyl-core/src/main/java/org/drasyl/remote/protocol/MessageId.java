@@ -32,7 +32,7 @@ import java.util.Arrays;
  * This is an immutable object.
  */
 public final class MessageId {
-    public static final int MESSAGE_ID_LENGTH = 12;
+    public static final int MESSAGE_ID_LENGTH = 8;
     private final byte[] id;
 
     private MessageId(@NonNull final byte[] id) {

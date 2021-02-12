@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(MockitoExtension.class)
 class MessageIdTest {
     @Nested
-    class of {
+    class Of {
         @Test
         void shouldThrowExceptionOnInvalidId() {
             assertThrows(IllegalArgumentException.class, () -> MessageId.of("412176952b"));
@@ -47,7 +47,7 @@ class MessageIdTest {
 
         @Test
         void shouldCreateObjectOnValidId() {
-            assertNotNull(MessageId.of("412176952b5b81fd13f84a7c"));
+            assertNotNull(MessageId.of("412176952b5b81fd"));
         }
     }
 
@@ -56,9 +56,9 @@ class MessageIdTest {
         @SuppressWarnings("java:S2701")
         @Test
         void shouldRecognizeEqualPairs() {
-            final MessageId idA = MessageId.of("412176952b5b81fd13f84a7c");
-            final MessageId idB = MessageId.of("412176952b5b81fd13f84a7c");
-            final MessageId idC = MessageId.of("78c36c82b8d11c7217a011b3");
+            final MessageId idA = MessageId.of("412176952b5b81fd");
+            final MessageId idB = MessageId.of("412176952b5b81fd");
+            final MessageId idC = MessageId.of("78c36c82b8d11c72");
 
             assertEquals(idA, idA);
             assertEquals(idA, idB);
@@ -73,9 +73,9 @@ class MessageIdTest {
     class HashCode {
         @Test
         void shouldRecognizeEqualPairs() {
-            final MessageId idA = MessageId.of("412176952b5b81fd13f84a7c");
-            final MessageId idB = MessageId.of("412176952b5b81fd13f84a7c");
-            final MessageId idC = MessageId.of("78c36c82b8d11c7217a011b3");
+            final MessageId idA = MessageId.of("412176952b5b81fd");
+            final MessageId idB = MessageId.of("412176952b5b81fd");
+            final MessageId idC = MessageId.of("78c36c82b8d11c72");
 
             assertEquals(idA.hashCode(), idB.hashCode());
             assertNotEquals(idA.hashCode(), idC.hashCode());
@@ -87,9 +87,9 @@ class MessageIdTest {
     class ToString {
         @Test
         void shouldReturnCorrectString() {
-            final String string = MessageId.of("412176952b5b81fd13f84a7c").toString();
+            final String string = MessageId.of("412176952b5b81fd").toString();
 
-            assertEquals("412176952b5b81fd13f84a7c", string);
+            assertEquals("412176952b5b81fd", string);
         }
     }
 
@@ -115,7 +115,7 @@ class MessageIdTest {
 
         @Test
         void shouldReturnTrueForValidString() {
-            assertTrue(isValidMessageId(MessageId.of("f3d0aee7962de47a849bd7b0").byteArrayValue()));
+            assertTrue(isValidMessageId(MessageId.of("f3d0aee7962de47a").byteArrayValue()));
         }
     }
 }

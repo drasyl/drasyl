@@ -43,7 +43,7 @@ import java.io.IOException;
 
 @ExtendWith(MockitoExtension.class)
 class ByteBuf2MessageHandlerTest {
-    private final MessageId correspondingId = MessageId.of("412176952b5b81fd13f84a7c");
+    private final MessageId correspondingId = MessageId.of("412176952b5b81fd");
     @Mock
     private DrasylConfig config;
     @Mock
