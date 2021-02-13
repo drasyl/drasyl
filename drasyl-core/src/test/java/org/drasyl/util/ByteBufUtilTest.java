@@ -31,9 +31,7 @@ class ByteBufUtilTest {
                     9
             }, io.netty.buffer.ByteBufUtil.getBytes(result));
 
-            byteBufA.release();
-            byteBufB.release();
-            byteBufC.release();
+            result.release();
         }
     }
 }

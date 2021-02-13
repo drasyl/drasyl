@@ -33,16 +33,19 @@ public final class ByteBufUtil {
     /**
      * Prepends the given {@code elements} at the start of the {@code byteBuf} and moves all
      * readable bytes accordingly.
+     * <p>
+     * Note: {@link ByteBuf#release()} ownership of all {@link ByteBuf} objects in {@code elements}
+     * is transferred to this {@link CompositeByteBuf}.
      *
      * @param byteBuf  the byteBuf to append the elements
-     * @param elements the elemens to append
+     * @param elements the elements to append
      * @return the composed {@code ByteBuf}
      */
     public static CompositeByteBuf prepend(final ByteBuf byteBuf,
                                            final ByteBuf... elements) {
         final ByteBuf[] buffers = new ByteBuf[elements.length + 1];
         System.arraycopy(elements, 0, buffers, 0, elements.length);
-        buffers[elements.length] = byteBuf;
+        buffers[elements.length] = byteBuf.slice();
 
         return Unpooled.compositeBuffer(elements.length + 1).addComponents(true, buffers);
     }
