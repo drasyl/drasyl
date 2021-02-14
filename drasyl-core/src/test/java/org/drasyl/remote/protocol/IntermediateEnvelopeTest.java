@@ -45,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
@@ -102,6 +103,7 @@ class IntermediateEnvelopeTest {
 
         message = Unpooled.buffer();
         final ByteBufOutputStream outputStream = new ByteBufOutputStream(message);
+        outputStream.write(IntermediateEnvelope.magicNumber());
         publicHeader.writeDelimitedTo(outputStream);
         publicHeaderLength = outputStream.writtenBytes();
         privateHeader.writeDelimitedTo(outputStream);
@@ -473,7 +475,7 @@ class IntermediateEnvelopeTest {
         void shouldIncrementIfMessageIsPresentOnlyInByteBuf() throws IOException {
             IntermediateEnvelope<Application> envelope = null;
             try {
-                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("600a0c9e5457c123bfd9d2b10c0d44120200012221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22288eee8d033221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42")));
+                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f50015c0a085672b26b94d530ef120200002221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42")));
                 envelope = new IntermediateEnvelope<>(message, null, null, null);
 
                 envelope.incrementHopCount();
@@ -492,7 +494,7 @@ class IntermediateEnvelopeTest {
         void shouldIncrementIfMessageIsPresentInByteBufAndEnvelope() throws IOException {
             IntermediateEnvelope<Application> envelope = null;
             try {
-                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("600a0c9e5457c123bfd9d2b10c0d44120200012221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22288eee8d033221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42")));
+                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f50015c0a085672b26b94d530ef120200002221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42")));
                 final PublicHeader publicHeader = IntermediateEnvelope.buildPublicHeader(0, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
                 final PrivateHeader privateHeader = PrivateHeader.newBuilder()
                         .setType(APPLICATION)
@@ -707,6 +709,18 @@ class IntermediateEnvelopeTest {
             assertEquals(1, unite.getPublicHeader().getNetworkId());
             assertEquals(UNITE, unite.getPrivateHeader().getType());
             assertEquals(ByteString.copyFrom(senderPublicKey.byteArrayValue()), unite.getBodyAndRelease().getPublicKey());
+        }
+    }
+
+    @Nested
+    class TestMagicNumber {
+        @Test
+        void shouldBeTheCorrectMagicNumber() {
+            final int magicNumber = (int) Math.pow(22527, 2);
+            final byte[] expectedMagicNumber = ByteBuffer.allocate(4).putInt(magicNumber).array();
+
+            assertArrayEquals(expectedMagicNumber, IntermediateEnvelope.magicNumber());
+            assertEquals(magicNumber, ByteBuffer.wrap(IntermediateEnvelope.magicNumber()).getInt());
         }
     }
 }
