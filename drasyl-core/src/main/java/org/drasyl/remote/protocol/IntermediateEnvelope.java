@@ -402,7 +402,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      */
     public MessageId getId() {
         try {
-            return MessageId.of(getPublicHeader().getId().toByteArray());
+            return MessageId.of(getPublicHeader().getId());
         }
         catch (final IOException e) {
             throw new IllegalArgumentException(e);
@@ -462,9 +462,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      */
     public byte getHopCount() {
         try {
-            return getPublicHeader().getHopCount().byteAt(0);
+            return (byte) (getPublicHeader().getHopCount() - 1);
         }
-        catch (final IOException | IndexOutOfBoundsException e) {
+        catch (final IOException e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -475,16 +475,14 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     public void incrementHopCount() throws IOException {
         synchronized (this) {
             final PublicHeader existingPublicHeader = getPublicHeader();
-            final byte newHopCount = (byte) (existingPublicHeader.getHopCount().byteAt(0) + 1);
+            final byte newHopCount = (byte) (existingPublicHeader.getHopCount() + 1);
 
             if (newHopCount == 0) {
                 throw new IllegalStateException("hop count overflow");
             }
 
             this.publicHeader = PublicHeader.newBuilder(existingPublicHeader)
-                    .setHopCount(ByteString.copyFrom(new byte[]{
-                            newHopCount
-                    }))
+                    .setHopCount(newHopCount)
                     .build();
 
             if (message != null) {
@@ -724,7 +722,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                 PrivateHeader.newBuilder()
                         .setType(ACKNOWLEDGEMENT)
                         .build(), Acknowledgement.newBuilder()
-                        .setCorrespondingId(ByteString.copyFrom(correspondingId.byteArrayValue()))
+                        .setCorrespondingId(correspondingId.longValue())
                         .build()
         );
     }
@@ -734,12 +732,12 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                                                    final ProofOfWork proofOfWork,
                                                    final CompressedPublicKey recipient) {
         return PublicHeader.newBuilder()
-                .setId(ByteString.copyFrom(randomMessageId().byteArrayValue()))
+                .setId(randomMessageId().longValue())
                 .setNetworkId(networkId)
                 .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                 .setProofOfWork(proofOfWork.intValue())
                 .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
-                .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
+                .setHopCount(1)
                 .build();
     }
 
@@ -820,7 +818,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @throws IOException if the public header cannot be read
      */
     public boolean isChunk() throws IOException {
-        return !getPublicHeader().getTotalChunks().isEmpty() || !getPublicHeader().getChunkNo().isEmpty();
+        return getPublicHeader().getTotalChunks() > 0 || getPublicHeader().getChunkNo() > 0;
     }
 
     /**
@@ -830,13 +828,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @throws IOException if the public header cannot be read
      */
     public UnsignedShort getChunkNo() throws IOException {
-        final ByteString chunkNo = getPublicHeader().getChunkNo();
-        if (!chunkNo.isEmpty()) {
-            return UnsignedShort.of(chunkNo.toByteArray());
-        }
-        else {
-            return UnsignedShort.of(0);
-        }
+        return UnsignedShort.of(getPublicHeader().getChunkNo());
     }
 
     /**
@@ -846,13 +838,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @throws IOException if the public header cannot be read
      */
     public UnsignedShort getTotalChunks() throws IOException {
-        final ByteString totalChunks = getPublicHeader().getTotalChunks();
-        if (!totalChunks.isEmpty()) {
-            return UnsignedShort.of(totalChunks.toByteArray());
-        }
-        else {
-            return UnsignedShort.of(0);
-        }
+        return UnsignedShort.of(getPublicHeader().getTotalChunks());
     }
 
     public static byte[] magicNumber() {

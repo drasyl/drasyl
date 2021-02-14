@@ -394,7 +394,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                             final AddressedIntermediateEnvelope<Discovery> envelope,
                             final CompletableFuture<Void> future) throws IOException {
         final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getContent().getPublicHeader().getSender().toByteArray()));
-        final MessageId id = requireNonNull(MessageId.of(envelope.getContent().getPublicHeader().getId().toByteArray()));
+        final MessageId id = requireNonNull(MessageId.of(envelope.getContent().getPublicHeader().getId()));
         final Discovery body = envelope.getContent().getBodyAndRelease();
         final boolean childrenJoin = body.getChildrenTime() > 0;
         LOG.trace("Got {} from {}", envelope.getContent(), envelope.getSender());
@@ -425,7 +425,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                             final AddressedIntermediateEnvelope<Acknowledgement> envelope,
                             final CompletableFuture<Void> future) throws IOException {
         final Acknowledgement body = envelope.getContent().getBodyAndRelease();
-        final MessageId correspondingId = requireNonNull(MessageId.of(body.getCorrespondingId().toByteArray()));
+        final MessageId correspondingId = requireNonNull(MessageId.of(body.getCorrespondingId()));
         final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getContent().getPublicHeader().getSender().toByteArray()));
         LOG.trace("Got {} from {}", envelope.getContent(), envelope.getSender());
         final OpenPing openPing = openPingsCache.remove(correspondingId);

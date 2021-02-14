@@ -18,17 +18,14 @@
  */
 package org.drasyl.remote.protocol;
 
-import org.drasyl.crypto.Crypto;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.nio.charset.StandardCharsets;
-
-import static org.drasyl.remote.protocol.MessageId.MESSAGE_ID_LENGTH;
 import static org.drasyl.remote.protocol.MessageId.isValidMessageId;
 import static org.drasyl.remote.protocol.MessageId.randomMessageId;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -46,8 +43,27 @@ class MessageIdTest {
         }
 
         @Test
-        void shouldCreateObjectOnValidId() {
-            assertNotNull(MessageId.of("412176952b5b81fd"));
+        void shouldCreateCorrectIdFromString() {
+            assertEquals("412176952b5b81fd", MessageId.of("412176952b5b81fd").toString());
+        }
+
+        @Test
+        void shouldCreateValidIdFromBytes() {
+            assertEquals(MessageId.of("412176952b5b81fd"), MessageId.of(new byte[]{
+                    65,
+                    33,
+                    118,
+                    -107,
+                    43,
+                    91,
+                    -127,
+                    -3
+            }));
+        }
+
+        @Test
+        void shouldCreateValidIdFromLong() {
+            assertEquals(MessageId.of("412176952b5b81fd"), MessageId.of(4693162669746389501L));
         }
     }
 
@@ -116,6 +132,31 @@ class MessageIdTest {
         @Test
         void shouldReturnTrueForValidString() {
             assertTrue(isValidMessageId(MessageId.of("f3d0aee7962de47a").byteArrayValue()));
+        }
+    }
+
+    @Nested
+    class ByteArrayValue {
+        @Test
+        void shouldReturnCorrectBytes() {
+            assertArrayEquals(new byte[]{
+                    65,
+                    33,
+                    118,
+                    -107,
+                    43,
+                    91,
+                    -127,
+                    -3
+            }, MessageId.of("412176952b5b81fd").byteArrayValue());
+        }
+    }
+
+    @Nested
+    class LongValue {
+        @Test
+        void shouldReturnCorrectBytes() {
+            assertEquals(4693162669746389501L, MessageId.of("412176952b5b81fd").longValue());
         }
     }
 }

@@ -85,12 +85,12 @@ class IntermediateEnvelopeTest {
         messageId = MessageId.of("412176952b5b81fd");
         senderProofOfWork = ProofOfWork.of(6657650);
         publicHeader = PublicHeader.newBuilder()
-                .setId(ByteString.copyFrom(messageId.byteArrayValue()))
+                .setId(messageId.longValue())
                 .setNetworkId(1)
                 .setSender(ByteString.copyFrom(senderPublicKey.byteArrayValue()))
                 .setProofOfWork(senderProofOfWork.intValue())
                 .setRecipient(ByteString.copyFrom(recipientPublicKey.byteArrayValue()))
-                .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
+                .setHopCount(1)
                 .build();
 
         privateHeader = PrivateHeader.newBuilder()
@@ -446,12 +446,12 @@ class IntermediateEnvelopeTest {
         void shouldIncrementIfMessageIsPresentOnlyInByteBuf() throws IOException {
             IntermediateEnvelope<Application> envelope = null;
             try {
-                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f50015c0a085672b26b94d530ef120200002221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42")));
+                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
                 envelope = new IntermediateEnvelope<>(message, null, null, null);
 
                 envelope.incrementHopCount();
 
-                assertEquals(1, envelope.getPublicHeader().getHopCount().byteAt(0));
+                assertEquals(1, envelope.getHopCount());
                 assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
             }
             finally {
@@ -465,8 +465,8 @@ class IntermediateEnvelopeTest {
         void shouldIncrementIfMessageIsPresentInByteBufAndEnvelope() throws IOException {
             IntermediateEnvelope<Application> envelope = null;
             try {
-                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f50015c0a085672b26b94d530ef120200002221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42")));
-                final PublicHeader publicHeader = IntermediateEnvelope.buildPublicHeader(0, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
+                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
+                final PublicHeader publicHeader = IntermediateEnvelope.buildPublicHeader(0, CompressedPublicKey.of("1e3f50015609fc450176d19fd6192221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f2238021e3f50015c0a085672b26b94d530ef120200002221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
                 final PrivateHeader privateHeader = PrivateHeader.newBuilder()
                         .setType(APPLICATION)
                         .build();
@@ -478,7 +478,7 @@ class IntermediateEnvelopeTest {
 
                 envelope.incrementHopCount();
 
-                assertEquals(1, envelope.getPublicHeader().getHopCount().byteAt(0));
+                assertEquals(1, envelope.getHopCount());
                 assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
             }
             finally {
@@ -503,7 +503,7 @@ class IntermediateEnvelopeTest {
 
             envelope.incrementHopCount();
 
-            assertEquals(1, envelope.getPublicHeader().getHopCount().byteAt(0));
+            assertEquals(1, envelope.getHopCount());
             assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
             envelope.releaseAll();
         }
@@ -643,7 +643,7 @@ class IntermediateEnvelopeTest {
 
             assertEquals(1, acknowledgement.getPublicHeader().getNetworkId());
             assertEquals(ACKNOWLEDGEMENT, acknowledgement.getPrivateHeader().getType());
-            assertEquals(ByteString.copyFrom(messageId.byteArrayValue()), acknowledgement.getBodyAndRelease().getCorrespondingId());
+            assertEquals(messageId.longValue(), acknowledgement.getBodyAndRelease().getCorrespondingId());
         }
     }
 
