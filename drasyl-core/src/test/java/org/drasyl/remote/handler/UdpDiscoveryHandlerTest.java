@@ -207,7 +207,7 @@ class UdpDiscoveryHandlerTest {
 
             when(identity.getPublicKey()).thenReturn(recipient);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address, false))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
+            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
 
             pipeline.processInbound(address, addressedAcknowledgementMessage).join();
@@ -228,8 +228,9 @@ class UdpDiscoveryHandlerTest {
 
             when(peer.getAddress()).thenReturn(new InetSocketAddressWrapper(22527));
             when(identity.getPublicKey()).thenReturn(recipient);
+            when(config.getRemoteSuperPeerEndpoint().getPublicKey()).thenReturn(sender);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address, true))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
+            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
 
             pipeline.processInbound(address, addressedAcknowledgementMessage).join();
@@ -658,23 +659,23 @@ class UdpDiscoveryHandlerTest {
         }
 
         @Nested
-        class Getter {
+        class GetAddress {
             @Test
-            void shouldReturnCorrectValues() {
-                final OpenPing ping = new OpenPing(address, true);
+            void shouldReturnAddress() {
+                final OpenPing ping = new OpenPing(address);
 
                 assertEquals(address, ping.getAddress());
-                assertTrue(ping.isChildrenJoin());
             }
         }
 
         @Nested
         class Equals {
+            @SuppressWarnings("java:S2701")
             @Test
             void shouldRecognizeEqualPairs() {
-                final OpenPing pingA = new OpenPing(address, true);
-                final OpenPing pingB = new OpenPing(address, true);
-                final OpenPing pingC = new OpenPing(address, false);
+                final OpenPing pingA = new OpenPing(address);
+                final OpenPing pingB = new OpenPing(address);
+                final OpenPing pingC = new OpenPing(new InetSocketAddressWrapper(25421));
 
                 assertEquals(pingA, pingA);
                 assertEquals(pingA, pingB);
@@ -689,9 +690,9 @@ class UdpDiscoveryHandlerTest {
         class HashCode {
             @Test
             void shouldRecognizeEqualPairs() {
-                final OpenPing pingA = new OpenPing(address, true);
-                final OpenPing pingB = new OpenPing(address, true);
-                final OpenPing pingC = new OpenPing(address, false);
+                final OpenPing pingA = new OpenPing(address);
+                final OpenPing pingB = new OpenPing(address);
+                final OpenPing pingC = new OpenPing(new InetSocketAddressWrapper(25421));
 
                 assertEquals(pingA.hashCode(), pingB.hashCode());
                 assertNotEquals(pingA.hashCode(), pingC.hashCode());
@@ -701,7 +702,7 @@ class UdpDiscoveryHandlerTest {
 
         @Test
         void toStringShouldReturnString() {
-            final OpenPing ping = new OpenPing(address, true);
+            final OpenPing ping = new OpenPing(address);
 
             assertNotNull(ping.toString());
         }
