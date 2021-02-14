@@ -86,7 +86,6 @@ class IntermediateEnvelopeTest {
         senderProofOfWork = ProofOfWork.of(6657650);
         publicHeader = PublicHeader.newBuilder()
                 .setId(ByteString.copyFrom(messageId.byteArrayValue()))
-                .setUserAgent(ByteString.copyFrom(UserAgent.generate().getVersion().toBytes()))
                 .setNetworkId(1)
                 .setSender(ByteString.copyFrom(senderPublicKey.byteArrayValue()))
                 .setProofOfWork(senderProofOfWork.intValue())
@@ -306,34 +305,6 @@ class IntermediateEnvelopeTest {
                 when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
                 assertThrows(IllegalArgumentException.class, envelope::getId);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
-        }
-    }
-
-    @Nested
-    class GetUserAgent {
-        @Test
-        void shouldReturnUserAgent() {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
-
-                assertEquals(UserAgent.generate(), envelope.getUserAgent());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
-        }
-
-        @Test
-        void shouldThrowIllegalArgumentExceptionOnError() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
-                when(envelope.getPublicHeader()).thenThrow(IOException.class);
-
-                assertThrows(IllegalArgumentException.class, envelope::getUserAgent);
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);

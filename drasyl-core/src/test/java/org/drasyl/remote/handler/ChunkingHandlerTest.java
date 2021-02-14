@@ -40,7 +40,6 @@ import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
-import org.drasyl.remote.protocol.UserAgent;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
 import org.drasyl.util.UnsignedShort;
@@ -111,7 +110,6 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final MessageId messageId = randomMessageId();
-                final UserAgent userAgent = UserAgent.generate();
                 when(identity.getPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
@@ -121,7 +119,6 @@ class ChunkingHandlerTest {
                 // head chunk
                 final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                         .setId(ByteString.copyFrom(messageId.byteArrayValue()))
-                        .setUserAgent(ByteString.copyFrom(userAgent.getVersion().toBytes()))
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
                         .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
@@ -149,7 +146,6 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final MessageId messageId = randomMessageId();
-                final UserAgent userAgent = UserAgent.generate();
                 when(identity.getPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
@@ -160,7 +156,6 @@ class ChunkingHandlerTest {
                 // normal chunk
                 final PublicHeader chunkHeader = PublicHeader.newBuilder()
                         .setId(ByteString.copyFrom(messageId.byteArrayValue()))
-                        .setUserAgent(ByteString.copyFrom(userAgent.getVersion().toBytes()))
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
                         .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
@@ -177,7 +172,6 @@ class ChunkingHandlerTest {
                 // head chunk
                 final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                         .setId(ByteString.copyFrom(messageId.byteArrayValue()))
-                        .setUserAgent(ByteString.copyFrom(userAgent.getVersion().toBytes()))
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
                         .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
@@ -213,7 +207,6 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final MessageId messageId = randomMessageId();
-                final UserAgent userAgent = UserAgent.generate();
                 when(identity.getPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
@@ -223,7 +216,6 @@ class ChunkingHandlerTest {
                 // head chunk
                 final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                         .setId(ByteString.copyFrom(messageId.byteArrayValue()))
-                        .setUserAgent(ByteString.copyFrom(userAgent.getVersion().toBytes()))
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
                         .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
@@ -235,7 +227,6 @@ class ChunkingHandlerTest {
                 // normal chunk
                 final PublicHeader chunkHeader = PublicHeader.newBuilder()
                         .setId(ByteString.copyFrom(messageId.byteArrayValue()))
-                        .setUserAgent(ByteString.copyFrom(userAgent.getVersion().toBytes()))
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
                         .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
@@ -287,7 +278,6 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final MessageId messageId = randomMessageId();
-                final UserAgent userAgent = UserAgent.generate();
                 when(identity.getPublicKey()).thenReturn(sender);
 
                 final Handler handler = new ChunkingHandler();
@@ -297,7 +287,6 @@ class ChunkingHandlerTest {
 
                 final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                         .setId(ByteString.copyFrom(messageId.byteArrayValue()))
-                        .setUserAgent(ByteString.copyFrom(userAgent.getVersion().toBytes()))
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
                         .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))

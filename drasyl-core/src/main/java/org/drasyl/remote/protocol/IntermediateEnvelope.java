@@ -410,18 +410,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     }
 
     /**
-     * @throws IllegalArgumentException if user agent could not be read
-     */
-    public UserAgent getUserAgent() {
-        try {
-            return new UserAgent(getPublicHeader().getUserAgent().toByteArray());
-        }
-        catch (final IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    /**
      * @throws IllegalArgumentException if network id could not be read
      */
     public int getNetworkId() {
@@ -747,7 +735,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                                                    final CompressedPublicKey recipient) {
         return PublicHeader.newBuilder()
                 .setId(ByteString.copyFrom(randomMessageId().byteArrayValue()))
-                .setUserAgent(ByteString.copyFrom(UserAgent.generate().getVersion().toBytes()))
                 .setNetworkId(networkId)
                 .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                 .setProofOfWork(proofOfWork.intValue())

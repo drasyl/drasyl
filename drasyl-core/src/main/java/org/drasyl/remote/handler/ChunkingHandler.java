@@ -173,7 +173,6 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
 
             final PublicHeader partialChunkHeader = PublicHeader.newBuilder()
                     .setId(msgPublicHeader.getId())
-                    .setUserAgent(msgPublicHeader.getUserAgent())
                     .setSender(msgPublicHeader.getSender())
                     .setRecipient(msgPublicHeader.getRecipient())
                     .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
