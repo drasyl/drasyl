@@ -46,6 +46,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.remote.protocol.IntermediateEnvelope.MAGIC_NUMBER_LENGTH;
+
 /**
  * This handler is responsible for merging incoming message chunks into a single message as well as
  * splitting outgoing too large messages into chunks.
@@ -171,7 +173,6 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
 
             final PublicHeader partialChunkHeader = PublicHeader.newBuilder()
                     .setId(msgPublicHeader.getId())
-                    .setUserAgent(msgPublicHeader.getUserAgent())
                     .setSender(msgPublicHeader.getSender())
                     .setRecipient(msgPublicHeader.getRecipient())
                     .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
@@ -189,6 +190,8 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                 ByteBuf chunkBodyByteBuf = null;
                 final ByteBuf chunkByteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(chunkByteBuf)) {
+                    outputStream.write(IntermediateEnvelope.magicNumber());
+
                     // chunk header
                     final PublicHeader chunkHeader = buildChunkHeader(totalChunks, partialChunkHeader, chunkNo);
                     chunkHeader.writeDelimitedTo(outputStream);
@@ -266,6 +269,6 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
     private int getChunkSize(final PublicHeader header, final int mtu) {
         final int headerSize = header.getSerializedSize();
 
-        return mtu - (CodedOutputStream.computeUInt32SizeNoTag(headerSize) + headerSize);
+        return mtu - (MAGIC_NUMBER_LENGTH + CodedOutputStream.computeUInt32SizeNoTag(headerSize) + headerSize);
     }
 }

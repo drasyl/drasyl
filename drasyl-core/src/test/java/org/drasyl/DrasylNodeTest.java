@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -259,14 +258,6 @@ class DrasylNodeTest {
         @Test
         void shouldNotReturnNull() {
             assertNotNull(DrasylNode.getVersion());
-        }
-    }
-
-    @Nested
-    class GetProtocol {
-        @Test
-        void shouldNotReturnNull() {
-            assertNotEquals(-1, DrasylNode.getProtocolVersion());
         }
     }
 }

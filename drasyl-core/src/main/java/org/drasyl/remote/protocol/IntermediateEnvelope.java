@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -49,6 +50,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.security.PublicKey;
+import java.util.Arrays;
 
 import static org.drasyl.remote.protocol.MessageId.randomMessageId;
 import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
@@ -62,6 +64,8 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
  * translated into a Java object.
  */
 public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCounted {
+    private static final byte[] MAGIC_NUMBER = new byte[]{ 0x1E, 0x3F, 0x50, 0x01 };
+    public static final short MAGIC_NUMBER_LENGTH = 4;
     private ByteBuf message;
     private PublicHeader publicHeader;
     private PrivateHeader privateHeader;
@@ -155,17 +159,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      */
     public static <T extends MessageLite> IntermediateEnvelope<T> of(final PublicHeader publicHeader,
                                                                      final byte[] bytes) throws IOException {
-        final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-        try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
-            publicHeader.writeDelimitedTo(outputStream);
-            outputStream.write(bytes);
-
-            return of(byteBuf);
-        }
-        catch (final IllegalStateException e) {
-            ReferenceCountUtil.safeRelease(byteBuf);
-            throw e;
-        }
+        return of(publicHeader, Unpooled.wrappedBuffer(bytes));
     }
 
     /**
@@ -185,6 +179,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                                                                      final ByteBuf bytes) throws IOException {
         final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
+            outputStream.write(MAGIC_NUMBER);
             publicHeader.writeDelimitedTo(outputStream);
             byteBuf.writeBytes(bytes);
 
@@ -210,6 +205,12 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         synchronized (this) {
             if (publicHeader == null) {
                 try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
+                    final byte[] magicNumber = in.readNBytes(4);
+
+                    if (!Arrays.equals(MAGIC_NUMBER, magicNumber)) {
+                        throw new IllegalStateException("Magic Number mismatch!");
+                    }
+
                     publicHeader = PublicHeader.parseDelimitedFrom(in);
                 }
                 catch (final IOException e) {
@@ -409,18 +410,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     }
 
     /**
-     * @throws IllegalArgumentException if user agent could not be read
-     */
-    public UserAgent getUserAgent() {
-        try {
-            return new UserAgent(getPublicHeader().getUserAgent().toByteArray());
-        }
-        catch (final IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    /**
      * @throws IllegalArgumentException if network id could not be read
      */
     public int getNetworkId() {
@@ -505,7 +494,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                     publicHeader.writeDelimitedTo(outputStream);
                 }
 
-                this.message = ByteBufUtil.prepend(message, publicHeaderByteBuf);
+                this.message = ByteBufUtil.prepend(message, Unpooled.copiedBuffer(MAGIC_NUMBER), publicHeaderByteBuf);
             }
         }
     }
@@ -703,6 +692,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
 
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
+            outputStream.write(MAGIC_NUMBER);
             publicHeader.writeDelimitedTo(outputStream);
             privateHeader.writeDelimitedTo(outputStream);
             body.writeDelimitedTo(outputStream);
@@ -745,7 +735,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                                                    final CompressedPublicKey recipient) {
         return PublicHeader.newBuilder()
                 .setId(ByteString.copyFrom(randomMessageId().byteArrayValue()))
-                .setUserAgent(ByteString.copyFrom(UserAgent.generate().getVersion().toBytes()))
                 .setNetworkId(networkId)
                 .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                 .setProofOfWork(proofOfWork.intValue())
@@ -864,5 +853,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         else {
             return UnsignedShort.of(0);
         }
+    }
+
+    public static byte[] magicNumber() {
+        return MAGIC_NUMBER.clone();
     }
 }
