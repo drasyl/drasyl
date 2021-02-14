@@ -488,7 +488,7 @@ class UdpDiscoveryHandlerTest {
                 final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
 
                 when(superPeerPeer.getAddress()).thenReturn(superPeerSocketAddress);
-                when(peersManager.getSuperPeerKey()).thenReturn(recipient);
+                when(peersManager.getSuperPeer()).thenReturn(recipient);
                 when(identity.getPublicKey()).thenReturn(recipient);
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers);

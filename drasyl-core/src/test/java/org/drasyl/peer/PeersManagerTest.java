@@ -113,10 +113,10 @@ class PeersManagerTest {
     }
 
     @Nested
-    class GetSuperPeerKey {
+    class GetSuperPeer {
         @Test
         void shouldReturnSuperKey() {
-            assertEquals(superPeer, underTest.getSuperPeerKey());
+            assertEquals(superPeer, underTest.getSuperPeer());
         }
 
         @AfterEach
@@ -183,33 +183,6 @@ class PeersManagerTest {
     }
 
     @Nested
-    class UnsetSuperPeer {
-        @Test
-        void shouldUnsetSuperPeer() {
-            peers.add(superPeer);
-
-            underTest.unsetSuperPeer();
-
-            assertNull(underTest.getSuperPeerKey());
-        }
-
-        @Test
-        void shouldEmitNodeOfflineEvent() {
-            peers.add(superPeer);
-
-            underTest.unsetSuperPeer();
-
-            verify(eventConsumer).accept(new NodeOfflineEvent(Node.of(identity)));
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.writeLock()).lock();
-            verify(lock.writeLock()).unlock();
-        }
-    }
-
-    @Nested
     class UnsetSuperPeerAndRemovePath {
         @Test
         void shouldUnsetSuperPeerAndRemovePath(@Mock final Object path) {
@@ -217,7 +190,7 @@ class PeersManagerTest {
 
             underTest.unsetSuperPeerAndRemovePath(path);
 
-            assertNull(underTest.getSuperPeerKey());
+            assertNull(underTest.getSuperPeer());
         }
 
         @Test
@@ -246,7 +219,7 @@ class PeersManagerTest {
     class AddPathAndSetSuperPeer {
         @BeforeEach
         void setUp() {
-            underTest.unsetSuperPeer();
+            underTest.unsetSuperPeerAndRemovePath(new Object());
         }
 
         @Test
@@ -254,7 +227,7 @@ class PeersManagerTest {
                                           @Mock final Object path) {
             underTest.addPathAndSetSuperPeer(publicKey, path);
 
-            final CompressedPublicKey superPeerKey = underTest.getSuperPeerKey();
+            final CompressedPublicKey superPeerKey = underTest.getSuperPeer();
             assertEquals(publicKey, superPeerKey);
         }
 

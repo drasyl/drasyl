@@ -260,7 +260,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                                 final IntermediateEnvelope<? extends MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         final Peer recipientPeer = peers.get(recipient);
-        final CompressedPublicKey superPeerKey = ctx.peersManager().getSuperPeerKey();
+        final CompressedPublicKey superPeerKey = ctx.peersManager().getSuperPeer();
         final Peer superPeerPeer;
         if (superPeerKey != null) {
             superPeerPeer = peers.get(superPeerKey);

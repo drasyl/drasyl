@@ -125,7 +125,7 @@ public class PeersManager {
      * @return public key  of Super Peer. If no Super Peer is defined, then
      * <code>null</code> is returned
      */
-    public CompressedPublicKey getSuperPeerKey() {
+    public CompressedPublicKey getSuperPeer() {
         try {
             lock.readLock().lock();
 
@@ -205,21 +205,6 @@ public class PeersManager {
                     peers.contains(publicKey),
                     SetUtil.difference(paths.get(publicKey), path)
             );
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public void unsetSuperPeer() {
-        try {
-            lock.writeLock().lock();
-
-            if (superPeer != null) {
-                eventConsumer.accept(new NodeOfflineEvent(Node.of(identity)));
-
-                superPeer = null;
-            }
         }
         finally {
             lock.writeLock().unlock();
