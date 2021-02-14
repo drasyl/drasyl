@@ -26,7 +26,10 @@ import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.ThrowingBiFunction;
+import org.drasyl.util.ThrowingFunction;
+import org.drasyl.util.Triple;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.util.List;
@@ -35,31 +38,45 @@ import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.identity.CompressedPublicKey.PUBLIC_KEY_LENGTH;
+
 /**
- * Inspired by <a href="https://github.com/warner/magic-wormhole">https://github.com/warner/magic-wormhole</a>.
+ * Inspired by <a href="https://github.com/warner/magic-wormhole">Magic Wormhole</a>.
  */
 public class WormholeCommand extends AbstractCommand {
+    private static final Logger LOG = LoggerFactory.getLogger(WormholeCommand.class);
     private final Supplier<Scanner> scannerSupplier;
-    private final ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
-    private final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
+    private final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, SendingWormholeNode, DrasylException> sendingNodeSupplier;
+    private final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
+    private SendingWormholeNode sendingNode;
+    private ReceivingWormholeNode receivingNode;
 
     public WormholeCommand() {
         this(
                 System.out, // NOSONAR
-                () -> new Scanner(System.in),
-                SendingWormholeNode::new,
-                ReceivingWormholeNode::new
+                System.err, // NOSONAR
+                () -> new Scanner(System.in), // NOSONAR
+                triple -> new SendingWormholeNode(triple.first(), triple.second(), triple.third()),
+                triple -> new ReceivingWormholeNode(triple.first(), triple.second(), triple.third()),
+                null,
+                null
         );
     }
 
-    WormholeCommand(final PrintStream printStream,
+    WormholeCommand(final PrintStream out,
+                    final PrintStream err,
                     final Supplier<Scanner> scannerSupplier,
-                    final ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier,
-                    final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier) {
-        super(printStream);
-        this.scannerSupplier = scannerSupplier;
-        this.sendingNodeSupplier = sendingNodeSupplier;
-        this.receivingNodeSupplier = receivingNodeSupplier;
+                    final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, SendingWormholeNode, DrasylException> sendingNodeSupplier,
+                    final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, ReceivingWormholeNode, DrasylException> receivingNodeSupplier,
+                    SendingWormholeNode sendingNode,
+                    ReceivingWormholeNode receivingNode) {
+        super(out, err);
+        this.scannerSupplier = requireNonNull(scannerSupplier);
+        this.sendingNodeSupplier = requireNonNull(sendingNodeSupplier);
+        this.receivingNodeSupplier = requireNonNull(receivingNodeSupplier);
+        this.sendingNode = sendingNode;
+        this.receivingNode = receivingNode;
     }
 
     @Override
@@ -81,7 +98,7 @@ public class WormholeCommand extends AbstractCommand {
     }
 
     @Override
-    protected void execute(final CommandLine cmd) throws CliException {
+    protected void execute(final CommandLine cmd) {
         final List<String> argList = cmd.getArgList();
         if (argList.size() >= 2) {
             final String subcommand = argList.get(1);
@@ -93,7 +110,7 @@ public class WormholeCommand extends AbstractCommand {
                     receive(cmd);
                     break;
                 default:
-                    throw new CliException("Unknown command \"" + subcommand + "\" for \"drasyl wormhole\"");
+                    err.println("ERR: Unknown command \"" + subcommand + "\" for \"drasyl wormhole\".");
             }
         }
         else {
@@ -101,49 +118,53 @@ public class WormholeCommand extends AbstractCommand {
         }
     }
 
-    private void send(final CommandLine cmd) throws CliException {
-        SendingWormholeNode node = null;
+    private void send(final CommandLine cmd) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (sendingNode != null) {
+                LOG.info("Shutdown drasyl Node");
+                sendingNode.shutdown().join();
+            }
+        }));
+
         try {
             // prepare node
-            node = sendingNodeSupplier.apply(getDrasylConfig(cmd), printStream);
-            node.start();
+            sendingNode = sendingNodeSupplier.apply(Triple.of(getDrasylConfig(cmd), out, err));
+            sendingNode.start();
 
             // obtain text
-            printStream.print("Text to send: ");
+            out.print("Text to send: ");
             final String text = scannerSupplier.get().nextLine();
-            node.setText(text);
+            sendingNode.setText(text);
 
             // wait for node to finish
-            node.doneFuture().get();
+            sendingNode.doneFuture().get();
         }
-        catch (final DrasylException e) {
-            throw new CliException("Unable to create/run sending wormhole node", e);
+        catch (final DrasylException | ExecutionException e) {
+            throw new CliException(e);
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        catch (final ExecutionException e) {
-            throw new CliException(e.getCause());
-        }
-        finally {
-            if (node != null) {
-                node.shutdown();
-            }
-        }
     }
 
-    private void receive(final CommandLine cmd) throws CliException {
-        ReceivingWormholeNode node = null;
+    private void receive(final CommandLine cmd) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (receivingNode != null) {
+                LOG.info("Shutdown drasyl Node");
+                receivingNode.shutdown().join();
+            }
+        }));
+
         try {
             // prepare node
-            node = receivingNodeSupplier.apply(getDrasylConfig(cmd), printStream);
-            node.start();
+            receivingNode = receivingNodeSupplier.apply(Triple.of(getDrasylConfig(cmd), out, err));
+            receivingNode.start();
 
             // obtain code
             final List<String> argList = cmd.getArgList();
             final String code;
             if (argList.size() < 3) {
-                printStream.print("Enter wormhole code: ");
+                out.print("Enter wormhole code: ");
                 code = scannerSupplier.get().nextLine().strip();
             }
             else {
@@ -151,32 +172,23 @@ public class WormholeCommand extends AbstractCommand {
             }
 
             // request text
-            final CompressedPublicKey sender = CompressedPublicKey.of(code.substring(0, 66));
-            final String password = code.substring(66);
-            node.requestText(sender, password);
+            if (code.length() < PUBLIC_KEY_LENGTH) {
+                err.println("ERR: Invalid wormhole code supplied: must be at least 66 characters long.");
+                return;
+            }
+
+            final CompressedPublicKey sender = CompressedPublicKey.of(code.substring(0, PUBLIC_KEY_LENGTH));
+            final String password = code.substring(PUBLIC_KEY_LENGTH);
+            receivingNode.requestText(sender, password);
 
             // wait for node to finish
-            node.doneFuture().get();
+            receivingNode.doneFuture().get();
         }
-        catch (final IllegalArgumentException e) {
-            throw new CliException("Invalid wormhole code supplied", e);
-        }
-        catch (final StringIndexOutOfBoundsException e) {
-            throw new CliException("Invalid wormhole code supplied: must be at least 64 characters long");
-        }
-        catch (final DrasylException e) {
-            throw new CliException("Unable to create/run receiving wormhole node", e);
+        catch (final DrasylException | ExecutionException | IllegalArgumentException e) {
+            throw new CliException(e);
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
-        }
-        catch (final ExecutionException e) {
-            throw new CliException(e.getCause());
-        }
-        finally {
-            if (node != null) {
-                node.shutdown();
-            }
         }
     }
 }

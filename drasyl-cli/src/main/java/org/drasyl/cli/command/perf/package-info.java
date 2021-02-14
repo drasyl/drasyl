@@ -17,13 +17,7 @@
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.drasyl.cli.command;
-
 /**
- * Defines a command of the {@link org.drasyl.cli.Cli}.
+ * Provides the {@code perf} command for the {@link org.drasyl.cli.Cli}.
  */
-public interface Command {
-    void execute(String[] args);
-
-    String getDescription();
-}
+package org.drasyl.cli.command.perf;

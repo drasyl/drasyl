@@ -3,15 +3,15 @@ syntax = "proto3";
 package org.drasyl.remote.protocol;
 
 message PublicHeader {
-    bytes id = 1; // 8 bytes fix
-    sint32 networkId = 3; // 4 bytes
-    bytes sender = 4; // 33 bytes fix
-    sint32 proofOfWork = 5; // 4 bytes
-    bytes recipient = 6; // 33 bytes fix
-    bytes hopCount = 7; // 1 byte fix
-    bytes signature = 8; // 32 bytes fix
-    bytes chunkNo = 9; // 2 bytes fix
-    bytes totalChunks = 10; // 2 bytes fix
+    sfixed64 id = 1; // 8 bytes fix
+    sint32 networkId = 2; // up to 4 bytes
+    bytes sender = 3; // 33 bytes fix
+    sint32 proofOfWork = 4; // up to 4 bytes
+    bytes recipient = 5; // 33 bytes fix
+    uint32 hopCount = 6; // 1 byte fix (by definition, only values between 1 and 127 are allowed)
+    bytes signature = 7; // 32 bytes fix
+    uint32 chunkNo = 8; // up to 2 bytes (by definition, only values up to 65535 are allowed)
+    uint32 totalChunks = 9; // up to 2 bytes (by definition, only values up to 65535 are allowed)
 }
 
 message PrivateHeader {
@@ -26,7 +26,7 @@ enum MessageType {
 }
 
 message Acknowledgement {
-    bytes correspondingId = 1; // 12 bytes fix
+    sfixed64 correspondingId = 1; // 8 bytes fix
 }
 
 message Application {

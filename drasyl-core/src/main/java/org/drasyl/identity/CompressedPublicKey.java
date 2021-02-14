@@ -31,6 +31,8 @@ import java.security.PublicKey;
  * This is an immutable object.
  */
 public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
+    @SuppressWarnings("unused")
+    public static final short PUBLIC_KEY_LENGTH = 66;
     public static final InternPool<CompressedPublicKey> POOL = new InternPool<>();
 
     /**

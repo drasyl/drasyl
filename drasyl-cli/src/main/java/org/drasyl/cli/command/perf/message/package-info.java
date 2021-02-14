@@ -17,13 +17,8 @@
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.drasyl.cli.command;
-
 /**
- * Defines a command of the {@link org.drasyl.cli.Cli}.
+ * Contains messages that are sent between {@link org.drasyl.cli.command.perf.PerfClientNode} and
+ * {@link org.drasyl.cli.command.perf.PerfServerNode}.
  */
-public interface Command {
-    void execute(String[] args);
-
-    String getDescription();
-}
+package org.drasyl.cli.command.perf.message;

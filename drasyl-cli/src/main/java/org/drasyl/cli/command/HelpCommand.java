@@ -32,11 +32,11 @@ import static org.drasyl.cli.Cli.COMMANDS;
  */
 public class HelpCommand extends AbstractCommand {
     public HelpCommand() {
-        this(System.out); // NOSONAR
+        this(System.out, System.err); // NOSONAR
     }
 
-    HelpCommand(final PrintStream printStream) {
-        super(printStream);
+    HelpCommand(final PrintStream out, final PrintStream err) {
+        super(out, err);
     }
 
     @Override

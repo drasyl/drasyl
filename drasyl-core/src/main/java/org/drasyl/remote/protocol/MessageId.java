@@ -23,6 +23,7 @@ import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
@@ -68,6 +69,10 @@ public final class MessageId {
         return id.clone();
     }
 
+    public long longValue() {
+        return ByteBuffer.wrap(id).getLong();
+    }
+
     /**
      * Static factory to retrieve a randomly generated {@link MessageId}.
      *
@@ -99,5 +104,9 @@ public final class MessageId {
      */
     public static MessageId of(@NonNull final String id) {
         return new MessageId(HexUtil.parseHexBinary(id));
+    }
+
+    public static MessageId of(final long id) {
+        return of(ByteBuffer.allocate(Long.BYTES).putLong(id).array());
     }
 }

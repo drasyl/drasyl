@@ -16,14 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.cli;
+package org.drasyl.cli.command.perf.message;
 
-/**
- * This exception is thrown when the command line interface should terminate.
- */
-public class CliShutdownException extends RuntimeException {
-    @SuppressWarnings("unused")
-    public CliShutdownException() {
-        super();
-    }
+public interface PerfMessage {
 }

@@ -16,14 +16,14 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.drasyl.cli.command.perf.message;
 
-package org.drasyl.cli.command;
+import org.drasyl.cli.command.perf.PerfClientNode;
+import org.drasyl.cli.command.perf.PerfServerNode;
 
 /**
- * Defines a command of the {@link org.drasyl.cli.Cli}.
+ * Sent from the {@link PerfServerNode} to the {@link PerfClientNode} to confirm a requested session
+ * ({@link SessionRequest}).
  */
-public interface Command {
-    void execute(String[] args);
-
-    String getDescription();
+public class SessionConfirmation implements PerfMessage {
 }

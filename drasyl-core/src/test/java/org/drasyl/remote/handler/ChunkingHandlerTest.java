@@ -118,11 +118,11 @@ class ChunkingHandlerTest {
 
                 // head chunk
                 final PublicHeader headChunkHeader = PublicHeader.newBuilder()
-                        .setId(ByteString.copyFrom(messageId.byteArrayValue()))
+                        .setId(messageId.longValue())
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
-                        .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
-                        .setTotalChunks(ByteString.copyFrom(UnsignedShort.of(2).toBytes()))
+                        .setHopCount(1)
+                        .setTotalChunks(UnsignedShort.of(2).getValue())
                         .build();
                 final byte[] bytes = new byte[remoteMessageMtu / 2];
                 final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
@@ -155,11 +155,11 @@ class ChunkingHandlerTest {
 
                 // normal chunk
                 final PublicHeader chunkHeader = PublicHeader.newBuilder()
-                        .setId(ByteString.copyFrom(messageId.byteArrayValue()))
+                        .setId(messageId.longValue())
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
-                        .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
-                        .setChunkNo(ByteString.copyFrom(UnsignedShort.of(1).toBytes()))
+                        .setHopCount(1)
+                        .setChunkNo(UnsignedShort.of(1).getValue())
                         .build();
                 final byte[] chunkBytes = new byte[remoteMessageMtu / 2];
                 new Random().nextBytes(chunkBytes);
@@ -171,11 +171,11 @@ class ChunkingHandlerTest {
 
                 // head chunk
                 final PublicHeader headChunkHeader = PublicHeader.newBuilder()
-                        .setId(ByteString.copyFrom(messageId.byteArrayValue()))
+                        .setId(messageId.longValue())
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
-                        .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
-                        .setTotalChunks(ByteString.copyFrom(UnsignedShort.of(2).toBytes()))
+                        .setHopCount(1)
+                        .setTotalChunks(UnsignedShort.of(2).getValue())
                         .build();
                 final byte[] headChunkBytes = new byte[remoteMessageMtu / 2];
                 new Random().nextBytes(headChunkBytes);
@@ -215,22 +215,22 @@ class ChunkingHandlerTest {
 
                 // head chunk
                 final PublicHeader headChunkHeader = PublicHeader.newBuilder()
-                        .setId(ByteString.copyFrom(messageId.byteArrayValue()))
+                        .setId(messageId.longValue())
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
-                        .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
-                        .setTotalChunks(ByteString.copyFrom(UnsignedShort.of(2).toBytes()))
+                        .setHopCount(1)
+                        .setTotalChunks(UnsignedShort.of(2).getValue())
                         .build();
                 final byte[] bytes1 = new byte[remoteMaxContentLength];
                 final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes1);
 
                 // normal chunk
                 final PublicHeader chunkHeader = PublicHeader.newBuilder()
-                        .setId(ByteString.copyFrom(messageId.byteArrayValue()))
+                        .setId(messageId.longValue())
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
-                        .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
-                        .setChunkNo(ByteString.copyFrom(UnsignedShort.of(1).toBytes()))
+                        .setHopCount(1)
+                        .setChunkNo(UnsignedShort.of(1).getValue())
                         .build();
                 final byte[] bytes = new byte[remoteMaxContentLength];
                 final ByteBuf chunkPayload = Unpooled.wrappedBuffer(bytes);
@@ -286,11 +286,11 @@ class ChunkingHandlerTest {
                 }).test();
 
                 final PublicHeader headChunkHeader = PublicHeader.newBuilder()
-                        .setId(ByteString.copyFrom(messageId.byteArrayValue()))
+                        .setId(messageId.longValue())
                         .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                         .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
-                        .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
-                        .setTotalChunks(ByteString.copyFrom(UnsignedShort.of(2).toBytes()))
+                        .setHopCount(1)
+                        .setTotalChunks(UnsignedShort.of(2).getValue())
                         .build();
                 final byte[] bytes = new byte[remoteMessageMtu / 2];
                 final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
@@ -389,7 +389,7 @@ class ChunkingHandlerTest {
                         .assertValueCount(3)
                         .assertValueAt(0, m -> {
                             try {
-                                return m.getContent().getTotalChunks().getValue() == 3 && m.getContent().copy().readableBytes() == remoteMessageMtu;
+                                return m.getContent().getTotalChunks().getValue() == 3 && m.getContent().copy().readableBytes() <= remoteMessageMtu;
                             }
                             finally {
                                 ReferenceCountUtil.safeRelease(m.getContent());
@@ -397,7 +397,7 @@ class ChunkingHandlerTest {
                         })
                         .assertValueAt(1, m -> {
                             try {
-                                return m.getContent().getChunkNo().getValue() == 1 && m.getContent().copy().readableBytes() == remoteMessageMtu;
+                                return m.getContent().getChunkNo().getValue() == 1 && m.getContent().copy().readableBytes() <= remoteMessageMtu;
                             }
                             finally {
                                 ReferenceCountUtil.safeRelease(m.getContent());
@@ -405,7 +405,7 @@ class ChunkingHandlerTest {
                         })
                         .assertValueAt(2, m -> {
                             try {
-                                return m.getContent().getChunkNo().getValue() == 2 && m.getContent().copy().readableBytes() < remoteMessageMtu;
+                                return m.getContent().getChunkNo().getValue() == 2 && m.getContent().copy().readableBytes() <= remoteMessageMtu;
                             }
                             finally {
                                 ReferenceCountUtil.safeRelease(m.getContent());

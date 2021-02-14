@@ -16,14 +16,15 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.drasyl.cli.command.perf.message;
 
-package org.drasyl.cli;
+import org.drasyl.cli.command.perf.PerfClientNode;
+import org.drasyl.cli.command.perf.PerfServerNode;
 
 /**
- * Is thrown by the {@link Cli} if desired command is not found.
+ * Sent from the {@link PerfServerNode} to the {@link PerfClientNode} to reject a requested session
+ * ({@link SessionRequest}). Sessions are actually only rejected if the server already has an active
+ * session with (another) client.
  */
-public class CommandNotFoundCliException extends CliException {
-    public CommandNotFoundCliException(final String commandName) {
-        super("Unknown command \"" + commandName + "\" for \"drasyl\"");
-    }
+public class SessionRejection implements PerfMessage {
 }

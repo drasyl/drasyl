@@ -29,11 +29,11 @@ import java.io.PrintStream;
  */
 public class VersionCommand extends AbstractCommand {
     public VersionCommand() {
-        this(System.out); // NOSONAR
+        this(System.out, System.err); // NOSONAR
     }
 
-    VersionCommand(final PrintStream printStream) {
-        super(printStream);
+    VersionCommand(final PrintStream out, final PrintStream err) {
+        super(out, err);
     }
 
     @Override
@@ -43,11 +43,11 @@ public class VersionCommand extends AbstractCommand {
 
     @Override
     public void execute(final CommandLine cmd) {
-        printStream.println("drasyl v" + DrasylNode.getVersion());
-        printStream.println("- os.name " + System.getProperty("os.name"));
-        printStream.println("- os.version " + System.getProperty("os.version"));
-        printStream.println("- os.arch " + System.getProperty("os.arch"));
-        printStream.println("- java.version " + System.getProperty("java.version"));
+        out.println("drasyl v" + DrasylNode.getVersion());
+        out.println("- os.name " + System.getProperty("os.name"));
+        out.println("- os.version " + System.getProperty("os.version"));
+        out.println("- os.arch " + System.getProperty("os.arch"));
+        out.println("- java.version " + System.getProperty("java.version"));
     }
 
     @Override

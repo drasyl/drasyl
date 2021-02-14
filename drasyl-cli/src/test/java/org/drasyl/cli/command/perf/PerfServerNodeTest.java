@@ -16,17 +16,19 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package org.drasyl.cli.command.wormhole;
+package org.drasyl.cli.command.perf;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
-import org.drasyl.cli.command.wormhole.SendingWormholeNode.OnlineTimeout;
-import org.drasyl.cli.command.wormhole.SendingWormholeNode.SetText;
+import org.drasyl.cli.command.perf.PerfServerNode.OnlineTimeout;
+import org.drasyl.cli.command.perf.message.SessionConfirmation;
+import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
@@ -49,47 +51,40 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SendingWormholeNodeTest {
+class PerfServerNodeTest {
+    @SuppressWarnings("FieldCanBeLocal")
+    private ByteArrayOutputStream outputStream;
+    @SuppressWarnings("FieldCanBeLocal")
+    private PrintStream printStream;
     @Mock
     private CompletableFuture<Void> doneFuture;
-    @SuppressWarnings("FieldCanBeLocal")
-    private ByteArrayOutputStream outStream;
-    @SuppressWarnings("FieldCanBeLocal")
-    private PrintStream out;
-    @SuppressWarnings("FieldCanBeLocal")
-    private ByteArrayOutputStream errStream;
-    @SuppressWarnings("FieldCanBeLocal")
-    private PrintStream err;
-    @SuppressWarnings("FieldCanBeLocal")
-    private final String password = "123";
+    @Mock
+    private Scheduler perfScheduler;
     @Mock
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock
     private PeersManager peersManager;
+    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
+    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
     @Mock
     private PluginManager pluginManager;
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     @Mock
     private Scheduler scheduler;
-    private SendingWormholeNode underTest;
+    private PerfServerNode underTest;
 
     @BeforeEach
     void setUp() {
-        outStream = new ByteArrayOutputStream();
-        out = new PrintStream(outStream, true);
-        errStream = new ByteArrayOutputStream();
-        err = new PrintStream(errStream, true);
-        underTest = new SendingWormholeNode(doneFuture, out, err, password, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        outputStream = new ByteArrayOutputStream();
+        printStream = new PrintStream(outputStream, true);
+        underTest = new PerfServerNode(doneFuture, printStream, perfScheduler, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
     }
 
     @Nested
@@ -97,14 +92,10 @@ class SendingWormholeNodeTest {
         @Nested
         class OnNodeUnrecoverableErrorEvent {
             @Test
-            void shouldCompleteExceptionally(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUnrecoverableErrorEvent event) {
-                when(event.getError().toString()).thenReturn("Boom!");
-
+            void shouldCompleteExceptionally(@Mock final NodeUnrecoverableErrorEvent event) {
                 underTest.onEvent(event);
 
-                final String output = errStream.toString();
-                assertThat(output, containsString("ERR: Boom!"));
-                verify(doneFuture).complete(null);
+                verify(doneFuture).completeExceptionally(any());
             }
         }
 
@@ -119,40 +110,56 @@ class SendingWormholeNodeTest {
         }
 
         @Nested
+        class OnNodeUpEvent {
+            @Test
+            void shouldNotFail(@Mock final NodeUpEvent event) {
+                assertDoesNotThrow(() -> underTest.onEvent(event));
+            }
+        }
+
+        @Nested
         class OnNodeOnlineEvent {
-            @Mock(answer = RETURNS_DEEP_STUBS)
+            @Mock
             private NodeOnlineEvent nodeOnline;
 
             @Test
-            void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
-                when(event.getPayload()).thenReturn(new PasswordMessage("123"));
-                underTest.setText("Hi");
-
+            void shouldPrintListeningAddress() {
                 underTest.onEvent(nodeOnline);
-                underTest.onEvent(event);
 
-                verify(pipeline).processOutbound(eq(event.getSender()), any(TextMessage.class));
-            }
-
-            @Test
-            void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
-                when(event.getPayload()).thenReturn(new PasswordMessage("456"));
-                underTest.setText("Hi");
-
-                underTest.onEvent(nodeOnline);
-                underTest.onEvent(event);
-
-                verify(pipeline).processOutbound(eq(event.getSender()), any(WrongPasswordMessage.class));
+                final String output = outputStream.toString();
+                assertThat(output, containsString("Server listening on address"));
             }
 
             @Nested
-            class OnSetText {
+            class WhenWaitingForSession {
                 @Test
-                void shouldNotFail(@Mock(answer = RETURNS_DEEP_STUBS) final SetText event) {
-                    assertDoesNotThrow(() -> {
-                        underTest.onEvent(nodeOnline);
-                        underTest.onEvent(event);
-                    });
+                void shouldConfirmRequest(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
+                                          @Mock final SessionRequest sessionRequest) {
+                    when(messageEvent.getPayload()).thenReturn(sessionRequest);
+
+                    underTest.onEvent(nodeOnline);
+                    underTest.onEvent(messageEvent);
+
+                    verify(pipeline).processOutbound(any(), any(SessionConfirmation.class));
+                }
+
+                @Test
+                void shouldPrintInfoOnOfflineEvent(@Mock final NodeOfflineEvent event) {
+                    underTest.onEvent(nodeOnline);
+                    underTest.onEvent(event);
+
+                    final String output = outputStream.toString();
+                    assertThat(output, containsString("Lost connection to super peer"));
+                }
+            }
+
+            @Nested
+            class OnOnlineTimeout {
+                @Test
+                void shouldComplete(@Mock(answer = RETURNS_DEEP_STUBS) final OnlineTimeout event) {
+                    underTest.onEvent(event);
+
+                    verify(doneFuture).completeExceptionally(any());
                 }
             }
         }
@@ -163,9 +170,7 @@ class SendingWormholeNodeTest {
             void shouldComplete(@Mock(answer = RETURNS_DEEP_STUBS) final OnlineTimeout event) {
                 underTest.onEvent(event);
 
-                final String output = errStream.toString();
-                assertThat(output, containsString("ERR: Node did not come online within 10s. Look like super peer is unavailable."));
-                verify(doneFuture).complete(null);
+                verify(doneFuture).completeExceptionally(any());
             }
         }
     }
@@ -175,14 +180,6 @@ class SendingWormholeNodeTest {
         @Test
         void shouldReturnDoneFuture() {
             assertEquals(doneFuture, underTest.doneFuture());
-        }
-    }
-
-    @Nested
-    class TestSetText {
-        @Test
-        void shouldNotFail() {
-            assertDoesNotThrow(() -> underTest.setText("Hello you!"));
         }
     }
 }
