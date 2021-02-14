@@ -139,6 +139,29 @@ class PeersManagerTest {
     }
 
     @Nested
+    class AddPath {
+        @Test
+        void shouldEmitEventIfThisIsTheFirstPath(@Mock final CompressedPublicKey publicKey,
+                                                 @Mock final Object path) {
+            underTest.addPath(publicKey, path);
+
+            verify(eventConsumer).accept(new PeerDirectEvent(Peer.of(publicKey)));
+        }
+
+        @Test
+        void shouldEmitNotEventIfPeerHasAlreadyPaths(@Mock final CompressedPublicKey publicKey,
+                                                     @Mock final Object path1,
+                                                     @Mock final Object path2) {
+            peers.add(publicKey);
+            paths.put(publicKey, path1);
+
+            underTest.addPath(publicKey, path2);
+
+            verify(eventConsumer, never()).accept(any());
+        }
+    }
+
+    @Nested
     class RemovePath {
         @Test
         void shouldRemovePath(@Mock final CompressedPublicKey publicKey,
