@@ -207,7 +207,7 @@ class UdpDiscoveryHandlerTest {
 
             when(identity.getPublicKey()).thenReturn(recipient);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
+            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new OpenPing(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
 
             pipeline.processInbound(address, addressedAcknowledgementMessage).join();
@@ -230,7 +230,7 @@ class UdpDiscoveryHandlerTest {
             when(identity.getPublicKey()).thenReturn(recipient);
             when(config.getRemoteSuperPeerEndpoint().getPublicKey()).thenReturn(sender);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new OpenPing(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
+            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new OpenPing(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
 
             pipeline.processInbound(address, addressedAcknowledgementMessage).join();

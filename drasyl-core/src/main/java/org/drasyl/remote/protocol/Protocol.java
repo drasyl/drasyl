@@ -27,36 +27,35 @@ public final class Protocol {
          */
         ACKNOWLEDGEMENT(0),
         /**
-     * <code>APPLICATION = 1;</code>
-     */
-    APPLICATION(1),
-    /**
-     * <code>DISCOVERY = 2;</code>
-     */
-    DISCOVERY(2),
-    /**
-     * <code>UNITE = 3;</code>
-     */
-    UNITE(3),
-    UNRECOGNIZED(-1),
-    ;
-
-    /**
-     * <code>ACKNOWLEDGEMENT = 0;</code>
-     */
-    public static final int ACKNOWLEDGEMENT_VALUE = 0;
-    /**
-     * <code>APPLICATION = 1;</code>
-     */
-    public static final int APPLICATION_VALUE = 1;
-    /**
-     * <code>DISCOVERY = 2;</code>
-     */
-    public static final int DISCOVERY_VALUE = 2;
-    /**
-     * <code>UNITE = 3;</code>
-     */
-    public static final int UNITE_VALUE = 3;
+         * <code>APPLICATION = 1;</code>
+         */
+        APPLICATION(1),
+        /**
+         * <code>DISCOVERY = 2;</code>
+         */
+        DISCOVERY(2),
+        /**
+         * <code>UNITE = 3;</code>
+         */
+        UNITE(3),
+        UNRECOGNIZED(-1),
+        ;
+        /**
+         * <code>ACKNOWLEDGEMENT = 0;</code>
+         */
+        public static final int ACKNOWLEDGEMENT_VALUE = 0;
+        /**
+         * <code>APPLICATION = 1;</code>
+         */
+        public static final int APPLICATION_VALUE = 1;
+        /**
+         * <code>DISCOVERY = 2;</code>
+         */
+        public static final int DISCOVERY_VALUE = 2;
+        /**
+         * <code>UNITE = 3;</code>
+         */
+        public static final int UNITE_VALUE = 3;
 
         public final int getNumber() {
             if (this == UNRECOGNIZED) {
@@ -108,18 +107,19 @@ public final class Protocol {
                     }
                 };
 
-    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+        public final com.google.protobuf.Descriptors.EnumValueDescriptor
         getValueDescriptor() {
-      if (this == UNRECOGNIZED) {
-        throw new java.lang.IllegalStateException(
-            "Can't get the descriptor of an unrecognized enum value.");
-      }
-      return getDescriptor().getValues().get(ordinal());
-    }
-    public final com.google.protobuf.Descriptors.EnumDescriptor
-    getDescriptorForType() {
-        return getDescriptor();
-    }
+            if (this == UNRECOGNIZED) {
+                throw new java.lang.IllegalStateException(
+                        "Can't get the descriptor of an unrecognized enum value.");
+            }
+            return getDescriptor().getValues().get(ordinal());
+        }
+
+        public final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+            return getDescriptor();
+        }
 
         public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
@@ -147,102 +147,110 @@ public final class Protocol {
         }
 
         // @@protoc_insertion_point(enum_scope:org.drasyl.remote.protocol.MessageType)
-  }
+    }
 
-  public interface PublicHeaderOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:org.drasyl.remote.protocol.PublicHeader)
-      com.google.protobuf.MessageOrBuilder {
+    public interface PublicHeaderOrBuilder extends
+            // @@protoc_insertion_point(interface_extends:org.drasyl.remote.protocol.PublicHeader)
+            com.google.protobuf.MessageOrBuilder {
+        /**
+         * <pre>
+         * 8 bytes fix
+         * </pre>
+         *
+         * <code>sfixed64 id = 1;</code>
+         *
+         * @return The id.
+         */
+        long getId();
 
-    /**
-     * <pre>
-     * 8 bytes fix
-     * </pre>
-     *
-     * <code>bytes id = 1;</code>
-     * @return The id.
-     */
-    com.google.protobuf.ByteString getId();
+        /**
+         * <pre>
+         * up to 4 bytes
+         * </pre>
+         *
+         * <code>sint32 networkId = 2;</code>
+         *
+         * @return The networkId.
+         */
+        int getNetworkId();
 
-    /**
-     * <pre>
-     * 4 bytes
-     * </pre>
-     *
-     * <code>sint32 networkId = 3;</code>
-     * @return The networkId.
-     */
-    int getNetworkId();
+        /**
+         * <pre>
+         * 33 bytes fix
+         * </pre>
+         *
+         * <code>bytes sender = 3;</code>
+         *
+         * @return The sender.
+         */
+        com.google.protobuf.ByteString getSender();
 
-    /**
-     * <pre>
-     * 33 bytes fix
-     * </pre>
-     *
-     * <code>bytes sender = 4;</code>
-     * @return The sender.
-     */
-    com.google.protobuf.ByteString getSender();
+        /**
+         * <pre>
+         * up to 4 bytes
+         * </pre>
+         *
+         * <code>sint32 proofOfWork = 4;</code>
+         *
+         * @return The proofOfWork.
+         */
+        int getProofOfWork();
 
-    /**
-     * <pre>
-     * 4 bytes
-     * </pre>
-     *
-     * <code>sint32 proofOfWork = 5;</code>
-     * @return The proofOfWork.
-     */
-    int getProofOfWork();
+        /**
+         * <pre>
+         * 33 bytes fix
+         * </pre>
+         *
+         * <code>bytes recipient = 5;</code>
+         *
+         * @return The recipient.
+         */
+        com.google.protobuf.ByteString getRecipient();
 
-    /**
-     * <pre>
-     * 33 bytes fix
-     * </pre>
-     *
-     * <code>bytes recipient = 6;</code>
-     * @return The recipient.
-     */
-    com.google.protobuf.ByteString getRecipient();
+        /**
+         * <pre>
+         * 1 byte fix (by definition, only values between 1 and 127 are allowed)
+         * </pre>
+         *
+         * <code>uint32 hopCount = 6;</code>
+         *
+         * @return The hopCount.
+         */
+        int getHopCount();
 
-    /**
-     * <pre>
-     * 1 byte fix
-     * </pre>
-     *
-     * <code>bytes hopCount = 7;</code>
-     * @return The hopCount.
-     */
-    com.google.protobuf.ByteString getHopCount();
+        /**
+         * <pre>
+         * 32 bytes fix
+         * </pre>
+         *
+         * <code>bytes signature = 7;</code>
+         *
+         * @return The signature.
+         */
+        com.google.protobuf.ByteString getSignature();
 
-    /**
-     * <pre>
-     * 32 bytes fix
-     * </pre>
-     *
-     * <code>bytes signature = 8;</code>
-     * @return The signature.
-     */
-    com.google.protobuf.ByteString getSignature();
+        /**
+         * <pre>
+         * up to 2 bytes (by definition, only values up to 65535 are allowed)
+         * </pre>
+         *
+         * <code>uint32 chunkNo = 8;</code>
+         *
+         * @return The chunkNo.
+         */
+        int getChunkNo();
 
-    /**
-     * <pre>
-     * 2 bytes fix
-     * </pre>
-     *
-     * <code>bytes chunkNo = 9;</code>
-     * @return The chunkNo.
-     */
-    com.google.protobuf.ByteString getChunkNo();
-
-    /**
-     * <pre>
-     * 2 bytes fix
-     * </pre>
-     *
-     * <code>bytes totalChunks = 10;</code>
-     * @return The totalChunks.
-     */
-    com.google.protobuf.ByteString getTotalChunks();
-  }
+        /**
+         * <pre>
+         * up to 2 bytes (by definition, only values up to 65535 are allowed)
+         * </pre>
+         *
+         * <code>uint32 totalChunks = 9;</code>
+         *
+         * @return The totalChunks.
+         */
+        int getTotalChunks();
+    }
 
     /**
      * Protobuf type {@code org.drasyl.remote.protocol.PublicHeader}
@@ -259,13 +267,9 @@ public final class Protocol {
         }
 
         private PublicHeader() {
-            id_ = com.google.protobuf.ByteString.EMPTY;
             sender_ = com.google.protobuf.ByteString.EMPTY;
             recipient_ = com.google.protobuf.ByteString.EMPTY;
-            hopCount_ = com.google.protobuf.ByteString.EMPTY;
             signature_ = com.google.protobuf.ByteString.EMPTY;
-            chunkNo_ = com.google.protobuf.ByteString.EMPTY;
-            totalChunks_ = com.google.protobuf.ByteString.EMPTY;
         }
 
         @java.lang.Override
@@ -299,49 +303,49 @@ public final class Protocol {
                         case 0:
                             done = true;
                             break;
-                        case 10: {
+                        case 9: {
 
-                            id_ = input.readBytes();
+                            id_ = input.readSFixed64();
                             break;
                         }
-                        case 24: {
+                        case 16: {
 
-              networkId_ = input.readSInt32();
-              break;
-            }
-            case 34: {
-
-              sender_ = input.readBytes();
-              break;
-            }
-            case 40: {
-
-              proofOfWork_ = input.readSInt32();
-              break;
-            }
-            case 50: {
-
-              recipient_ = input.readBytes();
-              break;
-            }
-            case 58: {
-
-              hopCount_ = input.readBytes();
-              break;
-            }
-            case 66: {
-
-              signature_ = input.readBytes();
-                break;
-            }
-                        case 74: {
-
-                            chunkNo_ = input.readBytes();
+                            networkId_ = input.readSInt32();
                             break;
                         }
-                        case 82: {
+                        case 26: {
 
-                            totalChunks_ = input.readBytes();
+                            sender_ = input.readBytes();
+                            break;
+                        }
+                        case 32: {
+
+                            proofOfWork_ = input.readSInt32();
+                            break;
+                        }
+                        case 42: {
+
+                            recipient_ = input.readBytes();
+                            break;
+                        }
+                        case 48: {
+
+                            hopCount_ = input.readUInt32();
+                            break;
+                        }
+                        case 58: {
+
+                            signature_ = input.readBytes();
+                            break;
+                        }
+                        case 64: {
+
+                            chunkNo_ = input.readUInt32();
+                            break;
+                        }
+                        case 72: {
+
+                            totalChunks_ = input.readUInt32();
                             break;
                         }
                         default: {
@@ -364,157 +368,176 @@ public final class Protocol {
             finally {
                 this.unknownFields = unknownFields.build();
                 makeExtensionsImmutable();
-      }
-    }
-    public static final com.google.protobuf.Descriptors.Descriptor
+            }
+        }
+
+        public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_descriptor;
-    }
+            return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_descriptor;
+        }
 
-    @java.lang.Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        @java.lang.Override
+        protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              org.drasyl.remote.protocol.Protocol.PublicHeader.class, org.drasyl.remote.protocol.Protocol.PublicHeader.Builder.class);
-    }
+            return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_fieldAccessorTable
+                    .ensureFieldAccessorsInitialized(
+                            org.drasyl.remote.protocol.Protocol.PublicHeader.class, org.drasyl.remote.protocol.Protocol.PublicHeader.Builder.class);
+        }
 
-    public static final int ID_FIELD_NUMBER = 1;
-    private com.google.protobuf.ByteString id_;
-    /**
-     * <pre>
-     * 8 bytes fix
-     * </pre>
-     *
-     * <code>bytes id = 1;</code>
-     * @return The id.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString getId() {
-      return id_;
-    }
+        public static final int ID_FIELD_NUMBER = 1;
+        private long id_;
 
-    public static final int NETWORKID_FIELD_NUMBER = 3;
-    private int networkId_;
-    /**
-     * <pre>
-     * 4 bytes
-     * </pre>
-     *
-     * <code>sint32 networkId = 3;</code>
-     * @return The networkId.
-     */
-    @java.lang.Override
-    public int getNetworkId() {
-      return networkId_;
-    }
+        /**
+         * <pre>
+         * 8 bytes fix
+         * </pre>
+         *
+         * <code>sfixed64 id = 1;</code>
+         *
+         * @return The id.
+         */
+        @java.lang.Override
+        public long getId() {
+            return id_;
+        }
 
-    public static final int SENDER_FIELD_NUMBER = 4;
-    private com.google.protobuf.ByteString sender_;
-    /**
-     * <pre>
-     * 33 bytes fix
-     * </pre>
-     *
-     * <code>bytes sender = 4;</code>
-     * @return The sender.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString getSender() {
-      return sender_;
-    }
+        public static final int NETWORKID_FIELD_NUMBER = 2;
+        private int networkId_;
 
-    public static final int PROOFOFWORK_FIELD_NUMBER = 5;
-    private int proofOfWork_;
-    /**
-     * <pre>
-     * 4 bytes
-     * </pre>
-     *
-     * <code>sint32 proofOfWork = 5;</code>
-     * @return The proofOfWork.
-     */
-    @java.lang.Override
-    public int getProofOfWork() {
-      return proofOfWork_;
-    }
+        /**
+         * <pre>
+         * up to 4 bytes
+         * </pre>
+         *
+         * <code>sint32 networkId = 2;</code>
+         *
+         * @return The networkId.
+         */
+        @java.lang.Override
+        public int getNetworkId() {
+            return networkId_;
+        }
 
-    public static final int RECIPIENT_FIELD_NUMBER = 6;
-    private com.google.protobuf.ByteString recipient_;
-    /**
-     * <pre>
-     * 33 bytes fix
-     * </pre>
-     *
-     * <code>bytes recipient = 6;</code>
-     * @return The recipient.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString getRecipient() {
-      return recipient_;
-    }
+        public static final int SENDER_FIELD_NUMBER = 3;
+        private com.google.protobuf.ByteString sender_;
 
-    public static final int HOPCOUNT_FIELD_NUMBER = 7;
-    private com.google.protobuf.ByteString hopCount_;
-    /**
-     * <pre>
-     * 1 byte fix
-     * </pre>
-     *
-     * <code>bytes hopCount = 7;</code>
-     * @return The hopCount.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString getHopCount() {
-      return hopCount_;
-    }
+        /**
+         * <pre>
+         * 33 bytes fix
+         * </pre>
+         *
+         * <code>bytes sender = 3;</code>
+         *
+         * @return The sender.
+         */
+        @java.lang.Override
+        public com.google.protobuf.ByteString getSender() {
+            return sender_;
+        }
 
-    public static final int SIGNATURE_FIELD_NUMBER = 8;
-    private com.google.protobuf.ByteString signature_;
-    /**
-     * <pre>
-     * 32 bytes fix
-     * </pre>
-     *
-     * <code>bytes signature = 8;</code>
-     * @return The signature.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString getSignature() {
-      return signature_;
-    }
+        public static final int PROOFOFWORK_FIELD_NUMBER = 4;
+        private int proofOfWork_;
 
-    public static final int CHUNKNO_FIELD_NUMBER = 9;
-    private com.google.protobuf.ByteString chunkNo_;
-    /**
-     * <pre>
-     * 2 bytes fix
-     * </pre>
-     *
-     * <code>bytes chunkNo = 9;</code>
-     * @return The chunkNo.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString getChunkNo() {
-      return chunkNo_;
-    }
+        /**
+         * <pre>
+         * up to 4 bytes
+         * </pre>
+         *
+         * <code>sint32 proofOfWork = 4;</code>
+         *
+         * @return The proofOfWork.
+         */
+        @java.lang.Override
+        public int getProofOfWork() {
+            return proofOfWork_;
+        }
 
-    public static final int TOTALCHUNKS_FIELD_NUMBER = 10;
-    private com.google.protobuf.ByteString totalChunks_;
-    /**
-     * <pre>
-     * 2 bytes fix
-     * </pre>
-     *
-     * <code>bytes totalChunks = 10;</code>
-     * @return The totalChunks.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString getTotalChunks() {
-      return totalChunks_;
-    }
+        public static final int RECIPIENT_FIELD_NUMBER = 5;
+        private com.google.protobuf.ByteString recipient_;
 
-    private byte memoizedIsInitialized = -1;
+        /**
+         * <pre>
+         * 33 bytes fix
+         * </pre>
+         *
+         * <code>bytes recipient = 5;</code>
+         *
+         * @return The recipient.
+         */
+        @java.lang.Override
+        public com.google.protobuf.ByteString getRecipient() {
+            return recipient_;
+        }
+
+        public static final int HOPCOUNT_FIELD_NUMBER = 6;
+        private int hopCount_;
+
+        /**
+         * <pre>
+         * 1 byte fix (by definition, only values between 1 and 127 are allowed)
+         * </pre>
+         *
+         * <code>uint32 hopCount = 6;</code>
+         *
+         * @return The hopCount.
+         */
+        @java.lang.Override
+        public int getHopCount() {
+            return hopCount_;
+        }
+
+        public static final int SIGNATURE_FIELD_NUMBER = 7;
+        private com.google.protobuf.ByteString signature_;
+
+        /**
+         * <pre>
+         * 32 bytes fix
+         * </pre>
+         *
+         * <code>bytes signature = 7;</code>
+         *
+         * @return The signature.
+         */
+        @java.lang.Override
+        public com.google.protobuf.ByteString getSignature() {
+            return signature_;
+        }
+
+        public static final int CHUNKNO_FIELD_NUMBER = 8;
+        private int chunkNo_;
+
+        /**
+         * <pre>
+         * up to 2 bytes (by definition, only values up to 65535 are allowed)
+         * </pre>
+         *
+         * <code>uint32 chunkNo = 8;</code>
+         *
+         * @return The chunkNo.
+         */
+        @java.lang.Override
+        public int getChunkNo() {
+            return chunkNo_;
+        }
+
+        public static final int TOTALCHUNKS_FIELD_NUMBER = 9;
+        private int totalChunks_;
+
+        /**
+         * <pre>
+         * up to 2 bytes (by definition, only values up to 65535 are allowed)
+         * </pre>
+         *
+         * <code>uint32 totalChunks = 9;</code>
+         *
+         * @return The totalChunks.
+         */
+        @java.lang.Override
+        public int getTotalChunks() {
+            return totalChunks_;
+        }
+
+        private byte memoizedIsInitialized = -1;
 
         @java.lang.Override
         public final boolean isInitialized() {
@@ -533,155 +556,177 @@ public final class Protocol {
         @java.lang.Override
         public void writeTo(final com.google.protobuf.CodedOutputStream output)
                 throws java.io.IOException {
-            if (!id_.isEmpty()) {
-                output.writeBytes(1, id_);
+            if (id_ != 0L) {
+                output.writeSFixed64(1, id_);
             }
             if (networkId_ != 0) {
-                output.writeSInt32(3, networkId_);
+                output.writeSInt32(2, networkId_);
             }
             if (!sender_.isEmpty()) {
-                output.writeBytes(4, sender_);
+                output.writeBytes(3, sender_);
             }
             if (proofOfWork_ != 0) {
-                output.writeSInt32(5, proofOfWork_);
+                output.writeSInt32(4, proofOfWork_);
             }
             if (!recipient_.isEmpty()) {
-                output.writeBytes(6, recipient_);
+                output.writeBytes(5, recipient_);
             }
-            if (!hopCount_.isEmpty()) {
-                output.writeBytes(7, hopCount_);
-      }
-      if (!signature_.isEmpty()) {
-        output.writeBytes(8, signature_);
-      }
-      if (!chunkNo_.isEmpty()) {
-        output.writeBytes(9, chunkNo_);
-      }
-      if (!totalChunks_.isEmpty()) {
-        output.writeBytes(10, totalChunks_);
-      }
-      unknownFields.writeTo(output);
-    }
+            if (hopCount_ != 0) {
+                output.writeUInt32(6, hopCount_);
+            }
+            if (!signature_.isEmpty()) {
+                output.writeBytes(7, signature_);
+            }
+            if (chunkNo_ != 0) {
+                output.writeUInt32(8, chunkNo_);
+            }
+            if (totalChunks_ != 0) {
+                output.writeUInt32(9, totalChunks_);
+            }
+            unknownFields.writeTo(output);
+        }
 
-    @java.lang.Override
-    public int getSerializedSize() {
-      int size = memoizedSize;
-      if (size != -1) return size;
+        @java.lang.Override
+        public int getSerializedSize() {
+            int size = memoizedSize;
+            if (size != -1) {
+                return size;
+            }
 
-      size = 0;
-      if (!id_.isEmpty()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, id_);
-      }
-      if (networkId_ != 0) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeSInt32Size(3, networkId_);
-      }
-      if (!sender_.isEmpty()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, sender_);
-      }
-      if (proofOfWork_ != 0) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeSInt32Size(5, proofOfWork_);
-      }
-      if (!recipient_.isEmpty()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(6, recipient_);
-      }
-      if (!hopCount_.isEmpty()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(7, hopCount_);
-      }
-      if (!signature_.isEmpty()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(8, signature_);
-      }
-      if (!chunkNo_.isEmpty()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(9, chunkNo_);
-      }
-      if (!totalChunks_.isEmpty()) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(10, totalChunks_);
-      }
-      size += unknownFields.getSerializedSize();
-      memoizedSize = size;
-      return size;
-    }
+            size = 0;
+            if (id_ != 0L) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeSFixed64Size(1, id_);
+            }
+            if (networkId_ != 0) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeSInt32Size(2, networkId_);
+            }
+            if (!sender_.isEmpty()) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(3, sender_);
+            }
+            if (proofOfWork_ != 0) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeSInt32Size(4, proofOfWork_);
+            }
+            if (!recipient_.isEmpty()) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(5, recipient_);
+            }
+            if (hopCount_ != 0) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeUInt32Size(6, hopCount_);
+            }
+            if (!signature_.isEmpty()) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(7, signature_);
+            }
+            if (chunkNo_ != 0) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeUInt32Size(8, chunkNo_);
+            }
+            if (totalChunks_ != 0) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeUInt32Size(9, totalChunks_);
+            }
+            size += unknownFields.getSerializedSize();
+            memoizedSize = size;
+            return size;
+        }
 
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
-      if (obj == this) {
-       return true;
-      }
-      if (!(obj instanceof org.drasyl.remote.protocol.Protocol.PublicHeader)) {
-        return super.equals(obj);
-      }
-        final org.drasyl.remote.protocol.Protocol.PublicHeader other = (org.drasyl.remote.protocol.Protocol.PublicHeader) obj;
+        @java.lang.Override
+        public boolean equals(final java.lang.Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (!(obj instanceof org.drasyl.remote.protocol.Protocol.PublicHeader)) {
+                return super.equals(obj);
+            }
+            final org.drasyl.remote.protocol.Protocol.PublicHeader other = (org.drasyl.remote.protocol.Protocol.PublicHeader) obj;
 
-      if (!getId()
-          .equals(other.getId())) return false;
-      if (getNetworkId()
-          != other.getNetworkId()) return false;
-      if (!getSender()
-          .equals(other.getSender())) return false;
-      if (getProofOfWork()
-          != other.getProofOfWork()) return false;
-      if (!getRecipient()
-          .equals(other.getRecipient())) return false;
-      if (!getHopCount()
-          .equals(other.getHopCount())) return false;
-      if (!getSignature()
-          .equals(other.getSignature())) return false;
-      if (!getChunkNo()
-          .equals(other.getChunkNo())) return false;
-      if (!getTotalChunks()
-          .equals(other.getTotalChunks())) return false;
-        return unknownFields.equals(other.unknownFields);
-    }
+            if (getId()
+                    != other.getId()) {
+                return false;
+            }
+            if (getNetworkId()
+                    != other.getNetworkId()) {
+                return false;
+            }
+            if (!getSender()
+                    .equals(other.getSender())) {
+                return false;
+            }
+            if (getProofOfWork()
+                    != other.getProofOfWork()) {
+                return false;
+            }
+            if (!getRecipient()
+                    .equals(other.getRecipient())) {
+                return false;
+            }
+            if (getHopCount()
+                    != other.getHopCount()) {
+                return false;
+            }
+            if (!getSignature()
+                    .equals(other.getSignature())) {
+                return false;
+            }
+            if (getChunkNo()
+                    != other.getChunkNo()) {
+                return false;
+            }
+            if (getTotalChunks()
+                    != other.getTotalChunks()) {
+                return false;
+            }
+            return unknownFields.equals(other.unknownFields);
+        }
 
-    @java.lang.Override
-    public int hashCode() {
-      if (memoizedHashCode != 0) {
-        return memoizedHashCode;
-      }
-      int hash = 41;
-      hash = (19 * hash) + getDescriptor().hashCode();
-      hash = (37 * hash) + ID_FIELD_NUMBER;
-      hash = (53 * hash) + getId().hashCode();
-      hash = (37 * hash) + NETWORKID_FIELD_NUMBER;
-      hash = (53 * hash) + getNetworkId();
-      hash = (37 * hash) + SENDER_FIELD_NUMBER;
-      hash = (53 * hash) + getSender().hashCode();
-      hash = (37 * hash) + PROOFOFWORK_FIELD_NUMBER;
-      hash = (53 * hash) + getProofOfWork();
-      hash = (37 * hash) + RECIPIENT_FIELD_NUMBER;
-      hash = (53 * hash) + getRecipient().hashCode();
-      hash = (37 * hash) + HOPCOUNT_FIELD_NUMBER;
-      hash = (53 * hash) + getHopCount().hashCode();
-      hash = (37 * hash) + SIGNATURE_FIELD_NUMBER;
-      hash = (53 * hash) + getSignature().hashCode();
-      hash = (37 * hash) + CHUNKNO_FIELD_NUMBER;
-      hash = (53 * hash) + getChunkNo().hashCode();
-      hash = (37 * hash) + TOTALCHUNKS_FIELD_NUMBER;
-      hash = (53 * hash) + getTotalChunks().hashCode();
-      hash = (29 * hash) + unknownFields.hashCode();
-      memoizedHashCode = hash;
-      return hash;
-    }
+        @java.lang.Override
+        public int hashCode() {
+            if (memoizedHashCode != 0) {
+                return memoizedHashCode;
+            }
+            int hash = 41;
+            hash = (19 * hash) + getDescriptor().hashCode();
+            hash = (37 * hash) + ID_FIELD_NUMBER;
+            hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
+                    getId());
+            hash = (37 * hash) + NETWORKID_FIELD_NUMBER;
+            hash = (53 * hash) + getNetworkId();
+            hash = (37 * hash) + SENDER_FIELD_NUMBER;
+            hash = (53 * hash) + getSender().hashCode();
+            hash = (37 * hash) + PROOFOFWORK_FIELD_NUMBER;
+            hash = (53 * hash) + getProofOfWork();
+            hash = (37 * hash) + RECIPIENT_FIELD_NUMBER;
+            hash = (53 * hash) + getRecipient().hashCode();
+            hash = (37 * hash) + HOPCOUNT_FIELD_NUMBER;
+            hash = (53 * hash) + getHopCount();
+            hash = (37 * hash) + SIGNATURE_FIELD_NUMBER;
+            hash = (53 * hash) + getSignature().hashCode();
+            hash = (37 * hash) + CHUNKNO_FIELD_NUMBER;
+            hash = (53 * hash) + getChunkNo();
+            hash = (37 * hash) + TOTALCHUNKS_FIELD_NUMBER;
+            hash = (53 * hash) + getTotalChunks();
+            hash = (29 * hash) + unknownFields.hashCode();
+            memoizedHashCode = hash;
+            return hash;
+        }
 
-    public static org.drasyl.remote.protocol.Protocol.PublicHeader parseFrom(
-            final java.nio.ByteBuffer data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static org.drasyl.remote.protocol.Protocol.PublicHeader parseFrom(
-            final java.nio.ByteBuffer data,
-            final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data, extensionRegistry);
-    }
+        public static org.drasyl.remote.protocol.Protocol.PublicHeader parseFrom(
+                final java.nio.ByteBuffer data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return PARSER.parseFrom(data);
+        }
+
+        public static org.drasyl.remote.protocol.Protocol.PublicHeader parseFrom(
+                final java.nio.ByteBuffer data,
+                final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return PARSER.parseFrom(data, extensionRegistry);
+        }
 
         public static org.drasyl.remote.protocol.Protocol.PublicHeader parseFrom(
                 final com.google.protobuf.ByteString data)
@@ -785,17 +830,17 @@ public final class Protocol {
                 // @@protoc_insertion_point(builder_implements:org.drasyl.remote.protocol.PublicHeader)
                 org.drasyl.remote.protocol.Protocol.PublicHeaderOrBuilder {
             public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_descriptor;
-      }
+            getDescriptor() {
+                return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_descriptor;
+            }
 
-      @java.lang.Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-          return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_fieldAccessorTable
-                  .ensureFieldAccessorsInitialized(
-                          org.drasyl.remote.protocol.Protocol.PublicHeader.class, org.drasyl.remote.protocol.Protocol.PublicHeader.Builder.class);
-      }
+            @java.lang.Override
+            protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+                return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_fieldAccessorTable
+                        .ensureFieldAccessorsInitialized(
+                                org.drasyl.remote.protocol.Protocol.PublicHeader.class, org.drasyl.remote.protocol.Protocol.PublicHeader.Builder.class);
+            }
 
             // Construct using org.drasyl.remote.protocol.Protocol.PublicHeader.newBuilder()
             private Builder() {
@@ -817,62 +862,62 @@ public final class Protocol {
             @java.lang.Override
             public Builder clear() {
                 super.clear();
-                id_ = com.google.protobuf.ByteString.EMPTY;
+                id_ = 0L;
 
                 networkId_ = 0;
 
                 sender_ = com.google.protobuf.ByteString.EMPTY;
 
-        proofOfWork_ = 0;
+                proofOfWork_ = 0;
 
-        recipient_ = com.google.protobuf.ByteString.EMPTY;
+                recipient_ = com.google.protobuf.ByteString.EMPTY;
 
-        hopCount_ = com.google.protobuf.ByteString.EMPTY;
+                hopCount_ = 0;
 
-        signature_ = com.google.protobuf.ByteString.EMPTY;
+                signature_ = com.google.protobuf.ByteString.EMPTY;
 
-        chunkNo_ = com.google.protobuf.ByteString.EMPTY;
+                chunkNo_ = 0;
 
-        totalChunks_ = com.google.protobuf.ByteString.EMPTY;
+                totalChunks_ = 0;
 
-        return this;
-      }
+                return this;
+            }
 
-      @java.lang.Override
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_descriptor;
-      }
+            @java.lang.Override
+            public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+                return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PublicHeader_descriptor;
+            }
 
-      @java.lang.Override
-      public org.drasyl.remote.protocol.Protocol.PublicHeader getDefaultInstanceForType() {
-        return org.drasyl.remote.protocol.Protocol.PublicHeader.getDefaultInstance();
-      }
+            @java.lang.Override
+            public org.drasyl.remote.protocol.Protocol.PublicHeader getDefaultInstanceForType() {
+                return org.drasyl.remote.protocol.Protocol.PublicHeader.getDefaultInstance();
+            }
 
-      @java.lang.Override
-      public org.drasyl.remote.protocol.Protocol.PublicHeader build() {
-          final org.drasyl.remote.protocol.Protocol.PublicHeader result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
+            @java.lang.Override
+            public org.drasyl.remote.protocol.Protocol.PublicHeader build() {
+                final org.drasyl.remote.protocol.Protocol.PublicHeader result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw newUninitializedMessageException(result);
+                }
+                return result;
+            }
 
-      @java.lang.Override
-      public org.drasyl.remote.protocol.Protocol.PublicHeader buildPartial() {
-          final org.drasyl.remote.protocol.Protocol.PublicHeader result = new org.drasyl.remote.protocol.Protocol.PublicHeader(this);
-        result.id_ = id_;
-        result.networkId_ = networkId_;
-          result.sender_ = sender_;
-          result.proofOfWork_ = proofOfWork_;
-          result.recipient_ = recipient_;
-          result.hopCount_ = hopCount_;
-          result.signature_ = signature_;
-          result.chunkNo_ = chunkNo_;
-          result.totalChunks_ = totalChunks_;
-          onBuilt();
-          return result;
-      }
+            @java.lang.Override
+            public org.drasyl.remote.protocol.Protocol.PublicHeader buildPartial() {
+                final org.drasyl.remote.protocol.Protocol.PublicHeader result = new org.drasyl.remote.protocol.Protocol.PublicHeader(this);
+                result.id_ = id_;
+                result.networkId_ = networkId_;
+                result.sender_ = sender_;
+                result.proofOfWork_ = proofOfWork_;
+                result.recipient_ = recipient_;
+                result.hopCount_ = hopCount_;
+                result.signature_ = signature_;
+                result.chunkNo_ = chunkNo_;
+                result.totalChunks_ = totalChunks_;
+                onBuilt();
+                return result;
+            }
 
             @java.lang.Override
             public Builder clone() {
@@ -927,7 +972,7 @@ public final class Protocol {
                 if (other == org.drasyl.remote.protocol.Protocol.PublicHeader.getDefaultInstance()) {
                     return this;
                 }
-                if (other.getId() != com.google.protobuf.ByteString.EMPTY) {
+                if (other.getId() != 0L) {
                     setId(other.getId());
                 }
                 if (other.getNetworkId() != 0) {
@@ -942,62 +987,62 @@ public final class Protocol {
                 if (other.getRecipient() != com.google.protobuf.ByteString.EMPTY) {
                     setRecipient(other.getRecipient());
                 }
-                if (other.getHopCount() != com.google.protobuf.ByteString.EMPTY) {
+                if (other.getHopCount() != 0) {
                     setHopCount(other.getHopCount());
-        }
-        if (other.getSignature() != com.google.protobuf.ByteString.EMPTY) {
-          setSignature(other.getSignature());
-        }
-        if (other.getChunkNo() != com.google.protobuf.ByteString.EMPTY) {
-          setChunkNo(other.getChunkNo());
-        }
-        if (other.getTotalChunks() != com.google.protobuf.ByteString.EMPTY) {
-          setTotalChunks(other.getTotalChunks());
-        }
-        this.mergeUnknownFields(other.unknownFields);
-        onChanged();
-        return this;
-      }
+                }
+                if (other.getSignature() != com.google.protobuf.ByteString.EMPTY) {
+                    setSignature(other.getSignature());
+                }
+                if (other.getChunkNo() != 0) {
+                    setChunkNo(other.getChunkNo());
+                }
+                if (other.getTotalChunks() != 0) {
+                    setTotalChunks(other.getTotalChunks());
+                }
+                this.mergeUnknownFields(other.unknownFields);
+                onChanged();
+                return this;
+            }
 
-      @java.lang.Override
-      public final boolean isInitialized() {
-        return true;
-      }
+            @java.lang.Override
+            public final boolean isInitialized() {
+                return true;
+            }
 
-      @java.lang.Override
-      public Builder mergeFrom(
-              final com.google.protobuf.CodedInputStream input,
-              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-              throws java.io.IOException {
-          org.drasyl.remote.protocol.Protocol.PublicHeader parsedMessage = null;
-          try {
-              parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          }
-          catch (final com.google.protobuf.InvalidProtocolBufferException e) {
-              parsedMessage = (org.drasyl.remote.protocol.Protocol.PublicHeader) e.getUnfinishedMessage();
-              throw e.unwrapIOException();
-          }
-          finally {
-              if (parsedMessage != null) {
-                  mergeFrom(parsedMessage);
-              }
-          }
-        return this;
-      }
+            @java.lang.Override
+            public Builder mergeFrom(
+                    final com.google.protobuf.CodedInputStream input,
+                    final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                    throws java.io.IOException {
+                org.drasyl.remote.protocol.Protocol.PublicHeader parsedMessage = null;
+                try {
+                    parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+                }
+                catch (final com.google.protobuf.InvalidProtocolBufferException e) {
+                    parsedMessage = (org.drasyl.remote.protocol.Protocol.PublicHeader) e.getUnfinishedMessage();
+                    throw e.unwrapIOException();
+                }
+                finally {
+                    if (parsedMessage != null) {
+                        mergeFrom(parsedMessage);
+                    }
+                }
+                return this;
+            }
 
-      private com.google.protobuf.ByteString id_ = com.google.protobuf.ByteString.EMPTY;
+            private long id_;
 
             /**
              * <pre>
              * 8 bytes fix
              * </pre>
              *
-             * <code>bytes id = 1;</code>
+             * <code>sfixed64 id = 1;</code>
              *
              * @return The id.
              */
             @java.lang.Override
-            public com.google.protobuf.ByteString getId() {
+            public long getId() {
                 return id_;
             }
 
@@ -1006,15 +1051,12 @@ public final class Protocol {
              * 8 bytes fix
              * </pre>
              *
-             * <code>bytes id = 1;</code>
+             * <code>sfixed64 id = 1;</code>
              *
              * @param value The id to set.
              * @return This builder for chaining.
              */
-            public Builder setId(final com.google.protobuf.ByteString value) {
-                if (value == null) {
-                    throw new NullPointerException();
-                }
+            public Builder setId(final long value) {
 
                 id_ = value;
                 onChanged();
@@ -1026,13 +1068,13 @@ public final class Protocol {
              * 8 bytes fix
              * </pre>
              *
-             * <code>bytes id = 1;</code>
+             * <code>sfixed64 id = 1;</code>
              *
              * @return This builder for chaining.
              */
             public Builder clearId() {
 
-                id_ = getDefaultInstance().getId();
+                id_ = 0L;
                 onChanged();
                 return this;
             }
@@ -1041,10 +1083,10 @@ public final class Protocol {
 
             /**
              * <pre>
-             * 4 bytes
+             * up to 4 bytes
              * </pre>
              *
-             * <code>sint32 networkId = 3;</code>
+             * <code>sint32 networkId = 2;</code>
              *
              * @return The networkId.
              */
@@ -1055,10 +1097,10 @@ public final class Protocol {
 
             /**
              * <pre>
-             * 4 bytes
+             * up to 4 bytes
              * </pre>
              *
-             * <code>sint32 networkId = 3;</code>
+             * <code>sint32 networkId = 2;</code>
              *
              * @param value The networkId to set.
              * @return This builder for chaining.
@@ -1072,11 +1114,12 @@ public final class Protocol {
 
             /**
              * <pre>
-       * 4 bytes
-       * </pre>
-       *
-       * <code>sint32 networkId = 3;</code>
-       * @return This builder for chaining.
+             * up to 4 bytes
+             * </pre>
+             *
+             * <code>sint32 networkId = 2;</code>
+             *
+             * @return This builder for chaining.
              */
             public Builder clearNetworkId() {
 
@@ -1092,7 +1135,7 @@ public final class Protocol {
              * 33 bytes fix
              * </pre>
              *
-             * <code>bytes sender = 4;</code>
+             * <code>bytes sender = 3;</code>
              *
              * @return The sender.
              */
@@ -1106,27 +1149,27 @@ public final class Protocol {
              * 33 bytes fix
              * </pre>
              *
-             * <code>bytes sender = 4;</code>
+             * <code>bytes sender = 3;</code>
              *
              * @param value The sender to set.
              * @return This builder for chaining.
              */
             public Builder setSender(final com.google.protobuf.ByteString value) {
-            if (value == null) {
-    throw new NullPointerException();
-  }
+                if (value == null) {
+                    throw new NullPointerException();
+                }
 
-        sender_ = value;
-        onChanged();
-        return this;
-      }
+                sender_ = value;
+                onChanged();
+                return this;
+            }
 
             /**
              * <pre>
              * 33 bytes fix
              * </pre>
              *
-             * <code>bytes sender = 4;</code>
+             * <code>bytes sender = 3;</code>
              *
              * @return This builder for chaining.
              */
@@ -1141,10 +1184,10 @@ public final class Protocol {
 
             /**
              * <pre>
-             * 4 bytes
+             * up to 4 bytes
              * </pre>
              *
-             * <code>sint32 proofOfWork = 5;</code>
+             * <code>sint32 proofOfWork = 4;</code>
              *
              * @return The proofOfWork.
              */
@@ -1155,26 +1198,27 @@ public final class Protocol {
 
             /**
              * <pre>
-             * 4 bytes
+             * up to 4 bytes
              * </pre>
-         *
-         * <code>sint32 proofOfWork = 5;</code>
-         * @param value The proofOfWork to set.
-         * @return This builder for chaining.
-       */
-      public Builder setProofOfWork(final int value) {
+             *
+             * <code>sint32 proofOfWork = 4;</code>
+             *
+             * @param value The proofOfWork to set.
+             * @return This builder for chaining.
+             */
+            public Builder setProofOfWork(final int value) {
 
-          proofOfWork_ = value;
-          onChanged();
-          return this;
-      }
+                proofOfWork_ = value;
+                onChanged();
+                return this;
+            }
 
             /**
              * <pre>
-             * 4 bytes
+             * up to 4 bytes
              * </pre>
              *
-             * <code>sint32 proofOfWork = 5;</code>
+             * <code>sint32 proofOfWork = 4;</code>
              *
              * @return This builder for chaining.
              */
@@ -1192,7 +1236,7 @@ public final class Protocol {
              * 33 bytes fix
              * </pre>
              *
-             * <code>bytes recipient = 6;</code>
+             * <code>bytes recipient = 5;</code>
              *
              * @return The recipient.
              */
@@ -1206,7 +1250,7 @@ public final class Protocol {
              * 33 bytes fix
              * </pre>
              *
-             * <code>bytes recipient = 6;</code>
+             * <code>bytes recipient = 5;</code>
              *
              * @param value The recipient to set.
              * @return This builder for chaining.
@@ -1226,7 +1270,7 @@ public final class Protocol {
              * 33 bytes fix
              * </pre>
              *
-             * <code>bytes recipient = 6;</code>
+             * <code>bytes recipient = 5;</code>
              *
              * @return This builder for chaining.
              */
@@ -1237,36 +1281,33 @@ public final class Protocol {
                 return this;
             }
 
-            private com.google.protobuf.ByteString hopCount_ = com.google.protobuf.ByteString.EMPTY;
+            private int hopCount_;
 
             /**
              * <pre>
-             * 1 byte fix
+             * 1 byte fix (by definition, only values between 1 and 127 are allowed)
              * </pre>
              *
-             * <code>bytes hopCount = 7;</code>
+             * <code>uint32 hopCount = 6;</code>
              *
              * @return The hopCount.
              */
             @java.lang.Override
-            public com.google.protobuf.ByteString getHopCount() {
+            public int getHopCount() {
                 return hopCount_;
             }
 
             /**
              * <pre>
-             * 1 byte fix
+             * 1 byte fix (by definition, only values between 1 and 127 are allowed)
              * </pre>
              *
-             * <code>bytes hopCount = 7;</code>
+             * <code>uint32 hopCount = 6;</code>
              *
              * @param value The hopCount to set.
              * @return This builder for chaining.
              */
-            public Builder setHopCount(final com.google.protobuf.ByteString value) {
-                if (value == null) {
-                    throw new NullPointerException();
-                }
+            public Builder setHopCount(final int value) {
 
                 hopCount_ = value;
                 onChanged();
@@ -1275,16 +1316,16 @@ public final class Protocol {
 
             /**
              * <pre>
-             * 1 byte fix
+             * 1 byte fix (by definition, only values between 1 and 127 are allowed)
              * </pre>
              *
-             * <code>bytes hopCount = 7;</code>
+             * <code>uint32 hopCount = 6;</code>
              *
              * @return This builder for chaining.
              */
             public Builder clearHopCount() {
 
-                hopCount_ = getDefaultInstance().getHopCount();
+                hopCount_ = 0;
                 onChanged();
                 return this;
             }
@@ -1296,7 +1337,7 @@ public final class Protocol {
              * 32 bytes fix
              * </pre>
              *
-             * <code>bytes signature = 8;</code>
+             * <code>bytes signature = 7;</code>
              *
              * @return The signature.
              */
@@ -1310,7 +1351,7 @@ public final class Protocol {
              * 32 bytes fix
              * </pre>
              *
-             * <code>bytes signature = 8;</code>
+             * <code>bytes signature = 7;</code>
              *
              * @param value The signature to set.
              * @return This builder for chaining.
@@ -1330,7 +1371,7 @@ public final class Protocol {
              * 32 bytes fix
              * </pre>
              *
-             * <code>bytes signature = 8;</code>
+             * <code>bytes signature = 7;</code>
              *
              * @return This builder for chaining.
              */
@@ -1341,36 +1382,33 @@ public final class Protocol {
                 return this;
             }
 
-            private com.google.protobuf.ByteString chunkNo_ = com.google.protobuf.ByteString.EMPTY;
+            private int chunkNo_;
 
             /**
              * <pre>
-             * 2 bytes fix
+             * up to 2 bytes (by definition, only values up to 65535 are allowed)
              * </pre>
              *
-             * <code>bytes chunkNo = 9;</code>
+             * <code>uint32 chunkNo = 8;</code>
              *
              * @return The chunkNo.
              */
             @java.lang.Override
-            public com.google.protobuf.ByteString getChunkNo() {
+            public int getChunkNo() {
                 return chunkNo_;
             }
 
             /**
              * <pre>
-             * 2 bytes fix
+             * up to 2 bytes (by definition, only values up to 65535 are allowed)
              * </pre>
              *
-             * <code>bytes chunkNo = 9;</code>
+             * <code>uint32 chunkNo = 8;</code>
              *
              * @param value The chunkNo to set.
              * @return This builder for chaining.
              */
-            public Builder setChunkNo(final com.google.protobuf.ByteString value) {
-                if (value == null) {
-                    throw new NullPointerException();
-                }
+            public Builder setChunkNo(final int value) {
 
                 chunkNo_ = value;
                 onChanged();
@@ -1379,50 +1417,47 @@ public final class Protocol {
 
             /**
              * <pre>
-             * 2 bytes fix
+             * up to 2 bytes (by definition, only values up to 65535 are allowed)
              * </pre>
              *
-             * <code>bytes chunkNo = 9;</code>
+             * <code>uint32 chunkNo = 8;</code>
              *
              * @return This builder for chaining.
              */
             public Builder clearChunkNo() {
 
-                chunkNo_ = getDefaultInstance().getChunkNo();
+                chunkNo_ = 0;
                 onChanged();
                 return this;
-      }
+            }
 
-        private com.google.protobuf.ByteString totalChunks_ = com.google.protobuf.ByteString.EMPTY;
-
-        /**
-         * <pre>
-         * 2 bytes fix
-         * </pre>
-         *
-         * <code>bytes totalChunks = 10;</code>
-         *
-         * @return The totalChunks.
-         */
-        @java.lang.Override
-        public com.google.protobuf.ByteString getTotalChunks() {
-            return totalChunks_;
-        }
+            private int totalChunks_;
 
             /**
              * <pre>
-             * 2 bytes fix
+             * up to 2 bytes (by definition, only values up to 65535 are allowed)
              * </pre>
              *
-             * <code>bytes totalChunks = 10;</code>
+             * <code>uint32 totalChunks = 9;</code>
+             *
+             * @return The totalChunks.
+             */
+            @java.lang.Override
+            public int getTotalChunks() {
+                return totalChunks_;
+            }
+
+            /**
+             * <pre>
+             * up to 2 bytes (by definition, only values up to 65535 are allowed)
+             * </pre>
+             *
+             * <code>uint32 totalChunks = 9;</code>
              *
              * @param value The totalChunks to set.
              * @return This builder for chaining.
              */
-            public Builder setTotalChunks(final com.google.protobuf.ByteString value) {
-                if (value == null) {
-                    throw new NullPointerException();
-                }
+            public Builder setTotalChunks(final int value) {
 
                 totalChunks_ = value;
                 onChanged();
@@ -1431,16 +1466,16 @@ public final class Protocol {
 
             /**
              * <pre>
-             * 2 bytes fix
+             * up to 2 bytes (by definition, only values up to 65535 are allowed)
              * </pre>
              *
-             * <code>bytes totalChunks = 10;</code>
+             * <code>uint32 totalChunks = 9;</code>
              *
              * @return This builder for chaining.
              */
             public Builder clearTotalChunks() {
 
-                totalChunks_ = getDefaultInstance().getTotalChunks();
+                totalChunks_ = 0;
                 onChanged();
                 return this;
             }
@@ -1451,26 +1486,25 @@ public final class Protocol {
                 return super.setUnknownFields(unknownFields);
             }
 
-      @java.lang.Override
-      public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.mergeUnknownFields(unknownFields);
-      }
+            @java.lang.Override
+            public final Builder mergeUnknownFields(
+                    final com.google.protobuf.UnknownFieldSet unknownFields) {
+                return super.mergeUnknownFields(unknownFields);
+            }
 
+            // @@protoc_insertion_point(builder_scope:org.drasyl.remote.protocol.PublicHeader)
+        }
 
-      // @@protoc_insertion_point(builder_scope:org.drasyl.remote.protocol.PublicHeader)
-    }
+        // @@protoc_insertion_point(class_scope:org.drasyl.remote.protocol.PublicHeader)
+        private static final org.drasyl.remote.protocol.Protocol.PublicHeader DEFAULT_INSTANCE;
 
-    // @@protoc_insertion_point(class_scope:org.drasyl.remote.protocol.PublicHeader)
-    private static final org.drasyl.remote.protocol.Protocol.PublicHeader DEFAULT_INSTANCE;
+        static {
+            DEFAULT_INSTANCE = new org.drasyl.remote.protocol.Protocol.PublicHeader();
+        }
 
-      static {
-          DEFAULT_INSTANCE = new org.drasyl.remote.protocol.Protocol.PublicHeader();
-    }
-
-    public static org.drasyl.remote.protocol.Protocol.PublicHeader getDefaultInstance() {
-        return DEFAULT_INSTANCE;
-    }
+        public static org.drasyl.remote.protocol.Protocol.PublicHeader getDefaultInstance() {
+            return DEFAULT_INSTANCE;
+        }
 
         private static final com.google.protobuf.Parser<PublicHeader>
                 PARSER = new com.google.protobuf.AbstractParser<PublicHeader>() {
@@ -1556,42 +1590,42 @@ public final class Protocol {
                 throw new java.lang.NullPointerException();
             }
             final com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-                com.google.protobuf.UnknownFieldSet.newBuilder();
-        try {
-            boolean done = false;
-            while (!done) {
-                final int tag = input.readTag();
-                switch (tag) {
-                    case 0:
-                        done = true;
-                        break;
-                    case 8: {
-                        final int rawValue = input.readEnum();
-
-                        type_ = rawValue;
-                        break;
-                    }
-                    default: {
-                        if (!parseUnknownField(
-                                input, unknownFields, extensionRegistry, tag)) {
+                    com.google.protobuf.UnknownFieldSet.newBuilder();
+            try {
+                boolean done = false;
+                while (!done) {
+                    final int tag = input.readTag();
+                    switch (tag) {
+                        case 0:
                             done = true;
+                            break;
+                        case 8: {
+                            final int rawValue = input.readEnum();
+
+                            type_ = rawValue;
+                            break;
                         }
-                        break;
+                        default: {
+                            if (!parseUnknownField(
+                                    input, unknownFields, extensionRegistry, tag)) {
+                                done = true;
+                            }
+                            break;
+                        }
                     }
                 }
             }
-        }
-        catch (final com.google.protobuf.InvalidProtocolBufferException e) {
-            throw e.setUnfinishedMessage(this);
-        }
-        catch (final java.io.IOException e) {
-            throw new com.google.protobuf.InvalidProtocolBufferException(
-                    e).setUnfinishedMessage(this);
-        }
-        finally {
-            this.unknownFields = unknownFields.build();
-            makeExtensionsImmutable();
-        }
+            catch (final com.google.protobuf.InvalidProtocolBufferException e) {
+                throw e.setUnfinishedMessage(this);
+            }
+            catch (final java.io.IOException e) {
+                throw new com.google.protobuf.InvalidProtocolBufferException(
+                        e).setUnfinishedMessage(this);
+            }
+            finally {
+                this.unknownFields = unknownFields.build();
+                makeExtensionsImmutable();
+            }
         }
 
         public static final com.google.protobuf.Descriptors.Descriptor
@@ -1612,11 +1646,13 @@ public final class Protocol {
 
         /**
          * <code>.org.drasyl.remote.protocol.MessageType type = 1;</code>
+         *
          * @return The enum numeric value on the wire for type.
-     */
-    @java.lang.Override public int getTypeValue() {
-        return type_;
-    }
+         */
+        @java.lang.Override
+        public int getTypeValue() {
+            return type_;
+        }
 
         /**
          * <code>.org.drasyl.remote.protocol.MessageType type = 1;</code>
@@ -1626,8 +1662,8 @@ public final class Protocol {
         @java.lang.Override
         public org.drasyl.remote.protocol.Protocol.MessageType getType() {
             @SuppressWarnings("deprecation") final org.drasyl.remote.protocol.Protocol.MessageType result = org.drasyl.remote.protocol.Protocol.MessageType.valueOf(type_);
-        return result == null ? org.drasyl.remote.protocol.Protocol.MessageType.UNRECOGNIZED : result;
-    }
+            return result == null ? org.drasyl.remote.protocol.Protocol.MessageType.UNRECOGNIZED : result;
+        }
 
         private byte memoizedIsInitialized = -1;
 
@@ -1641,12 +1677,12 @@ public final class Protocol {
                 return false;
             }
 
-      memoizedIsInitialized = 1;
+            memoizedIsInitialized = 1;
             return true;
         }
 
         @java.lang.Override
-    public void writeTo(final com.google.protobuf.CodedOutputStream output)
+        public void writeTo(final com.google.protobuf.CodedOutputStream output)
                 throws java.io.IOException {
             if (type_ != org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT.getNumber()) {
                 output.writeEnum(1, type_);
@@ -1681,7 +1717,9 @@ public final class Protocol {
             }
             final org.drasyl.remote.protocol.Protocol.PrivateHeader other = (org.drasyl.remote.protocol.Protocol.PrivateHeader) obj;
 
-            if (type_ != other.type_) return false;
+            if (type_ != other.type_) {
+                return false;
+            }
             return unknownFields.equals(other.unknownFields);
         }
 
@@ -1770,7 +1808,7 @@ public final class Protocol {
                 throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3
                     .parseWithIOException(PARSER, input);
-    }
+        }
 
         public static org.drasyl.remote.protocol.Protocol.PrivateHeader parseFrom(
                 final com.google.protobuf.CodedInputStream input,
@@ -1802,8 +1840,8 @@ public final class Protocol {
         @java.lang.Override
         protected Builder newBuilderForType(
                 final com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-      final Builder builder = new Builder(parent);
-      return builder;
+            final Builder builder = new Builder(parent);
+            return builder;
         }
 
         /**
@@ -1813,10 +1851,10 @@ public final class Protocol {
                 com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
                 // @@protoc_insertion_point(builder_implements:org.drasyl.remote.protocol.PrivateHeader)
                 org.drasyl.remote.protocol.Protocol.PrivateHeaderOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-          return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PrivateHeader_descriptor;
-      }
+            public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+                return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_PrivateHeader_descriptor;
+            }
 
             @java.lang.Override
             protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
@@ -1982,25 +2020,25 @@ public final class Protocol {
              * <code>.org.drasyl.remote.protocol.MessageType type = 1;</code>
              *
              * @param value The enum numeric value on the wire for type to set.
-         * @return This builder for chaining.
-         */
-        public Builder setTypeValue(final int value) {
+             * @return This builder for chaining.
+             */
+            public Builder setTypeValue(final int value) {
 
-            type_ = value;
-            onChanged();
-            return this;
-        }
+                type_ = value;
+                onChanged();
+                return this;
+            }
 
-        /**
-         * <code>.org.drasyl.remote.protocol.MessageType type = 1;</code>
-         *
-         * @return The type.
-         */
-        @java.lang.Override
-        public org.drasyl.remote.protocol.Protocol.MessageType getType() {
-            @SuppressWarnings("deprecation") final org.drasyl.remote.protocol.Protocol.MessageType result = org.drasyl.remote.protocol.Protocol.MessageType.valueOf(type_);
-            return result == null ? org.drasyl.remote.protocol.Protocol.MessageType.UNRECOGNIZED : result;
-        }
+            /**
+             * <code>.org.drasyl.remote.protocol.MessageType type = 1;</code>
+             *
+             * @return The type.
+             */
+            @java.lang.Override
+            public org.drasyl.remote.protocol.Protocol.MessageType getType() {
+                @SuppressWarnings("deprecation") final org.drasyl.remote.protocol.Protocol.MessageType result = org.drasyl.remote.protocol.Protocol.MessageType.valueOf(type_);
+                return result == null ? org.drasyl.remote.protocol.Protocol.MessageType.UNRECOGNIZED : result;
+            }
 
             /**
              * <code>.org.drasyl.remote.protocol.MessageType type = 1;</code>
@@ -2020,28 +2058,29 @@ public final class Protocol {
 
             /**
              * <code>.org.drasyl.remote.protocol.MessageType type = 1;</code>
+             *
              * @return This builder for chaining.
              */
             public Builder clearType() {
 
                 type_ = 0;
                 onChanged();
-        return this;
-      }
-      @java.lang.Override
-      public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
-      }
+                return this;
+            }
 
-      @java.lang.Override
-      public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.mergeUnknownFields(unknownFields);
-      }
+            @java.lang.Override
+            public final Builder setUnknownFields(
+                    final com.google.protobuf.UnknownFieldSet unknownFields) {
+                return super.setUnknownFields(unknownFields);
+            }
 
+            @java.lang.Override
+            public final Builder mergeUnknownFields(
+                    final com.google.protobuf.UnknownFieldSet unknownFields) {
+                return super.mergeUnknownFields(unknownFields);
+            }
 
-      // @@protoc_insertion_point(builder_scope:org.drasyl.remote.protocol.PrivateHeader)
+            // @@protoc_insertion_point(builder_scope:org.drasyl.remote.protocol.PrivateHeader)
         }
 
         // @@protoc_insertion_point(class_scope:org.drasyl.remote.protocol.PrivateHeader)
@@ -2086,14 +2125,14 @@ public final class Protocol {
             com.google.protobuf.MessageOrBuilder {
         /**
          * <pre>
-         * 12 bytes fix
+         * 8 bytes fix
          * </pre>
          *
-         * <code>bytes correspondingId = 1;</code>
+         * <code>sfixed64 correspondingId = 1;</code>
          *
          * @return The correspondingId.
          */
-        com.google.protobuf.ByteString getCorrespondingId();
+        long getCorrespondingId();
     }
 
     /**
@@ -2111,7 +2150,6 @@ public final class Protocol {
         }
 
         private Acknowledgement() {
-            correspondingId_ = com.google.protobuf.ByteString.EMPTY;
         }
 
         @java.lang.Override
@@ -2131,12 +2169,12 @@ public final class Protocol {
                 final com.google.protobuf.CodedInputStream input,
                 final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
-        this();
-        if (extensionRegistry == null) {
-            throw new java.lang.NullPointerException();
-        }
-        final com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-                com.google.protobuf.UnknownFieldSet.newBuilder();
+            this();
+            if (extensionRegistry == null) {
+                throw new java.lang.NullPointerException();
+            }
+            final com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+                    com.google.protobuf.UnknownFieldSet.newBuilder();
             try {
                 boolean done = false;
                 while (!done) {
@@ -2145,9 +2183,9 @@ public final class Protocol {
                         case 0:
                             done = true;
                             break;
-                        case 10: {
+                        case 9: {
 
-                            correspondingId_ = input.readBytes();
+                            correspondingId_ = input.readSFixed64();
                             break;
                         }
                         default: {
@@ -2175,7 +2213,7 @@ public final class Protocol {
 
         public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Acknowledgement_descriptor;
+            return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Acknowledgement_descriptor;
         }
 
         @java.lang.Override
@@ -2187,19 +2225,19 @@ public final class Protocol {
         }
 
         public static final int CORRESPONDINGID_FIELD_NUMBER = 1;
-        private com.google.protobuf.ByteString correspondingId_;
+        private long correspondingId_;
 
         /**
          * <pre>
-         * 12 bytes fix
+         * 8 bytes fix
          * </pre>
          *
-         * <code>bytes correspondingId = 1;</code>
+         * <code>sfixed64 correspondingId = 1;</code>
          *
          * @return The correspondingId.
          */
         @java.lang.Override
-        public com.google.protobuf.ByteString getCorrespondingId() {
+        public long getCorrespondingId() {
             return correspondingId_;
         }
 
@@ -2215,15 +2253,15 @@ public final class Protocol {
                 return false;
             }
 
-      memoizedIsInitialized = 1;
+            memoizedIsInitialized = 1;
             return true;
         }
 
         @java.lang.Override
         public void writeTo(final com.google.protobuf.CodedOutputStream output)
                 throws java.io.IOException {
-            if (!correspondingId_.isEmpty()) {
-                output.writeBytes(1, correspondingId_);
+            if (correspondingId_ != 0L) {
+                output.writeSFixed64(1, correspondingId_);
             }
             unknownFields.writeTo(output);
         }
@@ -2236,9 +2274,9 @@ public final class Protocol {
             }
 
             size = 0;
-            if (!correspondingId_.isEmpty()) {
+            if (correspondingId_ != 0L) {
                 size += com.google.protobuf.CodedOutputStream
-                        .computeBytesSize(1, correspondingId_);
+                        .computeSFixed64Size(1, correspondingId_);
             }
             size += unknownFields.getSerializedSize();
             memoizedSize = size;
@@ -2255,8 +2293,8 @@ public final class Protocol {
             }
             final org.drasyl.remote.protocol.Protocol.Acknowledgement other = (org.drasyl.remote.protocol.Protocol.Acknowledgement) obj;
 
-            if (!getCorrespondingId()
-                    .equals(other.getCorrespondingId())) {
+            if (getCorrespondingId()
+                    != other.getCorrespondingId()) {
                 return false;
             }
             return unknownFields.equals(other.unknownFields);
@@ -2270,7 +2308,8 @@ public final class Protocol {
             int hash = 41;
             hash = (19 * hash) + getDescriptor().hashCode();
             hash = (37 * hash) + CORRESPONDINGID_FIELD_NUMBER;
-            hash = (53 * hash) + getCorrespondingId().hashCode();
+            hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
+                    getCorrespondingId());
             hash = (29 * hash) + unknownFields.hashCode();
             memoizedHashCode = hash;
             return hash;
@@ -2344,9 +2383,9 @@ public final class Protocol {
 
         public static org.drasyl.remote.protocol.Protocol.Acknowledgement parseFrom(
                 final com.google.protobuf.CodedInputStream input)
-            throws java.io.IOException {
-        return com.google.protobuf.GeneratedMessageV3
-                .parseWithIOException(PARSER, input);
+                throws java.io.IOException {
+            return com.google.protobuf.GeneratedMessageV3
+                    .parseWithIOException(PARSER, input);
         }
 
         public static org.drasyl.remote.protocol.Protocol.Acknowledgement parseFrom(
@@ -2423,7 +2462,7 @@ public final class Protocol {
             @java.lang.Override
             public Builder clear() {
                 super.clear();
-                correspondingId_ = com.google.protobuf.ByteString.EMPTY;
+                correspondingId_ = 0L;
 
                 return this;
             }
@@ -2509,7 +2548,7 @@ public final class Protocol {
                 if (other == org.drasyl.remote.protocol.Protocol.Acknowledgement.getDefaultInstance()) {
                     return this;
                 }
-                if (other.getCorrespondingId() != com.google.protobuf.ByteString.EMPTY) {
+                if (other.getCorrespondingId() != 0L) {
                     setCorrespondingId(other.getCorrespondingId());
                 }
                 this.mergeUnknownFields(other.unknownFields);
@@ -2530,79 +2569,81 @@ public final class Protocol {
                 org.drasyl.remote.protocol.Protocol.Acknowledgement parsedMessage = null;
                 try {
                     parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (final com.google.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.drasyl.remote.protocol.Protocol.Acknowledgement) e.getUnfinishedMessage();
-            throw e.unwrapIOException();
-        }
-        finally {
-            if (parsedMessage != null) {
-                mergeFrom(parsedMessage);
+                }
+                catch (final com.google.protobuf.InvalidProtocolBufferException e) {
+                    parsedMessage = (org.drasyl.remote.protocol.Protocol.Acknowledgement) e.getUnfinishedMessage();
+                    throw e.unwrapIOException();
+                }
+                finally {
+                    if (parsedMessage != null) {
+                        mergeFrom(parsedMessage);
+                    }
+                }
+                return this;
             }
-        }
-            return this;
-        }
 
-        private com.google.protobuf.ByteString correspondingId_ = com.google.protobuf.ByteString.EMPTY;
-
-        /**
-         * <pre>
-         * 12 bytes fix
-         * </pre>
-         *
-         * <code>bytes correspondingId = 1;</code>
-       * @return The correspondingId.
-       */
-      @java.lang.Override
-      public com.google.protobuf.ByteString getCorrespondingId() {
-        return correspondingId_;
-      }
+            private long correspondingId_;
 
             /**
              * <pre>
-             * 12 bytes fix
+             * 8 bytes fix
              * </pre>
-       *
-       * <code>bytes correspondingId = 1;</code>
-       * @param value The correspondingId to set.
-       * @return This builder for chaining.
-       */
-      public Builder setCorrespondingId(final com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
+             *
+             * <code>sfixed64 correspondingId = 1;</code>
+             *
+             * @return The correspondingId.
+             */
+            @java.lang.Override
+            public long getCorrespondingId() {
+                return correspondingId_;
+            }
 
-        correspondingId_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * 12 bytes fix
-       * </pre>
-       *
-       * <code>bytes correspondingId = 1;</code>
-       * @return This builder for chaining.
-       */
-      public Builder clearCorrespondingId() {
+            /**
+             * <pre>
+             * 8 bytes fix
+             * </pre>
+             *
+             * <code>sfixed64 correspondingId = 1;</code>
+             *
+             * @param value The correspondingId to set.
+             * @return This builder for chaining.
+             */
+            public Builder setCorrespondingId(final long value) {
 
-          correspondingId_ = getDefaultInstance().getCorrespondingId();
-        onChanged();
-        return this;
-      }
-      @java.lang.Override
-      public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
-      }
+                correspondingId_ = value;
+                onChanged();
+                return this;
+            }
 
-      @java.lang.Override
-      public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.mergeUnknownFields(unknownFields);
-      }
+            /**
+             * <pre>
+             * 8 bytes fix
+             * </pre>
+             *
+             * <code>sfixed64 correspondingId = 1;</code>
+             *
+             * @return This builder for chaining.
+             */
+            public Builder clearCorrespondingId() {
 
+                correspondingId_ = 0L;
+                onChanged();
+                return this;
+            }
 
-      // @@protoc_insertion_point(builder_scope:org.drasyl.remote.protocol.Acknowledgement)
+            @java.lang.Override
+            public final Builder setUnknownFields(
+                    final com.google.protobuf.UnknownFieldSet unknownFields) {
+                return super.setUnknownFields(unknownFields);
+            }
+
+            @java.lang.Override
+            public final Builder mergeUnknownFields(
+                    final com.google.protobuf.UnknownFieldSet unknownFields) {
+                return super.mergeUnknownFields(unknownFields);
+            }
+
+            // @@protoc_insertion_point(builder_scope:org.drasyl.remote.protocol.Acknowledgement)
         }
 
         // @@protoc_insertion_point(class_scope:org.drasyl.remote.protocol.Acknowledgement)
@@ -2659,12 +2700,13 @@ public final class Protocol {
          */
         java.lang.String getType();
 
-      /**
-       * <code>string type = 2;</code>
-       * @return The bytes for type.
-       */
-      com.google.protobuf.ByteString
-      getTypeBytes();
+        /**
+         * <code>string type = 2;</code>
+         *
+         * @return The bytes for type.
+         */
+        com.google.protobuf.ByteString
+        getTypeBytes();
     }
 
     /**
@@ -2706,47 +2748,49 @@ public final class Protocol {
             this();
             if (extensionRegistry == null) {
                 throw new java.lang.NullPointerException();
-        }
-        final com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-                com.google.protobuf.UnknownFieldSet.newBuilder();
-        try {
-            boolean done = false;
-            while (!done) {
-                final int tag = input.readTag();
-                switch (tag) {
-                    case 0:
-                        done = true;
-                        break;
-                    case 10: {
-
-                        payload_ = input.readBytes();
-                        break;
-                    }
-                    case 18: {
-                        final java.lang.String s = input.readStringRequireUtf8();
-
-                        type_ = s;
-                        break;
-                    }
-                    default: {
-                        if (!parseUnknownField(
-                                input, unknownFields, extensionRegistry, tag)) {
+            }
+            final com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+                    com.google.protobuf.UnknownFieldSet.newBuilder();
+            try {
+                boolean done = false;
+                while (!done) {
+                    final int tag = input.readTag();
+                    switch (tag) {
+                        case 0:
                             done = true;
+                            break;
+                        case 10: {
+
+                            payload_ = input.readBytes();
+                            break;
                         }
-                        break;
+                        case 18: {
+                            final java.lang.String s = input.readStringRequireUtf8();
+
+                            type_ = s;
+                            break;
+                        }
+                        default: {
+                            if (!parseUnknownField(
+                                    input, unknownFields, extensionRegistry, tag)) {
+                                done = true;
+                            }
+                            break;
+                        }
                     }
                 }
             }
-        }
-        catch (final com.google.protobuf.InvalidProtocolBufferException e) {
-            throw e.setUnfinishedMessage(this);
-      } catch (final java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-                e).setUnfinishedMessage(this);
-        } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-        }
+            catch (final com.google.protobuf.InvalidProtocolBufferException e) {
+                throw e.setUnfinishedMessage(this);
+            }
+            catch (final java.io.IOException e) {
+                throw new com.google.protobuf.InvalidProtocolBufferException(
+                        e).setUnfinishedMessage(this);
+            }
+            finally {
+                this.unknownFields = unknownFields.build();
+                makeExtensionsImmutable();
+            }
         }
 
         public static final com.google.protobuf.Descriptors.Descriptor
@@ -2766,34 +2810,37 @@ public final class Protocol {
         private com.google.protobuf.ByteString payload_;
 
         /**
-     * <code>bytes payload = 1;</code>
-     * @return The payload.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString getPayload() {
-      return payload_;
-    }
+         * <code>bytes payload = 1;</code>
+         *
+         * @return The payload.
+         */
+        @java.lang.Override
+        public com.google.protobuf.ByteString getPayload() {
+            return payload_;
+        }
 
-    public static final int TYPE_FIELD_NUMBER = 2;
+        public static final int TYPE_FIELD_NUMBER = 2;
         private volatile java.lang.Object type_;
-    /**
-     * <code>string type = 2;</code>
-     * @return The type.
-     */
-    @java.lang.Override
-    public java.lang.String getType() {
-        final java.lang.Object ref = type_;
-        if (ref instanceof java.lang.String) {
-            return (java.lang.String) ref;
+
+        /**
+         * <code>string type = 2;</code>
+         *
+         * @return The type.
+         */
+        @java.lang.Override
+        public java.lang.String getType() {
+            final java.lang.Object ref = type_;
+            if (ref instanceof java.lang.String) {
+                return (java.lang.String) ref;
+            }
+            else {
+                final com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                final java.lang.String s = bs.toStringUtf8();
+                type_ = s;
+                return s;
+            }
         }
-        else {
-            final com.google.protobuf.ByteString bs =
-                    (com.google.protobuf.ByteString) ref;
-            final java.lang.String s = bs.toStringUtf8();
-          type_ = s;
-            return s;
-        }
-    }
 
         /**
          * <code>string type = 2;</code>
@@ -2809,8 +2856,8 @@ public final class Protocol {
                         com.google.protobuf.ByteString.copyFromUtf8(
                                 (java.lang.String) ref);
                 type_ = b;
-            return b;
-        }
+                return b;
+            }
             else {
                 return (com.google.protobuf.ByteString) ref;
             }
@@ -2821,8 +2868,12 @@ public final class Protocol {
         @java.lang.Override
         public final boolean isInitialized() {
             final byte isInitialized = memoizedIsInitialized;
-            if (isInitialized == 1) return true;
-            if (isInitialized == 0) return false;
+            if (isInitialized == 1) {
+                return true;
+            }
+            if (isInitialized == 0) {
+                return false;
+            }
 
             memoizedIsInitialized = 1;
             return true;
@@ -2831,9 +2882,9 @@ public final class Protocol {
         @java.lang.Override
         public void writeTo(final com.google.protobuf.CodedOutputStream output)
                 throws java.io.IOException {
-      if (!payload_.isEmpty()) {
-          output.writeBytes(1, payload_);
-      }
+            if (!payload_.isEmpty()) {
+                output.writeBytes(1, payload_);
+            }
             if (!getTypeBytes().isEmpty()) {
                 com.google.protobuf.GeneratedMessageV3.writeString(output, 2, type_);
             }
@@ -2964,7 +3015,7 @@ public final class Protocol {
         }
 
         public static org.drasyl.remote.protocol.Protocol.Application parseFrom(
-            final com.google.protobuf.CodedInputStream input)
+                final com.google.protobuf.CodedInputStream input)
                 throws java.io.IOException {
             return com.google.protobuf.GeneratedMessageV3
                     .parseWithIOException(PARSER, input);
@@ -3134,7 +3185,7 @@ public final class Protocol {
                     return this;
                 }
                 if (other.getPayload() != com.google.protobuf.ByteString.EMPTY) {
-            setPayload(other.getPayload());
+                    setPayload(other.getPayload());
                 }
                 if (!other.getType().isEmpty()) {
                     type_ = other.type_;
@@ -3160,7 +3211,7 @@ public final class Protocol {
                     parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
                 }
                 catch (final com.google.protobuf.InvalidProtocolBufferException e) {
-                parsedMessage = (org.drasyl.remote.protocol.Protocol.Application) e.getUnfinishedMessage();
+                    parsedMessage = (org.drasyl.remote.protocol.Protocol.Application) e.getUnfinishedMessage();
                     throw e.unwrapIOException();
                 }
                 finally {
@@ -3242,9 +3293,9 @@ public final class Protocol {
                 final java.lang.Object ref = type_;
                 if (ref instanceof String) {
                     final com.google.protobuf.ByteString b =
-                  com.google.protobuf.ByteString.copyFromUtf8(
-                          (java.lang.String) ref);
-                type_ = b;
+                            com.google.protobuf.ByteString.copyFromUtf8(
+                                    (java.lang.String) ref);
+                    type_ = b;
                     return b;
                 }
                 else {
@@ -3254,47 +3305,50 @@ public final class Protocol {
 
             /**
              * <code>string type = 2;</code>
-         *
-         * @param value The type to set.
-         * @return This builder for chaining.
-         */
-        public Builder setType(
-                final java.lang.String value) {
-            if (value == null) {
-                throw new NullPointerException();
+             *
+             * @param value The type to set.
+             * @return This builder for chaining.
+             */
+            public Builder setType(
+                    final java.lang.String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+
+                type_ = value;
+                onChanged();
+                return this;
             }
-
-            type_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>string type = 2;</code>
-       * @return This builder for chaining.
-       */
-      public Builder clearType() {
-
-        type_ = getDefaultInstance().getType();
-        onChanged();
-          return this;
-      }
 
             /**
              * <code>string type = 2;</code>
+             *
+             * @return This builder for chaining.
+             */
+            public Builder clearType() {
+
+                type_ = getDefaultInstance().getType();
+                onChanged();
+                return this;
+            }
+
+            /**
+             * <code>string type = 2;</code>
+             *
              * @param value The bytes for type to set.
              * @return This builder for chaining.
-       */
-      public Builder setTypeBytes(
-              final com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  checkByteStringIsUtf8(value);
+             */
+            public Builder setTypeBytes(
+                    final com.google.protobuf.ByteString value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                checkByteStringIsUtf8(value);
 
-        type_ = value;
-        onChanged();
-          return this;
-      }
+                type_ = value;
+                onChanged();
+                return this;
+            }
 
             @java.lang.Override
             public final Builder setUnknownFields(
@@ -3385,65 +3439,67 @@ public final class Protocol {
 
         @java.lang.Override
         public final com.google.protobuf.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
-
-      private Discovery(
-              final com.google.protobuf.CodedInputStream input,
-              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-              throws com.google.protobuf.InvalidProtocolBufferException {
-          this();
-          if (extensionRegistry == null) {
-              throw new java.lang.NullPointerException();
-          }
-          final com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-                  com.google.protobuf.UnknownFieldSet.newBuilder();
-          try {
-              boolean done = false;
-              while (!done) {
-                  final int tag = input.readTag();
-                  switch (tag) {
-                      case 0:
-                          done = true;
-                          break;
-                      case 8: {
-
-                          childrenTime_ = input.readUInt64();
-                          break;
-                      }
-                      default: {
-                          if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                              done = true;
-                          }
-              break;
-            }
-          }
+        getUnknownFields() {
+            return this.unknownFields;
         }
-      } catch (final com.google.protobuf.InvalidProtocolBufferException e) {
-              throw e.setUnfinishedMessage(this);
-          }
-          catch (final java.io.IOException e) {
-              throw new com.google.protobuf.InvalidProtocolBufferException(
-                      e).setUnfinishedMessage(this);
-          }
-          finally {
-              this.unknownFields = unknownFields.build();
-              makeExtensionsImmutable();
-      }
-    }
-    public static final com.google.protobuf.Descriptors.Descriptor
-    getDescriptor() {
-        return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Discovery_descriptor;
-    }
+
+        private Discovery(
+                final com.google.protobuf.CodedInputStream input,
+                final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            this();
+            if (extensionRegistry == null) {
+                throw new java.lang.NullPointerException();
+            }
+            final com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+                    com.google.protobuf.UnknownFieldSet.newBuilder();
+            try {
+                boolean done = false;
+                while (!done) {
+                    final int tag = input.readTag();
+                    switch (tag) {
+                        case 0:
+                            done = true;
+                            break;
+                        case 8: {
+
+                            childrenTime_ = input.readUInt64();
+                            break;
+                        }
+                        default: {
+                            if (!parseUnknownField(
+                                    input, unknownFields, extensionRegistry, tag)) {
+                                done = true;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (final com.google.protobuf.InvalidProtocolBufferException e) {
+                throw e.setUnfinishedMessage(this);
+            }
+            catch (final java.io.IOException e) {
+                throw new com.google.protobuf.InvalidProtocolBufferException(
+                        e).setUnfinishedMessage(this);
+            }
+            finally {
+                this.unknownFields = unknownFields.build();
+                makeExtensionsImmutable();
+            }
+        }
+
+        public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+            return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Discovery_descriptor;
+        }
 
         @java.lang.Override
         protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
             return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Discovery_fieldAccessorTable
-              .ensureFieldAccessorsInitialized(
-                      org.drasyl.remote.protocol.Protocol.Discovery.class, org.drasyl.remote.protocol.Protocol.Discovery.Builder.class);
+                    .ensureFieldAccessorsInitialized(
+                            org.drasyl.remote.protocol.Protocol.Discovery.class, org.drasyl.remote.protocol.Protocol.Discovery.Builder.class);
         }
 
         public static final int CHILDRENTIME_FIELD_NUMBER = 1;
@@ -3464,8 +3520,12 @@ public final class Protocol {
         @java.lang.Override
         public final boolean isInitialized() {
             final byte isInitialized = memoizedIsInitialized;
-            if (isInitialized == 1) return true;
-            if (isInitialized == 0) return false;
+            if (isInitialized == 1) {
+                return true;
+            }
+            if (isInitialized == 0) {
+                return false;
+            }
 
             memoizedIsInitialized = 1;
             return true;
@@ -3591,8 +3651,8 @@ public final class Protocol {
                 final java.io.InputStream input,
                 final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-              .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+            return com.google.protobuf.GeneratedMessageV3
+                    .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
         }
 
         public static org.drasyl.remote.protocol.Protocol.Discovery parseFrom(
@@ -3633,215 +3693,223 @@ public final class Protocol {
         protected Builder newBuilderForType(
                 final com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
             final Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * Protobuf type {@code org.drasyl.remote.protocol.Discovery}
-     */
-    public static final class Builder extends
-            com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
-            // @@protoc_insertion_point(builder_implements:org.drasyl.remote.protocol.Discovery)
-            org.drasyl.remote.protocol.Protocol.DiscoveryOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-            return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Discovery_descriptor;
+            return builder;
         }
 
-        @java.lang.Override
-        protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-            return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Discovery_fieldAccessorTable
-                    .ensureFieldAccessorsInitialized(
-                            org.drasyl.remote.protocol.Protocol.Discovery.class, org.drasyl.remote.protocol.Protocol.Discovery.Builder.class);
-        }
-
-        // Construct using org.drasyl.remote.protocol.Protocol.Discovery.newBuilder()
-        private Builder() {
-            maybeForceBuilderInitialization();
-        }
-
-        private Builder(
-                final com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-            super(parent);
-            maybeForceBuilderInitialization();
-        }
-
-        private void maybeForceBuilderInitialization() {
-            if (com.google.protobuf.GeneratedMessageV3
-                    .alwaysUseFieldBuilders) {
+        /**
+         * Protobuf type {@code org.drasyl.remote.protocol.Discovery}
+         */
+        public static final class Builder extends
+                com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+                // @@protoc_insertion_point(builder_implements:org.drasyl.remote.protocol.Discovery)
+                org.drasyl.remote.protocol.Protocol.DiscoveryOrBuilder {
+            public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+                return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Discovery_descriptor;
             }
-        }
 
-        @java.lang.Override
-        public Builder clear() {
-            super.clear();
-            childrenTime_ = 0L;
-
-            return this;
-        }
-
-        @java.lang.Override
-        public com.google.protobuf.Descriptors.Descriptor
-        getDescriptorForType() {
-            return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Discovery_descriptor;
-        }
-
-        @java.lang.Override
-        public org.drasyl.remote.protocol.Protocol.Discovery getDefaultInstanceForType() {
-            return org.drasyl.remote.protocol.Protocol.Discovery.getDefaultInstance();
-        }
-
-        @java.lang.Override
-        public org.drasyl.remote.protocol.Protocol.Discovery build() {
-            final org.drasyl.remote.protocol.Protocol.Discovery result = buildPartial();
-            if (!result.isInitialized()) {
-                throw newUninitializedMessageException(result);
+            @java.lang.Override
+            protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+                return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Discovery_fieldAccessorTable
+                        .ensureFieldAccessorsInitialized(
+                                org.drasyl.remote.protocol.Protocol.Discovery.class, org.drasyl.remote.protocol.Protocol.Discovery.Builder.class);
             }
-            return result;
-        }
 
-        @java.lang.Override
-        public org.drasyl.remote.protocol.Protocol.Discovery buildPartial() {
-            final org.drasyl.remote.protocol.Protocol.Discovery result = new org.drasyl.remote.protocol.Protocol.Discovery(this);
-            result.childrenTime_ = childrenTime_;
-            onBuilt();
-            return result;
-        }
-
-        @java.lang.Override
-        public Builder clone() {
-            return super.clone();
-        }
-
-        @java.lang.Override
-        public Builder setField(
-                final com.google.protobuf.Descriptors.FieldDescriptor field,
-                final java.lang.Object value) {
-            return super.setField(field, value);
-        }
-
-        @java.lang.Override
-        public Builder clearField(
-                final com.google.protobuf.Descriptors.FieldDescriptor field) {
-            return super.clearField(field);
-        }
-
-        @java.lang.Override
-        public Builder clearOneof(
-                final com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-            return super.clearOneof(oneof);
-        }
-
-        @java.lang.Override
-        public Builder setRepeatedField(
-                final com.google.protobuf.Descriptors.FieldDescriptor field,
-                final int index, final java.lang.Object value) {
-            return super.setRepeatedField(field, index, value);
-        }
-
-        @java.lang.Override
-        public Builder addRepeatedField(
-                final com.google.protobuf.Descriptors.FieldDescriptor field,
-                final java.lang.Object value) {
-            return super.addRepeatedField(field, value);
-        }
-
-        @java.lang.Override
-        public Builder mergeFrom(final com.google.protobuf.Message other) {
-            if (other instanceof org.drasyl.remote.protocol.Protocol.Discovery) {
-            return mergeFrom((org.drasyl.remote.protocol.Protocol.Discovery) other);
+            // Construct using org.drasyl.remote.protocol.Protocol.Discovery.newBuilder()
+            private Builder() {
+                maybeForceBuilderInitialization();
             }
-            else {
-                super.mergeFrom(other);
+
+            private Builder(
+                    final com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+                super(parent);
+                maybeForceBuilderInitialization();
+            }
+
+            private void maybeForceBuilderInitialization() {
+                if (com.google.protobuf.GeneratedMessageV3
+                        .alwaysUseFieldBuilders) {
+                }
+            }
+
+            @java.lang.Override
+            public Builder clear() {
+                super.clear();
+                childrenTime_ = 0L;
+
                 return this;
             }
-        }
 
-        public Builder mergeFrom(final org.drasyl.remote.protocol.Protocol.Discovery other) {
-            if (other == org.drasyl.remote.protocol.Protocol.Discovery.getDefaultInstance()) {
+            @java.lang.Override
+            public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+                return org.drasyl.remote.protocol.Protocol.internal_static_org_drasyl_remote_protocol_Discovery_descriptor;
+            }
+
+            @java.lang.Override
+            public org.drasyl.remote.protocol.Protocol.Discovery getDefaultInstanceForType() {
+                return org.drasyl.remote.protocol.Protocol.Discovery.getDefaultInstance();
+            }
+
+            @java.lang.Override
+            public org.drasyl.remote.protocol.Protocol.Discovery build() {
+                final org.drasyl.remote.protocol.Protocol.Discovery result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw newUninitializedMessageException(result);
+                }
+                return result;
+            }
+
+            @java.lang.Override
+            public org.drasyl.remote.protocol.Protocol.Discovery buildPartial() {
+                final org.drasyl.remote.protocol.Protocol.Discovery result = new org.drasyl.remote.protocol.Protocol.Discovery(this);
+                result.childrenTime_ = childrenTime_;
+                onBuilt();
+                return result;
+            }
+
+            @java.lang.Override
+            public Builder clone() {
+                return super.clone();
+            }
+
+            @java.lang.Override
+            public Builder setField(
+                    final com.google.protobuf.Descriptors.FieldDescriptor field,
+                    final java.lang.Object value) {
+                return super.setField(field, value);
+            }
+
+            @java.lang.Override
+            public Builder clearField(
+                    final com.google.protobuf.Descriptors.FieldDescriptor field) {
+                return super.clearField(field);
+            }
+
+            @java.lang.Override
+            public Builder clearOneof(
+                    final com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+                return super.clearOneof(oneof);
+            }
+
+            @java.lang.Override
+            public Builder setRepeatedField(
+                    final com.google.protobuf.Descriptors.FieldDescriptor field,
+                    final int index, final java.lang.Object value) {
+                return super.setRepeatedField(field, index, value);
+            }
+
+            @java.lang.Override
+            public Builder addRepeatedField(
+                    final com.google.protobuf.Descriptors.FieldDescriptor field,
+                    final java.lang.Object value) {
+                return super.addRepeatedField(field, value);
+            }
+
+            @java.lang.Override
+            public Builder mergeFrom(final com.google.protobuf.Message other) {
+                if (other instanceof org.drasyl.remote.protocol.Protocol.Discovery) {
+                    return mergeFrom((org.drasyl.remote.protocol.Protocol.Discovery) other);
+                }
+                else {
+                    super.mergeFrom(other);
+                    return this;
+                }
+            }
+
+            public Builder mergeFrom(final org.drasyl.remote.protocol.Protocol.Discovery other) {
+                if (other == org.drasyl.remote.protocol.Protocol.Discovery.getDefaultInstance()) {
+                    return this;
+                }
+                if (other.getChildrenTime() != 0L) {
+                    setChildrenTime(other.getChildrenTime());
+                }
+                this.mergeUnknownFields(other.unknownFields);
+                onChanged();
                 return this;
             }
-            if (other.getChildrenTime() != 0L) {
-                setChildrenTime(other.getChildrenTime());
+
+            @java.lang.Override
+            public final boolean isInitialized() {
+                return true;
             }
-            this.mergeUnknownFields(other.unknownFields);
-            onChanged();
-            return this;
+
+            @java.lang.Override
+            public Builder mergeFrom(
+                    final com.google.protobuf.CodedInputStream input,
+                    final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                    throws java.io.IOException {
+                org.drasyl.remote.protocol.Protocol.Discovery parsedMessage = null;
+                try {
+                    parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+                }
+                catch (final com.google.protobuf.InvalidProtocolBufferException e) {
+                    parsedMessage = (org.drasyl.remote.protocol.Protocol.Discovery) e.getUnfinishedMessage();
+                    throw e.unwrapIOException();
+                }
+                finally {
+                    if (parsedMessage != null) {
+                        mergeFrom(parsedMessage);
+                    }
+                }
+                return this;
+            }
+
+            private long childrenTime_;
+
+            /**
+             * <code>uint64 childrenTime = 1;</code>
+             *
+             * @return The childrenTime.
+             */
+            @java.lang.Override
+            public long getChildrenTime() {
+                return childrenTime_;
+            }
+
+            /**
+             * <code>uint64 childrenTime = 1;</code>
+             *
+             * @param value The childrenTime to set.
+             * @return This builder for chaining.
+             */
+            public Builder setChildrenTime(final long value) {
+
+                childrenTime_ = value;
+                onChanged();
+                return this;
+            }
+
+            /**
+             * <code>uint64 childrenTime = 1;</code>
+             *
+             * @return This builder for chaining.
+             */
+            public Builder clearChildrenTime() {
+
+                childrenTime_ = 0L;
+                onChanged();
+                return this;
+            }
+
+            @java.lang.Override
+            public final Builder setUnknownFields(
+                    final com.google.protobuf.UnknownFieldSet unknownFields) {
+                return super.setUnknownFields(unknownFields);
+            }
+
+            @java.lang.Override
+            public final Builder mergeUnknownFields(
+                    final com.google.protobuf.UnknownFieldSet unknownFields) {
+                return super.mergeUnknownFields(unknownFields);
+            }
+
+            // @@protoc_insertion_point(builder_scope:org.drasyl.remote.protocol.Discovery)
         }
 
-        @java.lang.Override
-        public final boolean isInitialized() {
-        return true;
-      }
-
-      @java.lang.Override
-      public Builder mergeFrom(
-              final com.google.protobuf.CodedInputStream input,
-              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-              throws java.io.IOException {
-          org.drasyl.remote.protocol.Protocol.Discovery parsedMessage = null;
-          try {
-              parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          }
-          catch (final com.google.protobuf.InvalidProtocolBufferException e) {
-              parsedMessage = (org.drasyl.remote.protocol.Protocol.Discovery) e.getUnfinishedMessage();
-              throw e.unwrapIOException();
-          }
-          finally {
-              if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-
-      private long childrenTime_ ;
-      /**
-       * <code>uint64 childrenTime = 1;</code>
-       * @return The childrenTime.
-       */
-      @java.lang.Override
-      public long getChildrenTime() {
-        return childrenTime_;
-      }
-      /**
-       * <code>uint64 childrenTime = 1;</code>
-       * @param value The childrenTime to set.
-       * @return This builder for chaining.
-       */
-      public Builder setChildrenTime(final long value) {
-
-        childrenTime_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>uint64 childrenTime = 1;</code>
-       * @return This builder for chaining.
-       */
-      public Builder clearChildrenTime() {
-
-        childrenTime_ = 0L;
-        onChanged();
-        return this;
-      }
-      @java.lang.Override
-      public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
-      }
-
-      @java.lang.Override
-      public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-          return super.mergeUnknownFields(unknownFields);
-      }
-
-        // @@protoc_insertion_point(builder_scope:org.drasyl.remote.protocol.Discovery)
-    }
-
-    // @@protoc_insertion_point(class_scope:org.drasyl.remote.protocol.Discovery)
-    private static final org.drasyl.remote.protocol.Protocol.Discovery DEFAULT_INSTANCE;
+        // @@protoc_insertion_point(class_scope:org.drasyl.remote.protocol.Discovery)
+        private static final org.drasyl.remote.protocol.Protocol.Discovery DEFAULT_INSTANCE;
 
         static {
             DEFAULT_INSTANCE = new org.drasyl.remote.protocol.Protocol.Discovery();
@@ -3963,10 +4031,10 @@ public final class Protocol {
                 final com.google.protobuf.CodedInputStream input,
                 final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
                 throws com.google.protobuf.InvalidProtocolBufferException {
-        this();
-        if (extensionRegistry == null) {
-            throw new java.lang.NullPointerException();
-        }
+            this();
+            if (extensionRegistry == null) {
+                throw new java.lang.NullPointerException();
+            }
             final com.google.protobuf.UnknownFieldSet.Builder unknownFields =
                     com.google.protobuf.UnknownFieldSet.newBuilder();
             try {
@@ -3987,30 +4055,31 @@ public final class Protocol {
 
                             address_ = s;
                             break;
-            }
-            case 26: {
+                        }
+                        case 26: {
 
-                port_ = input.readBytes();
-                break;
-            }
+                            port_ = input.readBytes();
+                            break;
+                        }
                         default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
+                            if (!parseUnknownField(
+                                    input, unknownFields, extensionRegistry, tag)) {
+                                done = true;
+                            }
+                            break;
+                        }
+                    }
+                }
             }
             catch (final com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (final java.io.IOException e) {
+                throw e.setUnfinishedMessage(this);
+            }
+            catch (final java.io.IOException e) {
                 throw new com.google.protobuf.InvalidProtocolBufferException(
                         e).setUnfinishedMessage(this);
             }
             finally {
-        this.unknownFields = unknownFields.build();
+                this.unknownFields = unknownFields.build();
                 makeExtensionsImmutable();
             }
         }
@@ -4047,75 +4116,84 @@ public final class Protocol {
 
         public static final int ADDRESS_FIELD_NUMBER = 2;
         private volatile java.lang.Object address_;
-    /**
-     * <pre>
-     * hostname
-     * </pre>
-     *
-     * <code>string address = 2;</code>
-     * @return The address.
-     */
-    @java.lang.Override
-    public java.lang.String getAddress() {
-        final java.lang.Object ref = address_;
-        if (ref instanceof java.lang.String) {
-            return (java.lang.String) ref;
-        }
-        else {
-            final com.google.protobuf.ByteString bs =
-                    (com.google.protobuf.ByteString) ref;
-            final java.lang.String s = bs.toStringUtf8();
-            address_ = s;
-            return s;
-      }
-    }
-    /**
-     * <pre>
-     * hostname
-     * </pre>
-     *
-     * <code>string address = 2;</code>
-     * @return The bytes for address.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString
-    getAddressBytes() {
-        final java.lang.Object ref = address_;
-        if (ref instanceof java.lang.String) {
-            final com.google.protobuf.ByteString b =
-                    com.google.protobuf.ByteString.copyFromUtf8(
-                            (java.lang.String) ref);
-            address_ = b;
-            return b;
-        }
-        else {
-            return (com.google.protobuf.ByteString) ref;
-      }
-    }
 
-      public static final int PORT_FIELD_NUMBER = 3;
-      private com.google.protobuf.ByteString port_;
+        /**
+         * <pre>
+         * hostname
+         * </pre>
+         *
+         * <code>string address = 2;</code>
+         *
+         * @return The address.
+         */
+        @java.lang.Override
+        public java.lang.String getAddress() {
+            final java.lang.Object ref = address_;
+            if (ref instanceof java.lang.String) {
+                return (java.lang.String) ref;
+            }
+            else {
+                final com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                final java.lang.String s = bs.toStringUtf8();
+                address_ = s;
+                return s;
+            }
+        }
 
-      /**
-       * <pre>
-       * 2 bytes fix
-       * </pre>
-       *
-       * <code>bytes port = 3;</code>
-       * @return The port.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString getPort() {
-        return port_;
-    }
+        /**
+         * <pre>
+         * hostname
+         * </pre>
+         *
+         * <code>string address = 2;</code>
+         *
+         * @return The bytes for address.
+         */
+        @java.lang.Override
+        public com.google.protobuf.ByteString
+        getAddressBytes() {
+            final java.lang.Object ref = address_;
+            if (ref instanceof java.lang.String) {
+                final com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8(
+                                (java.lang.String) ref);
+                address_ = b;
+                return b;
+            }
+            else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        public static final int PORT_FIELD_NUMBER = 3;
+        private com.google.protobuf.ByteString port_;
+
+        /**
+         * <pre>
+         * 2 bytes fix
+         * </pre>
+         *
+         * <code>bytes port = 3;</code>
+         *
+         * @return The port.
+         */
+        @java.lang.Override
+        public com.google.protobuf.ByteString getPort() {
+            return port_;
+        }
 
         private byte memoizedIsInitialized = -1;
 
         @java.lang.Override
         public final boolean isInitialized() {
             final byte isInitialized = memoizedIsInitialized;
-            if (isInitialized == 1) return true;
-            if (isInitialized == 0) return false;
+            if (isInitialized == 1) {
+                return true;
+            }
+            if (isInitialized == 0) {
+                return false;
+            }
 
             memoizedIsInitialized = 1;
             return true;
@@ -4301,14 +4379,14 @@ public final class Protocol {
         public Builder toBuilder() {
             return this == DEFAULT_INSTANCE
                     ? new Builder() : new Builder().mergeFrom(this);
-    }
+        }
 
-    @java.lang.Override
-    protected Builder newBuilderForType(
-            final com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-        final Builder builder = new Builder(parent);
-        return builder;
-    }
+        @java.lang.Override
+        protected Builder newBuilderForType(
+                final com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+            final Builder builder = new Builder(parent);
+            return builder;
+        }
 
         /**
          * Protobuf type {@code org.drasyl.remote.protocol.Unite}
@@ -4410,15 +4488,15 @@ public final class Protocol {
             @java.lang.Override
             public Builder clearOneof(
                     final com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-            return super.clearOneof(oneof);
-        }
+                return super.clearOneof(oneof);
+            }
 
-        @java.lang.Override
-        public Builder setRepeatedField(
-                final com.google.protobuf.Descriptors.FieldDescriptor field,
-                final int index, final java.lang.Object value) {
-            return super.setRepeatedField(field, index, value);
-        }
+            @java.lang.Override
+            public Builder setRepeatedField(
+                    final com.google.protobuf.Descriptors.FieldDescriptor field,
+                    final int index, final java.lang.Object value) {
+                return super.setRepeatedField(field, index, value);
+            }
 
             @java.lang.Override
             public Builder addRepeatedField(
@@ -4430,31 +4508,32 @@ public final class Protocol {
             @java.lang.Override
             public Builder mergeFrom(final com.google.protobuf.Message other) {
                 if (other instanceof org.drasyl.remote.protocol.Protocol.Unite) {
-                    return mergeFrom((org.drasyl.remote.protocol.Protocol.Unite)other);
-        } else {
-          super.mergeFrom(other);
-            return this;
-        }
-        }
+                    return mergeFrom((org.drasyl.remote.protocol.Protocol.Unite) other);
+                }
+                else {
+                    super.mergeFrom(other);
+                    return this;
+                }
+            }
 
-        public Builder mergeFrom(final org.drasyl.remote.protocol.Protocol.Unite other) {
-            if (other == org.drasyl.remote.protocol.Protocol.Unite.getDefaultInstance()) {
+            public Builder mergeFrom(final org.drasyl.remote.protocol.Protocol.Unite other) {
+                if (other == org.drasyl.remote.protocol.Protocol.Unite.getDefaultInstance()) {
+                    return this;
+                }
+                if (other.getPublicKey() != com.google.protobuf.ByteString.EMPTY) {
+                    setPublicKey(other.getPublicKey());
+                }
+                if (!other.getAddress().isEmpty()) {
+                    address_ = other.address_;
+                    onChanged();
+                }
+                if (other.getPort() != com.google.protobuf.ByteString.EMPTY) {
+                    setPort(other.getPort());
+                }
+                this.mergeUnknownFields(other.unknownFields);
+                onChanged();
                 return this;
             }
-        if (other.getPublicKey() != com.google.protobuf.ByteString.EMPTY) {
-            setPublicKey(other.getPublicKey());
-        }
-            if (!other.getAddress().isEmpty()) {
-                address_ = other.address_;
-                onChanged();
-            }
-            if (other.getPort() != com.google.protobuf.ByteString.EMPTY) {
-                setPort(other.getPort());
-            }
-            this.mergeUnknownFields(other.unknownFields);
-            onChanged();
-            return this;
-        }
 
             @java.lang.Override
             public final boolean isInitialized() {
@@ -4463,22 +4542,22 @@ public final class Protocol {
 
             @java.lang.Override
             public Builder mergeFrom(
-              final com.google.protobuf.CodedInputStream input,
-              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
+                    final com.google.protobuf.CodedInputStream input,
+                    final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                    throws java.io.IOException {
                 org.drasyl.remote.protocol.Protocol.Unite parsedMessage = null;
-          try {
-              parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          }
-          catch (final com.google.protobuf.InvalidProtocolBufferException e) {
-              parsedMessage = (org.drasyl.remote.protocol.Protocol.Unite) e.getUnfinishedMessage();
-              throw e.unwrapIOException();
-          }
-          finally {
-              if (parsedMessage != null) {
-                  mergeFrom(parsedMessage);
-              }
-          }
+                try {
+                    parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+                }
+                catch (final com.google.protobuf.InvalidProtocolBufferException e) {
+                    parsedMessage = (org.drasyl.remote.protocol.Protocol.Unite) e.getUnfinishedMessage();
+                    throw e.unwrapIOException();
+                }
+                finally {
+                    if (parsedMessage != null) {
+                        mergeFrom(parsedMessage);
+                    }
+                }
                 return this;
             }
 
@@ -4664,6 +4743,7 @@ public final class Protocol {
              * </pre>
              *
              * <code>bytes port = 3;</code>
+             *
              * @param value The port to set.
              * @return This builder for chaining.
              */
@@ -4683,6 +4763,7 @@ public final class Protocol {
              * </pre>
              *
              * <code>bytes port = 3;</code>
+             *
              * @return This builder for chaining.
              */
             public Builder clearPort() {
@@ -4786,14 +4867,14 @@ public final class Protocol {
     static {
         final java.lang.String[] descriptorData = {
                 "\n\016protocol.proto\022\032org.drasyl.remote.prot" +
-                        "ocol\"\260\001\n\014PublicHeader\022\n\n\002id\030\001 \001(\014\022\021\n\tnet" +
-                        "workId\030\003 \001(\021\022\016\n\006sender\030\004 \001(\014\022\023\n\013proofOfW" +
-                        "ork\030\005 \001(\021\022\021\n\trecipient\030\006 \001(\014\022\020\n\010hopCount" +
-                        "\030\007 \001(\014\022\021\n\tsignature\030\010 \001(\014\022\017\n\007chunkNo\030\t \001" +
-                        "(\014\022\023\n\013totalChunks\030\n \001(\014\"F\n\rPrivateHeader" +
+                        "ocol\"\260\001\n\014PublicHeader\022\n\n\002id\030\001 \001(\020\022\021\n\tnet" +
+                        "workId\030\002 \001(\021\022\016\n\006sender\030\003 \001(\014\022\023\n\013proofOfW" +
+                        "ork\030\004 \001(\021\022\021\n\trecipient\030\005 \001(\014\022\020\n\010hopCount" +
+                        "\030\006 \001(\r\022\021\n\tsignature\030\007 \001(\014\022\017\n\007chunkNo\030\010 \001" +
+                        "(\r\022\023\n\013totalChunks\030\t \001(\r\"F\n\rPrivateHeader" +
                         "\0225\n\004type\030\001 \001(\0162'.org.drasyl.remote.proto" +
                         "col.MessageType\"*\n\017Acknowledgement\022\027\n\017co" +
-                        "rrespondingId\030\001 \001(\014\",\n\013Application\022\017\n\007pa" +
+                        "rrespondingId\030\001 \001(\020\",\n\013Application\022\017\n\007pa" +
                         "yload\030\001 \001(\014\022\014\n\004type\030\002 \001(\t\"!\n\tDiscovery\022\024" +
                         "\n\014childrenTime\030\001 \001(\004\"9\n\005Unite\022\021\n\tpublicK" +
                         "ey\030\001 \001(\014\022\017\n\007address\030\002 \001(\t\022\014\n\004port\030\003 \001(\014*" +
@@ -4815,39 +4896,43 @@ public final class Protocol {
                         "NetworkId",
                         "Sender",
                         "ProofOfWork",
-                        "Recipient", "HopCount", "Signature", "ChunkNo", "TotalChunks",
+                        "Recipient",
+                        "HopCount",
+                        "Signature",
+                        "ChunkNo",
+                        "TotalChunks",
                         });
         internal_static_org_drasyl_remote_protocol_PrivateHeader_descriptor =
                 getDescriptor().getMessageTypes().get(1);
         internal_static_org_drasyl_remote_protocol_PrivateHeader_fieldAccessorTable = new
                 com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
                 internal_static_org_drasyl_remote_protocol_PrivateHeader_descriptor,
-        new java.lang.String[] { "Type", });
-    internal_static_org_drasyl_remote_protocol_Acknowledgement_descriptor =
-      getDescriptor().getMessageTypes().get(2);
-    internal_static_org_drasyl_remote_protocol_Acknowledgement_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_org_drasyl_remote_protocol_Acknowledgement_descriptor,
-        new java.lang.String[] { "CorrespondingId", });
-    internal_static_org_drasyl_remote_protocol_Application_descriptor =
-      getDescriptor().getMessageTypes().get(3);
-    internal_static_org_drasyl_remote_protocol_Application_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_org_drasyl_remote_protocol_Application_descriptor,
-        new java.lang.String[] { "Payload", "Type", });
-    internal_static_org_drasyl_remote_protocol_Discovery_descriptor =
-      getDescriptor().getMessageTypes().get(4);
-    internal_static_org_drasyl_remote_protocol_Discovery_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_org_drasyl_remote_protocol_Discovery_descriptor,
-        new java.lang.String[] { "ChildrenTime", });
-    internal_static_org_drasyl_remote_protocol_Unite_descriptor =
-      getDescriptor().getMessageTypes().get(5);
-    internal_static_org_drasyl_remote_protocol_Unite_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_org_drasyl_remote_protocol_Unite_descriptor,
-        new java.lang.String[] { "PublicKey", "Address", "Port", });
-  }
+                new java.lang.String[]{ "Type", });
+        internal_static_org_drasyl_remote_protocol_Acknowledgement_descriptor =
+                getDescriptor().getMessageTypes().get(2);
+        internal_static_org_drasyl_remote_protocol_Acknowledgement_fieldAccessorTable = new
+                com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_org_drasyl_remote_protocol_Acknowledgement_descriptor,
+                new java.lang.String[]{ "CorrespondingId", });
+        internal_static_org_drasyl_remote_protocol_Application_descriptor =
+                getDescriptor().getMessageTypes().get(3);
+        internal_static_org_drasyl_remote_protocol_Application_fieldAccessorTable = new
+                com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_org_drasyl_remote_protocol_Application_descriptor,
+                new java.lang.String[]{ "Payload", "Type", });
+        internal_static_org_drasyl_remote_protocol_Discovery_descriptor =
+                getDescriptor().getMessageTypes().get(4);
+        internal_static_org_drasyl_remote_protocol_Discovery_fieldAccessorTable = new
+                com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_org_drasyl_remote_protocol_Discovery_descriptor,
+                new java.lang.String[]{ "ChildrenTime", });
+        internal_static_org_drasyl_remote_protocol_Unite_descriptor =
+                getDescriptor().getMessageTypes().get(5);
+        internal_static_org_drasyl_remote_protocol_Unite_fieldAccessorTable = new
+                com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_org_drasyl_remote_protocol_Unite_descriptor,
+                new java.lang.String[]{ "PublicKey", "Address", "Port", });
+    }
 
-  // @@protoc_insertion_point(outer_class_scope)
+    // @@protoc_insertion_point(outer_class_scope)
 }

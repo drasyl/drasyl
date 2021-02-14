@@ -20,7 +20,6 @@ package org.drasyl.remote.handler;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
@@ -175,8 +174,8 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                     .setId(msgPublicHeader.getId())
                     .setSender(msgPublicHeader.getSender())
                     .setRecipient(msgPublicHeader.getRecipient())
-                    .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
-                    .setChunkNo(ByteString.copyFrom(chunkNo.toBytes()))
+                    .setHopCount(1)
+                    .setTotalChunks(UnsignedShort.MAX_VALUE.getValue())
                     .buildPartial();
 
             final int mtu = ctx.config().getRemoteMessageMtu();
@@ -227,15 +226,15 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                                           final PublicHeader partialHeader,
                                           final UnsignedShort chunkNo) {
         final PublicHeader.Builder builder = PublicHeader.newBuilder(partialHeader);
-        builder.clearChunkNo();
+        builder.clearTotalChunks();
 
         if (chunkNo.getValue() == 0) {
             // set only on first chunk (head chunk)
-            builder.setTotalChunks(ByteString.copyFrom(totalChunks.toBytes()));
+            builder.setTotalChunks(totalChunks.getValue());
         }
         else {
             // set on all non-head chunks
-            builder.setChunkNo(ByteString.copyFrom(chunkNo.toBytes()));
+            builder.setChunkNo(chunkNo.getValue());
         }
 
         return builder.build();
