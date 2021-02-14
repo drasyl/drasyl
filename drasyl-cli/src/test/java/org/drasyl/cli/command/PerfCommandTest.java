@@ -25,14 +25,12 @@ import org.drasyl.DrasylException;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.perf.PerfClientNode;
 import org.drasyl.cli.command.perf.PerfServerNode;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.ThrowingBiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,21 +46,26 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PerfCommandTest {
-    private ByteArrayOutputStream outputStream;
+    private ByteArrayOutputStream outStream;
     @SuppressWarnings("FieldCanBeLocal")
-    private PrintStream printStream;
+    private PrintStream out;
+    @SuppressWarnings("FieldCanBeLocal")
+    private ByteArrayOutputStream errStream;
+    @SuppressWarnings("FieldCanBeLocal")
+    private PrintStream err;
     @Mock
     private ThrowingBiFunction<DrasylConfig, PrintStream, PerfServerNode, DrasylException> serverNodeSupplier;
     @Mock
     private ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier;
-    @InjectMocks
     private PerfCommand underTest;
 
     @BeforeEach
     void setUp() {
-        outputStream = new ByteArrayOutputStream();
-        printStream = new PrintStream(outputStream, true);
-        underTest = new PerfCommand(printStream, serverNodeSupplier, clientNodeSupplier);
+        outStream = new ByteArrayOutputStream();
+        out = new PrintStream(outStream, true);
+        errStream = new ByteArrayOutputStream();
+        err = new PrintStream(errStream, true);
+        underTest = new PerfCommand(out, err, serverNodeSupplier, clientNodeSupplier);
     }
 
     @Nested
@@ -74,7 +77,7 @@ class PerfCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            final String output = outputStream.toString();
+            final String output = outStream.toString();
             assertThat(output, containsString("Tool for measuring network performance."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl perf [flags]" + System.lineSeparator()));
@@ -97,7 +100,7 @@ class PerfCommandTest {
         }
 
         @Test
-        void shouldStartClientNodeAndSetCorrectOptionsWhenClientOptionIsGiven(@Mock(answer = RETURNS_DEEP_STUBS) final PerfClientNode node) throws CliException, ParseException, DrasylException, CryptoException {
+        void shouldStartClientNodeAndSetCorrectOptionsWhenClientOptionIsGiven(@Mock(answer = RETURNS_DEEP_STUBS) final PerfClientNode node) throws CliException, ParseException, DrasylException {
             when(cmd.hasOption("client")).thenReturn(true);
             when(cmd.getParsedOptionValue("client")).thenReturn("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a98281ff73f2346d55195d0cd274c101c4775");
             when(clientNodeSupplier.apply(any(), any())).thenReturn(node);

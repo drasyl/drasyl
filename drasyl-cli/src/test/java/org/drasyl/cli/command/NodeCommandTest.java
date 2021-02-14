@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -47,8 +46,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class NodeCommandTest {
     private ByteArrayOutputStream outStream;
+    @SuppressWarnings("FieldCanBeLocal")
     private PrintStream out;
+    @SuppressWarnings("FieldCanBeLocal")
     private ByteArrayOutputStream errStream;
+    @SuppressWarnings("FieldCanBeLocal")
     private PrintStream err;
     @Mock
     private Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier;

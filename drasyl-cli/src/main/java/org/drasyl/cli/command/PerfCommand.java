@@ -48,15 +48,17 @@ public class PerfCommand extends AbstractCommand {
     public PerfCommand() {
         this(
                 System.out, // NOSONAR
+                System.err, // NOSONAR
                 PerfServerNode::new,
                 PerfClientNode::new
         );
     }
 
-    PerfCommand(final PrintStream printStream,
+    PerfCommand(final PrintStream out,
+                final PrintStream err,
                 final ThrowingBiFunction<DrasylConfig, PrintStream, PerfServerNode, DrasylException> serverNodeSupplier,
                 final ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier) {
-        super(printStream);
+        super(out, err);
         this.serverNodeSupplier = serverNodeSupplier;
         this.clientNodeSupplier = clientNodeSupplier;
     }
@@ -117,7 +119,7 @@ public class PerfCommand extends AbstractCommand {
         PerfServerNode node = null;
         try {
             // prepare node
-            node = serverNodeSupplier.apply(getDrasylConfig(cmd), printStream);
+            node = serverNodeSupplier.apply(getDrasylConfig(cmd), out);
             node.start();
 
             // wait for node to finish
@@ -143,7 +145,7 @@ public class PerfCommand extends AbstractCommand {
         PerfClientNode node = null;
         try {
             // prepare node
-            node = clientNodeSupplier.apply(getDrasylConfig(cmd), printStream);
+            node = clientNodeSupplier.apply(getDrasylConfig(cmd), out);
             node.start();
 
             // obtain server address and test options
