@@ -19,9 +19,15 @@
 package org.drasyl.event;
 
 /**
- * This event signals that the node has established a connection via a super peer to a peer.
+ * This event signals that communication with this peer is only possible by relaying messages via a
+ * super peer. If there is no connection to a super peer, no communication with this peer is
+ * possible.
  * <p>
  * This is an immutable object.
+ *
+ * @see PeerDirectEvent
+ * @see NodeOnlineEvent
+ * @see NodeOfflineEvent
  */
 public class PeerRelayEvent extends AbstractPeerEvent {
     /**

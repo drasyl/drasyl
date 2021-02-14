@@ -19,9 +19,14 @@
 package org.drasyl.event;
 
 /**
- * This event signals that the node has established a direct connection to a peer.
+ * This event signals that the node has established a direct connection to a peer. This means that
+ * messages do not have to be relayed through a super peer.
  * <p>
  * This is an immutable object.
+ *
+ * @see PeerRelayEvent
+ * @see NodeOnlineEvent
+ * @see NodeOfflineEvent
  */
 public class PeerDirectEvent extends AbstractPeerEvent {
     /**

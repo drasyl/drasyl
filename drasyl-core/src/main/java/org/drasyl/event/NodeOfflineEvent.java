@@ -19,9 +19,17 @@
 package org.drasyl.event;
 
 /**
- * This event signals that the node is currently not connected to a super peer.
+ * This event signals that the node is currently not connected to a super peer. This means that the
+ * node cannot be discovered and contacted by remote peers. Existing direct connections are not
+ * affected by this event. Lost direct connections may not be recovered
+ * <p>
+ * If the node has been configured with no super peer, this event will be never emitted.
  * <p>
  * This is an immutable object.
+ *
+ * @see NodeOnlineEvent
+ * @see PeerDirectEvent
+ * @see PeerRelayEvent
  */
 public class NodeOfflineEvent extends AbstractNodeEvent {
     /**

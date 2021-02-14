@@ -19,11 +19,17 @@
 package org.drasyl.event;
 
 /**
- * This event signals that the node has successfully registered with the super peer. If a node has
- * been configured with no super peer (e.g. if it is a root node), the event is immediately
- * emitted.
+ * This event signals that the node is currently connected to a super peer. This means that it can
+ * be contacted by other peers connected to the same super peer. In addition, the super peer can
+ * assist in establishing direct connections to other peers.
+ * <p>
+ * If the node has been configured with no super peer, this event will be never emitted.
  * <p>
  * This is an immutable object.
+ *
+ * @see NodeOfflineEvent
+ * @see PeerDirectEvent
+ * @see PeerRelayEvent
  */
 public class NodeOnlineEvent extends AbstractNodeEvent {
     /**
