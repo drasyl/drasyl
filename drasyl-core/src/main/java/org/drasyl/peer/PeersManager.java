@@ -29,7 +29,6 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.util.SetUtil;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -62,6 +61,7 @@ public class PeersManager {
         this(new ReentrantReadWriteLock(true), new HashSet<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer, identity);
     }
 
+    @SuppressWarnings("java:S2384")
     PeersManager(final ReadWriteLock lock,
                  final Set<CompressedPublicKey> peers,
                  final SetMultimap<CompressedPublicKey, Object> paths,
@@ -156,38 +156,16 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            handlePeerStateTransition(
-                    publicKey,
-                    peers.contains(publicKey),
-                    paths.get(publicKey),
-                    true,
-                    SetUtil.merge(paths.get(publicKey), path)
-            );
+            peers.add(publicKey);
+            final boolean firstPath = paths.get(publicKey).isEmpty();
+            paths.put(publicKey, path);
+
+            if (firstPath) {
+                eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
+            }
         }
         finally {
             lock.writeLock().unlock();
-        }
-    }
-
-    private void handlePeerStateTransition(final CompressedPublicKey publicKey,
-                                           final boolean existingInformation,
-                                           final Set<Object> existingPaths,
-                                           final boolean newInformation,
-                                           final Set<Object> newPaths) {
-        final int existingPathCount = existingPaths.size();
-        final int newPathCount = newPaths.size();
-        peers.add(publicKey);
-        paths.replaceValues(publicKey, newPaths);
-
-        if (existingPathCount == 0 && newPathCount > 0) {
-            eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
-        }
-        else if ((!existingInformation || existingPathCount > 0) && newPathCount == 0 && (!publicKey.equals(superPeer) && superPeer != null || children.contains(publicKey)) && !(!existingInformation && !newInformation)) {
-            eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
-        }
-
-        if (newPathCount == 0) {
-            peers.remove(publicKey);
         }
     }
 
@@ -198,13 +176,10 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            handlePeerStateTransition(
-                    publicKey,
-                    peers.contains(publicKey),
-                    paths.get(publicKey),
-                    peers.contains(publicKey),
-                    SetUtil.difference(paths.get(publicKey), path)
-            );
+            if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
+                eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
+                peers.remove(publicKey);
+            }
         }
         finally {
             lock.writeLock().unlock();
@@ -220,13 +195,11 @@ public class PeersManager {
             if (superPeer != null) {
                 eventConsumer.accept(new NodeOfflineEvent(Node.of(identity)));
 
-                handlePeerStateTransition(
-                        superPeer,
-                        peers.contains(superPeer),
-                        paths.get(superPeer),
-                        peers.contains(superPeer),
-                        SetUtil.difference(paths.get(superPeer), path)
-                );
+                if (paths.remove(superPeer, path) && paths.get(superPeer).isEmpty()) {
+                    eventConsumer.accept(new PeerRelayEvent(Peer.of(superPeer)));
+                    peers.remove(superPeer);
+                }
+
                 superPeer = null;
             }
         }
@@ -243,13 +216,14 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            handlePeerStateTransition(
-                    publicKey,
-                    peers.contains(publicKey),
-                    paths.get(publicKey),
-                    true,
-                    SetUtil.merge(paths.get(publicKey), path)
-            );
+            peers.add(publicKey);
+            final boolean firstPath = paths.get(publicKey).isEmpty();
+            paths.put(publicKey, path);
+
+            if (firstPath) {
+                eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
+            }
+
             if (superPeer == null) {
                 eventConsumer.accept(new NodeOnlineEvent(Node.of(identity)));
             }
@@ -268,13 +242,11 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            handlePeerStateTransition(
-                    publicKey,
-                    peers.contains(publicKey),
-                    paths.get(publicKey),
-                    peers.contains(publicKey),
-                    SetUtil.difference(paths.get(publicKey), path)
-            );
+            if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
+                eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
+                peers.remove(publicKey);
+            }
+
             children.remove(publicKey);
         }
         finally {
@@ -290,13 +262,14 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            handlePeerStateTransition(
-                    publicKey,
-                    peers.contains(publicKey),
-                    paths.get(publicKey),
-                    true,
-                    SetUtil.merge(paths.get(publicKey), path)
-            );
+            peers.add(publicKey);
+            final boolean firstPath = paths.get(publicKey).isEmpty();
+            paths.put(publicKey, path);
+
+            if (firstPath) {
+                eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
+            }
+
             children.add(publicKey);
         }
         finally {
