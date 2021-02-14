@@ -25,7 +25,10 @@ import org.drasyl.cli.command.NodeCommand;
 import org.drasyl.cli.command.VersionCommand;
 import org.drasyl.cli.command.WormholeCommand;
 
+import java.io.PrintStream;
 import java.util.Map;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Provides a command line interface with drasyl-related tools (run root node, generate identity,
@@ -45,30 +48,25 @@ public class Cli {
         );
     }
 
+    private final PrintStream err;
     private final Map<String, Command> myCommands;
 
     public Cli() {
-        this(COMMANDS);
+        this(System.err, COMMANDS); // NOSONAR
     }
 
     @SuppressWarnings("SameParameterValue")
-    Cli(final Map<String, Command> myCommands) {
-        this.myCommands = myCommands;
+    Cli(final PrintStream err,
+        final Map<String, Command> myCommands) {
+        this.err = requireNonNull(err);
+        this.myCommands = requireNonNull(myCommands);
     }
 
     public static void main(final String[] args) {
-        final Cli cli = new Cli();
-        try {
-            cli.run(args);
-            System.exit(0);
-        }
-        catch (final CliException e) {
-            System.out.println("Error: " + e.getMessage()); // NOSONAR
-            System.exit(1);
-        }
+        new Cli().run(args);
     }
 
-    public void run(final String[] args) throws CliException {
+    public void run(final String[] args) {
         final String commandName;
         if (args.length > 0) {
             commandName = args[0];
@@ -78,9 +76,11 @@ public class Cli {
         }
 
         final Command command = myCommands.get(commandName);
-        if (command == null) {
-            throw new CommandNotFoundCliException(commandName);
+        if (command != null) {
+            command.execute(args);
         }
-        command.execute(args);
+        else {
+            err.println("ERR: Unknown command \"" + commandName + "\" for \"drasyl\".");
+        }
     }
 }

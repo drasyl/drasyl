@@ -36,16 +36,19 @@ import static org.hamcrest.Matchers.containsString;
 
 @ExtendWith(MockitoExtension.class)
 class VersionCommandTest {
-    private PrintStream printStream;
-    @InjectMocks
+    private ByteArrayOutputStream outStream;
+    private PrintStream out;
+    private ByteArrayOutputStream errStream;
+    private PrintStream err;
     private VersionCommand underTest;
-    private ByteArrayOutputStream outputStream;
 
     @BeforeEach
     void setUp() {
-        outputStream = new ByteArrayOutputStream();
-        printStream = new PrintStream(outputStream, true);
-        underTest = new VersionCommand(printStream);
+        outStream = new ByteArrayOutputStream();
+        out = new PrintStream(outStream, true);
+        errStream = new ByteArrayOutputStream();
+        err = new PrintStream(errStream, true);
+        underTest = new VersionCommand(out, err);
     }
 
     @Nested
@@ -57,7 +60,7 @@ class VersionCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            final String output = outputStream.toString();
+            final String output = outStream.toString();
             assertThat(output, containsString("Show the drasyl, os and java version number."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl version [flags]" + System.lineSeparator()));
@@ -74,7 +77,7 @@ class VersionCommandTest {
         void shouldPrintVersion() {
             underTest.execute(cmd);
 
-            final String output = outputStream.toString();
+            final String output = outStream.toString();
             assertThat(output, containsString("drasyl v"));
         }
     }

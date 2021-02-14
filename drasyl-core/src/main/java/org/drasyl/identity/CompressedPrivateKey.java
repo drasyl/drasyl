@@ -31,6 +31,8 @@ import java.security.PrivateKey;
  * This is an immutable object.
  */
 public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
+    @SuppressWarnings("unused")
+    public static final short PRIVATE_KEY_LENGTH = 64;
     public static final InternPool<CompressedPrivateKey> POOL = new InternPool<>();
 
     /**

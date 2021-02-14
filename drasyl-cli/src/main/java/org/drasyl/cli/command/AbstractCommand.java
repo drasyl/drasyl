@@ -29,7 +29,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNode;
-import org.drasyl.cli.CliException;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -40,28 +39,33 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
+
 abstract class AbstractCommand implements Command {
     static final Path DEFAULT_CONF_PATH = Paths.get("drasyl.conf").toAbsolutePath();
     private static final String OPT_HELP = "help";
     private static final String OPT_VERBOSE = "verbose";
     private static final String OPT_CONFIG = "config";
-    private static final Logger log = LoggerFactory.getLogger(AbstractCommand.class);
-    protected final PrintStream printStream;
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractCommand.class);
+    protected final PrintStream out;
+    protected final PrintStream err;
 
     protected AbstractCommand(
-            final PrintStream printStream) {
-        this.printStream = printStream;
+            final PrintStream out,
+            final PrintStream err) {
+        this.out = requireNonNull(out);
+        this.err = requireNonNull(err);
     }
 
     @Override
-    public void execute(final String[] args) throws CliException {
+    public void execute(final String[] args) {
         final Options flags = getOptions();
         final CommandLineParser parser = new DefaultParser();
         try {
             final CommandLine cmd = parser.parse(flags, args);
 
             setLogLevel(cmd);
-            log.debug("drasyl: Version '{}' starting with parameters [{}]", DrasylNode.getVersion(), args.length > 0 ? "'" + String.join("', '", args) + "'" : "");
+            LOG.debug("drasyl: Version '{}' starting with parameters [{}]", DrasylNode::getVersion, () -> args.length > 0 ? ("'" + String.join("', '", args) + "'") : "");
 
             if (cmd.hasOption(OPT_HELP)) {
                 help(cmd);
@@ -71,7 +75,8 @@ abstract class AbstractCommand implements Command {
             }
         }
         catch (final ParseException e) {
-            throw new CliException(e);
+            err.println("ERR: Unable to parse args.");
+            e.printStackTrace(err);
         }
     }
 
@@ -86,37 +91,37 @@ abstract class AbstractCommand implements Command {
                                 final String footer,
                                 final Map<String, String> commands) {
         if (!header.isEmpty()) {
-            printStream.println(header);
-            printStream.println();
+            out.println(header);
+            out.println();
         }
 
-        printStream.println("Usage:");
-        printStream.println("  drasyl" + (!name.isEmpty() ? " " + name : "") + " [flags]");
+        out.println("Usage:");
+        out.println("  drasyl" + (!name.isEmpty() ? (" " + name) : "") + " [flags]");
         if (!commands.isEmpty()) {
-            printStream.println("  drasyl" + (!name.isEmpty() ? " " + name : "") + " [command]");
+            out.println("  drasyl" + (!name.isEmpty() ? (" " + name) : "") + " [command]");
         }
-        printStream.println();
+        out.println();
 
         if (!commands.isEmpty()) {
-            printStream.println("Available Commands:");
+            out.println("Available Commands:");
             for (final Map.Entry<String, String> entry : commands.entrySet()) {
                 final String command = entry.getKey();
                 final String description = entry.getValue();
-                printStream.printf("%-15s", command);
-                printStream.printf("%-15s%n", description);
+                out.printf("%-15s", command);
+                out.printf("%-15s%n", description);
             }
-            printStream.println();
+            out.println();
         }
 
-        printStream.println("Flags:");
+        out.println("Flags:");
         final HelpFormatter formatter = new HelpFormatter();
-        final PrintWriter printWriter = new PrintWriter(printStream);
+        final PrintWriter printWriter = new PrintWriter(out);
         formatter.printOptions(printWriter, 100, getOptions(), 0, 6);
         printWriter.flush();
 
         if (!footer.isEmpty()) {
-            printStream.println();
-            printStream.println(footer);
+            out.println();
+            out.println(footer);
         }
     }
 
@@ -141,9 +146,9 @@ abstract class AbstractCommand implements Command {
     }
 
     @SuppressWarnings({ "unused" })
-    protected abstract void help(CommandLine cmd) throws CliException;
+    protected abstract void help(CommandLine cmd);
 
-    protected abstract void execute(CommandLine cmd) throws CliException;
+    protected abstract void execute(CommandLine cmd);
 
     protected void setLogLevel(final CommandLine cmd) {
         if (cmd.hasOption(OPT_VERBOSE)) {
@@ -159,15 +164,15 @@ abstract class AbstractCommand implements Command {
         final DrasylConfig config;
         if (cmd.hasOption(OPT_CONFIG)) {
             final File file = new File(cmd.getOptionValue(OPT_CONFIG));
-            log.info("Using config file from '{}'", file);
+            LOG.info("Using config file from '{}'", file);
             config = DrasylConfig.parseFile(file);
         }
         else if (DEFAULT_CONF_PATH.toFile().exists()) {
-            log.info("Using config file from '{}'", DEFAULT_CONF_PATH);
+            LOG.info("Using config file from '{}'", DEFAULT_CONF_PATH);
             config = DrasylConfig.parseFile(DEFAULT_CONF_PATH.toFile());
         }
         else {
-            log.info("Config file '{}' not found - using defaults", DEFAULT_CONF_PATH);
+            LOG.info("Config file '{}' not found - using defaults", DEFAULT_CONF_PATH);
             config = new DrasylConfig();
         }
 
