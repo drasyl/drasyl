@@ -65,7 +65,7 @@ class SignatureHandlerTest {
         @Test
         void shouldArmOutgoingMessageFromMe(@Mock final CompressedPublicKey recipient,
                                             @Mock final InetSocketAddressWrapper senderAddress,
-                                            @Mock final InetSocketAddressWrapper recipientAddress) {
+                                            @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -77,7 +77,7 @@ class SignatureHandlerTest {
             final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
             }).test();
 
-            pipeline.processOutbound(recipient, addressedMessageEnvelope);
+            pipeline.processOutbound(recipient, addressedMessageEnvelope).get();
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -97,7 +97,7 @@ class SignatureHandlerTest {
         @Test
         void shouldPassthroughOutgoingMessageNotFromMe(@Mock final CompressedPublicKey recipient,
                                                        @Mock final InetSocketAddressWrapper senderAddress,
-                                                       @Mock final InetSocketAddressWrapper recipientAddress) {
+                                                       @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -108,7 +108,7 @@ class SignatureHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
-            pipeline.processOutbound(recipient, addressedMessageEnvelope);
+            pipeline.processOutbound(recipient, addressedMessageEnvelope).get();
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -150,7 +150,7 @@ class SignatureHandlerTest {
         @Test
         void shouldDisarmIngoingMessageAddressedToMe(@Mock final CompressedPublicKey sender,
                                                      @Mock final InetSocketAddressWrapper senderAddress,
-                                                     @Mock final InetSocketAddressWrapper recipientAddress) {
+                                                     @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -162,7 +162,7 @@ class SignatureHandlerTest {
             final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
             }).test();
 
-            pipeline.processInbound(sender, addressedMessageEnvelope);
+            pipeline.processInbound(sender, addressedMessageEnvelope).get();
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -174,7 +174,7 @@ class SignatureHandlerTest {
         @Test
         void shouldPassthroughIngoingMessageNotAddressedToMe(@Mock final CompressedPublicKey sender,
                                                              @Mock final InetSocketAddressWrapper senderAddress,
-                                                             @Mock final InetSocketAddressWrapper recipientAddress) {
+                                                             @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -185,7 +185,7 @@ class SignatureHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(sender, addressedMessageEnvelope);
+            pipeline.processInbound(sender, addressedMessageEnvelope).get();
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1)
