@@ -405,7 +405,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         if (childrenJoin) {
             peer.inboundPongOccurred();
             // store peer information
-            if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
+            if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
                 LOG.debug("PING! Add {} as children", sender);
             }
             ctx.peersManager().addPathAndChildren(sender, path);
@@ -436,7 +436,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             peer.inboundPongOccurred();
             if (sender.equals(ctx.config().getRemoteSuperPeerEndpoint().getPublicKey())) {
                 // store peer information
-                if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
+                if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
                     LOG.debug("PONG! Add {} as super peer", sender);
                 }
                 ctx.peersManager().addPathAndSetSuperPeer(sender, path);

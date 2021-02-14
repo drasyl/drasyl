@@ -122,7 +122,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
                     // monitor PeersManager
                     Gauge.builder("peersManager.peers", ctx.peersManager(), pm -> pm.getPeers().size()).register(newRegistry);
                     Gauge.builder("peersManager.superPeer", ctx.peersManager(), pm -> pm.getSuperPeerKey() != null ? 1 : 0).register(newRegistry);
-                    Gauge.builder("peersManager.children", ctx.peersManager(), pm -> pm.getChildrenKeys().size()).register(newRegistry);
+                    Gauge.builder("peersManager.children", ctx.peersManager(), pm -> pm.getChildren().size()).register(newRegistry);
 
                     return newRegistry;
                 },

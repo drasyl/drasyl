@@ -127,22 +127,6 @@ class PeersManagerTest {
     }
 
     @Nested
-    class GetChildrenKeys {
-        @Test
-        void shouldReturnChildrenKeys(@Mock final CompressedPublicKey publicKey) {
-            children.add(publicKey);
-
-            assertEquals(Set.of(publicKey), underTest.getChildrenKeys());
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.readLock()).lock();
-            verify(lock.readLock()).unlock();
-        }
-    }
-
-    @Nested
     class GetPaths {
         @Test
         void shouldReturnPeerInformationAndPaths(@Mock final CompressedPublicKey publicKey,
@@ -301,7 +285,7 @@ class PeersManagerTest {
             underTest.removeChildrenAndPath(publicKey, path);
 
             assertThat(underTest.getPeers(), not(hasItem(publicKey)));
-            assertEquals(Set.of(), underTest.getChildrenKeys());
+            assertEquals(Set.of(), underTest.getChildren());
         }
 
         @Test
@@ -327,7 +311,7 @@ class PeersManagerTest {
             underTest.addPathAndChildren(publicKey, path);
 
             assertThat(underTest.getPeers(), hasItem(publicKey));
-            assertEquals(Set.of(publicKey), underTest.getChildrenKeys());
+            assertEquals(Set.of(publicKey), underTest.getChildren());
         }
 
         @Test

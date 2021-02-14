@@ -136,17 +136,6 @@ public class PeersManager {
         }
     }
 
-    public Set<CompressedPublicKey> getChildrenKeys() {
-        try {
-            lock.readLock().lock();
-
-            return Set.copyOf(children);
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
     public Set<Object> getPaths(final CompressedPublicKey publicKey) {
         requireNonNull(publicKey);
 
