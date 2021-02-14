@@ -19,18 +19,34 @@
 package org.drasyl.cli;
 
 /**
- * A org.drasyl.cli.CliException is thrown by the {@link Cli} when errors occur.
+ * This exception signals an error occurred during execution in {@link Cli} implementations.
  */
-public class CliException extends Exception {
+public class CliException extends RuntimeException {
+    /**
+     * @param message the detail message. The detail message is saved for later retrieval by the
+     *                {@link #getMessage()} method.
+     */
     public CliException(final String message) {
         super(message);
     }
 
+    /**
+     * @param cause the cause (which is saved for later retrieval by the {@link #getCause()}
+     *              method).  (A {@code null} value is permitted, and indicates that the cause is
+     *              nonexistent or unknown.)
+     */
     public CliException(final Throwable cause) {
         super(cause);
     }
 
-    public CliException(String message, Throwable cause) {
+    /**
+     * @param message the detail message (which is saved for later retrieval by the {@link
+     *                #getMessage()} method).
+     * @param cause   the cause (which is saved for later retrieval by the {@link #getCause()}
+     *                method).  (A {@code null} value is permitted, and indicates that the cause is
+     *                nonexistent or unknown.)
+     */
+    public CliException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

@@ -22,16 +22,14 @@ package org.drasyl.cli.command;
 import org.apache.commons.cli.CommandLine;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
-import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
-import org.drasyl.util.ThrowingBiFunction;
+import org.drasyl.util.ThrowingFunction;
+import org.drasyl.util.Triple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -42,30 +40,35 @@ import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class WormholeCommandTest {
-    private ByteArrayOutputStream outputStream;
+    private ByteArrayOutputStream outStream;
     @SuppressWarnings("FieldCanBeLocal")
-    private PrintStream printStream;
+    private PrintStream out;
+    private ByteArrayOutputStream errStream;
+    @SuppressWarnings("FieldCanBeLocal")
+    private PrintStream err;
     @Mock
     private Supplier<Scanner> scannerSupplier;
     @Mock
-    private ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
+    private ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, SendingWormholeNode, DrasylException> sendingNodeSupplier;
     @Mock
-    private ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
-    @InjectMocks
+    private ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
     private WormholeCommand underTest;
 
     @BeforeEach
     void setUp() {
-        outputStream = new ByteArrayOutputStream();
-        printStream = new PrintStream(outputStream, true);
-        underTest = new WormholeCommand(printStream, scannerSupplier, sendingNodeSupplier, receivingNodeSupplier);
+        outStream = new ByteArrayOutputStream();
+        out = new PrintStream(outStream, true);
+        errStream = new ByteArrayOutputStream();
+        err = new PrintStream(errStream, true);
+        underTest = new WormholeCommand(out, err, scannerSupplier, sendingNodeSupplier, receivingNodeSupplier, null, null);
     }
 
     @Nested
@@ -77,7 +80,7 @@ class WormholeCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            final String output = outputStream.toString();
+            final String output = outStream.toString();
             assertThat(output, containsString("Transfer a text message from one node to another, safely."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl wormhole [flags]" + System.lineSeparator()));
@@ -88,15 +91,15 @@ class WormholeCommandTest {
 
     @Nested
     class Execute {
-        @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+        @Mock(answer = RETURNS_DEEP_STUBS)
         private CommandLine cmd;
 
         @Test
-        void shouldStartSendingNode(@Mock(answer = Answers.RETURNS_DEEP_STUBS) final SendingWormholeNode node) throws CliException, DrasylException {
+        void shouldStartSendingNode(@Mock(answer = RETURNS_DEEP_STUBS) final SendingWormholeNode node) throws DrasylException {
             when(cmd.getArgList().size()).thenReturn(2);
             when(cmd.getArgList().get(1)).thenReturn("send");
             when(scannerSupplier.get()).thenReturn(new Scanner("Hallo Welt"));
-            when(sendingNodeSupplier.apply(any(), any())).thenReturn(node);
+            when(sendingNodeSupplier.apply(any())).thenReturn(node);
 
             underTest.execute(cmd);
 
@@ -104,15 +107,30 @@ class WormholeCommandTest {
         }
 
         @Test
-        void shouldStartReceivingNode(@Mock(answer = Answers.RETURNS_DEEP_STUBS) final ReceivingWormholeNode node) throws CliException, DrasylException {
+        void shouldStartReceivingNode(@Mock(answer = RETURNS_DEEP_STUBS) final ReceivingWormholeNode node) throws DrasylException {
             when(cmd.getArgList().size()).thenReturn(3);
             when(cmd.getArgList().get(1)).thenReturn("receive");
             when(cmd.getArgList().get(2)).thenReturn("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a98281ff73f2346d55195d0cd274c101c4775");
-            when(receivingNodeSupplier.apply(any(), any())).thenReturn(node);
+            when(receivingNodeSupplier.apply(any())).thenReturn(node);
 
             underTest.execute(cmd);
 
             verify(node).start();
+        }
+
+        @Test
+        void shouldAbortOnInvalidCode(@Mock(answer = RETURNS_DEEP_STUBS) final ReceivingWormholeNode node) throws DrasylException {
+            when(cmd.getArgList().size()).thenReturn(3);
+            when(cmd.getArgList().get(1)).thenReturn("receive");
+            when(cmd.getArgList().get(2)).thenReturn("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a9");
+            when(receivingNodeSupplier.apply(any())).thenReturn(node);
+
+            underTest.execute(cmd);
+
+            verify(node, never()).requestText(any(), any());
+
+            final String output = errStream.toString();
+            assertThat(output, containsString("ERR: Invalid wormhole code supplied: must be at least 66 characters long."));
         }
 
         @Test
@@ -120,16 +138,19 @@ class WormholeCommandTest {
             when(cmd.getArgList().size()).thenReturn(2);
             when(cmd.getArgList().get(1)).thenReturn("foo");
 
-            assertThrows(CliException.class, () -> underTest.execute(cmd));
+            underTest.execute(cmd);
+
+            final String output = errStream.toString();
+            assertThat(output, containsString("ERR: Unknown command \"foo\" for \"drasyl wormhole\"."));
         }
 
         @Test
-        void shouldPrintHelpOnMissingCommand() throws CliException {
+        void shouldPrintHelpOnMissingCommand() {
             when(cmd.getArgList().size()).thenReturn(1);
 
             underTest.execute(cmd);
 
-            final String output = outputStream.toString();
+            final String output = outStream.toString();
             assertThat(output, containsString("Transfer a text message from one node to another, safely."));
         }
     }

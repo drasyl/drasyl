@@ -22,7 +22,6 @@ package org.drasyl.cli.command;
 import org.apache.commons.cli.CommandLine;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNode;
-import org.drasyl.cli.CliException;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -47,20 +46,23 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class NodeCommandTest {
-    private PrintStream printStream;
+    private ByteArrayOutputStream outStream;
+    private PrintStream out;
+    private ByteArrayOutputStream errStream;
+    private PrintStream err;
     @Mock
     private Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylNode node;
-    @InjectMocks
     private NodeCommand underTest;
-    private ByteArrayOutputStream outputStream;
 
     @BeforeEach
     void setUp() {
-        outputStream = new ByteArrayOutputStream();
-        printStream = new PrintStream(outputStream, true);
-        underTest = new NodeCommand(printStream, nodeSupplier, node);
+        outStream = new ByteArrayOutputStream();
+        out = new PrintStream(outStream, true);
+        errStream = new ByteArrayOutputStream();
+        err = new PrintStream(errStream, true);
+        underTest = new NodeCommand(out, err, nodeSupplier, node);
     }
 
     @Nested
@@ -72,7 +74,7 @@ public class NodeCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            final String output = outputStream.toString();
+            final String output = outStream.toString();
             assertThat(output, containsString("Run a drasyl node in the current directory."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl node [flags]" + System.lineSeparator()));
@@ -86,7 +88,7 @@ public class NodeCommandTest {
         private CommandLine cmd;
 
         @Test
-        void shouldRunANode(@Mock final Pair<DrasylNode, CompletableFuture<Void>> pair) throws CliException {
+        void shouldRunANode(@Mock final Pair<DrasylNode, CompletableFuture<Void>> pair) {
             when(nodeSupplier.apply(any())).thenReturn(pair);
             when(pair.second()).thenReturn(completedFuture(null));
 

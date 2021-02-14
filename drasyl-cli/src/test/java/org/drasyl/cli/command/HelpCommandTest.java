@@ -36,16 +36,19 @@ import static org.hamcrest.Matchers.containsString;
 
 @ExtendWith(MockitoExtension.class)
 class HelpCommandTest {
-    private PrintStream printStream;
-    @InjectMocks
+    private ByteArrayOutputStream outStream;
+    private PrintStream out;
+    private ByteArrayOutputStream errStream;
+    private PrintStream err;
     private HelpCommand underTest;
-    private ByteArrayOutputStream outputStream;
 
     @BeforeEach
     void setUp() {
-        outputStream = new ByteArrayOutputStream();
-        printStream = new PrintStream(outputStream, true);
-        underTest = new HelpCommand(printStream);
+        outStream = new ByteArrayOutputStream();
+        out = new PrintStream(outStream, true);
+        errStream = new ByteArrayOutputStream();
+        err = new PrintStream(errStream, true);
+        underTest = new HelpCommand(out, err);
     }
 
     @Nested
@@ -57,7 +60,7 @@ class HelpCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            final String output = outputStream.toString();
+            final String output = outStream.toString();
             assertThat(output, containsString("drasyl is an general purpose transport overlay network."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl help [flags]" + System.lineSeparator()));
@@ -74,7 +77,7 @@ class HelpCommandTest {
         void shouldPrintAvailableCommands() {
             underTest.execute(cmd);
 
-            final String output = outputStream.toString();
+            final String output = outStream.toString();
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl [flags]" + System.lineSeparator()));
             assertThat(output, containsString("drasyl [command]" + System.lineSeparator()));

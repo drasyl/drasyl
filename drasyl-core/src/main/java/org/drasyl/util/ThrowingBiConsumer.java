@@ -16,14 +16,21 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package org.drasyl.cli;
+package org.drasyl.util;
 
 /**
- * Is thrown by the {@link Cli} if desired command is not found.
+ * {@link java.util.function.BiConsumer} that can throw checked {@link Exception}s.
+ *
+ * @param <T> the type of the first argument to the operation
+ * @param <U> the type of the second argument to the operation
  */
-public class CommandNotFoundCliException extends CliException {
-    public CommandNotFoundCliException(final String commandName) {
-        super("Unknown command \"" + commandName + "\" for \"drasyl\"");
-    }
+@FunctionalInterface
+public interface ThrowingBiConsumer<T, U, E extends Exception> {
+    /**
+     * Performs this operation on the given arguments.
+     *
+     * @param t the first input argument
+     * @param u the second input argument
+     */
+    void accept(T t, U u) throws E;
 }

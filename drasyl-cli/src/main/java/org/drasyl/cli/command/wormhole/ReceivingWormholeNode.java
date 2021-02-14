@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.behaviour.Behaviors.ignore;
+import static org.drasyl.behaviour.Behaviors.same;
 import static org.drasyl.serialization.Serializers.SERIALIZER_JACKSON_JSON;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
@@ -51,13 +53,15 @@ import static org.drasyl.util.SecretUtil.maskSecret;
 public class ReceivingWormholeNode extends BehavioralDrasylNode {
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     public static final Duration REQUEST_TEXT_TIMEOUT = ofSeconds(10);
-    private static final Logger log = LoggerFactory.getLogger(ReceivingWormholeNode.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReceivingWormholeNode.class);
     private final CompletableFuture<Void> doneFuture;
-    private final PrintStream printStream;
+    private final PrintStream out;
+    private final PrintStream err;
     private RequestText request;
 
     ReceivingWormholeNode(final CompletableFuture<Void> doneFuture,
-                          final PrintStream printStream,
+                          final PrintStream out,
+                          final PrintStream err,
                           final RequestText request,
                           final DrasylConfig config,
                           final Identity identity,
@@ -69,18 +73,21 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
                           final Scheduler scheduler) {
         super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
         this.doneFuture = doneFuture;
-        this.printStream = printStream;
+        this.out = out;
+        this.err = err;
         this.request = request;
     }
 
     public ReceivingWormholeNode(final DrasylConfig config,
-                                 final PrintStream printStream) throws DrasylException {
+                                 final PrintStream out,
+                                 final PrintStream err) throws DrasylException {
         super(DrasylConfig.newBuilder(config)
                 .addSerializationsBindingsInbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
                 .addSerializationsBindingsOutbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
                 .build());
         this.doneFuture = new CompletableFuture<>();
-        this.printStream = printStream;
+        this.out = requireNonNull(out);
+        this.err = requireNonNull(err);
     }
 
     @Override
@@ -110,21 +117,23 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
 
             return Behaviors.receive()
                     .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
-                        doneFuture.completeExceptionally(event.getError());
-                        return Behaviors.ignore();
+                        err.println("ERR: " + event.getError());
+                        doneFuture.complete(null);
+                        return ignore();
                     })
                     .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                     .onEvent(NodeOnlineEvent.class, event -> online())
                     .onEvent(OnlineTimeout.class, event -> {
-                        doneFuture.completeExceptionally(new Exception("Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable."));
-                        return Behaviors.ignore();
+                        err.println("ERR: Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable.");
+                        doneFuture.complete(null);
+                        return ignore();
                     })
                     .onEvent(RequestText.class, event -> request == null, event -> {
                         // we are not online (yet), remember for later
                         this.request = event;
                         return offline();
                     })
-                    .onAnyEvent(event -> Behaviors.same())
+                    .onAnyEvent(event -> same())
                     .build();
         });
     }
@@ -146,7 +155,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
                         this.request = event;
                         return requestText(request);
                     })
-                    .onAnyEvent(event -> Behaviors.same())
+                    .onAnyEvent(event -> same())
                     .build();
         }
     }
@@ -155,7 +164,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
      * Node is requesting text from {@link SendingWormholeNode} and waiting for the response.
      */
     private Behavior requestText(final RequestText request) {
-        log.debug("Requesting text from '{}' with password '{}'", request::getSender, () -> maskSecret(request.getPassword()));
+        LOG.debug("Requesting text from '{}' with password '{}'", request::getSender, () -> maskSecret(request.getPassword()));
         send(request.getSender(), new PasswordMessage(request.getPassword()));
 
         return Behaviors.withScheduler(scheduler -> {
@@ -165,11 +174,11 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
                     .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                     .onEvent(RequestTextTimeout.class, event -> fail())
                     .onMessage(TextMessage.class, (sender, payload) -> sender.equals(request.getSender()), (sender, payload) -> {
-                        printStream.println(payload.getText());
+                        out.println(payload.getText());
                         return terminate();
                     })
                     .onMessage(WrongPasswordMessage.class, (sender, payload) -> sender.equals(request.getSender()), (sender, message) -> fail())
-                    .onAnyEvent(event -> Behaviors.same())
+                    .onAnyEvent(event -> same())
                     .build();
         });
     }
@@ -179,20 +188,19 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
      */
     private Behavior terminate() {
         doneFuture.complete(null);
-        return Behaviors.ignore();
+        return ignore();
     }
 
     /**
      * Transfer failed.
      */
     private Behavior fail() {
-        doneFuture.completeExceptionally(new Exception(
-                "Code confirmation failed. Either you or your correspondent\n" +
-                        "typed the code wrong, or a would-be man-in-the-middle attacker guessed\n" +
-                        "incorrectly. You could try again, giving both your correspondent and\n" +
-                        "the attacker another chance."
-        ));
-        return Behaviors.ignore();
+        err.println("ERR: Code confirmation failed. Either you or your correspondent");
+        err.println("typed the code wrong, or a would-be man-in-the-middle attacker guessed");
+        err.println("incorrectly. You could try again, giving both your correspondent and");
+        err.println("the attacker another chance.");
+        doneFuture.complete(null);
+        return ignore();
     }
 
     /**

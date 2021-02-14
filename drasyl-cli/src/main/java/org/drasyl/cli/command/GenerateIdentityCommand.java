@@ -24,22 +24,38 @@ import org.apache.commons.cli.CommandLine;
 import org.drasyl.cli.CliException;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
+import org.drasyl.util.ThrowingBiConsumer;
+import org.drasyl.util.ThrowingSupplier;
 
 import java.io.IOException;
 import java.io.PrintStream;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * Generate and output new Identity in JSON format.
  */
 public class GenerateIdentityCommand extends AbstractCommand {
-    public GenerateIdentityCommand() {
-        this(System.out); // NOSONAR
+    private final ThrowingSupplier<Identity, IOException> identitySupplier;
+    private final ThrowingBiConsumer<PrintStream, Identity, IOException> jsonWriter;
+
+    GenerateIdentityCommand(final PrintStream out,
+                            final PrintStream err,
+                            final ThrowingSupplier<Identity, IOException> identitySupplier,
+                            final ThrowingBiConsumer<PrintStream, Identity, IOException> jsonWriter) {
+        super(out, err);
+        this.identitySupplier = requireNonNull(identitySupplier);
+        this.jsonWriter = requireNonNull(jsonWriter);
     }
 
-    GenerateIdentityCommand(final PrintStream printStream) {
-        super(printStream);
+    public GenerateIdentityCommand() {
+        this(
+                System.out, // NOSONAR
+                System.err, // NOSONAR
+                IdentityManager::generateIdentity,
+                (myOut, identity) -> JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(myOut, identity)
+        );
     }
 
     @Override
@@ -48,13 +64,13 @@ public class GenerateIdentityCommand extends AbstractCommand {
     }
 
     @Override
-    protected void execute(final CommandLine cmd) throws CliException {
+    protected void execute(final CommandLine cmd) {
         try {
-            final Identity identity = IdentityManager.generateIdentity();
-            JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(printStream, identity);
+            final Identity identity = identitySupplier.get();
+            jsonWriter.accept(out, identity);
         }
         catch (final IOException e) {
-            throw new CliException(e);
+            throw new CliException("Unable to output identity:", e);
         }
     }
 

@@ -42,19 +42,24 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.behaviour.Behaviors.ignore;
+import static org.drasyl.behaviour.Behaviors.same;
 import static org.drasyl.serialization.Serializers.SERIALIZER_JACKSON_JSON;
 
 @SuppressWarnings({ "java:S107" })
 public class SendingWormholeNode extends BehavioralDrasylNode {
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
+    public static final int PASSWORD_LENGTH = 16;
     private final CompletableFuture<Void> doneFuture;
-    private final PrintStream printStream;
+    private final PrintStream out;
+    private final PrintStream err;
     private final String password;
     private String text;
 
     @SuppressWarnings("SameParameterValue")
     SendingWormholeNode(final CompletableFuture<Void> doneFuture,
-                        final PrintStream printStream,
+                        final PrintStream out,
+                        final PrintStream err,
                         final String password,
                         final DrasylConfig config,
                         final Identity identity,
@@ -66,19 +71,22 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                         final Scheduler scheduler) {
         super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
         this.doneFuture = doneFuture;
-        this.printStream = printStream;
+        this.out = out;
+        this.err = err;
         this.password = password;
     }
 
     public SendingWormholeNode(final DrasylConfig config,
-                               final PrintStream printStream) throws DrasylException {
+                               final PrintStream out,
+                               final PrintStream err) throws DrasylException {
         super(DrasylConfig.newBuilder(config)
                 .addSerializationsBindingsInbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
                 .addSerializationsBindingsOutbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
                 .build());
         this.doneFuture = new CompletableFuture<>();
-        this.printStream = printStream;
-        this.password = Crypto.randomString(16);
+        this.out = requireNonNull(out);
+        this.err = requireNonNull(err);
+        this.password = Crypto.randomString(PASSWORD_LENGTH);
     }
 
     @Override
@@ -108,21 +116,23 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
 
             return Behaviors.receive()
                     .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
-                        doneFuture.completeExceptionally(event.getError());
-                        return Behaviors.ignore();
+                        err.println("ERR: " + event.getError());
+                        doneFuture.complete(null);
+                        return ignore();
                     })
                     .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                     .onEvent(NodeOnlineEvent.class, event -> online())
                     .onEvent(OnlineTimeout.class, event -> {
-                        doneFuture.completeExceptionally(new Exception("Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable."));
-                        return Behaviors.ignore();
+                        err.println("ERR: Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable.");
+                        doneFuture.complete(null);
+                        return ignore();
                     })
                     .onEvent(SetText.class, event -> text == null, event -> {
                         this.handleSetText(event);
                         return offline();
                     })
                     .onEvent(OnlineTimeout.class, event -> fail())
-                    .onAnyEvent(event -> Behaviors.same())
+                    .onAnyEvent(event -> same())
                     .build();
         });
     }
@@ -136,12 +146,12 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                 .onEvent(NodeOfflineEvent.class, event -> offline())
                 .onEvent(SetText.class, event -> text == null, event -> {
                     this.handleSetText(event);
-                    return Behaviors.same();
+                    return same();
                 })
                 .onMessage(PasswordMessage.class, (sender, payload) -> text != null && password.equals(payload.getPassword()), (sender, payload) -> {
                     // correct password -> send text
                     send(sender, new TextMessage(text));
-                    printStream.println("text message sent");
+                    out.println("text message sent");
                     return terminate();
                 })
                 .onMessage(PasswordMessage.class, (sender, payload) -> {
@@ -149,7 +159,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                     send(sender, new WrongPasswordMessage());
                     return fail();
                 })
-                .onAnyEvent(event -> Behaviors.same())
+                .onAnyEvent(event -> same())
                 .build();
     }
 
@@ -158,7 +168,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
      */
     private Behavior terminate() {
         doneFuture.complete(null);
-        return Behaviors.ignore();
+        return ignore();
     }
 
     /**
@@ -171,7 +181,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                         "incorrectly. You could try again, giving both your correspondent and\n" +
                         "the attacker another chance."
         ));
-        return Behaviors.ignore();
+        return ignore();
     }
 
     /**
@@ -181,11 +191,11 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
         // text has been set -> display wormhole code
         this.text = event.text;
         final String code = identity().getPublicKey().toString() + password;
-        printStream.println("Wormhole code is: " + code);
-        printStream.println("On the other computer, please run:");
-        printStream.println();
-        printStream.println("drasyl wormhole receive " + code);
-        printStream.println();
+        out.println("Wormhole code is: " + code);
+        out.println("On the other computer, please run:");
+        out.println();
+        out.println("drasyl wormhole receive " + code);
+        out.println();
     }
 
     /**

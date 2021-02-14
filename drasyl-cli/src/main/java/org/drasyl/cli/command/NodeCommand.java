@@ -29,8 +29,6 @@ import org.drasyl.cli.CliException;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.pipeline.DefaultPipeline;
-import org.drasyl.pipeline.VisualPipeline;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -40,15 +38,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.failedFuture;
-import static org.drasyl.pipeline.HandlerMask.ALL;
 
 /**
  * Run a drasyl node.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class NodeCommand extends AbstractCommand {
-    private static final Logger log = LoggerFactory.getLogger(NodeCommand.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NodeCommand.class);
 
     static {
         Sentry.init(options -> {
@@ -63,13 +61,14 @@ public class NodeCommand extends AbstractCommand {
     public NodeCommand() {
         this(
                 System.out, // NOSONAR
+                System.err, // NOSONAR
                 config -> {
                     try {
                         final CompletableFuture<Void> running = new CompletableFuture<>();
                         final DrasylNode myNode = new DrasylNode(config) {
                             @Override
                             public void onEvent(final @NonNull Event event) {
-                                log.info("Event received: {}", event);
+                                LOG.info("Event received: {}", event);
                                 if (event instanceof NodeNormalTerminationEvent) {
                                     running.complete(null);
                                 }
@@ -89,11 +88,12 @@ public class NodeCommand extends AbstractCommand {
         );
     }
 
-    NodeCommand(final PrintStream printStream,
+    NodeCommand(final PrintStream out,
+                final PrintStream err,
                 final Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier,
                 final DrasylNode node) {
-        super(printStream);
-        this.nodeSupplier = nodeSupplier;
+        super(out, err);
+        this.nodeSupplier = requireNonNull(nodeSupplier);
         this.node = node;
     }
 
@@ -107,10 +107,10 @@ public class NodeCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(final CommandLine cmd) throws CliException {
+    public void execute(final CommandLine cmd) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (node != null) {
-                log.info("Shutdown drasyl Node");
+                LOG.info("Shutdown drasyl Node");
                 node.shutdown().join();
             }
         }));
@@ -122,11 +122,11 @@ public class NodeCommand extends AbstractCommand {
             final CompletableFuture<Void> running = pair.second();
             running.get(); // block while node is running
         }
-        catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
         catch (final ExecutionException e) {
             throw new CliException(e);
+        }
+        catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

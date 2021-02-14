@@ -43,6 +43,8 @@ import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -56,9 +58,13 @@ class SendingWormholeNodeTest {
     @Mock
     private CompletableFuture<Void> doneFuture;
     @SuppressWarnings("FieldCanBeLocal")
-    private PrintStream printStream;
+    private ByteArrayOutputStream outStream;
     @SuppressWarnings("FieldCanBeLocal")
-    private ByteArrayOutputStream outputStream;
+    private PrintStream out;
+    @SuppressWarnings("FieldCanBeLocal")
+    private ByteArrayOutputStream errStream;
+    @SuppressWarnings("FieldCanBeLocal")
+    private PrintStream err;
     @SuppressWarnings("FieldCanBeLocal")
     private final String password = "123";
     @Mock
@@ -79,9 +85,11 @@ class SendingWormholeNodeTest {
 
     @BeforeEach
     void setUp() {
-        outputStream = new ByteArrayOutputStream();
-        printStream = new PrintStream(outputStream, true);
-        underTest = new SendingWormholeNode(doneFuture, printStream, password, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        outStream = new ByteArrayOutputStream();
+        out = new PrintStream(outStream, true);
+        errStream = new ByteArrayOutputStream();
+        err = new PrintStream(errStream, true);
+        underTest = new SendingWormholeNode(doneFuture, out, err, password, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
     }
 
     @Nested
@@ -89,10 +97,14 @@ class SendingWormholeNodeTest {
         @Nested
         class OnNodeUnrecoverableErrorEvent {
             @Test
-            void shouldCompleteExceptionally(@Mock final NodeUnrecoverableErrorEvent event) {
+            void shouldCompleteExceptionally(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUnrecoverableErrorEvent event) {
+                when(event.getError().toString()).thenReturn("Boom!");
+
                 underTest.onEvent(event);
 
-                verify(doneFuture).completeExceptionally(any());
+                final String output = errStream.toString();
+                assertThat(output, containsString("ERR: Boom!"));
+                verify(doneFuture).complete(null);
             }
         }
 
@@ -151,7 +163,9 @@ class SendingWormholeNodeTest {
             void shouldComplete(@Mock(answer = RETURNS_DEEP_STUBS) final OnlineTimeout event) {
                 underTest.onEvent(event);
 
-                verify(doneFuture).completeExceptionally(any());
+                final String output = errStream.toString();
+                assertThat(output, containsString("ERR: Node did not come online within 10s. Look like super peer is unavailable."));
+                verify(doneFuture).complete(null);
             }
         }
     }

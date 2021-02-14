@@ -26,14 +26,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.PrintStream;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CliTest {
+    @Mock
+    private PrintStream err;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Map<String, Command> commands;
     @Mock
@@ -42,7 +44,7 @@ class CliTest {
     private Cli underTest;
 
     @Test
-    void runShouldExecuteHelpCommandIfNothingIsGiven() throws CliException {
+    void runShouldExecuteHelpCommandIfNothingIsGiven() {
         when(commands.get("help")).thenReturn(command);
 
         underTest.run(new String[]{});
@@ -51,7 +53,7 @@ class CliTest {
     }
 
     @Test
-    void runShouldExecuteGivenCommand() throws CliException {
+    void runShouldExecuteGivenCommand() {
         when(commands.get("version")).thenReturn(command);
 
         underTest.run(new String[]{ "version" });
@@ -61,6 +63,8 @@ class CliTest {
 
     @Test
     void runShouldThrowExceptionForUnknownCommand() {
-        assertThrows(CommandNotFoundCliException.class, () -> underTest.run(new String[]{ "sadassdaashdaskj" }));
+        underTest.run(new String[]{ "sadassdaashdaskj" });
+
+        verify(err).println("ERR: Unknown command \"sadassdaashdaskj\" for \"drasyl\".");
     }
 }
