@@ -68,13 +68,14 @@ public class Cli {
         new Cli().run(args);
     }
 
-    public void run(final String[] args) {
+    public void run(String[] args) {
         final String commandName;
-        if (args.length > 0) {
+        if (args.length > 0 && !"--help".equals(args[0]) && !"-h".equals(args[0])) {
             commandName = args[0];
         }
         else {
             commandName = "help";
+            args = new String[0];
         }
 
         final Command command = myCommands.get(commandName);

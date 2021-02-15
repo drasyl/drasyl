@@ -53,6 +53,24 @@ class CliTest {
     }
 
     @Test
+    void runShouldExecuteHelpCommandIfNothingButHelpParameterIsGiven() {
+        when(commands.get("help")).thenReturn(command);
+
+        underTest.run(new String[]{ "--help" });
+
+        verify(commands.get("help")).execute(new String[]{});
+    }
+
+    @Test
+    void runShouldExecuteHelpCommandIfNothingButHParameterIsGiven() {
+        when(commands.get("help")).thenReturn(command);
+
+        underTest.run(new String[]{ "-h" });
+
+        verify(commands.get("help")).execute(new String[]{});
+    }
+
+    @Test
     void runShouldExecuteGivenCommand() {
         when(commands.get("version")).thenReturn(command);
 
