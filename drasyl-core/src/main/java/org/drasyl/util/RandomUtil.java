@@ -62,6 +62,37 @@ public final class RandomUtil {
     }
 
     /**
+     * Returns a pseudorandom, uniformly distributed {@code long} value between {@code min} and
+     * {@code max}.
+     *
+     * @param min The lowest value to return
+     * @param max The highest value to return
+     * @return Pseudorandom {@code long}
+     * @throws IllegalArgumentException if {@code min} is greater then {@code max}
+     */
+    public static long randomLong(final long min, final long max) {
+        if (min > max) {
+            throw new IllegalArgumentException("max must be greater then min");
+        }
+        else if (min == max) {
+            return min;
+        }
+        else {
+            return min + (long) (Math.random() * (max - min + 1));
+        }
+    }
+
+    /**
+     * Returns a pseudorandom, uniformly distributed {@code long} value between 0 and {@code max}.
+     *
+     * @param max The highest value to return
+     * @return Pseudorandom {@code long}
+     */
+    public static long randomLong(final long max) {
+        return randomLong(0, max);
+    }
+
+    /**
      * Returns an array of length {@code count} containing pseudorandom bytes.
      *
      * @param count The length of the array

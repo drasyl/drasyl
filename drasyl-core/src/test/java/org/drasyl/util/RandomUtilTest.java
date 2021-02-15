@@ -33,24 +33,40 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class RandomUtilTest {
+    private static final int ITERATIONS = 1_000;
+
     @Nested
     class RandomInt {
         @Test
         void shouldReturnRandomNumberBetweenMinAndMax() {
-            for (int i = 0; i < 100; i++) {
+            int minResult = 10;
+            int maxResult = 5;
+            for (int i = 0; i < ITERATIONS; i++) {
                 final int result = RandomUtil.randomInt(5, 10);
+                minResult = Math.min(minResult, result);
+                maxResult = Math.max(maxResult, result);
 
                 assertThat(result, is(both(greaterThanOrEqualTo(5)).and(lessThanOrEqualTo(10))));
             }
+
+            assertEquals(5, minResult);
+            assertEquals(10, maxResult);
         }
 
         @Test
         void shouldReturnRandomNumberBetweenZeroAndMax() {
-            for (int i = 0; i < 100; i++) {
+            int minResult = 5;
+            int maxResult = 0;
+            for (int i = 0; i < ITERATIONS; i++) {
                 final int result = RandomUtil.randomInt(5);
+                minResult = Math.min(minResult, result);
+                maxResult = Math.max(maxResult, result);
 
                 assertThat(result, is(both(greaterThanOrEqualTo(0)).and(lessThanOrEqualTo(5))));
             }
+
+            assertEquals(0, minResult);
+            assertEquals(5, maxResult);
         }
 
         @Test
@@ -66,6 +82,56 @@ class RandomUtilTest {
         @Test
         void shouldThrowExceptionIfMaxIsNegative() {
             assertThrows(IllegalArgumentException.class, () -> RandomUtil.randomInt(-1));
+        }
+    }
+
+    @Nested
+    class RandomLong {
+        @Test
+        void shouldReturnRandomNumberBetweenMinAndMax() {
+            long minResult = 10;
+            long maxResult = 5;
+            for (int i = 0; i < ITERATIONS; i++) {
+                final long result = RandomUtil.randomLong(5, 10);
+                minResult = Math.min(minResult, result);
+                maxResult = Math.max(maxResult, result);
+
+                assertThat(result, is(both(greaterThanOrEqualTo(5L)).and(lessThanOrEqualTo(10L))));
+            }
+
+            assertEquals(5, minResult);
+            assertEquals(10, maxResult);
+        }
+
+        @Test
+        void shouldReturnRandomNumberBetweenZeroAndMax() {
+            long minResult = 5;
+            long maxResult = 0;
+            for (int i = 0; i < ITERATIONS; i++) {
+                final long result = RandomUtil.randomLong(5);
+                minResult = Math.min(minResult, result);
+                maxResult = Math.max(maxResult, result);
+
+                assertThat(result, is(both(greaterThanOrEqualTo(0L)).and(lessThanOrEqualTo(5L))));
+            }
+
+            assertEquals(0, minResult);
+            assertEquals(5, maxResult);
+        }
+
+        @Test
+        void shouldReturnMinNumberIfMinAndMaxAreEqual() {
+            assertEquals(10, RandomUtil.randomLong(10, 10));
+        }
+
+        @Test
+        void shouldThrowExceptionIfMinIsGreaterThanMax() {
+            assertThrows(IllegalArgumentException.class, () -> RandomUtil.randomLong(10, 1));
+        }
+
+        @Test
+        void shouldThrowExceptionIfMaxIsNegative() {
+            assertThrows(IllegalArgumentException.class, () -> RandomUtil.randomLong(-1));
         }
     }
 
