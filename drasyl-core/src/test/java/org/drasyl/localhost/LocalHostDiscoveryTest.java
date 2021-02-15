@@ -58,7 +58,6 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
@@ -66,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
@@ -109,7 +109,7 @@ class LocalHostDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS));
+            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
             pipeline.close();
         }
 
@@ -145,8 +145,8 @@ class LocalHostDiscoveryTest {
 
             pipeline.processInbound(event).join();
 
-            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS));
-            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), eq(0L), eq(ofSeconds(55L).toMillis()), eq(MILLISECONDS));
+            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
             pipeline.close();
         }
 
@@ -161,11 +161,11 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
             when(discoveryPath.resolve(anyString())).thenReturn(path);
-            when(scheduler.schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS))).then(invocationOnMock -> {
+            when(scheduler.schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS))).then(invocationOnMock -> {
                 invocationOnMock.getArgument(0, Runnable.class).run();
                 return null;
             });
-            when(scheduler.schedulePeriodicallyDirect(any(), eq(0L), eq(ofSeconds(55L).toMillis()), eq(MILLISECONDS))).then(invocationOnMock -> {
+            when(scheduler.schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS))).then(invocationOnMock -> {
                 invocationOnMock.getArgument(0, Runnable.class).run();
                 return null;
             });

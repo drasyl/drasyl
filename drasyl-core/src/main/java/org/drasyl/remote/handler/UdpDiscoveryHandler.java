@@ -65,6 +65,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
+import static org.drasyl.util.RandomUtil.randomLong;
 
 @SuppressWarnings({ "java:S110", "java:S1192" })
 public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<? extends MessageLite>, SerializedApplicationMessage, Address> {
@@ -136,8 +137,9 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     synchronized void startHeartbeat(final HandlerContext ctx) {
         if (heartbeatDisposable == null) {
             LOG.debug("Start heartbeat scheduler");
+            final long pingInterval = ctx.config().getRemotePingInterval().toMillis();
             heartbeatDisposable = ctx.independentScheduler()
-                    .schedulePeriodicallyDirect(() -> doHeartbeat(ctx), 0, ctx.config().getRemotePingInterval().toMillis(), MILLISECONDS);
+                    .schedulePeriodicallyDirect(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
         }
     }
 
