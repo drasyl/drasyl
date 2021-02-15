@@ -35,6 +35,7 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -44,8 +45,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 @State(Scope.Benchmark)
@@ -62,8 +61,7 @@ public class Message2ByteBufHandlerBenchmark extends AbstractBenchmark {
             recipient = new MyAddress();
             final InetSocketAddressWrapper msgSender = new InetSocketAddressWrapper("127.0.0.1", 25527);
             final InetSocketAddressWrapper msgRecipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
-            final byte[] payload = new byte[1024];
-            new Random().nextBytes(payload);
+            final byte[] payload = RandomUtil.randomBytes(1024);
             final IntermediateEnvelope<Application> content = IntermediateEnvelope.application(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), byte[].class.getName(), payload);
             msg = new AddressedIntermediateEnvelope<>(msgSender, msgRecipient, content.getOrBuildByteBuf());
             future = new CompletableFuture<>();

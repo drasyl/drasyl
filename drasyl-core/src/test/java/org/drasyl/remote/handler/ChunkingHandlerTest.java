@@ -40,6 +40,7 @@ import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
 import org.drasyl.util.UnsignedShort;
@@ -53,7 +54,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
@@ -161,8 +161,7 @@ class ChunkingHandlerTest {
                         .setHopCount(1)
                         .setChunkNo(UnsignedShort.of(1).getValue())
                         .build();
-                final byte[] chunkBytes = new byte[remoteMessageMtu / 2];
-                new Random().nextBytes(chunkBytes);
+                final byte[] chunkBytes = RandomUtil.randomBytes(remoteMessageMtu / 2);
                 final ByteBuf chunkPayload = Unpooled.wrappedBuffer(chunkBytes);
 
                 final IntermediateEnvelope<MessageLite> chunk = IntermediateEnvelope.of(chunkHeader, chunkPayload);
@@ -177,8 +176,7 @@ class ChunkingHandlerTest {
                         .setHopCount(1)
                         .setTotalChunks(UnsignedShort.of(2).getValue())
                         .build();
-                final byte[] headChunkBytes = new byte[remoteMessageMtu / 2];
-                new Random().nextBytes(headChunkBytes);
+                final byte[] headChunkBytes = RandomUtil.randomBytes(remoteMessageMtu / 2);
                 final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(headChunkBytes);
 
                 final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload);

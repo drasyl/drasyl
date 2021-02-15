@@ -30,6 +30,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -41,7 +42,6 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
-import java.util.Random;
 
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 
@@ -62,8 +62,7 @@ public class IntermediateEnvelopeBenchmark extends AbstractBenchmark {
             privateHeader = PrivateHeader.newBuilder()
                     .setType(APPLICATION)
                     .build();
-            final byte[] payload = new byte[1024];
-            new Random().nextBytes(payload);
+            final byte[] payload = RandomUtil.randomBytes(1024);
             body = Application.newBuilder()
                     .setType(byte[].class.getName())
                     .setPayload(ByteString.copyFrom(payload))
@@ -79,7 +78,7 @@ public class IntermediateEnvelopeBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void byteBuf2Message(Blackhole blackhole) {
+    public void byteBuf2Message(final Blackhole blackhole) {
         try {
             final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(byteBuf);
             blackhole.consume(envelope.getBody());

@@ -36,6 +36,7 @@ import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.remote.handler.UdpDiscoveryHandler.Peer;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.util.Pair;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -45,11 +46,9 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -77,8 +76,7 @@ public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
 
         ctx = new MyHandlerContext();
         recipient = new MyAddress();
-        final byte[] payload = new byte[1024];
-        new Random().nextBytes(payload);
+        final byte[] payload = RandomUtil.randomBytes(1024);
         msg = new SerializedApplicationMessage(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class, payload);
         future = new CompletableFuture<>();
 
