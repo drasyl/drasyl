@@ -54,7 +54,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
  * Util class that provides cryptography functions for drasyl.
  */
 public class Crypto {
-    public static final SecureRandom SRND = new SecureRandom();
+    public static final SecureRandom CSPRNG;
     private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
     private static final String PROVIDER = "BC";
     private static final String ECDSA = "ECDSA";
@@ -63,6 +63,19 @@ public class Crypto {
 
     static {
         Security.addProvider(new BouncyCastleProvider());
+
+        // check for the optimal cryptographically secure pseudorandom number generator for the current platform
+        SecureRandom prng;
+        try {
+            prng = SecureRandom.getInstance("Windows-PRNG");
+        }
+        catch (final NoSuchAlgorithmException e1) { //NOSONAR
+            // the windows PRNG is not available switch over to default provider
+            // default for Unix-like systems is NativePRNG
+            prng = new SecureRandom();
+        }
+
+        CSPRNG = prng;
     }
 
     Crypto() {
@@ -80,7 +93,7 @@ public class Crypto {
             final ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
 
             final KeyPairGenerator keygen = KeyPairGenerator.getInstance(ECDSA, PROVIDER);
-            keygen.initialize(ecSpec, SRND);
+            keygen.initialize(ecSpec, CSPRNG);
             return keygen.generateKeyPair();
         }
         catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidAlgorithmParameterException e) {
@@ -307,7 +320,7 @@ public class Crypto {
      */
     public static byte[] randomBytes(final int entropy) {
         final byte[] token = new byte[entropy];
-        SRND.nextBytes(token);
+        CSPRNG.nextBytes(token);
 
         return token;
     }
@@ -321,6 +334,6 @@ public class Crypto {
      * (inclusive) and {@code bound} (exclusive) from this random number generator's sequence
      */
     public static int randomNumber(final int bound) {
-        return SRND.nextInt(bound);
+        return CSPRNG.nextInt(bound);
     }
 }

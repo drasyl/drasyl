@@ -149,4 +149,19 @@ class RandomUtilTest {
             assertThrows(IllegalArgumentException.class, () -> RandomUtil.randomBytes(-1));
         }
     }
+
+    @Nested
+    class RandomString {
+        @Test
+        void shouldReturnStringOfCorrectLength() {
+            final String string = RandomUtil.randomString(10);
+
+            assertEquals(10, string.length());
+        }
+
+        @Test
+        void shouldThrowExceptionIfLengthIsNegative() {
+            assertThrows(IllegalArgumentException.class, () -> RandomUtil.randomString(-1));
+        }
+    }
 }

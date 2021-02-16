@@ -20,6 +20,7 @@ package org.drasyl.serialization;
 
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.util.RandomUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -43,14 +44,14 @@ public class StringSerializerBenchmark extends AbstractBenchmark {
     @Setup
     public void setup() {
         serializer = new StringSerializer();
-        string = Crypto.randomString(100_000);
+        string = RandomUtil.randomString(200_000);
         this.bytes = string.getBytes();
     }
 
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void toByteArray(Blackhole blackhole) {
+    public void toByteArray(final Blackhole blackhole) {
         try {
             blackhole.consume(serializer.toByteArray(string));
         }
@@ -62,7 +63,7 @@ public class StringSerializerBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void fromByteArray(Blackhole blackhole) {
+    public void fromByteArray(final Blackhole blackhole) {
         try {
             blackhole.consume(serializer.fromByteArray(bytes, String.class));
         }

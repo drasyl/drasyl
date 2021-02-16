@@ -24,9 +24,9 @@ import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -105,7 +105,7 @@ public class PerfTestSender {
             printStream.println("Test parameters: " + session);
             printStream.println("Interval                 Transfer     Bitrate          Lost/Total Messages");
             scheduler.scheduleDirect(() -> {
-                final byte[] probePayload = Crypto.randomBytes(session.getSize());
+                final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
                 final int messageSize = session.getSize() + PROBE_HEADER.length + Long.BYTES;
                 final long startTime = currentTimeSupplier.getAsLong();
                 final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
