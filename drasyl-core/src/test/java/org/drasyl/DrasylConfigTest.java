@@ -84,7 +84,7 @@ import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_MAX_CONTENT_LENGTH;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_MTU;
 import static org.drasyl.DrasylConfig.REMOTE_PING_INTERVAL;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENABLED;
-import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINT;
+import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINTS;
 import static org.drasyl.DrasylConfig.SERIALIZATION_BINDINGS_INBOUND;
 import static org.drasyl.DrasylConfig.SERIALIZATION_BINDINGS_OUTBOUND;
 import static org.drasyl.DrasylConfig.SERIALIZATION_SERIALIZERS;
@@ -133,7 +133,7 @@ class DrasylConfigTest {
     private int remoteMessageMaxContentLength;
     private byte remoteMessageHopLimit;
     private boolean superPeerEnabled;
-    private Endpoint superPeerEndpoint;
+    private Set<Endpoint> superPeerEndpoints;
     private Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Config typesafeConfig;
@@ -175,7 +175,7 @@ class DrasylConfigTest {
         remoteMessageMaxContentLength = 1024;
         remoteMessageHopLimit = (byte) 64;
         superPeerEnabled = true;
-        superPeerEndpoint = Endpoint.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337");
+        superPeerEndpoints = Set.of(Endpoint.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337"));
         remoteStaticRoutes = Map.of();
         identityPathAsString = "drasyl.identity.json";
         intraVmDiscoveryEnabled = true;
@@ -217,7 +217,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getStringList(REMOTE_ENDPOINTS)).thenReturn(List.of());
             when(typesafeConfig.getBoolean(REMOTE_EXPOSE_ENABLED)).thenReturn(remoteExposeEnabled);
             when(typesafeConfig.getBoolean(REMOTE_SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
-            when(typesafeConfig.getString(REMOTE_SUPER_PEER_ENDPOINT)).thenReturn("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337");
+            when(typesafeConfig.getStringList(REMOTE_SUPER_PEER_ENDPOINTS)).thenReturn(List.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337"));
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
             when(typesafeConfig.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED)).thenReturn(remoteLocalHostDiscoveryEnabled);
             when(typesafeConfig.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH)).thenReturn(remoteLocalHostDiscoveryPathAsString);
@@ -252,7 +252,7 @@ class DrasylConfigTest {
             assertEquals(remoteMessageMaxContentLength, config.getRemoteMessageMaxContentLength());
             assertEquals(remoteMessageHopLimit, config.getRemoteMessageHopLimit());
             assertEquals(superPeerEnabled, config.isRemoteSuperPeerEnabled());
-            assertEquals(superPeerEndpoint, config.getRemoteSuperPeerEndpoint());
+            assertEquals(superPeerEndpoints, config.getRemoteSuperPeerEndpoints());
             assertEquals(intraVmDiscoveryEnabled, config.isIntraVmDiscoveryEnabled());
             assertEquals(remoteLocalHostDiscoveryEnabled, config.isRemoteLocalHostDiscoveryEnabled());
             assertEquals(Path.of(remoteLocalHostDiscoveryPathAsString), config.getRemoteLocalHostDiscoveryPath());
@@ -302,7 +302,7 @@ class DrasylConfigTest {
                     serverEndpoints,
                     remoteExposeEnabled,
                     superPeerEnabled,
-                    superPeerEndpoint,
+                    superPeerEndpoints,
                     remoteStaticRoutes,
                     remoteMessageMaxContentLength,
                     remoteMessageHopLimit,
@@ -340,6 +340,7 @@ class DrasylConfigTest {
             assertThrows(UnsupportedOperationException.class, () -> config.getSerializationsBindingsOutbound().put(String.class, "foo"));
             assertThrows(UnsupportedOperationException.class, () -> config.getPlugins().add(null));
             assertThrows(UnsupportedOperationException.class, () -> config.getRemoteEndpoints().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getRemoteSuperPeerEndpoints().add(null));
         }
 
         @SuppressWarnings("java:S5778")
@@ -358,6 +359,7 @@ class DrasylConfigTest {
             assertThrows(UnsupportedOperationException.class, () -> config.getSerializationsBindingsOutbound().put(String.class, "foo"));
             assertThrows(UnsupportedOperationException.class, () -> config.getPlugins().add(null));
             assertThrows(UnsupportedOperationException.class, () -> config.getRemoteEndpoints().add(null));
+            assertThrows(UnsupportedOperationException.class, () -> config.getRemoteSuperPeerEndpoints().add(null));
         }
     }
 
@@ -668,7 +670,7 @@ class DrasylConfigTest {
         @Test
         void shouldReadConfigFromFile(@TempDir final Path dir) throws IOException {
             final Path path = Paths.get(dir.toString(), "drasyl.conf");
-            Files.writeString(path, "drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoint = \"udp://example.org:22527?publicKey=07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f&networkId=1337\"", StandardOpenOption.CREATE);
+            Files.writeString(path, "drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoints = [\"udp://example.org:22527?publicKey=07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f&networkId=1337\"]", StandardOpenOption.CREATE);
 
             assertEquals(1337, DrasylConfig.parseFile(path.toFile()).getNetworkId());
         }
@@ -678,7 +680,7 @@ class DrasylConfigTest {
     class ParseString {
         @Test
         void shouldReadConfigFromString() {
-            assertEquals(1337, DrasylConfig.parseString("drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoint = \"udp://example.org:22527?publicKey=07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f&networkId=1337\"").getNetworkId());
+            assertEquals(1337, DrasylConfig.parseString("drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoints = [\"udp://example.org:22527?publicKey=07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f&networkId=1337\"]").getNetworkId());
         }
     }
 
@@ -708,7 +710,7 @@ class DrasylConfigTest {
                     .remoteMessageComposedMessageTransferTimeout(DEFAULT.getRemoteMessageComposedMessageTransferTimeout())
                     .remoteMessageHopLimit(DEFAULT.getRemoteMessageHopLimit())
                     .remoteSuperPeerEnabled(DEFAULT.isRemoteSuperPeerEnabled())
-                    .remoteSuperPeerEndpoint(DEFAULT.getRemoteSuperPeerEndpoint())
+                    .remoteSuperPeerEndpoints(DEFAULT.getRemoteSuperPeerEndpoints())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
                     .remoteLocalHostDiscoveryEnabled(DEFAULT.isRemoteLocalHostDiscoveryEnabled())
                     .remoteLocalHostDiscoveryPath(DEFAULT.getRemoteLocalHostDiscoveryPath())

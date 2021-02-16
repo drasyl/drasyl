@@ -30,6 +30,7 @@ import org.drasyl.peer.Endpoint;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
 
@@ -47,7 +48,7 @@ public class SuperPeerStressTesting extends AbstractBenchmark {
 
     public static void main(final String[] args) throws DrasylException, IOException {
         final DrasylConfig baseConfig = DrasylConfig.newBuilder()
-                .remoteSuperPeerEndpoint(Endpoint.of("udp://review-monitoring-md6yhe.env.drasyl.org"))
+                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://review-monitoring-md6yhe.env.drasyl.org")))
                 .remoteEnabled(false)
                 .build();
 

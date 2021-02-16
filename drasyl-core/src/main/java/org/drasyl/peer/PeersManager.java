@@ -29,6 +29,7 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.util.SetUtil;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -50,30 +51,27 @@ import static java.util.Objects.requireNonNull;
  */
 public class PeersManager {
     private final ReadWriteLock lock;
-    private final Set<CompressedPublicKey> peers;
     private final SetMultimap<CompressedPublicKey, Object> paths;
     private final Set<CompressedPublicKey> children;
     private final Consumer<Event> eventConsumer;
     private final Identity identity;
-    private CompressedPublicKey superPeer;
+    private final Set<CompressedPublicKey> superPeers;
 
     public PeersManager(final Consumer<Event> eventConsumer, final Identity identity) {
-        this(new ReentrantReadWriteLock(true), new HashSet<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer, identity);
+        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashSet<>(), new HashSet<>(), eventConsumer, identity);
     }
 
     @SuppressWarnings("java:S2384")
     PeersManager(final ReadWriteLock lock,
-                 final Set<CompressedPublicKey> peers,
                  final SetMultimap<CompressedPublicKey, Object> paths,
                  final Set<CompressedPublicKey> children,
-                 final CompressedPublicKey superPeer,
+                 final Set<CompressedPublicKey> superPeers,
                  final Consumer<Event> eventConsumer,
                  final Identity identity) {
         this.lock = lock;
-        this.peers = peers;
         this.paths = paths;
         this.children = children;
-        this.superPeer = superPeer;
+        this.superPeers = superPeers;
         this.eventConsumer = eventConsumer;
         this.identity = identity;
     }
@@ -84,11 +82,10 @@ public class PeersManager {
             lock.readLock().lock();
 
             return "PeersManager{" +
-                    "peers=" + peers +
                     ", paths=" + paths +
                     ", children=" + children +
                     ", eventConsumer=" + eventConsumer +
-                    ", superPeer=" + superPeer +
+                    ", superPeers=" + superPeers +
                     '}';
         }
         finally {
@@ -100,7 +97,7 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            return Set.copyOf(peers);
+            return SetUtil.merge(paths.keySet(), SetUtil.merge(superPeers, children));
         }
         finally {
             lock.readLock().unlock();
@@ -121,15 +118,14 @@ public class PeersManager {
         }
     }
 
-    /**
-     * @return public key  of Super Peer. If no Super Peer is defined, then
-     * <code>null</code> is returned
-     */
-    public CompressedPublicKey getSuperPeer() {
+    public Set<CompressedPublicKey> getSuperPeers() {
         try {
             lock.readLock().lock();
 
-            return superPeer;
+            // It is necessary to create a new HashMap because otherwise, this can raise a
+            // ConcurrentModificationException.
+            // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
+            return Set.copyOf(superPeers);
         }
         finally {
             lock.readLock().unlock();
@@ -156,13 +152,11 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            peers.add(publicKey);
             final boolean firstPath = paths.get(publicKey).isEmpty();
-            paths.put(publicKey, path);
-
-            if (firstPath) {
+            if (paths.put(publicKey, path) && firstPath) {
                 eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
             }
+
         }
         finally {
             lock.writeLock().unlock();
@@ -178,7 +172,6 @@ public class PeersManager {
 
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
                 eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
-                peers.remove(publicKey);
             }
         }
         finally {
@@ -186,68 +179,47 @@ public class PeersManager {
         }
     }
 
-    public void unsetSuperPeerAndRemovePath(final Object path) {
-        requireNonNull(path);
-
-        try {
-            lock.writeLock().lock();
-
-            if (superPeer != null) {
-                eventConsumer.accept(new NodeOfflineEvent(Node.of(identity)));
-
-                if (paths.remove(superPeer, path) && paths.get(superPeer).isEmpty()) {
-                    eventConsumer.accept(new PeerRelayEvent(Peer.of(superPeer)));
-                    peers.remove(superPeer);
-                }
-
-                superPeer = null;
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public void addPathAndSetSuperPeer(final CompressedPublicKey publicKey,
-                                       final Object path) {
+    public void addPathAndSuperPeer(final CompressedPublicKey publicKey,
+                                    final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
 
         try {
             lock.writeLock().lock();
 
-            peers.add(publicKey);
+            // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
-            paths.put(publicKey, path);
-
-            if (firstPath) {
+            if (paths.put(publicKey, path) && firstPath) {
                 eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
             }
 
-            if (superPeer == null) {
+            // role (super peer)
+            final boolean firstSuperPeer = superPeers.isEmpty();
+            if (superPeers.add(publicKey) && firstSuperPeer) {
                 eventConsumer.accept(new NodeOnlineEvent(Node.of(identity)));
             }
-            superPeer = publicKey;
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void removeChildrenAndPath(final CompressedPublicKey publicKey,
-                                      final Object path) {
-        requireNonNull(publicKey);
+    public void removeSuperPeerAndPath(final CompressedPublicKey publicKey,
+                                       final Object path) {
         requireNonNull(path);
 
         try {
             lock.writeLock().lock();
 
-            if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
-                peers.remove(publicKey);
+            // role (super peer)
+            if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
+                eventConsumer.accept(new NodeOfflineEvent(Node.of(identity)));
             }
 
-            children.remove(publicKey);
+            // path
+            if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
+                eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
+            }
         }
         finally {
             lock.writeLock().unlock();
@@ -262,15 +234,35 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            peers.add(publicKey);
+            // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
-            paths.put(publicKey, path);
-
-            if (firstPath) {
+            if (paths.put(publicKey, path) && firstPath) {
                 eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
             }
 
+            // role (children peer)
             children.add(publicKey);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void removeChildrenAndPath(final CompressedPublicKey publicKey,
+                                      final Object path) {
+        requireNonNull(publicKey);
+        requireNonNull(path);
+
+        try {
+            lock.writeLock().lock();
+
+            // path
+            if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
+                eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
+            }
+
+            // role (children)
+            children.remove(publicKey);
         }
         finally {
             lock.writeLock().unlock();

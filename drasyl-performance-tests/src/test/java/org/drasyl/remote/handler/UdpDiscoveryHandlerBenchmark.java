@@ -56,7 +56,7 @@ import static java.time.Duration.ofDays;
 
 @State(Scope.Benchmark)
 public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
-    private Map<MessageId, UdpDiscoveryHandler.OpenPing> openPingsCache;
+    private Map<MessageId, UdpDiscoveryHandler.Ping> openPingsCache;
     private Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
     private Map<CompressedPublicKey, Peer> peers;
     private Set<CompressedPublicKey> directConnectionPeers;
@@ -65,6 +65,8 @@ public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
     private Address recipient;
     private SerializedApplicationMessage msg;
     private CompletableFuture<Void> future;
+    private Set<CompressedPublicKey> superPeers;
+    private CompressedPublicKey bestSuperPeer;
 
     @Setup
     public void setup() {
@@ -72,7 +74,8 @@ public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
         uniteAttemptsCache = new HashMap<>();
         peers = new HashMap<>();
         directConnectionPeers = new HashSet<>();
-        handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, directConnectionPeers);
+        superPeers = new HashSet<>();
+        handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, directConnectionPeers, superPeers, bestSuperPeer);
 
         ctx = new MyHandlerContext();
         recipient = new MyAddress();
@@ -82,7 +85,7 @@ public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
 
         directConnectionPeers.add(msg.getRecipient());
         final Peer peer = new Peer();
-        peer.inboundPongOccurred();
+        peer.inboundPingOccurred();
         peer.setAddress(new InetSocketAddressWrapper("127.0.0.1", 25527));
         peers.put(msg.getRecipient(), peer);
     }
