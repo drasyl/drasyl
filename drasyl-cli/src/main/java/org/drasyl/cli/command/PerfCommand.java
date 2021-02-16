@@ -33,6 +33,9 @@ import org.drasyl.util.ThrowingBiFunction;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Inspired by <a href="https://iperf.fr/iperf-download.php">https://iperf.fr/iperf-download.php</a>.
@@ -44,23 +47,27 @@ public class PerfCommand extends AbstractCommand {
     private static final int DEFAULT_SIZE = 850;
     private final ThrowingBiFunction<DrasylConfig, PrintStream, PerfServerNode, DrasylException> serverNodeSupplier;
     private final ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier;
+    private final Consumer<Integer> exitSupplier;
 
     public PerfCommand() {
         this(
                 System.out, // NOSONAR
                 System.err, // NOSONAR
                 PerfServerNode::new,
-                PerfClientNode::new
+                PerfClientNode::new,
+                System::exit
         );
     }
 
     PerfCommand(final PrintStream out,
                 final PrintStream err,
                 final ThrowingBiFunction<DrasylConfig, PrintStream, PerfServerNode, DrasylException> serverNodeSupplier,
-                final ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier) {
+                final ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier,
+                Consumer<Integer> exitSupplier) {
         super(out, err);
-        this.serverNodeSupplier = serverNodeSupplier;
-        this.clientNodeSupplier = clientNodeSupplier;
+        this.serverNodeSupplier = requireNonNull(serverNodeSupplier);
+        this.clientNodeSupplier = requireNonNull(clientNodeSupplier);
+        this.exitSupplier = requireNonNull(exitSupplier);
     }
 
     @Override
@@ -106,7 +113,7 @@ public class PerfCommand extends AbstractCommand {
     }
 
     @Override
-    protected void execute(final CommandLine cmd) throws CliException {
+    protected void execute(final CommandLine cmd) {
         if (cmd.hasOption("client")) {
             client(cmd);
         }
@@ -115,7 +122,7 @@ public class PerfCommand extends AbstractCommand {
         }
     }
 
-    private void server(final CommandLine cmd) throws CliException {
+    private void server(final CommandLine cmd) {
         PerfServerNode node = null;
         try {
             // prepare node
@@ -136,12 +143,14 @@ public class PerfCommand extends AbstractCommand {
         }
         finally {
             if (node != null) {
-                node.shutdown();
+                node.shutdown().join();
             }
+
+            exitSupplier.accept(0);
         }
     }
 
-    private void client(final CommandLine cmd) throws CliException {
+    private void client(final CommandLine cmd) {
         PerfClientNode node = null;
         try {
             // prepare node
@@ -205,8 +214,10 @@ public class PerfCommand extends AbstractCommand {
         }
         finally {
             if (node != null) {
-                node.shutdown();
+                node.shutdown().join();
             }
+
+            exitSupplier.accept(0);
         }
     }
 }

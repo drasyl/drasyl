@@ -36,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -57,6 +58,8 @@ class PerfCommandTest {
     private ThrowingBiFunction<DrasylConfig, PrintStream, PerfServerNode, DrasylException> serverNodeSupplier;
     @Mock
     private ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier;
+    @Mock
+    private Consumer<Integer> exitSupplier;
     private PerfCommand underTest;
 
     @BeforeEach
@@ -65,7 +68,7 @@ class PerfCommandTest {
         out = new PrintStream(outStream, true);
         errStream = new ByteArrayOutputStream();
         err = new PrintStream(errStream, true);
-        underTest = new PerfCommand(out, err, serverNodeSupplier, clientNodeSupplier);
+        underTest = new PerfCommand(out, err, serverNodeSupplier, clientNodeSupplier, exitSupplier);
     }
 
     @Nested
@@ -91,7 +94,7 @@ class PerfCommandTest {
         private CommandLine cmd;
 
         @Test
-        void shouldStartServerNode(@Mock(answer = RETURNS_DEEP_STUBS) final PerfServerNode node) throws CliException, DrasylException {
+        void shouldStartServerNode(@Mock(answer = RETURNS_DEEP_STUBS) final PerfServerNode node) throws DrasylException {
             when(serverNodeSupplier.apply(any(), any())).thenReturn(node);
 
             underTest.execute(cmd);
@@ -100,7 +103,7 @@ class PerfCommandTest {
         }
 
         @Test
-        void shouldStartClientNodeAndSetCorrectOptionsWhenClientOptionIsGiven(@Mock(answer = RETURNS_DEEP_STUBS) final PerfClientNode node) throws CliException, ParseException, DrasylException {
+        void shouldStartClientNodeAndSetCorrectOptionsWhenClientOptionIsGiven(@Mock(answer = RETURNS_DEEP_STUBS) final PerfClientNode node) throws ParseException, DrasylException {
             when(cmd.hasOption("client")).thenReturn(true);
             when(cmd.getParsedOptionValue("client")).thenReturn("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a98281ff73f2346d55195d0cd274c101c4775");
             when(clientNodeSupplier.apply(any(), any())).thenReturn(node);
