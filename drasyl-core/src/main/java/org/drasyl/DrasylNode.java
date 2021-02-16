@@ -197,7 +197,7 @@ public abstract class DrasylNode {
     @Nullable
     public static String getVersion() {
         if (version == null) {
-            final InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("project.properties");
+            final InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("META-INF/org.drasyl.versions.properties");
             if (inputStream != null) {
                 try {
                     final Properties properties = new Properties();
