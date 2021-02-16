@@ -28,6 +28,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -54,6 +55,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
@@ -69,17 +71,19 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     public static final String UDP_DISCOVERY_HANDLER = "UDP_DISCOVERY_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(UdpDiscoveryHandler.class);
     private static final Object path = UdpDiscoveryHandler.class;
-    private final Map<MessageId, OpenPing> openPingsCache;
+    private final Map<MessageId, Ping> openPingsCache;
     private final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
     private final Map<CompressedPublicKey, Peer> peers;
     private final Set<CompressedPublicKey> directConnectionPeers;
+    private final Set<CompressedPublicKey> superPeers;
     private Disposable heartbeatDisposable;
+    private CompressedPublicKey bestSuperPeer;
 
     public UdpDiscoveryHandler(final DrasylConfig config) {
         openPingsCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getRemotePingMaxPeers())
                 .expireAfterWrite(config.getRemotePingTimeout())
-                .<MessageId, OpenPing>build()
+                .<MessageId, Ping>build()
                 .asMap();
         directConnectionPeers = new HashSet<>();
         if (config.getRemoteUniteMinInterval().toMillis() > 0) {
@@ -93,16 +97,22 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             uniteAttemptsCache = null;
         }
         peers = new ConcurrentHashMap<>();
+        superPeers = config.getRemoteSuperPeerEndpoints().stream().map(Endpoint::getPublicKey).collect(Collectors.toSet());
     }
 
-    UdpDiscoveryHandler(final Map<MessageId, OpenPing> openPingsCache,
+    @SuppressWarnings("java:S2384")
+    UdpDiscoveryHandler(final Map<MessageId, Ping> openPingsCache,
                         final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache,
                         final Map<CompressedPublicKey, Peer> peers,
-                        final Set<CompressedPublicKey> directConnectionPeers) {
+                        final Set<CompressedPublicKey> directConnectionPeers,
+                        final Set<CompressedPublicKey> superPeers,
+                        final CompressedPublicKey bestSuperPeer) {
         this.openPingsCache = openPingsCache;
         this.uniteAttemptsCache = uniteAttemptsCache;
         this.directConnectionPeers = directConnectionPeers;
         this.peers = peers;
+        this.superPeers = superPeers;
+        this.bestSuperPeer = bestSuperPeer;
     }
 
     @Override
@@ -146,7 +156,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
      */
     void doHeartbeat(final HandlerContext ctx) {
         removeStalePeers(ctx);
-        pingSuperPeer(ctx);
+        pingSuperPeers(ctx);
         pingDirectConnectionPeers(ctx);
     }
 
@@ -157,12 +167,11 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
      */
     private void removeStalePeers(final HandlerContext ctx) {
         // check lastContactTimes
-        final CompressedPublicKey superPeerKey = ctx.config().getRemoteSuperPeerEndpoint().getPublicKey();
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (!peer.hasControlTraffic(ctx.config())) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundControlTrafficTime());
-                if (publicKey.equals(superPeerKey)) {
-                    ctx.peersManager().unsetSuperPeerAndRemovePath(path);
+                if (superPeers.contains(publicKey)) {
+                    ctx.peersManager().removeSuperPeerAndPath(publicKey, path);
                 }
                 else {
                     ctx.peersManager().removeChildrenAndPath(publicKey, path);
@@ -174,18 +183,15 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     }
 
     /**
-     * If the node has configured a Super Peer, a ping message is sent to it.
+     * If the node has configured super peers, a ping message is sent to them.
      *
      * @param ctx handler's context
      */
-    private void pingSuperPeer(final HandlerContext ctx) {
+    private void pingSuperPeers(final HandlerContext ctx) {
         if (ctx.config().isRemoteSuperPeerEnabled()) {
-            sendPing(
-                    ctx,
-                    ctx.config().getRemoteSuperPeerEndpoint().getPublicKey(),
-                    new InetSocketAddressWrapper(ctx.config().getRemoteSuperPeerEndpoint().getHost(), ctx.config().getRemoteSuperPeerEndpoint().getPort()),
-                    new CompletableFuture<>()
-            );
+            for (final Endpoint endpoint : ctx.config().getRemoteSuperPeerEndpoints()) {
+                sendPing(ctx, endpoint.getPublicKey(), new InetSocketAddressWrapper(endpoint.getHost(), endpoint.getPort()), new CompletableFuture<>());
+            }
         }
     }
 
@@ -212,10 +218,9 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     }
 
     private void removeAllPeers(final HandlerContext ctx) {
-        final CompressedPublicKey superPeerKey = ctx.config().getRemoteSuperPeerEndpoint().getPublicKey();
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            if (publicKey.equals(superPeerKey)) {
-                ctx.peersManager().unsetSuperPeerAndRemovePath(path);
+            if (superPeers.contains(publicKey)) {
+                ctx.peersManager().removeSuperPeerAndPath(publicKey, path);
             }
             else {
                 ctx.peersManager().removeChildrenAndPath(publicKey, path);
@@ -260,10 +265,10 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                                 final IntermediateEnvelope<? extends MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         final Peer recipientPeer = peers.get(recipient);
-        final CompressedPublicKey superPeerKey = ctx.peersManager().getSuperPeer();
+
         final Peer superPeerPeer;
-        if (superPeerKey != null) {
-            superPeerPeer = peers.get(superPeerKey);
+        if (bestSuperPeer != null) {
+            superPeerPeer = peers.get(bestSuperPeer);
         }
         else {
             superPeerPeer = null;
@@ -377,7 +382,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         else if (envelope.getContent().getPrivateHeader().getType() == ACKNOWLEDGEMENT) {
             handlePong(ctx, (AddressedIntermediateEnvelope<Acknowledgement>) envelope, future);
         }
-        else if (envelope.getContent().getPrivateHeader().getType() == UNITE && ctx.config().getRemoteSuperPeerEndpoint().getPublicKey().equals(envelope.getContent().getSender())) {
+        else if (envelope.getContent().getPrivateHeader().getType() == UNITE && superPeers.contains(envelope.getContent().getSender())) {
             handleUnite(ctx, (AddressedIntermediateEnvelope<Unite>) envelope, future);
         }
         else if (envelope.getContent().getPrivateHeader().getType() == APPLICATION) {
@@ -403,7 +408,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         peer.inboundControlTrafficOccurred();
 
         if (childrenJoin) {
-            peer.inboundPongOccurred();
+            peer.inboundPingOccurred();
             // store peer information
             if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
                 LOG.debug("PING! Add {} as children", sender);
@@ -428,18 +433,21 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         final MessageId correspondingId = requireNonNull(MessageId.of(body.getCorrespondingId()));
         final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getContent().getPublicHeader().getSender().toByteArray()));
         LOG.trace("Got {} from {}", envelope.getContent(), envelope.getSender());
-        final OpenPing openPing = openPingsCache.remove(correspondingId);
-        if (openPing != null) {
+        final Ping ping = openPingsCache.remove(correspondingId);
+        if (ping != null) {
             final Peer peer = peers.computeIfAbsent(sender, key -> new Peer());
             peer.setAddress(envelope.getSender());
             peer.inboundControlTrafficOccurred();
-            peer.inboundPongOccurred();
-            if (sender.equals(ctx.config().getRemoteSuperPeerEndpoint().getPublicKey())) {
+            peer.inboundPongOccurred(ping);
+            if (superPeers.contains(envelope.getContent().getSender())) {
+                LOG.trace("Latency to super peer `{}` ({}): {}ms", () -> sender, peer.getAddress()::getHostName, peer::getLatency);
+                determineBestSuperPeer();
+
                 // store peer information
                 if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
                     LOG.debug("PONG! Add {} as super peer", sender);
                 }
-                ctx.peersManager().addPathAndSetSuperPeer(sender, path);
+                ctx.peersManager().addPathAndSuperPeer(sender, path);
             }
             else {
                 // store peer information
@@ -450,6 +458,27 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             }
         }
         future.complete(null);
+    }
+
+    private void determineBestSuperPeer() {
+        long bestLatency = Long.MAX_VALUE;
+        CompressedPublicKey newBestSuperPeer = null;
+        for (final CompressedPublicKey superPeer : superPeers) {
+            final Peer superPeerPeer = peers.get(superPeer);
+            if (superPeerPeer != null) {
+                final long latency = superPeerPeer.getLatency();
+                if (bestLatency > latency) {
+                    bestLatency = latency;
+                    newBestSuperPeer = superPeer;
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled() && !Objects.equals(bestSuperPeer, newBestSuperPeer)) {
+            LOG.debug("New best super peer ({}ms)! Replace `{}` with `{}`", bestLatency, bestSuperPeer, newBestSuperPeer);
+        }
+
+        bestSuperPeer = newBestSuperPeer;
     }
 
     private void handleUnite(final HandlerContext ctx,
@@ -489,9 +518,9 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         final CompressedPublicKey sender = ctx.identity().getPublicKey();
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
 
-        final boolean isChildrenJoin = recipient.equals(ctx.config().getRemoteSuperPeerEndpoint().getPublicKey());
+        final boolean isChildrenJoin = superPeers.contains(recipient);
         final IntermediateEnvelope<Discovery> messageEnvelope = IntermediateEnvelope.discovery(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
-        openPingsCache.put(messageEnvelope.getId(), new OpenPing(recipientAddress));
+        openPingsCache.put(messageEnvelope.getId(), new Ping(recipientAddress));
         LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
         final AddressedIntermediateEnvelope<Discovery> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(null, recipientAddress, messageEnvelope);
         ctx.write(recipientAddress, addressedMessageEnvelope, future);
@@ -502,6 +531,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         private long lastInboundControlTrafficTime;
         private long lastInboundPongTime;
         private long lastApplicationTrafficTime;
+        private long lastOutboundPingTime;
 
         Peer(final InetSocketAddressWrapper address,
              final long lastInboundControlTrafficTime,
@@ -512,7 +542,6 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             this.lastInboundPongTime = lastInboundPongTime;
             this.lastApplicationTrafficTime = lastApplicationTrafficTime;
         }
-
 
         public Peer() {
         }
@@ -538,7 +567,12 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             lastInboundControlTrafficTime = System.currentTimeMillis();
         }
 
-        public void inboundPongOccurred() {
+        public void inboundPongOccurred(final Ping ping) {
+            lastInboundPongTime = System.currentTimeMillis();
+            lastOutboundPingTime = Math.max(ping.getPingTime(), lastOutboundPingTime);
+        }
+
+        public void inboundPingOccurred() {
             lastInboundPongTime = System.currentTimeMillis();
         }
 
@@ -565,13 +599,19 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         public boolean isReachable(final DrasylConfig config) {
             return lastInboundPongTime >= System.currentTimeMillis() - config.getRemotePingTimeout().toMillis();
         }
+
+        public long getLatency() {
+            return lastInboundPongTime - lastOutboundPingTime;
+        }
     }
 
-    public static class OpenPing {
+    public static class Ping {
         private final InetSocketAddressWrapper address;
+        private final long pingTime;
 
-        public OpenPing(final InetSocketAddressWrapper address) {
-            this.address = address;
+        public Ping(final InetSocketAddressWrapper address) {
+            this.address = requireNonNull(address);
+            pingTime = System.currentTimeMillis();
         }
 
         public InetSocketAddressWrapper getAddress() {
@@ -591,8 +631,8 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            final OpenPing openPing = (OpenPing) o;
-            return Objects.equals(address, openPing.address);
+            final Ping ping = (Ping) o;
+            return Objects.equals(address, ping.address);
         }
 
         @Override
@@ -600,6 +640,10 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             return "OpenPing{" +
                     "address=" + address +
                     '}';
+        }
+
+        public long getPingTime() {
+            return pingTime;
         }
     }
 }

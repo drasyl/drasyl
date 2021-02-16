@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -80,7 +81,7 @@ public class DrasylConfig {
     static final String REMOTE_PING_MAX_PEERS = "drasyl.remote.ping.max-peers";
     static final String REMOTE_UNITE_MIN_INTERVAL = "drasyl.remote.unite.min-interval";
     static final String REMOTE_SUPER_PEER_ENABLED = "drasyl.remote.super-peer.enabled";
-    static final String REMOTE_SUPER_PEER_ENDPOINT = "drasyl.remote.super-peer.endpoint";
+    static final String REMOTE_SUPER_PEER_ENDPOINTS = "drasyl.remote.super-peer.endpoints";
     static final String REMOTE_STATIC_ROUTES = "drasyl.remote.static-routes";
     static final String REMOTE_MESSAGE_MTU = "drasyl.remote.message.mtu";
     static final String REMOTE_MESSAGE_MAX_CONTENT_LENGTH = "drasyl.remote.message.max-content-length";
@@ -122,7 +123,7 @@ public class DrasylConfig {
     private final byte remoteMessageHopLimit;
     private final Duration remoteMessageComposedMessageTransferTimeout;
     private final boolean remoteSuperPeerEnabled;
-    private final Endpoint remoteSuperPeerEndpoint;
+    private final Set<Endpoint> remoteSuperPeerEndpoints;
     private final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes;
     private final boolean remoteLocalHostDiscoveryEnabled;
     private final Path remoteLocalHostDiscoveryPath;
@@ -149,6 +150,7 @@ public class DrasylConfig {
      * @param config config to be loaded
      * @throws DrasylConfigException if config is invalid
      */
+    @SuppressWarnings("java:S3776")
     public DrasylConfig(final Config config) {
         try {
             config.checkValid(ConfigFactory.defaultReference(), "drasyl");
@@ -190,9 +192,13 @@ public class DrasylConfig {
             this.remotePingMaxPeers = config.getInt(REMOTE_PING_MAX_PEERS);
             this.remoteUniteMinInterval = config.getDuration(REMOTE_UNITE_MIN_INTERVAL);
             this.remoteSuperPeerEnabled = config.getBoolean(REMOTE_SUPER_PEER_ENABLED);
-            this.remoteSuperPeerEndpoint = getEndpoint(config, REMOTE_SUPER_PEER_ENDPOINT);
-            if (remoteSuperPeerEnabled && remoteSuperPeerEndpoint.getNetworkId() != null && remoteSuperPeerEndpoint.getNetworkId() != networkId) {
-                throw new DrasylConfigException(REMOTE_SUPER_PEER_ENDPOINT, "super peer's network id `" + remoteSuperPeerEndpoint.getNetworkId() + "` does not match your network id `" + networkId + "`");
+            this.remoteSuperPeerEndpoints = Set.copyOf(getEndpointList(config, REMOTE_SUPER_PEER_ENDPOINTS));
+            if (remoteSuperPeerEnabled) {
+                for (final Endpoint endpoint : remoteSuperPeerEndpoints) {
+                    if (endpoint.getNetworkId() != null && endpoint.getNetworkId() != networkId) {
+                        throw new DrasylConfigException(REMOTE_SUPER_PEER_ENDPOINTS, "super peer's network id `" + endpoint.getNetworkId() + "` does not match your network id `" + networkId + "`: " + endpoint);
+                    }
+                }
             }
             this.remoteStaticRoutes = getStaticRoutes(config, REMOTE_STATIC_ROUTES);
             this.remoteMessageMtu = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MTU).toBytes(), Integer.MAX_VALUE);
@@ -230,7 +236,7 @@ public class DrasylConfig {
         }
     }
 
-    @SuppressWarnings({ "java:S107" })
+    @SuppressWarnings({ "java:S107", "java:S2384" })
     DrasylConfig(final int networkId,
                  final ProofOfWork identityProofOfWork,
                  final CompressedPublicKey identityPublicKey,
@@ -248,7 +254,7 @@ public class DrasylConfig {
                  final Set<Endpoint> remoteEndpoints,
                  final boolean remoteExposeEnabled,
                  final boolean remoteSuperPeerEnabled,
-                 final Endpoint remoteSuperPeerEndpoint,
+                 final Set<Endpoint> remoteSuperPeerEndpoints,
                  final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes,
                  final int remoteMessageMaxContentLength,
                  final byte remoteMessageHopLimit,
@@ -285,7 +291,7 @@ public class DrasylConfig {
         this.remoteEndpoints = remoteEndpoints;
         this.remoteExposeEnabled = remoteExposeEnabled;
         this.remoteSuperPeerEnabled = remoteSuperPeerEnabled;
-        this.remoteSuperPeerEndpoint = remoteSuperPeerEndpoint;
+        this.remoteSuperPeerEndpoints = remoteSuperPeerEndpoints;
         this.remoteStaticRoutes = remoteStaticRoutes;
         this.remoteMessageMtu = remoteMessageMtu;
         this.remoteMessageMaxContentLength = remoteMessageMaxContentLength;
@@ -570,7 +576,7 @@ public class DrasylConfig {
 
     public static Map<Class<?>, String> getSerializationBindings(final Config config,
                                                                  final String path,
-                                                                 final Set<String> serializers) {
+                                                                 final Collection<String> serializers) {
         try {
             final Map<Class<?>, String> bindings = new HashMap<>();
             for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
@@ -690,7 +696,7 @@ public class DrasylConfig {
                 config.remoteEndpoints,
                 config.remoteExposeEnabled,
                 config.remoteSuperPeerEnabled,
-                config.remoteSuperPeerEndpoint,
+                config.remoteSuperPeerEndpoints,
                 config.remoteStaticRoutes,
                 config.remoteMessageMtu,
                 config.remoteMessageMaxContentLength,
@@ -737,7 +743,7 @@ public class DrasylConfig {
                 remoteMessageComposedMessageTransferTimeout,
                 remoteMessageHopLimit,
                 remoteSuperPeerEnabled,
-                remoteSuperPeerEndpoint,
+                remoteSuperPeerEndpoints,
                 remoteStaticRoutes,
                 remoteLocalHostDiscoveryEnabled,
                 remoteLocalHostDiscoveryPath,
@@ -788,7 +794,7 @@ public class DrasylConfig {
                 Objects.equals(remoteUniteMinInterval, that.remoteUniteMinInterval) &&
                 Objects.equals(remoteEndpoints, that.remoteEndpoints) &&
                 Objects.equals(remoteMessageComposedMessageTransferTimeout, that.remoteMessageComposedMessageTransferTimeout) &&
-                Objects.equals(remoteSuperPeerEndpoint, that.remoteSuperPeerEndpoint) &&
+                Objects.equals(remoteSuperPeerEndpoints, that.remoteSuperPeerEndpoints) &&
                 Objects.equals(remoteStaticRoutes, that.remoteStaticRoutes) &&
                 Objects.equals(remoteLocalHostDiscoveryPath, that.remoteLocalHostDiscoveryPath) &&
                 Objects.equals(remoteLocalHostDiscoveryLeaseTime, that.remoteLocalHostDiscoveryLeaseTime) &&
@@ -828,7 +834,7 @@ public class DrasylConfig {
                 ", remoteMessageComposedMessageTransferTimeout=" + remoteMessageComposedMessageTransferTimeout +
                 ", remoteMessageHopLimit=" + remoteMessageHopLimit +
                 ", remoteSuperPeerEnabled=" + remoteSuperPeerEnabled +
-                ", remoteSuperPeerEndpoint=" + remoteSuperPeerEndpoint +
+                ", remoteSuperPeerEndpoints=" + remoteSuperPeerEndpoints +
                 ", remoteStaticRoutes=" + remoteStaticRoutes +
                 ", remoteLocalHostDiscoveryEnabled=" + remoteLocalHostDiscoveryEnabled +
                 ", remoteLocalHostDiscoveryPath=" + remoteLocalHostDiscoveryPath +
@@ -907,6 +913,7 @@ public class DrasylConfig {
         return remoteBindPort;
     }
 
+    @SuppressWarnings("java:S2384")
     public Set<Endpoint> getRemoteEndpoints() {
         return remoteEndpoints;
     }
@@ -923,8 +930,9 @@ public class DrasylConfig {
         return remoteSuperPeerEnabled;
     }
 
-    public Endpoint getRemoteSuperPeerEndpoint() {
-        return remoteSuperPeerEndpoint;
+    @SuppressWarnings("java:S2384")
+    public Set<Endpoint> getRemoteSuperPeerEndpoints() {
+        return remoteSuperPeerEndpoints;
     }
 
     public ProofOfWork getIdentityProofOfWork() {
@@ -979,6 +987,7 @@ public class DrasylConfig {
         return remoteLocalHostDiscoveryLeaseTime;
     }
 
+    @SuppressWarnings("java:S2384")
     public Set<DrasylPlugin> getPlugins() {
         return pluginSet;
     }
@@ -995,6 +1004,7 @@ public class DrasylConfig {
         return serializationsBindingsOutbound;
     }
 
+    @SuppressWarnings("java:S2972")
     public static final class Builder {
         //======================================= Config Values ========================================
         private int networkId;
@@ -1018,7 +1028,7 @@ public class DrasylConfig {
         private byte remoteMessageHopLimit;
         private Duration remoteMessageComposedMessageTransferTimeout;
         private boolean remoteSuperPeerEnabled;
-        private Endpoint remoteSuperPeerEndpoint;
+        private Set<Endpoint> remoteSuperPeerEndpoints;
         private Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes;
         private boolean remoteLocalHostDiscoveryEnabled;
         private Path remoteLocalHostDiscoveryPath;
@@ -1035,7 +1045,7 @@ public class DrasylConfig {
         private Map<Class<?>, String> serializationsBindingsInbound;
         private Map<Class<?>, String> serializationsBindingsOutbound;
 
-        @SuppressWarnings({ "java:S107" })
+        @SuppressWarnings({ "java:S107", "java:S2384" })
         public Builder(final int networkId,
                        final ProofOfWork identityProofOfWork,
                        final CompressedPublicKey identityPublicKey,
@@ -1053,7 +1063,7 @@ public class DrasylConfig {
                        final Set<Endpoint> remoteEndpoints,
                        final boolean remoteExposeEnabled,
                        final boolean remoteSuperPeerEnabled,
-                       final Endpoint remoteSuperPeerEndpoint,
+                       final Set<Endpoint> remoteSuperPeerEndpoints,
                        final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes,
                        final int remoteMessageMtu,
                        final int remoteMessageMaxContentLength,
@@ -1094,7 +1104,7 @@ public class DrasylConfig {
             this.remoteMessageHopLimit = remoteMessageHopLimit;
             this.remoteMessageComposedMessageTransferTimeout = remoteMessageComposedMessageTransferTimeout;
             this.remoteSuperPeerEnabled = remoteSuperPeerEnabled;
-            this.remoteSuperPeerEndpoint = remoteSuperPeerEndpoint;
+            this.remoteSuperPeerEndpoints = remoteSuperPeerEndpoints;
             this.remoteStaticRoutes = remoteStaticRoutes;
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
             this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
@@ -1217,8 +1227,8 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder remoteSuperPeerEndpoint(final Endpoint remoteSuperPeerEndpoint) {
-            this.remoteSuperPeerEndpoint = remoteSuperPeerEndpoint;
+        public Builder remoteSuperPeerEndpoints(final Set<Endpoint> remoteSuperPeerEndpoints) {
+            this.remoteSuperPeerEndpoints = Set.copyOf(remoteSuperPeerEndpoints);
             return this;
         }
 
@@ -1328,7 +1338,7 @@ public class DrasylConfig {
                     remoteEndpoints,
                     remoteExposeEnabled,
                     remoteSuperPeerEnabled,
-                    remoteSuperPeerEndpoint,
+                    remoteSuperPeerEndpoints,
                     remoteStaticRoutes,
                     remoteMessageMaxContentLength,
                     remoteMessageHopLimit,
