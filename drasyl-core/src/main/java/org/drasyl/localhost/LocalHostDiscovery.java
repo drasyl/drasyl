@@ -60,9 +60,9 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
+import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
  * Uses the file system to discover other drasyl nodes running on the local computer.
@@ -80,6 +80,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     private static final Object path = LocalHostDiscovery.class;
     public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
+    public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     private final DrasylScheduler scheduler;
     private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes;
     private Disposable watchDisposable;
@@ -180,12 +181,13 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
             watchService = fileSystem.newWatchService();
             discoveryPath.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
             LOG.debug("Watch service for directory '{}' registered", directory);
+            final long pollInterval = WATCH_SERVICE_POLL_INTERVAL.toMillis();
             watchDisposable = scheduler.schedulePeriodicallyDirect(() -> {
                 if (watchService.poll() != null) {
                     // directory has been changed
                     scan(ctx);
                 }
-            }, 0, 5, SECONDS);
+            }, randomLong(pollInterval), pollInterval, MILLISECONDS);
         }
         catch (final IOException e) {
             LOG.debug("Unable to register watch service. Use polling as fallback: ", e);
@@ -226,7 +228,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
                 scan(ctx);
             }
             postInformation(filePath, socketAddresses);
-        }, 0, refreshInterval.toMillis(), MILLISECONDS);
+        }, randomLong(refreshInterval.toMillis()), refreshInterval.toMillis(), MILLISECONDS);
     }
 
     /**
