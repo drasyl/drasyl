@@ -91,7 +91,6 @@ public abstract class DrasylNode {
     private static final List<DrasylNode> INSTANCES;
     private static volatile boolean bossGroupCreated = false;
     private static String version;
-    private static int protocolVersion;
 
     static {
         // https://github.com/netty/netty/issues/7817
@@ -212,31 +211,6 @@ public abstract class DrasylNode {
         }
 
         return version;
-    }
-
-    /**
-     * Returns the protocol version of the node. If the protocol version could not be read, {@code
-     * -1} is returned.
-     *
-     * @return the protocol version of the node. If the protocol version could not be read, {@code
-     * -1} is returned
-     */
-    public static int getProtocolVersion() {
-        if (protocolVersion == -1) {
-            final InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("project.properties");
-            if (inputStream != null) {
-                try {
-                    final Properties properties = new Properties();
-                    properties.load(inputStream);
-                    protocolVersion = Integer.parseInt(properties.getProperty("protocol_version"));
-                }
-                catch (final IOException | NumberFormatException e) {
-                    // do nothing
-                }
-            }
-        }
-
-        return protocolVersion;
     }
 
     /**
