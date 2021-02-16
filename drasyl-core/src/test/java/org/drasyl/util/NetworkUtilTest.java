@@ -30,10 +30,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
+import java.util.function.Supplier;
 
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.drasyl.util.NetworkUtil.getAddresses;
@@ -43,10 +46,13 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,6 +61,8 @@ class NetworkUtilTest {
     private ThrowingSupplier<InputStream, IOException> defaultGatewayProvider;
     @Mock
     private ThrowingFunction<URL, URLConnection, IOException> urlConnectionProvider;
+    @Mock
+    private Supplier<Socket> socketSupplier;
 
     @Nested
     class GetExternalIPv4Address {
@@ -64,7 +72,7 @@ class NetworkUtilTest {
             when(urlConnectionProvider.apply(any())).thenReturn(urlConnection);
             when(urlConnection.getInputStream()).thenReturn(new ByteArrayInputStream("84.81.69.200".getBytes()));
 
-            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider);
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider, socketSupplier);
             final InetAddress address = util.getExternalIPAddress(new URL[]{ provider });
 
             assertEquals(InetAddress.getByName("84.81.69.200"), address);
@@ -76,7 +84,7 @@ class NetworkUtilTest {
             when(urlConnectionProvider.apply(any())).thenReturn(urlConnection);
             when(urlConnection.getInputStream()).thenReturn(new ByteArrayInputStream("bb95:2626:bbdc:dbac:c81:1018:347e:7f9c".getBytes()));
 
-            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider);
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider, socketSupplier);
             final InetAddress address = util.getExternalIPAddress(new URL[]{ provider });
 
             assertEquals(InetAddress.getByName("bb95:2626:bbdc:dbac:c81:1018:347e:7f9c"), address);
@@ -265,7 +273,7 @@ class NetworkUtilTest {
         void shouldParseCorrectAddressOnMacOS(@Mock final ThrowingSupplier<InputStream, IOException> defaultGatewayProvider) throws Exception {
             when(defaultGatewayProvider.get()).thenReturn(new ByteArrayInputStream(NETSTAT_MACOS.getBytes()));
 
-            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider);
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider, socketSupplier);
 
             assertEquals(Inet4Address.getByName("192.168.188.1"), util.getDefaultGateway());
         }
@@ -274,7 +282,7 @@ class NetworkUtilTest {
         void shouldParseCorrectAddressOnWindows(@Mock final ThrowingSupplier<InputStream, IOException> defaultGatewayProvider) throws Exception {
             when(defaultGatewayProvider.get()).thenReturn(new ByteArrayInputStream(NETSTAT_WIN.getBytes()));
 
-            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider);
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider, socketSupplier);
 
             assertEquals(Inet4Address.getByName("10.0.2.2"), util.getDefaultGateway());
         }
@@ -328,6 +336,32 @@ class NetworkUtilTest {
                     1,
                     -127
             }, NetworkUtil.getIpv4MappedIPv6AddressBytes(address));
+        }
+    }
+
+    @Nested
+    class GetLocalAddressForRemoteAddress {
+        @Test
+        void shouldReturnLocalAddress(@Mock(answer = RETURNS_DEEP_STUBS) final Socket socket,
+                                      @Mock final InetSocketAddress remoteAddress) {
+            when(socketSupplier.get()).thenReturn(socket);
+
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider, socketSupplier);
+            final InetAddress address = util.getLocalAddressForRemoteAddress(remoteAddress);
+
+            assertEquals(socket.getLocalAddress(), address);
+        }
+
+        @Test
+        void shouldReturnNullOnException(@Mock(answer = RETURNS_DEEP_STUBS) final Socket socket,
+                                         @Mock final InetSocketAddress remoteAddress) throws IOException {
+            when(socketSupplier.get()).thenReturn(socket);
+            doThrow(IOException.class).when(socket).connect(any(), anyInt());
+
+            final NetworkUtilImpl util = new NetworkUtilImpl(defaultGatewayProvider, urlConnectionProvider, socketSupplier);
+            final InetAddress address = util.getLocalAddressForRemoteAddress(remoteAddress);
+
+            assertNull(address);
         }
     }
 }

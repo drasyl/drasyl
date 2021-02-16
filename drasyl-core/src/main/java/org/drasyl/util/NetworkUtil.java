@@ -30,6 +30,7 @@ import java.io.PrintWriter;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
@@ -38,18 +39,22 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.Duration.ofSeconds;
 import static org.drasyl.util.UrlUtil.createUrl;
 
 /**
  * Utility class for network-related operations.
  */
+@SuppressWarnings("java:S1192")
 public final class NetworkUtil {
     private static final NetworkUtilImpl impl = new NetworkUtilImpl();
     /**
@@ -81,6 +86,8 @@ public final class NetworkUtil {
             createUrl("https://ipv6.wtfismyip.com/text"),
             createUrl("https://ipv6.ipecho.roebert.eu")
     };
+    public static final Duration LOCAL_ADDRESS_FOR_REMOTE_TIMEOUT = ofSeconds(5);
+    public static final Duration EXTERNAL_IP_ADDRESS_TIMEOUT = ofSeconds(5);
 
     private NetworkUtil() {
         // util class
@@ -94,6 +101,7 @@ public final class NetworkUtil {
      *
      * @return the external IPv4 address or {@code null} in case of error
      */
+    @SuppressWarnings("unused")
     public static Inet4Address getExternalIPv4Address() {
         return impl.getExternalIPAddress(EXTERNAL_IPV4_ADDRESS_SERVICES);
     }
@@ -106,6 +114,7 @@ public final class NetworkUtil {
      *
      * @return the external IPv6 address or {@code null} in case of error
      */
+    @SuppressWarnings("unused")
     public static Inet6Address getExternalIPv6Address() {
         return impl.getExternalIPAddress(EXTERNAL_IPV6_ADDRESS_SERVICES);
     }
@@ -168,6 +177,7 @@ public final class NetworkUtil {
      * @param address the address that should be checked
      * @return true if the address is a normal IP address, false otherwise
      */
+    @SuppressWarnings("java:S1067")
     public static boolean isValidNonSpecialIPAddress(final InetAddress address) {
         final boolean hasScope;
         if (address instanceof Inet6Address) {
@@ -254,6 +264,7 @@ public final class NetworkUtil {
      * @param cidr the network mask in CIDR notation
      * @return true if the two given addresses are in the same network, false otherwise
      */
+    @SuppressWarnings("java:S1142")
     public static boolean sameNetwork(final byte[] x, final byte[] y, final short cidr) {
         if (x == y) {
             return true;
@@ -285,6 +296,7 @@ public final class NetworkUtil {
      * @return the CIDR as network mask byte array
      * @throws IllegalArgumentException if the {@code byteLength} argument is invalid
      */
+    @SuppressWarnings("java:S109")
     public static byte[] cidr2Netmask(final short cidr, final int byteLength) {
         if (byteLength != 4 && byteLength != 16) {
             throw new IllegalArgumentException("A valid IP address has always 4 or 16 bytes.");
@@ -311,6 +323,7 @@ public final class NetworkUtil {
         return impl.getDefaultGateway();
     }
 
+    @SuppressWarnings("java:S109")
     public static byte[] getIpv4MappedIPv6AddressBytes(final InetAddress address) {
         if (address instanceof Inet4Address) {
             // create IPv4-mapped IPv6 address
@@ -326,16 +339,33 @@ public final class NetworkUtil {
     }
 
     /**
+     * Establishes a connection to {@code remoteAddress} and returns the local address used for
+     * it.If an error occurs, {@code null} is returned.
+     *
+     * @param remoteAddress The remote address
+     * @return local address used to connect to {@code remoteAddress}, or {@code null} in case of
+     * error
+     */
+    @SuppressWarnings("unused")
+    public static InetAddress getLocalAddressForRemoteAddress(final InetSocketAddress remoteAddress) {
+        return impl.getLocalAddressForRemoteAddress(remoteAddress);
+    }
+
+    /**
      * Private implementation class pointed to some static methods.
      */
+    @SuppressWarnings("java:S2972")
     static class NetworkUtilImpl {
         private final ThrowingSupplier<InputStream, IOException> defaultGatewayProvider;
         private final ThrowingFunction<URL, URLConnection, IOException> urlConnectionProvider;
+        private final Supplier<Socket> socketSupplier;
 
         NetworkUtilImpl(final ThrowingSupplier<InputStream, IOException> defaultGatewayProvider,
-                        final ThrowingFunction<URL, URLConnection, IOException> urlConnectionProvider) {
+                        final ThrowingFunction<URL, URLConnection, IOException> urlConnectionProvider,
+                        final Supplier<Socket> socketSupplier) {
             this.defaultGatewayProvider = defaultGatewayProvider;
             this.urlConnectionProvider = urlConnectionProvider;
+            this.socketSupplier = socketSupplier;
         }
 
         NetworkUtilImpl() {
@@ -344,10 +374,12 @@ public final class NetworkUtil {
                         final Process result = Runtime.getRuntime().exec("netstat -rn");
                         return result.getInputStream();
                     },
-                    URL::openConnection
+                    URL::openConnection,
+                    Socket::new
             );
         }
 
+        @SuppressWarnings("java:S134")
         <T extends InetAddress> T getExternalIPAddress(final URL[] providers) {
             // distribute requests across all available ip check tools
             final int randomOffset = Crypto.randomNumber(providers.length);
@@ -356,12 +388,12 @@ public final class NetworkUtil {
 
                 try {
                     final URLConnection connection = urlConnectionProvider.apply(provider);
-                    connection.setConnectTimeout(5000);
-                    connection.setReadTimeout(5000);
+                    connection.setConnectTimeout((int) EXTERNAL_IP_ADDRESS_TIMEOUT.toMillis());
+                    connection.setReadTimeout((int) EXTERNAL_IP_ADDRESS_TIMEOUT.toMillis());
 
                     LOG.debug("Request external ip address from service '{}'...", provider);
 
-                    try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), UTF_8))) {
                         final String response = reader.readLine();
                         @SuppressWarnings("unchecked") final T address = (T) InetAddress.getByName(response);
                         if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && !address.isSiteLocalAddress()) {
@@ -370,8 +402,11 @@ public final class NetworkUtil {
                         }
                     }
                 }
-                catch (final IOException | ClassCastException e) {
-                    // do nothing, skip to next provider
+                catch (final IOException e) {
+                    LOG.debug("I/O error occurred.", e);
+                }
+                catch (final ClassCastException e) {
+                    LOG.debug("Address returned by provider has the wrong type.", e);
                 }
             }
 
@@ -390,7 +425,7 @@ public final class NetworkUtil {
                 return true;
             }
             catch (final IOException e) {
-                // Do nothing
+                LOG.debug("I/O error occurred.", e);
             }
 
             return false;
@@ -412,12 +447,13 @@ public final class NetworkUtil {
                 return true;
             }
             catch (final IOException e) {
-                // Do nothing
+                LOG.debug("I/O error occurred.", e);
             }
 
             return false;
         }
 
+        @SuppressWarnings("java:S134")
         Set<InetAddress> getAddresses() {
             try {
                 final Set<InetAddress> addresses = new HashSet<>();
@@ -442,6 +478,7 @@ public final class NetworkUtil {
                 return addresses;
             }
             catch (final SocketException e) {
+                LOG.debug("I/O error occurred.", e);
                 return Set.of(InetAddress.getLoopbackAddress());
             }
         }
@@ -451,6 +488,7 @@ public final class NetworkUtil {
                 return InetAddress.getLocalHost().getHostName();
             }
             catch (final UnknownHostException e) {
+                LOG.debug("No local IP address could be found.", e);
                 return null;
             }
         }
@@ -459,11 +497,12 @@ public final class NetworkUtil {
             try {
                 return InetAddress.getByName(str);
             }
-            catch (final UnknownHostException x) {
-                throw new IllegalArgumentException("Host could not be resolved", x);
+            catch (final UnknownHostException e) {
+                throw new IllegalArgumentException("Host could not be resolved.", e);
             }
         }
 
+        @SuppressWarnings("java:S134")
         short getNetworkPrefixLength(final InetAddress address) {
             try {
                 final NetworkInterface networkInterface = NetworkInterface.getByInetAddress(address);
@@ -479,17 +518,18 @@ public final class NetworkUtil {
                 return -1;
             }
             catch (final SocketException e) {
-                // I/O error occurs
+                LOG.debug("I/O error occurred.", e);
                 return -1;
             }
         }
 
+        @SuppressWarnings("java:S1142")
         InetAddress getDefaultGateway() {
             // get line with default gateway address from "netstat"
             String line;
             try {
                 final InputStream inputStream = defaultGatewayProvider.get();
-                final BufferedReader output = new BufferedReader(new InputStreamReader(inputStream));
+                final BufferedReader output = new BufferedReader(new InputStreamReader(inputStream, UTF_8));
 
                 while ((line = output.readLine()) != null) {
                     line = line.trim();
@@ -518,11 +558,22 @@ public final class NetworkUtil {
                     }
                 }
                 catch (final UnknownHostException e) {
-                    // do nothing
+                    LOG.debug("No IP address for `" + token + "` could be found.", e);
                 }
             }
 
             return null;
+        }
+
+        InetAddress getLocalAddressForRemoteAddress(final InetSocketAddress remoteAddress) {
+            try (final Socket socket = socketSupplier.get()) {
+                socket.connect(remoteAddress, (int) LOCAL_ADDRESS_FOR_REMOTE_TIMEOUT.toMillis());
+                return socket.getLocalAddress();
+            }
+            catch (final IOException e) {
+                LOG.debug("Error occurred during the connection.", e);
+                return null;
+            }
         }
     }
 }
