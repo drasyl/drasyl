@@ -131,7 +131,7 @@ public class UpnpIgdPortMappingTest {
                                                                 @Mock final Service upnpService,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                                                @Mock final Runnable onFailure) {
+                                                                @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
                     when(ctx.independentScheduler().scheduleDirect(any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
                     when(ctx.independentScheduler().scheduleDirect(any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
@@ -282,9 +282,7 @@ public class UpnpIgdPortMappingTest {
                                    @Mock final Disposable ssdpDiscoverTask,
                                    @Mock final Disposable refreshTask,
                                    @Mock final Service upnpService,
-                                   @Mock final Runnable onFailure,
-                                   @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                   @Mock(answer = RETURNS_DEEP_STUBS) final AddressedByteBuf msg) {
+                                   @Mock final Runnable onFailure) {
             new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, new HashSet<>(), null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, onFailure).fail();
 
             verify(timeoutGuard).dispose();

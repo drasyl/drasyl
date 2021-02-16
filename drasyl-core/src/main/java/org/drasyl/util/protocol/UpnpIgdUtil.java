@@ -20,14 +20,13 @@ package org.drasyl.util.protocol;
 
 import org.drasyl.DrasylNode;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.net.http.HttpClient;
@@ -37,11 +36,12 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
@@ -67,48 +67,34 @@ public class UpnpIgdUtil {
     public static final Pattern UPNP_NEW_INTERNAL_CLIENT_PATTERN = Pattern.compile("<NewInternalClient>(.+?)</NewInternalClient>");
     public static final Pattern UPNP_NEW_LEASE_DURATION_PATTERN = Pattern.compile("<NewLeaseDuration>(.+?)</NewLeaseDuration>");
     private static final Logger LOG = LoggerFactory.getLogger(UpnpIgdUtil.class);
-
     private final HttpClient httpClient;
-    private final Supplier<Socket> socketSupplier;
+    private final Function<InetSocketAddress, InetAddress> remoteAddressProvider;
 
-    UpnpIgdUtil(final HttpClient httpClient, final Supplier<Socket> socketSupplier) {
+    UpnpIgdUtil(final HttpClient httpClient,
+                final Function<InetSocketAddress, InetAddress> remoteAddressProvider) {
         this.httpClient = httpClient;
-        this.socketSupplier = requireNonNull(socketSupplier);
+        this.remoteAddressProvider = remoteAddressProvider;
     }
 
     public UpnpIgdUtil() {
-        this(HttpClient.newHttpClient(), Socket::new);
+        this(HttpClient.newHttpClient(), NetworkUtil::getLocalAddressForRemoteAddress);
     }
 
-    public Service getUpnpService(final URI url) {
+    public Service getUpnpService(final URI url) throws InterruptedException {
         try {
-            // we use a raw tcp connection here, because we need the socket object to get our
-            // local ip address
-            try (final Socket socket = socketSupplier.get()) {
-                LOG.debug("Request root xml from `{}` to get additional service information.", url);
-                socket.connect(new InetSocketAddress(url.getHost(), url.getPort()), (int) ofSeconds(5).toMillis());
-                final PrintWriter printWriter = new PrintWriter(socket.getOutputStream());
-                printWriter.print("GET " + url.getPath() + " HTTP/1.1\r\n");
-                printWriter.print("Host: " + url.getHost() + ":" + url.getPort() + "\r\n");
-                printWriter.print("Connection: Close\r\n");
-                printWriter.print("\r\n");
-                printWriter.flush();
-                final String response = new String(socket.getInputStream().readAllBytes());
+            final HttpRequest request = HttpRequest.newBuilder(url).GET().build();
+            final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-                final String[] responseParts = response.split("\r\n\r\n", 2);
-                if (responseParts.length == 2) {
-                    final String[] headers = responseParts[0].split("\r\n");
-                    final String body = responseParts[1];
-                    if (headers.length > 0 && headers[0].endsWith(" 200 OK")) {
-                        final Matcher matcher = UPNP_SERVICE_PATTERN.matcher(body);
-                        if (matcher.find()) {
-                            final String localAddress = socket.getLocalAddress().getHostAddress();
-                            final String serviceType = matcher.group(1);
-                            final URI controlUrl = url.resolve(matcher.group(2));
+            if (response.statusCode() == HTTP_OK) {
+                final String body = response.body();
+                final Matcher matcher = UPNP_SERVICE_PATTERN.matcher(body);
+                if (matcher.find()) {
+                    final InetSocketAddress remoteAddress = new InetSocketAddress(url.getHost(), url.getPort());
+                    final InetAddress localAddress = remoteAddressProvider.apply(remoteAddress);
+                    final String serviceType = matcher.group(1);
+                    final URI controlUrl = url.resolve(matcher.group(2));
 
-                            return new Service(serviceType, controlUrl, localAddress);
-                        }
-                    }
+                    return new Service(serviceType, controlUrl, localAddress);
                 }
             }
         }
@@ -156,6 +142,7 @@ public class UpnpIgdUtil {
                 internalClient = InetAddress.getByName(matcher.group(1));
             }
             catch (final UnknownHostException e) {
+                LOG.debug("No IP address for the host `" + matcher.group(1) + "` could be found.", e);
                 internalClient = null;
             }
         }
@@ -214,6 +201,7 @@ public class UpnpIgdUtil {
             return response.body();
         }
         catch (final IOException e) {
+            LOG.debug("I/O error occurred.", e);
             return null;
         }
     }
@@ -221,14 +209,14 @@ public class UpnpIgdUtil {
     public PortMapping addPortMapping(final URI url,
                                       final String serviceType,
                                       final Integer externalPort,
-                                      final String localAddress,
+                                      final InetAddress localAddress,
                                       final String description) throws InterruptedException {
         final Map<String, Object> args = Map.of(
                 "NewRemoteHost", "",
                 "NewExternalPort", externalPort,
                 "NewProtocol", "UDP",
                 "NewInternalPort", externalPort,
-                "NewInternalClient", localAddress,
+                "NewInternalClient", localAddress.getHostAddress(),
                 "NewEnabled", 1,
                 "NewPortMappingDescription", description,
                 "NewLeaseDuration", 0 // see rfc6886, section 9.5., third paragraph...
@@ -296,6 +284,7 @@ public class UpnpIgdUtil {
                 newExternalIpAddress = InetAddress.getByName(matcher.group(1));
             }
             catch (final UnknownHostException e) {
+                LOG.debug("No IP address for the host `" + matcher.group(1) + "` could be found.", e);
                 newExternalIpAddress = null;
             }
         }
@@ -344,14 +333,15 @@ public class UpnpIgdUtil {
     public interface Message {
     }
 
+    @SuppressWarnings({ "java:S2972" })
     public static class Service {
         private final String serviceType;
         private final URI controlUrl;
-        private final String localAddress;
+        private final InetAddress localAddress;
 
         public Service(final String serviceType,
                        final URI controlUrl,
-                       final String localAddress) {
+                       final InetAddress localAddress) {
             this.serviceType = requireNonNull(serviceType);
             this.controlUrl = requireNonNull(controlUrl);
             this.localAddress = requireNonNull(localAddress);
@@ -365,7 +355,7 @@ public class UpnpIgdUtil {
             return controlUrl;
         }
 
-        public String getLocalAddress() {
+        public InetAddress getLocalAddress() {
             return localAddress;
         }
 
@@ -387,7 +377,7 @@ public class UpnpIgdUtil {
         }
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "unused", "java:S2972" })
     public static class MappingEntry {
         private final int internalPort;
         private final InetAddress internalClient;
@@ -445,7 +435,7 @@ public class UpnpIgdUtil {
         }
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "unused", "java:S2972" })
     public static class StatusInfo {
         private final String newConnectionStatus;
 
@@ -509,7 +499,7 @@ public class UpnpIgdUtil {
         }
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "unused", "java:S2972" })
     public static class DiscoveryResponseMessage implements Message {
         private final String serviceType;
         private final String location;

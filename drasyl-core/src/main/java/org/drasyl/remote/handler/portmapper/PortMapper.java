@@ -53,6 +53,7 @@ public class PortMapper extends SimpleInboundHandler<AddressedByteBuf, Address> 
     private int currentMethodPointer;
     private Disposable retryTask;
 
+    @SuppressWarnings("java:S2384")
     PortMapper(final ArrayList<PortMapping> methods,
                final int currentMethodPointer,
                final Disposable retryTask) {
