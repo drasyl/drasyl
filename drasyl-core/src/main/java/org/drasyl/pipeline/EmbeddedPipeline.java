@@ -22,7 +22,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
@@ -31,6 +30,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
@@ -68,7 +68,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                             final Serialization outboundSerialization,
                             final Handler... handlers) {
         this(config, identity, peersManager, inboundSerialization, outboundSerialization);
-        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
+        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + RandomUtil.randomString(16), handler));
     }
 
     /**
@@ -85,7 +85,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                             final PeersManager peersManager,
                             final Handler... handlers) {
         this(config, identity, peersManager, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()));
-        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
+        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + RandomUtil.randomString(16), handler));
     }
 
     public EmbeddedPipeline(final DrasylConfig config,

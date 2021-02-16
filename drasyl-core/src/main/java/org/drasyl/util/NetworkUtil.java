@@ -18,7 +18,6 @@
  */
 package org.drasyl.util;
 
-import org.drasyl.crypto.Crypto;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -382,7 +381,7 @@ public final class NetworkUtil {
         @SuppressWarnings("java:S134")
         <T extends InetAddress> T getExternalIPAddress(final URL[] providers) {
             // distribute requests across all available ip check tools
-            final int randomOffset = Crypto.randomNumber(providers.length);
+            final int randomOffset = RandomUtil.randomInt(providers.length);
             for (int i = 0; i < providers.length; i++) {
                 final URL provider = providers[(i + randomOffset) % providers.length];
 

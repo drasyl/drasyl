@@ -24,6 +24,7 @@ import java.util.Random;
  * Utility class for receiving pseudorandom values.
  */
 public final class RandomUtil {
+    private static final char[] ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz".toCharArray();
     private static final Random RANDOM = new Random();
 
     private RandomUtil() {
@@ -78,7 +79,7 @@ public final class RandomUtil {
             return min;
         }
         else {
-            return min + (long) (Math.random() * (max - min + 1));
+            return min + (long) (RANDOM.nextDouble() * (max - min + 1));
         }
     }
 
@@ -106,5 +107,26 @@ public final class RandomUtil {
         final byte[] bytes = new byte[count];
         RANDOM.nextBytes(bytes);
         return bytes;
+    }
+
+    /**
+     * Returns a string of the given {@code length} containing pseudorandom alphanumeric
+     * characters.
+     *
+     * @param length The length of the string
+     * @return string containing pseudorandom alphanumeric characters
+     */
+    public static String randomString(final int length) {
+        if (length < 0) {
+            throw new IllegalArgumentException("length must be greater than or equal to 0");
+        }
+
+        final char[] buffer = new char[length];
+
+        for (int i = 0; i < buffer.length; i++) {
+            buffer[i] = ALPHABET[RANDOM.nextInt(ALPHABET.length)];
+        }
+
+        return new String(buffer);
     }
 }

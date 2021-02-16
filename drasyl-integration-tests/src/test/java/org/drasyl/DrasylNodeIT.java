@@ -39,6 +39,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.Pair;
+import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -252,7 +253,7 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                final byte[] payload = Crypto.randomBytes(MESSAGE_MTU);
+                final byte[] payload = RandomUtil.randomBytes(MESSAGE_MTU);
                 final Set<String> identities = Set.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22",
                         "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
                         "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
