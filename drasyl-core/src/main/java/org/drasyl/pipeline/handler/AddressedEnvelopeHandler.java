@@ -16,9 +16,12 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.pipeline.handler;
 
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.pipeline.Handler;
+import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -31,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public class AddressedEnvelopeHandler extends SimpleDuplexHandler<AddressedEnvelope<?, ?>, Object, CompressedPublicKey> {
+public final class AddressedEnvelopeHandler extends SimpleDuplexHandler<AddressedEnvelope<?, ?>, Object, CompressedPublicKey> {
     public static final String ADDRESSED_ENVELOPE_HANDLER = "ADDRESSED_ENVELOPE_HANDLER";
     public static final Handler INSTANCE = new AddressedEnvelopeHandler();
 
