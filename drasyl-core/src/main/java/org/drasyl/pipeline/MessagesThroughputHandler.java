@@ -135,7 +135,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
             final double outboundMps = outboundMessages.sumThenReset() / 1_000f * intervalDuration;
             final double inboundMps = inboundMessages.sumThenReset() / 1_000f * intervalDuration;
             inboundMessages.reset();
-            printStream.printf("%,6.2f - %,6.2f s; Tx: %,8.1f m/s; Rx: %,8.1f m/s;", relativeIntervalStartTime, relativeIntervalEndTime, outboundMps, inboundMps);
+            printStream.printf("%,6.2f - %,6.2f s; Tx: %,8.1f m/s; Rx: %,8.1f m/s;%n", relativeIntervalStartTime, relativeIntervalEndTime, outboundMps, inboundMps);
             intervalTime.set(currentTime);
         }, 0, INTERVAL.toMillis(), MILLISECONDS);
     }
