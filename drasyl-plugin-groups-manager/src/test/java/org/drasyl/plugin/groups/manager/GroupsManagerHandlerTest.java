@@ -139,6 +139,7 @@ class GroupsManagerHandlerTest {
             when(databaseAdapter.deleteStaleMemberships()).thenReturn(memberships);
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
             when(ctx.pipeline()).thenReturn(pipeline);
+            when(pipeline.processOutbound(any(), any())).thenReturn(new CompletableFuture<>());
 
             handler.staleTask(ctx);
 
@@ -205,7 +206,7 @@ class GroupsManagerHandlerTest {
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
             future.join();
-            testObserver.awaitCount(2).assertValueCount(2);
+            testObserver.assertValueCount(2);
             testObserver.assertValues(
                     new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of()),
                     new MemberJoinedMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())));
@@ -334,7 +335,7 @@ class GroupsManagerHandlerTest {
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
             future.join();
-            testObserver.awaitCount(2)
+            testObserver
                     .assertValueCount(2)
                     .assertValues(
                             new MemberLeftMessage(publicKey, msg.getGroup()),

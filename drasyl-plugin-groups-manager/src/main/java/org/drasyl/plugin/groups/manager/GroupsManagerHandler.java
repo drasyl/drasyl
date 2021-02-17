@@ -37,9 +37,12 @@ import org.drasyl.plugin.groups.manager.data.Membership;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
 import org.drasyl.serialization.JacksonJsonSerializer;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -86,7 +89,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                         org.drasyl.plugin.groups.client.Group.of(member.getGroup().getName()));
 
                 ctx.pipeline().processOutbound(member.getMember().getPublicKey(), leftMessage);
-                notifyMembers(ctx, member.getGroup().getName(), leftMessage);
+                notifyMembers(ctx, member.getGroup().getName(), leftMessage, new CompletableFuture<>());
             }
         }
         catch (final DatabaseException e) {
@@ -110,11 +113,16 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      */
     private void notifyMembers(final HandlerContext ctx,
                                final String group,
-                               final GroupsPluginMessage msg) throws DatabaseException {
+                               final GroupsPluginMessage msg,
+                               final CompletableFuture<Void> future) throws DatabaseException {
         try {
             final Set<Membership> recipients = database.getGroupMembers(group);
 
-            recipients.forEach(member -> ctx.pipeline().processOutbound(member.getMember().getPublicKey(), msg));
+            final List<CompletableFuture<Void>> futures = new ArrayList<>(recipients.size());
+
+            recipients.forEach(member -> futures.add(ctx.pipeline().processOutbound(member.getMember().getPublicKey(), msg)));
+
+            FutureUtil.completeOnAllOf(future, futures.toArray(new CompletableFuture[0]));
         }
         catch (final DatabaseException e) {
             LOG.debug("Error occurred on getting members of group '{}': ", group, e);
@@ -191,10 +199,11 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
             final MemberLeftMessage leftMessage = new MemberLeftMessage(sender, msg.getGroup());
 
             database.removeGroupMember(sender, msg.getGroup().getName());
-            ctx.pipeline().processOutbound(sender, leftMessage);
-            notifyMembers(ctx, msg.getGroup().getName(), leftMessage);
+            final CompletableFuture<Void> future1 = ctx.pipeline().processOutbound(sender, leftMessage);
+            final CompletableFuture<Void> future2 = new CompletableFuture<>();
+            notifyMembers(ctx, msg.getGroup().getName(), leftMessage, future2);
 
-            future.complete(null);
+            FutureUtil.completeOnAllOf(future, future1, future2);
             LOG.debug("Removed member '{}' from group '{}'", () -> sender, () -> msg.getGroup().getName());
         }
         catch (final DatabaseException e) {
@@ -222,14 +231,16 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                             Member.of(sender),
                             group,
                             System.currentTimeMillis() + group.getTimeout().toMillis()))) {
+
                 final Set<Membership> memberships = database.getGroupMembers(group.getName());
-                ctx.pipeline().processOutbound(sender, new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), memberships.stream()
+                final CompletableFuture<Void> future1 = ctx.pipeline().processOutbound(sender, new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), memberships.stream()
                         .filter(v -> !v.getMember().getPublicKey().equals(sender) && v.getStaleAt() > System.currentTimeMillis())
                         .map(v -> v.getMember().getPublicKey())
                         .collect(Collectors.toSet())));
-                notifyMembers(ctx, group.getName(), new MemberJoinedMessage(sender, org.drasyl.plugin.groups.client.Group.of(group.getName())));
+                final CompletableFuture<Void> future2 = new CompletableFuture<>();
+                notifyMembers(ctx, group.getName(), new MemberJoinedMessage(sender, org.drasyl.plugin.groups.client.Group.of(group.getName())), future2);
 
-                future.complete(null);
+                FutureUtil.completeOnAllOf(future, future1, future2);
                 LOG.debug("Added member '{}' to group '{}'", () -> sender, group::getName);
             }
             else {
