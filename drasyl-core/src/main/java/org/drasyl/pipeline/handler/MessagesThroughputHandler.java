@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.pipeline.handler;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -25,6 +25,8 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.ReferenceCountUtil;
@@ -129,11 +131,11 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
         disposable = scheduler.schedulePeriodicallyDirect(() -> {
             final long currentTime = System.currentTimeMillis();
 
-            final double relativeIntervalStartTime = (intervalTime.get() - startTime) / 1_000f;
-            final double relativeIntervalEndTime = (currentTime - startTime) / 1_000f;
+            final double relativeIntervalStartTime = (intervalTime.get() - startTime) / 1_000.;
+            final double relativeIntervalEndTime = (currentTime - startTime) / 1_000.;
             final long intervalDuration = currentTime - intervalTime.get();
-            final double outboundMps = outboundMessages.sumThenReset() / 1_000f * intervalDuration;
-            final double inboundMps = inboundMessages.sumThenReset() / 1_000f * intervalDuration;
+            final double outboundMps = outboundMessages.sumThenReset() / 1_000. * intervalDuration;
+            final double inboundMps = inboundMessages.sumThenReset() / 1_000. * intervalDuration;
             inboundMessages.reset();
             printStream.printf("%,6.2f - %,6.2f s; Tx: %,8.1f m/s; Rx: %,8.1f m/s;%n", relativeIntervalStartTime, relativeIntervalEndTime, outboundMps, inboundMps);
             intervalTime.set(currentTime);

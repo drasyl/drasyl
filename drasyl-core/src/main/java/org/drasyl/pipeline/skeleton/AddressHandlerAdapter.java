@@ -16,10 +16,9 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.pipeline.skeleton;
 
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.TypeParameterMatcher;
 
 /**
