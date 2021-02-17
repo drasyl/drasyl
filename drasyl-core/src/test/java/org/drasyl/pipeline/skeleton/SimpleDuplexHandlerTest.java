@@ -27,7 +27,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.AddressedEnvelopeHandler;
+import org.drasyl.pipeline.handler.AddressedEnvelopeHandler;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
