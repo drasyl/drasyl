@@ -132,6 +132,9 @@ public abstract class DrasylNode {
      * <p>
      * Note: This is a blocking method, because when a node is started for the first time, its
      * identity must be created. This can take up to a minute because of the proof of work.
+     *
+     * @throws DrasylException       if identity could not be loaded or created
+     * @throws DrasylConfigException if config is invalid
      */
     protected DrasylNode() throws DrasylException {
         this(new DrasylConfig());
@@ -147,7 +150,7 @@ public abstract class DrasylNode {
      *
      * @param config custom configuration used for this node
      * @throws NullPointerException if {@code config} is {@code null}
-     * @throws DrasylException      if config or identity is not valid
+     * @throws DrasylException      if identity could not be loaded or created
      */
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
@@ -162,9 +165,6 @@ public abstract class DrasylNode {
             this.startFuture = new AtomicReference<>();
             this.shutdownFuture = new AtomicReference<>(completedFuture(null));
             this.scheduler = getInstanceHeavy();
-        }
-        catch (final DrasylConfigException e) {
-            throw new DrasylException("Couldn't load config", e);
         }
         catch (final IOException e) {
             throw new DrasylException("Couldn't load or create identity", e);
