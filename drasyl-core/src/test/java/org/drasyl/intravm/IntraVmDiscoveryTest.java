@@ -71,11 +71,11 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldStartDiscoveryOnNodeUpEvent(@Mock final NodeUpEvent event) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(1)));
+                await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(1)));
+            }
         }
     }
 
@@ -86,11 +86,11 @@ class IntraVmDiscoveryTest {
                                                               @Mock final HandlerContext ctx) {
             discoveries.put(Pair.of(0, identity.getPublicKey()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
+                await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
+            }
         }
 
         @Test
@@ -99,11 +99,11 @@ class IntraVmDiscoveryTest {
             discoveries.put(Pair.of(0, identity.getPublicKey()), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
+                await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
+            }
         }
     }
 
@@ -121,12 +121,11 @@ class IntraVmDiscoveryTest {
             });
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+                pipeline.processOutbound(recipient, message).join();
 
-            pipeline.processOutbound(recipient, message).join();
-
-            verify(ctx).fireRead(any(), any(), any());
-            pipeline.close();
+                verify(ctx).fireRead(any(), any(), any());
+            }
         }
 
         @Test
@@ -134,13 +133,13 @@ class IntraVmDiscoveryTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-            pipeline.processOutbound(recipient, message).join();
+                pipeline.processOutbound(recipient, message).join();
 
-            outboundMessages.assertValueCount(1);
-            pipeline.close();
+                outboundMessages.assertValueCount(1);
+            }
         }
 
         @Test
@@ -155,25 +154,24 @@ class IntraVmDiscoveryTest {
             });
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+                pipeline.processInbound(sender, message).join();
 
-            pipeline.processInbound(sender, message).join();
-
-            verify(ctx).fireRead(any(), any(), any());
-            pipeline.close();
+                verify(ctx).fireRead(any(), any(), any());
+            }
         }
 
         @Test
         void shouldPasstroughIngoingMessageForUnknownRecipients(@Mock final CompressedPublicKey sender,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(sender, message).join();
+                pipeline.processInbound(sender, message).join();
 
-            inboundMessages.assertValueCount(1);
-            pipeline.close();
+                inboundMessages.assertValueCount(1);
+            }
         }
     }
 }
