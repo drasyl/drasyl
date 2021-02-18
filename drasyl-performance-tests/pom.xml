@@ -58,7 +58,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>drasyl-core</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- Logging -->
@@ -85,6 +84,24 @@
                     </systemPropertyVariables>
                     <argLine>-Dio.netty.leakDetectionLevel=disabled</argLine>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
