@@ -50,7 +50,7 @@ public class Serialization {
 
     public Serialization(final Map<String, Serializer> serializers,
                          final Map<Class<?>, String> bindings) {
-        this(new ReentrantReadWriteLock(true), serializers, bindings, new HashMap<>());
+        this(new ReentrantReadWriteLock(true), new HashMap<>(serializers), new HashMap<>(bindings), new HashMap<>());
     }
 
     /**
