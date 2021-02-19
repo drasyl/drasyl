@@ -37,7 +37,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -90,6 +92,7 @@ class DrasylNodeIT {
             private EmbeddedNode client1;
             private EmbeddedNode client2;
 
+            @SuppressWarnings("ConstantConditions")
             @BeforeEach
             void setUp() throws DrasylException {
                 //
@@ -587,7 +590,7 @@ class DrasylNodeIT {
             private EmbeddedNode node2;
 
             @BeforeEach
-            void setUp() throws DrasylException {
+            void setUp(@TempDir final Path localHostDiscoveryPath) throws DrasylException {
                 //
                 // create nodes
                 //
@@ -606,6 +609,7 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(true)
                         .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
+                        .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
                         .build();
                 node1 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
@@ -623,6 +627,7 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(true)
                         .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
+                        .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
                         .build();
                 node2 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
@@ -640,7 +645,7 @@ class DrasylNodeIT {
              */
             @Test
             @Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)
-            void applicationMessagesShouldBeDelivered() {
+            void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
                 // WatchService can be ridiculous slow in reporting changes...wait up to 12*5 seconds...
                 node1.events(PeerDirectEvent.class).test()
                         .awaitCount(1).awaitCount(1)
@@ -663,8 +668,8 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                node1.send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt");
-                node2.send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt");
+                node1.send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt").get();
+                node2.send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt").get();
 
                 //
                 // verify
