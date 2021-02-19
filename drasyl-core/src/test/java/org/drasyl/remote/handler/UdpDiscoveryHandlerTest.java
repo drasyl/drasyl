@@ -359,7 +359,7 @@ class UdpDiscoveryHandlerTest {
         void shouldInitiateUniteForInboundMessageWithKnownSenderAndRecipient(@Mock final InetSocketAddressWrapper sender,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer senderPeer,
-                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
+                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) throws IOException {
             final InetSocketAddressWrapper senderSocketAddress = new InetSocketAddressWrapper(80);
             final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(81);
             final CompressedPublicKey myKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
@@ -394,7 +394,7 @@ class UdpDiscoveryHandlerTest {
         class Inbound {
             @Test
             void shouldRelayMessageForKnownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) throws IOException {
                 final Address sender = new InetSocketAddressWrapper(22527);
                 when(recipientPeer.isReachable(any())).thenReturn(true);
                 when(recipientPeer.getAddress()).thenReturn(new InetSocketAddressWrapper(25421));
@@ -416,9 +416,8 @@ class UdpDiscoveryHandlerTest {
             void shouldCompleteExceptionallyOnInvalidMessage(@Mock final InetSocketAddressWrapper sender,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey recipient) throws InterruptedException {
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey recipient) throws InterruptedException, IOException {
                 when(message.getContent().getRecipient()).thenThrow(IllegalArgumentException.class);
-                when(message.refCnt()).thenReturn(1);
 
                 final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
@@ -436,7 +435,7 @@ class UdpDiscoveryHandlerTest {
                     @Mock final Peer peer,
                     @Mock final InetSocketAddressWrapper address,
                     @Mock final InetSocketAddressWrapper senderAddress,
-                    @Mock final InetSocketAddressWrapper recipientAddress) {
+                    @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final IntermediateEnvelope<Application> applicationMessage = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[]{});

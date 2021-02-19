@@ -204,7 +204,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
      * @param ctx handler's context
      */
     private void pingDirectConnectionPeers(final HandlerContext ctx) {
-        new HashSet<>(directConnectionPeers).forEach(publicKey -> {
+        for (final CompressedPublicKey publicKey : new HashSet<>(directConnectionPeers)) {
             final Peer peer = peers.get(publicKey);
             final InetSocketAddressWrapper address = peer.getAddress();
             if (address != null && peer.hasApplicationTraffic(ctx.config())) {
@@ -216,7 +216,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                 ctx.peersManager().removeChildrenAndPath(publicKey, path);
                 directConnectionPeers.remove(publicKey);
             }
-        });
+        }
     }
 
     private void removeAllPeers(final HandlerContext ctx) {
@@ -244,8 +244,16 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         }
 
         if (recipient instanceof CompressedPublicKey) {
-            final IntermediateEnvelope<Application> remoteMessageEnvelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
-            processMessage(ctx, (CompressedPublicKey) recipient, remoteMessageEnvelope, future);
+            IntermediateEnvelope<Application> remoteMessageEnvelope = null;
+            try {
+                remoteMessageEnvelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
+                processMessage(ctx, (CompressedPublicKey) recipient, remoteMessageEnvelope, future);
+            }
+            catch (final IOException e) {
+                // should never occur as we build the message ourselves
+                future.completeExceptionally(e);
+                ReferenceCountUtil.safeRelease(remoteMessageEnvelope);
+            }
         }
         else {
             // passthrough message
@@ -261,11 +269,12 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
      * @param recipient the recipient of the message
      * @param msg       the message
      * @param future    the future
+     * @throws IOException if public header of {@code msg} cannot be read
      */
     private void processMessage(final HandlerContext ctx,
                                 final CompressedPublicKey recipient,
                                 final IntermediateEnvelope<? extends MessageLite> msg,
-                                final CompletableFuture<Void> future) {
+                                final CompletableFuture<Void> future) throws IOException {
         final Peer recipientPeer = peers.get(recipient);
 
         final Peer superPeerPeer;
@@ -283,10 +292,12 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
             // rendezvous? I'm a super peer?
             if (senderPeer != null && superPeerPeer == null && senderPeer.getAddress() != null) {
                 final InetSocketAddressWrapper senderSocketAddress = senderPeer.getAddress();
-                LOG.trace("Relay message from {} to {}.", msg.getSender(), recipient);
+                final CompressedPublicKey msgSender = msg.getSender();
+                final CompressedPublicKey msgRecipient = msg.getRecipient();
+                LOG.trace("Relay message from {} to {}.", msgSender, recipient);
 
-                if (shouldTryUnite(msg.getSender(), msg.getRecipient())) {
-                    ctx.independentScheduler().scheduleDirect(() -> sendUnites(ctx, msg.getSender(), msg.getRecipient(), recipientSocketAddress, senderSocketAddress));
+                if (shouldTryUnite(msgSender, msgRecipient)) {
+                    ctx.independentScheduler().scheduleDirect(() -> sendUnites(ctx, msgSender, msgRecipient, recipientSocketAddress, senderSocketAddress));
                 }
             }
 
@@ -361,12 +372,12 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
                 if (!ctx.config().isRemoteSuperPeerEnabled()) {
                     processMessage(ctx, envelope.getContent().getRecipient(), envelope.getContent(), future);
                 }
-                else {
-                    LOG.debug("We're not a super peer. Message `{}` from `{}` (`{}`) to `{}` for relaying was dropped.", () -> envelope, envelope.getContent()::getSender, () -> sender, envelope.getContent()::getRecipient);
+                else if (LOG.isDebugEnabled()) {
+                    LOG.debug("We're not a super peer. Message `{}` from `{}` (`{}`) to `{}` for relaying was dropped.", envelope, envelope.getContent().getSender(), sender, envelope.getContent().getRecipient());
                 }
             }
         }
-        catch (final IOException | IllegalArgumentException e) {
+        catch (final IOException e) {
             LOG.warn("Unable to deserialize '{}': {}", () -> sanitizeLogArg(envelope.getContent()), e::getMessage);
             future.completeExceptionally(new Exception("Message could not be deserialized.", e));
             ReferenceCountUtil.safeRelease(envelope);
@@ -521,11 +532,19 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
 
         final boolean isChildrenJoin = superPeers.contains(recipient);
-        final IntermediateEnvelope<Discovery> messageEnvelope = IntermediateEnvelope.discovery(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
-        openPingsCache.put(messageEnvelope.getId(), new Ping(recipientAddress));
-        LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
-        final AddressedIntermediateEnvelope<Discovery> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(null, recipientAddress, messageEnvelope);
-        ctx.write(recipientAddress, addressedMessageEnvelope, future);
+        IntermediateEnvelope<Discovery> messageEnvelope = null;
+        try {
+            messageEnvelope = IntermediateEnvelope.discovery(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
+            openPingsCache.put(messageEnvelope.getId(), new Ping(recipientAddress));
+            LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
+            final AddressedIntermediateEnvelope<Discovery> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(null, recipientAddress, messageEnvelope);
+            ctx.write(recipientAddress, addressedMessageEnvelope, future);
+        }
+        catch (final IOException e) {
+            // should never occur as we build the message ourselves
+            future.completeExceptionally(e);
+            ReferenceCountUtil.safeRelease(messageEnvelope);
+        }
     }
 
     @SuppressWarnings("java:S2972")

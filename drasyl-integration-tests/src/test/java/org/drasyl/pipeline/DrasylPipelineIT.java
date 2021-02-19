@@ -45,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -113,7 +114,7 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void passMessageThroughThePipeline() {
+    void passMessageThroughThePipeline() throws IOException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final byte[] newPayload = new byte[]{
@@ -144,7 +145,7 @@ class DrasylPipelineIT {
 
     @Test
     void passEventThroughThePipeline(@Mock final InetSocketAddressWrapper senderAddress,
-                                     @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException {
+                                     @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException, IOException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final Event testEvent = new Event() {
@@ -176,7 +177,7 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void exceptionShouldPassThroughThePipeline() {
+    void exceptionShouldPassThroughThePipeline() throws IOException {
         final PublishSubject<Throwable> receivedExceptions = PublishSubject.create();
         final TestObserver<Throwable> exceptions = receivedExceptions.test();
 

@@ -68,7 +68,7 @@ class HopCountGuardTest {
 
     @Test
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException {
+                                                                @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException, IOException {
         when(config.getRemoteMessageHopLimit()).thenReturn((byte) 1);
         when(message.getContent().getHopCount()).thenReturn((byte) 1);
         when(message.refCnt()).thenReturn(1);

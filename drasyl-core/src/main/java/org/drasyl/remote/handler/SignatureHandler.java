@@ -28,6 +28,7 @@ import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -62,7 +63,7 @@ public final class SignatureHandler extends SimpleDuplexHandler<AddressedInterme
                 ctx.fireRead(sender, msg, future);
             }
         }
-        catch (final IllegalStateException e) {
+        catch (final IOException e) {
             LOG.debug("Can't disarm message `{}` due to the following error: ", msg, e);
             future.completeExceptionally(new Exception("Unable to disarm message", e));
             ReferenceCountUtil.safeRelease(msg);
@@ -84,7 +85,7 @@ public final class SignatureHandler extends SimpleDuplexHandler<AddressedInterme
                 ctx.write(recipient, msg, future);
             }
         }
-        catch (final IllegalStateException e) {
+        catch (final IOException e) {
             LOG.debug("Can't arm message `{}` due to the following error: ", msg, e);
             future.completeExceptionally(new Exception("Unable to arm message", e));
             ReferenceCountUtil.safeRelease(msg);

@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -123,7 +124,7 @@ class SignatureHandlerTest {
         @SuppressWarnings("rawtypes")
         @Test
         void shouldCompleteFutureExceptionallyAndNotPassOutgoingMessageIfArmingFailed(@Mock final InetSocketAddressWrapper senderAddress,
-                                                                                      @Mock final InetSocketAddressWrapper recipientAddress) throws InterruptedException {
+                                                                                      @Mock final InetSocketAddressWrapper recipientAddress) throws InterruptedException, IOException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -150,7 +151,7 @@ class SignatureHandlerTest {
         @Test
         void shouldDisarmIngoingMessageAddressedToMe(@Mock final CompressedPublicKey sender,
                                                      @Mock final InetSocketAddressWrapper senderAddress,
-                                                     @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException {
+                                                     @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException, IOException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -174,7 +175,7 @@ class SignatureHandlerTest {
         @Test
         void shouldPassthroughIngoingMessageNotAddressedToMe(@Mock final CompressedPublicKey sender,
                                                              @Mock final InetSocketAddressWrapper senderAddress,
-                                                             @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException {
+                                                             @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException, IOException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -198,7 +199,7 @@ class SignatureHandlerTest {
         @Test
         void shouldCompleteFutureExceptionallyAndNotPassIngoingMessageIfDisarmingFailed(@Mock final CompressedPublicKey sender,
                                                                                         @Mock final InetSocketAddressWrapper senderAddress,
-                                                                                        @Mock final InetSocketAddressWrapper recipientAddress) throws InterruptedException {
+                                                                                        @Mock final InetSocketAddressWrapper recipientAddress) throws InterruptedException, IOException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));

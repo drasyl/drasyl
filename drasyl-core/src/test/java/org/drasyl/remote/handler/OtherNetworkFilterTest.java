@@ -33,6 +33,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
@@ -47,7 +49,7 @@ class OtherNetworkFilterTest {
     private PeersManager peersManager;
 
     @Test
-    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException {
+    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException, IOException {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getContent().getNetworkId()).thenReturn(456);
         when(message.refCnt()).thenReturn(1);
@@ -64,7 +66,7 @@ class OtherNetworkFilterTest {
     }
 
     @Test
-    void shouldPassMessagesFromSameNetwork(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) {
+    void shouldPassMessagesFromSameNetwork(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws IOException {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getContent().getNetworkId()).thenReturn(123);
 

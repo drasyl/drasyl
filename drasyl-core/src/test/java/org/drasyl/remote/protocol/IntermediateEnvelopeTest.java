@@ -180,7 +180,7 @@ class IntermediateEnvelopeTest {
             }
 
             @Test
-            void shouldShareRefCnt() {
+            void shouldShareRefCnt() throws IOException {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
                 final ByteBuf original = envelope.getInternalByteBuf();
@@ -200,7 +200,7 @@ class IntermediateEnvelopeTest {
             void shouldThrowExceptionForNonReadableByteBuf(@Mock final ByteBuf message) {
                 when(message.refCnt()).thenReturn(1);
 
-                assertThrows(IllegalArgumentException.class, () -> IntermediateEnvelope.of(message));
+                assertThrows(IOException.class, () -> IntermediateEnvelope.of(message));
             }
         }
     }
@@ -271,7 +271,7 @@ class IntermediateEnvelopeTest {
     @Nested
     class ToString {
         @Test
-        void shouldNotFail() {
+        void shouldNotFail() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
@@ -286,7 +286,7 @@ class IntermediateEnvelopeTest {
     @Nested
     class GetId {
         @Test
-        void shouldReturnId() {
+        void shouldReturnId() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
@@ -298,12 +298,12 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void shouldThrowIllegalArgumentExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
                 when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IllegalArgumentException.class, envelope::getId);
+                assertThrows(IOException.class, envelope::getId);
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
@@ -314,7 +314,7 @@ class IntermediateEnvelopeTest {
     @Nested
     class GetNetworkId {
         @Test
-        void shouldReturnNetworkId() {
+        void shouldReturnNetworkId() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
@@ -326,12 +326,12 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void shouldThrowIllegalArgumentExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
                 when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IllegalArgumentException.class, envelope::getNetworkId);
+                assertThrows(IOException.class, envelope::getNetworkId);
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
@@ -342,7 +342,7 @@ class IntermediateEnvelopeTest {
     @Nested
     class GetProofOfWork {
         @Test
-        void shouldReturnProofOfWork() {
+        void shouldReturnProofOfWork() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
@@ -354,12 +354,12 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void shouldThrowIllegalArgumentExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
                 when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IllegalArgumentException.class, envelope::getProofOfWork);
+                assertThrows(IOException.class, envelope::getProofOfWork);
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
@@ -370,7 +370,7 @@ class IntermediateEnvelopeTest {
     @Nested
     class GetRecipient {
         @Test
-        void shouldReturnRecipient() {
+        void shouldReturnRecipient() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
@@ -382,12 +382,12 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void shouldThrowIllegalArgumentExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
                 when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IllegalArgumentException.class, envelope::getRecipient);
+                assertThrows(IOException.class, envelope::getRecipient);
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
@@ -398,12 +398,12 @@ class IntermediateEnvelopeTest {
     @Nested
     class GetSender {
         @Test
-        void shouldThrowIllegalArgumentExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
                 when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IllegalArgumentException.class, envelope::getSender);
+                assertThrows(IOException.class, envelope::getSender);
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
@@ -414,7 +414,7 @@ class IntermediateEnvelopeTest {
     @Nested
     class GetHopCount {
         @Test
-        void shouldReturnHopCount() {
+        void shouldReturnHopCount() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
@@ -426,12 +426,12 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void shouldThrowIllegalArgumentExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
                 when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IllegalArgumentException.class, envelope::getHopCount);
+                assertThrows(IOException.class, envelope::getHopCount);
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
@@ -511,7 +511,7 @@ class IntermediateEnvelopeTest {
     @Nested
     class GetSignature {
         @Test
-        void shouldReturnSignature() {
+        void shouldReturnSignature() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
@@ -523,12 +523,12 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void shouldThrowIllegalArgumentExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws IOException {
             try {
                 final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
                 when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IllegalArgumentException.class, envelope::getSignature);
+                assertThrows(IOException.class, envelope::getSignature);
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
@@ -552,7 +552,7 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void getPrivatHeaderShouldFailOnArmedMessage() {
+        void getPrivatHeaderShouldFailOnArmedMessage() throws IOException {
             final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
             final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey);
 
@@ -565,7 +565,7 @@ class IntermediateEnvelopeTest {
         }
 
         @Test
-        void getBodyShouldFailOnArmedMessage() {
+        void getBodyShouldFailOnArmedMessage() throws IOException {
             final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
             final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey);
 
@@ -584,24 +584,24 @@ class IntermediateEnvelopeTest {
         private IntermediateEnvelope<MessageLite> armedEnvelop;
 
         @BeforeEach
-        void setUp() {
+        void setUp() throws IOException {
             envelope = IntermediateEnvelope.of(message);
             armedEnvelop = envelope.armAndRelease(senderPrivateKey);
         }
 
         @Test
-        void shouldReturnDisarmedMessageIfSignatureIsValid() {
+        void shouldReturnDisarmedMessageIfSignatureIsValid() throws IOException {
             final IntermediateEnvelope<MessageLite> disarmedMessage = armedEnvelop.disarmAndRelease(senderPrivateKey);
 
             assertNotNull(disarmedMessage);
         }
 
         @Test
-        void shouldThrowExceptionIfSignatureIsNotValid() {
+        void shouldThrowExceptionIfSignatureIsNotValid() throws IOException {
             final IntermediateEnvelope<MessageLite> rearmed = envelope.armAndRelease(recipientPrivateKey);
             try {
                 // arm with wrong private key
-                assertThrows(IllegalStateException.class, () -> rearmed.disarmAndRelease(recipientPrivateKey));
+                assertThrows(IOException.class, () -> rearmed.disarmAndRelease(recipientPrivateKey));
             }
             finally {
                 ReferenceCountUtil.safeRelease(armedEnvelop);
