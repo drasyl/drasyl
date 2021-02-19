@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A message from or to the application whose content has been serialized to a byte array so that
@@ -34,13 +33,9 @@ import static java.util.Objects.requireNonNull;
 public class SerializedApplicationMessage extends DefaultAddressedEnvelope<CompressedPublicKey, byte[]> {
     private final String type;
 
-    public SerializedApplicationMessage(final CompressedPublicKey sender,
-                                        final CompressedPublicKey recipient,
-                                        final Class<?> type,
-                                        final byte[] content) {
-        this(sender, recipient, type.getName(), content);
-    }
-
+    /**
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
+     */
     public SerializedApplicationMessage(final CompressedPublicKey sender,
                                         final CompressedPublicKey recipient,
                                         final String type,

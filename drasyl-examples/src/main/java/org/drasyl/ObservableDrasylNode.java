@@ -29,7 +29,7 @@ import org.drasyl.util.scheduler.DrasylSchedulerUtil;
  * This particular Implementation of a drasyl Node shows exemplary how incoming Events can be
  * processed using the Observer Pattern.
  */
-@SuppressWarnings({ "java:S106", "java:S107", "unused", "ResultOfMethodCallIgnored" })
+@SuppressWarnings({ "java:S106", "java:S107", "java:S2096", "unused", "ResultOfMethodCallIgnored" })
 public class ObservableDrasylNode extends DrasylNode {
     private final Subject<Event> events;
 

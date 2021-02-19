@@ -28,7 +28,7 @@ import java.lang.reflect.Type;
  *
  * @param <T> the type we need the full generic type information from
  */
-@SuppressWarnings("java:S2326")
+@SuppressWarnings({ "java:S1694", "java:S2326" })
 public abstract class TypeReference<T> {
     private final Type type;
 

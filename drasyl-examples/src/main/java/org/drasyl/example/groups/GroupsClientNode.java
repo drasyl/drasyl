@@ -32,14 +32,16 @@ import java.nio.file.Path;
 import java.util.Scanner;
 import java.util.Set;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 /**
  * This example starts a drasyl node with activated {@link GroupsClientNode}. It can be used to join
  * groups provided by {@link GroupsManagerNode}.
  */
-@SuppressWarnings({ "squid:S106" })
+@SuppressWarnings({ "squid:S106", "java:S2096" })
 public class GroupsClientNode {
     public static void main(final String[] args) throws DrasylException {
-        final Scanner scanner = new Scanner(System.in);
+        final Scanner scanner = new Scanner(System.in, UTF_8);
         System.out.print("Please enter URI printed by " + GroupsManagerNode.class.getSimpleName() + ": ");
         final String input = scanner.nextLine();
         final GroupUri group = GroupUri.of(input);

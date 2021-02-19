@@ -42,16 +42,24 @@ import java.time.Duration;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Duration.ofSeconds;
 
 /**
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
-@SuppressWarnings({ "squid:S106", "java:S1141", "java:S3776" })
+@SuppressWarnings({
+        "squid:S106",
+        "java:S138",
+        "java:S1141",
+        "java:S1188",
+        "java:S2096",
+        "java:S3776"
+})
 public class ChatCli {
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
-    private static final Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in, UTF_8);
     private static String prompt;
 
     public static void main(final String[] args) throws DrasylException {

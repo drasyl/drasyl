@@ -36,16 +36,18 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.DOTALL;
+import static java.util.regex.Pattern.UNICODE_CHARACTER_CLASS;
 
 /**
  * Utility class for Universal Plug and Play (UPnP) Internet Gateway Device-related stuff.
@@ -57,7 +59,7 @@ public class UpnpIgdUtil {
     public static final InetSocketAddressWrapper SSDP_MULTICAST_ADDRESS = new InetSocketAddressWrapper("239.255.255.250", 1900);
     public static final Duration SSDP_MAX_WAIT_TIME = ofSeconds(3);
     public static final Pattern SSDP_DISCOVERY_RESPONSE_PATTERN = Pattern.compile("^HTTP/1\\.1 [0-9]+?");
-    public static final Pattern SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$");
+    public static final Pattern SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$", UNICODE_CHARACTER_CLASS);
     public static final Pattern UPNP_SERVICE_PATTERN = Pattern.compile("<serviceType>(urn:schemas-upnp-org:service:WANIPConnection:\\d+?)</serviceType>.*?<controlURL>(.+?)</controlURL>", DOTALL);
     public static final Pattern UPNP_EXTERNAL_IP_ADDRESS_PATTERN = Pattern.compile("<NewExternalIPAddress>(.+?)</NewExternalIPAddress>");
     public static final Pattern UPNP_ERROR_PATTERN = Pattern.compile("<errorCode>(\\d+?)</errorCode>");
@@ -309,8 +311,9 @@ public class UpnpIgdUtil {
         return content.getBytes(UTF_8);
     }
 
+    @SuppressWarnings("java:S109")
     public static Message readMessage(final byte[] content) {
-        final String contentStr = new String(content);
+        final String contentStr = new String(content, UTF_8);
         final String[] parts = HTTP_HEADER_SEPARATOR_PATTERN.split(contentStr, 2);
 
         // read header
@@ -318,11 +321,10 @@ public class UpnpIgdUtil {
             final String header = parts[0];
             final String[] headerLines = HTTP_HEADER_FIELD_SEPARATOR_PATTERN.split(header);
             if (headerLines.length > 0 && SSDP_DISCOVERY_RESPONSE_PATTERN.matcher(headerLines[0]).find()) {
-                final Map<String, String> headerFields = Arrays
-                        .stream(headerLines, 1, headerLines.length)
-                        .map(SSDP_HEADER_PATTERN::matcher)
-                        .filter(Matcher::matches)
-                        .collect(Collectors.toMap(m -> m.group(1).toUpperCase(), m -> m.group(2)));
+                final Map<String, String> headerFields = new TreeMap<>(CASE_INSENSITIVE_ORDER);
+                Arrays.stream(headerLines, 1, headerLines.length).map(SSDP_HEADER_PATTERN::matcher)
+                        .filter(Matcher::matches).forEach(m -> headerFields.put(m.group(1), m.group(2)));
+
                 final String serviceType = headerFields.get("ST");
                 final String location = headerFields.get("LOCATION");
 

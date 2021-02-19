@@ -67,6 +67,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     public static final Duration TIMEOUT = ofSeconds(10);
     private static final Duration SSDP_DISCOVERY_TIMEOUT = ofSeconds(5);
     private static final Logger LOG = LoggerFactory.getLogger(UpnpIgdPortMapping.class);
+    private static final int PUBLIC_KEY_DESCRIPTION_LENGTH = 10;
     private final AtomicBoolean ssdpDiscoveryActive;
     private final UpnpIgdUtil upnpIgdUtil;
     private final Set<URI> ssdpServices;
@@ -112,7 +113,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         this.onFailure = onFailure;
         final Node node = event.getNode();
         port = node.getPort();
-        description = "drasyl" + node.getIdentity().getPublicKey().toString().substring(0, 10);
+        description = "drasyl" + node.getIdentity().getPublicKey().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
         mapPort(ctx);
     }
 

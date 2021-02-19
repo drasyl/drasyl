@@ -51,6 +51,7 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
+@SuppressWarnings({ "java:S138", "java:S2096", "java:S1188" })
 public class ChatGui {
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     private final JFrame frame = new JFrame();

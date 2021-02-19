@@ -36,7 +36,7 @@ import java.util.Set;
 /**
  * This example starts a drasyl node with activated {@link GroupsManagerPlugin}.
  */
-@SuppressWarnings({ "squid:S106" })
+@SuppressWarnings({ "squid:S106", "java:S2096" })
 public class GroupsManagerNode {
     public static void main(final String[] args) throws DrasylException {
         final Group group = Group.of("my-fancy-group", "s3cr3t_passw0rd!");

@@ -269,7 +269,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
                         final Set<InetSocketAddress> addresses = JACKSON_READER.forType(typeRef).readValue(file);
                         if (!addresses.isEmpty()) {
                             LOG.trace("Addresses '{}' for peer '{}' discovered by file '{}'", addresses, publicKey, fileName);
-                            final InetSocketAddress firstAddress = SetUtil.nthElement(addresses, 0);
+                            final InetSocketAddress firstAddress = SetUtil.firstElement(addresses);
                             newRoutes.put(publicKey, firstAddress);
                         }
                     }

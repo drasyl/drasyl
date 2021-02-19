@@ -159,12 +159,12 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
     }
 
     @SuppressWarnings("unchecked")
-    private void chunkMessage(final HandlerContext ctx,
-                              final Address recipient,
-                              final AddressedIntermediateEnvelope<? extends MessageLite> msg,
-                              final CompletableFuture<Void> future,
-                              final ByteBuf messageByteBuf,
-                              final int messageSize) throws IOException {
+    private static void chunkMessage(final HandlerContext ctx,
+                                     final Address recipient,
+                                     final AddressedIntermediateEnvelope<? extends MessageLite> msg,
+                                     final CompletableFuture<Void> future,
+                                     final ByteBuf messageByteBuf,
+                                     final int messageSize) throws IOException {
         try {
             // create & send chunks
             final PublicHeader msgPublicHeader = msg.getContent().getPublicHeader();
@@ -222,9 +222,9 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
     }
 
     @NotNull
-    private PublicHeader buildChunkHeader(final UnsignedShort totalChunks,
-                                          final PublicHeader partialHeader,
-                                          final UnsignedShort chunkNo) {
+    private static PublicHeader buildChunkHeader(final UnsignedShort totalChunks,
+                                                 final PublicHeader partialHeader,
+                                                 final UnsignedShort chunkNo) {
         final PublicHeader.Builder builder = PublicHeader.newBuilder(partialHeader);
         builder.clearTotalChunks();
 
@@ -249,9 +249,9 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
      * @param header      the header of each chunk
      * @return the total amount of chunks required to send the given payload
      */
-    private UnsignedShort totalChunks(final int payloadSize,
-                                      final int mtu,
-                                      final PublicHeader header) {
+    private static UnsignedShort totalChunks(final int payloadSize,
+                                             final int mtu,
+                                             final PublicHeader header) {
         final double chunkSize = getChunkSize(header, mtu);
         final int totalChunks = (int) Math.ceil(payloadSize / chunkSize);
 
@@ -265,7 +265,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
      * @param mtu    the mtu value
      * @return the size of each chunk
      */
-    private int getChunkSize(final PublicHeader header, final int mtu) {
+    private static int getChunkSize(final PublicHeader header, final int mtu) {
         final int headerSize = header.getSerializedSize();
 
         return mtu - (MAGIC_NUMBER_LENGTH + CodedOutputStream.computeUInt32SizeNoTag(headerSize) + headerSize);

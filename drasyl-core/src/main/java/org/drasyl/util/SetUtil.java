@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * Utility class for operations on {@link Set}s.
  */
@@ -101,8 +99,8 @@ public final class SetUtil {
      * @throws IndexOutOfBoundsException if {@code n} is negative or greater than the set's
      *                                   cardinality
      */
+    @SuppressWarnings({ "java:S881", "java:S3242" })
     public static <E> E nthElement(final Set<E> set, final int n) {
-        requireNonNull(set);
         if (n < 0 || n > set.size() - 1) {
             throw new IndexOutOfBoundsException();
         }
@@ -116,5 +114,22 @@ public final class SetUtil {
 
         // unreachable
         return null;
+    }
+
+    /**
+     * Returns the first element from set {@code set}. Returns {@code null} if set is empty.
+     *
+     * @param set a set
+     * @param <E> the {@link Set}'s element type
+     * @return first element from set {@code set}
+     */
+    @SuppressWarnings("java:S1166")
+    public static <E> E firstElement(final Set<E> set) {
+        try {
+            return nthElement(set, 0);
+        }
+        catch (final IndexOutOfBoundsException e) {
+            return null;
+        }
     }
 }

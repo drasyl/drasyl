@@ -46,6 +46,7 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.remote.handler.portmapper.PortMapper.MAPPING_LIFETIME;
+import static org.drasyl.util.protocol.PcpPortUtil.MAPPING_NONCE_LENGTH;
 import static org.drasyl.util.protocol.PcpPortUtil.PCP_PORT;
 import static org.drasyl.util.protocol.PcpPortUtil.PROTO_UDP;
 import static org.drasyl.util.protocol.PcpPortUtil.ResultCode.SUCCESS;
@@ -108,7 +109,7 @@ public class PcpPortMapping implements PortMapping {
         this.onFailure = onFailure;
         port = event.getNode().getPort();
         interfaces = interfacesSupplier.get();
-        nonce = new byte[12];
+        nonce = new byte[MAPPING_NONCE_LENGTH];
         final byte[] publicKeyBytes = ctx.identity().getPublicKey().byteArrayValue();
         System.arraycopy(publicKeyBytes, 0, nonce, 0, nonce.length);
         mapPort(ctx);

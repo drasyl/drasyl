@@ -24,7 +24,7 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 
 public class AddressedIntermediateEnvelope<T extends MessageLite> extends ReferenceCountedAddressedEnvelope<InetSocketAddressWrapper, IntermediateEnvelope<T>> {
     /**
-     * @throws NullPointerException if {@code sender} and {@code recipient} are {@code null}
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
      */
     public AddressedIntermediateEnvelope(final InetSocketAddressWrapper sender,
                                          final InetSocketAddressWrapper recipient,
@@ -34,7 +34,8 @@ public class AddressedIntermediateEnvelope<T extends MessageLite> extends Refere
 
     /**
      * @throws NullPointerException     if {@code sender} and {@code recipient} are {@code null}
-     * @throws IllegalArgumentException if the given {@link ByteBuf} is not readable
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null} or
+     *                                  {@code byteBuf} is not readable
      */
     public AddressedIntermediateEnvelope(final InetSocketAddressWrapper sender,
                                          final InetSocketAddressWrapper recipient,

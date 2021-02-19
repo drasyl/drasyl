@@ -80,7 +80,7 @@ public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
         ctx = new MyHandlerContext();
         recipient = new MyAddress();
         final byte[] payload = RandomUtil.randomBytes(1024);
-        msg = new SerializedApplicationMessage(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class, payload);
+        msg = new SerializedApplicationMessage(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class.getName(), payload);
         future = new CompletableFuture<>();
 
         directConnectionPeers.add(msg.getRecipient());

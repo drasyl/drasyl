@@ -23,6 +23,9 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 
 abstract class ReferenceCountedAddressedEnvelope<A extends Address, M extends ReferenceCounted> extends DefaultAddressedEnvelope<A, M> implements ReferenceCounted {
+    /**
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
+     */
     protected ReferenceCountedAddressedEnvelope(final A sender,
                                                 final A recipient,
                                                 final M content) {

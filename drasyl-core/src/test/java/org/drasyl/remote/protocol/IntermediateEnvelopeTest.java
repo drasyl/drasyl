@@ -36,7 +36,6 @@ import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.ReferenceCountUtil;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -606,17 +605,6 @@ class IntermediateEnvelopeTest {
             }
             finally {
                 ReferenceCountUtil.safeRelease(armedEnvelop);
-            }
-        }
-
-        @Test
-        @Disabled("Encryption not implemented yet")
-        void shouldThrowExceptionIfWrongPrivatKeyIsGiven() {
-            try {
-                assertThrows(IllegalStateException.class, () -> armedEnvelop.disarmAndRelease(recipientPrivateKey));
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
             }
         }
 

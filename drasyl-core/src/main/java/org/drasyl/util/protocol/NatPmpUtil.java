@@ -50,8 +50,8 @@ public final class NatPmpUtil {
     public static final int MAPPING_TCP_REQUEST_OP = 2;
     @SuppressWarnings("unused")
     public static final int MAPPING_TCP_RESPONSE_OP = 130;
-    private static final int RESERVED_LENGTH = 2;
-    private static final int LIFETIME_LENGTH = 4;
+    public static final int RESERVED_LENGTH = 2;
+    public static final int LIFETIME_LENGTH = 4;
 
     private NatPmpUtil() {
         // util class

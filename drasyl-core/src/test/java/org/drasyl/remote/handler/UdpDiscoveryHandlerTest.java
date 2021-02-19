@@ -465,7 +465,7 @@ class UdpDiscoveryHandlerTest {
                 final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(22527);
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
+                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class.getName(), "Hallo Welt".getBytes());
 
                 when(recipientPeer.getAddress()).thenReturn(recipientSocketAddress);
                 when(recipientPeer.isReachable(any())).thenReturn(true);
@@ -488,7 +488,7 @@ class UdpDiscoveryHandlerTest {
                 final InetSocketAddressWrapper superPeerSocketAddress = new InetSocketAddressWrapper(22527);
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
+                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class.getName(), "Hallo Welt".getBytes());
 
                 when(superPeerPeer.getAddress()).thenReturn(superPeerSocketAddress);
                 when(identity.getPublicKey()).thenReturn(recipient);
@@ -510,7 +510,7 @@ class UdpDiscoveryHandlerTest {
             void shouldPassthroughForUnknownRecipientWhenNoSuperPeerIsPresent() {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
+                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class.getName(), "Hallo Welt".getBytes());
 
                 when(identity.getPublicKey()).thenReturn(sender);
 
@@ -532,7 +532,7 @@ class UdpDiscoveryHandlerTest {
             void shouldUpdateLastCommunicationTimeForApplicationMessages(@Mock final Peer peer) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class, "Hallo Welt".getBytes());
+                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class.getName(), "Hallo Welt".getBytes());
 
                 when(rendezvousPeers.contains(any())).thenReturn(true);
                 when(identity.getPublicKey()).thenReturn(recipient);

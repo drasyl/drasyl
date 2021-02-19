@@ -112,8 +112,8 @@ public abstract class DrasylNode {
             final Long offset = (Long) staticFieldOffset.invoke(unsafe, loggerField);
             putObjectVolatile.invoke(unsafe, loggerClass, offset, null);
         }
-        catch (final Exception ignored) {
-            // ignore
+        catch (final Exception e) { // NOSONAR
+            LOG.debug("", e);
         }
     }
 

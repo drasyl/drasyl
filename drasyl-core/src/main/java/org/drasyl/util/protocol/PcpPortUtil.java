@@ -51,15 +51,15 @@ public final class PcpPortUtil {
     public static final int PROTO_UDP = 17;
     public static final InetAddress ZERO_IPV6;
     public static final InetAddress ZERO_IPV4;
-    private static final int LIFETIME_LENGTH = 4;
-    private static final int EPOCH_TIME_LENGTH = 4;
-    private static final int MAPPING_NONCE_LENGTH = 12;
-    private static final int EXTERNAL_SUGGESTED_ADDRESS_LENGTH = 16;
-    private static final int REQUEST_RESERVED1_LENGTH = 2;
-    private static final int REQUEST_RESERVED2_LENGTH = 3;
-    private static final int RESPONSE_RESERVED1_LENGTH = 1;
-    private static final int RESPONSE_RESERVED2_LENGTH = 12;
-    private static final int RESPONSE_RESERVED3_LENGTH = 3;
+    public static final int LIFETIME_LENGTH = 4;
+    public static final int EPOCH_TIME_LENGTH = 4;
+    public static final int MAPPING_NONCE_LENGTH = 12;
+    public static final int EXTERNAL_SUGGESTED_ADDRESS_LENGTH = 16;
+    public static final int REQUEST_RESERVED1_LENGTH = 2;
+    public static final int REQUEST_RESERVED2_LENGTH = 3;
+    public static final int RESPONSE_RESERVED1_LENGTH = 1;
+    public static final int RESPONSE_RESERVED2_LENGTH = 12;
+    public static final int RESPONSE_RESERVED3_LENGTH = 3;
 
     static {
         try {

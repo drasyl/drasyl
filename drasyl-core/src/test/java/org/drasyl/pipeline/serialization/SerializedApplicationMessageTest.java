@@ -36,9 +36,9 @@ class SerializedApplicationMessageTest {
         @Test
         void shouldRecognizeEqualMessages(@Mock final CompressedPublicKey sender,
                                           @Mock final CompressedPublicKey recipient) {
-            final SerializedApplicationMessage messageA = new SerializedApplicationMessage(sender, recipient, String.class, "Hello".getBytes());
-            final SerializedApplicationMessage messageB = new SerializedApplicationMessage(sender, recipient, String.class, "Hello".getBytes());
-            final SerializedApplicationMessage messageC = new SerializedApplicationMessage(sender, recipient, String.class, "Bye".getBytes());
+            final SerializedApplicationMessage messageA = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes());
+            final SerializedApplicationMessage messageB = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes());
+            final SerializedApplicationMessage messageC = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Bye".getBytes());
 
             assertEquals(messageA, messageA);
             assertEquals(messageA, messageB);
@@ -53,9 +53,9 @@ class SerializedApplicationMessageTest {
         @Test
         void shouldRecognizeEqualMessages(@Mock final CompressedPublicKey sender,
                                           @Mock final CompressedPublicKey recipient) {
-            final SerializedApplicationMessage messageA = new SerializedApplicationMessage(sender, recipient, String.class, "Hello".getBytes());
-            final SerializedApplicationMessage messageB = new SerializedApplicationMessage(sender, recipient, String.class, "Hello".getBytes());
-            final SerializedApplicationMessage messageC = new SerializedApplicationMessage(sender, recipient, String.class, "Bye".getBytes());
+            final SerializedApplicationMessage messageA = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes());
+            final SerializedApplicationMessage messageB = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes());
+            final SerializedApplicationMessage messageC = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Bye".getBytes());
 
             assertEquals(messageA.hashCode(), messageB.hashCode());
             assertNotEquals(messageA.hashCode(), messageC.hashCode());
@@ -68,7 +68,7 @@ class SerializedApplicationMessageTest {
         @Test
         void shouldReturnCorrectString(@Mock final CompressedPublicKey sender,
                                        @Mock final CompressedPublicKey recipient) {
-            final String string = new SerializedApplicationMessage(sender, recipient, String.class, "Hello".getBytes()).toString();
+            final String string = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes()).toString();
 
             assertNotNull(string);
         }

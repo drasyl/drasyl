@@ -98,7 +98,7 @@ class SimpleDuplexHandlerTest {
                                             final byte[] msg,
                                             final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.pipeline().processInbound(identity.getPublicKey(), new SerializedApplicationMessage(identity.getPublicKey(), recipient, byte[].class, msg));
+                    ctx.pipeline().processInbound(identity.getPublicKey(), new SerializedApplicationMessage(identity.getPublicKey(), recipient, byte[].class.getName(), msg));
                 }
             };
 
@@ -198,7 +198,7 @@ class SimpleDuplexHandlerTest {
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
             final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
-            final SerializedApplicationMessage msg1 = new SerializedApplicationMessage(sender, sender, byte[].class, msg);
+            final SerializedApplicationMessage msg1 = new SerializedApplicationMessage(sender, sender, byte[].class.getName(), msg);
             pipeline.processInbound(msg1.getSender(), msg1);
 
             outboundMessageTestObserver.awaitCount(1)

@@ -26,6 +26,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SetUtilTest {
@@ -97,6 +98,26 @@ class SetUtilTest {
             final Set<String> set = Set.of("pear", "cherry", "banana");
 
             assertThrows(IndexOutOfBoundsException.class, () -> SetUtil.nthElement(set, 3));
+        }
+    }
+
+    @Nested
+    class FirstElement {
+        @Test
+        void shouldReturnFirstElementOfASet() {
+            final SortedSet<String> set = new TreeSet<>();
+            set.add("banana");
+            set.add("cherry");
+            set.add("pear");
+
+            assertEquals("banana", SetUtil.firstElement(set));
+        }
+
+        @Test
+        void shouldReturnNullForEmptySet() {
+            final SortedSet<String> set = new TreeSet<>();
+
+            assertNull(SetUtil.firstElement(set));
         }
     }
 }
