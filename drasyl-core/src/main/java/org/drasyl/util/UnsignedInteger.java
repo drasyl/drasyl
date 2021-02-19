@@ -24,7 +24,7 @@ import java.util.Objects;
 /**
  * This class represents an unsigned integer in a rang of [0, 2^32 - 1]
  */
-public class UnsignedInteger {
+public final class UnsignedInteger {
     public static final UnsignedInteger MIN_VALUE = UnsignedInteger.of(new byte[4]);
     public static final UnsignedInteger MAX_VALUE = UnsignedInteger.of(new byte[]{
             (byte) 0xFF,
@@ -32,6 +32,7 @@ public class UnsignedInteger {
             (byte) 0xFF,
             (byte) 0xFF
     });
+    private static final int INTEGER_LENGTH = 4;
     private final long value;
 
     private UnsignedInteger(final long value) {
@@ -42,8 +43,9 @@ public class UnsignedInteger {
         this.value = value;
     }
 
+    @SuppressWarnings("java:S109")
     private UnsignedInteger(final byte[] value) {
-        if (value.length != 4) {
+        if (value.length != INTEGER_LENGTH) {
             throw new IllegalArgumentException("Value must be a byte array of length 4, but was of length " + value.length);
         }
 
@@ -103,7 +105,8 @@ public class UnsignedInteger {
         return value;
     }
 
-    private byte[] toByteArray(final long value) {
+    @SuppressWarnings("java:S109")
+    private static byte[] toByteArray(final long value) {
         return new byte[]{
                 (byte) (value >> 32),
                 (byte) (value >> 16),

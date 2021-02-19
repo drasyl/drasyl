@@ -27,7 +27,7 @@ public class NodeDownEvent extends AbstractNodeEvent {
     /**
      * @throws NullPointerException if {@code node} is {@code null}
      */
-    public NodeDownEvent(final Node node) {
+    private NodeDownEvent(final Node node) {
         super(node);
     }
 
@@ -36,5 +36,12 @@ public class NodeDownEvent extends AbstractNodeEvent {
         return "NodeDownEvent{" +
                 "node=" + node +
                 '}';
+    }
+
+    /**
+     * @throws NullPointerException if {@code node} is {@code null}
+     */
+    public static NodeDownEvent of(final Node node) {
+        return new NodeDownEvent(node);
     }
 }

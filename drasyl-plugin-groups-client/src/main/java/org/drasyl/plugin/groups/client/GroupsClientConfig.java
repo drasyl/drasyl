@@ -48,7 +48,7 @@ public class GroupsClientConfig {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private Set<GroupUri> getGroupOptions(final Config config, final String path) {
+    private static Set<GroupUri> getGroupOptions(final Config config, final String path) {
         final Set<GroupUri> options = new HashSet<>();
 
         for (final String groupsURL : config.getStringList(path)) {
@@ -93,8 +93,8 @@ public class GroupsClientConfig {
      *
      * @return {@link GroupsClientConfig} builder
      */
-    public static Builder builder() {
-        return builder(DEFAULT);
+    public static Builder newBuilder() {
+        return newBuilder(DEFAULT);
     }
 
     /**
@@ -102,7 +102,7 @@ public class GroupsClientConfig {
      *
      * @return {@link GroupsClientConfig} builder
      */
-    public static Builder builder(final GroupsClientConfig config) {
+    public static Builder newBuilder(final GroupsClientConfig config) {
         return new Builder(config);
     }
 

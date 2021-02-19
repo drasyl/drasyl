@@ -35,7 +35,7 @@ public class Node {
     private final Identity identity;
     private final int port;
 
-    Node(final Identity identity, final int port) {
+    private Node(final Identity identity, final int port) {
         this.identity = requireNonNull(identity);
         if (port < 0) {
             throw new IllegalArgumentException("port must be non-negative.");

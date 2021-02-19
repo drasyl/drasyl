@@ -96,7 +96,7 @@ class GroupsManagerPluginTest {
 
             plugin.onBeforeShutdown(env);
 
-            verify(pipeline).remove(eq(GROUPS_MANAGER_HANDLER));
+            verify(pipeline).remove(GROUPS_MANAGER_HANDLER);
             verify(databaseAdapter).close();
         }
     }

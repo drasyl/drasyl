@@ -24,12 +24,13 @@ import java.util.Objects;
 /**
  * This class represents an unsigned short in a rang of [0, 2^16 - 1]
  */
-public class UnsignedShort {
+public final class UnsignedShort {
     public static final UnsignedShort MIN_VALUE = UnsignedShort.of(new byte[2]);
     public static final UnsignedShort MAX_VALUE = UnsignedShort.of(new byte[]{
             (byte) 0xFF,
             (byte) 0xFF
     });
+    private static final int SHORT_LENGTH = 2;
     private final int value;
 
     private UnsignedShort(final int value) {
@@ -41,7 +42,7 @@ public class UnsignedShort {
     }
 
     private UnsignedShort(final byte[] value) {
-        if (value.length != 2) {
+        if (value.length != SHORT_LENGTH) {
             throw new IllegalArgumentException("Value must be a byte array of length 2, but was of length " + value.length);
         }
 
@@ -114,7 +115,8 @@ public class UnsignedShort {
         return Objects.hash(value);
     }
 
-    private byte[] toByteArray(final int value) {
+    @SuppressWarnings("java:S109")
+    private static byte[] toByteArray(final int value) {
         return new byte[]{ (byte) (value >> 8), (byte) value };
     }
 }

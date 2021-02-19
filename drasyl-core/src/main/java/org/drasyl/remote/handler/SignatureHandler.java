@@ -38,12 +38,13 @@ import java.util.concurrent.CompletableFuture;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public class SignatureHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<MessageLite>, AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class SignatureHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<MessageLite>, AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final SignatureHandler INSTANCE = new SignatureHandler();
     public static final String SIGNATURE_HANDLER = "SIGNATURE_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
 
     private SignatureHandler() {
+        // singleton
     }
 
     @Override

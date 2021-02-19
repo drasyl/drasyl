@@ -48,7 +48,7 @@ public class GroupsClientNode {
                 .identityPath(Path.of("groups-client.identity.json"))
                 .remoteBindPort(0)
                 .plugins(Set.of(new GroupsClientPlugin(
-                        GroupsClientConfig.builder()
+                        GroupsClientConfig.newBuilder()
                                 .groups(Set.of(group))
                                 .build()
                 )))

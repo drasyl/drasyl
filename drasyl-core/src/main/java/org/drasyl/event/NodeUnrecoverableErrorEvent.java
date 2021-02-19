@@ -32,10 +32,7 @@ import static java.util.Objects.requireNonNull;
 public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
     private final Throwable error;
 
-    /**
-     * @throws NullPointerException if {@code node} or {@code error} is {@code null}
-     */
-    public NodeUnrecoverableErrorEvent(final Node node, final Throwable error) {
+    private NodeUnrecoverableErrorEvent(final Node node, final Throwable error) {
         super(node);
         this.error = requireNonNull(error);
     }
@@ -76,5 +73,12 @@ public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
         }
         final NodeUnrecoverableErrorEvent that = (NodeUnrecoverableErrorEvent) o;
         return Objects.equals(error, that.error);
+    }
+
+    /**
+     * @throws NullPointerException if {@code node} or {@code error} is {@code null}
+     */
+    public static NodeUnrecoverableErrorEvent of(final Node node, final Throwable error) {
+        return new NodeUnrecoverableErrorEvent(node, error);
     }
 }

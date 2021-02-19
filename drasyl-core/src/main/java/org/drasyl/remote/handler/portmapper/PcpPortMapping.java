@@ -76,6 +76,7 @@ public class PcpPortMapping implements PortMapping {
     private final Supplier<InetAddress> defaultGatewaySupplier;
     private final Supplier<Set<InetAddress>> interfacesSupplier;
 
+    @SuppressWarnings("java:S2384")
     PcpPortMapping(final AtomicInteger mappingRequested,
                    final int port,
                    final Runnable onFailure,

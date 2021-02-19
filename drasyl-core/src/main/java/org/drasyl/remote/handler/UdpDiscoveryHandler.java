@@ -314,11 +314,11 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
      * @param recipient    the recipient socket address
      * @param sender       the sender socket address
      */
-    private void sendUnites(final HandlerContext ctx,
-                            final CompressedPublicKey senderKey,
-                            final CompressedPublicKey recipientKey,
-                            final InetSocketAddressWrapper recipient,
-                            final InetSocketAddressWrapper sender) {
+    private static void sendUnites(final HandlerContext ctx,
+                                   final CompressedPublicKey senderKey,
+                                   final CompressedPublicKey recipientKey,
+                                   final InetSocketAddressWrapper recipient,
+                                   final InetSocketAddressWrapper sender) {
         // send recipient's information to sender
         final IntermediateEnvelope<Unite> senderRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
         final AddressedIntermediateEnvelope<Unite> addressedSenderRendezvousEnvelope = new AddressedIntermediateEnvelope<>(null, sender, senderRendezvousEnvelope);
@@ -528,6 +528,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         ctx.write(recipientAddress, addressedMessageEnvelope, future);
     }
 
+    @SuppressWarnings("java:S2972")
     static class Peer {
         private InetSocketAddressWrapper address;
         private long lastInboundControlTrafficTime;
@@ -607,6 +608,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
         }
     }
 
+    @SuppressWarnings("java:S2972")
     public static class Ping {
         private final InetSocketAddressWrapper address;
         private final long pingTime;

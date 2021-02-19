@@ -39,7 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -89,7 +88,7 @@ class HandlerAdapterTest {
 
             handlerAdapter.write(ctx, recipient, msg, future);
 
-            verify(ctx).write(eq(recipient), eq(msg), eq(future));
+            verify(ctx).write(recipient, msg, future);
         }
     }
 
@@ -104,7 +103,7 @@ class HandlerAdapterTest {
 
             handlerAdapter.read(ctx, sender, msg, future);
 
-            verify(ctx).fireRead(eq(sender), eq(msg), eq(future));
+            verify(ctx).fireRead(sender, msg, future);
         }
 
         @Test
@@ -115,7 +114,7 @@ class HandlerAdapterTest {
 
             handlerAdapter.eventTriggered(ctx, event, future);
 
-            verify(ctx).fireEventTriggered(eq(event), eq(future));
+            verify(ctx).fireEventTriggered(event, future);
         }
 
         @Test
@@ -126,7 +125,7 @@ class HandlerAdapterTest {
 
             handlerAdapter.exceptionCaught(ctx, exception);
 
-            verify(ctx).fireExceptionCaught(eq(exception));
+            verify(ctx).fireExceptionCaught(exception);
         }
 
         @Test

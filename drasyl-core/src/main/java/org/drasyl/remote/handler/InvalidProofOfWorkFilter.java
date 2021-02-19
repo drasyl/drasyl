@@ -38,12 +38,13 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * This handler filters out all messages received with invalid proof of work.
  */
 @Stateless
-public class InvalidProofOfWorkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
     public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
 
     private InvalidProofOfWorkFilter() {
+        // singleton
     }
 
     @Override

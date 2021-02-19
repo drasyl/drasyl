@@ -37,12 +37,13 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * This handler filters out all messages received from other networks.
  */
 @Stateless
-public class OtherNetworkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class OtherNetworkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
 
     private OtherNetworkFilter() {
+        // singleton
     }
 
     @Override

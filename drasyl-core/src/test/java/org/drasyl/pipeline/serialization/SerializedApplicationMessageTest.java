@@ -43,7 +43,6 @@ class SerializedApplicationMessageTest {
             assertEquals(messageA, messageA);
             assertEquals(messageA, messageB);
             assertEquals(messageB, messageA);
-            assertNotEquals(null, messageA);
             assertNotEquals(messageA, messageC);
             assertNotEquals(messageC, messageA);
         }

@@ -40,12 +40,13 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * reached, the message is discarded. Otherwise the message can pass.
  */
 @Stateless
-public class HopCountGuard extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class HopCountGuard extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
     public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
 
     private HopCountGuard() {
+        // singleton
     }
 
     @Override

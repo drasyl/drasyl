@@ -22,7 +22,7 @@ package org.drasyl.serialization;
  * This class contains some constants with the identifiers of default serializers.
  */
 @SuppressWarnings("unused")
-public class Serializers {
+public final class Serializers {
     public static final String SERIALIZER_PRIMITIVE_BOOLEAN = "primitive-boolean";
     public static final String SERIALIZER_PRIMITIVE_BYTE = "primitive-byte";
     public static final String SERIALIZER_PRIMITIVE_CHAR = "primitive-char";

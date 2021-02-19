@@ -23,7 +23,24 @@ import org.slf4j.Marker;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
+/**
+ * A {@link org.slf4j.Logger} that supports lazy evaluation of passend values.
+ * <p>
+ * Example:
+ * <pre><code>
+ * // without lazy logger
+ * if (logger.isDebug()) {
+ *     logger.debug("value: {}", this.expensiveComputation());
+ * }
+ *
+ * // with lazy logger
+ * logger.debug("value: {}", this::expensiveComputation);
+ * </code></pre>
+ *
+ * @see LoggerFactory
+ */
 public class Logger {
+    @SuppressWarnings("java:S1312")
     private final org.slf4j.Logger delegate;
 
     Logger(final org.slf4j.Logger delegate) {

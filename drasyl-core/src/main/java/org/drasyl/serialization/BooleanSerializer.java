@@ -31,10 +31,10 @@ public class BooleanSerializer extends BoundedSerializer<Boolean> {
     @Override
     protected byte[] matchedToByArray(final Boolean o) {
         if (Boolean.TRUE.equals(o)) {
-            return TRUE_BYTES;
+            return TRUE_BYTES.clone();
         }
         else {
-            return FALSE_BYTES;
+            return FALSE_BYTES.clone();
         }
     }
 

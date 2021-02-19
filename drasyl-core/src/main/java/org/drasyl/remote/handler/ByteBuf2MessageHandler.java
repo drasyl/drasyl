@@ -38,12 +38,13 @@ import java.util.concurrent.CompletableFuture;
  * IntermediateEnvelope}.
  */
 @Stateless
-public class ByteBuf2MessageHandler extends SimpleInboundHandler<AddressedByteBuf, Address> {
+public final class ByteBuf2MessageHandler extends SimpleInboundHandler<AddressedByteBuf, Address> {
     public static final ByteBuf2MessageHandler INSTANCE = new ByteBuf2MessageHandler();
     public static final String BYTE_BUF_2_MESSAGE_HANDLER = "BYTE_BUF_2_MESSAGE_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(ByteBuf2MessageHandler.class);
 
     private ByteBuf2MessageHandler() {
+        // singleton
     }
 
     @Override

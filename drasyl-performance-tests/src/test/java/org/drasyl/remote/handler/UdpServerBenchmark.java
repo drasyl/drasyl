@@ -20,7 +20,6 @@ package org.drasyl.remote.handler;
 
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -36,15 +35,12 @@ import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.ReferenceCountUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -105,7 +101,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                         }
                     });
 
-            pipeline.processInbound(new NodeUpEvent(Node.of(identity2))).join();
+            pipeline.processInbound(NodeUpEvent.of(Node.of(identity2))).join();
             final NodeUpEvent event = (NodeUpEvent) pipeline.inboundEvents().filter(e -> e instanceof NodeUpEvent).blockingFirst();
 
             port = event.getNode().getPort();
@@ -118,7 +114,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
     @TearDown
     public void teardown() {
-        pipeline.processInbound(new NodeDownEvent(Node.of(identity2))).join();
+        pipeline.processInbound(NodeDownEvent.of(Node.of(identity2))).join();
     }
 
     @State(Scope.Thread)

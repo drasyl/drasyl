@@ -36,7 +36,7 @@ class NodeDownEventTest {
     class GetMessage {
         @Test
         void shouldReturnMessage() {
-            final NodeDownEvent event = new NodeDownEvent(node);
+            final NodeDownEvent event = NodeDownEvent.of(node);
 
             assertEquals(node, event.getNode());
         }
@@ -49,9 +49,9 @@ class NodeDownEventTest {
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            final NodeDownEvent event1 = new NodeDownEvent(node);
-            final NodeDownEvent event2 = new NodeDownEvent(node);
-            final NodeDownEvent event3 = new NodeDownEvent(node2);
+            final NodeDownEvent event1 = NodeDownEvent.of(node);
+            final NodeDownEvent event2 = NodeDownEvent.of(node);
+            final NodeDownEvent event3 = NodeDownEvent.of(node2);
 
             assertEquals(event1, event2);
             assertNotEquals(event1, event3);
@@ -65,9 +65,9 @@ class NodeDownEventTest {
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            final NodeDownEvent event1 = new NodeDownEvent(node);
-            final NodeDownEvent event2 = new NodeDownEvent(node);
-            final NodeDownEvent event3 = new NodeDownEvent(node2);
+            final NodeDownEvent event1 = NodeDownEvent.of(node);
+            final NodeDownEvent event2 = NodeDownEvent.of(node);
+            final NodeDownEvent event3 = NodeDownEvent.of(node2);
 
             assertEquals(event1.hashCode(), event2.hashCode());
             assertNotEquals(event1.hashCode(), event3.hashCode());

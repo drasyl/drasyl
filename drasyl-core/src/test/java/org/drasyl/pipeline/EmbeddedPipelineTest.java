@@ -75,7 +75,7 @@ class EmbeddedPipelineTest {
                 .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
         eventTestObserver.awaitCount(1)
                 .assertValueCount(1)
-                .assertValue(new MessageEvent(sender, msg));
+                .assertValue(MessageEvent.of(sender, msg));
         outboundMessageTestObserver.assertNoValues();
         pipeline.close();
     }

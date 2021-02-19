@@ -676,10 +676,10 @@ class DrasylNodeIT {
                 //
                 node1Messages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new MessageEvent(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), "Hallo Welt"));
+                        .assertValue(MessageEvent.of(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), "Hallo Welt"));
                 nodes2Messages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new MessageEvent(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), "Hallo Welt"));
+                        .assertValue(MessageEvent.of(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), "Hallo Welt"));
             }
         }
     }

@@ -68,42 +68,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
         this(
                 new HashMap<>(),
                 ctx -> {
-                    final MeterRegistry newRegistry = new InfluxMeterRegistry(new InfluxConfig() {
-                        @Override
-                        public @NotNull String uri() {
-                            return ctx.config().getMonitoringInfluxUri().toString();
-                        }
-
-                        @Override
-                        public String userName() {
-                            return ctx.config().getMonitoringInfluxUser();
-                        }
-
-                        @Override
-                        public String password() {
-                            return ctx.config().getMonitoringInfluxPassword();
-                        }
-
-                        @Override
-                        public @NotNull String db() {
-                            return ctx.config().getMonitoringInfluxDatabase();
-                        }
-
-                        @Override
-                        public boolean autoCreateDb() {
-                            return false;
-                        }
-
-                        @Override
-                        public @NotNull Duration step() {
-                            return ctx.config().getMonitoringInfluxReportingFrequency();
-                        }
-
-                        @Override
-                        public String get(final @NotNull String key) {
-                            return null;
-                        }
-                    }, Clock.SYSTEM);
+                    final MeterRegistry newRegistry = new InfluxMeterRegistry(new MyInfluxConfig(ctx), Clock.SYSTEM);
 
                     // add common tags
                     final String hostTag;
@@ -191,6 +156,50 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
         if (registry != null) {
             final Counter counter = counters.computeIfAbsent(o.getClass().getSimpleName(), clazz -> Counter.builder(metric).tag("clazz", clazz).register(registry));
             counter.increment();
+        }
+    }
+
+    @SuppressWarnings("java:S2972")
+    private static class MyInfluxConfig implements InfluxConfig {
+        private final HandlerContext ctx;
+
+        public MyInfluxConfig(final HandlerContext ctx) {
+            this.ctx = requireNonNull(ctx);
+        }
+
+        @Override
+        public @NotNull String uri() {
+            return ctx.config().getMonitoringInfluxUri().toString();
+        }
+
+        @Override
+        public String userName() {
+            return ctx.config().getMonitoringInfluxUser();
+        }
+
+        @Override
+        public String password() {
+            return ctx.config().getMonitoringInfluxPassword();
+        }
+
+        @Override
+        public @NotNull String db() {
+            return ctx.config().getMonitoringInfluxDatabase();
+        }
+
+        @Override
+        public boolean autoCreateDb() {
+            return false;
+        }
+
+        @Override
+        public @NotNull Duration step() {
+            return ctx.config().getMonitoringInfluxReportingFrequency();
+        }
+
+        @Override
+        public String get(final @NotNull String key) {
+            return null;
         }
     }
 }

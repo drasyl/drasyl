@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -230,7 +229,7 @@ class AbstractHandlerContextTest {
         ctx.fireExceptionCaught(exception);
 
         verify(next, times(3)).handler();
-        verify(newHandler).exceptionCaught(eq(next), eq(exception));
+        verify(newHandler).exceptionCaught(next, exception);
     }
 
     @Test
@@ -269,7 +268,7 @@ class AbstractHandlerContextTest {
         ctx.fireRead(sender, msg, future);
 
         verify(next, times(3)).handler();
-        verify(newHandler).read(eq(next), eq(sender), eq(msg), eq(future));
+        verify(newHandler).read(next, sender, msg, future);
     }
 
     @Test
@@ -293,7 +292,7 @@ class AbstractHandlerContextTest {
         ctx.fireRead(sender, msg, future);
 
         verify(next, times(3)).handler();
-        verify(newHandler).read(eq(next), eq(sender), eq(msg), eq(future));
+        verify(newHandler).read(next, sender, msg, future);
         verify(next).fireExceptionCaught(isA(RuntimeException.class));
     }
 
@@ -315,7 +314,7 @@ class AbstractHandlerContextTest {
         ctx.fireEventTriggered(event, future);
 
         verify(next, times(3)).handler();
-        verify(newHandler).eventTriggered(eq(next), eq(event), eq(future));
+        verify(newHandler).eventTriggered(next, event, future);
     }
 
     @Test
@@ -338,7 +337,7 @@ class AbstractHandlerContextTest {
         ctx.fireEventTriggered(event, future);
 
         verify(next, times(3)).handler();
-        verify(newHandler).eventTriggered(eq(next), eq(event), eq(future));
+        verify(newHandler).eventTriggered(next, event, future);
         verify(next).fireExceptionCaught(isA(RuntimeException.class));
     }
 
@@ -361,7 +360,7 @@ class AbstractHandlerContextTest {
         ctx.write(recipient, msg, future);
 
         verify(prev, times(3)).handler();
-        verify(newHandler).write(eq(prev), eq(recipient), eq(msg), eq(future));
+        verify(newHandler).write(prev, recipient, msg, future);
     }
 
     @Test
@@ -385,7 +384,7 @@ class AbstractHandlerContextTest {
         ctx.write(recipient, msg, future);
 
         verify(prev, times(3)).handler();
-        verify(newHandler).write(eq(prev), eq(recipient), eq(msg), eq(future));
+        verify(newHandler).write(prev, recipient, msg, future);
         verify(prev).fireExceptionCaught(isA(RuntimeException.class));
     }
 

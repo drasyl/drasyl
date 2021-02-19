@@ -428,7 +428,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         try {
             return CompressedPublicKey.of(getPublicHeader().getSender().toByteArray());
         }
-        catch (final Exception e) {
+        catch (final IOException e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -452,7 +452,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         try {
             return CompressedPublicKey.of(getPublicHeader().getRecipient().toByteArray());
         }
-        catch (final Exception e) {
+        catch (final IOException e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -648,7 +648,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "java:S1142" })
     private T bodyFromInputStream(final MessageType type, final InputStream in) throws IOException {
         switch (type) {
             case ACKNOWLEDGEMENT:

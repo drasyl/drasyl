@@ -26,9 +26,11 @@ import java.nio.ByteBuffer;
  * This Serializer (de)serializes {@link Double} objects.
  */
 public class DoubleSerializer extends BoundedSerializer<Double> {
+    private static final short DOUBLE_LENGTH = 8;
+
     @Override
     protected byte[] matchedToByArray(final Double o) {
-        return ByteBuffer.allocate(8).putDouble(o).array();
+        return ByteBuffer.allocate(DOUBLE_LENGTH).putDouble(o).array();
     }
 
     @Override

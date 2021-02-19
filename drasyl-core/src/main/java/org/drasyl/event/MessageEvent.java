@@ -34,14 +34,7 @@ public class MessageEvent implements Event {
     private final CompressedPublicKey sender;
     private final Object payload;
 
-    /**
-     * Creates a new {@code MessageEvent}
-     *
-     * @param sender  the message's sender
-     * @param payload content of the message
-     * @throws NullPointerException if {@code sender} is {@code null}
-     */
-    public MessageEvent(final CompressedPublicKey sender, final Object payload) {
+    private MessageEvent(final CompressedPublicKey sender, final Object payload) {
         this.sender = requireNonNull(sender);
         this.payload = payload;
     }
@@ -89,5 +82,16 @@ public class MessageEvent implements Event {
                 "sender=" + sender +
                 ", message=" + payload +
                 '}';
+    }
+
+    /**
+     * Creates a new {@code MessageEvent}
+     *
+     * @param sender  the message's sender
+     * @param payload content of the message
+     * @throws NullPointerException if {@code sender} is {@code null}
+     */
+    public static MessageEvent of(final CompressedPublicKey sender, final Object payload) {
+        return new MessageEvent(sender, payload);
     }
 }

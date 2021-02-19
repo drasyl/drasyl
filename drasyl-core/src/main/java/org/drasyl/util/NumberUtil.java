@@ -25,7 +25,7 @@ import java.util.Locale;
 /**
  * Utility class for number-related operations.
  */
-public class NumberUtil {
+public final class NumberUtil {
     private NumberUtil() {
         // util class
     }
@@ -46,6 +46,7 @@ public class NumberUtil {
      * @return the formatted SI (metric) multiple-byte number
      * @throws IllegalArgumentException if precision is less than {@code -1}
      */
+    @SuppressWarnings({ "java:S109", "java:S1541" })
     public static String numberToHumanData(final Number number,
                                            short precision,
                                            final Locale locale) {

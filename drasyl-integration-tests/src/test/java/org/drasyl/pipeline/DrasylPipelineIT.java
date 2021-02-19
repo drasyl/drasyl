@@ -109,7 +109,7 @@ class DrasylPipelineIT {
 
     @AfterEach
     void tearDown() throws ExecutionException, InterruptedException {
-        pipeline.processInbound(new NodeDownEvent(Node.of(identity1))).get();
+        pipeline.processInbound(NodeDownEvent.of(Node.of(identity1))).get();
     }
 
     @Test
@@ -137,7 +137,7 @@ class DrasylPipelineIT {
         pipeline.processInbound(message.getSender(), message);
 
         events.awaitCount(1).assertValueCount(1);
-        events.assertValue(new MessageEvent(identity2.getPublicKey(), newPayload));
+        events.assertValue(MessageEvent.of(identity2.getPublicKey(), newPayload));
 
         ReferenceCountUtil.safeRelease(message);
     }
@@ -151,7 +151,7 @@ class DrasylPipelineIT {
         };
 
         // we need to start the node, otherwise LoopbackInboundMessageSinkHandler will drop our message
-        pipeline.processInbound(new NodeUpEvent(Node.of(identity1))).get();
+        pipeline.processInbound(NodeUpEvent.of(Node.of(identity1))).get();
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
         pipeline.addLast("eventProducer", new HandlerAdapter() {
@@ -171,7 +171,7 @@ class DrasylPipelineIT {
         pipeline.processInbound(message.getSender(), addressedMessage);
 
         events.awaitCount(3);
-        events.assertValueAt(1, new MessageEvent(message.getSender(), "Hallo Welt".getBytes()));
+        events.assertValueAt(1, MessageEvent.of(message.getSender(), "Hallo Welt".getBytes()));
         events.assertValueAt(2, testEvent);
     }
 

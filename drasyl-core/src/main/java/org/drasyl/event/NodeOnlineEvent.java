@@ -32,10 +32,7 @@ package org.drasyl.event;
  * @see PeerRelayEvent
  */
 public class NodeOnlineEvent extends AbstractNodeEvent {
-    /**
-     * @throws NullPointerException if {@code node} is {@code null}
-     */
-    public NodeOnlineEvent(final Node node) {
+    private NodeOnlineEvent(final Node node) {
         super(node);
     }
 
@@ -44,5 +41,12 @@ public class NodeOnlineEvent extends AbstractNodeEvent {
         return "NodeOnlineEvent{" +
                 "node=" + node +
                 '}';
+    }
+
+    /**
+     * @throws NullPointerException if {@code node} is {@code null}
+     */
+    public static NodeOnlineEvent of(final Node node) {
+        return new NodeOnlineEvent(node);
     }
 }

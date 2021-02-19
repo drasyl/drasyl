@@ -143,7 +143,7 @@ class GroupsManagerHandlerTest {
 
             handler.staleTask(ctx);
 
-            verify(pipeline, times(2)).processOutbound(eq(publicKey), eq(new MemberLeftMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName()))));
+            verify(pipeline, times(2)).processOutbound(publicKey, new MemberLeftMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())));
         }
     }
 

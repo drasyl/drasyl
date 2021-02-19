@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.plugin.groups.util;
+package org.drasyl.util;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,34 +26,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Duration;
 
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.plugin.groups.util.DurationUtil.max;
-import static org.drasyl.plugin.groups.util.DurationUtil.min;
+import static org.drasyl.util.DurationUtil.max;
+import static org.drasyl.util.DurationUtil.min;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class DurationUtilTest {
     @Nested
-    class Normalize {
-        @Test
-        void shouldNormalizeDurationToAtLeastOneMinute() {
-            final Duration duration = ofSeconds(59);
-
-            assertEquals(Duration.ofMinutes(1), DurationUtil.normalize(duration));
-        }
-
-        @Test
-        void shouldDoNothingOnDurationGreaterOrEqualsToOneMinute() {
-            final Duration duration1 = ofSeconds(60);
-            final Duration duration2 = ofSeconds(61);
-
-            assertEquals(duration1, DurationUtil.normalize(duration1));
-            assertEquals(duration2, DurationUtil.normalize(duration2));
-        }
-    }
-
-    @Nested
     class Max {
+        @SuppressWarnings({ "ResultOfMethodCallIgnored", "ConstantConditions" })
         @Test
         void shouldReturnLongerDuration() {
             assertEquals(
@@ -79,6 +61,7 @@ class DurationUtilTest {
 
     @Nested
     class Min {
+        @SuppressWarnings({ "ResultOfMethodCallIgnored", "ConstantConditions" })
         @Test
         void shouldReturnLongerDuration() {
             assertEquals(

@@ -37,9 +37,9 @@ import static java.util.Objects.requireNonNull;
 /**
  * Utility class for NAT Port Mapping Protocol (NAT-PMP)-related stuff.
  *
- * @see <a href="https://tools.ietf.org/html/rfc6886">https://tools.ietf.org/html/rfc6886</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6886">RFC 6886</a>
  */
-public class NatPmpUtil {
+public final class NatPmpUtil {
     public static final int NAT_PMP_PORT = 5351;
     public static final int NAT_PMP_VERSION = 0;
     public static final int EXTERNAL_ADDRESS_REQUEST_OP = 0;
@@ -50,6 +50,8 @@ public class NatPmpUtil {
     public static final int MAPPING_TCP_REQUEST_OP = 2;
     @SuppressWarnings("unused")
     public static final int MAPPING_TCP_RESPONSE_OP = 130;
+    private static final int RESERVED_LENGTH = 2;
+    private static final int LIFETIME_LENGTH = 4;
 
     private NatPmpUtil() {
         // util class
@@ -119,7 +121,7 @@ public class NatPmpUtil {
             out.write(MAPPING_UDP_REQUEST_OP);
 
             // reserved
-            out.write(new byte[2]);
+            out.write(new byte[RESERVED_LENGTH]);
 
             // internal port
             out.write(UnsignedShort.of(internalPort).toBytes());
@@ -139,6 +141,7 @@ public class NatPmpUtil {
         }
     }
 
+    @SuppressWarnings("java:S1142")
     public static Message readMessage(final InputStream inputStream) throws IOException {
         try (final DataInputStream in = new DataInputStream(inputStream)) {
             // version
@@ -251,8 +254,8 @@ public class NatPmpUtil {
         final int secondsSinceStartOfEpoch = in.readInt();
         final int internalPort = in.readUnsignedShort();
         final int externalPort = in.readUnsignedShort();
-        final byte[] unsignedLifetime = new byte[4];
-        if (in.read(unsignedLifetime) != 4) {
+        final byte[] unsignedLifetime = new byte[LIFETIME_LENGTH];
+        if (in.read(unsignedLifetime) != LIFETIME_LENGTH) {
             throw new IOException("Message is incomplete.");
         }
         final long lifetime = UnsignedInteger.of(unsignedLifetime).getValue();
@@ -266,7 +269,7 @@ public class NatPmpUtil {
         private final ResultCode resultCode;
 
         public AbstractMessage(final ResultCode resultCode) {
-            this.resultCode = resultCode;
+            this.resultCode = requireNonNull(resultCode);
         }
 
         public ResultCode getResultCode() {
@@ -291,7 +294,7 @@ public class NatPmpUtil {
         }
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "unused", "java:S2972" })
     public static class MappingUdpResponseMessage extends AbstractMessage {
         private final int secondsSinceStartOfEpoch;
         private final int internalPort;
@@ -347,7 +350,7 @@ public class NatPmpUtil {
         }
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "unused", "java:S2972" })
     public static class ExternalAddressResponseMessage extends AbstractMessage {
         private final int secondsSinceStartOfEpoch;
         private final InetAddress externalAddress;

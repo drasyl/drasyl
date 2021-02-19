@@ -87,7 +87,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
             try {
                 key = Crypto.getPrivateKeyFromBytes(compressedKey);
             }
-            catch (CryptoException e) {
+            catch (final CryptoException e) {
                 throw new IllegalStateException("Uncompressed private key could not be generated", e);
             }
         }

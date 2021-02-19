@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.cli.command;
 
 import org.apache.commons.cli.CommandLine;
@@ -69,8 +68,8 @@ public class WormholeCommand extends AbstractCommand {
                     final Supplier<Scanner> scannerSupplier,
                     final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, SendingWormholeNode, DrasylException> sendingNodeSupplier,
                     final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, ReceivingWormholeNode, DrasylException> receivingNodeSupplier,
-                    SendingWormholeNode sendingNode,
-                    ReceivingWormholeNode receivingNode) {
+                    final SendingWormholeNode sendingNode,
+                    final ReceivingWormholeNode receivingNode) {
         super(out, err);
         this.scannerSupplier = requireNonNull(scannerSupplier);
         this.sendingNodeSupplier = requireNonNull(sendingNodeSupplier);
@@ -100,7 +99,7 @@ public class WormholeCommand extends AbstractCommand {
     @Override
     protected void execute(final CommandLine cmd) {
         final List<String> argList = cmd.getArgList();
-        if (argList.size() >= 2) {
+        if (argList.size() >= 2) { // NOSONAR
             final String subcommand = argList.get(1);
             switch (subcommand) {
                 case "send":
@@ -163,12 +162,12 @@ public class WormholeCommand extends AbstractCommand {
             // obtain code
             final List<String> argList = cmd.getArgList();
             final String code;
-            if (argList.size() < 3) {
+            if (argList.size() < 3) { // NOSONAR
                 out.print("Enter wormhole code: ");
                 code = scannerSupplier.get().nextLine().strip();
             }
             else {
-                code = argList.get(2).strip();
+                code = argList.get(2).strip(); // NOSONAR
             }
 
             // request text

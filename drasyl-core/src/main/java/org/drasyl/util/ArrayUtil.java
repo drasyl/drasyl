@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 /**
  * Utility class for operations on arrays.
  */
-public class ArrayUtil {
+public final class ArrayUtil {
     private ArrayUtil() {
         // util class
     }

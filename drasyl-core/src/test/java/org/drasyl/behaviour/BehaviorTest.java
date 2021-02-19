@@ -73,9 +73,9 @@ class BehaviorTest {
                                          final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onEvent(NodeUpEvent.class, event -> event.getNode().equals(nodeA), event -> newBehavior).build();
 
-                assertEquals(UNHANDLED, behavior.receive(new NodeDownEvent(nodeA))); // type check
-                assertEquals(UNHANDLED, behavior.receive(new NodeUpEvent(nodeB))); // predicate check
-                assertEquals(newBehavior, behavior.receive(new NodeUpEvent(nodeA)));
+                assertEquals(UNHANDLED, behavior.receive(NodeDownEvent.of(nodeA))); // type check
+                assertEquals(UNHANDLED, behavior.receive(NodeUpEvent.of(nodeB))); // predicate check
+                assertEquals(newBehavior, behavior.receive(NodeUpEvent.of(nodeA)));
             }
 
             @Test
@@ -83,8 +83,8 @@ class BehaviorTest {
                                             final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onEvent(NodeUpEvent.class, event -> newBehavior).build();
 
-                assertEquals(UNHANDLED, behavior.receive(new NodeDownEvent(node))); // type check
-                assertEquals(newBehavior, behavior.receive(new NodeUpEvent(node)));
+                assertEquals(UNHANDLED, behavior.receive(NodeDownEvent.of(node))); // type check
+                assertEquals(newBehavior, behavior.receive(NodeUpEvent.of(node)));
             }
         }
 
@@ -93,10 +93,10 @@ class BehaviorTest {
             @Test
             void shouldAddCase(final @Mock Node node,
                                final @Mock Behavior newBehavior) {
-                final Behavior behavior = BehaviorBuilder.create().onEventEquals(new NodeUpEvent(node), () -> newBehavior).build();
+                final Behavior behavior = BehaviorBuilder.create().onEventEquals(NodeUpEvent.of(node), () -> newBehavior).build();
 
-                assertEquals(UNHANDLED, behavior.receive(new NodeDownEvent(node))); // equal check
-                assertEquals(newBehavior, behavior.receive(new NodeUpEvent(node)));
+                assertEquals(UNHANDLED, behavior.receive(NodeDownEvent.of(node))); // equal check
+                assertEquals(newBehavior, behavior.receive(NodeUpEvent.of(node)));
             }
         }
 
@@ -107,8 +107,8 @@ class BehaviorTest {
                                final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onAnyEvent(event -> newBehavior).build();
 
-                assertEquals(newBehavior, behavior.receive(new NodeUpEvent(node)));
-                assertEquals(newBehavior, behavior.receive(new NodeDownEvent(node)));
+                assertEquals(newBehavior, behavior.receive(NodeUpEvent.of(node)));
+                assertEquals(newBehavior, behavior.receive(NodeDownEvent.of(node)));
             }
         }
 
@@ -120,10 +120,10 @@ class BehaviorTest {
                                          final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onMessage(String.class, (mySender, myPayload) -> myPayload.equals("Hello World"), (mySender, myPayload) -> newBehavior).build();
 
-                assertEquals(UNHANDLED, behavior.receive(new NodeDownEvent(node))); // type check
-                assertEquals(UNHANDLED, behavior.receive(new MessageEvent(sender, 1337))); // payload check
-                assertEquals(UNHANDLED, behavior.receive(new MessageEvent(sender, "Goodbye"))); // predicate check
-                assertEquals(newBehavior, behavior.receive(new MessageEvent(sender, "Hello World")));
+                assertEquals(UNHANDLED, behavior.receive(NodeDownEvent.of(node))); // type check
+                assertEquals(UNHANDLED, behavior.receive(MessageEvent.of(sender, 1337))); // payload check
+                assertEquals(UNHANDLED, behavior.receive(MessageEvent.of(sender, "Goodbye"))); // predicate check
+                assertEquals(newBehavior, behavior.receive(MessageEvent.of(sender, "Hello World")));
             }
 
             @Test
@@ -132,9 +132,9 @@ class BehaviorTest {
                                             final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onMessage(String.class, (mySender, myPayload) -> newBehavior).build();
 
-                assertEquals(UNHANDLED, behavior.receive(new NodeDownEvent(node))); // type check
-                assertEquals(UNHANDLED, behavior.receive(new MessageEvent(sender, 1337))); // payload check
-                assertEquals(newBehavior, behavior.receive(new MessageEvent(sender, "Hello World")));
+                assertEquals(UNHANDLED, behavior.receive(NodeDownEvent.of(node))); // type check
+                assertEquals(UNHANDLED, behavior.receive(MessageEvent.of(sender, 1337))); // payload check
+                assertEquals(newBehavior, behavior.receive(MessageEvent.of(sender, "Hello World")));
             }
         }
 
@@ -146,9 +146,9 @@ class BehaviorTest {
                                final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onMessageEquals(senderA, "Hallo Welt", () -> newBehavior).build();
 
-                assertEquals(UNHANDLED, behavior.receive(new MessageEvent(senderB, "Hallo Welt"))); // equal check (sender)
-                assertEquals(UNHANDLED, behavior.receive(new MessageEvent(senderA, "Goodbye"))); // equal check (payload)
-                assertEquals(newBehavior, behavior.receive(new MessageEvent(senderA, "Hallo Welt")));
+                assertEquals(UNHANDLED, behavior.receive(MessageEvent.of(senderB, "Hallo Welt"))); // equal check (sender)
+                assertEquals(UNHANDLED, behavior.receive(MessageEvent.of(senderA, "Goodbye"))); // equal check (payload)
+                assertEquals(newBehavior, behavior.receive(MessageEvent.of(senderA, "Hallo Welt")));
             }
         }
 
@@ -160,9 +160,9 @@ class BehaviorTest {
                                final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onAnyMessage((mySender, myPayload) -> newBehavior).build();
 
-                assertEquals(newBehavior, behavior.receive(new MessageEvent(sender, "Hallo Welt")));
-                assertEquals(newBehavior, behavior.receive(new MessageEvent(sender, 42)));
-                assertEquals(UNHANDLED, behavior.receive(new NodeDownEvent(node)));
+                assertEquals(newBehavior, behavior.receive(MessageEvent.of(sender, "Hallo Welt")));
+                assertEquals(newBehavior, behavior.receive(MessageEvent.of(sender, 42)));
+                assertEquals(UNHANDLED, behavior.receive(NodeDownEvent.of(node)));
             }
         }
     }
@@ -182,7 +182,6 @@ class BehaviorTest {
                 assertEquals(caseA, caseA);
                 assertEquals(caseA, caseB);
                 assertEquals(caseB, caseA);
-                assertNotEquals(null, caseA);
                 assertNotEquals(caseA, caseC);
                 assertNotEquals(caseC, caseA);
             }

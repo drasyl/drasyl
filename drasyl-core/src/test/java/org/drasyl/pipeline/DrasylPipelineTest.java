@@ -29,7 +29,6 @@ import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -62,7 +61,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
@@ -189,9 +187,9 @@ class DrasylPipelineTest {
         pipeline.addAfter("name1", "name2", handler);
 
         verify(baseCtx).setNextHandlerContext(captor.capture());
-        verify(tail).setPrevHandlerContext(eq(captor.getValue()));
+        verify(tail).setPrevHandlerContext(captor.getValue());
         assertEquals(handler, captor.getValue().handler());
-        verify(captor.getValue().handler()).handlerAdded(eq(captor.getValue()));
+        verify(captor.getValue().handler()).handlerAdded(captor.getValue());
     }
 
     @Test
@@ -285,7 +283,7 @@ class DrasylPipelineTest {
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(head).fireRead(eq(sender), eq(msg), eq(future));
+        verify(head).fireRead(sender, msg, future);
     }
 
     @Test
@@ -299,7 +297,7 @@ class DrasylPipelineTest {
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(head).fireEventTriggered(eq(event), eq(future));
+        verify(head).fireEventTriggered(event, future);
     }
 
     @Test
@@ -314,6 +312,6 @@ class DrasylPipelineTest {
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(tail).write(eq(recipient), eq(msg), eq(future));
+        verify(tail).write(recipient, msg, future);
     }
 }

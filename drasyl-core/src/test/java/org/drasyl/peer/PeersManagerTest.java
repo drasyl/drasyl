@@ -145,7 +145,7 @@ class PeersManagerTest {
                                                  @Mock final Object path) {
             underTest.addPath(publicKey, path);
 
-            verify(eventConsumer).accept(new PeerDirectEvent(Peer.of(publicKey)));
+            verify(eventConsumer).accept(PeerDirectEvent.of(Peer.of(publicKey)));
         }
 
         @Test
@@ -191,7 +191,7 @@ class PeersManagerTest {
 
             underTest.removePath(publicKey, path);
 
-            verify(eventConsumer).accept(new PeerRelayEvent(Peer.of(publicKey)));
+            verify(eventConsumer).accept(PeerRelayEvent.of(Peer.of(publicKey)));
         }
 
         @AfterEach
@@ -218,7 +218,7 @@ class PeersManagerTest {
 
             underTest.removeSuperPeerAndPath(publicKey, path);
 
-            verify(eventConsumer).accept(new NodeOfflineEvent(Node.of(identity)));
+            verify(eventConsumer).accept(NodeOfflineEvent.of(Node.of(identity)));
         }
 
         @Test
@@ -230,7 +230,7 @@ class PeersManagerTest {
 
             underTest.removeSuperPeerAndPath(publicKey, path);
 
-            verify(eventConsumer, never()).accept(new NodeOfflineEvent(Node.of(identity)));
+            verify(eventConsumer, never()).accept(NodeOfflineEvent.of(Node.of(identity)));
         }
 
         @AfterEach
@@ -256,8 +256,8 @@ class PeersManagerTest {
                                                                      @Mock final Object path) {
             underTest.addPathAndSuperPeer(publicKey, path);
 
-            verify(eventConsumer).accept(new PeerDirectEvent(Peer.of(publicKey)));
-            verify(eventConsumer).accept(new NodeOnlineEvent(Node.of(identity)));
+            verify(eventConsumer).accept(PeerDirectEvent.of(Peer.of(publicKey)));
+            verify(eventConsumer).accept(NodeOnlineEvent.of(Node.of(identity)));
         }
 
         @AfterEach
@@ -311,7 +311,7 @@ class PeersManagerTest {
                                                                          @Mock final Object path) {
             underTest.addPathAndChildren(publicKey, path);
 
-            verify(eventConsumer).accept(new PeerDirectEvent(Peer.of(publicKey)));
+            verify(eventConsumer).accept(PeerDirectEvent.of(Peer.of(publicKey)));
         }
 
         @Test

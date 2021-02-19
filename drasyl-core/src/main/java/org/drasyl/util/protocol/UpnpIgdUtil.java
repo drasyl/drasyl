@@ -50,7 +50,7 @@ import static java.util.regex.Pattern.DOTALL;
 /**
  * Utility class for Universal Plug and Play (UPnP) Internet Gateway Device-related stuff.
  *
- * @see <a href="https://tools.ietf.org/html/rfc6970">https://tools.ietf.org/html/rfc6970</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6970">RFC 6970</a>
  */
 @SuppressWarnings({ "java:S1192" })
 public class UpnpIgdUtil {
@@ -66,6 +66,8 @@ public class UpnpIgdUtil {
     public static final Pattern UPNP_NEW_INTERNAL_PORT_PATTERN = Pattern.compile("<NewInternalPort>(.+?)</NewInternalPort>");
     public static final Pattern UPNP_NEW_INTERNAL_CLIENT_PATTERN = Pattern.compile("<NewInternalClient>(.+?)</NewInternalClient>");
     public static final Pattern UPNP_NEW_LEASE_DURATION_PATTERN = Pattern.compile("<NewLeaseDuration>(.+?)</NewLeaseDuration>");
+    public static final Pattern HTTP_HEADER_SEPARATOR_PATTERN = Pattern.compile("\r\n\r\n");
+    public static final Pattern HTTP_HEADER_FIELD_SEPARATOR_PATTERN = Pattern.compile("\r\n");
     private static final Logger LOG = LoggerFactory.getLogger(UpnpIgdUtil.class);
     private final HttpClient httpClient;
     private final Function<InetSocketAddress, InetAddress> remoteAddressProvider;
@@ -219,7 +221,8 @@ public class UpnpIgdUtil {
                 "NewInternalClient", localAddress.getHostAddress(),
                 "NewEnabled", 1,
                 "NewPortMappingDescription", description,
-                "NewLeaseDuration", 0 // see rfc6886, section 9.5., third paragraph...
+                // see rfc6886, section 9.5., third paragraph...
+                "NewLeaseDuration", 0
         );
         final String response = soapRequest(url, serviceType, "AddPortMapping", args);
         if (response == null) {
@@ -308,12 +311,12 @@ public class UpnpIgdUtil {
 
     public static Message readMessage(final byte[] content) {
         final String contentStr = new String(content);
-        final String[] parts = contentStr.split("\r\n\r\n", 2);
+        final String[] parts = HTTP_HEADER_SEPARATOR_PATTERN.split(contentStr, 2);
 
         // read header
         if (parts.length > 0) {
             final String header = parts[0];
-            final String[] headerLines = header.split("\r\n");
+            final String[] headerLines = HTTP_HEADER_FIELD_SEPARATOR_PATTERN.split(header);
             if (headerLines.length > 0 && SSDP_DISCOVERY_RESPONSE_PATTERN.matcher(headerLines[0]).find()) {
                 final Map<String, String> headerFields = Arrays
                         .stream(headerLines, 1, headerLines.length)
@@ -393,7 +396,7 @@ public class UpnpIgdUtil {
             this.errorCode = errorCode;
             this.internalPort = internalPort;
             this.internalClient = internalClient;
-            this.description = description;
+            this.description = requireNonNull(description);
             this.leaseDuration = leaseDuration;
         }
 
@@ -440,7 +443,7 @@ public class UpnpIgdUtil {
         private final String newConnectionStatus;
 
         public StatusInfo(final String newConnectionStatus) {
-            this.newConnectionStatus = newConnectionStatus;
+            this.newConnectionStatus = requireNonNull(newConnectionStatus);
         }
 
         public String getNewConnectionStatus() {
@@ -448,7 +451,7 @@ public class UpnpIgdUtil {
         }
 
         public boolean isConnected() {
-            return newConnectionStatus.equals("Connected") || newConnectionStatus.equals("Up");
+            return "Connected".equals(newConnectionStatus) || "Up".equals(newConnectionStatus);
         }
 
         @Override
@@ -474,7 +477,7 @@ public class UpnpIgdUtil {
         private final InetAddress newExternalIpAddress;
 
         public ExternalIpAddress(final InetAddress newExternalIpAddress) {
-            this.newExternalIpAddress = newExternalIpAddress;
+            this.newExternalIpAddress = requireNonNull(newExternalIpAddress);
         }
 
         public InetAddress getNewExternalIpAddress() {

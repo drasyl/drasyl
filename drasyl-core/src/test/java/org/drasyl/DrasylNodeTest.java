@@ -88,7 +88,7 @@ class DrasylNodeTest {
             });
             underTest.start();
 
-            verify(underTest).onInternalEvent(new NodeUpEvent(Node.of(identity)));
+            verify(underTest).onInternalEvent(NodeUpEvent.of(Node.of(identity)));
         }
 
         @Test
@@ -110,7 +110,7 @@ class DrasylNodeTest {
 
             final InOrder inOrder = inOrder(underTest);
             inOrder.verify(underTest).onInternalEvent(any(NodeUpEvent.class));
-            inOrder.verify(underTest).onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity), new DrasylException("error")));
+            inOrder.verify(underTest).onInternalEvent(NodeUnrecoverableErrorEvent.of(Node.of(identity), new DrasylException("error")));
         }
 
         @Test

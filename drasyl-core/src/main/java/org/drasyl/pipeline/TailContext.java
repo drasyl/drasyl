@@ -81,7 +81,7 @@ class TailContext extends AbstractEndHandler {
         }
         else if (sender instanceof CompressedPublicKey) {
             final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
-            final MessageEvent event = new MessageEvent(senderAddress, msg);
+            final MessageEvent event = MessageEvent.of(senderAddress, msg);
             eventConsumer.accept(event);
             future.complete(null);
 

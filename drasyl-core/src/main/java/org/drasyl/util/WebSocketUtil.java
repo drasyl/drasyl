@@ -23,7 +23,7 @@ import java.net.URI;
 /**
  * Utility class for operations on websocket {@link URI}s (e.g. ws://foo.bar).
  */
-public class WebSocketUtil {
+public final class WebSocketUtil {
     public static final int WS_PORT = 80;
     public static final int WSS_PORT = 443;
 
@@ -49,10 +49,10 @@ public class WebSocketUtil {
         // Fallback: Use protocol standard ports
         final String scheme = uri.getScheme();
         if (scheme != null) {
-            if (scheme.equals("ws")) {
+            if ("ws".equals(scheme)) {
                 return WS_PORT;
             }
-            else if (scheme.equals("wss")) {
+            else if ("wss".equals(scheme)) {
                 return WSS_PORT;
             }
         }
@@ -67,7 +67,7 @@ public class WebSocketUtil {
      * @throws NullPointerException if {@code uri} is {@code null}
      */
     public static boolean isWebSocketSecureURI(final URI uri) {
-        return uri.getScheme() != null && uri.getScheme().equals("wss");
+        return "wss".equals(uri.getScheme());
     }
 
     /**
@@ -77,7 +77,7 @@ public class WebSocketUtil {
      * @throws NullPointerException if {@code uri} is {@code null}
      */
     public static boolean isWebSocketNonSecureURI(final URI uri) {
-        return uri.getScheme() != null && uri.getScheme().equals("ws");
+        return "ws".equals(uri.getScheme());
     }
 
     /**

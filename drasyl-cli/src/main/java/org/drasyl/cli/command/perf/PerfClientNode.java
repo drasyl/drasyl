@@ -75,7 +75,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
     private final Set<CompressedPublicKey> directConnections;
     private TestOptions testOptions;
 
-    @SuppressWarnings("java:S107")
+    @SuppressWarnings({ "java:S107", "java:S2384" })
     PerfClientNode(final CompletableFuture<Void> doneFuture,
                    final PrintStream printStream,
                    final Scheduler perfScheduler,
@@ -89,10 +89,10 @@ public class PerfClientNode extends BehavioralDrasylNode {
                    final AtomicReference<CompletableFuture<Void>> shutdownFuture,
                    final Scheduler scheduler) {
         super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
-        this.doneFuture = doneFuture;
-        this.printStream = printStream;
-        this.perfScheduler = perfScheduler;
-        this.directConnections = directConnections;
+        this.doneFuture = requireNonNull(doneFuture);
+        this.printStream = requireNonNull(printStream);
+        this.perfScheduler = requireNonNull(perfScheduler);
+        this.directConnections = requireNonNull(directConnections);
     }
 
     public PerfClientNode(final DrasylConfig config,
@@ -102,7 +102,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
                 .addSerializationsBindingsOutbound(PerfMessage.class, SERIALIZER_JACKSON_JSON)
                 .build());
         this.doneFuture = new CompletableFuture<>();
-        this.printStream = printStream;
+        this.printStream = requireNonNull(printStream);
         perfScheduler = Schedulers.io();
         directConnections = new HashSet<>();
     }
@@ -290,6 +290,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
     /**
      * Signals that the server has been set.
      */
+    @SuppressWarnings("java:S2972")
     static class TestOptions implements Event {
         private final CompressedPublicKey server;
         private final int messagesPerSecond;

@@ -48,6 +48,7 @@ public abstract class DefaultPipeline implements Pipeline {
     protected Serialization inboundSerialization;
     protected Serialization outboundSerialization;
 
+    @SuppressWarnings("java:S2221")
     protected void initPointer() {
         this.head.setNextHandlerContext(this.tail);
         this.tail.setPrevHandlerContext(this.head);
@@ -97,6 +98,7 @@ public abstract class DefaultPipeline implements Pipeline {
         }
     }
 
+    @SuppressWarnings("java:S2221")
     private void registerNewHandler(final String name, final AbstractHandlerContext handlerCtx) {
         // Add to handlerName list
         handlerNames.put(name, handlerCtx);
@@ -213,7 +215,8 @@ public abstract class DefaultPipeline implements Pipeline {
         return this;
     }
 
-    private void removeHandlerAction(final AbstractHandlerContext ctx) {
+    @SuppressWarnings("java:S2221")
+    private static void removeHandlerAction(final AbstractHandlerContext ctx) {
         // call remove action
         try {
             ctx.handler().handlerRemoved(ctx);

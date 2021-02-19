@@ -46,7 +46,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * submitted tasks.
  */
 public final class DrasylSchedulerUtil {
-    public static final Duration SHUTDOWN_TIMEOUT = ofSeconds(10); // 10s until the schedulers are stopped immediately
+    // 10s until the schedulers are stopped immediately
+    public static final Duration SHUTDOWN_TIMEOUT = ofSeconds(10);
     private static final Logger LOG = LoggerFactory.getLogger(DrasylSchedulerUtil.class);
     protected static volatile boolean lightSchedulerCreated = false;
     protected static volatile boolean heavySchedulerCreated = false;
@@ -111,7 +112,7 @@ public final class DrasylSchedulerUtil {
         return FutureUtil.getCompleteOnAllOf(lightSchedulerFuture, heavySchedulerFuture);
     }
 
-    private static class LazyLightSchedulerHolder {
+    private static final class LazyLightSchedulerHolder {
         static final String BASE_NAME = "drasyl-L-";
         static final int SIZE = SystemPropertyUtil.getInt("org.drasyl.scheduler.light", Runtime.getRuntime().availableProcessors() - 2);
         // pool should have at least all available processors minus two threads
@@ -122,7 +123,7 @@ public final class DrasylSchedulerUtil {
         }
     }
 
-    private static class LazyHeavySchedulerHolder {
+    private static final class LazyHeavySchedulerHolder {
         static final String BASE_NAME = "drasyl-H-";
         static final int CORE_SIZE = 1;
         static final int MAX_SIZE = SystemPropertyUtil.getInt("org.drasyl.scheduler.heavy", (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1));
@@ -134,7 +135,9 @@ public final class DrasylSchedulerUtil {
         }
     }
 
+    @SuppressWarnings("java:S2972")
     public static final class DrasylExecutor {
+        private static final int QUEUE_SIZE = 10_000;
         final DrasylScheduler scheduler;
         final ThreadPoolExecutor executor;
 
@@ -143,6 +146,7 @@ public final class DrasylSchedulerUtil {
          *
          * @param basename the basename for the created threads
          */
+        @SuppressWarnings("java:S139")
         DrasylExecutor(final String basename, final int corePoolSize, final int maxPoolSize) {
             final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                     .setNameFormat(basename + "%d")
@@ -154,7 +158,7 @@ public final class DrasylSchedulerUtil {
                     Math.max(1, corePoolSize), // corePoolSize
                     Math.max(2, maxPoolSize), //maximumPoolSize
                     60, SECONDS, //keepAliveTime, unit
-                    new LinkedBlockingQueue<>(10_000),  //workQueue
+                    new LinkedBlockingQueue<>(QUEUE_SIZE),  //workQueue
                     threadFactory
             );
             this.scheduler = DrasylScheduler.wrap(Schedulers.from(executor), basename);

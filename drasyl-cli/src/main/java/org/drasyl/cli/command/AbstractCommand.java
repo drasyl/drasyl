@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.cli.command;
 
 import ch.qos.logback.classic.Level;
@@ -39,6 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractCommand implements Command {
@@ -47,6 +47,8 @@ abstract class AbstractCommand implements Command {
     private static final String OPT_VERBOSE = "verbose";
     private static final String OPT_CONFIG = "config";
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCommand.class);
+    private static final int LINE_WIDTH = 100;
+    private static final int DESCRIPTION_PADDING = 6;
     protected final PrintStream out;
     protected final PrintStream err;
 
@@ -115,8 +117,8 @@ abstract class AbstractCommand implements Command {
 
         out.println("Flags:");
         final HelpFormatter formatter = new HelpFormatter();
-        final PrintWriter printWriter = new PrintWriter(out);
-        formatter.printOptions(printWriter, 100, getOptions(), 0, 6);
+        final PrintWriter printWriter = new PrintWriter(out, false, UTF_8);
+        formatter.printOptions(printWriter, LINE_WIDTH, getOptions(), 0, DESCRIPTION_PADDING);
         printWriter.flush();
 
         if (!footer.isEmpty()) {
@@ -150,6 +152,7 @@ abstract class AbstractCommand implements Command {
 
     protected abstract void execute(CommandLine cmd);
 
+    @SuppressWarnings("java:S1312")
     protected void setLogLevel(final CommandLine cmd) {
         if (cmd.hasOption(OPT_VERBOSE)) {
             final String levelString = cmd.getOptionValue(OPT_VERBOSE);

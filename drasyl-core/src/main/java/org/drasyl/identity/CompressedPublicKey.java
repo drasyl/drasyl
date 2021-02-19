@@ -73,6 +73,7 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      *
      * @param compressedKey public key
      * @return {@link CompressedPublicKey}
+     * @throws NullPointerException if {@code compressedKey} is {@code null}
      */
     @JsonCreator
     public static CompressedPublicKey of(final byte[] compressedKey) {
@@ -90,7 +91,7 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
             try {
                 key = Crypto.getPublicKeyFromBytes(compressedKey);
             }
-            catch (CryptoException e) {
+            catch (final CryptoException e) {
                 throw new IllegalStateException("Uncompressed public key could not be generated", e);
             }
         }

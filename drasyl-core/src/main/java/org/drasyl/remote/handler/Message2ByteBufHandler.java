@@ -39,12 +39,13 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * Handler that converts a given {@link IntermediateEnvelope} to a {@link ByteBuf}.
  */
 @Stateless
-public class Message2ByteBufHandler extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class Message2ByteBufHandler extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final Message2ByteBufHandler INSTANCE = new Message2ByteBufHandler();
     public static final String MESSAGE_2_BYTE_BUF_HANDLER = "MESSAGE_2_BYTE_BUF_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(Message2ByteBufHandler.class);
 
     private Message2ByteBufHandler() {
+        // singleton
     }
 
     @Override

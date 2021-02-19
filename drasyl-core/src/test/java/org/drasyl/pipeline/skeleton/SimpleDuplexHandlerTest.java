@@ -27,11 +27,11 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.handler.AddressedEnvelopeHandler;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.handler.AddressedEnvelopeHandler;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
@@ -252,7 +252,7 @@ class SimpleDuplexHandlerTest {
                     .assertValue(new DefaultAddressedEnvelope<>(msg.getSender(), null, msg));
             eventTestObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(new MessageEvent(msg.getSender(), msg));
+                    .assertValue(MessageEvent.of(msg.getSender(), msg));
             outboundMessageTestObserver.assertNoValues();
             pipeline.close();
         }

@@ -30,7 +30,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.util.RandomUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
@@ -41,11 +40,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.drasyl.util.RandomUtil.randomString;
+
 /**
  * Embedded {@link Pipeline} implementation, that allows easy testing of {@link Handler}s.
  */
 @SuppressWarnings({ "java:S107" })
 public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
+    private static final short DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH = 16;
     private final ReplaySubject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
     private final ReplaySubject<Object> outboundMessages;
@@ -68,7 +70,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                             final Serialization outboundSerialization,
                             final Handler... handlers) {
         this(config, identity, peersManager, inboundSerialization, outboundSerialization);
-        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + RandomUtil.randomString(16), handler));
+        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + randomString(DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH), handler));
     }
 
     /**
@@ -85,7 +87,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                             final PeersManager peersManager,
                             final Handler... handlers) {
         this(config, identity, peersManager, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()));
-        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + RandomUtil.randomString(16), handler));
+        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + randomString(DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH), handler));
     }
 
     public EmbeddedPipeline(final DrasylConfig config,
@@ -119,7 +121,7 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                              final CompletableFuture<Void> future) {
                 if (sender instanceof CompressedPublicKey) {
                     final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
-                    inboundEvents.onNext(new MessageEvent(senderAddress, msg));
+                    inboundEvents.onNext(MessageEvent.of(senderAddress, msg));
                 }
                 inboundMessages.onNext(new DefaultAddressedEnvelope<>(sender, null, msg));
 

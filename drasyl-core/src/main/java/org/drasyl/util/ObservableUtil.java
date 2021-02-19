@@ -23,7 +23,7 @@ import io.reactivex.rxjava3.core.Observable;
 /**
  * Utility class for operations on {@link Observable}s.
  */
-public class ObservableUtil {
+public final class ObservableUtil {
     private ObservableUtil() {
         // util class
     }

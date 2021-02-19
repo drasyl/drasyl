@@ -43,8 +43,8 @@ class ChunksCollector {
     private final int maxContentLength;
     private final MessageId messageId;
     private final Map<Integer, ByteBuf> chunks;
-    private int messageSize = 0;
-    private int totalChunks = 0;
+    private int messageSize;
+    private int totalChunks;
 
     public ChunksCollector(final int maxContentLength, final MessageId messageId) {
         this.maxContentLength = maxContentLength;
@@ -94,7 +94,8 @@ class ChunksCollector {
             throw new IllegalStateException("The chunked message with id `" + messageId + "` has exhausted the max allowed size of " + maxContentLength + " bytes and was therefore dropped (tried to allocate additional " + chunkSize + " bytes).");
         }
         messageSize += chunkSize;
-        ReferenceCountUtil.safeRelease(chunks.putIfAbsent(chunkNo, chunk.getInternalByteBuf())); // Does also release any previous chunk with same chunkNo
+        // does also release any previous chunk with same chunkNo
+        ReferenceCountUtil.safeRelease(chunks.putIfAbsent(chunkNo, chunk.getInternalByteBuf()));
 
         // head chunk? set totalChunks
         if (totalChunks == 0 && chunk.getTotalChunks().getValue() > 0) {

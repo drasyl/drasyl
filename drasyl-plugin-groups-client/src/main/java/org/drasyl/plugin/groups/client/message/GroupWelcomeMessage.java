@@ -26,8 +26,6 @@ import org.drasyl.plugin.groups.client.Group;
 import java.util.Objects;
 import java.util.Set;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * This message is sent by the groups server to the client when the join to a group was successful.
  * <p>
@@ -40,7 +38,7 @@ public class GroupWelcomeMessage extends GroupActionMessage implements GroupsSer
     public GroupWelcomeMessage(@JsonProperty("group") final Group group,
                                @JsonProperty("members") final Set<CompressedPublicKey> members) {
         super(group);
-        this.members = requireNonNull(members);
+        this.members = Set.copyOf(members);
     }
 
     public Set<CompressedPublicKey> getMembers() {

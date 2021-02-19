@@ -27,13 +27,14 @@
         <version>0.4.0-SNAPSHOT</version>
     </parent>
 
+    <artifactId>drasyl-examples</artifactId>
+
     <name>drasyl: General-Purpose Overlay Network Framework - Examples Package</name>
     <description>
         This package contains examples of how to use drasyl.
     </description>
     <url>https://drasyl.org/</url>
 
-    <artifactId>drasyl-examples</artifactId>
 
     <dependencies>
         <dependency>

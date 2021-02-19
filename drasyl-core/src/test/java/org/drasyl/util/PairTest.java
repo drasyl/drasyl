@@ -61,7 +61,6 @@ class PairTest {
             assertEquals(pairA, pairA);
             assertEquals(pairA, pairB);
             assertEquals(pairB, pairA);
-            assertNotEquals(null, pairA);
             assertNotEquals(pairA, pairC);
             assertNotEquals(pairC, pairA);
         }

@@ -29,7 +29,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -58,7 +57,7 @@ class DrasylSchedulerTest {
             final TimeUnit unit = TimeUnit.SECONDS;
             wrapper.now(unit);
 
-            verify(scheduler).now(eq(unit));
+            verify(scheduler).now(unit);
         }
 
         @Test
@@ -81,7 +80,7 @@ class DrasylSchedulerTest {
             };
             wrapper.scheduleDirect(run);
 
-            verify(scheduler).scheduleDirect(eq(run));
+            verify(scheduler).scheduleDirect(run);
         }
 
         @Test
@@ -93,7 +92,7 @@ class DrasylSchedulerTest {
 
             wrapper.scheduleDirect(run, delay, unit);
 
-            verify(scheduler).scheduleDirect(eq(run), eq(delay), eq(unit));
+            verify(scheduler).scheduleDirect(run, delay, unit);
         }
 
         @Test
@@ -105,15 +104,16 @@ class DrasylSchedulerTest {
 
             wrapper.schedulePeriodicallyDirect(run, delay, delay, unit);
 
-            verify(scheduler).schedulePeriodicallyDirect(eq(run), eq(delay), eq(delay), eq(unit));
+            verify(scheduler).schedulePeriodicallyDirect(run, delay, delay, unit);
         }
 
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         @Test
         void when() {
             final Function function = mock(Function.class);
             wrapper.when(function);
 
-            verify(scheduler).when(eq(function));
+            verify(scheduler).when(function);
         }
     }
 }

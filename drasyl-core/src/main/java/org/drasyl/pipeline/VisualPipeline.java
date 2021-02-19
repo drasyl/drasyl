@@ -27,7 +27,7 @@ import org.drasyl.util.AnsiColor;
  * Helper class to visualize the {@link Handler} order of a given {@link DefaultPipeline}.
  */
 @SuppressWarnings({ "java:S106", "java:S1192", "unused" })
-public class VisualPipeline {
+public final class VisualPipeline {
     private static final int MAX_LINE_WIDTH = 76;
     private static final String DIV_LINE = "--------------------------------------------------------------------------------";
 

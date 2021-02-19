@@ -16,14 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline.message;
-
-import org.drasyl.identity.CompressedPublicKey;
-
-public class UnserializedApplicationMessage extends DefaultAddressedEnvelope<CompressedPublicKey, Object> {
-    public UnserializedApplicationMessage(final CompressedPublicKey sender,
-                                          final CompressedPublicKey recipient,
-                                          final Object content) {
-        super(sender, recipient, content);
-    }
-}
+/**
+ * Messages that are used to communicate with other nodes using the groups plugin.
+ */
+package org.drasyl.plugin.groups.client.message;

@@ -121,6 +121,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
         return this;
     }
 
+    @SuppressWarnings("java:S2221")
     private void invokeExceptionCaught(final Exception cause) {
         if (cause instanceof PipelineException) {
             throw (PipelineException) cause;
@@ -181,6 +182,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
         return future;
     }
 
+    @SuppressWarnings("java:S2221")
     private void invokeRead(final Address sender,
                             final Object msg,
                             final CompletableFuture<Void> future) {
@@ -206,6 +208,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
         return future;
     }
 
+    @SuppressWarnings("java:S2221")
     private void invokeEventTriggered(final Event event,
                                       final CompletableFuture<Void> future) {
         final AbstractHandlerContext inboundCtx = findNextInbound(EVENT_TRIGGERED_MASK);
@@ -230,6 +233,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
         return future;
     }
 
+    @SuppressWarnings("java:S2221")
     private void invokeWrite(final Address recipient,
                              final Object msg,
                              final CompletableFuture<Void> future) {

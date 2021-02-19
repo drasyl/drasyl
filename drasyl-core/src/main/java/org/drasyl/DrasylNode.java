@@ -89,7 +89,7 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
-    private static volatile boolean bossGroupCreated = false;
+    private static final boolean bossGroupCreated = false;
     private static String version;
 
     static {
@@ -205,7 +205,7 @@ public abstract class DrasylNode {
                     version = properties.getProperty("version");
                 }
                 catch (final IOException e) {
-                    // do nothing
+                    LOG.debug("Unable to read properties file.", e);
                 }
             }
         }
@@ -348,12 +348,12 @@ public abstract class DrasylNode {
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identity);
             scheduler.scheduleDirect(() -> {
                 synchronized (startFuture) {
-                    onInternalEvent(new NodeDownEvent(Node.of(identity))).whenComplete((result, e) -> {
+                    onInternalEvent(NodeDownEvent.of(Node.of(identity))).whenComplete((result, e) -> {
                         if (e != null) {
                             LOG.error("Node faced error on shutdown (NodeDownEvent):", e);
                         }
                         pluginManager.beforeShutdown();
-                        onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity))).whenComplete((result2, e2) -> {
+                        onInternalEvent(NodeNormalTerminationEvent.of(Node.of(identity))).whenComplete((result2, e2) -> {
                             if (e2 != null) {
                                 LOG.error("Node faced error on shutdown (NodeNormalTerminationEvent):", e2);
                             }
@@ -399,7 +399,7 @@ public abstract class DrasylNode {
                 synchronized (startFuture) {
                     INSTANCES.add(this);
                     pluginManager.beforeStart();
-                    onInternalEvent(new NodeUpEvent(Node.of(identity))).whenComplete((result, e) -> {
+                    onInternalEvent(NodeUpEvent.of(Node.of(identity))).whenComplete((result, e) -> {
                         if (e == null) {
                             LOG.info("drasyl Node with Identity '{}' has started", identity);
                             pluginManager.afterStart();
@@ -409,7 +409,7 @@ public abstract class DrasylNode {
                         else {
                             LOG.warn("Could not start drasyl Node:", e);
                             pluginManager.beforeShutdown();
-                            onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity), e)).whenComplete((result2, e2) -> {
+                            onInternalEvent(NodeUnrecoverableErrorEvent.of(Node.of(identity), e)).whenComplete((result2, e2) -> {
                                 if (e2 != null) {
                                     LOG.error("Node faced error '{}' on startup, which caused it to shut down all already started components. This again resulted in an error: {}", e.getMessage(), e2.getMessage());
                                 }
@@ -451,10 +451,9 @@ public abstract class DrasylNode {
         return identity;
     }
 
-    private static class LazyBossGroupHolder {
+    private static final class LazyBossGroupHolder {
         // https://github.com/netty/netty/issues/639#issuecomment-9263566
         static final EventLoopGroup INSTANCE = getBestEventLoop(2);
-        static final boolean LOCK = bossGroupCreated = true;
 
         private LazyBossGroupHolder() {
         }

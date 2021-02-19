@@ -37,7 +37,6 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -107,7 +106,7 @@ class TailContextTest {
 
             tailContext.write(ctx, recipient, msg, future);
 
-            verify(ctx).write(eq(recipient), eq(msg), eq(future));
+            verify(ctx).write(recipient, msg, future);
         }
     }
 
@@ -132,7 +131,7 @@ class TailContextTest {
 
             tailContext.eventTriggered(ctx, event, future);
 
-            verify(eventConsumer).accept(eq(event));
+            verify(eventConsumer).accept(event);
             verifyNoInteractions(ctx);
         }
 
@@ -160,7 +159,7 @@ class TailContextTest {
 
             tailContext.read(ctx, sender, msg, future);
 
-            verify(eventConsumer).accept(eq(new MessageEvent(sender, msg)));
+            verify(eventConsumer).accept(MessageEvent.of(sender, msg));
             verifyNoInteractions(ctx);
         }
 

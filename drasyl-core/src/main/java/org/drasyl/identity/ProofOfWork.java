@@ -34,9 +34,11 @@ import static java.util.Objects.requireNonNull;
  */
 public class ProofOfWork {
     private static final Logger LOG = LoggerFactory.getLogger(ProofOfWork.class);
+    private static final short MIN_DIFFICULTY = 0;
+    private static final short MAX_DIFFICULTY = 64;
     private int nonce;
 
-    ProofOfWork(final int nonce) {
+    private ProofOfWork(final int nonce) {
         this.nonce = nonce;
     }
 
@@ -109,7 +111,7 @@ public class ProofOfWork {
      */
     public boolean isValid(final CompressedPublicKey publicKey, final byte difficulty) {
         requireNonNull(publicKey);
-        if (difficulty < 0 || difficulty > 64) {
+        if (difficulty < MIN_DIFFICULTY || difficulty > MAX_DIFFICULTY) {
             throw new IllegalArgumentException("difficulty must in between the range of [0,64].");
         }
 

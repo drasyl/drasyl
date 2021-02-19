@@ -26,9 +26,11 @@ import java.nio.ByteBuffer;
  * This Serializer (de)serializes {@link Float} objects.
  */
 public class FloatSerializer extends BoundedSerializer<Float> {
+    private static final short FLOAT_LENGTH = 4;
+
     @Override
     protected byte[] matchedToByArray(final Float o) {
-        return ByteBuffer.allocate(4).putFloat(o).array();
+        return ByteBuffer.allocate(FLOAT_LENGTH).putFloat(o).array();
     }
 
     @Override

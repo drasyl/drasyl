@@ -50,6 +50,9 @@ public abstract class TypeParameterMatcher {
         }
     };
 
+    TypeParameterMatcher() {
+    }
+
     public static TypeParameterMatcher get(final Class<?> parameterType) {
         TypeParameterMatcher matcher = getCache.get(parameterType);
         if (matcher == null) {
@@ -87,7 +90,7 @@ public abstract class TypeParameterMatcher {
         return matcher;
     }
 
-    @SuppressWarnings("java:S3776")
+    @SuppressWarnings({ "java:S134", "java:S1142", "java:S1541", "java:S3776" })
     private static Class<?> find0(
             final Object object, Class<?> parametrizedSuperclass, String typeParamName) {
 
@@ -191,8 +194,5 @@ public abstract class TypeParameterMatcher {
         public <T> boolean matchClass(final Class<T> clazz) {
             return type.isAssignableFrom(clazz);
         }
-    }
-
-    TypeParameterMatcher() {
     }
 }

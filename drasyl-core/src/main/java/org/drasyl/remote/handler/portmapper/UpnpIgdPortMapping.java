@@ -78,6 +78,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     private Service upnpService;
     private Runnable onFailure;
 
+    @SuppressWarnings("java:S2384")
     UpnpIgdPortMapping(final AtomicBoolean ssdpDiscoveryActive,
                        final UpnpIgdUtil upnpIgdUtil,
                        final Set<URI> ssdpServices,
@@ -141,7 +142,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                             LOG.debug("Got UPnP service of type `{}` with location `{}` reported from `{}`", () -> serviceType, () -> location, msg.getSender()::getHostString);
                         }
                         catch (final URISyntaxException e) {
-                            // ignore
+                            LOG.debug("Unable to parse received service location.", e);
                         }
                     }
                 }
@@ -244,6 +245,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         ctx.write(envelope.getRecipient(), envelope, new CompletableFuture<>());
     }
 
+    @SuppressWarnings({ "java:S1142", "java:S1541" })
     private boolean createMappingAtService(final URI serviceLocation) throws InterruptedException {
         final Service service = upnpIgdUtil.getUpnpService(serviceLocation);
         if (service == null) {

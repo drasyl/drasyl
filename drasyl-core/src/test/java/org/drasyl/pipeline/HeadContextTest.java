@@ -37,7 +37,6 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -156,7 +155,7 @@ class HeadContextTest {
 
             headContext.exceptionCaught(ctx, exception);
 
-            verify(ctx).fireExceptionCaught(eq(exception));
+            verify(ctx).fireExceptionCaught(exception);
         }
     }
 
@@ -169,7 +168,7 @@ class HeadContextTest {
 
             headContext.eventTriggered(ctx, event, future);
 
-            verify(ctx).fireEventTriggered(eq(event), eq(future));
+            verify(ctx).fireEventTriggered(event, future);
         }
     }
 
@@ -183,7 +182,7 @@ class HeadContextTest {
 
             headContext.read(ctx, sender, msg, future);
 
-            verify(ctx).fireRead(eq(sender), eq(msg), eq(future));
+            verify(ctx).fireRead(sender, msg, future);
         }
     }
 }

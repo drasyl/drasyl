@@ -16,25 +16,16 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.plugin.groups.util;
+package org.drasyl.util;
 
 import java.time.Duration;
 
-import static java.time.Duration.ofSeconds;
-
-public class DurationUtil {
+/**
+ * Utility class for operations on {@link Duration}s.
+ */
+public final class DurationUtil {
     private DurationUtil() {
         // util class
-    }
-
-    /**
-     * Normalize the given {@code duration} to a minimum of 1m.
-     *
-     * @param duration the duration
-     * @return the normalized duration
-     */
-    public static Duration normalize(final Duration duration) {
-        return max(ofSeconds(60), duration);
     }
 
     /**
