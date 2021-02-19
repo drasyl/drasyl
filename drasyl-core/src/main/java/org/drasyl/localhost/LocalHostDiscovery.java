@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.time.Duration;
@@ -60,6 +61,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.identity.CompressedPublicKey.PUBLIC_KEY_LENGTH;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.RandomUtil.randomLong;
@@ -81,6 +83,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
+    public static final String FILE_SUFFIX = ".json";
     private final DrasylScheduler scheduler;
     private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes;
     private Disposable watchDisposable;
@@ -130,7 +133,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         final InetSocketAddressWrapper localAddress = routes.get(msg.getRecipient());
         if (localAddress != null) {
             final IntermediateEnvelope<Protocol.Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
-            LOG.trace("Send message `{}` via local route {}.", () -> msg, () -> localAddress);
+            LOG.error("Send message `{}` via local route {}.", () -> msg, () -> localAddress);
             ctx.write(localAddress, new AddressedIntermediateEnvelope<>(null, localAddress, envelope), future);
         }
         else {
@@ -143,7 +146,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         LOG.debug("Start Local Host Discovery...");
         final Path discoveryPath = discoveryPath(ctx);
         final File directory = discoveryPath.toFile();
-        if (!directory.exists() && !directory.mkdirs()) {
+
+        if (!directory.mkdirs() && !directory.exists()) {
             LOG.warn("Discovery directory '{}' could not be created.", discoveryPath::toAbsolutePath);
         }
         else if (!(directory.isDirectory() && directory.canRead() && directory.canWrite())) {
@@ -159,14 +163,25 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
 
     private synchronized void stopDiscovery(final HandlerContext ctx) {
         LOG.debug("Stop Local Host Discovery...");
+
         if (watchDisposable != null) {
             watchDisposable.dispose();
         }
         if (postDisposable != null) {
             postDisposable.dispose();
         }
-        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, path));
+
+        try {
+            final Path discoveryPath = discoveryPath(ctx);
+            Files.delete(discoveryPath.resolve(ctx.identity().getPublicKey().toString() + ".json"));
+        }
+        catch (final IOException e) {
+            LOG.debug("Unable to delete `{}`", path, e);
+        }
+
+        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, LocalHostDiscovery.path));
         routes.clear();
+
         LOG.debug("Local Host Discovery stopped.");
     }
 
@@ -247,7 +262,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
             for (final File file : files) {
                 try {
                     final String fileName = file.getName();
-                    if (file.lastModified() >= maxAge && fileName.length() == 71 && fileName.endsWith(".json") && !fileName.startsWith(ownPublicKeyString)) {
+                    if (file.lastModified() >= maxAge && fileName.length() == PUBLIC_KEY_LENGTH + FILE_SUFFIX.length() && fileName.endsWith(FILE_SUFFIX) && !fileName.startsWith(ownPublicKeyString)) {
                         final CompressedPublicKey publicKey = CompressedPublicKey.of(fileName.replace(".json", ""));
                         final TypeReference<Set<InetSocketAddress>> typeRef = new TypeReference<>() {
                         };
@@ -293,7 +308,9 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     /**
      * Posts own port to {@code filePath}.
      */
-    private void postInformation(final Path filePath, final Set<InetSocketAddress> addresses) {
+    @SuppressWarnings("java:S2308")
+    private static void postInformation(final Path filePath,
+                                        final Set<InetSocketAddress> addresses) {
         LOG.trace("Post own Peer Information to {}", filePath);
         final File file = filePath.toFile();
         try {
@@ -307,7 +324,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         }
     }
 
-    private Path discoveryPath(final HandlerContext ctx) {
+    private static Path discoveryPath(final HandlerContext ctx) {
         return ctx.config().getRemoteLocalHostDiscoveryPath().resolve(String.valueOf(ctx.config().getNetworkId()));
     }
 }
