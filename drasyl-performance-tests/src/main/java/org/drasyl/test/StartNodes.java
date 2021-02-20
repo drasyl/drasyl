@@ -16,9 +16,12 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl;
+package org.drasyl.test;
 
 import io.netty.util.internal.SystemPropertyUtil;
+import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylException;
+import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;

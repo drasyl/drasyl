@@ -16,11 +16,14 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl;
+package org.drasyl.example;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylException;
+import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;

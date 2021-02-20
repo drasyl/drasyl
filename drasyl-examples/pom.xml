@@ -35,7 +35,6 @@
     </description>
     <url>https://drasyl.org/</url>
 
-
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -66,6 +65,15 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.source}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>org/drasyl/example/**/*</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

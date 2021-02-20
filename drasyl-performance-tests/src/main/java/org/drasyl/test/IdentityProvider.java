@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl;
+package org.drasyl.test;
 
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
