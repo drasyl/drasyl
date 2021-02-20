@@ -28,7 +28,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.Serialization;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
@@ -57,10 +56,6 @@ class IntraVmDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock
-    private Serialization inboundSerialization;
-    @Mock
-    private Serialization outboundSerialization;
-    @Mock
     private PeersManager peersManager;
     private final Map<Pair<Integer, CompressedPublicKey>, HandlerContext> discoveries = new HashMap<>();
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -71,7 +66,7 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldStartDiscoveryOnNodeUpEvent(@Mock final NodeUpEvent event) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
                 await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(1)));
@@ -86,7 +81,7 @@ class IntraVmDiscoveryTest {
                                                               @Mock final HandlerContext ctx) {
             discoveries.put(Pair.of(0, identity.getPublicKey()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
                 await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
@@ -99,7 +94,7 @@ class IntraVmDiscoveryTest {
             discoveries.put(Pair.of(0, identity.getPublicKey()), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
                 await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
@@ -121,7 +116,7 @@ class IntraVmDiscoveryTest {
             });
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processOutbound(recipient, message).join();
 
                 verify(ctx).fireRead(any(), any(), any());
@@ -133,7 +128,7 @@ class IntraVmDiscoveryTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processOutbound(recipient, message).join();
@@ -154,7 +149,7 @@ class IntraVmDiscoveryTest {
             });
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(sender, message).join();
 
                 verify(ctx).fireRead(any(), any(), any());
@@ -165,7 +160,7 @@ class IntraVmDiscoveryTest {
         void shouldPasstroughIngoingMessageForUnknownRecipients(@Mock final CompressedPublicKey sender,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, message).join();

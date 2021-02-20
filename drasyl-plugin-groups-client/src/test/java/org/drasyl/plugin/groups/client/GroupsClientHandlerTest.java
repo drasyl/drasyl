@@ -70,10 +70,6 @@ class GroupsClientHandlerTest {
     @Mock
     private HandlerContext ctx;
     @Mock
-    private Serialization inboundSerialization;
-    @Mock
-    private Serialization outboundSerialization;
-    @Mock
     private List<Disposable> renewTasks;
     @Mock
     private Map<Group, GroupUri> groups;
@@ -95,7 +91,8 @@ class GroupsClientHandlerTest {
     @Nested
     class HandlerAdded {
         @Test
-        void shouldAddClassesToValidator() {
+        void shouldAddClassesToValidator(@Mock final Serialization inboundSerialization,
+                                         @Mock final Serialization outboundSerialization) {
             when(ctx.inboundSerialization()).thenReturn(inboundSerialization);
             when(ctx.outboundSerialization()).thenReturn(outboundSerialization);
 
@@ -126,12 +123,7 @@ class GroupsClientHandlerTest {
         void shouldDeregisterFromGroups() {
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager);
             final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundMessages(GroupLeaveMessage.class).test();
 
             pipeline.addLast("handler", handler);
@@ -150,7 +142,7 @@ class GroupsClientHandlerTest {
         void shouldPassThroughOnNotMatchingEvent() {
             final Event event = mock(NodeOfflineEvent.class);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event);
@@ -167,7 +159,7 @@ class GroupsClientHandlerTest {
             final String credentials = "test";
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final TestObserver<GroupJoinMessage> outboundObserver = pipeline.outboundMessages(GroupJoinMessage.class).test();
 
@@ -192,7 +184,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessMemberJoined() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
@@ -208,7 +200,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessMemberLeft() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
@@ -224,7 +216,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessWelcome() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
                 final Duration timeout = Duration.ofSeconds(60);
@@ -247,7 +239,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessJoinFailed() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
                 final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);

@@ -56,27 +56,6 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
      * their simple class name.
      *
-     * @param config                the config
-     * @param identity              the identity
-     * @param peersManager          the peers manager
-     * @param inboundSerialization  the inbound serialization
-     * @param outboundSerialization the outbound serialization
-     * @param handlers              the handlers
-     */
-    public EmbeddedPipeline(final DrasylConfig config,
-                            final Identity identity,
-                            final PeersManager peersManager,
-                            final Serialization inboundSerialization,
-                            final Serialization outboundSerialization,
-                            final Handler... handlers) {
-        this(config, identity, peersManager, inboundSerialization, outboundSerialization);
-        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + randomString(DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH), handler));
-    }
-
-    /**
-     * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
-     * their simple class name.
-     *
      * @param config       the config
      * @param identity     the identity
      * @param peersManager the peers manager
@@ -90,11 +69,11 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
         List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + randomString(DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH), handler));
     }
 
-    public EmbeddedPipeline(final DrasylConfig config,
-                            final Identity identity,
-                            final PeersManager peersManager,
-                            final Serialization inboundSerialization,
-                            final Serialization outboundSerialization) {
+    private EmbeddedPipeline(final DrasylConfig config,
+                             final Identity identity,
+                             final PeersManager peersManager,
+                             final Serialization inboundSerialization,
+                             final Serialization outboundSerialization) {
         this.config = config;
         inboundMessages = ReplaySubject.create();
         inboundEvents = ReplaySubject.create();
