@@ -57,7 +57,7 @@
                 <sonar.login>${env.SONAR_LOGIN_TOKEN}</sonar.login>
                 <sonar.projectName>drasyl</sonar.projectName>
                 <sonar.exclusions>**/org/drasyl/remote/protocol/Protocol.java</sonar.exclusions>
-                <sonar.coverage.exclusions>**/org/drasyl/remote/protocol/Protocol.java,**/org/drasyl/example/**/*,drasyl-performance-tests/**/*</sonar.coverage.exclusions>
+                <sonar.coverage.exclusions>**/org/drasyl/remote/protocol/Protocol.java,drasyl-examples/**/*,drasyl-performance-tests/**/*</sonar.coverage.exclusions>
             </properties>
         </profile>
     </profiles>
