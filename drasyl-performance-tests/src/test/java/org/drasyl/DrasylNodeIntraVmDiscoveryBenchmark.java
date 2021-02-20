@@ -18,11 +18,11 @@
  */
 package org.drasyl;
 
+import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
-import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -69,13 +69,13 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
 
             node1 = new DrasylNode(config1) {
                 @Override
-                public void onEvent(final @NotNull Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             };
 
             node2 = new DrasylNode(config2) {
                 @Override
-                public void onEvent(final @NotNull Event event) {
+                public void onEvent(final @NonNull Event event) {
                 }
             };
 

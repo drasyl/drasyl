@@ -37,7 +37,7 @@ import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,25 +51,24 @@ import static java.time.Duration.ofSeconds;
  */
 @SuppressWarnings({
         "squid:S106",
+        "java:S126",
         "java:S138",
         "java:S1141",
         "java:S1188",
+        "java:S1943",
         "java:S2096",
         "java:S3776"
 })
 public class ChatCli {
+    private static final String IDENTITY = System.getProperty("identity", "chat-cli.identity.json");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     private static final Scanner scanner = new Scanner(System.in, UTF_8);
     private static String prompt;
 
     public static void main(final String[] args) throws DrasylException {
-        final DrasylConfig config;
-        if (args.length == 1) {
-            config = DrasylConfig.parseFile(new File(args[0]));
-        }
-        else {
-            config = new DrasylConfig();
-        }
+        final DrasylConfig config = DrasylConfig.newBuilder()
+                .identityPath(Path.of(IDENTITY))
+                .build();
 
         final DrasylNode node = new BehavioralDrasylNode(config) {
             @Override
