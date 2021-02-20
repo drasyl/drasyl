@@ -78,6 +78,7 @@ import static org.drasyl.DrasylConfig.REMOTE_EXPOSE_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_PATH;
+import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_ARM_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_HOP_LIMIT;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_MAX_CONTENT_LENGTH;
@@ -132,6 +133,7 @@ class DrasylConfigTest {
     private int remoteMessageMtu;
     private int remoteMessageMaxContentLength;
     private byte remoteMessageHopLimit;
+    private boolean remoteMessageArmEnabled;
     private boolean superPeerEnabled;
     private Set<Endpoint> superPeerEndpoints;
     private Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes;
@@ -214,6 +216,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getMemorySize(REMOTE_MESSAGE_MTU)).thenReturn(ConfigMemorySize.ofBytes(remoteMessageMtu));
             when(typesafeConfig.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(remoteMessageMaxContentLength));
             when(typesafeConfig.getInt(REMOTE_MESSAGE_HOP_LIMIT)).thenReturn((int) remoteMessageHopLimit);
+            when(typesafeConfig.getBoolean(REMOTE_MESSAGE_ARM_ENABLED)).thenReturn(remoteMessageArmEnabled);
             when(typesafeConfig.getStringList(REMOTE_ENDPOINTS)).thenReturn(List.of());
             when(typesafeConfig.getBoolean(REMOTE_EXPOSE_ENABLED)).thenReturn(remoteExposeEnabled);
             when(typesafeConfig.getBoolean(REMOTE_SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
@@ -251,6 +254,7 @@ class DrasylConfigTest {
             assertEquals(remoteMessageMtu, config.getRemoteMessageMtu());
             assertEquals(remoteMessageMaxContentLength, config.getRemoteMessageMaxContentLength());
             assertEquals(remoteMessageHopLimit, config.getRemoteMessageHopLimit());
+            assertEquals(remoteMessageArmEnabled, config.isRemoteMessageArmEnabled());
             assertEquals(superPeerEnabled, config.isRemoteSuperPeerEnabled());
             assertEquals(superPeerEndpoints, config.getRemoteSuperPeerEndpoints());
             assertEquals(intraVmDiscoveryEnabled, config.isIntraVmDiscoveryEnabled());
@@ -306,6 +310,7 @@ class DrasylConfigTest {
                     remoteStaticRoutes,
                     remoteMessageMaxContentLength,
                     remoteMessageHopLimit,
+                    remoteMessageArmEnabled,
                     composedMessageTransferTimeout,
                     remoteMessageMtu,
                     remoteLocalHostDiscoveryEnabled,
@@ -709,6 +714,7 @@ class DrasylConfigTest {
                     .remoteMessageMaxContentLength(DEFAULT.getRemoteMessageMaxContentLength())
                     .remoteMessageComposedMessageTransferTimeout(DEFAULT.getRemoteMessageComposedMessageTransferTimeout())
                     .remoteMessageHopLimit(DEFAULT.getRemoteMessageHopLimit())
+                    .remoteMessageArmEnabled(DEFAULT.isRemoteMessageArmEnabled())
                     .remoteSuperPeerEnabled(DEFAULT.isRemoteSuperPeerEnabled())
                     .remoteSuperPeerEndpoints(DEFAULT.getRemoteSuperPeerEndpoints())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())

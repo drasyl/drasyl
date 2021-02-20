@@ -129,7 +129,9 @@ public class DrasylPipeline extends DefaultPipeline {
             }
 
             // arm (sign/encrypt) outbound and disarm (verify/decrypt) inbound messages
-            addFirst(ARM_HANDLER, ArmHandler.INSTANCE);
+            if (config.isRemoteMessageArmEnabled()) {
+                addFirst(ARM_HANDLER, ArmHandler.INSTANCE);
+            }
 
             // filter out inbound messages with invalid proof of work or other network id
             addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);

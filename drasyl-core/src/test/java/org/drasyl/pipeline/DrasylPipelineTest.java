@@ -96,6 +96,7 @@ class DrasylPipelineTest {
         when(config.isRemoteExposeEnabled()).thenReturn(true);
         when(config.getRemoteStaticRoutes().isEmpty()).thenReturn(false);
         when(config.isRemoteLocalHostDiscoveryEnabled()).thenReturn(true);
+        when(config.isRemoteMessageArmEnabled()).thenReturn(true);
 
         final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, workerGroup);
 

@@ -86,6 +86,7 @@ public class DrasylConfig {
     static final String REMOTE_MESSAGE_MTU = "drasyl.remote.message.mtu";
     static final String REMOTE_MESSAGE_MAX_CONTENT_LENGTH = "drasyl.remote.message.max-content-length";
     static final String REMOTE_MESSAGE_HOP_LIMIT = "drasyl.remote.message.hop-limit";
+    static final String REMOTE_MESSAGE_ARM_ENABLED = "drasyl.remote.message.arm.enabled";
     static final String REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT = "drasyl.remote.message.composed-message-transfer-timeout";
     static final String REMOTE_LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.remote.local-host-discovery.enabled";
     static final String REMOTE_LOCAL_HOST_DISCOVERY_PATH = "drasyl.remote.local-host-discovery.path";
@@ -121,6 +122,7 @@ public class DrasylConfig {
     private final int remoteMessageMtu;
     private final int remoteMessageMaxContentLength;
     private final byte remoteMessageHopLimit;
+    private final boolean remoteMessageArmEnabled;
     private final Duration remoteMessageComposedMessageTransferTimeout;
     private final boolean remoteSuperPeerEnabled;
     private final Set<Endpoint> remoteSuperPeerEndpoints;
@@ -205,6 +207,7 @@ public class DrasylConfig {
             this.remoteMessageMaxContentLength = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
             this.remoteMessageComposedMessageTransferTimeout = config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
             this.remoteMessageHopLimit = getByte(config, REMOTE_MESSAGE_HOP_LIMIT);
+            this.remoteMessageArmEnabled = config.getBoolean(REMOTE_MESSAGE_ARM_ENABLED);
             this.remoteLocalHostDiscoveryEnabled = config.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED);
             if (isNullOrEmpty(config.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH))) {
                 this.remoteLocalHostDiscoveryPath = Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery");
@@ -258,6 +261,7 @@ public class DrasylConfig {
                  final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes,
                  final int remoteMessageMaxContentLength,
                  final byte remoteMessageHopLimit,
+                 final boolean remoteMessageArmEnabled,
                  final Duration remoteMessageComposedMessageTransferTimeout,
                  final int remoteMessageMtu,
                  final boolean remoteLocalHostDiscoveryEnabled,
@@ -296,6 +300,7 @@ public class DrasylConfig {
         this.remoteMessageMtu = remoteMessageMtu;
         this.remoteMessageMaxContentLength = remoteMessageMaxContentLength;
         this.remoteMessageHopLimit = remoteMessageHopLimit;
+        this.remoteMessageArmEnabled = remoteMessageArmEnabled;
         this.remoteMessageComposedMessageTransferTimeout = remoteMessageComposedMessageTransferTimeout;
         this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
         this.remoteLocalHostDiscoveryPath = remoteLocalHostDiscoveryPath;
@@ -702,6 +707,7 @@ public class DrasylConfig {
                 config.remoteMessageMaxContentLength,
                 config.remoteMessageComposedMessageTransferTimeout,
                 config.remoteMessageHopLimit,
+                config.remoteMessageArmEnabled,
                 config.remoteLocalHostDiscoveryEnabled,
                 config.remoteLocalHostDiscoveryPath,
                 config.remoteLocalHostDiscoveryLeaseTime,
@@ -967,6 +973,10 @@ public class DrasylConfig {
         return remoteMessageHopLimit;
     }
 
+    public boolean isRemoteMessageArmEnabled() {
+        return remoteMessageArmEnabled;
+    }
+
     public Map<CompressedPublicKey, InetSocketAddressWrapper> getRemoteStaticRoutes() {
         return remoteStaticRoutes;
     }
@@ -1026,6 +1036,7 @@ public class DrasylConfig {
         private int remoteMessageMtu;
         private int remoteMessageMaxContentLength;
         private byte remoteMessageHopLimit;
+        private boolean remoteMessageArmEnabled;
         private Duration remoteMessageComposedMessageTransferTimeout;
         private boolean remoteSuperPeerEnabled;
         private Set<Endpoint> remoteSuperPeerEndpoints;
@@ -1069,6 +1080,7 @@ public class DrasylConfig {
                        final int remoteMessageMaxContentLength,
                        final Duration remoteMessageComposedMessageTransferTimeout,
                        final byte remoteMessageHopLimit,
+                       final boolean remoteMessageArmEnabled,
                        final boolean remoteLocalHostDiscoveryEnabled,
                        final Path remoteLocalHostDiscoveryPath,
                        final Duration remoteLocalHostDiscoveryLeaseTime,
@@ -1102,6 +1114,7 @@ public class DrasylConfig {
             this.remoteMessageMtu = remoteMessageMtu;
             this.remoteMessageMaxContentLength = remoteMessageMaxContentLength;
             this.remoteMessageHopLimit = remoteMessageHopLimit;
+            this.remoteMessageArmEnabled = remoteMessageArmEnabled;
             this.remoteMessageComposedMessageTransferTimeout = remoteMessageComposedMessageTransferTimeout;
             this.remoteSuperPeerEnabled = remoteSuperPeerEnabled;
             this.remoteSuperPeerEndpoints = remoteSuperPeerEndpoints;
@@ -1214,6 +1227,11 @@ public class DrasylConfig {
 
         public Builder remoteMessageHopLimit(final byte remoteMessageHopLimit) {
             this.remoteMessageHopLimit = remoteMessageHopLimit;
+            return this;
+        }
+
+        public Builder remoteMessageArmEnabled(final boolean remoteMessageArmEnabled) {
+            this.remoteMessageArmEnabled = remoteMessageArmEnabled;
             return this;
         }
 
@@ -1342,6 +1360,7 @@ public class DrasylConfig {
                     remoteStaticRoutes,
                     remoteMessageMaxContentLength,
                     remoteMessageHopLimit,
+                    remoteMessageArmEnabled,
                     remoteMessageComposedMessageTransferTimeout,
                     remoteMessageMtu,
                     remoteLocalHostDiscoveryEnabled,
