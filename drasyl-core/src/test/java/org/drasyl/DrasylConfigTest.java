@@ -183,7 +183,7 @@ class DrasylConfigTest {
         intraVmDiscoveryEnabled = true;
         remoteLocalHostDiscoveryEnabled = true;
         remoteLocalHostDiscoveryPathAsString = "foo/bar";
-        remoteLocalHostDiscoveryLeaseTime = ofSeconds(60);
+        remoteLocalHostDiscoveryLeaseTime = ofSeconds(40);
         composedMessageTransferTimeout = ofSeconds(60);
         monitoringEnabled = true;
         monitoringHostTag = "test.example.com";
@@ -191,11 +191,13 @@ class DrasylConfigTest {
         monitoringInfluxUser = "";
         monitoringInfluxPassword = "";
         monitoringInfluxDatabase = "drasyl";
-        monitoringInfluxReportingFrequency = ofSeconds(60);
+        monitoringInfluxReportingFrequency = ofSeconds(70);
         plugins = Set.of();
         serializationSerializers = Map.of("string", new MySerializer());
         serializationsBindingsInbound = Map.of();
         serializationsBindingsOutbound = Map.of();
+        remotePingCommunicationTimeout = ofSeconds(80);
+        remoteUniteMinInterval = ofSeconds(90);
     }
 
     @Nested
@@ -722,7 +724,7 @@ class DrasylConfigTest {
                     .remoteLocalHostDiscoveryPath(DEFAULT.getRemoteLocalHostDiscoveryPath())
                     .remoteLocalHostDiscoveryLeaseTime(DEFAULT.getRemoteLocalHostDiscoveryLeaseTime())
                     .monitoringEnabled(DEFAULT.isMonitoringEnabled())
-                    .monitoringHost(DEFAULT.getMonitoringHostTag())
+                    .monitoringHostTag(DEFAULT.getMonitoringHostTag())
                     .monitoringInfluxUri(DEFAULT.getMonitoringInfluxUri())
                     .monitoringInfluxUser(DEFAULT.getMonitoringInfluxUser())
                     .monitoringInfluxPassword(DEFAULT.getMonitoringInfluxPassword())
