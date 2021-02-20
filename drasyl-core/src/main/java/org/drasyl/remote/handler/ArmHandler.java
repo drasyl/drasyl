@@ -32,19 +32,17 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Acts as a guard for in- and outbound messages. <br> Signs automatically outbound messages. <br>
- * Validates automatically inbound messages and drops them, iff a signature is invalid or if a
- * validation is impossible, e.g. the public key of the sender is unknown. In this case, drop
- * information is written to the log.
+ * Arms (sign/encrypt) outbound and disarms (verify/decrypt) inbound messages. Considers only
+ * messages that are addressed from or to us. Messages that could not be (dis)armed) are dropped.
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class SignatureHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<MessageLite>, AddressedIntermediateEnvelope<MessageLite>, Address> {
-    public static final SignatureHandler INSTANCE = new SignatureHandler();
-    public static final String SIGNATURE_HANDLER = "SIGNATURE_HANDLER";
-    private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
+public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<MessageLite>, AddressedIntermediateEnvelope<MessageLite>, Address> {
+    public static final ArmHandler INSTANCE = new ArmHandler();
+    public static final String ARM_HANDLER = "ARM_HANDLER";
+    private static final Logger LOG = LoggerFactory.getLogger(ArmHandler.class);
 
-    private SignatureHandler() {
+    private ArmHandler() {
         // singleton
     }
 

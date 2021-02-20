@@ -26,7 +26,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -36,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
- * Handler that converts a given {@link IntermediateEnvelope} to a {@link ByteBuf}.
+ * Handler that converts a given {@link AddressedIntermediateEnvelope} to a {@link ByteBuf}.
  */
 @Stateless
 public final class Message2ByteBufHandler extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {

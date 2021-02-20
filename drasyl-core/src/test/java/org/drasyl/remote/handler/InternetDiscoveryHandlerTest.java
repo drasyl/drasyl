@@ -37,8 +37,8 @@ import org.drasyl.pipeline.Serialization;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
-import org.drasyl.remote.handler.UdpDiscoveryHandler.Peer;
-import org.drasyl.remote.handler.UdpDiscoveryHandler.Ping;
+import org.drasyl.remote.handler.InternetDiscoveryHandler.Peer;
+import org.drasyl.remote.handler.InternetDiscoveryHandler.Ping;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
@@ -86,7 +86,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class UdpDiscoveryHandlerTest {
+class InternetDiscoveryHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -111,7 +111,7 @@ class UdpDiscoveryHandlerTest {
 
     @Test
     void shouldPassthroughAllOtherEvents(@Mock final NodeEvent event) {
-        final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
+        final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
             final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
 
@@ -129,7 +129,7 @@ class UdpDiscoveryHandlerTest {
         void shouldStartHeartbeatingOnNodeUpEvent(@Mock final NodeUpEvent event) {
             when(config.getRemotePingInterval()).thenReturn(ofSeconds(5));
 
-            final UdpDiscoveryHandler handler = spy(new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
+            final InternetDiscoveryHandler handler = spy(new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                 pipeline.processInbound(event).join();
 
@@ -142,7 +142,7 @@ class UdpDiscoveryHandlerTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                                  @Mock final NodeUnrecoverableErrorEvent event) {
             final HashMap<CompressedPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
-            final UdpDiscoveryHandler handler = spy(new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
+            final InternetDiscoveryHandler handler = spy(new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                 pipeline.processInbound(event).join();
 
@@ -159,7 +159,7 @@ class UdpDiscoveryHandlerTest {
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                    @Mock final NodeDownEvent event) {
             final HashMap<CompressedPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
-            final UdpDiscoveryHandler handler = spy(new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
+            final InternetDiscoveryHandler handler = spy(new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                 pipeline.processInbound(event).join();
 
@@ -183,7 +183,7 @@ class UdpDiscoveryHandlerTest {
 
             when(identity.getPublicKey()).thenReturn(recipient);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
@@ -208,7 +208,7 @@ class UdpDiscoveryHandlerTest {
 
             when(identity.getPublicKey()).thenReturn(recipient);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                 pipeline.processInbound(address, addressedAcknowledgementMessage).join();
 
@@ -231,7 +231,7 @@ class UdpDiscoveryHandlerTest {
             when(identity.getPublicKey()).thenReturn(recipient);
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(Set.of(superPeerEndpoint));
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                 pipeline.processInbound(address, addressedAcknowledgementMessage).join();
 
@@ -246,7 +246,7 @@ class UdpDiscoveryHandlerTest {
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(peer.getAddress()).thenReturn(address);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
             verifyNoInteractions(peersManager);
@@ -262,7 +262,7 @@ class UdpDiscoveryHandlerTest {
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(Set.of(superPeerEndpoint));
             when(superPeers.contains(publicKey)).thenReturn(true);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
             verify(ctx.peersManager()).removeSuperPeerAndPath(eq(publicKey), any());
@@ -275,7 +275,7 @@ class UdpDiscoveryHandlerTest {
                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(peer.getAddress()).thenReturn(address);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
             verify(ctx.peersManager()).removeChildrenAndPath(eq(publicKey), any());
@@ -293,7 +293,7 @@ class UdpDiscoveryHandlerTest {
             when(ctx.identity().getPublicKey()).thenReturn(myPublicKey);
             when(superPeerEndpoint.getPublicKey()).thenReturn(publicKey);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, new HashSet<>(), superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
             verify(ctx).write(any(), any(AddressedIntermediateEnvelope.class), any());
@@ -309,7 +309,7 @@ class UdpDiscoveryHandlerTest {
             when(peer.hasApplicationTraffic(any())).thenReturn(true);
             when(ctx.identity().getPublicKey()).thenReturn(myPublicKey);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
             verify(ctx).write(any(), any(AddressedIntermediateEnvelope.class), any());
@@ -322,7 +322,7 @@ class UdpDiscoveryHandlerTest {
 
             when(peer.hasControlTraffic(any())).thenReturn(true);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
             verify(ctx, never()).write(any(), any(), any());
@@ -347,7 +347,7 @@ class UdpDiscoveryHandlerTest {
             when(identity.getPublicKey()).thenReturn(recipient);
             when(superPeers.contains(sender)).thenReturn(true);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(CompressedPublicKey.of(uniteMessage.getBody().getPublicKey().toByteArray()), peer)), rendezvousPeers, superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(CompressedPublicKey.of(uniteMessage.getBody().getPublicKey().toByteArray()), peer)), rendezvousPeers, superPeers, bestSuperPeer);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                 pipeline.processInbound(address, addressedUniteMessage).join();
 
@@ -373,7 +373,7 @@ class UdpDiscoveryHandlerTest {
             when(message.getContent().getSender()).thenReturn(senderKey);
             when(message.getContent().getRecipient()).thenReturn(recipientKey);
 
-            final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getContent().getSender(), senderPeer, message.getContent().getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
+            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getContent().getSender(), senderPeer, message.getContent().getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                 final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
                 }).test();
@@ -399,7 +399,7 @@ class UdpDiscoveryHandlerTest {
                 when(recipientPeer.isReachable(any())).thenReturn(true);
                 when(recipientPeer.getAddress()).thenReturn(new InetSocketAddressWrapper(25421));
 
-                final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getContent().getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getContent().getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                     final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
                     }).test();
@@ -419,7 +419,7 @@ class UdpDiscoveryHandlerTest {
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey recipient) throws InterruptedException, IOException {
                 when(message.getContent().getRecipient()).thenThrow(IllegalArgumentException.class);
 
-                final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                     final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
@@ -444,7 +444,7 @@ class UdpDiscoveryHandlerTest {
                 when(rendezvousPeers.contains(any())).thenReturn(true);
                 when(identity.getPublicKey()).thenReturn(recipient);
 
-                final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(applicationMessage.getSender(), peer)), rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(applicationMessage.getSender(), peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                     final TestObserver<SerializedApplicationMessage> inboundMessages = pipeline.inboundMessages(SerializedApplicationMessage.class).test();
 
@@ -470,7 +470,7 @@ class UdpDiscoveryHandlerTest {
                 when(recipientPeer.isReachable(any())).thenReturn(true);
                 when(identity.getPublicKey()).thenReturn(recipient);
 
-                final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                     final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
                     }).test();
@@ -492,7 +492,7 @@ class UdpDiscoveryHandlerTest {
                 when(superPeerPeer.getAddress()).thenReturn(superPeerSocketAddress);
                 when(identity.getPublicKey()).thenReturn(recipient);
 
-                final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers, superPeers, recipient);
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers, superPeers, recipient);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                     final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
                     }).test();
@@ -513,7 +513,7 @@ class UdpDiscoveryHandlerTest {
 
                 when(identity.getPublicKey()).thenReturn(sender);
 
-                final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                     final TestObserver<IntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<IntermediateEnvelope<?>>() {
                     }).test();
@@ -536,7 +536,7 @@ class UdpDiscoveryHandlerTest {
                 when(rendezvousPeers.contains(any())).thenReturn(true);
                 when(identity.getPublicKey()).thenReturn(recipient);
 
-                final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(message.getRecipient(), peer)), rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(message.getRecipient(), peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundSerialization, outboundSerialization, handler)) {
                     pipeline.processOutbound(recipient, message).join();
 

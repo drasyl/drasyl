@@ -49,7 +49,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SignatureHandlerTest {
+class ArmHandlerTest {
     @Mock
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -73,7 +73,7 @@ class SignatureHandlerTest {
             final IntermediateEnvelope<Application> messageEnvelope = IntermediateEnvelope.application(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), byte[].class.getName(), new byte[]{});
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
-            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final ArmHandler handler = ArmHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
             }).test();
@@ -105,7 +105,7 @@ class SignatureHandlerTest {
             final IntermediateEnvelope<Application> messageEnvelope = IntermediateEnvelope.application(1, CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), proofOfWork, identity.getPublicKey(), byte[].class.getName(), new byte[]{});
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
-            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final ArmHandler handler = ArmHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
@@ -133,7 +133,7 @@ class SignatureHandlerTest {
             final IntermediateEnvelope<Application> armedMessage = messageEnvelope.armAndRelease(identity.getPrivateKey());
             when(armedMessage).thenThrow(IllegalStateException.class);
 
-            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final ArmHandler handler = ArmHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
@@ -158,7 +158,7 @@ class SignatureHandlerTest {
             final IntermediateEnvelope<Application> messageEnvelope = IntermediateEnvelope.application(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity.getPrivateKey());
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
-            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final ArmHandler handler = ArmHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
             }).test();
@@ -182,7 +182,7 @@ class SignatureHandlerTest {
             final IntermediateEnvelope<Application> messageEnvelope = IntermediateEnvelope.application(1, identity.getPublicKey(), proofOfWork, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), byte[].class.getName(), new byte[]{}).armAndRelease(identity.getPrivateKey());
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
-            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final ArmHandler handler = ArmHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
@@ -210,7 +210,7 @@ class SignatureHandlerTest {
             byteBuf.writeZero(10);
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
-            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final ArmHandler handler = ArmHandler.INSTANCE;
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 

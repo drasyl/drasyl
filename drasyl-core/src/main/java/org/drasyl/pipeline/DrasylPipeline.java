@@ -30,15 +30,15 @@ import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.handler.AddressedEnvelopeHandler;
 import org.drasyl.pipeline.serialization.MessageSerializer;
+import org.drasyl.remote.handler.ArmHandler;
 import org.drasyl.remote.handler.ByteBuf2MessageHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
+import org.drasyl.remote.handler.InternetDiscoveryHandler;
 import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
 import org.drasyl.remote.handler.Message2ByteBufHandler;
 import org.drasyl.remote.handler.OtherNetworkFilter;
-import org.drasyl.remote.handler.SignatureHandler;
 import org.drasyl.remote.handler.StaticRoutesHandler;
-import org.drasyl.remote.handler.UdpDiscoveryHandler;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.util.scheduler.DrasylScheduler;
@@ -55,15 +55,15 @@ import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAG
 import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
 import static org.drasyl.pipeline.handler.AddressedEnvelopeHandler.ADDRESSED_ENVELOPE_HANDLER;
 import static org.drasyl.pipeline.serialization.MessageSerializer.MESSAGE_SERIALIZER;
+import static org.drasyl.remote.handler.ArmHandler.ARM_HANDLER;
 import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
 import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
+import static org.drasyl.remote.handler.InternetDiscoveryHandler.INTERNET_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
 import static org.drasyl.remote.handler.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
 import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
-import static org.drasyl.remote.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.remote.handler.StaticRoutesHandler.STATIC_ROUTES_HANDLER;
-import static org.drasyl.remote.handler.UdpDiscoveryHandler.UDP_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
 import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
 
@@ -93,28 +93,33 @@ public class DrasylPipeline extends DefaultPipeline {
         // convert msg <-> AddressedEnvelopeHandler(msg)
         addFirst(ADDRESSED_ENVELOPE_HANDLER, AddressedEnvelopeHandler.INSTANCE);
 
+        // drop messages not addressed to us
         addFirst(INBOUND_MESSAGE_GUARD, new InboundMessageGuard());
 
-        // local message delivery
+        // convert outbound messages addresses to us to inbound messages
         addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
 
-        // we trust peers within the same jvm. therefore we do not use signatures
+        // discover nodes running within the same jvm.
         if (config.isIntraVmDiscoveryEnabled()) {
             addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
         }
 
         if (config.isRemoteEnabled()) {
+            // convert messages from/to byte arrays
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
+            // route outbound messages to pre-configures ip addresses
             if (!config.getRemoteStaticRoutes().isEmpty()) {
                 addFirst(STATIC_ROUTES_HANDLER, StaticRoutesHandler.INSTANCE);
             }
 
             if (config.isRemoteLocalHostDiscoveryEnabled()) {
+                // discover nodes running on the same local computer
                 addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery());
             }
 
-            addFirst(UDP_DISCOVERY_HANDLER, new UdpDiscoveryHandler(config));
+            // register at super peers/discover nodes in other networks
+            addFirst(INTERNET_DISCOVERY_HANDLER, new InternetDiscoveryHandler(config));
 
             // outbound message guards
             addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
@@ -123,19 +128,19 @@ public class DrasylPipeline extends DefaultPipeline {
                 addFirst(MONITORING_HANDLER, new Monitoring());
             }
 
-            addFirst(SIGNATURE_HANDLER, SignatureHandler.INSTANCE);
+            // arm (sign/encrypt) outbound and disarm (verify/decrypt) inbound messages
+            addFirst(ARM_HANDLER, ArmHandler.INSTANCE);
 
-            // inbound message guards
+            // filter out inbound messages with invalid proof of work or other network id
             addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);
             addFirst(OTHER_NETWORK_FILTER, OtherNetworkFilter.INSTANCE);
 
+            // split messages too big for udp
             addFirst(CHUNKING_HANDLER, new ChunkingHandler());
 
-            // (de)serialize messages
+            // udp server
             addFirst(MESSAGE_2_BYTE_BUF_HANDLER, Message2ByteBufHandler.INSTANCE);
             addFirst(BYTE_BUF_2_MESSAGE_HANDLER, ByteBuf2MessageHandler.INSTANCE);
-
-            // udp server
             if (config.isRemoteExposeEnabled()) {
                 addFirst(PORT_MAPPER, new PortMapper());
             }

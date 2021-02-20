@@ -67,11 +67,20 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 import static org.drasyl.util.RandomUtil.randomLong;
 
+/**
+ * This handler performs the following tasks, which help to communicate with nodes located in other
+ * networks:
+ * <ul>
+ * <li>Joins one or more super peers or acts itself as a super peer (super peers act as registries of available nodes on the network. they can be used as message relays and help to traverse NATs).</li>
+ * <li>Tracks which nodes are being communicated with and tries to establish direct connections to these nodes with the help of a super peer.</li>
+ * <li>Routes messages to the recipient. If no route is known, the message is relayed to a super peer (our default gateway).</li>
+ * </ul>
+ */
 @SuppressWarnings({ "java:S110", "java:S1192" })
-public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<? extends MessageLite>, SerializedApplicationMessage, Address> {
-    public static final String UDP_DISCOVERY_HANDLER = "UDP_DISCOVERY_HANDLER";
-    private static final Logger LOG = LoggerFactory.getLogger(UdpDiscoveryHandler.class);
-    private static final Object path = UdpDiscoveryHandler.class;
+public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<? extends MessageLite>, SerializedApplicationMessage, Address> {
+    public static final String INTERNET_DISCOVERY_HANDLER = "INTERNET_DISCOVERY_HANDLER";
+    private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryHandler.class);
+    private static final Object path = InternetDiscoveryHandler.class;
     private final Map<MessageId, Ping> openPingsCache;
     private final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
     private final Map<CompressedPublicKey, Peer> peers;
@@ -80,7 +89,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     private Disposable heartbeatDisposable;
     private CompressedPublicKey bestSuperPeer;
 
-    public UdpDiscoveryHandler(final DrasylConfig config) {
+    public InternetDiscoveryHandler(final DrasylConfig config) {
         openPingsCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getRemotePingMaxPeers())
                 .expireAfterWrite(config.getRemotePingTimeout())
@@ -102,12 +111,12 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermedia
     }
 
     @SuppressWarnings("java:S2384")
-    UdpDiscoveryHandler(final Map<MessageId, Ping> openPingsCache,
-                        final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache,
-                        final Map<CompressedPublicKey, Peer> peers,
-                        final Set<CompressedPublicKey> directConnectionPeers,
-                        final Set<CompressedPublicKey> superPeers,
-                        final CompressedPublicKey bestSuperPeer) {
+    InternetDiscoveryHandler(final Map<MessageId, Ping> openPingsCache,
+                             final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache,
+                             final Map<CompressedPublicKey, Peer> peers,
+                             final Set<CompressedPublicKey> directConnectionPeers,
+                             final Set<CompressedPublicKey> superPeers,
+                             final CompressedPublicKey bestSuperPeer) {
         this.openPingsCache = openPingsCache;
         this.uniteAttemptsCache = uniteAttemptsCache;
         this.directConnectionPeers = directConnectionPeers;

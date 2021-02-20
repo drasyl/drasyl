@@ -33,7 +33,7 @@ import org.drasyl.pipeline.Serialization;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
-import org.drasyl.remote.handler.UdpDiscoveryHandler.Peer;
+import org.drasyl.remote.handler.InternetDiscoveryHandler.Peer;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.util.Pair;
 import org.drasyl.util.RandomUtil;
@@ -55,12 +55,12 @@ import java.util.concurrent.CompletableFuture;
 import static java.time.Duration.ofDays;
 
 @State(Scope.Benchmark)
-public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
-    private Map<MessageId, UdpDiscoveryHandler.Ping> openPingsCache;
+public class InternetDiscoveryHandlerBenchmark extends AbstractBenchmark {
+    private Map<MessageId, InternetDiscoveryHandler.Ping> openPingsCache;
     private Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
     private Map<CompressedPublicKey, Peer> peers;
     private Set<CompressedPublicKey> directConnectionPeers;
-    private UdpDiscoveryHandler handler;
+    private InternetDiscoveryHandler handler;
     private HandlerContext ctx;
     private Address recipient;
     private SerializedApplicationMessage msg;
@@ -75,7 +75,7 @@ public class UdpDiscoveryHandlerBenchmark extends AbstractBenchmark {
         peers = new HashMap<>();
         directConnectionPeers = new HashSet<>();
         superPeers = new HashSet<>();
-        handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, directConnectionPeers, superPeers, bestSuperPeer);
+        handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, directConnectionPeers, superPeers, bestSuperPeer);
 
         ctx = new MyHandlerContext();
         recipient = new MyAddress();

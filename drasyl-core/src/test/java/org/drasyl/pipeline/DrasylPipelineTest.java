@@ -44,15 +44,15 @@ import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAG
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
 import static org.drasyl.pipeline.serialization.MessageSerializer.MESSAGE_SERIALIZER;
+import static org.drasyl.remote.handler.ArmHandler.ARM_HANDLER;
 import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
 import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
+import static org.drasyl.remote.handler.InternetDiscoveryHandler.INTERNET_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
 import static org.drasyl.remote.handler.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
 import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
-import static org.drasyl.remote.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.remote.handler.StaticRoutesHandler.STATIC_ROUTES_HANDLER;
-import static org.drasyl.remote.handler.UdpDiscoveryHandler.UDP_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
 import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -112,8 +112,8 @@ class DrasylPipelineTest {
         assertNotNull(pipeline.get(LOOPBACK_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(STATIC_ROUTES_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(LOCAL_HOST_DISCOVERY), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(UDP_DISCOVERY_HANDLER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(SIGNATURE_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(INTERNET_DISCOVERY_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(ARM_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(CHUNKING_HANDLER), "This handler is required in the DrasylPipeline");

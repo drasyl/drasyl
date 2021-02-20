@@ -35,8 +35,7 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handler that converts a given {@link ByteBuf} to a {@link IntermediateEnvelope} or {@link
- * IntermediateEnvelope}.
+ * Handler that converts a given {@link ByteBuf} to a {@link AddressedIntermediateEnvelope}.
  */
 @Stateless
 public final class ByteBuf2MessageHandler extends SimpleInboundHandler<AddressedByteBuf, Address> {
