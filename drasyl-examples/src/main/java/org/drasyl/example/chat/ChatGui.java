@@ -40,7 +40,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 
 import static java.time.Duration.ofSeconds;
@@ -51,8 +51,9 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
-@SuppressWarnings({ "java:S138", "java:S2096", "java:S1188" })
+@SuppressWarnings({ "java:S126", "java:S138", "java:S1188", "java:S2096" })
 public class ChatGui {
+    private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity.json");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     private final JFrame frame = new JFrame();
     private final JTextFieldWithPlaceholder recipientField = new JTextFieldWithPlaceholder(10, "Enter Recipient");
@@ -224,14 +225,10 @@ public class ChatGui {
         node.start();
     }
 
-    public static void main(final String[] args) throws Exception {
-        final DrasylConfig config;
-        if (args.length == 1) {
-            config = DrasylConfig.parseFile(new File(args[0]));
-        }
-        else {
-            config = new DrasylConfig();
-        }
+    public static void main(final String[] args) throws DrasylException {
+        final DrasylConfig config = DrasylConfig.newBuilder()
+                .identityPath(Path.of(IDENTITY))
+                .build();
 
         final ChatGui gui = new ChatGui(config);
         gui.run();

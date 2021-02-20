@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.drasyl.DrasylConfig;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -39,7 +40,6 @@ import org.drasyl.util.UnsignedShort;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Map;
@@ -221,7 +221,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
         }
     }
 
-    @NotNull
+    @NonNull
     private static PublicHeader buildChunkHeader(final UnsignedShort totalChunks,
                                                  final PublicHeader partialHeader,
                                                  final UnsignedShort chunkNo) {
