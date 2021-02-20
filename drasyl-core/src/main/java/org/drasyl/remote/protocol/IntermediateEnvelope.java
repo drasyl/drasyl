@@ -208,7 +208,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                     final byte[] magicNumber = in.readNBytes(4);
 
                     if (!Arrays.equals(MAGIC_NUMBER, magicNumber)) {
-                        throw new IllegalStateException("Magic Number mismatch!");
+                        throw new IOException("Magic Number mismatch!");
                     }
 
                     publicHeader = PublicHeader.parseDelimitedFrom(in);
@@ -448,7 +448,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
             final byte newHopCount = (byte) (existingPublicHeader.getHopCount() + 1);
 
             if (newHopCount == 0) {
-                throw new IllegalStateException("hop count overflow");
+                throw new IOException("hop count overflow");
             }
 
             this.publicHeader = PublicHeader.newBuilder(existingPublicHeader)
