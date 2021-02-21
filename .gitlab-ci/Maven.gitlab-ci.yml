@@ -13,9 +13,9 @@ cache:
     - export GPG_TTY=$(tty)
     - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import --no-tty --batch --yes
     - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust --no-tty --batch --yes
-    - for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
   after_script:
     - '/bin/bash coverage-jacoco.sh'
+    - for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
   coverage: '/\d+.\d+ \% covered/'
   artifacts:
     reports:
