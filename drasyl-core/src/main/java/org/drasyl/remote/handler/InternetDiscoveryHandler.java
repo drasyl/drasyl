@@ -482,7 +482,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
         future.complete(null);
     }
 
-    private void determineBestSuperPeer() {
+    private synchronized void determineBestSuperPeer() {
         long bestLatency = Long.MAX_VALUE;
         CompressedPublicKey newBestSuperPeer = null;
         for (final CompressedPublicKey superPeer : superPeers) {
