@@ -14,7 +14,7 @@ With drasyl, boundaries between IP-based networks will be eliminated and secure 
 Zero-configuration is required to use drasyl.
 Developers can run a new drasyl node without having to write configuration files or provide IP addresses of peers.
 
-![drasyl architecture](https://docs.drasyl.org/assets/img/drasyl-architecture.png)
+![drasyl architecture](https://docs.drasyl.org/master/assets/img/drasyl-architecture.png)
 
 _As drasyl is primarily developed for the research project
 [Smart Networks for Urban Participation (SANE)](https://sane.city/) and focuses on functionalities necessary for the project. However, drasyl is open to
