@@ -205,7 +205,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         synchronized (this) {
             if (publicHeader == null) {
                 try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
-                    final byte[] magicNumber = in.readNBytes(4);
+                    final byte[] magicNumber = in.readNBytes(MAGIC_NUMBER_LENGTH);
 
                     if (!Arrays.equals(MAGIC_NUMBER, magicNumber)) {
                         throw new IOException("Magic Number mismatch!");
