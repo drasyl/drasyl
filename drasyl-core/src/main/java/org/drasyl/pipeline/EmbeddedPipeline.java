@@ -32,6 +32,7 @@ import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
+import org.drasyl.util.scheduler.DrasylScheduler;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.lang.reflect.ParameterizedType;
@@ -52,6 +53,16 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
     private final Subject<Event> inboundEvents;
     private final ReplaySubject<Object> outboundMessages;
 
+    public EmbeddedPipeline(final DrasylConfig config,
+                            final Identity identity,
+                            final PeersManager peersManager,
+                            final DrasylScheduler dependentScheduler,
+                            final DrasylScheduler independentScheduler,
+                            final Handler... handlers) {
+        this(config, identity, peersManager, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()), dependentScheduler, independentScheduler);
+        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + randomString(DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH), handler));
+    }
+
     /**
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
      * their simple class name.
@@ -65,23 +76,24 @@ public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
                             final Identity identity,
                             final PeersManager peersManager,
                             final Handler... handlers) {
-        this(config, identity, peersManager, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()));
-        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + randomString(DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH), handler));
+        this(config, identity, peersManager, DrasylSchedulerUtil.getInstanceLight(), DrasylSchedulerUtil.getInstanceHeavy(), handlers);
     }
 
     private EmbeddedPipeline(final DrasylConfig config,
                              final Identity identity,
                              final PeersManager peersManager,
                              final Serialization inboundSerialization,
-                             final Serialization outboundSerialization) {
+                             final Serialization outboundSerialization,
+                             final DrasylScheduler dependentScheduler,
+                             final DrasylScheduler independentScheduler) {
         this.config = config;
         inboundMessages = ReplaySubject.create();
         inboundEvents = ReplaySubject.create();
         outboundMessages = ReplaySubject.create();
 
         this.handlerNames = new ConcurrentHashMap<>();
-        this.dependentScheduler = DrasylSchedulerUtil.getInstanceLight();
-        this.independentScheduler = DrasylSchedulerUtil.getInstanceHeavy();
+        this.dependentScheduler = dependentScheduler;
+        this.independentScheduler = independentScheduler;
         this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             public void write(final HandlerContext ctx,

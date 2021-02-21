@@ -36,8 +36,6 @@ import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import org.drasyl.util.scheduler.DrasylScheduler;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -84,7 +82,6 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     public static final String FILE_SUFFIX = ".json";
-    private final DrasylScheduler scheduler;
     private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes;
     private Disposable watchDisposable;
     private Disposable postDisposable;
@@ -92,7 +89,6 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
 
     public LocalHostDiscovery() {
         this(
-                DrasylSchedulerUtil.getInstanceLight(),
                 new HashMap<>(),
                 null,
                 null
@@ -100,11 +96,9 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     }
 
     @SuppressWarnings({ "java:S107" })
-    LocalHostDiscovery(final DrasylScheduler scheduler,
-                       final Map<CompressedPublicKey, InetSocketAddressWrapper> routes,
+    LocalHostDiscovery(final Map<CompressedPublicKey, InetSocketAddressWrapper> routes,
                        final Disposable watchDisposable,
                        final Disposable postDisposable) {
-        this.scheduler = requireNonNull(scheduler);
         this.routes = requireNonNull(routes);
         this.watchDisposable = watchDisposable;
         this.postDisposable = postDisposable;
@@ -197,7 +191,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
             discoveryPath.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
             LOG.debug("Watch service for directory '{}' registered", directory);
             final long pollInterval = WATCH_SERVICE_POLL_INTERVAL.toMillis();
-            watchDisposable = scheduler.schedulePeriodicallyDirect(() -> {
+            watchDisposable = ctx.dependentScheduler().schedulePeriodicallyDirect(() -> {
                 if (watchService.poll() != null) {
                     // directory has been changed
                     scan(ctx);
@@ -237,7 +231,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         else {
             refreshInterval = ofSeconds(1);
         }
-        postDisposable = scheduler.schedulePeriodicallyDirect(() -> {
+        postDisposable = ctx.dependentScheduler().schedulePeriodicallyDirect(() -> {
             // only scan in polling mode when watchService does not work
             if (watchService == null) {
                 scan(ctx);
