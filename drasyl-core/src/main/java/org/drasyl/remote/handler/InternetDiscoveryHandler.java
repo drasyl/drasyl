@@ -387,7 +387,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
             }
         }
         catch (final IOException e) {
-            LOG.warn("Unable to deserialize '{}': {}", () -> sanitizeLogArg(envelope.getContent()), e::getMessage);
+            LOG.warn("Unable to deserialize '{}'.", () -> sanitizeLogArg(envelope.getContent()), () -> e);
             future.completeExceptionally(new Exception("Message could not be deserialized.", e));
             ReferenceCountUtil.safeRelease(envelope);
         }

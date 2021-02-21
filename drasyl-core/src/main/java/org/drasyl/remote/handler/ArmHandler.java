@@ -31,6 +31,8 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
+
 /**
  * Arms (sign/encrypt) outbound and disarms (verify/decrypt) inbound messages. Considers only
  * messages that are addressed from or to us. Messages that could not be (dis)armed) are dropped.
@@ -62,7 +64,7 @@ public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateE
             }
         }
         catch (final IOException e) {
-            LOG.debug("Can't disarm message `{}` due to the following error: ", msg, e);
+            LOG.debug("Can't disarm message `{}`. Message dropped.", () -> sanitizeLogArg(msg), () -> e);
             future.completeExceptionally(new Exception("Unable to disarm message", e));
             ReferenceCountUtil.safeRelease(msg);
         }
@@ -84,7 +86,7 @@ public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateE
             }
         }
         catch (final IOException e) {
-            LOG.debug("Can't arm message `{}` due to the following error: ", msg, e);
+            LOG.debug("Can't arm message `{}`. Message dropped.", () -> sanitizeLogArg(msg), () -> e);
             future.completeExceptionally(new Exception("Unable to arm message", e));
             ReferenceCountUtil.safeRelease(msg);
         }

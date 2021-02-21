@@ -57,13 +57,13 @@ public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<Address
                 ctx.fireRead(sender, msg, future);
             }
             else {
-                LOG.trace("Message with invalid proof of work dropped: {}", msg);
-                future.completeExceptionally(new Exception("Message with invalid proof of work dropped"));
+                LOG.trace("Message with invalid proof of work dropped: '{}'", () -> sanitizeLogArg(msg));
+                future.completeExceptionally(new Exception("Message with invalid proof of work dropped."));
                 ReferenceCountUtil.safeRelease(msg);
             }
         }
-        catch (final IllegalArgumentException | IOException e) {
-            LOG.debug("Message {} can't be read and was dropped due to the following error: ", () -> sanitizeLogArg(msg), e::getMessage);
+        catch (final IOException e) {
+            LOG.debug("Message {} can't be read and was dropped: '{}'", () -> sanitizeLogArg(msg), () -> e);
             future.completeExceptionally(new Exception("Message can't be read and was dropped due to the following error: ", e));
             ReferenceCountUtil.safeRelease(msg);
         }

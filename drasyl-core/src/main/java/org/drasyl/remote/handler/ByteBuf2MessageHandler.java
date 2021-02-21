@@ -58,7 +58,7 @@ public final class ByteBuf2MessageHandler extends SimpleInboundHandler<Addressed
         }
         catch (final IOException e) {
             ReferenceCountUtil.safeRelease(addressedByteBuf);
-            LOG.debug("Unable deserialize message of type {} to {}: {}", addressedByteBuf.getClass()::getSimpleName, IntermediateEnvelope.class::getSimpleName, e::getMessage);
+            LOG.debug("Unable deserialize message of type {} to {}.", addressedByteBuf.getClass()::getSimpleName, IntermediateEnvelope.class::getSimpleName, () -> e);
             future.completeExceptionally(new Exception("Message could not be deserialized.", e));
         }
     }

@@ -63,13 +63,13 @@ public final class HopCountGuard extends SimpleOutboundHandler<AddressedIntermed
             }
             else {
                 // too many hops, discard message
-                LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message '{}'", msg);
+                LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message '{}'", () -> sanitizeLogArg(msg));
                 ReferenceCountUtil.safeRelease(msg);
                 future.completeExceptionally(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
             }
         }
-        catch (final IllegalArgumentException | IOException e) {
-            LOG.error("Unable to read/increment hop count from message '{}': {}", () -> sanitizeLogArg(msg.getContent()), e::getMessage);
+        catch (final IOException e) {
+            LOG.error("Unable to read/increment hop count from message. Discard message '{}'", () -> sanitizeLogArg(msg), () -> e);
             ReferenceCountUtil.safeRelease(msg);
             future.completeExceptionally(new Exception("Unable to read/increment hop count from message.", e));
         }

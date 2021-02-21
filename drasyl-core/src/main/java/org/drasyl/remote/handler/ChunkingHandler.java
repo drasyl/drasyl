@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.remote.protocol.IntermediateEnvelope.MAGIC_NUMBER_LENGTH;
+import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
  * This handler is responsible for merging incoming message chunks into a single message as well as
@@ -76,9 +77,9 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                 ctx.fireRead(sender, msg, future);
             }
         }
-        catch (final IllegalArgumentException | IOException e) {
-            future.completeExceptionally(new Exception("Unable to read message", e));
-            LOG.debug("Can't read message `{}` due to the following error: ", msg, e);
+        catch (final IOException e) {
+            future.completeExceptionally(new Exception("Unable to read message.", e));
+            LOG.debug("Can't read message `{}` due to the following error: ", () -> sanitizeLogArg(msg), () -> e);
             ReferenceCountUtil.safeRelease(msg);
         }
     }
@@ -134,7 +135,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                 final int messageLength = messageByteBuf.readableBytes();
                 final int messageMaxContentLength = ctx.config().getRemoteMessageMaxContentLength();
                 if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
-                    LOG.debug("The message `{}` has a size of {} bytes and is too large. The max allowed size is {} bytes. Message dropped.", msg, messageLength, messageMaxContentLength);
+                    LOG.debug("The message `{}` has a size of {} bytes and is too large. The max allowed size is {} bytes. Message dropped.", () -> sanitizeLogArg(msg), () -> messageLength, () -> messageMaxContentLength);
                     future.completeExceptionally(new Exception("The message has a size of " + messageLength + " bytes and is too large. The max. allowed size is " + messageMaxContentLength + " bytes. Message dropped."));
                     ReferenceCountUtil.safeRelease(messageByteBuf);
                 }
@@ -152,8 +153,8 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
             }
         }
         catch (final IllegalStateException | IOException e) {
-            future.completeExceptionally(new Exception("Unable to read message", e));
-            LOG.debug("Can't read message `{}` due to the following error: ", msg, e);
+            future.completeExceptionally(new Exception("Unable to read message.", e));
+            LOG.debug("Can't read message `{}` due to the following error: ", () -> sanitizeLogArg(msg), () -> e);
             ReferenceCountUtil.safeRelease(msg);
         }
     }
@@ -180,7 +181,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
 
             final int mtu = ctx.config().getRemoteMessageMtu();
             final UnsignedShort totalChunks = totalChunks(messageSize, mtu, partialChunkHeader);
-            LOG.debug("The message `{}` has a size of {} bytes and must be split to {} chunks (MTU = {}).", msg, messageSize, totalChunks, mtu);
+            LOG.debug("The message `{}` has a size of {} bytes and must be split to {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> mtu);
             final CompletableFuture<Void>[] chunkFutures = new CompletableFuture[totalChunks.getValue()];
 
             final int chunkSize = getChunkSize(partialChunkHeader, mtu);

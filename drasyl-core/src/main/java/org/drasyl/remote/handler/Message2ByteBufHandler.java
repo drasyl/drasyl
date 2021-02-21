@@ -58,7 +58,7 @@ public final class Message2ByteBufHandler extends SimpleOutboundHandler<Addresse
             ctx.write(recipient, new AddressedByteBuf(msg.getSender(), msg.getRecipient(), byteBuf), future);
         }
         catch (final IOException e) {
-            LOG.error("Unable to serialize '{}': {}", () -> sanitizeLogArg(msg), e::getMessage);
+            LOG.error("Unable to serialize '{}'.", () -> sanitizeLogArg(msg), () -> e);
             future.completeExceptionally(new Exception("Message could not be serialized. This could indicate a bug in drasyl.", e));
         }
     }
