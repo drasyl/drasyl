@@ -102,16 +102,16 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler);
-            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
-            final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
-            pipeline.processOutbound(recipient, payload);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler)) {
+                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+                final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
+                pipeline.processOutbound(recipient, payload);
 
-            inboundMessageTestObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, payload));
-            outboundMessageTestObserver.assertNoValues();
-            pipeline.close();
+                inboundMessageTestObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new DefaultAddressedEnvelope<>(sender, null, payload));
+                outboundMessageTestObserver.assertNoValues();
+            }
         }
 
         @Test
@@ -142,21 +142,21 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler);
-            final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler)) {
+                final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
+                final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
-            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            when(identity.getPublicKey()).thenReturn(sender);
-            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-            final byte[] payload = new byte[]{};
-            pipeline.processOutbound(recipient, payload);
+                final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+                when(identity.getPublicKey()).thenReturn(sender);
+                final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+                final byte[] payload = new byte[]{};
+                pipeline.processOutbound(recipient, payload);
 
-            outboundMessageTestObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new ApplicationMessage(sender, recipient, payload));
-            inboundMessageTestObserver.assertNoValues();
-            pipeline.close();
+                outboundMessageTestObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new ApplicationMessage(sender, recipient, payload));
+                inboundMessageTestObserver.assertNoValues();
+            }
         }
     }
 
@@ -190,23 +190,23 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler);
-            final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
-            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler)) {
+                final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
+                final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+                final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            when(identity.getPublicKey()).thenReturn(sender);
-            final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
-            final SerializedApplicationMessage msg1 = new SerializedApplicationMessage(sender, sender, byte[].class.getName(), msg);
-            pipeline.processInbound(msg1.getSender(), msg1);
+                final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+                when(identity.getPublicKey()).thenReturn(sender);
+                final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
+                final SerializedApplicationMessage msg1 = new SerializedApplicationMessage(sender, sender, byte[].class.getName(), msg);
+                pipeline.processInbound(msg1.getSender(), msg1);
 
-            outboundMessageTestObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new ApplicationMessage(sender, sender, msg));
-            inboundMessageTestObserver.assertNoValues();
-            eventTestObserver.assertNoValues();
-            pipeline.close();
+                outboundMessageTestObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new ApplicationMessage(sender, sender, msg));
+                inboundMessageTestObserver.assertNoValues();
+                eventTestObserver.assertNoValues();
+            }
         }
 
         @Test
@@ -237,24 +237,24 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
-            final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
-            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+                final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
+                final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
-            when(msg.getSender()).thenReturn(mock(CompressedPublicKey.class));
+                final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
+                when(msg.getSender()).thenReturn(mock(CompressedPublicKey.class));
 
-            pipeline.processInbound(msg.getSender(), msg);
+                pipeline.processInbound(msg.getSender(), msg);
 
-            inboundMessageTestObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(msg.getSender(), null, msg));
-            eventTestObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(MessageEvent.of(msg.getSender(), msg));
-            outboundMessageTestObserver.assertNoValues();
-            pipeline.close();
+                inboundMessageTestObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new DefaultAddressedEnvelope<>(msg.getSender(), null, msg));
+                eventTestObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(MessageEvent.of(msg.getSender(), msg));
+                outboundMessageTestObserver.assertNoValues();
+            }
         }
 
         @Test
@@ -284,15 +284,15 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            final NodeUpEvent event = mock(NodeUpEvent.class);
-            pipeline.processInbound(event);
+                final NodeUpEvent event = mock(NodeUpEvent.class);
+                pipeline.processInbound(event);
 
-            eventTestObserver.await(1, TimeUnit.SECONDS);
-            eventTestObserver.assertNoValues();
-            pipeline.close();
+                eventTestObserver.await(1, TimeUnit.SECONDS);
+                eventTestObserver.assertNoValues();
+            }
         }
 
         @Test
@@ -322,16 +322,16 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            final Event event = mock(Event.class);
-            pipeline.processInbound(event);
+                final Event event = mock(Event.class);
+                pipeline.processInbound(event);
 
-            eventTestObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(event);
-            pipeline.close();
+                eventTestObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(event);
+            }
         }
 
         @Test

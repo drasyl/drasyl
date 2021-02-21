@@ -58,53 +58,53 @@ class EmbeddedPipelineTest {
 
     @Test
     void shouldReturnInboundMessagesAndEvents() {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager);
-        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
-        final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
-        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+            final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
+            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
+            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
 
-        when(msg.getSender()).thenReturn(sender);
+            when(msg.getSender()).thenReturn(sender);
 
-        pipeline.processInbound(msg.getSender(), msg);
+            pipeline.processInbound(msg.getSender(), msg);
 
-        inboundMessageTestObserver.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
-        eventTestObserver.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(MessageEvent.of(sender, msg));
-        outboundMessageTestObserver.assertNoValues();
-        pipeline.close();
+            inboundMessageTestObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+            eventTestObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(MessageEvent.of(sender, msg));
+            outboundMessageTestObserver.assertNoValues();
+        }
     }
 
     @Test
     void shouldReturnOutboundMessages() {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
                 peersManager,
                 AddressedEnvelopeHandler.INSTANCE,
                 new HandlerAdapter(),
                 new HandlerAdapter()
-        );
-        final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
-        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+        )) {
+            final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-        when(identity.getPublicKey()).thenReturn(sender);
-        final byte[] msg = new byte[]{};
-        pipeline.processOutbound(recipient, msg);
+            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+            when(identity.getPublicKey()).thenReturn(sender);
+            final byte[] msg = new byte[]{};
+            pipeline.processOutbound(recipient, msg);
 
-        outboundMessageTestObserver.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new ApplicationMessage(sender, recipient, msg));
-        inboundMessageTestObserver.assertNoValues();
-        eventTestObserver.assertNoValues();
-        pipeline.close();
+            outboundMessageTestObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new ApplicationMessage(sender, recipient, msg));
+            inboundMessageTestObserver.assertNoValues();
+            eventTestObserver.assertNoValues();
+        }
     }
 }

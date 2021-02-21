@@ -76,7 +76,7 @@ class GroupsManagerPluginTest {
             final GroupsManagerPlugin plugin = new GroupsManagerPlugin(ConfigFactory.parseMap(Map.of(
                     DATABASE_URI, "",
                     GROUPS, Map.of(),
-                    API_ENABLED, true,
+                    API_ENABLED, false,
                     API_BIND_HOST, "0.0.0.0",
                     API_BIND_PORT, 8080)));
             when(env.getPipeline()).thenReturn(pipeline);

@@ -130,33 +130,33 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnEventTriggeredWithMultipleHandler() {
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
-            final TestObserver<Event> events = pipeline.inboundEvents().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
+                final TestObserver<Event> events = pipeline.inboundEvents().test();
 
-            final Event event = mock(Event.class);
-            pipeline.processInbound(event);
+                final Event event = mock(Event.class);
+                pipeline.processInbound(event);
 
-            events.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(event);
-            pipeline.close();
+                events.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(event);
+            }
         }
 
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler() {
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
-            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
+                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
-            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
-            when(msg.getSender()).thenReturn(sender);
+                final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+                final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
+                when(msg.getSender()).thenReturn(sender);
 
-            pipeline.processInbound(msg.getSender(), msg);
+                pipeline.processInbound(msg.getSender(), msg);
 
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
-            pipeline.close();
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+            }
         }
     }
 }

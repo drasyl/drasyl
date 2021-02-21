@@ -113,12 +113,11 @@ class LocalHostDiscoveryTest {
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
-            pipeline.close();
+                verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+            }
         }
 
         @Test
@@ -131,12 +130,11 @@ class LocalHostDiscoveryTest {
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(discoveryPath, timeout(1_000)).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
-            pipeline.close();
+                verify(discoveryPath, timeout(1_000)).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
+            }
         }
 
         @Test
@@ -159,13 +157,12 @@ class LocalHostDiscoveryTest {
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
-            verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
-            pipeline.close();
+                verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+                verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
+            }
         }
 
         @Test
@@ -204,13 +201,12 @@ class LocalHostDiscoveryTest {
             when(fileSystem.newWatchService()).thenReturn(watchService);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(watchService, timeout(1_000)).poll();
-            await().untilAsserted(() -> assertThat(path.toFile(), anExistingFile()));
-            pipeline.close();
+                verify(watchService, timeout(1_000)).poll();
+                await().untilAsserted(() -> assertThat(path.toFile(), anExistingFile()));
+            }
         }
     }
 
@@ -223,14 +219,13 @@ class LocalHostDiscoveryTest {
             routes.put(publicKey, address);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(watchDisposable, timeout(1_000)).dispose();
-            verify(postDisposable, timeout(1_000)).dispose();
-            await().untilAsserted(() -> assertTrue(routes.isEmpty()));
-            pipeline.close();
+                verify(watchDisposable, timeout(1_000)).dispose();
+                verify(postDisposable, timeout(1_000)).dispose();
+                await().untilAsserted(() -> assertTrue(routes.isEmpty()));
+            }
         }
 
         @Test
@@ -240,14 +235,13 @@ class LocalHostDiscoveryTest {
             routes.put(publicKey, address);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(watchDisposable, timeout(1_000)).dispose();
-            verify(postDisposable, timeout(1_000)).dispose();
-            await().untilAsserted(() -> assertTrue(routes.isEmpty()));
-            pipeline.close();
+                verify(watchDisposable, timeout(1_000)).dispose();
+                verify(postDisposable, timeout(1_000)).dispose();
+                await().untilAsserted(() -> assertTrue(routes.isEmpty()));
+            }
         }
     }
 

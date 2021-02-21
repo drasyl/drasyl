@@ -123,16 +123,16 @@ class GroupsClientHandlerTest {
         void shouldDeregisterFromGroups() {
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager);
-            final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundMessages(GroupLeaveMessage.class).test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
+                final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundMessages(GroupLeaveMessage.class).test();
 
-            pipeline.addLast("handler", handler);
-            pipeline.remove("handler");
+                pipeline.addLast("handler", handler);
+                pipeline.remove("handler");
 
-            testObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new GroupLeaveMessage(group));
-            pipeline.close();
+                testObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new GroupLeaveMessage(group));
+            }
         }
     }
 

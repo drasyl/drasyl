@@ -45,14 +45,14 @@ class LoopbackMessageHandlerTest {
     @Test
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final CompressedPublicKey recipient,
                                                     @Mock final ApplicationMessage message) {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler());
-        final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler())) {
+            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-        pipeline.processOutbound(recipient, message);
+            pipeline.processOutbound(recipient, message);
 
-        outboundMessages.awaitCount(1)
-                .assertValueCount(1);
-        pipeline.close();
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1);
+        }
     }
 
     @Test
@@ -61,13 +61,13 @@ class LoopbackMessageHandlerTest {
         when(identity.getPublicKey()).thenReturn(recipient);
         when(message.getRecipient()).thenReturn(recipient);
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler(true));
-        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler(true))) {
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-        pipeline.processOutbound(recipient, message);
+            pipeline.processOutbound(recipient, message);
 
-        inboundMessages.awaitCount(1)
-                .assertValueCount(1);
-        pipeline.close();
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1);
+        }
     }
 }

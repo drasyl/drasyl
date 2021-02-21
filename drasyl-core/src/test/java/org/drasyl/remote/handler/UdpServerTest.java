@@ -48,7 +48,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Set;
 
-import static java.net.InetSocketAddress.createUnresolved;
 import static org.drasyl.remote.handler.UdpServer.determineActualEndpoints;
 import static org.drasyl.util.NetworkUtil.getAddresses;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,12 +82,12 @@ class UdpServerTest {
             when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
 
             final UdpServer handler = new UdpServer(bootstrap, null);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
 
-            pipeline.processInbound(event).join();
+                pipeline.processInbound(event).join();
 
-            verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
-            pipeline.close();
+                verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
+            }
         }
 
         @Nested
@@ -127,12 +126,12 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
 
-            pipeline.processInbound(event).join();
+                pipeline.processInbound(event).join();
 
-            verify(channel).close();
-            pipeline.close();
+                verify(channel).close();
+            }
         }
 
         @Test
@@ -140,12 +139,12 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
 
-            pipeline.processInbound(event).join();
+                pipeline.processInbound(event).join();
 
-            verify(channel).close();
-            pipeline.close();
+                verify(channel).close();
+            }
         }
     }
 
@@ -160,12 +159,12 @@ class UdpServerTest {
             when(channel.writeAndFlush(any()).isSuccess()).thenReturn(true);
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
 
-            pipeline.processOutbound(recipient, msg).join();
+                pipeline.processOutbound(recipient, msg).join();
 
-            verify(channel, times(3)).writeAndFlush(any());
-            pipeline.close();
+                verify(channel, times(3)).writeAndFlush(any());
+            }
         }
 
         @Test
@@ -187,14 +186,14 @@ class UdpServerTest {
 
             final UdpServer handler = new UdpServer(bootstrap, null);
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<AddressedByteBuf> inboundMessages = pipeline.inboundMessages(AddressedByteBuf.class).test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<AddressedByteBuf> inboundMessages = pipeline.inboundMessages(AddressedByteBuf.class).test();
 
-            pipeline.processInbound(event).join();
+                pipeline.processInbound(event).join();
 
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1);
-            pipeline.close();
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1);
+            }
         }
     }
 }

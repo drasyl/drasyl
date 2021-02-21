@@ -71,12 +71,11 @@ class MonitoringTest {
             when(registrySupplier.apply(any())).thenReturn(registry);
 
             final Monitoring handler = new Monitoring(counters, registrySupplier, null);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(registrySupplier).apply(any());
-            pipeline.close();
+                verify(registrySupplier).apply(any());
+            }
         }
     }
 
@@ -85,23 +84,21 @@ class MonitoringTest {
         @Test
         void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
             final Monitoring handler = new Monitoring(counters, registrySupplier, registry);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(registry).close();
-            pipeline.close();
+                verify(registry).close();
+            }
         }
 
         @Test
         void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(registry).close();
-            pipeline.close();
+                verify(registry).close();
+            }
         }
     }
 
@@ -110,42 +107,42 @@ class MonitoringTest {
         @Test
         void shouldPassthroughAllEvents(@Mock final Event event) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
 
-            pipeline.processInbound(event);
+                pipeline.processInbound(event);
 
-            inboundEvents.awaitCount(1)
-                    .assertValue(event);
-            pipeline.close();
+                inboundEvents.awaitCount(1)
+                        .assertValue(event);
+            }
         }
 
         @Test
         void shouldPassthroughInboundMessages(@Mock final Address sender,
                                               @Mock final IntermediateEnvelope<MessageLite> message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(sender, message);
+                pipeline.processInbound(sender, message);
 
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1);
-            pipeline.close();
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1);
+            }
         }
 
         @Test
         void shouldPassthroughOutboundMessages(@Mock final Address recipient,
                                                @Mock final IntermediateEnvelope<MessageLite> message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-            pipeline.processOutbound(recipient, message);
+                pipeline.processOutbound(recipient, message);
 
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1);
-            pipeline.close();
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1);
+            }
         }
     }
 }

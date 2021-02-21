@@ -100,15 +100,15 @@ class IntermediateEnvelopeTest {
                 .setPayload(ByteString.copyFrom("Lorem ipsum dolor sit amet".getBytes())).build();
 
         message = Unpooled.buffer();
-        final ByteBufOutputStream outputStream = new ByteBufOutputStream(message);
-        outputStream.write(IntermediateEnvelope.magicNumber());
-        publicHeader.writeDelimitedTo(outputStream);
-        publicHeaderLength = outputStream.writtenBytes();
-        privateHeader.writeDelimitedTo(outputStream);
-        privateHeaderLength = outputStream.writtenBytes() - publicHeaderLength;
-        body.writeDelimitedTo(outputStream);
-        bodyLength = outputStream.writtenBytes() - publicHeaderLength - privateHeaderLength;
-        outputStream.close();
+        try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(message)) {
+            outputStream.write(IntermediateEnvelope.magicNumber());
+            publicHeader.writeDelimitedTo(outputStream);
+            publicHeaderLength = outputStream.writtenBytes();
+            privateHeader.writeDelimitedTo(outputStream);
+            privateHeaderLength = outputStream.writtenBytes() - publicHeaderLength;
+            body.writeDelimitedTo(outputStream);
+            bodyLength = outputStream.writtenBytes() - publicHeaderLength - privateHeaderLength;
+        }
     }
 
     @Nested

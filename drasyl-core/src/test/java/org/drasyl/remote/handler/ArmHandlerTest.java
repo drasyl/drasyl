@@ -74,24 +74,23 @@ class ArmHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final ArmHandler handler = ArmHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
-            }).test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                }).test();
 
-            pipeline.processOutbound(recipient, addressedMessageEnvelope).get();
+                pipeline.processOutbound(recipient, addressedMessageEnvelope).get();
 
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(m -> {
-                        try {
-                            return m.getContent().getSignature().length != 0;
-                        }
-                        finally {
-                            ReferenceCountUtil.safeRelease(m.getContent());
-                        }
-                    });
-
-            pipeline.close();
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> {
+                            try {
+                                return m.getContent().getSignature().length != 0;
+                            }
+                            finally {
+                                ReferenceCountUtil.safeRelease(m.getContent());
+                            }
+                        });
+            }
         }
 
         @SuppressWarnings("rawtypes")
@@ -106,19 +105,18 @@ class ArmHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final ArmHandler handler = ArmHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
-            pipeline.processOutbound(recipient, addressedMessageEnvelope).get();
+                pipeline.processOutbound(recipient, addressedMessageEnvelope).get();
 
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(m -> {
-                        final IntermediateEnvelope<?> content = (IntermediateEnvelope<?>) m.getContent();
-                        return content.getSignature().length == 0;
-                    });
-
-            pipeline.close();
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> {
+                            final IntermediateEnvelope<?> content = (IntermediateEnvelope<?>) m.getContent();
+                            return content.getSignature().length == 0;
+                        });
+            }
         }
 
         @SuppressWarnings("rawtypes")
@@ -134,15 +132,15 @@ class ArmHandlerTest {
             when(armedMessage).thenThrow(IllegalStateException.class);
 
             final ArmHandler handler = ArmHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
-            assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, addressedMessageEnvelope).get());
-            outboundMessages.await(1, SECONDS);
-            outboundMessages.assertNoValues();
+                assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, addressedMessageEnvelope).get());
+                outboundMessages.await(1, SECONDS);
+                outboundMessages.assertNoValues();
 
-            ReferenceCountUtil.safeRelease(armedMessage);
-            pipeline.close();
+                ReferenceCountUtil.safeRelease(armedMessage);
+            }
         }
     }
 
@@ -159,17 +157,16 @@ class ArmHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final ArmHandler handler = ArmHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
-            }).test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                }).test();
 
-            pipeline.processInbound(sender, addressedMessageEnvelope).get();
+                pipeline.processInbound(sender, addressedMessageEnvelope).get();
 
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(m -> m.getContent().getPrivateHeader() != null);
-
-            pipeline.close();
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m.getContent().getPrivateHeader() != null);
+            }
         }
 
         @Test
@@ -183,17 +180,17 @@ class ArmHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final ArmHandler handler = ArmHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(sender, addressedMessageEnvelope).get();
+                pipeline.processInbound(sender, addressedMessageEnvelope).get();
 
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(addressedMessageEnvelope);
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(addressedMessageEnvelope);
 
-            ReferenceCountUtil.safeRelease(messageEnvelope);
-            pipeline.close();
+                ReferenceCountUtil.safeRelease(messageEnvelope);
+            }
         }
 
         @Test
@@ -211,14 +208,13 @@ class ArmHandlerTest {
             final AddressedIntermediateEnvelope<Application> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, messageEnvelope);
 
             final ArmHandler handler = ArmHandler.INSTANCE;
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, addressedMessageEnvelope).get());
-            inboundMessages.await(1, SECONDS);
-            inboundMessages.assertNoValues();
-
-            pipeline.close();
+                assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, addressedMessageEnvelope).get());
+                inboundMessages.await(1, SECONDS);
+                inboundMessages.assertNoValues();
+            }
         }
     }
 }

@@ -55,14 +55,14 @@ class OtherNetworkFilterTest {
         when(message.refCnt()).thenReturn(1);
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-        pipeline.processInbound(message.getSender(), message);
+            pipeline.processInbound(message.getSender(), message);
 
-        inboundMessages.await(1, SECONDS);
-        inboundMessages.assertNoValues();
-        pipeline.close();
+            inboundMessages.await(1, SECONDS);
+            inboundMessages.assertNoValues();
+        }
     }
 
     @Test
@@ -71,14 +71,14 @@ class OtherNetworkFilterTest {
         when(message.getContent().getNetworkId()).thenReturn(123);
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
-        pipeline.processInbound(message.getSender(), message);
+            pipeline.processInbound(message.getSender(), message);
 
-        inboundMessages.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
-        pipeline.close();
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
+        }
     }
 }

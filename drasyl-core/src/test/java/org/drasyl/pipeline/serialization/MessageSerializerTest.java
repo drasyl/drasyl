@@ -62,15 +62,15 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(Map.of("string", new StringSerializer()));
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(String.class, "string"));
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(address, message);
+                pipeline.processInbound(address, message);
 
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(m -> m instanceof ApplicationMessage);
-            pipeline.close();
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m instanceof ApplicationMessage);
+            }
         }
 
         @Test
@@ -83,30 +83,30 @@ class MessageSerializerTest {
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(Object.class, "object"));
             when(serializer.fromByteArray(any(), any())).thenReturn("Hallo Welt");
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(address, message);
+                pipeline.processInbound(address, message);
 
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(m -> m instanceof ApplicationMessage);
-            pipeline.close();
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m instanceof ApplicationMessage);
+            }
         }
 
         @Test
         void shouldBeAbleToDeserializeNullMessage(@Mock final CompressedPublicKey address) {
             final SerializedApplicationMessage message = new SerializedApplicationMessage(address, address, null, new byte[0]);
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(address, message);
+                pipeline.processInbound(address, message);
 
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(m -> m instanceof ApplicationMessage && ((ApplicationMessage) m).getContent() == null);
-            pipeline.close();
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m instanceof ApplicationMessage && ((ApplicationMessage) m).getContent() == null);
+            }
         }
 
         @Test
@@ -114,13 +114,13 @@ class MessageSerializerTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) throws ClassNotFoundException, InterruptedException {
             when(message.getTypeClazz()).then(invocation -> String.class);
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
-            inboundMessages.await(1, SECONDS);
-            inboundMessages.assertNoValues();
-            pipeline.close();
+                assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
+                inboundMessages.await(1, SECONDS);
+                inboundMessages.assertNoValues();
+            }
         }
 
         @Test
@@ -133,13 +133,13 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(Map.of("string", serializer));
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(String.class, "string"));
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
-            inboundMessages.await(1, SECONDS);
-            inboundMessages.assertNoValues();
-            pipeline.close();
+                assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
+                inboundMessages.await(1, SECONDS);
+                inboundMessages.assertNoValues();
+            }
         }
     }
 
@@ -152,15 +152,15 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(Map.of("string", new StringSerializer()));
             when(config.getSerializationsBindingsOutbound()).thenReturn(Map.of(String.class, "string"));
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-            pipeline.processOutbound(address, message);
+                pipeline.processOutbound(address, message);
 
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(m -> m instanceof SerializedApplicationMessage);
-            pipeline.close();
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m instanceof SerializedApplicationMessage);
+            }
         }
 
         @Test
@@ -172,15 +172,15 @@ class MessageSerializerTest {
             when(config.getSerializationsBindingsOutbound()).thenReturn(Map.of(Object.class, "object"));
             when(serializer.toByteArray(any())).thenReturn(new byte[0]);
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-            pipeline.processOutbound(address, message);
+                pipeline.processOutbound(address, message);
 
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(m -> m instanceof SerializedApplicationMessage);
-            pipeline.close();
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(m -> m instanceof SerializedApplicationMessage);
+            }
         }
 
         @Test
@@ -188,13 +188,13 @@ class MessageSerializerTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) throws InterruptedException {
             when(message.getContent()).thenReturn("Hallo Welt");
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-            assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
-            outboundMessages.await(1, SECONDS);
-            outboundMessages.assertNoValues();
-            pipeline.close();
+                assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
+                outboundMessages.await(1, SECONDS);
+                outboundMessages.assertNoValues();
+            }
         }
 
         @Test
@@ -206,13 +206,13 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(Map.of("string", serializer));
             when(config.getSerializationsBindingsOutbound()).thenReturn(Map.of(String.class, "string"));
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-            assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
-            outboundMessages.await(1, SECONDS);
-            outboundMessages.assertNoValues();
-            pipeline.close();
+                assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
+                outboundMessages.await(1, SECONDS);
+                outboundMessages.assertNoValues();
+            }
         }
 
         @Test
@@ -220,15 +220,15 @@ class MessageSerializerTest {
                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
             when(message.getContent()).thenReturn(null);
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-            pipeline.processOutbound(address, message);
+                pipeline.processOutbound(address, message);
 
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new SerializedApplicationMessage(message.getSender(), message.getRecipient(), null, new byte[0]));
-            pipeline.close();
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new SerializedApplicationMessage(message.getSender(), message.getRecipient(), null, new byte[0]));
+            }
         }
     }
 }
