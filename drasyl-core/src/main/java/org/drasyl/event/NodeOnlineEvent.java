@@ -32,7 +32,12 @@ package org.drasyl.event;
  * @see PeerRelayEvent
  */
 public class NodeOnlineEvent extends AbstractNodeEvent {
-    private NodeOnlineEvent(final Node node) {
+    /**
+     * @throws NullPointerException if {@code node} is {@code null}
+     * @deprecated Use {@link #of(Node)} instead.
+     */
+    @Deprecated(since = "0.4.0", forRemoval = true)
+    public NodeOnlineEvent(final Node node) {
         super(node);
     }
 

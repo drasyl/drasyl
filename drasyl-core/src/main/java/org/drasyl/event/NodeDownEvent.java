@@ -26,8 +26,10 @@ package org.drasyl.event;
 public class NodeDownEvent extends AbstractNodeEvent {
     /**
      * @throws NullPointerException if {@code node} is {@code null}
+     * @deprecated Use {@link #of(Node)} instead.
      */
-    private NodeDownEvent(final Node node) {
+    @Deprecated(since = "0.4.0", forRemoval = true)
+    public NodeDownEvent(final Node node) {
         super(node);
     }
 

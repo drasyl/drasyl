@@ -34,7 +34,12 @@ public class MessageEvent implements Event {
     private final CompressedPublicKey sender;
     private final Object payload;
 
-    private MessageEvent(final CompressedPublicKey sender, final Object payload) {
+    /**
+     * @throws NullPointerException if {@code sender} is {@code null}
+     * @deprecated Use {@link #of(CompressedPublicKey, Object)} instead.
+     */
+    @Deprecated(since = "0.4.0", forRemoval = true)
+    public MessageEvent(final CompressedPublicKey sender, final Object payload) {
         this.sender = requireNonNull(sender);
         this.payload = payload;
     }

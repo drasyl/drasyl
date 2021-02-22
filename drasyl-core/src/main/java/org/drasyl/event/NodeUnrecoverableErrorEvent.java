@@ -32,7 +32,12 @@ import static java.util.Objects.requireNonNull;
 public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
     private final Throwable error;
 
-    private NodeUnrecoverableErrorEvent(final Node node, final Throwable error) {
+    /**
+     * @throws NullPointerException if {@code node} or {@code error} is {@code null}
+     * @deprecated Use {@link #of(Node, Throwable)} instead.
+     */
+    @Deprecated(since = "0.4.0", forRemoval = true)
+    public NodeUnrecoverableErrorEvent(final Node node, final Throwable error) {
         super(node);
         this.error = requireNonNull(error);
     }

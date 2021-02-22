@@ -21,6 +21,7 @@ package org.drasyl.identity;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.HexUtil;
 import org.drasyl.util.InternPool;
 
 import java.security.PrivateKey;
@@ -40,9 +41,24 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      *
      * @param compressedKey compressed private key
      * @throws IllegalArgumentException if the string parameter does not conform to a valid key
+     * @deprecated Use {@link #of(String)} instead.
      */
-    private CompressedPrivateKey(final String compressedKey) {
+    @Deprecated(since = "0.4.0", forRemoval = true)
+    public CompressedPrivateKey(final String compressedKey) {
         super(compressedKey);
+    }
+
+    /**
+     * Creates a new compressed private key from the given private key.
+     *
+     * @param key compressed private key
+     * @throws IllegalArgumentException if parameter does not conform to a valid hexadecimal string
+     * @throws CryptoException          if the parameter does not conform to a valid key
+     * @deprecated this will be removed in the next release.
+     */
+    @Deprecated(since = "0.4.0", forRemoval = true)
+    public CompressedPrivateKey(final PrivateKey key) throws CryptoException {
+        this(HexUtil.bytesToHex(Crypto.compressedKey(key)));
     }
 
     /**

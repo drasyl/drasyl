@@ -24,7 +24,11 @@ package org.drasyl.event;
  * This is an immutable object.
  */
 public class NodeUpEvent extends AbstractNodeEvent {
-    private NodeUpEvent(final Node node) {
+    /**
+     * @deprecated Use {@link #of(Node)} instead.
+     */
+    @Deprecated(since = "0.4.0", forRemoval = true)
+    public NodeUpEvent(final Node node) {
         super(node);
     }
 

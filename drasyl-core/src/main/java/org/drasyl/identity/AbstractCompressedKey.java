@@ -103,4 +103,12 @@ abstract class AbstractCompressedKey<K> implements Address {
     public String toString() {
         return HexUtil.bytesToHex(this.compressedKey);
     }
+
+    /**
+     * @deprecated Use {@link #toString()} ()} instead.
+     */
+    @Deprecated(since = "0.4.0", forRemoval = true)
+    public String getCompressedKey() {
+        return toString();
+    }
 }
