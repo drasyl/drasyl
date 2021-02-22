@@ -149,7 +149,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         }
         else {
             tryWatchDirectory(ctx, discoveryPath);
-            scan(ctx);
+            ctx.dependentScheduler().scheduleDirect(() -> scan(ctx));
             keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.identity().getPublicKey().toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
