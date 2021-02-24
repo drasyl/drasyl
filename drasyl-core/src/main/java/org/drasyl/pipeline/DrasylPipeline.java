@@ -30,6 +30,7 @@ import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.handler.AddressedEnvelopeHandler;
 import org.drasyl.pipeline.serialization.MessageSerializer;
+import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.ArmHandler;
 import org.drasyl.remote.handler.ByteBuf2MessageHandler;
 import org.drasyl.remote.handler.ChunkingHandler;

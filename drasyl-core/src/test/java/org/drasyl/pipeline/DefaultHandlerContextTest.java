@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -23,6 +23,7 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
