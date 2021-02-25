@@ -74,7 +74,6 @@ public final class NetworkUtil {
      * Services for external IPv6 address detection.
      */
     private static final URL[] EXTERNAL_IPV6_ADDRESS_SERVICES = {
-            createUrl("https://ipv6.icanhazip.com"),
             createUrl("https://ipv6.wtfismyip.com/text"),
             createUrl("https://ipv6.ipecho.roebert.eu")
     };
