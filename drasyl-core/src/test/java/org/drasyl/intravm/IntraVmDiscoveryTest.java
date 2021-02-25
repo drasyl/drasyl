@@ -28,6 +28,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;

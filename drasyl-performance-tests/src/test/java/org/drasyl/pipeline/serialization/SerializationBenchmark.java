@@ -16,11 +16,10 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.pipeline.serialization;
 
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
-import org.drasyl.pipeline.serialization.Serialization;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -43,7 +42,21 @@ public class SerializationBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void findSerializerFor(Blackhole blackhole) {
+    public void findSerializerFor(final Blackhole blackhole) {
         blackhole.consume(serializer.findSerializerFor("Hello"));
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void addSerializerWithHit() {
+        serializer.addSerializer(java.io.Serializable.class, Serialization.NULL_SERIALIZER); // has the most implementations
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void removeSerializerWithHit() {
+        serializer.removeSerializer(java.io.Serializable.class); // has the most implementations
     }
 }

@@ -41,6 +41,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,9 +57,9 @@ class MessageSerializerTest {
     class OnInboundMessage {
         @Test
         void shouldDeserializeMessageIfSerializerForConcreteClassExist(@Mock final CompressedPublicKey address,
-                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) throws ClassNotFoundException {
+                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
             when(message.getContent()).thenReturn("Hallo Welt".getBytes());
-            when(message.getTypeClazz()).then(invocation -> String.class);
+            when(message.getType()).thenReturn(String.class.getName());
             when(config.getSerializationSerializers()).thenReturn(Map.of("string", new StringSerializer()));
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(String.class, "string"));
 
@@ -76,12 +77,12 @@ class MessageSerializerTest {
         @Test
         void shouldDeserializeMessageIfSerializerForSuperClassExist(@Mock final CompressedPublicKey address,
                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message,
-                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Serializer serializer) throws ClassNotFoundException, IOException {
+                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Serializer serializer) throws IOException {
             when(message.getContent()).thenReturn("Hallo Welt".getBytes());
-            when(message.getTypeClazz()).then(invocation -> String.class);
+            when(message.getType()).thenReturn(String.class.getName());
             when(config.getSerializationSerializers()).thenReturn(Map.of("object", serializer));
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(Object.class, "object"));
-            when(serializer.fromByteArray(any(), any())).thenReturn("Hallo Welt");
+            when(serializer.fromByteArray(any(), anyString())).thenReturn("Hallo Welt");
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
@@ -96,7 +97,7 @@ class MessageSerializerTest {
 
         @Test
         void shouldBeAbleToDeserializeNullMessage(@Mock final CompressedPublicKey address) {
-            final SerializedApplicationMessage message = new SerializedApplicationMessage(address, address, null, new byte[0]);
+            final SerializedApplicationMessage message = new SerializedApplicationMessage(address, address, (String) null, new byte[0]);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
@@ -111,8 +112,8 @@ class MessageSerializerTest {
 
         @Test
         void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final CompressedPublicKey sender,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) throws ClassNotFoundException, InterruptedException {
-            when(message.getTypeClazz()).then(invocation -> String.class);
+                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) throws InterruptedException {
+            when(message.getType()).thenReturn(String.class.getName());
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
@@ -126,10 +127,10 @@ class MessageSerializerTest {
         @Test
         void shouldCompleteExceptionallyIfDeserializationFail(@Mock final CompressedPublicKey sender,
                                                               @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message,
-                                                              @Mock final Serializer serializer) throws IOException, ClassNotFoundException, InterruptedException {
+                                                              @Mock final Serializer serializer) throws IOException, InterruptedException {
             when(message.getContent()).thenReturn("Hallo Welt".getBytes());
-            when(message.getTypeClazz()).then(invocation -> String.class);
-            when(serializer.fromByteArray(any(), any())).thenThrow(IOException.class);
+            when(message.getType()).thenReturn(String.class.getName());
+            when(serializer.fromByteArray(any(), anyString())).thenThrow(IOException.class);
             when(config.getSerializationSerializers()).thenReturn(Map.of("string", serializer));
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(String.class, "string"));
 

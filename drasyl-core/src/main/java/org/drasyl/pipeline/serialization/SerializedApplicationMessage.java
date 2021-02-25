@@ -24,8 +24,6 @@ import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
-
 /**
  * A message from or to the application whose content has been serialized to a byte array so that
  * the message can be delivered to remote nodes.
@@ -72,15 +70,6 @@ public class SerializedApplicationMessage extends DefaultAddressedEnvelope<Compr
                 "type='" + type + "'," +
                 "content=byte[" + getContent().length + "]" +
                 '}';
-    }
-
-    public Class<?> getTypeClazz() throws ClassNotFoundException {
-        if (isNullOrEmpty(type)) {
-            return null;
-        }
-        else {
-            return Class.forName(type);
-        }
     }
 
     public String getType() {
