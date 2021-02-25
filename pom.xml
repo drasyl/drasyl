@@ -285,6 +285,13 @@
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.version}</version>
             </dependency>
+
+            <!-- Classpath Scanner -->
+            <dependency>
+                <groupId>io.github.classgraph</groupId>
+                <artifactId>classgraph</artifactId>
+                <version>4.8.102</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

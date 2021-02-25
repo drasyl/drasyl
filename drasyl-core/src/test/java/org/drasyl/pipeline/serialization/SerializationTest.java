@@ -29,15 +29,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,14 +48,15 @@ class SerializationTest {
         void shouldReturnSerializerIfSerializerForConcreteClassExist(@Mock final Serializer serializer) {
             final Serialization serialization = new Serialization(Map.of("my-serializer", serializer), Map.of(String.class, "my-serializer"));
 
-            assertEquals(serializer, serialization.findSerializerFor("Hallo Welt"));
+            assertEquals(serializer, serialization.findSerializerFor("Hallo Welt".getClass().getName()));
         }
 
         @Test
         void shouldReturnSerializerIfSerializerForSuperClassExist(@Mock final Serializer serializer) {
             final Serialization serialization = new Serialization(Map.of("my-serializer", serializer), Map.of(Map.class, "my-serializer"));
 
-            assertEquals(serializer, serialization.findSerializerFor(new HashMap<>()));
+            assertEquals(serializer, serialization.findSerializerFor(HashMap.class.getName()));
+            assertEquals(serializer, serialization.findSerializerFor(Map.class.getName()));
         }
 
         @Test
@@ -73,27 +71,27 @@ class SerializationTest {
                     Short.class, "my-serializer"
             ));
 
-            assertEquals(serializer, serialization.findSerializerFor(true));
-            assertEquals(serializer, serialization.findSerializerFor((char) 0));
-            assertEquals(serializer, serialization.findSerializerFor((byte) 0));
-            assertEquals(serializer, serialization.findSerializerFor(0f));
-            assertEquals(serializer, serialization.findSerializerFor(0));
-            assertEquals(serializer, serialization.findSerializerFor(0L));
-            assertEquals(serializer, serialization.findSerializerFor((short) 0));
+            assertEquals(serializer, serialization.findSerializerFor(Boolean.class.getName()));
+            assertEquals(serializer, serialization.findSerializerFor(Character.class.getName()));
+            assertEquals(serializer, serialization.findSerializerFor(Byte.class.getName()));
+            assertEquals(serializer, serialization.findSerializerFor(Float.class.getName()));
+            assertEquals(serializer, serialization.findSerializerFor(Integer.class.getName()));
+            assertEquals(serializer, serialization.findSerializerFor(Long.class.getName()));
+            assertEquals(serializer, serialization.findSerializerFor(Short.class.getName()));
         }
 
         @Test
         void shouldReturnNullIfNoSerializerExist() {
             final Serialization serialization = new Serialization(Map.of(), Map.of());
 
-            assertNull(serialization.findSerializerFor(new HashMap<>()));
+            assertNull(serialization.findSerializerFor(HashMap.class.getName()));
         }
 
         @Test
         void shouldReturnNullSerializerForNullObject() {
             final Serialization serialization = new Serialization(Map.of(), Map.of());
 
-            assertThat(serialization.findSerializerFor((String) null), instanceOf(NullSerializer.class));
+            assertThat(serialization.findSerializerFor(null), instanceOf(NullSerializer.class));
         }
     }
 
@@ -101,33 +99,37 @@ class SerializationTest {
     class AddSerializer {
         @Test
         void shouldAddSerializer() {
-            final Map<String, Serializer> serializers = new HashMap<>();
-            final Map<Class<?>, String> bindings = new HashMap<>();
-            final Map<Class<?>, Optional<Serializer>> mapping = new HashMap<>();
             final Serializer serializer = new MySerializer();
-            final Serialization serialization = new Serialization(lock, serializers, bindings, mapping);
+            final Serialization serialization = new Serialization(new HashMap<>(), new HashMap<>());
 
             serialization.addSerializer(HashMap.class, serializer);
 
-            assertThat(serializers, hasEntry(MySerializer.class.getName(), serializer));
-            assertThat(bindings, hasEntry(HashMap.class, MySerializer.class.getName()));
+            assertEquals(serializer, serialization.findSerializerFor(HashMap.class.getName()));
+            assertNull(serialization.findSerializerFor(Map.class.getName()));
         }
     }
 
     @Nested
-    class RemoteSerializer {
+    class RemoveSerializer {
+        @Test
+        void shouldRemoveClazz() {
+            final Serialization serialization = new Serialization(lock, new HashMap<>(Map.of(HashMap.class.getName(), new MySerializer(), Map.class.getName(), new MySerializer())));
+
+            serialization.removeSerializer(Map.class);
+
+            assertNull(serialization.findSerializerFor(HashMap.class.getName()));
+            assertNull(serialization.findSerializerFor(Map.class.getName()));
+        }
+
         @Test
         void shouldRemoveSerializer() {
-            final Serializer serializer = new MySerializer();
-            final Map<String, Serializer> serializers = new HashMap<>(Map.of(MySerializer.class.getName(), serializer));
-            final Map<Class<?>, String> bindings = new HashMap<>(Map.of(HashMap.class, MySerializer.class.getName(), String.class, MySerializer.class.getName()));
-            final Map<Class<?>, Optional<Serializer>> mapping = new HashMap<>();
-            final Serialization serialization = new Serialization(lock, serializers, bindings, mapping);
+            final MySerializer serializer = new MySerializer();
+            final Serialization serialization = new Serialization(lock, new HashMap<>(Map.of(HashMap.class.getName(), serializer, Map.class.getName(), serializer)));
 
             serialization.removeSerializer(serializer);
 
-            assertTrue(serializers.isEmpty());
-            assertTrue(bindings.isEmpty());
+            assertNull(serialization.findSerializerFor(HashMap.class.getName()));
+            assertNull(serialization.findSerializerFor(Map.class.getName()));
         }
     }
 

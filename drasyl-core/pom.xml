@@ -120,6 +120,12 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-influx</artifactId>
         </dependency>
+
+        <!-- Classpath Scanner -->
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
