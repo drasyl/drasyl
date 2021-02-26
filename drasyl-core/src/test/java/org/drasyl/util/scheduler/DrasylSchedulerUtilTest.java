@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@SuppressWarnings("common-java:SkippedUnitTests")
 @ExtendWith(MockitoExtension.class)
 @Disabled("This tests runs only when started in own JVM")
 class DrasylSchedulerUtilTest {

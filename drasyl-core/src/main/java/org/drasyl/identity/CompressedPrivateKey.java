@@ -43,6 +43,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      * @throws IllegalArgumentException if the string parameter does not conform to a valid key
      * @deprecated Use {@link #of(String)} instead.
      */
+    // make method private on next release
     @Deprecated(since = "0.4.0", forRemoval = true)
     public CompressedPrivateKey(final String compressedKey) {
         super(compressedKey);

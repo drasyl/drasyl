@@ -89,7 +89,7 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
-    private static final boolean bossGroupCreated = false;
+    private static final boolean BOSS_GROUP_CREATED = false;
     private static String version;
 
     static {
@@ -223,7 +223,7 @@ public abstract class DrasylNode {
      * </p>
      */
     public static void irrevocablyTerminate() {
-        if (INSTANCES.isEmpty() && bossGroupCreated) {
+        if (INSTANCES.isEmpty() && BOSS_GROUP_CREATED) {
             LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
         }
     }
@@ -293,8 +293,8 @@ public abstract class DrasylNode {
         try {
             return send(CompressedPublicKey.of(recipient), payload);
         }
-        catch (final NullPointerException | IllegalArgumentException e) {
-            return failedFuture(new DrasylException("Unable to parse recipient's public key", e));
+        catch (final IllegalArgumentException e) {
+            return failedFuture(new DrasylException("Recipient does not conform to a valid public key.", e));
         }
     }
 

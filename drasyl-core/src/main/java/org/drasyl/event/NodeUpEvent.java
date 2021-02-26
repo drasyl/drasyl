@@ -27,6 +27,7 @@ public class NodeUpEvent extends AbstractNodeEvent {
     /**
      * @deprecated Use {@link #of(Node)} instead.
      */
+    // make method private on next release
     @Deprecated(since = "0.4.0", forRemoval = true)
     public NodeUpEvent(final Node node) {
         super(node);

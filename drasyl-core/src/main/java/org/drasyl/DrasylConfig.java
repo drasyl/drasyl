@@ -499,7 +499,7 @@ public class DrasylConfig {
             final String stringValue = config.getString(path);
             return new URI(stringValue);
         }
-        catch (final NullPointerException | URISyntaxException | ConfigException e) {
+        catch (final URISyntaxException | ConfigException e) {
             throw new DrasylConfigException(path, e);
         }
     }
@@ -635,7 +635,7 @@ public class DrasylConfig {
             }
             return routes;
         }
-        catch (final IllegalArgumentException | NullPointerException | ConfigException e) {
+        catch (final IllegalArgumentException | ConfigException e) {
             throw new DrasylConfigException(path, e);
         }
     }

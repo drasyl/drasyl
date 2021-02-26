@@ -36,6 +36,7 @@ public class NodeOnlineEvent extends AbstractNodeEvent {
      * @throws NullPointerException if {@code node} is {@code null}
      * @deprecated Use {@link #of(Node)} instead.
      */
+    // make method private on next release
     @Deprecated(since = "0.4.0", forRemoval = true)
     public NodeOnlineEvent(final Node node) {
         super(node);

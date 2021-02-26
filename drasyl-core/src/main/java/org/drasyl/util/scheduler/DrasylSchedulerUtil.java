@@ -49,8 +49,8 @@ public final class DrasylSchedulerUtil {
     // 10s until the schedulers are stopped immediately
     public static final Duration SHUTDOWN_TIMEOUT = ofSeconds(10);
     private static final Logger LOG = LoggerFactory.getLogger(DrasylSchedulerUtil.class);
-    protected static volatile boolean lightSchedulerCreated = false;
-    protected static volatile boolean heavySchedulerCreated = false;
+    static volatile boolean lightSchedulerCreated;
+    static volatile boolean heavySchedulerCreated;
 
     static {
         RxJavaPlugins.setErrorHandler(error -> {
