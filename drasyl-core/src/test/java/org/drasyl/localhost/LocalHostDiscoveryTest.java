@@ -33,6 +33,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -59,8 +61,6 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -85,6 +85,8 @@ class LocalHostDiscoveryTest {
     private Path discoveryPath;
     @Mock
     private CompressedPublicKey ownPublicKey;
+    @Mock
+    private ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
     @Mock
     private Disposable watchDisposable;
@@ -112,7 +114,7 @@ class LocalHostDiscoveryTest {
             when(config.getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
                 pipeline.processInbound(event).join();
 
@@ -126,10 +128,9 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
-            when(config.getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
@@ -156,7 +157,7 @@ class LocalHostDiscoveryTest {
             when(config.getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
                 pipeline.processInbound(event).join();
 
@@ -200,12 +201,12 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.getFileSystem()).thenReturn(fileSystem);
             when(fileSystem.newWatchService()).thenReturn(watchService);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
                 pipeline.processInbound(event).join();
 
                 verify(watchService, timeout(1_000)).poll();
-                await().untilAsserted(() -> assertThat(path.toFile(), anExistingFile()));
+                verify(jacksonWriter, timeout(10_000)).accept(eq(path.toFile()), any());
             }
         }
     }
@@ -218,7 +219,7 @@ class LocalHostDiscoveryTest {
                                                               @Mock final InetSocketAddressWrapper address) {
             routes.put(publicKey, address);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
@@ -234,7 +235,7 @@ class LocalHostDiscoveryTest {
                                                 @Mock final InetSocketAddressWrapper address) {
             routes.put(publicKey, address);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
@@ -259,7 +260,7 @@ class LocalHostDiscoveryTest {
             when(message.getType()).thenReturn(byte[].class.getName());
             when(message.getContent()).thenReturn(new byte[0]);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
@@ -272,7 +273,7 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey publicKey,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
-            final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<SerializedApplicationMessage> outboundMessages = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
 
@@ -297,7 +298,7 @@ class LocalHostDiscoveryTest {
             Files.createDirectory(path.getParent());
             Files.writeString(path, "[\"192.168.188.42:12345\",\"192.168.188.23:12345\"]", StandardOpenOption.CREATE);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             handler.scan(ctx);
 
             assertEquals(Map.of(

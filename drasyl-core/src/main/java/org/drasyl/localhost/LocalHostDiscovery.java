@@ -34,6 +34,7 @@ import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol;
 import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.SetUtil;
+import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -82,6 +83,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     public static final String FILE_SUFFIX = ".json";
+    private final ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes;
     private Disposable watchDisposable;
     private Disposable postDisposable;
@@ -89,6 +91,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
 
     public LocalHostDiscovery() {
         this(
+                JACKSON_WRITER::writeValue,
                 new HashMap<>(),
                 null,
                 null
@@ -96,9 +99,11 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     }
 
     @SuppressWarnings({ "java:S107" })
-    LocalHostDiscovery(final Map<CompressedPublicKey, InetSocketAddressWrapper> routes,
+    LocalHostDiscovery(final ThrowingBiConsumer<File, Object, IOException> jacksonWriter,
+                       final Map<CompressedPublicKey, InetSocketAddressWrapper> routes,
                        final Disposable watchDisposable,
                        final Disposable postDisposable) {
+        this.jacksonWriter = requireNonNull(jacksonWriter);
         this.routes = requireNonNull(routes);
         this.watchDisposable = watchDisposable;
         this.postDisposable = postDisposable;
@@ -303,13 +308,13 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
      * Posts own port to {@code filePath}.
      */
     @SuppressWarnings("java:S2308")
-    private static void postInformation(final Path filePath,
-                                        final Set<InetSocketAddress> addresses) {
+    private void postInformation(final Path filePath,
+                                 final Set<InetSocketAddress> addresses) {
         LOG.trace("Post own Peer Information to {}", filePath);
         final File file = filePath.toFile();
         try {
             if (!file.setLastModified(System.currentTimeMillis())) {
-                JACKSON_WRITER.writeValue(file, addresses);
+                jacksonWriter.accept(file, addresses);
                 file.deleteOnExit();
             }
         }
