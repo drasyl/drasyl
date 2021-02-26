@@ -30,6 +30,7 @@ import java.util.Map;
 /**
  * Adapted from netty {@link io.netty.util.internal.TypeParameterMatcher}
  */
+@SuppressWarnings("java:S118")
 public abstract class TypeParameterMatcher {
     private static final Map<Class<?>, Map<String, TypeParameterMatcher>> findCache = new IdentityHashMap<>();
     private static final Map<Class<?>, TypeParameterMatcher> getCache = new IdentityHashMap<>();
