@@ -24,6 +24,8 @@ import org.drasyl.pipeline.Pipeline;
 
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Models environment information of a {@link DrasylPlugin} that are required by the plugin.
  */
@@ -35,9 +37,9 @@ public class PluginEnvironment {
     public PluginEnvironment(final DrasylConfig config,
                              final Identity identity,
                              final Pipeline pipeline) {
-        this.config = config;
-        this.identity = identity;
-        this.pipeline = pipeline;
+        this.config = requireNonNull(config);
+        this.identity = requireNonNull(identity);
+        this.pipeline = requireNonNull(pipeline);
     }
 
     public DrasylConfig getConfig() {
