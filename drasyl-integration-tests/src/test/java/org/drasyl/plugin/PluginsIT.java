@@ -34,15 +34,19 @@ import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import static org.mockito.Mockito.mock;
-
+@ExtendWith(MockitoExtension.class)
 class PluginsIT {
-    private final static Event event1 = mock(MessageEvent.class);
-    private final static Event event2 = mock(MessageEvent.class);
+    @Mock
+    private static MessageEvent event1;
+    @Mock
+    private static MessageEvent event2;
     private PublishSubject<Event> receivedEvents;
     private DrasylConfig config;
     private DrasylNode node;

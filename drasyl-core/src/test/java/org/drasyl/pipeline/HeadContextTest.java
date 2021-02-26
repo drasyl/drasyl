@@ -39,7 +39,6 @@ import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -99,9 +98,9 @@ class HeadContextTest {
     @Nested
     class OnWrite {
         @Test
-        void shouldSkipOnFutureCompleted(@Mock final Object msg) {
+        void shouldSkipOnFutureCompleted(@Mock final Object msg,
+                                         @Mock final CompressedPublicKey recipient) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
 
             when(future.isDone()).thenReturn(true);
 
@@ -111,9 +110,9 @@ class HeadContextTest {
         }
 
         @Test
-        void shouldWriteCompleteExceptionallyIfFutureIsNotCompleted(@Mock final Object msg) {
+        void shouldWriteCompleteExceptionallyIfFutureIsNotCompleted(@Mock final Object msg,
+                                                                    @Mock final CompressedPublicKey recipient) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
 
             when(future.isDone()).thenReturn(false);
 
@@ -123,9 +122,8 @@ class HeadContextTest {
         }
 
         @Test
-        void shouldCompleteFutureAndNothingElseOnAutoSwallow() {
+        void shouldCompleteFutureAndNothingElseOnAutoSwallow(@Mock final CompressedPublicKey recipient) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             final AutoSwallow msg = new AutoSwallow() {
             };
 
@@ -136,9 +134,8 @@ class HeadContextTest {
         }
 
         @Test
-        void shouldAutoReleaseByteBuf() {
+        void shouldAutoReleaseByteBuf(@Mock final Address address) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final Address address = mock(Address.class);
             final ByteBuf byteBuf = Unpooled.buffer();
 
             headContext.write(ctx, address, byteBuf, CompletableFuture.completedFuture(null));
@@ -150,9 +147,8 @@ class HeadContextTest {
     @Nested
     class OnException {
         @Test
-        void shouldPassthroughsOnException() {
+        void shouldPassthroughsOnException(@Mock final Exception exception) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final Exception exception = mock(Exception.class);
 
             headContext.exceptionCaught(ctx, exception);
 
@@ -163,9 +159,8 @@ class HeadContextTest {
     @Nested
     class OnEvent {
         @Test
-        void shouldPassthroughsOnEvent() {
+        void shouldPassthroughsOnEvent(@Mock final Event event) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final Event event = mock(Event.class);
 
             headContext.eventTriggered(ctx, event, future);
 
@@ -176,10 +171,9 @@ class HeadContextTest {
     @Nested
     class OnRead {
         @Test
-        void shouldPassthroughsOnRead() {
+        void shouldPassthroughsOnRead(@Mock final CompressedPublicKey sender,
+                                      @Mock final Object msg) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            final Object msg = mock(Object.class);
 
             headContext.read(ctx, sender, msg, future);
 

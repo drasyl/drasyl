@@ -49,7 +49,6 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -316,8 +315,9 @@ class PeersManagerTest {
 
         @Test
         void shouldEmitNoEventIfGivenPathIsNotTheFirstOneForThePeer(@Mock final CompressedPublicKey publicKey,
-                                                                    @Mock final Object path) {
-            paths.put(publicKey, mock(Object.class));
+                                                                    @Mock final Object path,
+                                                                    @Mock final Object o) {
+            paths.put(publicKey, o);
 
             underTest.addPathAndChildren(publicKey, path);
 

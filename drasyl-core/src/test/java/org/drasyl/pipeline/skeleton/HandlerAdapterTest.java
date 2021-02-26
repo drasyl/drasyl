@@ -39,7 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -80,11 +79,9 @@ class HandlerAdapterTest {
     @Nested
     class Outbound {
         @Test
-        void shouldPassthroughsOnWrite() {
+        void shouldPassthroughsOnWrite(@Mock final CompressedPublicKey recipient,
+                                       @Mock final Object msg) {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
-
-            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-            final Object msg = mock(Object.class);
 
             handlerAdapter.write(ctx, recipient, msg, future);
 
@@ -95,11 +92,9 @@ class HandlerAdapterTest {
     @Nested
     class Inbound {
         @Test
-        void shouldPassthroughsOnRead() {
+        void shouldPassthroughsOnRead(@Mock final CompressedPublicKey sender,
+                                      @Mock final Object msg) {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
-
-            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            final Object msg = mock(Object.class);
 
             handlerAdapter.read(ctx, sender, msg, future);
 
@@ -107,10 +102,8 @@ class HandlerAdapterTest {
         }
 
         @Test
-        void shouldPassthroughsOnEventTriggered() {
+        void shouldPassthroughsOnEventTriggered(@Mock final Event event) {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
-
-            final Event event = mock(Event.class);
 
             handlerAdapter.eventTriggered(ctx, event, future);
 
@@ -118,10 +111,8 @@ class HandlerAdapterTest {
         }
 
         @Test
-        void shouldPassthroughsOnExceptionCaught() {
+        void shouldPassthroughsOnExceptionCaught(@Mock final Exception exception) {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
-
-            final Exception exception = mock(Exception.class);
 
             handlerAdapter.exceptionCaught(ctx, exception);
 
@@ -129,11 +120,10 @@ class HandlerAdapterTest {
         }
 
         @Test
-        void shouldPassthroughsOnEventTriggeredWithMultipleHandler() {
+        void shouldPassthroughsOnEventTriggeredWithMultipleHandler(@Mock final Event event) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
                 final TestObserver<Event> events = pipeline.inboundEvents().test();
 
-                final Event event = mock(Event.class);
                 pipeline.processInbound(event);
 
                 events.awaitCount(1)
@@ -143,12 +133,11 @@ class HandlerAdapterTest {
         }
 
         @Test
-        void shouldPassthroughsOnReadWithMultipleHandler() {
+        void shouldPassthroughsOnReadWithMultipleHandler(@Mock final CompressedPublicKey sender,
+                                                         @Mock final SerializedApplicationMessage msg) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
-                final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-                final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
                 when(msg.getSender()).thenReturn(sender);
 
                 pipeline.processInbound(msg.getSender(), msg);

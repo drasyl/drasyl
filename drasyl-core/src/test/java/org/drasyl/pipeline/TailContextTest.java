@@ -38,7 +38,6 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -100,10 +99,9 @@ class TailContextTest {
     @Nested
     class OnWrite {
         @Test
-        void shouldPassthroughsOnWrite() {
+        void shouldPassthroughsOnWrite(@Mock final CompressedPublicKey recipient,
+                                       @Mock final Object msg) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-            final Object msg = mock(Object.class);
 
             tailContext.write(ctx, recipient, msg, future);
 
@@ -114,9 +112,8 @@ class TailContextTest {
     @Nested
     class OnException {
         @Test
-        void shouldThrowException() {
+        void shouldThrowException(@Mock final Exception exception) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final Exception exception = mock(Exception.class);
 
             assertThrows(Exception.class, () -> tailContext.exceptionCaught(ctx, exception));
             verifyNoInteractions(ctx);
@@ -126,9 +123,8 @@ class TailContextTest {
     @Nested
     class OnEvent {
         @Test
-        void shouldPassEventToConsumer() {
+        void shouldPassEventToConsumer(@Mock final Event event) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final Event event = mock(Event.class);
 
             tailContext.eventTriggered(ctx, event, future);
 
@@ -137,9 +133,8 @@ class TailContextTest {
         }
 
         @Test
-        void shouldNotWriteToConsumerWhenFutureIsDone() {
+        void shouldNotWriteToConsumerWhenFutureIsDone(@Mock final Event event) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final Event event = mock(Event.class);
 
             when(future.isDone()).thenReturn(true);
 
@@ -153,10 +148,9 @@ class TailContextTest {
     @Nested
     class OnRead {
         @Test
-        void shouldPassMessageToApplication() {
+        void shouldPassMessageToApplication(@Mock final CompressedPublicKey sender,
+                                            @Mock final Object msg) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            final Object msg = mock(Object.class);
 
             tailContext.read(ctx, sender, msg, future);
 
@@ -165,10 +159,9 @@ class TailContextTest {
         }
 
         @Test
-        void shouldNotWriteToConsumerWhenFutureIsDone() {
+        void shouldNotWriteToConsumerWhenFutureIsDone(@Mock final CompressedPublicKey sender,
+                                                      @Mock final Object msg) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            final Object msg = mock(Object.class);
 
             when(future.isDone()).thenReturn(true);
 
@@ -179,9 +172,8 @@ class TailContextTest {
         }
 
         @Test
-        void shouldCompleteFutureAndNothingElseOnAutoSwallow() {
+        void shouldCompleteFutureAndNothingElseOnAutoSwallow(@Mock final CompressedPublicKey recipient) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             final AutoSwallow msg = new AutoSwallow() {
             };
 

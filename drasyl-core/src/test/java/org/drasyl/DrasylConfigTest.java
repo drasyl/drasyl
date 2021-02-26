@@ -108,7 +108,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -204,7 +203,7 @@ class DrasylConfigTest {
     class Constructor {
         @Test
         @SuppressWarnings("java:S5961")
-        void shouldReadConfigProperly() {
+        void shouldReadConfigProperly(@Mock final ConfigObject configObject) {
             when(typesafeConfig.getInt(NETWORK_ID)).thenReturn(networkId);
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(-1);
             when(typesafeConfig.getString(IDENTITY_PUBLIC_KEY)).thenReturn("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
@@ -236,8 +235,8 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(MONITORING_INFLUX_DATABASE)).thenReturn(monitoringInfluxDatabase);
             when(typesafeConfig.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY)).thenReturn(monitoringInfluxReportingFrequency);
             when(typesafeConfig.getObject(SERIALIZATION_SERIALIZERS)).thenReturn(ConfigFactory.parseString("serializers { string = \"" + MySerializer.class.getName() + "\" }").getObject("serializers"));
-            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_INBOUND)).thenReturn(mock(ConfigObject.class));
-            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_OUTBOUND)).thenReturn(mock(ConfigObject.class));
+            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_INBOUND)).thenReturn(configObject);
+            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_OUTBOUND)).thenReturn(configObject);
             when(typesafeConfig.getObject(PLUGINS)).thenReturn(ConfigFactory.parseString("plugins { \"" + MyPlugin.class.getName() + "\" { enabled = true } }").getObject("plugins"));
 
             final DrasylConfig config = new DrasylConfig(typesafeConfig);

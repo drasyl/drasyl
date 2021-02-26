@@ -29,7 +29,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -109,8 +108,7 @@ class DrasylSchedulerTest {
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
         @Test
-        void when() {
-            final Function function = mock(Function.class);
+        void when(@Mock final Function function) {
             wrapper.when(function);
 
             verify(scheduler).when(function);

@@ -61,7 +61,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -108,8 +107,7 @@ class GroupsClientHandlerTest {
     @Nested
     class HandlerRemoved {
         @Test
-        void shouldStopRenewTasks() {
-            final Disposable disposable = mock(Disposable.class);
+        void shouldStopRenewTasks(@Mock final Disposable disposable) {
             final ArrayList<Disposable> renewTasks = new ArrayList<>(List.of(disposable));
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
 
@@ -139,8 +137,7 @@ class GroupsClientHandlerTest {
     @Nested
     class OnEvent {
         @Test
-        void shouldPassThroughOnNotMatchingEvent() {
-            final Event event = mock(NodeOfflineEvent.class);
+        void shouldPassThroughOnNotMatchingEvent(@Mock final NodeOfflineEvent event) {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
@@ -154,8 +151,7 @@ class GroupsClientHandlerTest {
         }
 
         @Test
-        void shouldSendJoinOnNodeOnlineEvent() {
-            final Event event = mock(NodeOnlineEvent.class);
+        void shouldSendJoinOnNodeOnlineEvent(@Mock final NodeOnlineEvent event) {
             final String credentials = "test";
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());

@@ -49,7 +49,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,11 +70,10 @@ class SimpleDuplexHandlerTest {
     @Nested
     class OutboundTest {
         @Test
-        void shouldTriggerOnMatchedMessage() {
-            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        void shouldTriggerOnMatchedMessage(@Mock final CompressedPublicKey sender,
+                                           @Mock final CompressedPublicKey recipient) {
             when(identity.getPublicKey()).thenReturn(sender);
             final byte[] payload = new byte[]{};
-            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
 
             final SimpleDuplexHandler<Object, byte[], CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
@@ -115,7 +113,8 @@ class SimpleDuplexHandlerTest {
         }
 
         @Test
-        void shouldPassthroughsNotMatchingMessage() {
+        void shouldPassthroughsNotMatchingMessage(@Mock final CompressedPublicKey sender,
+                                                  @Mock final CompressedPublicKey recipient) {
             final SimpleDuplexEventAwareHandler<Object, Event, MyMessage, CompressedPublicKey> handler = new SimpleDuplexEventAwareHandler<>(Object.class, Event.class, MyMessage.class, CompressedPublicKey.class) {
                 @Override
                 protected void matchedEventTriggered(final HandlerContext ctx,
@@ -146,9 +145,7 @@ class SimpleDuplexHandlerTest {
                 final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
                 final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
-                final CompressedPublicKey sender = mock(CompressedPublicKey.class);
                 when(identity.getPublicKey()).thenReturn(sender);
-                final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
                 final byte[] payload = new byte[]{};
                 pipeline.processOutbound(recipient, payload);
 
@@ -163,7 +160,7 @@ class SimpleDuplexHandlerTest {
     @Nested
     class InboundTest {
         @Test
-        void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
+        void shouldTriggerOnMatchedMessage(@Mock final CompressedPublicKey sender) throws JsonProcessingException {
             final SimpleDuplexEventAwareHandler<byte[], Event, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
@@ -195,7 +192,6 @@ class SimpleDuplexHandlerTest {
                 final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-                final CompressedPublicKey sender = mock(CompressedPublicKey.class);
                 when(identity.getPublicKey()).thenReturn(sender);
                 final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
                 final SerializedApplicationMessage msg1 = new SerializedApplicationMessage(sender, sender, byte[].class.getName(), msg);
@@ -210,7 +206,8 @@ class SimpleDuplexHandlerTest {
         }
 
         @Test
-        void shouldPassthroughsNotMatchingMessage() {
+        void shouldPassthroughsNotMatchingMessage(@Mock final SerializedApplicationMessage msg,
+                                                  @Mock final CompressedPublicKey sender) {
             final SimpleDuplexHandler<List<?>, Object, Address> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
@@ -242,8 +239,7 @@ class SimpleDuplexHandlerTest {
                 final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-                final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
-                when(msg.getSender()).thenReturn(mock(CompressedPublicKey.class));
+                when(msg.getSender()).thenReturn(sender);
 
                 pipeline.processInbound(msg.getSender(), msg);
 
@@ -258,7 +254,7 @@ class SimpleDuplexHandlerTest {
         }
 
         @Test
-        void shouldTriggerOnMatchedEvent() throws InterruptedException {
+        void shouldTriggerOnMatchedEvent(@Mock final NodeUpEvent event) throws InterruptedException {
             final SimpleDuplexEventAwareHandler<SerializedApplicationMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>(SerializedApplicationMessage.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
@@ -287,7 +283,6 @@ class SimpleDuplexHandlerTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-                final NodeUpEvent event = mock(NodeUpEvent.class);
                 pipeline.processInbound(event);
 
                 eventTestObserver.await(1, TimeUnit.SECONDS);
@@ -296,7 +291,7 @@ class SimpleDuplexHandlerTest {
         }
 
         @Test
-        void shouldPassthroughsNotMatchingEvents() {
+        void shouldPassthroughsNotMatchingEvents(@Mock final Event event) {
             final SimpleDuplexEventAwareHandler<MyMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
@@ -325,7 +320,6 @@ class SimpleDuplexHandlerTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-                final Event event = mock(Event.class);
                 pipeline.processInbound(event);
 
                 eventTestObserver.awaitCount(1)
