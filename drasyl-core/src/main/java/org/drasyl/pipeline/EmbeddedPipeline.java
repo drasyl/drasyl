@@ -48,7 +48,7 @@ import static org.drasyl.util.RandomUtil.randomString;
  * Embedded {@link Pipeline} implementation, that allows easy testing of {@link Handler}s.
  */
 @SuppressWarnings({ "java:S107" })
-public class EmbeddedPipeline extends DefaultPipeline implements AutoCloseable {
+public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable {
     private static final short DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH = 16;
     private final ReplaySubject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;

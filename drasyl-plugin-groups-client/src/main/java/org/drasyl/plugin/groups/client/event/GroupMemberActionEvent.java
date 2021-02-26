@@ -23,6 +23,7 @@ import org.drasyl.plugin.groups.client.Group;
 
 import java.util.Objects;
 
+@SuppressWarnings("java:S118")
 abstract class GroupMemberActionEvent implements GroupEvent {
     protected final CompressedPublicKey member;
     protected final Group group;

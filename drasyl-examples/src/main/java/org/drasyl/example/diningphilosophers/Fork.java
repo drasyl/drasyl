@@ -70,6 +70,7 @@ public class Fork extends BehavioralDrasylNode {
     static class Put {
     }
 
+    @SuppressWarnings("java:S118")
     abstract static class Answer {
         final CompressedPublicKey fork;
 

@@ -30,7 +30,7 @@ import java.util.concurrent.CompletableFuture;
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages and
  * events.
  */
-@SuppressWarnings("common-java:DuplicatedBlocks")
+@SuppressWarnings({ "common-java:DuplicatedBlocks", "java:S118" })
 public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> extends SimpleInboundEventAwareHandler<I, E, A> {
     private final TypeParameterMatcher outboundMessageMatcher;
 

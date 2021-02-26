@@ -24,6 +24,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("java:S118")
 abstract class GroupActionMessage implements GroupsPluginMessage {
     protected final Group group;
 

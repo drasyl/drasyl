@@ -84,7 +84,7 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
  * node.shutdown();
  * </code></pre>
  */
-@SuppressWarnings({ "java:S107" })
+@SuppressWarnings({ "java:S107", "java:S118" })
 @Beta
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);

@@ -24,13 +24,13 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-class AbstractPeerEvent implements PeerEvent {
+abstract class AbstractPeerEvent implements PeerEvent {
     protected final Peer peer;
 
     /**
      * @throws NullPointerException if {@code peer} is {@code null}
      */
-    public AbstractPeerEvent(final Peer peer) {
+    protected AbstractPeerEvent(final Peer peer) {
         this.peer = requireNonNull(peer);
     }
 

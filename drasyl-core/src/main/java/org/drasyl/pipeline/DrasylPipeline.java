@@ -71,7 +71,7 @@ import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
 /**
  * The default {@link Pipeline} implementation. Used to implement plugins for drasyl.
  */
-public class DrasylPipeline extends DefaultPipeline {
+public class DrasylPipeline extends AbstractPipeline {
     @SuppressWarnings({ "java:S107" })
     public DrasylPipeline(final Consumer<Event> eventConsumer,
                           final DrasylConfig config,

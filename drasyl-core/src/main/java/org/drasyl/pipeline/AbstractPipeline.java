@@ -36,8 +36,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Abstract {@link Pipeline} implementation, that needs head and tail.
  */
-public abstract class DefaultPipeline implements Pipeline {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultPipeline.class);
+public abstract class AbstractPipeline implements Pipeline {
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractPipeline.class);
     protected Map<String, AbstractHandlerContext> handlerNames;
     protected AbstractEndHandler head;
     protected AbstractEndHandler tail;

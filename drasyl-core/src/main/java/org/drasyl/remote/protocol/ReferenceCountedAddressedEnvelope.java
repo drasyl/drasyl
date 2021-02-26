@@ -22,6 +22,7 @@ import io.netty.util.ReferenceCounted;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 
+@SuppressWarnings("java:S118")
 abstract class ReferenceCountedAddressedEnvelope<A extends Address, M extends ReferenceCounted> extends DefaultAddressedEnvelope<A, M> implements ReferenceCounted {
     /**
      * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}

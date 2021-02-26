@@ -411,10 +411,10 @@ public final class PcpPortUtil {
     public interface Message {
     }
 
-    static class AbstractMessage implements Message {
+    abstract static class AbstractMessage implements Message {
         private final ResultCode resultCode;
 
-        public AbstractMessage(final ResultCode resultCode) {
+        protected AbstractMessage(final ResultCode resultCode) {
             this.resultCode = requireNonNull(resultCode);
         }
 

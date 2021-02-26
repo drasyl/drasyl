@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
  * Note: Unlike the default {@link DrasylNode}, this node can only process one event at a time.
  * Please consider to run long-running operations asynchronously in a separate thread.
  */
-@SuppressWarnings({ "java:S107", "java:S1192" })
+@SuppressWarnings({ "java:S107", "java:S118", "java:S1192" })
 public abstract class BehavioralDrasylNode extends DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(BehavioralDrasylNode.class);
     Behavior behavior;
