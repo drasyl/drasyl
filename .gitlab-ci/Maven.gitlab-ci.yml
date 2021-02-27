@@ -26,7 +26,7 @@ cache:
     paths:
       - "drasyl-*.zip"
       - "drasyl-*.zip.sha256"
-      - "drasyl-integration-tests/target/site/jacoco-aggregate/jacoco.xml"
+      - "drasyl-all/target/site/jacoco-aggregate/jacoco.xml"
   needs: [ ]
 
 maven-verify:

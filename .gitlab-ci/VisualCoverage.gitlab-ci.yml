@@ -3,13 +3,13 @@ visual-coverage:
   image: haynes/jacoco2cobertura:latest
   script:
     # all module add to args
-    - 'python /opt/cover2cover.py drasyl-integration-tests/target/site/jacoco-aggregate/jacoco.xml
+    - 'python /opt/cover2cover.py drasyl-all/target/site/jacoco-aggregate/jacoco.xml
                 drasyl-cli/src/main/java
                 drasyl-core/src/main/java
                 drasyl-plugin-groups-client/src/main/java
                 drasyl-plugin-groups-manager/src/main/java
-                > drasyl-integration-tests/target/site/coverage.xml'
-    - 'python /opt/source2filename.py drasyl-integration-tests/target/site/coverage.xml'
+                > drasyl-all/target/site/cobertura.xml'
+    - 'python /opt/source2filename.py drasyl-all/target/site/cobertura.xml'
   except:
     - master
     - /^v\d+\.\d+/
@@ -18,4 +18,4 @@ visual-coverage:
     - maven-verify
   artifacts:
     reports:
-      cobertura: drasyl-integration-tests/target/site/coverage.xml
+      cobertura: drasyl-all/target/site/cobertura.xml

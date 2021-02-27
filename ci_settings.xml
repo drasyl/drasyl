@@ -58,6 +58,7 @@
                 <sonar.projectName>drasyl</sonar.projectName>
                 <sonar.exclusions>**/org/drasyl/remote/protocol/Protocol.java</sonar.exclusions>
                 <sonar.coverage.exclusions>**/org/drasyl/remote/protocol/Protocol.java,drasyl-examples/**/*,drasyl-performance-tests/**/*</sonar.coverage.exclusions>
+                <sonar.coverage.jacoco.xmlReportPaths>${project.artifactId}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
             </properties>
         </profile>
     </profiles>

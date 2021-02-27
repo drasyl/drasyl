@@ -73,10 +73,11 @@
         <module>drasyl-cli</module>
         <module>drasyl-core</module>
         <module>drasyl-examples</module>
+        <module>drasyl-integration-tests</module>
         <module>drasyl-performance-tests</module>
         <module>drasyl-plugin-groups-client</module>
         <module>drasyl-plugin-groups-manager</module>
-        <module>drasyl-integration-tests</module>
+        <module>drasyl-all</module>
     </modules>
 
     <scm>
