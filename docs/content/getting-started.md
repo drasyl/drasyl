@@ -1,9 +1,5 @@
 # Getting Started
 
-!!! important "Nightly Version"
-
-    You're currently on a nightly version branch. If you're only interested  in the latest stable version, please click [here](/).
-
 This guide describes the necessary steps to create your first drasyl node and how to integrate it into your application.
 
 Once the node is set up, it and therefore your application can participate in the drasyl Overlay Network and communicate with other nodes and applications.
@@ -14,33 +10,18 @@ Create a new maven project and add the dependency to your [pom.xml](http://maven
 
 Maven:
 ```xml
-<repositories>
-    <repository>
-        <id>oss.sonatype.org-snapshot</id>
-        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        <releases>
-            <enabled>false</enabled>
-        </releases>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
-    </repository>
-</repositories>
-```
-
-```xml
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-core</artifactId>
-    <version>0.4.0-SNAPSHOT</version>
+    <version>0.4.0</version>
 </dependency>
 ```
 
 Other dependency managers:
 ```java
-Gradle : compile "org.drasyl:drasyl-core:0.4.0-SNAPSHOT" // build.gradle 
-   Ivy : <dependency org="org.drasyl" name="drasyl-core" rev="0.4.0-SNAPSHOT" conf="build" /> // ivy.xml
-   SBT : libraryDependencies += "org.drasyl" % "drasyl-core" % "0.4.0-SNAPSHOT" // build.sbt
+Gradle : compile "org.drasyl:drasyl-core:0.4.0" // build.gradle 
+   Ivy : <dependency org="org.drasyl" name="drasyl-core" rev="0.4.0" conf="build" /> // ivy.xml
+   SBT : libraryDependencies += "org.drasyl" % "drasyl-core" % "0.4.0" // build.sbt
 ```
 
 ## Implementing `DrasylNode`
