@@ -6,7 +6,7 @@ variables:
 .deploy-base-docker: &deploy-base-docker
   image: drasyl/drasyl-build-images:docker-18.02-docker-compose-1.19-git-2.15.4
   script:
-    - sh ./prepare-environment-docker-compose.sh > docker-compose.yml
+    - sh .gitlab/prepare-environment-docker-compose.sh > docker-compose.yml
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker-compose pull
     - docker-compose --project-name ${CI_PROJECT_NAME}-${CI_PROJECT_ID}-${CI_ENVIRONMENT_SLUG} up -d --remove-orphans
@@ -20,7 +20,7 @@ variables:
     - cd $CI_PROJECT_NAME
     - git checkout $CI_COMMIT_SHA || git checkout master
   script:
-    - sh ./prepare-environment-docker-compose.sh > docker-compose.yml
+    - sh .gitlab/prepare-environment-docker-compose.sh > docker-compose.yml
     - docker-compose --project-name ${CI_PROJECT_NAME}-${CI_PROJECT_ID}-${CI_ENVIRONMENT_SLUG} down
   # We don't need cache for stop a environment
   cache: {}
