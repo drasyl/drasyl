@@ -127,7 +127,6 @@
         <slf4j.version>1.7.30</slf4j.version>
         <typesafe.config.version>1.4.1</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
-        <commons-codec.version>1.15</commons-codec.version>
         <json-unit-assertj.version>2.24.0</json-unit-assertj.version>
         <commons-cli.version>1.4</commons-cli.version>
         <protobuf.version>3.15.1</protobuf.version>
@@ -250,11 +249,6 @@
                 <version>${commons.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>commons-codec</groupId>
-                <artifactId>commons-codec</artifactId>
-                <version>${commons-codec.version}</version>
-            </dependency>
             <dependency>
                 <groupId>net.javacrumbs.json-unit</groupId>
                 <artifactId>json-unit-assertj</artifactId>
