@@ -470,6 +470,7 @@
                     <!-- Currently not supported by JUnit5: https://github.com/junit-team/junit5/issues/1424#issuecomment-390313944 -->
                     <!--<parallel>all</parallel>-->
                     <!-- Sets the VM argument line used when unit tests are run. -->
+                    <!--suppress MavenModelInspection -->
                     <argLine>-Dio.netty.leakDetectionLevel=PARANOID ${surefireArgLine}</argLine>
                     <runOrder>random</runOrder>
                 </configuration>
@@ -614,6 +615,7 @@
                             <dependency>
                                 <groupId>org.apache.maven.scm</groupId>
                                 <artifactId>maven-scm-provider-gitexe</artifactId>
+                                <!--suppress MavenModelInspection -->
                                 <version>1.11.2</version>
                             </dependency>
                         </dependencies>
