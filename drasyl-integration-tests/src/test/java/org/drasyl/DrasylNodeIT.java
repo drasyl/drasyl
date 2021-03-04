@@ -18,18 +18,10 @@
  */
 package org.drasyl;
 
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
-import io.reactivex.rxjava3.subjects.ReplaySubject;
-import io.reactivex.rxjava3.subjects.Subject;
-import org.drasyl.annotation.NonNull;
-import org.drasyl.crypto.Crypto;
-import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeEvent;
-import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
-import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
@@ -38,7 +30,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.util.Pair;
 import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,9 +37,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -65,42 +56,17 @@ import static testutils.TestHelper.colorizedPrintln;
 class DrasylNodeIT {
     public static final long TIMEOUT = 15000L;
     public static final int MESSAGE_MTU = 1024;
-    private List<DrasylNode> nodes;
 
     @BeforeEach
     void setup(final TestInfo info) {
         System.setProperty("io.netty.leakDetection.level", "PARANOID");
 
         colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
-        nodes = new ArrayList<>();
     }
 
     @AfterEach
     void cleanUp(final TestInfo info) {
-        nodes.forEach(n -> n.shutdown().join());
         colorizedPrintln("FINISHED " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
-    }
-
-    private Pair<DrasylNode, Observable<Event>> createStartedNode(final DrasylConfig config) throws DrasylException {
-        final Pair<DrasylNode, Observable<Event>> pair = createNode(config);
-        pair.first().start();
-        return pair;
-    }
-
-    private Pair<DrasylNode, Observable<Event>> createNode(final DrasylConfig config) throws DrasylException {
-        final Subject<Event> subject = ReplaySubject.<Event>create().toSerialized();
-        final DrasylNode node = new DrasylNode(config) {
-            @Override
-            public void onEvent(final @NonNull Event event) {
-                subject.onNext(event);
-                if (event instanceof NodeNormalTerminationEvent) {
-                    subject.onComplete();
-                }
-            }
-        };
-        nodes.add(node);
-
-        return Pair.of(node, subject);
     }
 
     @Nested
@@ -122,10 +88,11 @@ class DrasylNodeIT {
          */
         @Nested
         class SuperPeerAndTwoClientWhenOnlyRemoteIsEnabled {
-            private Pair<DrasylNode, Observable<Event>> superPeer;
-            private Pair<DrasylNode, Observable<Event>> client1;
-            private Pair<DrasylNode, Observable<Event>> client2;
+            private EmbeddedNode superPeer;
+            private EmbeddedNode client1;
+            private EmbeddedNode client2;
 
+            @SuppressWarnings("ConstantConditions")
             @BeforeEach
             void setUp() throws DrasylException {
                 //
@@ -147,8 +114,8 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .build();
-                superPeer = createStartedNode(config);
-                final NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
+                superPeer = new EmbeddedNode(config).started();
+                final NodeEvent superPeerNodeUp = superPeer.events(NodeUpEvent.class).firstElement().blockingGet();
                 final int superPeerPort = superPeerNodeUp.getNode().getPort();
                 colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
@@ -168,7 +135,7 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .build();
-                client1 = createStartedNode(config);
+                client1 = new EmbeddedNode(config).started().online();
                 colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
                 // client2
@@ -187,12 +154,19 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .build();
-                client2 = createStartedNode(config);
+                client2 = new EmbeddedNode(config).started().online();
                 colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
-                superPeer.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
-                client1.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2).assertValueCount(2);
-                client2.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2).assertValueCount(2);
+                superPeer.events(PeerDirectEvent.class).test().awaitCount(2).assertValueCount(2);
+                client1.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+                client2.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+            }
+
+            @AfterEach
+            void tearDown() {
+                superPeer.close();
+                client1.close();
+                client2.close();
             }
 
             /**
@@ -204,12 +178,9 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                final TestObserver<MessageEvent> superPeerMessages = superPeer.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
-                final TestObserver<MessageEvent> client1Messages = client1.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
-                final TestObserver<MessageEvent> client2Messages = client2.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> superPeerMessages = superPeer.messages().test();
+                final TestObserver<MessageEvent> client1Messages = client1.messages().test();
+                final TestObserver<MessageEvent> client2Messages = client2.messages().test();
 
                 //
                 // send messages
@@ -218,9 +189,9 @@ class DrasylNodeIT {
                         "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
                         "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
                 for (final String recipient : identities) {
-                    superPeer.first().send(recipient, "Hallo Welt");
-                    client1.first().send(recipient, "Hallo Welt");
-                    client2.first().send(recipient, "Hallo Welt");
+                    superPeer.send(recipient, "Hallo Welt");
+                    client1.send(recipient, "Hallo Welt");
+                    client2.send(recipient, "Hallo Welt");
                 }
 
                 //
@@ -243,12 +214,9 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesExceedingMtuShouldBeDelivered() {
-                final TestObserver<MessageEvent> superPeerMessages = superPeer.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
-                final TestObserver<MessageEvent> client1Messages = client1.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
-                final TestObserver<MessageEvent> client2Messages = client2.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> superPeerMessages = superPeer.messages().test();
+                final TestObserver<MessageEvent> client1Messages = client1.messages().test();
+                final TestObserver<MessageEvent> client2Messages = client2.messages().test();
 
                 //
                 // send messages
@@ -258,9 +226,9 @@ class DrasylNodeIT {
                         "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
                         "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
                 for (final String recipient : identities) {
-                    superPeer.first().send(recipient, payload);
-                    client1.first().send(recipient, payload);
-                    client2.first().send(recipient, payload);
+                    superPeer.send(recipient, payload);
+                    client1.send(recipient, payload);
+                    client2.send(recipient, payload);
                 }
 
                 //
@@ -290,9 +258,9 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                final TestObserver<Event> superPeerEvents = superPeer.second().filter(e -> e instanceof PeerDirectEvent).test();
-                final TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof PeerDirectEvent).test();
-                final TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<PeerDirectEvent> superPeerEvents = superPeer.events(PeerDirectEvent.class).test();
+                final TestObserver<PeerDirectEvent> client1Events = client1.events(PeerDirectEvent.class).test();
+                final TestObserver<PeerDirectEvent> client2Events = client2.events(PeerDirectEvent.class).test();
 
 //            superPeer.second().subscribe(e -> System.err.println("SP: " + e));
 //            client1.second().subscribe(e -> System.err.println("C1: " + e));
@@ -313,10 +281,10 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                final TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof NodeOfflineEvent).test();
-                final TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof NodeOfflineEvent).test();
+                final TestObserver<NodeOfflineEvent> client1Events = client1.events(NodeOfflineEvent.class).test();
+                final TestObserver<NodeOfflineEvent> client2Events = client2.events(NodeOfflineEvent.class).test();
 
-                superPeer.first().shutdown().join();
+                superPeer.shutdown().join();
 
                 client1Events.awaitCount(1).assertValueCount(1);
                 client2Events.awaitCount(1).assertValueCount(1);
@@ -333,8 +301,8 @@ class DrasylNodeIT {
          */
         @Nested
         class TwoClientWithStaticRoutesAndWithoutSuperPeerWhenOnlyRemoteIsEnabled {
-            private Pair<DrasylNode, Observable<Event>> client1;
-            private Pair<DrasylNode, Observable<Event>> client2;
+            private EmbeddedNode client1;
+            private EmbeddedNode client2;
 
             @BeforeEach
             void setUp() throws DrasylException {
@@ -360,7 +328,7 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .build();
-                client1 = createStartedNode(config);
+                client1 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
                 // client2
@@ -380,11 +348,17 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .build();
-                client2 = createStartedNode(config);
+                client2 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
-                client1.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(1).assertValueCount(1);
-                client2.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(1).assertValueCount(1);
+                client1.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+                client2.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+            }
+
+            @AfterEach
+            void tearDown() {
+                client1.close();
+                client2.close();
             }
 
             /**
@@ -393,41 +367,39 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
-                final TestObserver<MessageEvent> client1Messages = client1.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
-                final TestObserver<MessageEvent> client2Messages = client2.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> client1Messages = client1.messages().test();
+                final TestObserver<MessageEvent> client2Messages = client2.messages().test();
 
                 //
                 // send messages
                 //
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", true).get();
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (byte) 23).get();
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 'C').get();
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 3.141F).get();
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 1337).get();
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 9001L).get();
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (short) 42).get();
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", new byte[]{
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", true).get();
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (byte) 23).get();
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 'C').get();
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 3.141F).get();
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 1337).get();
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 9001L).get();
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (short) 42).get();
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", new byte[]{
                         (byte) 0,
                         (byte) 1
                 }).get();
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "String").get();
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", null).get();
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "String").get();
+                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", null).get();
 
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", true).get();
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (byte) 23).get();
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 'C').get();
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 3.141F).get();
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 1337).get();
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 9001L).get();
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (short) 42).get();
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", new byte[]{
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", true).get();
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (byte) 23).get();
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 'C').get();
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 3.141F).get();
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 1337).get();
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 9001L).get();
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (short) 42).get();
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", new byte[]{
                         (byte) 0,
                         (byte) 1
                 }).get();
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "String").get();
-                client2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", null).get();
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "String").get();
+                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", null).get();
 
                 //
                 // verify
@@ -450,10 +422,10 @@ class DrasylNodeIT {
          */
         @Nested
         class FourNodesWithOnlyIntraVmDiscoverIsEnabled {
-            private Pair<DrasylNode, Observable<Event>> node1;
-            private Pair<DrasylNode, Observable<Event>> node2;
-            private Pair<DrasylNode, Observable<Event>> node3;
-            private Pair<DrasylNode, Observable<Event>> node4;
+            private EmbeddedNode node1;
+            private EmbeddedNode node2;
+            private EmbeddedNode node3;
+            private EmbeddedNode node4;
 
             @BeforeEach
             void setUp() throws DrasylException {
@@ -473,7 +445,7 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .build();
-                node1 = createStartedNode(config);
+                node1 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
                 // node2
@@ -487,7 +459,7 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .build();
-                node2 = createStartedNode(config);
+                node2 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
 
                 // node3
@@ -501,7 +473,7 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .build();
-                node3 = createStartedNode(config);
+                node3 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
 
                 // node4
@@ -515,13 +487,16 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .build();
-                node4 = createStartedNode(config);
+                node4 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
+            }
 
-                node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
-                node2.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
-                node3.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
-                node4.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
+            @AfterEach
+            void tearDown() {
+                node1.close();
+                node2.close();
+                node3.close();
+                node4.close();
             }
 
             /**
@@ -531,19 +506,15 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                node1.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
-                node2.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
-                node3.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
-                node4.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
+                node1.events(PeerDirectEvent.class).test().awaitCount(3).assertValueCount(3);
+                node2.events(PeerDirectEvent.class).test().awaitCount(3).assertValueCount(3);
+                node3.events(PeerDirectEvent.class).test().awaitCount(3).assertValueCount(3);
+                node4.events(PeerDirectEvent.class).test().awaitCount(3).assertValueCount(3);
 
-                final TestObserver<MessageEvent> node1Messages = node1.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
-                final TestObserver<MessageEvent> nodes2Messages = node2.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
-                final TestObserver<MessageEvent> node3Messages = node3.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
-                final TestObserver<MessageEvent> node4Messages = node4.second()
-                        .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+                final TestObserver<MessageEvent> node1Messages = node1.messages().test();
+                final TestObserver<MessageEvent> nodes2Messages = node2.messages().test();
+                final TestObserver<MessageEvent> node3Messages = node3.messages().test();
+                final TestObserver<MessageEvent> node4Messages = node4.messages().test();
 
                 //
                 // send messages
@@ -553,10 +524,10 @@ class DrasylNodeIT {
                         "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
                         "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
                 for (final String recipient : identities) {
-                    node1.first().send(recipient, "Hallo Welt");
-                    node2.first().send(recipient, "Hallo Welt");
-                    node3.first().send(recipient, "Hallo Welt");
-                    node4.first().send(recipient, "Hallo Welt");
+                    node1.send(recipient, "Hallo Welt");
+                    node2.send(recipient, "Hallo Welt");
+                    node3.send(recipient, "Hallo Welt");
+                    node4.send(recipient, "Hallo Welt");
                 }
 
                 //
@@ -590,10 +561,10 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
-                final TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerDirectEvent).test();
-                final TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerDirectEvent).test();
-                final TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerDirectEvent).test();
-                final TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<PeerDirectEvent> node1Events = node1.events(PeerDirectEvent.class).test();
+                final TestObserver<PeerDirectEvent> node2Events = node2.events(PeerDirectEvent.class).test();
+                final TestObserver<PeerDirectEvent> node3Events = node3.events(PeerDirectEvent.class).test();
+                final TestObserver<PeerDirectEvent> node4Events = node4.events(PeerDirectEvent.class).test();
 
                 node1Events.awaitCount(3).assertValueCount(3);
                 node2Events.awaitCount(3).assertValueCount(3);
@@ -608,18 +579,18 @@ class DrasylNodeIT {
         /**
          * Network Layout:
          * <pre>
-         * +---+----+   +----+---+
+         * +--------+   +--------+
          * | Node 1 |   | Node 2 |
          * +--------+   +--------+
          * </pre>
          */
         @Nested
         class FourNodesWithOnlyLocalHostDiscoveryEnabled {
-            private Pair<DrasylNode, Observable<Event>> node1;
-            private Pair<DrasylNode, Observable<Event>> node2;
+            private EmbeddedNode node1;
+            private EmbeddedNode node2;
 
             @BeforeEach
-            void setUp() throws DrasylException {
+            void setUp(@TempDir final Path localHostDiscoveryPath) throws DrasylException {
                 //
                 // create nodes
                 //
@@ -638,8 +609,9 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(true)
                         .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
+                        .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
                         .build();
-                node1 = createStartedNode(config);
+                node1 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
                 // node2
@@ -655,12 +627,16 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(true)
                         .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
+                        .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
                         .build();
-                node2 = createStartedNode(config);
+                node2 = new EmbeddedNode(config).started();
                 colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
+            }
 
-                node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
-                node2.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
+            @AfterEach
+            void tearDown() {
+                node1.close();
+                node2.close();
             }
 
             /**
@@ -669,16 +645,16 @@ class DrasylNodeIT {
              */
             @Test
             @Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)
-            void applicationMessagesShouldBeDelivered() {
+            void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
                 // WatchService can be ridiculous slow in reporting changes...wait up to 12*5 seconds...
-                node1.second().filter(e -> e instanceof PeerDirectEvent).test()
+                node1.events(PeerDirectEvent.class).test()
                         .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1);
-                node2.second().filter(e -> e instanceof PeerDirectEvent).test()
+                node2.events(PeerDirectEvent.class).test()
                         .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1)
@@ -686,24 +662,24 @@ class DrasylNodeIT {
                         .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1);
 
-                final TestObserver<Event> node1Messages = node1.second().filter(e -> e instanceof MessageEvent).test();
-                final TestObserver<Event> nodes2Messages = node2.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<MessageEvent> node1Messages = node1.messages().test();
+                final TestObserver<MessageEvent> nodes2Messages = node2.messages().test();
 
                 //
                 // send messages
                 //
-                node1.first().send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt");
-                node2.first().send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt");
+                node1.send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt").get();
+                node2.send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt").get();
 
                 //
                 // verify
                 //
                 node1Messages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new MessageEvent(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), "Hallo Welt"));
+                        .assertValue(MessageEvent.of(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), "Hallo Welt"));
                 nodes2Messages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new MessageEvent(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), "Hallo Welt"));
+                        .assertValue(MessageEvent.of(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), "Hallo Welt"));
             }
         }
     }
@@ -718,7 +694,7 @@ class DrasylNodeIT {
      */
     @Nested
     class OneNodeWithNoDiscoveryMethodsEnabled {
-        private Pair<DrasylNode, Observable<Event>> node1;
+        private EmbeddedNode node;
 
         @BeforeEach
         void setUp() throws DrasylException {
@@ -727,7 +703,7 @@ class DrasylNodeIT {
             //
             final DrasylConfig config;
 
-            // node1
+            // node
             config = DrasylConfig.newBuilder()
                     .networkId(0)
                     .identityProofOfWork(ProofOfWork.of(12304070))
@@ -739,9 +715,13 @@ class DrasylNodeIT {
                     .intraVmDiscoveryEnabled(false)
                     .remoteLocalHostDiscoveryEnabled(false)
                     .build();
-            node1 = createStartedNode(config);
-            node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
+            node = new EmbeddedNode(config).started();
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
+        }
+
+        @AfterEach
+        void tearDown() {
+            node.close();
         }
 
         /**
@@ -750,10 +730,9 @@ class DrasylNodeIT {
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
         void applicationMessagesShouldBeDelivered() {
-            final TestObserver<MessageEvent> node1Messages = node1.second()
-                    .filter(e -> e instanceof MessageEvent).cast(MessageEvent.class).test();
+            final TestObserver<MessageEvent> node1Messages = node.messages().test();
 
-            node1.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
+            node.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
 
             node1Messages.awaitCount(1).assertValueCount(1)
                     .assertValue(m -> m.getPayload().equals("Hallo Welt"));
@@ -773,7 +752,7 @@ class DrasylNodeIT {
          */
         @Nested
         class SingleNonStartedNode {
-            private Pair<DrasylNode, Observable<Event>> node1;
+            private EmbeddedNode node;
 
             @BeforeEach
             void setUp() throws DrasylException {
@@ -790,20 +769,25 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .build();
-                node1 = createNode(config);
+                node = new EmbeddedNode(config);
                 colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
+            }
+
+            @AfterEach
+            void tearDown() {
+                node.close();
             }
 
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void sendToSelfShouldThrowException() {
-                assertThrows(ExecutionException.class, () -> node1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt").get());
+                assertThrows(ExecutionException.class, () -> node.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt").get());
             }
 
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void sendToAnOtherPeerShouldThrowException() {
-                assertThrows(ExecutionException.class, () -> node1.first().send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt").get());
+                assertThrows(ExecutionException.class, () -> node.send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt").get());
             }
         }
     }

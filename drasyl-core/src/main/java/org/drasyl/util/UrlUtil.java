@@ -24,7 +24,7 @@ import java.net.URL;
 /**
  * Utility class for operations on {@link URL}s.
  */
-public class UrlUtil {
+public final class UrlUtil {
     private UrlUtil() {
         // util class
     }

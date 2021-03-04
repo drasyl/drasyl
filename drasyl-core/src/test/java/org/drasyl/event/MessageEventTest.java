@@ -39,7 +39,7 @@ class MessageEventTest {
     class GetMessage {
         @Test
         void shouldReturnMessage() {
-            final MessageEvent event = new MessageEvent(sender, message);
+            final MessageEvent event = MessageEvent.of(sender, message);
 
             assertEquals(message, event.getPayload());
         }
@@ -52,9 +52,9 @@ class MessageEventTest {
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            final MessageEvent event1 = new MessageEvent(sender, message);
-            final MessageEvent event2 = new MessageEvent(sender, message);
-            final MessageEvent event3 = new MessageEvent(sender, message2);
+            final MessageEvent event1 = MessageEvent.of(sender, message);
+            final MessageEvent event2 = MessageEvent.of(sender, message);
+            final MessageEvent event3 = MessageEvent.of(sender, message2);
 
             assertEquals(event1, event2);
             assertNotEquals(event1, event3);
@@ -62,8 +62,8 @@ class MessageEventTest {
 
         @Test
         void sameBecauseOfEqualPayload() {
-            final MessageEvent event1 = new MessageEvent(sender, "Hallo Welt".getBytes());
-            final MessageEvent event2 = new MessageEvent(sender, "Hallo Welt".getBytes());
+            final MessageEvent event1 = MessageEvent.of(sender, "Hallo Welt".getBytes());
+            final MessageEvent event2 = MessageEvent.of(sender, "Hallo Welt".getBytes());
 
             assertEquals(event1, event2);
         }
@@ -76,9 +76,9 @@ class MessageEventTest {
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            final MessageEvent event1 = new MessageEvent(sender, message);
-            final MessageEvent event2 = new MessageEvent(sender, message);
-            final MessageEvent event3 = new MessageEvent(sender, message2);
+            final MessageEvent event1 = MessageEvent.of(sender, message);
+            final MessageEvent event2 = MessageEvent.of(sender, message);
+            final MessageEvent event3 = MessageEvent.of(sender, message2);
 
             assertEquals(event1.hashCode(), event2.hashCode());
             assertNotEquals(event1.hashCode(), event3.hashCode());

@@ -56,6 +56,7 @@ import java.util.concurrent.CompletableFuture;
  *     }
  * </pre>
  */
+@SuppressWarnings("java:S118")
 public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> extends AddressHandlerAdapter<A> {
     private final TypeParameterMatcher matcherMessage;
     private final TypeParameterMatcher matcherEvent;

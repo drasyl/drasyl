@@ -19,9 +19,6 @@
 package org.drasyl;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
@@ -58,6 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static org.drasyl.util.NettyUtil.getBestEventLoopGroup;
 import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 
 /**
@@ -84,12 +82,12 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
  * node.shutdown();
  * </code></pre>
  */
-@SuppressWarnings({ "java:S107" })
+@SuppressWarnings({ "java:S107", "java:S118" })
 @Beta
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
-    private static volatile boolean bossGroupCreated = false;
+    private static final boolean BOSS_GROUP_CREATED = false;
     private static String version;
 
     static {
@@ -112,8 +110,8 @@ public abstract class DrasylNode {
             final Long offset = (Long) staticFieldOffset.invoke(unsafe, loggerField);
             putObjectVolatile.invoke(unsafe, loggerClass, offset, null);
         }
-        catch (final Exception ignored) {
-            // ignore
+        catch (final Exception e) { // NOSONAR
+            LOG.debug("", e);
         }
     }
 
@@ -132,6 +130,9 @@ public abstract class DrasylNode {
      * <p>
      * Note: This is a blocking method, because when a node is started for the first time, its
      * identity must be created. This can take up to a minute because of the proof of work.
+     *
+     * @throws DrasylException       if identity could not be loaded or created
+     * @throws DrasylConfigException if config is invalid
      */
     protected DrasylNode() throws DrasylException {
         this(new DrasylConfig());
@@ -147,7 +148,7 @@ public abstract class DrasylNode {
      *
      * @param config custom configuration used for this node
      * @throws NullPointerException if {@code config} is {@code null}
-     * @throws DrasylException      if config or identity is not valid
+     * @throws DrasylException      if identity could not be loaded or created
      */
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
@@ -162,9 +163,6 @@ public abstract class DrasylNode {
             this.startFuture = new AtomicReference<>();
             this.shutdownFuture = new AtomicReference<>(completedFuture(null));
             this.scheduler = getInstanceHeavy();
-        }
-        catch (final DrasylConfigException e) {
-            throw new DrasylException("Couldn't load config", e);
         }
         catch (final IOException e) {
             throw new DrasylException("Couldn't load or create identity", e);
@@ -205,7 +203,7 @@ public abstract class DrasylNode {
                     version = properties.getProperty("version");
                 }
                 catch (final IOException e) {
-                    // do nothing
+                    LOG.debug("Unable to read properties file.", e);
                 }
             }
         }
@@ -223,24 +221,8 @@ public abstract class DrasylNode {
      * </p>
      */
     public static void irrevocablyTerminate() {
-        if (INSTANCES.isEmpty() && bossGroupCreated) {
+        if (INSTANCES.isEmpty() && BOSS_GROUP_CREATED) {
             LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
-        }
-    }
-
-    /**
-     * Returns the {@link EventLoopGroup} that fits best to the current environment. Under Linux the
-     * more performant {@link EpollEventLoopGroup} is returned.
-     *
-     * @return {@link EventLoopGroup} that fits best to the current environment
-     */
-    @NonNull
-    public static EventLoopGroup getBestEventLoop(final int poolSize) {
-        if (Epoll.isAvailable()) {
-            return new EpollEventLoopGroup(poolSize);
-        }
-        else {
-            return new NioEventLoopGroup(poolSize);
         }
     }
 
@@ -293,8 +275,8 @@ public abstract class DrasylNode {
         try {
             return send(CompressedPublicKey.of(recipient), payload);
         }
-        catch (final NullPointerException | IllegalArgumentException e) {
-            return failedFuture(new DrasylException("Unable to parse recipient's public key", e));
+        catch (final IllegalArgumentException e) {
+            return failedFuture(new DrasylException("Recipient does not conform to a valid public key.", e));
         }
     }
 
@@ -348,12 +330,12 @@ public abstract class DrasylNode {
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identity);
             scheduler.scheduleDirect(() -> {
                 synchronized (startFuture) {
-                    onInternalEvent(new NodeDownEvent(Node.of(identity))).whenComplete((result, e) -> {
+                    onInternalEvent(NodeDownEvent.of(Node.of(identity))).whenComplete((result, e) -> {
                         if (e != null) {
                             LOG.error("Node faced error on shutdown (NodeDownEvent):", e);
                         }
                         pluginManager.beforeShutdown();
-                        onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity))).whenComplete((result2, e2) -> {
+                        onInternalEvent(NodeNormalTerminationEvent.of(Node.of(identity))).whenComplete((result2, e2) -> {
                             if (e2 != null) {
                                 LOG.error("Node faced error on shutdown (NodeNormalTerminationEvent):", e2);
                             }
@@ -399,7 +381,7 @@ public abstract class DrasylNode {
                 synchronized (startFuture) {
                     INSTANCES.add(this);
                     pluginManager.beforeStart();
-                    onInternalEvent(new NodeUpEvent(Node.of(identity))).whenComplete((result, e) -> {
+                    onInternalEvent(NodeUpEvent.of(Node.of(identity))).whenComplete((result, e) -> {
                         if (e == null) {
                             LOG.info("drasyl Node with Identity '{}' has started", identity);
                             pluginManager.afterStart();
@@ -409,7 +391,7 @@ public abstract class DrasylNode {
                         else {
                             LOG.warn("Could not start drasyl Node:", e);
                             pluginManager.beforeShutdown();
-                            onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity), e)).whenComplete((result2, e2) -> {
+                            onInternalEvent(NodeUnrecoverableErrorEvent.of(Node.of(identity), e)).whenComplete((result2, e2) -> {
                                 if (e2 != null) {
                                     LOG.error("Node faced error '{}' on startup, which caused it to shut down all already started components. This again resulted in an error: {}", e.getMessage(), e2.getMessage());
                                 }
@@ -451,10 +433,9 @@ public abstract class DrasylNode {
         return identity;
     }
 
-    private static class LazyBossGroupHolder {
+    private static final class LazyBossGroupHolder {
         // https://github.com/netty/netty/issues/639#issuecomment-9263566
-        static final EventLoopGroup INSTANCE = getBestEventLoop(2);
-        static final boolean LOCK = bossGroupCreated = true;
+        static final EventLoopGroup INSTANCE = getBestEventLoopGroup(2);
 
         private LazyBossGroupHolder() {
         }

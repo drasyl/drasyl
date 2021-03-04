@@ -33,6 +33,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -59,8 +61,6 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -86,7 +86,7 @@ class LocalHostDiscoveryTest {
     @Mock
     private CompressedPublicKey ownPublicKey;
     @Mock
-    private DrasylScheduler scheduler;
+    private ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
     @Mock
     private Disposable watchDisposable;
@@ -96,7 +96,17 @@ class LocalHostDiscoveryTest {
     @Nested
     class StartDiscovery {
         @Test
-        void shouldStartDiscoveryOnNodeUpEvent(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event) {
+        void shouldStartDiscoveryOnNodeUpEvent(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final DrasylScheduler dependentScheduler,
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final DrasylScheduler independentScheduler) {
+            when(dependentScheduler.scheduleDirect(any())).then(invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
+                return null;
+            });
+            when(independentScheduler.scheduleDirect(any())).then(invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
+                return null;
+            });
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
@@ -104,13 +114,12 @@ class LocalHostDiscoveryTest {
             when(config.getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
-            pipeline.close();
+                verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+            }
         }
 
         @Test
@@ -119,20 +128,28 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
-            when(config.getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(discoveryPath, timeout(1_000)).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
-            pipeline.close();
+                verify(discoveryPath, timeout(1_000)).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
+            }
         }
 
         @Test
-        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event) {
+        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
+                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final DrasylScheduler dependentScheduler,
+                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final DrasylScheduler independentScheduler) {
+            when(dependentScheduler.scheduleDirect(any())).then(invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
+                return null;
+            });
+            when(independentScheduler.scheduleDirect(any())).then(invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
+                return null;
+            });
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
@@ -140,33 +157,42 @@ class LocalHostDiscoveryTest {
             when(config.getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
-            verify(scheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
-            pipeline.close();
+                verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+                verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
+            }
         }
 
         @Test
         void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@TempDir final Path dir,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
-                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService) throws IOException {
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final DrasylScheduler dependentScheduler,
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final DrasylScheduler independentScheduler) throws IOException {
             final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
             when(discoveryPath.resolve(anyString())).thenReturn(path);
-            when(scheduler.schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS))).then(invocationOnMock -> {
-                invocationOnMock.getArgument(0, Runnable.class).run();
+            when(dependentScheduler.scheduleDirect(any())).then(invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
                 return null;
             });
-            when(scheduler.schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS))).then(invocationOnMock -> {
-                invocationOnMock.getArgument(0, Runnable.class).run();
+            when(independentScheduler.scheduleDirect(any())).then(invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
+                return null;
+            });
+            when(dependentScheduler.schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS))).then(invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
+                return null;
+            });
+            when(dependentScheduler.schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS))).then(invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
                 return null;
             });
             when(config.getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
@@ -175,14 +201,13 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.getFileSystem()).thenReturn(fileSystem);
             when(fileSystem.newWatchService()).thenReturn(watchService);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(watchService, timeout(1_000)).poll();
-            await().untilAsserted(() -> assertThat(path.toFile(), anExistingFile()));
-            pipeline.close();
+                verify(watchService, timeout(1_000)).poll();
+                verify(jacksonWriter, timeout(10_000)).accept(eq(path.toFile()), any());
+            }
         }
     }
 
@@ -194,15 +219,14 @@ class LocalHostDiscoveryTest {
                                                               @Mock final InetSocketAddressWrapper address) {
             routes.put(publicKey, address);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(watchDisposable, timeout(1_000)).dispose();
-            verify(postDisposable, timeout(1_000)).dispose();
-            await().untilAsserted(() -> assertTrue(routes.isEmpty()));
-            pipeline.close();
+                verify(watchDisposable, timeout(1_000)).dispose();
+                verify(postDisposable, timeout(1_000)).dispose();
+                await().untilAsserted(() -> assertTrue(routes.isEmpty()));
+            }
         }
 
         @Test
@@ -211,15 +235,14 @@ class LocalHostDiscoveryTest {
                                                 @Mock final InetSocketAddressWrapper address) {
             routes.put(publicKey, address);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                pipeline.processInbound(event).join();
 
-            pipeline.processInbound(event).join();
-
-            verify(watchDisposable, timeout(1_000)).dispose();
-            verify(postDisposable, timeout(1_000)).dispose();
-            await().untilAsserted(() -> assertTrue(routes.isEmpty()));
-            pipeline.close();
+                verify(watchDisposable, timeout(1_000)).dispose();
+                verify(postDisposable, timeout(1_000)).dispose();
+                await().untilAsserted(() -> assertTrue(routes.isEmpty()));
+            }
         }
     }
 
@@ -237,7 +260,7 @@ class LocalHostDiscoveryTest {
             when(message.getType()).thenReturn(byte[].class.getName());
             when(message.getContent()).thenReturn(new byte[0]);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
@@ -250,7 +273,7 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey publicKey,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
-            final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
             final TestObserver<SerializedApplicationMessage> outboundMessages = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
 
@@ -275,7 +298,7 @@ class LocalHostDiscoveryTest {
             Files.createDirectory(path.getParent());
             Files.writeString(path, "[\"192.168.188.42:12345\",\"192.168.188.23:12345\"]", StandardOpenOption.CREATE);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(scheduler, routes, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             handler.scan(ctx);
 
             assertEquals(Map.of(

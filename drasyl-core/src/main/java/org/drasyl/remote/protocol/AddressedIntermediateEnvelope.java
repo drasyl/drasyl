@@ -22,9 +22,11 @@ import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 
+import java.io.IOException;
+
 public class AddressedIntermediateEnvelope<T extends MessageLite> extends ReferenceCountedAddressedEnvelope<InetSocketAddressWrapper, IntermediateEnvelope<T>> {
     /**
-     * @throws NullPointerException if {@code sender} and {@code recipient} are {@code null}
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
      */
     public AddressedIntermediateEnvelope(final InetSocketAddressWrapper sender,
                                          final InetSocketAddressWrapper recipient,
@@ -34,11 +36,12 @@ public class AddressedIntermediateEnvelope<T extends MessageLite> extends Refere
 
     /**
      * @throws NullPointerException     if {@code sender} and {@code recipient} are {@code null}
-     * @throws IllegalArgumentException if the given {@link ByteBuf} is not readable
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
+     * @throws IOException              if {@code byteBuf} is not readable
      */
     public AddressedIntermediateEnvelope(final InetSocketAddressWrapper sender,
                                          final InetSocketAddressWrapper recipient,
-                                         final ByteBuf byteBuf) {
+                                         final ByteBuf byteBuf) throws IOException {
         super(sender, recipient, IntermediateEnvelope.of(byteBuf));
     }
 

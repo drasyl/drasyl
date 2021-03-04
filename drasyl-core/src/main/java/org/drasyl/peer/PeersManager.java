@@ -154,7 +154,7 @@ public class PeersManager {
 
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
+                eventConsumer.accept(PeerDirectEvent.of(Peer.of(publicKey)));
             }
 
         }
@@ -171,7 +171,7 @@ public class PeersManager {
             lock.writeLock().lock();
 
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
+                eventConsumer.accept(PeerRelayEvent.of(Peer.of(publicKey)));
             }
         }
         finally {
@@ -190,13 +190,13 @@ public class PeersManager {
             // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
+                eventConsumer.accept(PeerDirectEvent.of(Peer.of(publicKey)));
             }
 
             // role (super peer)
             final boolean firstSuperPeer = superPeers.isEmpty();
             if (superPeers.add(publicKey) && firstSuperPeer) {
-                eventConsumer.accept(new NodeOnlineEvent(Node.of(identity)));
+                eventConsumer.accept(NodeOnlineEvent.of(Node.of(identity)));
             }
         }
         finally {
@@ -213,12 +213,12 @@ public class PeersManager {
 
             // role (super peer)
             if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-                eventConsumer.accept(new NodeOfflineEvent(Node.of(identity)));
+                eventConsumer.accept(NodeOfflineEvent.of(Node.of(identity)));
             }
 
             // path
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
+                eventConsumer.accept(PeerRelayEvent.of(Peer.of(publicKey)));
             }
         }
         finally {
@@ -237,7 +237,7 @@ public class PeersManager {
             // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
+                eventConsumer.accept(PeerDirectEvent.of(Peer.of(publicKey)));
             }
 
             // role (children peer)
@@ -258,7 +258,7 @@ public class PeersManager {
 
             // path
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
+                eventConsumer.accept(PeerRelayEvent.of(Peer.of(publicKey)));
             }
 
             // role (children)

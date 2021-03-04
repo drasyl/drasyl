@@ -113,6 +113,9 @@ public class IntermediateEnvelopeBenchmark extends AbstractBenchmark {
         try {
             myArmedEnvelope = IntermediateEnvelope.of(byteBuf).arm(privateKey);
         }
+        catch (final IOException e) {
+            handleUnexpectedException(e);
+        }
         finally {
             ReferenceCountUtil.safeRelease(myArmedEnvelope);
         }
@@ -125,6 +128,9 @@ public class IntermediateEnvelopeBenchmark extends AbstractBenchmark {
         IntermediateEnvelope<MessageLite> myDisarmedEnvelope = null;
         try {
             myDisarmedEnvelope = IntermediateEnvelope.of(armedByteBuf).disarm(privateKey);
+        }
+        catch (final IOException e) {
+            handleUnexpectedException(e);
         }
         finally {
             ReferenceCountUtil.safeRelease(myDisarmedEnvelope);

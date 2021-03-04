@@ -83,7 +83,7 @@ class GroupsManagerConfigTest {
 
         @Test
         void shouldReadFromBuilderProperly() throws UnknownHostException {
-            final GroupsManagerConfig config = GroupsManagerConfig.builder()
+            final GroupsManagerConfig config = GroupsManagerConfig.newBuilder()
                     .databaseUri(databaseURI)
                     .groups(groups)
                     .apiEnabled(true)
@@ -103,14 +103,14 @@ class GroupsManagerConfigTest {
     class Equals {
         @Test
         void shouldBeEquals() throws UnknownHostException {
-            final GroupsManagerConfig config1 = GroupsManagerConfig.builder()
+            final GroupsManagerConfig config1 = GroupsManagerConfig.newBuilder()
                     .databaseUri(databaseURI)
                     .groups(groups)
                     .apiEnabled(true)
                     .apiBindHost(InetAddress.getByName("0.0.0.0"))
                     .apiBindPort(8080)
                     .build();
-            final GroupsManagerConfig config2 = GroupsManagerConfig.builder()
+            final GroupsManagerConfig config2 = GroupsManagerConfig.newBuilder()
                     .databaseUri(databaseURI)
                     .groups(groups)
                     .apiEnabled(true)
@@ -123,14 +123,14 @@ class GroupsManagerConfigTest {
 
         @Test
         void shouldNotBeEquals() throws UnknownHostException {
-            final GroupsManagerConfig config1 = GroupsManagerConfig.builder()
+            final GroupsManagerConfig config1 = GroupsManagerConfig.newBuilder()
                     .databaseUri(databaseURI)
                     .groups(groups)
                     .apiEnabled(true)
                     .apiBindHost(InetAddress.getByName("0.0.0.0"))
                     .apiBindPort(8080)
                     .build();
-            final GroupsManagerConfig config2 = GroupsManagerConfig.builder()
+            final GroupsManagerConfig config2 = GroupsManagerConfig.newBuilder()
                     .databaseUri(URI.create(""))
                     .groups(groups)
                     .apiEnabled(true)
@@ -146,14 +146,14 @@ class GroupsManagerConfigTest {
     class HashCode {
         @Test
         void shouldBeEquals() throws UnknownHostException {
-            final GroupsManagerConfig config1 = GroupsManagerConfig.builder()
+            final GroupsManagerConfig config1 = GroupsManagerConfig.newBuilder()
                     .databaseUri(databaseURI)
                     .groups(groups)
                     .apiEnabled(true)
                     .apiBindHost(InetAddress.getByName("0.0.0.0"))
                     .apiBindPort(8080)
                     .build();
-            final GroupsManagerConfig config2 = GroupsManagerConfig.builder()
+            final GroupsManagerConfig config2 = GroupsManagerConfig.newBuilder()
                     .databaseUri(databaseURI)
                     .groups(groups)
                     .apiEnabled(true)
@@ -166,14 +166,14 @@ class GroupsManagerConfigTest {
 
         @Test
         void shouldNotBeEquals() throws UnknownHostException {
-            final GroupsManagerConfig config1 = GroupsManagerConfig.builder()
+            final GroupsManagerConfig config1 = GroupsManagerConfig.newBuilder()
                     .databaseUri(databaseURI)
                     .groups(groups)
                     .apiEnabled(true)
                     .apiBindHost(InetAddress.getByName("0.0.0.0"))
                     .apiBindPort(8080)
                     .build();
-            final GroupsManagerConfig config2 = GroupsManagerConfig.builder()
+            final GroupsManagerConfig config2 = GroupsManagerConfig.newBuilder()
                     .databaseUri(URI.create(""))
                     .groups(groups)
                     .apiEnabled(true)

@@ -61,7 +61,7 @@ class GroupsClientPluginTest {
 
         plugin.onBeforeShutdown(env);
 
-        verify(pipeline).remove(eq(GROUPS_CLIENT_HANDLER));
+        verify(pipeline).remove(GROUPS_CLIENT_HANDLER);
     }
 
     @Test

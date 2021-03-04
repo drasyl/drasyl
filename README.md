@@ -5,6 +5,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/org.drasyl/drasyl-core.svg)](https://mvnrepository.com/artifact/org.drasyl/drasyl-core)
 [![Javadocs](https://javadoc.io/badge2/org.drasyl/drasyl-core/javadoc.svg)](https://www.javadoc.io/doc/org.drasyl/drasyl-core)
 [![Docker Pulls](https://img.shields.io/docker/pulls/drasyl/drasyl)](https://hub.docker.com/r/drasyl/drasyl)
+[![Chocolatey](https://img.shields.io/chocolatey/v/drasyl)](https://chocolatey.org/packages/drasyl)
 [![Gitter](https://badges.gitter.im/drasyl-overlay/drasyl.svg)](https://gitter.im/drasyl-overlay/drasyl)
 
 drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications.
@@ -14,7 +15,7 @@ With drasyl, boundaries between IP-based networks will be eliminated and secure 
 Zero-configuration is required to use drasyl.
 Developers can run a new drasyl node without having to write configuration files or provide IP addresses of peers.
 
-![drasyl architecture](drasyl-architecture.png)
+![drasyl architecture](https://docs.drasyl.org/master/assets/img/drasyl-architecture.png)
 
 _As drasyl is primarily developed for the research project
 [Smart Networks for Urban Participation (SANE)](https://sane.city/) and focuses on functionalities necessary for the project. However, drasyl is open to

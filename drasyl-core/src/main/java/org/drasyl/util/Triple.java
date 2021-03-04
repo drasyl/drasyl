@@ -31,8 +31,9 @@ import java.util.Objects;
  * Inspired by: https://github.com/javatuples/javatuples/blob/master/src/main/java/org/javatuples/Triplet.java
  */
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
-@SuppressWarnings({ "squid:S4144" })
+@SuppressWarnings({ "squid:S4144", "java:S4926" })
 public class Triple<A, B, C> implements Serializable {
+    private static final long serialVersionUID = 5738338228780907721L;
     private final A first; // NOSONAR
     private final B second; // NOSONAR
     private final C third; // NOSONAR

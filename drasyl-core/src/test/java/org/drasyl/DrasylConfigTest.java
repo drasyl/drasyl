@@ -78,6 +78,7 @@ import static org.drasyl.DrasylConfig.REMOTE_EXPOSE_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_PATH;
+import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_ARM_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_HOP_LIMIT;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_MAX_CONTENT_LENGTH;
@@ -107,7 +108,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -132,6 +132,7 @@ class DrasylConfigTest {
     private int remoteMessageMtu;
     private int remoteMessageMaxContentLength;
     private byte remoteMessageHopLimit;
+    private boolean remoteMessageArmEnabled;
     private boolean superPeerEnabled;
     private Set<Endpoint> superPeerEndpoints;
     private Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes;
@@ -181,7 +182,7 @@ class DrasylConfigTest {
         intraVmDiscoveryEnabled = true;
         remoteLocalHostDiscoveryEnabled = true;
         remoteLocalHostDiscoveryPathAsString = "foo/bar";
-        remoteLocalHostDiscoveryLeaseTime = ofSeconds(60);
+        remoteLocalHostDiscoveryLeaseTime = ofSeconds(40);
         composedMessageTransferTimeout = ofSeconds(60);
         monitoringEnabled = true;
         monitoringHostTag = "test.example.com";
@@ -189,18 +190,20 @@ class DrasylConfigTest {
         monitoringInfluxUser = "";
         monitoringInfluxPassword = "";
         monitoringInfluxDatabase = "drasyl";
-        monitoringInfluxReportingFrequency = ofSeconds(60);
+        monitoringInfluxReportingFrequency = ofSeconds(70);
         plugins = Set.of();
         serializationSerializers = Map.of("string", new MySerializer());
         serializationsBindingsInbound = Map.of();
         serializationsBindingsOutbound = Map.of();
+        remotePingCommunicationTimeout = ofSeconds(80);
+        remoteUniteMinInterval = ofSeconds(90);
     }
 
     @Nested
     class Constructor {
         @Test
         @SuppressWarnings("java:S5961")
-        void shouldReadConfigProperly() {
+        void shouldReadConfigProperly(@Mock final ConfigObject configObject) {
             when(typesafeConfig.getInt(NETWORK_ID)).thenReturn(networkId);
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(-1);
             when(typesafeConfig.getString(IDENTITY_PUBLIC_KEY)).thenReturn("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
@@ -214,6 +217,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getMemorySize(REMOTE_MESSAGE_MTU)).thenReturn(ConfigMemorySize.ofBytes(remoteMessageMtu));
             when(typesafeConfig.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(remoteMessageMaxContentLength));
             when(typesafeConfig.getInt(REMOTE_MESSAGE_HOP_LIMIT)).thenReturn((int) remoteMessageHopLimit);
+            when(typesafeConfig.getBoolean(REMOTE_MESSAGE_ARM_ENABLED)).thenReturn(remoteMessageArmEnabled);
             when(typesafeConfig.getStringList(REMOTE_ENDPOINTS)).thenReturn(List.of());
             when(typesafeConfig.getBoolean(REMOTE_EXPOSE_ENABLED)).thenReturn(remoteExposeEnabled);
             when(typesafeConfig.getBoolean(REMOTE_SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
@@ -231,8 +235,8 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(MONITORING_INFLUX_DATABASE)).thenReturn(monitoringInfluxDatabase);
             when(typesafeConfig.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY)).thenReturn(monitoringInfluxReportingFrequency);
             when(typesafeConfig.getObject(SERIALIZATION_SERIALIZERS)).thenReturn(ConfigFactory.parseString("serializers { string = \"" + MySerializer.class.getName() + "\" }").getObject("serializers"));
-            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_INBOUND)).thenReturn(mock(ConfigObject.class));
-            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_OUTBOUND)).thenReturn(mock(ConfigObject.class));
+            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_INBOUND)).thenReturn(configObject);
+            when(typesafeConfig.getObject(SERIALIZATION_BINDINGS_OUTBOUND)).thenReturn(configObject);
             when(typesafeConfig.getObject(PLUGINS)).thenReturn(ConfigFactory.parseString("plugins { \"" + MyPlugin.class.getName() + "\" { enabled = true } }").getObject("plugins"));
 
             final DrasylConfig config = new DrasylConfig(typesafeConfig);
@@ -251,6 +255,7 @@ class DrasylConfigTest {
             assertEquals(remoteMessageMtu, config.getRemoteMessageMtu());
             assertEquals(remoteMessageMaxContentLength, config.getRemoteMessageMaxContentLength());
             assertEquals(remoteMessageHopLimit, config.getRemoteMessageHopLimit());
+            assertEquals(remoteMessageArmEnabled, config.isRemoteMessageArmEnabled());
             assertEquals(superPeerEnabled, config.isRemoteSuperPeerEnabled());
             assertEquals(superPeerEndpoints, config.getRemoteSuperPeerEndpoints());
             assertEquals(intraVmDiscoveryEnabled, config.isIntraVmDiscoveryEnabled());
@@ -306,6 +311,7 @@ class DrasylConfigTest {
                     remoteStaticRoutes,
                     remoteMessageMaxContentLength,
                     remoteMessageHopLimit,
+                    remoteMessageArmEnabled,
                     composedMessageTransferTimeout,
                     remoteMessageMtu,
                     remoteLocalHostDiscoveryEnabled,
@@ -709,6 +715,7 @@ class DrasylConfigTest {
                     .remoteMessageMaxContentLength(DEFAULT.getRemoteMessageMaxContentLength())
                     .remoteMessageComposedMessageTransferTimeout(DEFAULT.getRemoteMessageComposedMessageTransferTimeout())
                     .remoteMessageHopLimit(DEFAULT.getRemoteMessageHopLimit())
+                    .remoteMessageArmEnabled(DEFAULT.isRemoteMessageArmEnabled())
                     .remoteSuperPeerEnabled(DEFAULT.isRemoteSuperPeerEnabled())
                     .remoteSuperPeerEndpoints(DEFAULT.getRemoteSuperPeerEndpoints())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
@@ -716,7 +723,7 @@ class DrasylConfigTest {
                     .remoteLocalHostDiscoveryPath(DEFAULT.getRemoteLocalHostDiscoveryPath())
                     .remoteLocalHostDiscoveryLeaseTime(DEFAULT.getRemoteLocalHostDiscoveryLeaseTime())
                     .monitoringEnabled(DEFAULT.isMonitoringEnabled())
-                    .monitoringHost(DEFAULT.getMonitoringHostTag())
+                    .monitoringHostTag(DEFAULT.getMonitoringHostTag())
                     .monitoringInfluxUri(DEFAULT.getMonitoringInfluxUri())
                     .monitoringInfluxUser(DEFAULT.getMonitoringInfluxUser())
                     .monitoringInfluxPassword(DEFAULT.getMonitoringInfluxPassword())

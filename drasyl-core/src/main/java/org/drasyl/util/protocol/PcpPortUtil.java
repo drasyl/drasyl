@@ -35,12 +35,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Utility class for Port Control Protocol (PCP)-related stuff.
  *
- * @see <a href="https://tools.ietf.org/html/rfc6887">https://tools.ietf.org/html/rfc6887</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6887">RFC 6887</a>
  */
-public class PcpPortUtil {
+public final class PcpPortUtil {
     public static final int PCP_PORT = 5351;
     public static final int PCP_VERSION = 2;
     public static final int MAP_OPCODE = 1;
@@ -49,6 +51,15 @@ public class PcpPortUtil {
     public static final int PROTO_UDP = 17;
     public static final InetAddress ZERO_IPV6;
     public static final InetAddress ZERO_IPV4;
+    public static final int LIFETIME_LENGTH = 4;
+    public static final int EPOCH_TIME_LENGTH = 4;
+    public static final int MAPPING_NONCE_LENGTH = 12;
+    public static final int EXTERNAL_SUGGESTED_ADDRESS_LENGTH = 16;
+    public static final int REQUEST_RESERVED1_LENGTH = 2;
+    public static final int REQUEST_RESERVED2_LENGTH = 3;
+    public static final int RESPONSE_RESERVED1_LENGTH = 1;
+    public static final int RESPONSE_RESERVED2_LENGTH = 12;
+    public static final int RESPONSE_RESERVED3_LENGTH = 3;
 
     static {
         try {
@@ -171,7 +182,7 @@ public class PcpPortUtil {
             out.write(MAP_OPCODE);
 
             // reserved
-            out.write(new byte[2]);
+            out.write(new byte[REQUEST_RESERVED1_LENGTH]);
 
             // lifetime
             out.write(UnsignedInteger.of(lifetime.toSeconds()).toBytes());
@@ -186,7 +197,7 @@ public class PcpPortUtil {
             out.write(protocol);
 
             // reserved
-            out.write(new byte[3]);
+            out.write(new byte[REQUEST_RESERVED2_LENGTH]);
 
             // internal port
             out.write(unsignedPort);
@@ -206,7 +217,7 @@ public class PcpPortUtil {
         }
     }
 
-    @SuppressWarnings({ "SwitchStatementWithTooFewBranches", "java:S1301" })
+    @SuppressWarnings({ "SwitchStatementWithTooFewBranches", "java:S1142", "java:S1301" })
     public static Message readMessage(final InputStream inputStream) throws IOException {
         try (final DataInputStream in = new DataInputStream(inputStream)) {
             // version
@@ -337,7 +348,9 @@ public class PcpPortUtil {
     @SuppressWarnings({ "java:S1192" })
     private static Message readMappingMessage(final DataInputStream in) throws IOException {
         // reserved
-        in.readByte();
+        if (in.read(new byte[RESPONSE_RESERVED1_LENGTH]) != RESPONSE_RESERVED1_LENGTH) {
+            throw new IOException("Message is incomplete.");
+        }
 
         // result code
         final short number = (short) (in.readByte() & 0xFF);
@@ -347,27 +360,27 @@ public class PcpPortUtil {
         }
 
         // lifetime
-        final byte[] unsignedLifetime = new byte[4];
-        if (in.read(unsignedLifetime) != 4) {
+        final byte[] unsignedLifetime = new byte[LIFETIME_LENGTH];
+        if (in.read(unsignedLifetime) != LIFETIME_LENGTH) {
             throw new IOException("Message is incomplete.");
         }
         final long lifetime = UnsignedInteger.of(unsignedLifetime).getValue();
 
         // epoch time
-        final byte[] unsignedEpochTime = new byte[4];
-        if (in.read(unsignedEpochTime) != 4) {
+        final byte[] unsignedEpochTime = new byte[EPOCH_TIME_LENGTH];
+        if (in.read(unsignedEpochTime) != EPOCH_TIME_LENGTH) {
             throw new IOException("Message is incomplete.");
         }
         final long epochTime = UnsignedInteger.of(unsignedEpochTime).getValue();
 
         // reserved
-        if (in.read(new byte[12]) != 12) {
+        if (in.read(new byte[RESPONSE_RESERVED2_LENGTH]) != RESPONSE_RESERVED2_LENGTH) {
             throw new IOException("Message is incomplete.");
         }
 
         // mapping nonce
-        final byte[] mappingNonce = new byte[12];
-        if (in.read(mappingNonce) != 12) {
+        final byte[] mappingNonce = new byte[MAPPING_NONCE_LENGTH];
+        if (in.read(mappingNonce) != MAPPING_NONCE_LENGTH) {
             throw new IOException("Message is incomplete.");
         }
 
@@ -375,7 +388,7 @@ public class PcpPortUtil {
         final int protocol = in.readByte() & 0xFF;
 
         // reserved
-        if (in.read(new byte[3]) != 3) {
+        if (in.read(new byte[RESPONSE_RESERVED3_LENGTH]) != RESPONSE_RESERVED3_LENGTH) {
             throw new IOException("Message is incomplete.");
         }
 
@@ -386,8 +399,8 @@ public class PcpPortUtil {
         final int externalSuggestedPort = in.readUnsignedShort();
 
         // external suggested address
-        final byte[] externalAddressBytes = new byte[16];
-        if (in.read(externalAddressBytes) != 16) {
+        final byte[] externalAddressBytes = new byte[EXTERNAL_SUGGESTED_ADDRESS_LENGTH];
+        if (in.read(externalAddressBytes) != EXTERNAL_SUGGESTED_ADDRESS_LENGTH) {
             throw new IOException("Message is incomplete.");
         }
         final InetAddress externalSuggestedAddress = InetAddress.getByAddress(externalAddressBytes);
@@ -398,11 +411,11 @@ public class PcpPortUtil {
     public interface Message {
     }
 
-    static class AbstractMessage implements Message {
+    abstract static class AbstractMessage implements Message {
         private final ResultCode resultCode;
 
-        public AbstractMessage(final ResultCode resultCode) {
-            this.resultCode = resultCode;
+        protected AbstractMessage(final ResultCode resultCode) {
+            this.resultCode = requireNonNull(resultCode);
         }
 
         public ResultCode getResultCode() {
@@ -410,7 +423,7 @@ public class PcpPortUtil {
         }
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "unused", "java:S2972" })
     public static class MappingResponseMessage extends AbstractMessage {
         private final long lifetime;
         private final long epochTime;
@@ -420,7 +433,7 @@ public class PcpPortUtil {
         private final int externalSuggestedPort;
         private final InetAddress externalSuggestedAddress;
 
-        @SuppressWarnings({ "java:S107" })
+        @SuppressWarnings({ "java:S107", "java:S2384" })
         public MappingResponseMessage(final ResultCode resultCode,
                                       final long lifetime,
                                       final long epochTime,
@@ -436,7 +449,7 @@ public class PcpPortUtil {
             this.protocol = protocol;
             this.internalPort = internalPort;
             this.externalSuggestedPort = externalSuggestedPort;
-            this.externalSuggestedAddress = externalSuggestedAddress;
+            this.externalSuggestedAddress = requireNonNull(externalSuggestedAddress);
         }
 
         public long getLifetime() {
@@ -448,7 +461,7 @@ public class PcpPortUtil {
         }
 
         public byte[] getMappingNonce() {
-            return mappingNonce;
+            return mappingNonce.clone();
         }
 
         public int getProtocol() {
@@ -487,6 +500,7 @@ public class PcpPortUtil {
         }
     }
 
+    @SuppressWarnings("java:S2972")
     public enum ResultCode {
         SUCCESS((short) 0),
         UNSUPP_VERSION((short) 1),

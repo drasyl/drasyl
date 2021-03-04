@@ -27,7 +27,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class MemberTest {
@@ -41,9 +40,6 @@ class MemberTest {
             final Member member = Member.of(publicKey);
 
             assertEquals(publicKey, member.getPublicKey());
-
-            // ignore toString()
-            member.toString();
         }
     }
 
@@ -58,9 +54,9 @@ class MemberTest {
         }
 
         @Test
-        void shouldNotBeEquals() {
+        void shouldNotBeEquals(@Mock final CompressedPublicKey publicKey2) {
             final Member member1 = Member.of(publicKey);
-            final Member member2 = Member.of(mock(CompressedPublicKey.class));
+            final Member member2 = Member.of(publicKey2);
 
             assertNotEquals(member1, member2);
         }
@@ -77,9 +73,9 @@ class MemberTest {
         }
 
         @Test
-        void shouldNotBeEquals() {
+        void shouldNotBeEquals(@Mock final CompressedPublicKey publicKey2) {
             final Member member1 = Member.of(publicKey);
-            final Member member2 = Member.of(mock(CompressedPublicKey.class));
+            final Member member2 = Member.of(publicKey2);
 
             assertNotEquals(member1.hashCode(), member2.hashCode());
         }

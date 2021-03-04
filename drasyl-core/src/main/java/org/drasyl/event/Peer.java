@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
 public class Peer {
     private final CompressedPublicKey publicKey;
 
-    Peer(final CompressedPublicKey publicKey) {
+    private Peer(final CompressedPublicKey publicKey) {
         this.publicKey = requireNonNull(publicKey);
     }
 

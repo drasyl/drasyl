@@ -37,12 +37,13 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * This handler filters out all messages received from other networks.
  */
 @Stateless
-public class OtherNetworkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class OtherNetworkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
 
     private OtherNetworkFilter() {
+        // singleton
     }
 
     @Override
@@ -55,13 +56,13 @@ public class OtherNetworkFilter extends SimpleInboundHandler<AddressedIntermedia
                 ctx.fireRead(sender, msg, future);
             }
             else {
-                LOG.trace("Message from other network dropped: {}", msg);
+                LOG.trace("Message from other network dropped: {}", () -> sanitizeLogArg(msg));
                 ReferenceCountUtil.safeRelease(msg);
                 future.completeExceptionally(new Exception("Message from other network dropped"));
             }
         }
-        catch (final IllegalArgumentException | IOException e) {
-            LOG.debug("Message {} can't be read and was dropped due to the following error: ", () -> sanitizeLogArg(msg), e::getMessage);
+        catch (final IOException e) {
+            LOG.debug("Message {} can't be read and and was dropped: '{}'", () -> sanitizeLogArg(msg), () -> e);
             future.completeExceptionally(new Exception("Message can't be read and was dropped due to the following error: ", e));
             ReferenceCountUtil.safeRelease(msg);
         }

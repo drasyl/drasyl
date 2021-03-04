@@ -25,7 +25,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DatabaseAdapterManager {
+public final class DatabaseAdapterManager {
     private static final Map<String, ThrowingFunction<URI, DatabaseAdapter, DatabaseException>> ADAPTERS = new HashMap<>();
 
     static {

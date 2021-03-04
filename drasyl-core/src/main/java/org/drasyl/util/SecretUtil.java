@@ -21,13 +21,13 @@ package org.drasyl.util;
 /**
  * Utility class for security-related operations.
  */
-public class SecretUtil {
+public final class SecretUtil {
     private SecretUtil() {
         // util class
     }
 
     /**
-     * This method replaces each character in the return of <code>secret</code>'s {@link
+     * This method replaces each character in the return of {@code secret}'s {@link
      * #toString()}-call with a asterisk. Can be used to mask secrets (like private keys or
      * passwords).
      *

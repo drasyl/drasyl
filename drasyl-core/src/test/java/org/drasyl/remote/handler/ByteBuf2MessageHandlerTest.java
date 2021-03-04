@@ -68,15 +68,15 @@ class ByteBuf2MessageHandlerTest {
         final AddressedByteBuf byteBuf = new AddressedByteBuf(senderAddress, recipientAddress, acknowledgementMessage.getOrBuildByteBuf());
 
         final ByteBuf2MessageHandler handler = ByteBuf2MessageHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
-        }).test();
-        pipeline.processInbound(senderPublicKey, byteBuf);
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+            }).test();
+            pipeline.processInbound(senderPublicKey, byteBuf);
 
-        inboundMessages.awaitCount(1)
-                .assertValueCount(1);
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1);
 
-        ReferenceCountUtil.safeRelease(byteBuf);
-        pipeline.close();
+            ReferenceCountUtil.safeRelease(byteBuf);
+        }
     }
 }

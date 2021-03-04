@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
@@ -59,10 +60,10 @@ public class GroupsManagerApi {
                      final int bindPort,
                      final DatabaseAdapter database,
                      final Service server) {
-        this.bindHost = bindHost;
+        this.bindHost = requireNonNull(bindHost);
         this.bindPort = bindPort;
         this.database = database;
-        this.server = server;
+        this.server = requireNonNull(server);
     }
 
     public GroupsManagerApi(final GroupsManagerConfig config, final DatabaseAdapter database) {
@@ -127,7 +128,7 @@ public class GroupsManagerApi {
     }
 
     Object groupsCreate(final Request request,
-                        final Response response) throws DatabaseException {
+                        final Response response) {
         try {
             final Group group = JACKSON_READER.readValue(request.body(), Group.class);
 
@@ -142,6 +143,7 @@ public class GroupsManagerApi {
             }
         }
         catch (final IOException e) {
+            LOG.debug("Error occurred.", e);
             response.status(UNPROCESSABLE_ENTITY_422);
             return "Unprocessable Entity: " + e.getMessage();
         }
@@ -182,6 +184,7 @@ public class GroupsManagerApi {
                 return null;
             }
             catch (final IOException | IllegalArgumentException e) {
+                LOG.debug("Error occurred.", e);
                 response.status(UNPROCESSABLE_ENTITY_422);
                 return "Unprocessable Entity: " + e.getMessage();
             }

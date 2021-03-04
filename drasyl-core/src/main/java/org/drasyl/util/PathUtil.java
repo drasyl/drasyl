@@ -23,7 +23,7 @@ import java.nio.file.Path;
 /**
  * Utility class for operations on {@link Path}es.
  */
-public class PathUtil {
+public final class PathUtil {
     private PathUtil() {
         // util class
     }

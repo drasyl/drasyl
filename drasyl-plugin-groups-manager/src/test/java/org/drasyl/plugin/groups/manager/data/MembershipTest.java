@@ -26,7 +26,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class MembershipTest {
@@ -42,9 +41,6 @@ class MembershipTest {
             final Membership membership = Membership.of(member, group, 0);
 
             assertEquals(member, membership.getMember());
-
-            // ignore toString()
-            membership.toString();
         }
 
         @Test
@@ -73,9 +69,9 @@ class MembershipTest {
         }
 
         @Test
-        void shouldNotBeEquals() {
+        void shouldNotBeEquals(@Mock final Member member2) {
             final Membership membership1 = Membership.of(member, group, 0);
-            final Membership membership2 = Membership.of(mock(Member.class), group, 0);
+            final Membership membership2 = Membership.of(member2, group, 0);
 
             assertNotEquals(membership1, membership2);
         }
@@ -92,9 +88,9 @@ class MembershipTest {
         }
 
         @Test
-        void shouldNotBeEquals() {
+        void shouldNotBeEquals(@Mock final Member member2) {
             final Membership membership1 = Membership.of(member, group, 0);
-            final Membership membership2 = Membership.of(mock(Member.class), group, 0);
+            final Membership membership2 = Membership.of(member2, group, 0);
 
             assertNotEquals(membership1.hashCode(), membership2.hashCode());
         }

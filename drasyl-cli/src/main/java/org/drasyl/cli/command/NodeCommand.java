@@ -16,10 +16,8 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.cli.command;
 
-import io.sentry.Sentry;
 import org.apache.commons.cli.CommandLine;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
@@ -48,14 +46,6 @@ import static java.util.concurrent.CompletableFuture.failedFuture;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class NodeCommand extends AbstractCommand {
     private static final Logger LOG = LoggerFactory.getLogger(NodeCommand.class);
-
-    static {
-        Sentry.init(options -> {
-            options.setEnableExternalConfiguration(true);
-            options.setRelease(DrasylNode.getVersion());
-        });
-    }
-
     private final Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier;
     private final Consumer<Integer> exitSupplier;
     private DrasylNode node;
@@ -94,7 +84,7 @@ public class NodeCommand extends AbstractCommand {
     NodeCommand(final PrintStream out,
                 final PrintStream err,
                 final Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier,
-                Consumer<Integer> exitSupplier,
+                final Consumer<Integer> exitSupplier,
                 final DrasylNode node) {
         super(out, err);
         this.nodeSupplier = requireNonNull(nodeSupplier);
@@ -125,7 +115,8 @@ public class NodeCommand extends AbstractCommand {
             final Pair<DrasylNode, CompletableFuture<Void>> pair = nodeSupplier.apply(config);
             node = pair.first();
             final CompletableFuture<Void> running = pair.second();
-            running.get(); // block while node is running
+            // block while node is running
+            running.get();
         }
         catch (final ExecutionException e) {
             throw new CliException(e);

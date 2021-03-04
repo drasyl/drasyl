@@ -38,6 +38,7 @@ public class ProtobufSerializer extends BoundedSerializer<Message> {
         return o.toByteArray();
     }
 
+    @SuppressWarnings("java:S3878")
     @Override
     protected Message matchedFromByteArray(final byte[] bytes,
                                            final Class<Message> type) throws IOException {
@@ -56,7 +57,7 @@ public class ProtobufSerializer extends BoundedSerializer<Message> {
         }
     }
 
-    private <T> Optional<Method> getParseFromMethod(final Class<T> type) {
+    private static <T> Optional<Method> getParseFromMethod(final Class<T> type) {
         return typeMethods.computeIfAbsent(type, key -> {
             try {
                 return Optional.of(key.getDeclaredMethod("parseFrom", byte[].class));

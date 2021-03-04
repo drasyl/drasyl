@@ -23,12 +23,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.util.JSONUtil;
 
 import java.io.IOException;
 import java.util.Arrays;
 
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+
 abstract class AbstractCompressedKey<K> implements Address {
+    public static final int LEGACY_KEY_LENGTH = 44;
     @JsonValue
     protected final byte[] compressedKey;
     @JsonIgnore
@@ -40,7 +43,7 @@ abstract class AbstractCompressedKey<K> implements Address {
     }
 
     protected AbstractCompressedKey(final byte[] compressedKey) {
-        this.compressedKey = compressedKey;
+        this.compressedKey = requireNonNull(compressedKey);
         this.key = null;
     }
 
@@ -53,9 +56,10 @@ abstract class AbstractCompressedKey<K> implements Address {
     protected AbstractCompressedKey(final String compressedKey) {
         // For backwards compatibility we check if the given string represents a base64 (new) or
         // a normal string.
-        if (compressedKey.length() == 44) { // base64 encoded 32 up to 33 bytes long key ((4 * n / 3) + 3) & ~3
+        // base64 encoded 32 up to 33 bytes long key ((4 * n / 3) + 3) & ~3
+        if (compressedKey.length() == LEGACY_KEY_LENGTH) {
             try {
-                this.compressedKey = JSONUtil.JACKSON_READER.readValue("\"" + compressedKey + "\"", byte[].class);
+                this.compressedKey = JACKSON_READER.readValue("\"" + compressedKey + "\"", byte[].class);
             }
             catch (final IOException e) {
                 throw new IllegalArgumentException("Given string does not conform to a valid key", e);
@@ -101,9 +105,9 @@ abstract class AbstractCompressedKey<K> implements Address {
     }
 
     /**
-     * @deprecated use {@link #toString()}
+     * @deprecated Use {@link #toString()} ()} instead.
      */
-    @Deprecated(since = "0.4.0")
+    @Deprecated(since = "0.4.0", forRemoval = true)
     public String getCompressedKey() {
         return toString();
     }

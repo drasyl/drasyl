@@ -48,6 +48,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.ECPoint;
 import java.security.spec.ECPublicKeySpec;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 /**
@@ -60,6 +61,7 @@ public class Crypto {
     private static final String ECDSA = "ECDSA";
     private static final String SHA256_WITH_ECDSA = "SHA256withECDSA";
     private static final String CURVE_NAME = "curve25519";
+    public static final int COMPRESSED_KEY_LENGTH = 33;
 
     static {
         Security.addProvider(new BouncyCastleProvider());
@@ -97,7 +99,7 @@ public class Crypto {
             return keygen.generateKeyPair();
         }
         catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidAlgorithmParameterException e) {
-            throw new InternalError("Cannot Generate Keys");
+            throw new InternalError("Cannot Generate Keys", e);
         }
     }
 
@@ -109,7 +111,7 @@ public class Crypto {
      * @throws CryptoException if public key could not be generated
      */
     public static PublicKey getPublicKeyFromBytes(final byte[] pubKey) throws CryptoException {
-        if (pubKey.length <= 33) {
+        if (pubKey.length <= COMPRESSED_KEY_LENGTH) {
             return parseCompressedPublicKey(pubKey);
         }
         else {
@@ -117,7 +119,7 @@ public class Crypto {
                 final KeyFactory kf = KeyFactory.getInstance(ECDSA, PROVIDER);
                 return kf.generatePublic(getKeySpec(pubKey));
             }
-            catch (final Exception e) {
+            catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
                 throw new CryptoException("Could not parse Key: " + HexUtil.toString(pubKey), e);
             }
         }
@@ -131,7 +133,7 @@ public class Crypto {
      * @throws CryptoException if private key could not be generated
      */
     public static PrivateKey getPrivateKeyFromBytes(final byte[] privKey) throws CryptoException {
-        if (privKey.length <= 33) {
+        if (privKey.length <= COMPRESSED_KEY_LENGTH) {
             return parseCompressedPrivateKey(privKey);
         }
         else {
@@ -140,7 +142,7 @@ public class Crypto {
                 final KeyFactory factory = KeyFactory.getInstance(ECDSA, PROVIDER);
                 return factory.generatePrivate(spec);
             }
-            catch (final Exception e) {
+            catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
                 throw new CryptoException("Could not parse Key: " + HexUtil.toString(privKey), e);
             }
         }
@@ -162,12 +164,12 @@ public class Crypto {
             final java.security.spec.EllipticCurve ellipticCurve = EC5Util.convertCurve(curve, ecP.getSeed());
 
             final java.security.spec.ECParameterSpec ecSpec = EC5Util.convertToSpec(ecP);
-            final java.security.spec.ECPoint point = ECPointUtil.decodePoint(ellipticCurve, compressedPubKey);
-            final java.security.spec.ECPublicKeySpec keySpec = new java.security.spec.ECPublicKeySpec(point, ecSpec);
+            final ECPoint point = ECPointUtil.decodePoint(ellipticCurve, compressedPubKey);
+            final ECPublicKeySpec keySpec = new ECPublicKeySpec(point, ecSpec);
             return (ECPublicKey) fact.generatePublic(keySpec);
         }
-        catch (final Exception e) {
-            throw new CryptoException(e);
+        catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
+            throw new CryptoException("Unable to parse compressed public key.", e);
         }
     }
 
@@ -200,8 +202,8 @@ public class Crypto {
         try {
             return (ECPrivateKey) KeyFactory.getInstance(ECDSA, PROVIDER).generatePrivate(privkeyspec);
         }
-        catch (final Exception e) {
-            throw new CryptoException(e);
+        catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
+            throw new CryptoException("Unable to parse compressed private key.", e);
         }
     }
 
@@ -249,7 +251,7 @@ public class Crypto {
             return ecdsaSign.sign();
         }
         catch (final NoSuchAlgorithmException | NoSuchProviderException | SignatureException | InvalidKeyException e) {
-            throw new CryptoException(e);
+            throw new CryptoException("Unable to sign message.", e);
         }
     }
 
@@ -270,8 +272,8 @@ public class Crypto {
             ecdsaVerify.update(message);
             return ecdsaVerify.verify(signature);
         }
-        catch (final Exception e) {
-            LOG.error("", e);
+        catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException e) {
+            LOG.error("Unable to verify signature.", e);
         }
         return false;
     }

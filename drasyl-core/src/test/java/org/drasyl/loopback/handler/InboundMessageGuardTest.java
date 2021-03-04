@@ -51,24 +51,24 @@ class InboundMessageGuardTest {
         when(message.getRecipient()).thenReturn(recipient);
         when(identity.getPublicKey()).thenReturn(recipient);
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new InboundMessageGuard());
-        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new InboundMessageGuard())) {
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-        assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
+            assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
 
-        inboundMessages.assertNoValues();
-        pipeline.close();
+            inboundMessages.assertNoValues();
+        }
     }
 
     @Test
     void shouldConsumeMessageIfRecipientIsNotLocalNode(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new InboundMessageGuard(true));
-        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new InboundMessageGuard(true))) {
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-        assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
+            assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
 
-        inboundMessages.assertNoValues();
-        pipeline.close();
+            inboundMessages.assertNoValues();
+        }
     }
 
     @Test
@@ -77,13 +77,13 @@ class InboundMessageGuardTest {
         when(message.getRecipient()).thenReturn(recipient);
         when(identity.getPublicKey()).thenReturn(recipient);
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new InboundMessageGuard(true));
-        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new InboundMessageGuard(true))) {
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-        pipeline.processInbound(message.getSender(), message).join();
+            pipeline.processInbound(message.getSender(), message).join();
 
-        inboundMessages.awaitCount(1)
-                .assertValueCount(1);
-        pipeline.close();
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1);
+        }
     }
 }

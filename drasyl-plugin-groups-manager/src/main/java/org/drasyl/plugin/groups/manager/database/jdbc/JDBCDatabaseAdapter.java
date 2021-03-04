@@ -39,7 +39,13 @@ import java.util.Set;
 /**
  * {@link DatabaseAdapter} implementation that supports SQL databases.
  */
-@SuppressWarnings({ "java:S1192", "SqlDialectInspection", "SqlNoDataSourceInspection" })
+@SuppressWarnings({
+        "java:S109",
+        "java:S1192",
+        "java:S4174",
+        "SqlDialectInspection",
+        "SqlNoDataSourceInspection"
+})
 public class JDBCDatabaseAdapter implements DatabaseAdapter {
     public static final int QUERY_TIMEOUT = 15;
     public static final String SCHEME = "jdbc";
@@ -302,9 +308,9 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
     /**
      * Executes the actual transaction of the {@link #deleteStaleMemberships()} method.
      */
-    private Set<Membership> deleteStaleMembershipTransaction(final Connection con,
-                                                             final long time,
-                                                             final Set<Membership> rtn) throws SQLException, DatabaseException {
+    private static Set<Membership> deleteStaleMembershipTransaction(final Connection con,
+                                                                    final long time,
+                                                                    final Set<Membership> rtn) throws SQLException, DatabaseException {
         final String sqlSelectAllStaleGroupMembers = "SELECT * FROM `GroupMembers` AS GM, `Group` AS G WHERE GM.staleAt<=? AND G.name=GM.groupName;";
         final String sqlDeleteAllStaleGroupMembers = "DELETE FROM `GroupMembers` WHERE staleAt <= ?;";
         // We want to do it in one transaction
@@ -338,7 +344,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
         }
     }
 
-    private Set<Group> getGroupsFromResultSet(final ResultSet rs) throws SQLException {
+    private static Set<Group> getGroupsFromResultSet(final ResultSet rs) throws SQLException {
         final Set<Group> groups = new HashSet<>();
 
         while (rs.next()) {
@@ -353,7 +359,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
         return groups;
     }
 
-    private Set<Membership> getGroupMembersFromResultSet(final ResultSet rs) throws SQLException {
+    private static Set<Membership> getGroupMembersFromResultSet(final ResultSet rs) throws SQLException {
         final Set<Membership> members = new HashSet<>();
 
         while (rs.next()) {

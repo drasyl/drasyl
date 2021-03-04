@@ -61,6 +61,7 @@ public class Group {
         this.timeout = Objects.requireNonNull(timeout);
     }
 
+    @SuppressWarnings("unused")
     @JsonCreator
     private Group(@JsonProperty("name") final String name,
                   @JsonProperty("credentials") final String credentials,

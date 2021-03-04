@@ -40,12 +40,13 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * reached, the message is discarded. Otherwise the message can pass.
  */
 @Stateless
-public class HopCountGuard extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class HopCountGuard extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
     public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
 
     private HopCountGuard() {
+        // singleton
     }
 
     @Override
@@ -62,13 +63,13 @@ public class HopCountGuard extends SimpleOutboundHandler<AddressedIntermediateEn
             }
             else {
                 // too many hops, discard message
-                LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message '{}'", msg);
+                LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message '{}'", () -> sanitizeLogArg(msg));
                 ReferenceCountUtil.safeRelease(msg);
                 future.completeExceptionally(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
             }
         }
-        catch (final IllegalArgumentException | IOException e) {
-            LOG.error("Unable to read/increment hop count from message '{}': {}", () -> sanitizeLogArg(msg.getContent()), e::getMessage);
+        catch (final IOException e) {
+            LOG.error("Unable to read/increment hop count from message. Discard message '{}'", () -> sanitizeLogArg(msg), () -> e);
             ReferenceCountUtil.safeRelease(msg);
             future.completeExceptionally(new Exception("Unable to read/increment hop count from message.", e));
         }

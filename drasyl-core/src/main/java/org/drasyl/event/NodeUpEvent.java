@@ -25,8 +25,10 @@ package org.drasyl.event;
  */
 public class NodeUpEvent extends AbstractNodeEvent {
     /**
-     * @throws NullPointerException if {@code node} is {@code null}
+     * @deprecated Use {@link #of(Node)} instead.
      */
+    // make method private on next release
+    @Deprecated(since = "0.4.0", forRemoval = true)
     public NodeUpEvent(final Node node) {
         super(node);
     }
@@ -36,5 +38,12 @@ public class NodeUpEvent extends AbstractNodeEvent {
         return "NodeUpEvent{" +
                 "node=" + node +
                 '}';
+    }
+
+    /**
+     * @throws NullPointerException if {@code node} is {@code null}
+     */
+    public static NodeUpEvent of(final Node node) {
+        return new NodeUpEvent(node);
     }
 }

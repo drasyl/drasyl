@@ -81,10 +81,10 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         this.body = body;
     }
 
-    private IntermediateEnvelope(final ByteBuf message) {
+    private IntermediateEnvelope(final ByteBuf message) throws IOException {
         if (!message.isReadable()) {
             try {
-                throw new IllegalArgumentException("The given message has no readable data.");
+                throw new IOException("The given message has no readable data.");
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
@@ -128,9 +128,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @param message the message that should be wrapped. {@link ByteBuf#release()} ownership is
      *                transferred to this {@link IntermediateEnvelope}.
      * @return an IntermediateEnvelope
-     * @throws IllegalArgumentException if the given {@link ByteBuf} is not readable
+     * @throws IOException if the given {@link ByteBuf} is not readable
      */
-    public static <T extends MessageLite> IntermediateEnvelope<T> of(final ByteBuf message) {
+    public static <T extends MessageLite> IntermediateEnvelope<T> of(final ByteBuf message) throws IOException {
         return new IntermediateEnvelope<>(message);
     }
 
@@ -205,10 +205,10 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         synchronized (this) {
             if (publicHeader == null) {
                 try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
-                    final byte[] magicNumber = in.readNBytes(4);
+                    final byte[] magicNumber = in.readNBytes(MAGIC_NUMBER_LENGTH);
 
                     if (!Arrays.equals(MAGIC_NUMBER, magicNumber)) {
-                        throw new IllegalStateException("Magic Number mismatch!");
+                        throw new IOException("Magic Number mismatch!");
                     }
 
                     publicHeader = PublicHeader.parseDelimitedFrom(in);
@@ -398,79 +398,49 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     }
 
     /**
-     * @throws IllegalArgumentException if id could not be read
+     * @throws IOException if the public header cannot be read
      */
-    public MessageId getId() {
-        try {
-            return MessageId.of(getPublicHeader().getId());
-        }
-        catch (final IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    /**
-     * @throws IllegalArgumentException if network id could not be read
-     */
-    public int getNetworkId() {
-        try {
-            return getPublicHeader().getNetworkId();
-        }
-        catch (final IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    /**
-     * @throws IllegalArgumentException if sender does not conform to a valid key
-     */
-    public CompressedPublicKey getSender() {
-        try {
-            return CompressedPublicKey.of(getPublicHeader().getSender().toByteArray());
-        }
-        catch (final Exception e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    /**
-     * @throws IllegalArgumentException if proof of work could not be read
-     */
-    public ProofOfWork getProofOfWork() {
-        try {
-            return ProofOfWork.of(getPublicHeader().getProofOfWork());
-        }
-        catch (final IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    /**
-     * @throws IllegalArgumentException if recipient does not conform to a valid key
-     */
-    public CompressedPublicKey getRecipient() {
-        try {
-            return CompressedPublicKey.of(getPublicHeader().getRecipient().toByteArray());
-        }
-        catch (final Exception e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    /**
-     * @throws IllegalArgumentException if hop count could not be read
-     */
-    public byte getHopCount() {
-        try {
-            return (byte) (getPublicHeader().getHopCount() - 1);
-        }
-        catch (final IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+    public MessageId getId() throws IOException {
+        return MessageId.of(getPublicHeader().getId());
     }
 
     /**
      * @throws IOException if the public header cannot be read
+     */
+    public int getNetworkId() throws IOException {
+        return getPublicHeader().getNetworkId();
+    }
+
+    /**
+     * @throws IOException if the public header cannot be read
+     */
+    public CompressedPublicKey getSender() throws IOException {
+        return CompressedPublicKey.of(getPublicHeader().getSender().toByteArray());
+    }
+
+    /**
+     * @throws IOException if the public header cannot be read
+     */
+    public ProofOfWork getProofOfWork() throws IOException {
+        return ProofOfWork.of(getPublicHeader().getProofOfWork());
+    }
+
+    /**
+     * @throws IOException if the public header cannot be read
+     */
+    public CompressedPublicKey getRecipient() throws IOException {
+        return CompressedPublicKey.of(getPublicHeader().getRecipient().toByteArray());
+    }
+
+    /**
+     * @throws IOException if the public header cannot be read
+     */
+    public byte getHopCount() throws IOException {
+        return (byte) (getPublicHeader().getHopCount() - 1);
+    }
+
+    /**
+     * @throws IOException if the public header cannot be read or be updated
      */
     public void incrementHopCount() throws IOException {
         synchronized (this) {
@@ -478,7 +448,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
             final byte newHopCount = (byte) (existingPublicHeader.getHopCount() + 1);
 
             if (newHopCount == 0) {
-                throw new IllegalStateException("hop count overflow");
+                throw new IOException("hop count overflow");
             }
 
             this.publicHeader = PublicHeader.newBuilder(existingPublicHeader)
@@ -499,15 +469,10 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
 
     /**
      * @return signature as byte array
-     * @throws IllegalArgumentException if signature could not be read
+     * @throws IOException if the public header cannot be read
      */
-    public byte[] getSignature() {
-        try {
-            return getPublicHeader().getSignature().toByteArray();
-        }
-        catch (final IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+    public byte[] getSignature() throws IOException {
+        return getPublicHeader().getSignature().toByteArray();
     }
 
     /**
@@ -525,9 +490,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      *
      * @param privateKey message is signed with this key
      * @return the armed version of this envelope
-     * @throws IllegalStateException if arming was not possible
+     * @throws IOException if arming was not possible
      */
-    public IntermediateEnvelope<T> arm(final CompressedPrivateKey privateKey) {
+    public IntermediateEnvelope<T> arm(final CompressedPrivateKey privateKey) throws IOException {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             getPrivateHeader().writeDelimitedTo(outputStream);
             getBody().writeDelimitedTo(outputStream);
@@ -546,7 +511,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
             return of(newPublicHeader, bytes);
         }
         catch (final IOException | CryptoException e) {
-            throw new IllegalStateException("Unable to arm message", e);
+            throw new IOException("Unable to arm message", e);
         }
     }
 
@@ -564,9 +529,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      *
      * @param privateKey message is signed with this key
      * @return the armed version of this envelope
-     * @throws IllegalStateException if arming was not possible
+     * @throws IOException if arming was not possible
      */
-    public IntermediateEnvelope<T> armAndRelease(final CompressedPrivateKey privateKey) {
+    public IntermediateEnvelope<T> armAndRelease(final CompressedPrivateKey privateKey) throws IOException {
         try {
             return arm(privateKey);
         }
@@ -589,10 +554,10 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * <b>Note: Do not forget to release the original {@link #message}</b>
      *
      * @return the disarmed version of this envelope
-     * @throws IllegalStateException if disarming was not possible
+     * @throws IOException if disarming was not possible
      */
     @SuppressWarnings({ "java:S1172" })
-    public IntermediateEnvelope<T> disarm(final CompressedPrivateKey privateKey) {
+    public IntermediateEnvelope<T> disarm(final CompressedPrivateKey privateKey) throws IOException {
         try {
             final PublicKey sender = getSender().toUncompressedKey();
             final byte[] signature = getPublicHeader().getSignature().toByteArray();
@@ -601,7 +566,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
 
                 // verify signature
                 if (signature.length == 0) {
-                    throw new IllegalStateException("No signature");
+                    throw new IOException("No signature");
                 }
                 if (Crypto.verifySignature(sender, bytes, signature)) {
                     // FIXME: decrypt payload
@@ -615,12 +580,12 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                     }
                 }
                 else {
-                    throw new IllegalStateException("Invalid signature");
+                    throw new IOException("Invalid signature");
                 }
             }
         }
-        catch (final IOException | IllegalArgumentException e) {
-            throw new IllegalStateException("Unable to arm message", e);
+        catch (final IOException e) {
+            throw new IOException("Unable to disarm message", e);
         }
     }
 
@@ -637,9 +602,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * <p>This method will release all resources even in case of an exception.
      *
      * @return the disarmed version of this envelope
-     * @throws IllegalStateException if disarming was not possible
+     * @throws IOException if disarming was not possible
      */
-    public IntermediateEnvelope<T> disarmAndRelease(final CompressedPrivateKey privateKey) {
+    public IntermediateEnvelope<T> disarmAndRelease(final CompressedPrivateKey privateKey) throws IOException {
         try {
             return disarm(privateKey);
         }
@@ -648,7 +613,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "java:S1142" })
     private T bodyFromInputStream(final MessageType type, final InputStream in) throws IOException {
         switch (type) {
             case ACKNOWLEDGEMENT:

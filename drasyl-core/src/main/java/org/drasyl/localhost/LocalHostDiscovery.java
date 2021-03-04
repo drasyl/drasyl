@@ -34,16 +34,16 @@ import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol;
 import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.SetUtil;
+import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import org.drasyl.util.scheduler.DrasylScheduler;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.time.Duration;
@@ -60,6 +60,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.identity.CompressedPublicKey.PUBLIC_KEY_LENGTH;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.RandomUtil.randomLong;
@@ -72,7 +73,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * nodes. If the file system does not support monitoring ({@link WatchService}), a fallback to
  * polling is used.
  * <p>
- * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</>
+ * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</a>
  */
 @SuppressWarnings("java:S1192")
 public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicationMessage, CompressedPublicKey> {
@@ -81,7 +82,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
-    private final DrasylScheduler scheduler;
+    public static final String FILE_SUFFIX = ".json";
+    private final ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes;
     private Disposable watchDisposable;
     private Disposable postDisposable;
@@ -89,7 +91,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
 
     public LocalHostDiscovery() {
         this(
-                DrasylSchedulerUtil.getInstanceLight(),
+                JACKSON_WRITER::writeValue,
                 new HashMap<>(),
                 null,
                 null
@@ -97,11 +99,11 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     }
 
     @SuppressWarnings({ "java:S107" })
-    LocalHostDiscovery(final DrasylScheduler scheduler,
+    LocalHostDiscovery(final ThrowingBiConsumer<File, Object, IOException> jacksonWriter,
                        final Map<CompressedPublicKey, InetSocketAddressWrapper> routes,
                        final Disposable watchDisposable,
                        final Disposable postDisposable) {
-        this.scheduler = requireNonNull(scheduler);
+        this.jacksonWriter = requireNonNull(jacksonWriter);
         this.routes = requireNonNull(routes);
         this.watchDisposable = watchDisposable;
         this.postDisposable = postDisposable;
@@ -143,7 +145,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         LOG.debug("Start Local Host Discovery...");
         final Path discoveryPath = discoveryPath(ctx);
         final File directory = discoveryPath.toFile();
-        if (!directory.exists() && !directory.mkdirs()) {
+
+        if (!directory.mkdirs() && !directory.exists()) {
             LOG.warn("Discovery directory '{}' could not be created.", discoveryPath::toAbsolutePath);
         }
         else if (!(directory.isDirectory() && directory.canRead() && directory.canWrite())) {
@@ -151,7 +154,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         }
         else {
             tryWatchDirectory(ctx, discoveryPath);
-            scan(ctx);
+            ctx.dependentScheduler().scheduleDirect(() -> scan(ctx));
             keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.identity().getPublicKey().toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
@@ -159,14 +162,25 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
 
     private synchronized void stopDiscovery(final HandlerContext ctx) {
         LOG.debug("Stop Local Host Discovery...");
+
         if (watchDisposable != null) {
             watchDisposable.dispose();
         }
         if (postDisposable != null) {
             postDisposable.dispose();
         }
-        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, path));
+
+        try {
+            final Path discoveryPath = discoveryPath(ctx);
+            Files.delete(discoveryPath.resolve(ctx.identity().getPublicKey().toString() + ".json"));
+        }
+        catch (final IOException e) {
+            LOG.debug("Unable to delete `{}`", path, e);
+        }
+
+        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, LocalHostDiscovery.path));
         routes.clear();
+
         LOG.debug("Local Host Discovery stopped.");
     }
 
@@ -182,7 +196,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
             discoveryPath.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
             LOG.debug("Watch service for directory '{}' registered", directory);
             final long pollInterval = WATCH_SERVICE_POLL_INTERVAL.toMillis();
-            watchDisposable = scheduler.schedulePeriodicallyDirect(() -> {
+            watchDisposable = ctx.dependentScheduler().schedulePeriodicallyDirect(() -> {
                 if (watchService.poll() != null) {
                     // directory has been changed
                     scan(ctx);
@@ -222,7 +236,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         else {
             refreshInterval = ofSeconds(1);
         }
-        postDisposable = scheduler.schedulePeriodicallyDirect(() -> {
+        postDisposable = ctx.dependentScheduler().schedulePeriodicallyDirect(() -> {
             // only scan in polling mode when watchService does not work
             if (watchService == null) {
                 scan(ctx);
@@ -247,14 +261,14 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
             for (final File file : files) {
                 try {
                     final String fileName = file.getName();
-                    if (file.lastModified() >= maxAge && fileName.length() == 71 && fileName.endsWith(".json") && !fileName.startsWith(ownPublicKeyString)) {
+                    if (file.lastModified() >= maxAge && fileName.length() == PUBLIC_KEY_LENGTH + FILE_SUFFIX.length() && fileName.endsWith(FILE_SUFFIX) && !fileName.startsWith(ownPublicKeyString)) {
                         final CompressedPublicKey publicKey = CompressedPublicKey.of(fileName.replace(".json", ""));
                         final TypeReference<Set<InetSocketAddress>> typeRef = new TypeReference<>() {
                         };
                         final Set<InetSocketAddress> addresses = JACKSON_READER.forType(typeRef).readValue(file);
                         if (!addresses.isEmpty()) {
                             LOG.trace("Addresses '{}' for peer '{}' discovered by file '{}'", addresses, publicKey, fileName);
-                            final InetSocketAddress firstAddress = SetUtil.nthElement(addresses, 0);
+                            final InetSocketAddress firstAddress = SetUtil.firstElement(addresses);
                             newRoutes.put(publicKey, firstAddress);
                         }
                     }
@@ -293,12 +307,14 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     /**
      * Posts own port to {@code filePath}.
      */
-    private void postInformation(final Path filePath, final Set<InetSocketAddress> addresses) {
+    @SuppressWarnings("java:S2308")
+    private void postInformation(final Path filePath,
+                                 final Set<InetSocketAddress> addresses) {
         LOG.trace("Post own Peer Information to {}", filePath);
         final File file = filePath.toFile();
         try {
             if (!file.setLastModified(System.currentTimeMillis())) {
-                JACKSON_WRITER.writeValue(file, addresses);
+                jacksonWriter.accept(file, addresses);
                 file.deleteOnExit();
             }
         }
@@ -307,7 +323,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         }
     }
 
-    private Path discoveryPath(final HandlerContext ctx) {
+    private static Path discoveryPath(final HandlerContext ctx) {
         return ctx.config().getRemoteLocalHostDiscoveryPath().resolve(String.valueOf(ctx.config().getNetworkId()));
     }
 }

@@ -41,7 +41,6 @@ class DrasylExceptionTest {
             assertEquals(exceptionA, exceptionA);
             assertEquals(exceptionA, exceptionB);
             assertEquals(exceptionB, exceptionA);
-            assertNotEquals(null, exceptionA);
             assertNotEquals(exceptionA, exceptionC);
             assertNotEquals(exceptionC, exceptionA);
         }
@@ -55,7 +54,6 @@ class DrasylExceptionTest {
             assertEquals(exceptionA, exceptionA);
             assertEquals(exceptionA, exceptionB);
             assertEquals(exceptionB, exceptionA);
-            assertNotEquals(null, exceptionA);
             assertNotEquals(exceptionA, exceptionC);
             assertNotEquals(exceptionC, exceptionA);
         }

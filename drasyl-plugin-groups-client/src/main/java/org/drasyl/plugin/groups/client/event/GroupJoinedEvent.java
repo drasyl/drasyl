@@ -24,6 +24,8 @@ import org.drasyl.plugin.groups.client.Group;
 import java.util.Objects;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An event that signals that this node has successfully joined a group.
  * <p>
@@ -37,9 +39,9 @@ public class GroupJoinedEvent implements GroupEvent {
     public GroupJoinedEvent(final Group group,
                             final Set<CompressedPublicKey> members,
                             final Runnable leaveRun) {
-        this.group = Objects.requireNonNull(group);
-        this.members = Objects.requireNonNull(members);
-        this.leaveRun = Objects.requireNonNull(leaveRun);
+        this.group = requireNonNull(group);
+        this.members = Set.copyOf(members);
+        this.leaveRun = requireNonNull(leaveRun);
     }
 
     @Override

@@ -34,7 +34,10 @@ package org.drasyl.event;
 public class NodeOfflineEvent extends AbstractNodeEvent {
     /**
      * @throws NullPointerException if {@code node} is {@code null}
+     * @deprecated Use {@link #of(Node)} instead.
      */
+    // make method private on next release
+    @Deprecated(since = "0.4.0", forRemoval = true)
     public NodeOfflineEvent(final Node node) {
         super(node);
     }
@@ -44,5 +47,12 @@ public class NodeOfflineEvent extends AbstractNodeEvent {
         return "NodeOfflineEvent{" +
                 "node=" + node +
                 '}';
+    }
+
+    /**
+     * @throws NullPointerException if {@code node} is {@code null}
+     */
+    public static NodeOfflineEvent of(final Node node) {
+        return new NodeOfflineEvent(node);
     }
 }

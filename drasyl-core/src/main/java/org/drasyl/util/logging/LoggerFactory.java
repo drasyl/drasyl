@@ -18,7 +18,12 @@
  */
 package org.drasyl.util.logging;
 
-public class LoggerFactory {
+/**
+ * The {@code LoggerFactory} is a utility class producing lazy {@link Logger}s.
+ *
+ * @see Logger
+ */
+public final class LoggerFactory {
     private LoggerFactory() {
         // util class
     }

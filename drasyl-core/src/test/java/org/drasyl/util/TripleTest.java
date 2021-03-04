@@ -72,7 +72,6 @@ class TripleTest {
             assertEquals(tripleA, tripleA);
             assertEquals(tripleA, tripleB);
             assertEquals(tripleB, tripleA);
-            assertNotEquals(null, tripleA);
             assertNotEquals(tripleA, tripleC);
             assertNotEquals(tripleC, tripleA);
         }

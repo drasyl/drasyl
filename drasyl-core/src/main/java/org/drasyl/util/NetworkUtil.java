@@ -18,6 +18,7 @@
  */
 package org.drasyl.util;
 
+import com.google.common.net.InetAddresses;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -522,7 +523,7 @@ public final class NetworkUtil {
             }
         }
 
-        @SuppressWarnings("java:S1142")
+        @SuppressWarnings({ "java:S1142", "UnstableApiUsage" })
         InetAddress getDefaultGateway() {
             // get line with default gateway address from "netstat"
             String line;
@@ -550,14 +551,16 @@ public final class NetworkUtil {
             final StringTokenizer tokenizer = new StringTokenizer(line);
             while (tokenizer.hasMoreTokens()) {
                 final String token = tokenizer.nextToken();
-                try {
-                    final InetAddress address = InetAddress.getByName(token);
-                    if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && address.isSiteLocalAddress()) {
-                        return address;
+                if (InetAddresses.isInetAddress(token)) {
+                    try {
+                        final InetAddress address = InetAddress.getByName(token);
+                        if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && address.isSiteLocalAddress()) {
+                            return address;
+                        }
                     }
-                }
-                catch (final UnknownHostException e) {
-                    LOG.debug("No IP address for `" + token + "` could be found.", e);
+                    catch (final UnknownHostException e) {
+                        LOG.debug("No IP address for `" + token + "` could be found.", e);
+                    }
                 }
             }
 

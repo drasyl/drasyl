@@ -20,6 +20,7 @@ package org.drasyl.identity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -55,7 +56,7 @@ import static org.drasyl.util.PathUtil.hasPosixSupport;
  * in the identity.
  */
 public class IdentityManager {
-    public static final byte POW_DIFFICULTY = 6;
+    public static final byte POW_DIFFICULTY = (byte) SystemPropertyUtil.getInt("org.drasyl.identity.pow-difficulty", 6);
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
     private final ThrowingSupplier<Identity, IOException> identityGenerator;
     private final DrasylConfig config;

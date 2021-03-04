@@ -46,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
  *     }
  * </pre>
  */
+@SuppressWarnings("java:S118")
 public abstract class SimpleOutboundHandler<O, A extends Address> extends AddressHandlerAdapter<A> {
     private final TypeParameterMatcher matcherMessage;
 

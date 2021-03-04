@@ -44,6 +44,7 @@ import java.util.concurrent.CompletableFuture;
  *     }
  * </pre>
  */
+@SuppressWarnings("java:S118")
 public abstract class SimpleInboundHandler<I, A extends Address> extends SimpleInboundEventAwareHandler<I, Event, A> {
     protected SimpleInboundHandler() {
     }

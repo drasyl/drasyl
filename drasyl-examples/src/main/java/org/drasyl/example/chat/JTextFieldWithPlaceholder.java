@@ -18,8 +18,10 @@
  */
 package org.drasyl.example.chat;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JTextField;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 
 @SuppressWarnings({ "java:S110" })
 public class JTextFieldWithPlaceholder extends JTextField {

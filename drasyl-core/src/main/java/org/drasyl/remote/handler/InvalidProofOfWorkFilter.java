@@ -38,12 +38,13 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * This handler filters out all messages received with invalid proof of work.
  */
 @Stateless
-public class InvalidProofOfWorkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
     public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
 
     private InvalidProofOfWorkFilter() {
+        // singleton
     }
 
     @Override
@@ -56,13 +57,13 @@ public class InvalidProofOfWorkFilter extends SimpleInboundHandler<AddressedInte
                 ctx.fireRead(sender, msg, future);
             }
             else {
-                LOG.trace("Message with invalid proof of work dropped: {}", msg);
-                future.completeExceptionally(new Exception("Message with invalid proof of work dropped"));
+                LOG.trace("Message with invalid proof of work dropped: '{}'", () -> sanitizeLogArg(msg));
+                future.completeExceptionally(new Exception("Message with invalid proof of work dropped."));
                 ReferenceCountUtil.safeRelease(msg);
             }
         }
-        catch (final IllegalArgumentException | IOException e) {
-            LOG.debug("Message {} can't be read and was dropped due to the following error: ", () -> sanitizeLogArg(msg), e::getMessage);
+        catch (final IOException e) {
+            LOG.debug("Message {} can't be read and was dropped: '{}'", () -> sanitizeLogArg(msg), () -> e);
             future.completeExceptionally(new Exception("Message can't be read and was dropped due to the following error: ", e));
             ReferenceCountUtil.safeRelease(msg);
         }

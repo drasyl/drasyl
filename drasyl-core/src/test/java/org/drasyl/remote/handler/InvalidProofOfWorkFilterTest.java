@@ -59,14 +59,14 @@ class InvalidProofOfWorkFilterTest {
         when(message.refCnt()).thenReturn(1);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-        pipeline.processInbound(message.getSender(), message);
+            pipeline.processInbound(message.getSender(), message);
 
-        inboundMessages.await(1, SECONDS);
-        inboundMessages.assertNoValues();
-        pipeline.close();
+            inboundMessages.await(1, SECONDS);
+            inboundMessages.assertNoValues();
+        }
     }
 
     @Test
@@ -75,15 +75,15 @@ class InvalidProofOfWorkFilterTest {
         when(message.getContent().isChunk()).thenReturn(false);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
-        pipeline.processInbound(message.getSender(), message);
+            pipeline.processInbound(message.getSender(), message);
 
-        inboundMessages.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
-        pipeline.close();
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
+        }
     }
 
     @Test
@@ -91,13 +91,13 @@ class InvalidProofOfWorkFilterTest {
         when(message.getContent().isChunk()).thenThrow(IOException.class);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-        final CompletableFuture<Void> future = pipeline.processInbound(message.getSender(), message);
+            final CompletableFuture<Void> future = pipeline.processInbound(message.getSender(), message);
 
-        assertThrows(Exception.class, future::join);
-        inboundMessages.assertNoValues();
-        pipeline.close();
+            assertThrows(Exception.class, future::join);
+            inboundMessages.assertNoValues();
+        }
     }
 }

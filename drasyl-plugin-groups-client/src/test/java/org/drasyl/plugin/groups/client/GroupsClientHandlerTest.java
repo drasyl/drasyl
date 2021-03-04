@@ -30,7 +30,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.Serialization;
+import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.event.GroupMemberJoinedEvent;
@@ -61,7 +61,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -69,10 +68,6 @@ import static org.mockito.Mockito.when;
 class GroupsClientHandlerTest {
     @Mock
     private HandlerContext ctx;
-    @Mock
-    private Serialization inboundSerialization;
-    @Mock
-    private Serialization outboundSerialization;
     @Mock
     private List<Disposable> renewTasks;
     @Mock
@@ -95,7 +90,8 @@ class GroupsClientHandlerTest {
     @Nested
     class HandlerAdded {
         @Test
-        void shouldAddClassesToValidator() {
+        void shouldAddClassesToValidator(@Mock final Serialization inboundSerialization,
+                                         @Mock final Serialization outboundSerialization) {
             when(ctx.inboundSerialization()).thenReturn(inboundSerialization);
             when(ctx.outboundSerialization()).thenReturn(outboundSerialization);
 
@@ -111,8 +107,7 @@ class GroupsClientHandlerTest {
     @Nested
     class HandlerRemoved {
         @Test
-        void shouldStopRenewTasks() {
-            final Disposable disposable = mock(Disposable.class);
+        void shouldStopRenewTasks(@Mock final Disposable disposable) {
             final ArrayList<Disposable> renewTasks = new ArrayList<>(List.of(disposable));
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
 
@@ -126,76 +121,57 @@ class GroupsClientHandlerTest {
         void shouldDeregisterFromGroups() {
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization);
-            final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundMessages(GroupLeaveMessage.class).test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
+                final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundMessages(GroupLeaveMessage.class).test();
 
-            pipeline.addLast("handler", handler);
-            pipeline.remove("handler");
+                pipeline.addLast("handler", handler);
+                pipeline.remove("handler");
 
-            testObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new GroupLeaveMessage(group));
-            pipeline.close();
+                testObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new GroupLeaveMessage(group));
+            }
         }
     }
 
     @Nested
     class OnEvent {
         @Test
-        void shouldPassThroughOnNotMatchingEvent() {
-            final Event event = mock(NodeOfflineEvent.class);
+        void shouldPassThroughOnNotMatchingEvent(@Mock final NodeOfflineEvent event) {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
-            pipeline.processInbound(event);
+                pipeline.processInbound(event);
 
-            testObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(event);
-            pipeline.close();
+                testObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(event);
+            }
         }
 
         @Test
-        void shouldSendJoinOnNodeOnlineEvent() {
-            final Event event = mock(NodeOnlineEvent.class);
+        void shouldSendJoinOnNodeOnlineEvent(@Mock final NodeOnlineEvent event) {
             final String credentials = "test";
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
-            final TestObserver<GroupJoinMessage> outboundObserver = pipeline.outboundMessages(GroupJoinMessage.class).test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final TestObserver<GroupJoinMessage> outboundObserver = pipeline.outboundMessages(GroupJoinMessage.class).test();
 
-            when(uri.getGroup()).thenReturn(group);
-            when(uri.getCredentials()).thenReturn(credentials);
-            when(identity.getProofOfWork()).thenReturn(proofOfWork);
+                when(uri.getGroup()).thenReturn(group);
+                when(uri.getCredentials()).thenReturn(credentials);
+                when(identity.getProofOfWork()).thenReturn(proofOfWork);
 
-            pipeline.processInbound(event);
+                pipeline.processInbound(event);
 
-            outboundObserver.awaitCount(1).assertValueCount(1);
-            outboundObserver.assertValue(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork));
+                outboundObserver.awaitCount(1).assertValueCount(1);
+                outboundObserver.assertValue(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork));
 
-            eventObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(event);
-            pipeline.close();
+                eventObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(event);
+            }
         }
     }
 
@@ -204,99 +180,75 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessMemberJoined() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
-            final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            eventObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new GroupMemberJoinedEvent(publicKey, group));
-            assertTrue(future.isDone());
-            pipeline.close();
+                eventObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new GroupMemberJoinedEvent(publicKey, group));
+                assertTrue(future.isDone());
+            }
         }
 
         @Test
         void shouldProcessMemberLeft() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
-            final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            eventObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new GroupMemberLeftEvent(publicKey, group));
-            assertTrue(future.isDone());
-            pipeline.close();
+                eventObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new GroupMemberLeftEvent(publicKey, group));
+                assertTrue(future.isDone());
+            }
         }
 
         @Test
         void shouldProcessWelcome() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
-            final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
-            final Duration timeout = Duration.ofSeconds(60);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
+                final Duration timeout = Duration.ofSeconds(60);
 
-            when(groups.get(isA(Group.class))).thenReturn(uri);
-            when(uri.getTimeout()).thenReturn(timeout);
+                when(groups.get(isA(Group.class))).thenReturn(uri);
+                when(uri.getTimeout()).thenReturn(timeout);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            eventObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new GroupJoinedEvent(group, Set.of(publicKey), () -> {
-                    }));
-            assertTrue(future.isDone());
+                eventObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new GroupJoinedEvent(group, Set.of(publicKey), () -> {
+                        }));
+                assertTrue(future.isDone());
 
-            verify(renewTasks).add(any());
-            pipeline.close();
+                verify(renewTasks).add(any());
+            }
         }
 
         @Test
         void shouldProcessJoinFailed() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
-            final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
-            final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
+                final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            eventObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new GroupJoinFailedEvent(group, error, () -> {
-                    }));
+                eventObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new GroupJoinFailedEvent(group, error, () -> {
+                        }));
 
-            assertTrue(future.isDone());
-            pipeline.close();
+                assertTrue(future.isDone());
+            }
         }
     }
 }

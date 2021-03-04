@@ -30,6 +30,7 @@ import java.util.Map;
 /**
  * Adapted from netty {@link io.netty.util.internal.TypeParameterMatcher}
  */
+@SuppressWarnings("java:S118")
 public abstract class TypeParameterMatcher {
     private static final Map<Class<?>, Map<String, TypeParameterMatcher>> findCache = new IdentityHashMap<>();
     private static final Map<Class<?>, TypeParameterMatcher> getCache = new IdentityHashMap<>();
@@ -49,6 +50,9 @@ public abstract class TypeParameterMatcher {
             return Object.class == clazz;
         }
     };
+
+    TypeParameterMatcher() {
+    }
 
     public static TypeParameterMatcher get(final Class<?> parameterType) {
         TypeParameterMatcher matcher = getCache.get(parameterType);
@@ -87,7 +91,7 @@ public abstract class TypeParameterMatcher {
         return matcher;
     }
 
-    @SuppressWarnings("java:S3776")
+    @SuppressWarnings({ "java:S134", "java:S1142", "java:S1541", "java:S3776" })
     private static Class<?> find0(
             final Object object, Class<?> parametrizedSuperclass, String typeParamName) {
 
@@ -191,8 +195,5 @@ public abstract class TypeParameterMatcher {
         public <T> boolean matchClass(final Class<T> clazz) {
             return type.isAssignableFrom(clazz);
         }
-    }
-
-    TypeParameterMatcher() {
     }
 }

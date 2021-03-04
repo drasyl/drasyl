@@ -58,7 +58,7 @@ class GroupsClientConfigTest {
 
         @Test
         void shouldReadFromBuilderProperly() {
-            final GroupsClientConfig config = GroupsClientConfig.builder().addGroup(groups.iterator().next()).build();
+            final GroupsClientConfig config = GroupsClientConfig.newBuilder().addGroup(groups.iterator().next()).build();
 
             assertEquals(groups, config.getGroups());
         }
@@ -68,17 +68,17 @@ class GroupsClientConfigTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroup(groups.iterator().next()).build();
-            final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroup(groups.iterator().next()).build();
+            final GroupsClientConfig config1 = GroupsClientConfig.newBuilder().addGroup(groups.iterator().next()).build();
+            final GroupsClientConfig config2 = GroupsClientConfig.newBuilder().addGroup(groups.iterator().next()).build();
 
             assertEquals(config1, config2);
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroup(
+            final GroupsClientConfig config1 = GroupsClientConfig.newBuilder().addGroup(
                     GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
-            final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroup(
+            final GroupsClientConfig config2 = GroupsClientConfig.newBuilder().addGroup(
                     GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
 
             assertNotEquals(config1, config2);
@@ -89,17 +89,17 @@ class GroupsClientConfigTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroup(groups.iterator().next()).build();
-            final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroup(groups.iterator().next()).build();
+            final GroupsClientConfig config1 = GroupsClientConfig.newBuilder().addGroup(groups.iterator().next()).build();
+            final GroupsClientConfig config2 = GroupsClientConfig.newBuilder().addGroup(groups.iterator().next()).build();
 
             assertEquals(config1.hashCode(), config2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroup(
+            final GroupsClientConfig config1 = GroupsClientConfig.newBuilder().addGroup(
                     GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
-            final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroup(
+            final GroupsClientConfig config2 = GroupsClientConfig.newBuilder().addGroup(
                     GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
 
             assertNotEquals(config1.hashCode(), config2.hashCode());

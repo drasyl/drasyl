@@ -26,6 +26,7 @@ import org.drasyl.util.TypeParameterMatcher;
  *
  * @param <A> the type of the {@link Address}.
  */
+@SuppressWarnings("java:S118")
 public abstract class AddressHandlerAdapter<A> extends HandlerAdapter {
     private final TypeParameterMatcher matcherAddress;
 

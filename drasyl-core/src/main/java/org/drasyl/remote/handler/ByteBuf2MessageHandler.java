@@ -31,19 +31,20 @@ import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handler that converts a given {@link ByteBuf} to a {@link IntermediateEnvelope} or {@link
- * IntermediateEnvelope}.
+ * Handler that converts a given {@link ByteBuf} to a {@link AddressedIntermediateEnvelope}.
  */
 @Stateless
-public class ByteBuf2MessageHandler extends SimpleInboundHandler<AddressedByteBuf, Address> {
+public final class ByteBuf2MessageHandler extends SimpleInboundHandler<AddressedByteBuf, Address> {
     public static final ByteBuf2MessageHandler INSTANCE = new ByteBuf2MessageHandler();
     public static final String BYTE_BUF_2_MESSAGE_HANDLER = "BYTE_BUF_2_MESSAGE_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(ByteBuf2MessageHandler.class);
 
     private ByteBuf2MessageHandler() {
+        // singleton
     }
 
     @Override
@@ -55,9 +56,9 @@ public class ByteBuf2MessageHandler extends SimpleInboundHandler<AddressedByteBu
             final AddressedIntermediateEnvelope<MessageLite> envelope = new AddressedIntermediateEnvelope<>(addressedByteBuf.getSender(), addressedByteBuf.getRecipient(), addressedByteBuf.getContent());
             ctx.fireRead(sender, envelope, future);
         }
-        catch (final IllegalArgumentException e) {
+        catch (final IOException e) {
             ReferenceCountUtil.safeRelease(addressedByteBuf);
-            LOG.debug("Unable deserialize message of type {} to {}: {}", addressedByteBuf.getClass()::getSimpleName, IntermediateEnvelope.class::getSimpleName, e::getMessage);
+            LOG.debug("Unable deserialize message of type {} to {}.", addressedByteBuf.getClass()::getSimpleName, IntermediateEnvelope.class::getSimpleName, () -> e);
             future.completeExceptionally(new Exception("Message could not be deserialized.", e));
         }
     }

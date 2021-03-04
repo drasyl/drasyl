@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
 
 public class AddressedByteBuf extends ReferenceCountedAddressedEnvelope<InetSocketAddressWrapper, ByteBuf> {
     /**
-     * @throws NullPointerException if {@code sender} and {@code recipient} are {@code null}
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
      */
     public AddressedByteBuf(final InetSocketAddressWrapper sender,
                             final InetSocketAddressWrapper recipient,
@@ -34,7 +34,7 @@ public class AddressedByteBuf extends ReferenceCountedAddressedEnvelope<InetSock
     }
 
     /**
-     * @throws NullPointerException if {@code sender} or {@code recipient} is {@code null}
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
      */
     public AddressedByteBuf(final InetSocketAddress sender,
                             final InetSocketAddress recipient,

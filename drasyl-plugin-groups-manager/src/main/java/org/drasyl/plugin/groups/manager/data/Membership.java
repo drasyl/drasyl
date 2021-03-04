@@ -28,7 +28,7 @@ import java.util.Objects;
  * <b>This class should only plugin internally used.</b>
  * </p>
  */
-public class Membership {
+public final class Membership {
     private final Member member;
     private final Group group;
     private final long staleAt;

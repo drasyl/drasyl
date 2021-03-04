@@ -29,7 +29,7 @@ import java.util.Optional;
 /**
  * Utility class for operations on {@link URI}s.
  */
-public class UriUtil {
+public final class UriUtil {
     private UriUtil() {
         // util class
     }

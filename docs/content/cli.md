@@ -65,3 +65,11 @@ The `drasyl` command can also be downloaded with [Homebrew](https://brew.sh/):
 ```bash
 $ brew install drasyl-overlay/drasyl/drasyl
 ```
+
+## Chocolatey
+
+The `drasyl` command can also be downloaded with [Chocolatey](https://chocolatey.org/packages/drasyl):
+
+```bash
+$ choco install drasyl
+```

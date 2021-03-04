@@ -34,7 +34,10 @@ public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
 
     /**
      * @throws NullPointerException if {@code node} or {@code error} is {@code null}
+     * @deprecated Use {@link #of(Node, Throwable)} instead.
      */
+    // make method private on next release
+    @Deprecated(since = "0.4.0", forRemoval = true)
     public NodeUnrecoverableErrorEvent(final Node node, final Throwable error) {
         super(node);
         this.error = requireNonNull(error);
@@ -76,5 +79,12 @@ public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
         }
         final NodeUnrecoverableErrorEvent that = (NodeUnrecoverableErrorEvent) o;
         return Objects.equals(error, that.error);
+    }
+
+    /**
+     * @throws NullPointerException if {@code node} or {@code error} is {@code null}
+     */
+    public static NodeUnrecoverableErrorEvent of(final Node node, final Throwable error) {
+        return new NodeUnrecoverableErrorEvent(node, error);
     }
 }

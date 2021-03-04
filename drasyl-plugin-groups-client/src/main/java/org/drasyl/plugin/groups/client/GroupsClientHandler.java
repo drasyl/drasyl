@@ -49,8 +49,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsServerMessage, NodeOnlineEvent, Address> {
@@ -58,9 +60,10 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     private final Map<Group, GroupUri> groups;
     private final List<Disposable> renewTasks;
 
+    @SuppressWarnings("java:S2384")
     GroupsClientHandler(final Map<Group, GroupUri> groups, final List<Disposable> renewTasks) {
-        this.groups = groups;
-        this.renewTasks = renewTasks;
+        this.groups = requireNonNull(groups);
+        this.renewTasks = requireNonNull(renewTasks);
     }
 
     public GroupsClientHandler(final Set<GroupUri> groups) {
@@ -90,9 +93,12 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
             final Group group = entry.getKey();
             final GroupUri groupURI = entry.getValue();
             try {
-                ctx.pipeline().processOutbound(groupURI.getManager(), new GroupLeaveMessage(group)).join();
+                ctx.pipeline().processOutbound(groupURI.getManager(), new GroupLeaveMessage(group)).get();
             }
-            catch (final Exception e) {
+            catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            catch (final ExecutionException e) {
                 LOG.warn("Exception occurred during de-registration from group '{}': ", group.getName(), e);
             }
         }
@@ -133,9 +139,9 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
      * @param msg    the member joined message
      * @param future the message future
      */
-    private void onMemberJoined(final HandlerContext ctx,
-                                final MemberJoinedMessage msg,
-                                final CompletableFuture<Void> future) {
+    private static void onMemberJoined(final HandlerContext ctx,
+                                       final MemberJoinedMessage msg,
+                                       final CompletableFuture<Void> future) {
         ctx.pipeline().processInbound(new GroupMemberJoinedEvent(msg.getMember(), msg.getGroup()));
         future.complete(null);
     }
@@ -152,7 +158,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                               final CompletableFuture<Void> future) {
         final Group group = msg.getGroup();
 
-        ctx.pipeline().processInbound(new GroupJoinFailedEvent(group, msg.getReason(), () -> this.joinGroup(ctx, groups.get(group))));
+        ctx.pipeline().processInbound(new GroupJoinFailedEvent(group, msg.getReason(), () -> joinGroup(ctx, groups.get(group))));
         future.complete(null);
     }
 
@@ -169,7 +175,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         final Group group = msg.getGroup();
 
         if (msg.getMember().equals(ctx.identity().getPublicKey())) {
-            ctx.pipeline().processInbound(new GroupLeftEvent(group, () -> this.joinGroup(ctx, groups.get(group))));
+            ctx.pipeline().processInbound(new GroupLeftEvent(group, () -> joinGroup(ctx, groups.get(group))));
         }
         else {
             ctx.pipeline().processInbound(new GroupMemberLeftEvent(msg.getMember(), group));
@@ -195,7 +201,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
 
         // Add renew task
         renewTasks.add(ctx.independentScheduler().schedulePeriodicallyDirect(() ->
-                        this.joinGroup(ctx, groups.get(group)),
+                        joinGroup(ctx, groups.get(group)),
                 timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
 
         ctx.pipeline().processInbound(
@@ -212,7 +218,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
      * @param ctx   the handler context
      * @param group the group to join
      */
-    private void joinGroup(final HandlerContext ctx, final GroupUri group) {
+    private static void joinGroup(final HandlerContext ctx, final GroupUri group) {
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
         final CompressedPublicKey groupManager = group.getManager();
 

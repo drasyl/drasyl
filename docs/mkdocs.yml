@@ -45,6 +45,9 @@ extra:
     - icon: fontawesome/solid/mug-hot
       link: https://www.javadoc.io/doc/org.drasyl/drasyl-core
       name: JavaDoc of drasyl
+    - icon: fontawesome/brands/gitter
+      link: https://gitter.im/drasyl-overlay/drasyl
+      name: Connect to drasyl on Gitter
 
 extra_css:
   - assets/style/content.css

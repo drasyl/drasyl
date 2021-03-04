@@ -50,22 +50,21 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
                                final SerializedApplicationMessage msg,
                                final CompletableFuture<Void> future) {
         try {
-            final Class<?> clazz = msg.getTypeClazz();
-            final Serializer serializer = ctx.inboundSerialization().findSerializerFor(clazz);
+            final Serializer serializer = ctx.inboundSerialization().findSerializerFor(msg.getType());
 
             if (serializer != null) {
-                final Object o = serializer.fromByteArray(msg.getContent(), clazz);
+                final Object o = serializer.fromByteArray(msg.getContent(), msg.getType());
 
                 final ApplicationMessage deserializedMsg = new ApplicationMessage(msg.getSender(), msg.getRecipient(), o);
                 ctx.fireRead(msg.getSender(), deserializedMsg, future);
                 LOG.trace("Message has been deserialized to '{}'", () -> deserializedMsg);
             }
             else {
-                LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", clazz::getName);
-                future.completeExceptionally(new Exception("No serializer was found for type '" + clazz + "'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/"));
+                LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", msg::getType);
+                future.completeExceptionally(new Exception("No serializer was found for type '" + msg.getType() + "'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/"));
             }
         }
-        catch (final IOException | IllegalArgumentException | ClassNotFoundException e) {
+        catch (final IOException | IllegalArgumentException e) {
             LOG.warn("Deserialization of '{}' failed:", () -> msg, () -> e);
             future.completeExceptionally(new Exception("Deserialization failed", e));
         }
@@ -77,7 +76,7 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
                                 final ApplicationMessage msg,
                                 final CompletableFuture<Void> future) {
         try {
-            final Serializer serializer = ctx.outboundSerialization().findSerializerFor(msg.getContent());
+            final Serializer serializer = ctx.outboundSerialization().findSerializerFor(msg.getContent() != null ? msg.getContent().getClass().getName() : null);
 
             final String type;
             if (msg.getContent() != null) {
@@ -89,7 +88,7 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
 
             if (serializer != null) {
                 final byte[] bytes = serializer.toByteArray(msg.getContent());
-                SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(msg.getSender(), msg.getRecipient(), type, bytes);
+                final SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(msg.getSender(), msg.getRecipient(), type, bytes);
                 ctx.write(recipient, serializedMsg, future);
                 LOG.trace("Message has been serialized to '{}'", () -> serializedMsg);
             }

@@ -22,6 +22,7 @@ import org.drasyl.util.TypeParameterMatcher;
 
 import java.io.IOException;
 
+@SuppressWarnings("java:S118")
 abstract class BoundedSerializer<B> implements Serializer {
     private final TypeParameterMatcher matcher;
 

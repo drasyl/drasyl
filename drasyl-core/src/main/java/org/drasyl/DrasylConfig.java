@@ -52,6 +52,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
@@ -86,6 +87,7 @@ public class DrasylConfig {
     static final String REMOTE_MESSAGE_MTU = "drasyl.remote.message.mtu";
     static final String REMOTE_MESSAGE_MAX_CONTENT_LENGTH = "drasyl.remote.message.max-content-length";
     static final String REMOTE_MESSAGE_HOP_LIMIT = "drasyl.remote.message.hop-limit";
+    static final String REMOTE_MESSAGE_ARM_ENABLED = "drasyl.remote.message.arm.enabled";
     static final String REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT = "drasyl.remote.message.composed-message-transfer-timeout";
     static final String REMOTE_LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.remote.local-host-discovery.enabled";
     static final String REMOTE_LOCAL_HOST_DISCOVERY_PATH = "drasyl.remote.local-host-discovery.path";
@@ -121,6 +123,7 @@ public class DrasylConfig {
     private final int remoteMessageMtu;
     private final int remoteMessageMaxContentLength;
     private final byte remoteMessageHopLimit;
+    private final boolean remoteMessageArmEnabled;
     private final Duration remoteMessageComposedMessageTransferTimeout;
     private final boolean remoteSuperPeerEnabled;
     private final Set<Endpoint> remoteSuperPeerEndpoints;
@@ -205,6 +208,7 @@ public class DrasylConfig {
             this.remoteMessageMaxContentLength = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
             this.remoteMessageComposedMessageTransferTimeout = config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
             this.remoteMessageHopLimit = getByte(config, REMOTE_MESSAGE_HOP_LIMIT);
+            this.remoteMessageArmEnabled = config.getBoolean(REMOTE_MESSAGE_ARM_ENABLED);
             this.remoteLocalHostDiscoveryEnabled = config.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED);
             if (isNullOrEmpty(config.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH))) {
                 this.remoteLocalHostDiscoveryPath = Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery");
@@ -258,6 +262,7 @@ public class DrasylConfig {
                  final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes,
                  final int remoteMessageMaxContentLength,
                  final byte remoteMessageHopLimit,
+                 final boolean remoteMessageArmEnabled,
                  final Duration remoteMessageComposedMessageTransferTimeout,
                  final int remoteMessageMtu,
                  final boolean remoteLocalHostDiscoveryEnabled,
@@ -280,37 +285,38 @@ public class DrasylConfig {
         this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
         this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
-        this.remoteBindHost = remoteBindHost;
+        this.remoteBindHost = requireNonNull(remoteBindHost);
         this.remoteEnabled = remoteEnabled;
         this.remoteBindPort = remoteBindPort;
         this.remotePingInterval = remotePingInterval;
         this.remotePingTimeout = remotePingTimeout;
-        this.remotePingCommunicationTimeout = remotePingCommunicationTimeout;
-        this.remoteUniteMinInterval = remoteUniteMinInterval;
+        this.remotePingCommunicationTimeout = requireNonNull(remotePingCommunicationTimeout);
+        this.remoteUniteMinInterval = requireNonNull(remoteUniteMinInterval);
         this.remotePingMaxPeers = remotePingMaxPeers;
-        this.remoteEndpoints = remoteEndpoints;
+        this.remoteEndpoints = requireNonNull(remoteEndpoints);
         this.remoteExposeEnabled = remoteExposeEnabled;
         this.remoteSuperPeerEnabled = remoteSuperPeerEnabled;
-        this.remoteSuperPeerEndpoints = remoteSuperPeerEndpoints;
-        this.remoteStaticRoutes = remoteStaticRoutes;
+        this.remoteSuperPeerEndpoints = requireNonNull(remoteSuperPeerEndpoints);
+        this.remoteStaticRoutes = requireNonNull(remoteStaticRoutes);
         this.remoteMessageMtu = remoteMessageMtu;
         this.remoteMessageMaxContentLength = remoteMessageMaxContentLength;
         this.remoteMessageHopLimit = remoteMessageHopLimit;
-        this.remoteMessageComposedMessageTransferTimeout = remoteMessageComposedMessageTransferTimeout;
+        this.remoteMessageArmEnabled = remoteMessageArmEnabled;
+        this.remoteMessageComposedMessageTransferTimeout = requireNonNull(remoteMessageComposedMessageTransferTimeout);
         this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
-        this.remoteLocalHostDiscoveryPath = remoteLocalHostDiscoveryPath;
-        this.remoteLocalHostDiscoveryLeaseTime = remoteLocalHostDiscoveryLeaseTime;
+        this.remoteLocalHostDiscoveryPath = requireNonNull(remoteLocalHostDiscoveryPath);
+        this.remoteLocalHostDiscoveryLeaseTime = requireNonNull(remoteLocalHostDiscoveryLeaseTime);
         this.monitoringEnabled = monitoringEnabled;
-        this.monitoringHostTag = monitoringHostTag;
-        this.monitoringInfluxUri = monitoringInfluxUri;
-        this.monitoringInfluxUser = monitoringInfluxUser;
-        this.monitoringInfluxPassword = monitoringInfluxPassword;
-        this.monitoringInfluxDatabase = monitoringInfluxDatabase;
-        this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
-        this.pluginSet = pluginSet;
-        this.serializationSerializers = serializationSerializers;
-        this.serializationsBindingsInbound = serializationsBindingsInbound;
-        this.serializationsBindingsOutbound = serializationsBindingsOutbound;
+        this.monitoringHostTag = requireNonNull(monitoringHostTag);
+        this.monitoringInfluxUri = requireNonNull(monitoringInfluxUri);
+        this.monitoringInfluxUser = requireNonNull(monitoringInfluxUser);
+        this.monitoringInfluxPassword = requireNonNull(monitoringInfluxPassword);
+        this.monitoringInfluxDatabase = requireNonNull(monitoringInfluxDatabase);
+        this.monitoringInfluxReportingFrequency = requireNonNull(monitoringInfluxReportingFrequency);
+        this.pluginSet = requireNonNull(pluginSet);
+        this.serializationSerializers = requireNonNull(serializationSerializers);
+        this.serializationsBindingsInbound = requireNonNull(serializationsBindingsInbound);
+        this.serializationsBindingsOutbound = requireNonNull(serializationsBindingsOutbound);
     }
 
     /**
@@ -493,7 +499,7 @@ public class DrasylConfig {
             final String stringValue = config.getString(path);
             return new URI(stringValue);
         }
-        catch (final NullPointerException | URISyntaxException | ConfigException e) {
+        catch (final URISyntaxException | ConfigException e) {
             throw new DrasylConfigException(path, e);
         }
     }
@@ -629,7 +635,7 @@ public class DrasylConfig {
             }
             return routes;
         }
-        catch (final IllegalArgumentException | NullPointerException | ConfigException e) {
+        catch (final IllegalArgumentException | ConfigException e) {
             throw new DrasylConfigException(path, e);
         }
     }
@@ -702,6 +708,7 @@ public class DrasylConfig {
                 config.remoteMessageMaxContentLength,
                 config.remoteMessageComposedMessageTransferTimeout,
                 config.remoteMessageHopLimit,
+                config.remoteMessageArmEnabled,
                 config.remoteLocalHostDiscoveryEnabled,
                 config.remoteLocalHostDiscoveryPath,
                 config.remoteLocalHostDiscoveryLeaseTime,
@@ -967,6 +974,10 @@ public class DrasylConfig {
         return remoteMessageHopLimit;
     }
 
+    public boolean isRemoteMessageArmEnabled() {
+        return remoteMessageArmEnabled;
+    }
+
     public Map<CompressedPublicKey, InetSocketAddressWrapper> getRemoteStaticRoutes() {
         return remoteStaticRoutes;
     }
@@ -1026,6 +1037,7 @@ public class DrasylConfig {
         private int remoteMessageMtu;
         private int remoteMessageMaxContentLength;
         private byte remoteMessageHopLimit;
+        private boolean remoteMessageArmEnabled;
         private Duration remoteMessageComposedMessageTransferTimeout;
         private boolean remoteSuperPeerEnabled;
         private Set<Endpoint> remoteSuperPeerEndpoints;
@@ -1034,7 +1046,7 @@ public class DrasylConfig {
         private Path remoteLocalHostDiscoveryPath;
         private Duration remoteLocalHostDiscoveryLeaseTime;
         private boolean monitoringEnabled;
-        private String monitoringHost;
+        private String monitoringHostTag;
         private URI monitoringInfluxUri;
         private String monitoringInfluxUser;
         private String monitoringInfluxPassword;
@@ -1069,11 +1081,12 @@ public class DrasylConfig {
                        final int remoteMessageMaxContentLength,
                        final Duration remoteMessageComposedMessageTransferTimeout,
                        final byte remoteMessageHopLimit,
+                       final boolean remoteMessageArmEnabled,
                        final boolean remoteLocalHostDiscoveryEnabled,
                        final Path remoteLocalHostDiscoveryPath,
                        final Duration remoteLocalHostDiscoveryLeaseTime,
                        final boolean monitoringEnabled,
-                       final String monitoringHost,
+                       final String monitoringHostTag,
                        final URI monitoringInfluxUri,
                        final String monitoringInfluxUser,
                        final String monitoringInfluxPassword,
@@ -1088,38 +1101,39 @@ public class DrasylConfig {
             this.identityPublicKey = identityPublicKey;
             this.identityPrivateKey = identityPrivateKey;
             this.identityPath = identityPath;
-            this.remoteBindHost = remoteBindHost;
+            this.remoteBindHost = requireNonNull(remoteBindHost);
             this.remoteEnabled = remoteEnabled;
-            this.monitoringHost = monitoringHost;
+            this.monitoringHostTag = requireNonNull(monitoringHostTag);
             this.remoteBindPort = remoteBindPort;
-            this.remotePingInterval = remotePingInterval;
-            this.remotePingTimeout = remotePingTimeout;
-            this.remotePingCommunicationTimeout = remotePingCommunicationTimeout;
-            this.remoteUniteMinInterval = remoteUniteMinInterval;
+            this.remotePingInterval = requireNonNull(remotePingInterval);
+            this.remotePingTimeout = requireNonNull(remotePingTimeout);
+            this.remotePingCommunicationTimeout = requireNonNull(remotePingCommunicationTimeout);
+            this.remoteUniteMinInterval = requireNonNull(remoteUniteMinInterval);
             this.remotePingMaxPeers = remotePingMaxPeers;
-            this.remoteEndpoints = remoteEndpoints;
+            this.remoteEndpoints = requireNonNull(remoteEndpoints);
             this.remoteExposeEnabled = remoteExposeEnabled;
             this.remoteMessageMtu = remoteMessageMtu;
             this.remoteMessageMaxContentLength = remoteMessageMaxContentLength;
             this.remoteMessageHopLimit = remoteMessageHopLimit;
-            this.remoteMessageComposedMessageTransferTimeout = remoteMessageComposedMessageTransferTimeout;
+            this.remoteMessageArmEnabled = remoteMessageArmEnabled;
+            this.remoteMessageComposedMessageTransferTimeout = requireNonNull(remoteMessageComposedMessageTransferTimeout);
             this.remoteSuperPeerEnabled = remoteSuperPeerEnabled;
-            this.remoteSuperPeerEndpoints = remoteSuperPeerEndpoints;
-            this.remoteStaticRoutes = remoteStaticRoutes;
+            this.remoteSuperPeerEndpoints = requireNonNull(remoteSuperPeerEndpoints);
+            this.remoteStaticRoutes = requireNonNull(remoteStaticRoutes);
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
             this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
-            this.remoteLocalHostDiscoveryPath = remoteLocalHostDiscoveryPath;
-            this.remoteLocalHostDiscoveryLeaseTime = remoteLocalHostDiscoveryLeaseTime;
+            this.remoteLocalHostDiscoveryPath = requireNonNull(remoteLocalHostDiscoveryPath);
+            this.remoteLocalHostDiscoveryLeaseTime = requireNonNull(remoteLocalHostDiscoveryLeaseTime);
             this.monitoringEnabled = monitoringEnabled;
-            this.monitoringInfluxUri = monitoringInfluxUri;
-            this.monitoringInfluxUser = monitoringInfluxUser;
-            this.monitoringInfluxPassword = monitoringInfluxPassword;
-            this.monitoringInfluxDatabase = monitoringInfluxDatabase;
-            this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
-            this.pluginSet = pluginSet;
-            this.serializationSerializers = serializationSerializers;
-            this.serializationsBindingsInbound = serializationsBindingsInbound;
-            this.serializationsBindingsOutbound = serializationsBindingsOutbound;
+            this.monitoringInfluxUri = requireNonNull(monitoringInfluxUri);
+            this.monitoringInfluxUser = requireNonNull(monitoringInfluxUser);
+            this.monitoringInfluxPassword = requireNonNull(monitoringInfluxPassword);
+            this.monitoringInfluxDatabase = requireNonNull(monitoringInfluxDatabase);
+            this.monitoringInfluxReportingFrequency = requireNonNull(monitoringInfluxReportingFrequency);
+            this.pluginSet = requireNonNull(pluginSet);
+            this.serializationSerializers = requireNonNull(serializationSerializers);
+            this.serializationsBindingsInbound = requireNonNull(serializationsBindingsInbound);
+            this.serializationsBindingsOutbound = requireNonNull(serializationsBindingsOutbound);
         }
 
         public Builder networkId(final int networkId) {
@@ -1148,7 +1162,7 @@ public class DrasylConfig {
         }
 
         public Builder remoteBindHost(final InetAddress remoteBindHost) {
-            this.remoteBindHost = remoteBindHost;
+            this.remoteBindHost = requireNonNull(remoteBindHost);
             return this;
         }
 
@@ -1173,12 +1187,12 @@ public class DrasylConfig {
         }
 
         public Builder remotePingCommunicationTimeout(final Duration remotePingCommunicationTimeout) {
-            this.remotePingCommunicationTimeout = remotePingCommunicationTimeout;
+            this.remotePingCommunicationTimeout = requireNonNull(remotePingCommunicationTimeout);
             return this;
         }
 
         public Builder remoteUniteMinInterval(final Duration remoteUniteMinInterval) {
-            this.remoteUniteMinInterval = remoteUniteMinInterval;
+            this.remoteUniteMinInterval = requireNonNull(remoteUniteMinInterval);
             return this;
         }
 
@@ -1217,8 +1231,13 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder remoteMessageArmEnabled(final boolean remoteMessageArmEnabled) {
+            this.remoteMessageArmEnabled = remoteMessageArmEnabled;
+            return this;
+        }
+
         public Builder remoteMessageComposedMessageTransferTimeout(final Duration messageComposedMessageTransferTimeout) {
-            this.remoteMessageComposedMessageTransferTimeout = messageComposedMessageTransferTimeout;
+            this.remoteMessageComposedMessageTransferTimeout = requireNonNull(messageComposedMessageTransferTimeout);
             return this;
         }
 
@@ -1243,12 +1262,12 @@ public class DrasylConfig {
         }
 
         public Builder remoteLocalHostDiscoveryPath(final Path remoteLocalHostDiscoveryPath) {
-            this.remoteLocalHostDiscoveryPath = remoteLocalHostDiscoveryPath;
+            this.remoteLocalHostDiscoveryPath = requireNonNull(remoteLocalHostDiscoveryPath);
             return this;
         }
 
         public Builder remoteLocalHostDiscoveryLeaseTime(final Duration remoteLocalHostDiscoveryLeaseTime) {
-            this.remoteLocalHostDiscoveryLeaseTime = remoteLocalHostDiscoveryLeaseTime;
+            this.remoteLocalHostDiscoveryLeaseTime = requireNonNull(remoteLocalHostDiscoveryLeaseTime);
             return this;
         }
 
@@ -1257,33 +1276,33 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder monitoringHost(final String monitoringHost) {
-            this.monitoringHost = monitoringHost;
+        public Builder monitoringHostTag(final String monitoringHostTag) {
+            this.monitoringHostTag = requireNonNull(monitoringHostTag);
             return this;
         }
 
         public Builder monitoringInfluxUri(final URI monitoringInfluxUri) {
-            this.monitoringInfluxUri = monitoringInfluxUri;
+            this.monitoringInfluxUri = requireNonNull(monitoringInfluxUri);
             return this;
         }
 
         public Builder monitoringInfluxUser(final String monitoringInfluxUser) {
-            this.monitoringInfluxUser = monitoringInfluxUser;
+            this.monitoringInfluxUser = requireNonNull(monitoringInfluxUser);
             return this;
         }
 
         public Builder monitoringInfluxPassword(final String monitoringInfluxPassword) {
-            this.monitoringInfluxPassword = monitoringInfluxPassword;
+            this.monitoringInfluxPassword = requireNonNull(monitoringInfluxPassword);
             return this;
         }
 
         public Builder monitoringInfluxDatabase(final String monitoringInfluxDatabase) {
-            this.monitoringInfluxDatabase = monitoringInfluxDatabase;
+            this.monitoringInfluxDatabase = requireNonNull(monitoringInfluxDatabase);
             return this;
         }
 
         public Builder monitoringInfluxReportingFrequency(final Duration monitoringInfluxReportingFrequency) {
-            this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
+            this.monitoringInfluxReportingFrequency = requireNonNull(monitoringInfluxReportingFrequency);
             return this;
         }
 
@@ -1342,13 +1361,14 @@ public class DrasylConfig {
                     remoteStaticRoutes,
                     remoteMessageMaxContentLength,
                     remoteMessageHopLimit,
+                    remoteMessageArmEnabled,
                     remoteMessageComposedMessageTransferTimeout,
                     remoteMessageMtu,
                     remoteLocalHostDiscoveryEnabled,
                     remoteLocalHostDiscoveryPath,
                     remoteLocalHostDiscoveryLeaseTime,
                     monitoringEnabled,
-                    monitoringHost,
+                    monitoringHostTag,
                     monitoringInfluxUri,
                     monitoringInfluxUser,
                     monitoringInfluxPassword,

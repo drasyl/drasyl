@@ -59,15 +59,15 @@ class SimpleInboundHandlerTest {
             }
         };
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
 
-        pipeline.processInbound(sender, "Hallo Welt".getBytes());
+            pipeline.processInbound(sender, "Hallo Welt".getBytes());
 
-        inboundMessageTestObserver.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(sender, null, "Hallo Welt"));
-        pipeline.close();
+            inboundMessageTestObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, "Hallo Welt"));
+        }
     }
 
     @Test
@@ -82,15 +82,15 @@ class SimpleInboundHandlerTest {
             }
         };
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
 
-        pipeline.processInbound(sender, 1337).join();
+            pipeline.processInbound(sender, 1337).join();
 
-        inboundMessageTestObserver.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(sender, null, 1337));
-        pipeline.close();
+            inboundMessageTestObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, 1337));
+        }
     }
 
     @Test

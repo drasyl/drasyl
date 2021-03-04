@@ -61,16 +61,16 @@ class Message2ByteBufHandlerTest {
         final AddressedIntermediateEnvelope<Application> addressedEnvelope = new AddressedIntermediateEnvelope<>(sender, recipient, messageEnvelope);
 
         final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<AddressedByteBuf> outboundMessages = pipeline.outboundMessages(AddressedByteBuf.class).test();
-        pipeline.processOutbound(recipient, addressedEnvelope);
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<AddressedByteBuf> outboundMessages = pipeline.outboundMessages(AddressedByteBuf.class).test();
+            pipeline.processOutbound(recipient, addressedEnvelope);
 
-        outboundMessages.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new AddressedByteBuf(sender, recipient, messageEnvelope.getOrBuildByteBuf()));
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new AddressedByteBuf(sender, recipient, messageEnvelope.getOrBuildByteBuf()));
 
-        ReferenceCountUtil.safeRelease(addressedEnvelope);
-        pipeline.close();
+            ReferenceCountUtil.safeRelease(addressedEnvelope);
+        }
     }
 
     @Test
@@ -79,9 +79,8 @@ class Message2ByteBufHandlerTest {
         when(messageEnvelope.getContent().getOrBuildByteBuf()).thenThrow(RuntimeException.class);
 
         final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-
-        assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, messageEnvelope).get());
-        pipeline.close();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, messageEnvelope).get());
+        }
     }
 }

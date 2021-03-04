@@ -31,7 +31,10 @@ package org.drasyl.event;
 public class PeerDirectEvent extends AbstractPeerEvent {
     /**
      * @throws NullPointerException if {@code peer} is {@code null}
+     * @deprecated Use {@link #of(Peer)} instead.
      */
+    // make method private on next release
+    @Deprecated(since = "0.4.0", forRemoval = true)
     public PeerDirectEvent(final Peer peer) {
         super(peer);
     }
@@ -41,5 +44,12 @@ public class PeerDirectEvent extends AbstractPeerEvent {
         return "PeerDirectEvent{" +
                 "peer=" + peer +
                 '}';
+    }
+
+    /**
+     * @throws NullPointerException if {@code peer} is {@code null}
+     */
+    public static PeerDirectEvent of(final Peer peer) {
+        return new PeerDirectEvent(peer);
     }
 }

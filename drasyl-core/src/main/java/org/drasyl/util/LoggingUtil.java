@@ -21,7 +21,7 @@ package org.drasyl.util;
 /**
  * Utility class for logging-related operations.
  */
-public class LoggingUtil {
+public final class LoggingUtil {
     private LoggingUtil() {
         // util class
     }

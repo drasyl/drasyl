@@ -54,33 +54,33 @@ class HopCountGuardTest {
         when(message.getContent().getHopCount()).thenReturn((byte) 1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-        pipeline.processOutbound(address, message);
+            pipeline.processOutbound(address, message);
 
-        outboundMessages.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(m -> m instanceof AddressedIntermediateEnvelope);
-        verify(message.getContent()).incrementHopCount();
-        pipeline.close();
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(m -> m instanceof AddressedIntermediateEnvelope);
+            verify(message.getContent()).incrementHopCount();
+        }
     }
 
     @Test
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException {
+                                                                @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException, IOException {
         when(config.getRemoteMessageHopLimit()).thenReturn((byte) 1);
         when(message.getContent().getHopCount()).thenReturn((byte) 1);
         when(message.refCnt()).thenReturn(1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-        pipeline.processOutbound(address, message);
+            pipeline.processOutbound(address, message);
 
-        outboundMessages.await(1, SECONDS);
-        outboundMessages.assertNoValues();
-        pipeline.close();
+            outboundMessages.await(1, SECONDS);
+            outboundMessages.assertNoValues();
+        }
     }
 }

@@ -35,12 +35,11 @@ public class MessageEvent implements Event {
     private final Object payload;
 
     /**
-     * Creates a new {@code MessageEvent}
-     *
-     * @param sender  the message's sender
-     * @param payload content of the message
      * @throws NullPointerException if {@code sender} is {@code null}
+     * @deprecated Use {@link #of(CompressedPublicKey, Object)} instead.
      */
+    // make method private on next release
+    @Deprecated(since = "0.4.0", forRemoval = true)
     public MessageEvent(final CompressedPublicKey sender, final Object payload) {
         this.sender = requireNonNull(sender);
         this.payload = payload;
@@ -89,5 +88,16 @@ public class MessageEvent implements Event {
                 "sender=" + sender +
                 ", message=" + payload +
                 '}';
+    }
+
+    /**
+     * Creates a new {@code MessageEvent}
+     *
+     * @param sender  the message's sender
+     * @param payload content of the message
+     * @throws NullPointerException if {@code sender} is {@code null}
+     */
+    public static MessageEvent of(final CompressedPublicKey sender, final Object payload) {
+        return new MessageEvent(sender, payload);
     }
 }

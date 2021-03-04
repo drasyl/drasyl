@@ -33,7 +33,6 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.mock;
 
 /**
  * This test should only raise the coverage of the corresponding class. It actually test nothing.
@@ -45,7 +44,10 @@ class SingleConnectionWrapperTest {
 
     @SuppressWarnings("ThrowableNotThrown")
     @Test
-    void coverage() {
+    void coverage(@Mock final Savepoint savepoint,
+                  @Mock final Properties properties,
+                  @Mock final Executor executor,
+                  @Mock final ShardingKey shardingKey) {
         final SingleConnectionWrapper underTest = new SingleConnectionWrapper(con);
 
         assertDoesNotThrow(() -> {
@@ -80,8 +82,8 @@ class SingleConnectionWrapperTest {
             underTest.getHoldability();
             underTest.setSavepoint();
             underTest.setSavepoint("");
-            underTest.rollback(mock(Savepoint.class));
-            underTest.releaseSavepoint(mock(Savepoint.class));
+            underTest.rollback(savepoint);
+            underTest.releaseSavepoint(savepoint);
             underTest.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
             underTest.prepareStatement("", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
             underTest.prepareCall("", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
@@ -94,22 +96,22 @@ class SingleConnectionWrapperTest {
             underTest.createSQLXML();
             underTest.isValid(0);
             underTest.setClientInfo("", "");
-            underTest.setClientInfo(mock(Properties.class));
+            underTest.setClientInfo(properties);
             underTest.getClientInfo();
             underTest.getClientInfo("");
             underTest.createArrayOf("", new Object[]{});
             underTest.createStruct("", new Object[]{});
             underTest.setSchema("");
             underTest.getSchema();
-            underTest.abort(mock(Executor.class));
-            underTest.setNetworkTimeout(mock(Executor.class), 0);
+            underTest.abort(executor);
+            underTest.setNetworkTimeout(executor, 0);
             underTest.getNetworkTimeout();
             underTest.beginRequest();
             underTest.endRequest();
-            underTest.setShardingKeyIfValid(mock(ShardingKey.class), mock(ShardingKey.class), 0);
-            underTest.setShardingKeyIfValid(mock(ShardingKey.class), 0);
-            underTest.setShardingKey(mock(ShardingKey.class), mock(ShardingKey.class));
-            underTest.setShardingKey(mock(ShardingKey.class));
+            underTest.setShardingKeyIfValid(shardingKey, shardingKey, 0);
+            underTest.setShardingKeyIfValid(shardingKey, 0);
+            underTest.setShardingKey(shardingKey, shardingKey);
+            underTest.setShardingKey(shardingKey);
         });
     }
 }

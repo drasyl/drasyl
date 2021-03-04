@@ -24,10 +24,10 @@ import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.util.AnsiColor;
 
 /**
- * Helper class to visualize the {@link Handler} order of a given {@link DefaultPipeline}.
+ * Helper class to visualize the {@link Handler} order of a given {@link AbstractPipeline}.
  */
 @SuppressWarnings({ "java:S106", "java:S1192", "unused" })
-public class VisualPipeline {
+public final class VisualPipeline {
     private static final int MAX_LINE_WIDTH = 76;
     private static final String DIV_LINE = "--------------------------------------------------------------------------------";
 
@@ -41,7 +41,7 @@ public class VisualPipeline {
      * @param pipeline the pipeline that should be printed
      * @param mask     the handler mask that should be fulfilled
      */
-    public static void printInboundOrder(final DefaultPipeline pipeline, final int mask) {
+    public static void printInboundOrder(final AbstractPipeline pipeline, final int mask) {
         AbstractHandlerContext currentContext = pipeline.head.getNext();
 
         System.out.println("\nInbound Handler Order:");
@@ -65,7 +65,7 @@ public class VisualPipeline {
      * @param pipeline the pipeline that should be printed
      * @param mask     the handler mask that should be fulfilled
      */
-    public static void printOnlySimpleInboundHandler(final DefaultPipeline pipeline,
+    public static void printOnlySimpleInboundHandler(final AbstractPipeline pipeline,
                                                      final int mask) {
         AbstractHandlerContext currentContext = pipeline.head;
 
@@ -92,7 +92,7 @@ public class VisualPipeline {
      * @param pipeline the pipeline that should be printed
      * @param mask     the handler mask that should be fulfilled
      */
-    public static void printOutboundOrder(final DefaultPipeline pipeline, final int mask) {
+    public static void printOutboundOrder(final AbstractPipeline pipeline, final int mask) {
         AbstractHandlerContext currentContext = pipeline.tail.getPrev();
 
         System.out.println("\nOutbound Handler Order:");
@@ -117,7 +117,7 @@ public class VisualPipeline {
      * @param pipeline the pipeline that should be printed
      * @param mask     the handler mask that should be fulfilled
      */
-    public static void printOnlySimpleOutboundHandler(final DefaultPipeline pipeline,
+    public static void printOnlySimpleOutboundHandler(final AbstractPipeline pipeline,
                                                       final int mask) {
         AbstractHandlerContext currentContext = pipeline.tail;
 

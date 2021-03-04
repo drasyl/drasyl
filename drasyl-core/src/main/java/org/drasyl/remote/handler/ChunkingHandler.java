@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.drasyl.DrasylConfig;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -39,13 +40,13 @@ import org.drasyl.util.UnsignedShort;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.remote.protocol.IntermediateEnvelope.MAGIC_NUMBER_LENGTH;
+import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
  * This handler is responsible for merging incoming message chunks into a single message as well as
@@ -76,9 +77,9 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                 ctx.fireRead(sender, msg, future);
             }
         }
-        catch (final IllegalArgumentException | IOException e) {
-            future.completeExceptionally(new Exception("Unable to read message", e));
-            LOG.debug("Can't read message `{}` due to the following error: ", msg, e);
+        catch (final IOException e) {
+            future.completeExceptionally(new Exception("Unable to read message.", e));
+            LOG.debug("Can't read message `{}` due to the following error: ", () -> sanitizeLogArg(msg), () -> e);
             ReferenceCountUtil.safeRelease(msg);
         }
     }
@@ -134,7 +135,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                 final int messageLength = messageByteBuf.readableBytes();
                 final int messageMaxContentLength = ctx.config().getRemoteMessageMaxContentLength();
                 if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
-                    LOG.debug("The message `{}` has a size of {} bytes and is too large. The max allowed size is {} bytes. Message dropped.", msg, messageLength, messageMaxContentLength);
+                    LOG.debug("The message `{}` has a size of {} bytes and is too large. The max allowed size is {} bytes. Message dropped.", () -> sanitizeLogArg(msg), () -> messageLength, () -> messageMaxContentLength);
                     future.completeExceptionally(new Exception("The message has a size of " + messageLength + " bytes and is too large. The max. allowed size is " + messageMaxContentLength + " bytes. Message dropped."));
                     ReferenceCountUtil.safeRelease(messageByteBuf);
                 }
@@ -152,19 +153,19 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
             }
         }
         catch (final IllegalStateException | IOException e) {
-            future.completeExceptionally(new Exception("Unable to read message", e));
-            LOG.debug("Can't read message `{}` due to the following error: ", msg, e);
+            future.completeExceptionally(new Exception("Unable to read message.", e));
+            LOG.debug("Can't read message `{}` due to the following error: ", () -> sanitizeLogArg(msg), () -> e);
             ReferenceCountUtil.safeRelease(msg);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void chunkMessage(final HandlerContext ctx,
-                              final Address recipient,
-                              final AddressedIntermediateEnvelope<? extends MessageLite> msg,
-                              final CompletableFuture<Void> future,
-                              final ByteBuf messageByteBuf,
-                              final int messageSize) throws IOException {
+    private static void chunkMessage(final HandlerContext ctx,
+                                     final Address recipient,
+                                     final AddressedIntermediateEnvelope<? extends MessageLite> msg,
+                                     final CompletableFuture<Void> future,
+                                     final ByteBuf messageByteBuf,
+                                     final int messageSize) throws IOException {
         try {
             // create & send chunks
             final PublicHeader msgPublicHeader = msg.getContent().getPublicHeader();
@@ -180,7 +181,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
 
             final int mtu = ctx.config().getRemoteMessageMtu();
             final UnsignedShort totalChunks = totalChunks(messageSize, mtu, partialChunkHeader);
-            LOG.debug("The message `{}` has a size of {} bytes and must be split to {} chunks (MTU = {}).", msg, messageSize, totalChunks, mtu);
+            LOG.debug("The message `{}` has a size of {} bytes and must be split to {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> mtu);
             final CompletableFuture<Void>[] chunkFutures = new CompletableFuture[totalChunks.getValue()];
 
             final int chunkSize = getChunkSize(partialChunkHeader, mtu);
@@ -221,10 +222,10 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
         }
     }
 
-    @NotNull
-    private PublicHeader buildChunkHeader(final UnsignedShort totalChunks,
-                                          final PublicHeader partialHeader,
-                                          final UnsignedShort chunkNo) {
+    @NonNull
+    private static PublicHeader buildChunkHeader(final UnsignedShort totalChunks,
+                                                 final PublicHeader partialHeader,
+                                                 final UnsignedShort chunkNo) {
         final PublicHeader.Builder builder = PublicHeader.newBuilder(partialHeader);
         builder.clearTotalChunks();
 
@@ -249,9 +250,9 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
      * @param header      the header of each chunk
      * @return the total amount of chunks required to send the given payload
      */
-    private UnsignedShort totalChunks(final int payloadSize,
-                                      final int mtu,
-                                      final PublicHeader header) {
+    private static UnsignedShort totalChunks(final int payloadSize,
+                                             final int mtu,
+                                             final PublicHeader header) {
         final double chunkSize = getChunkSize(header, mtu);
         final int totalChunks = (int) Math.ceil(payloadSize / chunkSize);
 
@@ -265,7 +266,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
      * @param mtu    the mtu value
      * @return the size of each chunk
      */
-    private int getChunkSize(final PublicHeader header, final int mtu) {
+    private static int getChunkSize(final PublicHeader header, final int mtu) {
         final int headerSize = header.getSerializedSize();
 
         return mtu - (MAGIC_NUMBER_LENGTH + CodedOutputStream.computeUInt32SizeNoTag(headerSize) + headerSize);

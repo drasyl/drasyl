@@ -46,7 +46,7 @@ public final class HandlerMask {
     // Tests shows, that a synchronized HashMap is for a small instances
     // faster than the ConcurrentHashMap: https://stackoverflow.com/a/25002229
     private static final Map<Class<? extends Handler>, Integer> MASK_CACHE =
-            Collections.synchronizedMap(new HashMap<>(32, 1.0f));
+            Collections.synchronizedMap(new HashMap<>(32, 1.0F));
 
     private HandlerMask() {
     }
@@ -125,7 +125,7 @@ public final class HandlerMask {
                 }
             });
         }
-        catch (final Exception e) {
+        catch (final Exception e) { // NOSONAR
             return false;
         }
     }

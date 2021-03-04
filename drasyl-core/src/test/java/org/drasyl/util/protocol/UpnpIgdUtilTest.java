@@ -28,8 +28,6 @@ import org.drasyl.util.protocol.UpnpIgdUtil.StatusInfo;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -58,9 +56,6 @@ import static org.mockito.Mockito.when;
 public class UpnpIgdUtilTest {
     @Nested
     class GetUpnpService {
-        @Captor
-        ArgumentCaptor<byte[]> outCaptor;
-
         @Test
         void shouldReturnService(@Mock(answer = RETURNS_DEEP_STUBS) final HttpClient httpClient,
                                  @Mock final Function<InetSocketAddress, InetAddress> remoteAddressProvider) throws IOException, InterruptedException {

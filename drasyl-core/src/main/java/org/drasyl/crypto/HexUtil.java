@@ -21,6 +21,7 @@ package org.drasyl.crypto;
 /**
  * Util class that provides hexadecimal functions for drasyl.
  */
+@SuppressWarnings("java:S109")
 public final class HexUtil {
     private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
 
@@ -71,6 +72,7 @@ public final class HexUtil {
         return out;
     }
 
+    @SuppressWarnings("java:S1142")
     private static int hexToBin(final char ch) {
         if ('0' <= ch && ch <= '9') {
             return ch - '0';

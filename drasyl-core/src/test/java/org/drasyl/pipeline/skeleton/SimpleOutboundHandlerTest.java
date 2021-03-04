@@ -57,15 +57,15 @@ class SimpleOutboundHandlerTest {
             }
         };
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
 
-        pipeline.processOutbound(recipient, "Hallo Welt".getBytes());
+            pipeline.processOutbound(recipient, "Hallo Welt".getBytes());
 
-        outboundMessageTestObserver.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue("Hallo Welt");
-        pipeline.close();
+            outboundMessageTestObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue("Hallo Welt");
+        }
     }
 
     @Test
@@ -80,13 +80,13 @@ class SimpleOutboundHandlerTest {
             }
         };
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
-        final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
 
-        pipeline.processOutbound(recipient, 1337);
+            pipeline.processOutbound(recipient, 1337);
 
-        outboundMessageTestObserver.assertNoValues();
-        pipeline.close();
+            outboundMessageTestObserver.assertNoValues();
+        }
     }
 
     @Test

@@ -45,12 +45,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
-import static org.drasyl.DrasylNode.getBestEventLoop;
+import static org.drasyl.util.NettyUtil.getBestEventLoopGroup;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,7 +93,7 @@ class DrasylPipelineIT {
                 .build();
 
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
-        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, getBestEventLoop(2));
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, getBestEventLoopGroup(2));
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
@@ -109,11 +110,11 @@ class DrasylPipelineIT {
 
     @AfterEach
     void tearDown() throws ExecutionException, InterruptedException {
-        pipeline.processInbound(new NodeDownEvent(Node.of(identity1))).get();
+        pipeline.processInbound(NodeDownEvent.of(Node.of(identity1))).get();
     }
 
     @Test
-    void passMessageThroughThePipeline() {
+    void passMessageThroughThePipeline() throws IOException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final byte[] newPayload = new byte[]{
@@ -137,21 +138,21 @@ class DrasylPipelineIT {
         pipeline.processInbound(message.getSender(), message);
 
         events.awaitCount(1).assertValueCount(1);
-        events.assertValue(new MessageEvent(identity2.getPublicKey(), newPayload));
+        events.assertValue(MessageEvent.of(identity2.getPublicKey(), newPayload));
 
         ReferenceCountUtil.safeRelease(message);
     }
 
     @Test
     void passEventThroughThePipeline(@Mock final InetSocketAddressWrapper senderAddress,
-                                     @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException {
+                                     @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException, IOException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final Event testEvent = new Event() {
         };
 
         // we need to start the node, otherwise LoopbackInboundMessageSinkHandler will drop our message
-        pipeline.processInbound(new NodeUpEvent(Node.of(identity1))).get();
+        pipeline.processInbound(NodeUpEvent.of(Node.of(identity1))).get();
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
         pipeline.addLast("eventProducer", new HandlerAdapter() {
@@ -171,12 +172,12 @@ class DrasylPipelineIT {
         pipeline.processInbound(message.getSender(), addressedMessage);
 
         events.awaitCount(3);
-        events.assertValueAt(1, new MessageEvent(message.getSender(), "Hallo Welt".getBytes()));
+        events.assertValueAt(1, MessageEvent.of(message.getSender(), "Hallo Welt".getBytes()));
         events.assertValueAt(2, testEvent);
     }
 
     @Test
-    void exceptionShouldPassThroughThePipeline() {
+    void exceptionShouldPassThroughThePipeline() throws IOException {
         final PublishSubject<Throwable> receivedExceptions = PublishSubject.create();
         final TestObserver<Throwable> exceptions = receivedExceptions.test();
 

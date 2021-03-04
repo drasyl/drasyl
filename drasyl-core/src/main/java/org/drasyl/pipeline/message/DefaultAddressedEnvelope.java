@@ -28,11 +28,11 @@ public class DefaultAddressedEnvelope<A extends Address, M> implements Addressed
     private final M content;
 
     /**
-     * @throws NullPointerException if {@code sender} and {@code recipient} are {@code null}
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
      */
     public DefaultAddressedEnvelope(final A sender, final A recipient, final M content) {
         if (sender == null && recipient == null) {
-            throw new NullPointerException("recipient and sender");
+            throw new IllegalArgumentException("sender and receiver must not both be null.");
         }
         this.sender = sender;
         this.recipient = recipient;

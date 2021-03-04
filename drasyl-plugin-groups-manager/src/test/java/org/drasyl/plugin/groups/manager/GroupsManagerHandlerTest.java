@@ -29,7 +29,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.Serialization;
+import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
@@ -71,7 +71,6 @@ import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,10 +79,6 @@ import static org.mockito.Mockito.when;
 class GroupsManagerHandlerTest {
     @Mock
     private HandlerContext ctx;
-    @Mock
-    private Serialization inboundSerialization;
-    @Mock
-    private Serialization outboundSerialization;
     @Mock
     private DatabaseAdapter databaseAdapter;
     @Mock
@@ -116,7 +111,8 @@ class GroupsManagerHandlerTest {
     @Nested
     class HandlerAdded {
         @Test
-        void shouldAddClassesToValidatorAndAddStaleTask() {
+        void shouldAddClassesToValidatorAndAddStaleTask(@Mock final Serialization inboundSerialization,
+                                                        @Mock final Serialization outboundSerialization) {
             when(ctx.inboundSerialization()).thenReturn(inboundSerialization);
             when(ctx.outboundSerialization()).thenReturn(outboundSerialization);
             when(ctx.independentScheduler()).thenReturn(scheduler);
@@ -143,7 +139,7 @@ class GroupsManagerHandlerTest {
 
             handler.staleTask(ctx);
 
-            verify(pipeline, times(2)).processOutbound(eq(publicKey), eq(new MemberLeftMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName()))));
+            verify(pipeline, times(2)).processOutbound(publicKey, new MemberLeftMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())));
         }
     }
 
@@ -162,24 +158,17 @@ class GroupsManagerHandlerTest {
     @Nested
     class OnEvent {
         @Test
-        void shouldSkipOnEvent() {
-            final Event event = mock(GroupJoinedEvent.class);
+        void shouldSkipOnEvent(@Mock final GroupJoinedEvent event) {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
-            pipeline.processInbound(event);
+                pipeline.processInbound(event);
 
-            testObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(event);
-            pipeline.close();
+                testObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(event);
+            }
         }
     }
 
@@ -188,130 +177,100 @@ class GroupsManagerHandlerTest {
         @Test
         void shouldHandleJoinRequest() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
-            final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
-            when(databaseAdapter.addGroupMember(any())).thenReturn(true);
-            when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
-            when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
-            when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
+                when(databaseAdapter.addGroupMember(any())).thenReturn(true);
+                when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
+                when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
+                when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            future.join();
-            testObserver.assertValueCount(2);
-            testObserver.assertValues(
-                    new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of()),
-                    new MemberJoinedMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())));
-            assertTrue(future.isDone());
-            pipeline.close();
+                future.join();
+                testObserver.assertValueCount(2);
+                testObserver.assertValues(
+                        new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of()),
+                        new MemberJoinedMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())));
+                assertTrue(future.isDone());
+            }
         }
 
         @Test
         void shouldSendErrorOnNotExistingGroup() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
-            final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
-            when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(null);
+                when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(null);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            assertThrows(CompletionException.class, future::join);
-            testObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValues(
-                            new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND));
-            assertTrue(future.isCompletedExceptionally());
-            pipeline.close();
+                assertThrows(CompletionException.class, future::join);
+                testObserver.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValues(
+                                new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND));
+                assertTrue(future.isCompletedExceptionally());
+            }
         }
 
         @Test
         void shouldSendErrorOnNotWeakProofOfWork() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
-            final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
-            when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
-            when(proofOfWork.isValid(any(), anyByte())).thenReturn(false);
+                when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
+                when(proofOfWork.isValid(any(), anyByte())).thenReturn(false);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            assertThrows(CompletionException.class, future::join);
-            testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValues(
-                    new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK));
-            assertTrue(future.isCompletedExceptionally());
-            pipeline.close();
+                assertThrows(CompletionException.class, future::join);
+                testObserver.awaitCount(1).assertValueCount(1);
+                testObserver.assertValues(
+                        new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK));
+                assertTrue(future.isCompletedExceptionally());
+            }
         }
 
         @Test
         void shouldSendErrorOnUnknownException() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
-            final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
-            when(databaseAdapter.addGroupMember(any())).thenThrow(DatabaseException.class);
-            when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
-            when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
+                when(databaseAdapter.addGroupMember(any())).thenThrow(DatabaseException.class);
+                when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
+                when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            assertThrows(CompletionException.class, future::join);
-            testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValues(
-                    new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN));
-            assertTrue(future.isCompletedExceptionally());
-            pipeline.close();
+                assertThrows(CompletionException.class, future::join);
+                testObserver.awaitCount(1).assertValueCount(1);
+                testObserver.assertValues(
+                        new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN));
+                assertTrue(future.isCompletedExceptionally());
+            }
         }
 
         @Test
         @Timeout(value = 15_000, unit = MILLISECONDS)
         void shouldCompleteFutureExceptionallyOnDatabaseException() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
-            when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
+                when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            assertThrows(Exception.class, future::get);
-            pipeline.close();
+                assertThrows(Exception.class, future::get);
+            }
         }
     }
 
@@ -320,51 +279,39 @@ class GroupsManagerHandlerTest {
         @Test
         void shouldHandleLeaveRequest() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
-            final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+                final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
-            when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
+                when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            future.join();
-            testObserver
-                    .assertValueCount(2)
-                    .assertValues(
-                            new MemberLeftMessage(publicKey, msg.getGroup()),
-                            new MemberLeftMessage(publicKey, msg.getGroup()));
+                future.join();
+                testObserver
+                        .assertValueCount(2)
+                        .assertValues(
+                                new MemberLeftMessage(publicKey, msg.getGroup()),
+                                new MemberLeftMessage(publicKey, msg.getGroup()));
 
-            assertTrue(future.isDone());
-            pipeline.close();
+                assertTrue(future.isDone());
+            }
         }
 
         @Test
         void shouldCompleteExceptionallyOnError() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                    config,
-                    identity,
-                    peersManager,
-                    inboundSerialization,
-                    outboundSerialization,
-                    handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
-            final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+                final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
-            doThrow(DatabaseException.class).when(databaseAdapter).removeGroupMember(any(), anyString());
+                doThrow(DatabaseException.class).when(databaseAdapter).removeGroupMember(any(), anyString());
 
-            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            testObserver.assertNoValues();
-            assertThrows(CompletionException.class, future::join);
-            pipeline.close();
+                testObserver.assertNoValues();
+                assertThrows(CompletionException.class, future::join);
+            }
         }
     }
 }

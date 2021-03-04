@@ -26,11 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollDatagramChannel;
-import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -56,6 +52,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
+import static org.drasyl.util.NetworkUtil.MAX_PORT_NUMBER;
 import static org.drasyl.util.NetworkUtil.getAddresses;
 
 /**
@@ -65,12 +64,13 @@ import static org.drasyl.util.NetworkUtil.getAddresses;
 public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocketAddressWrapper> {
     public static final String UDP_SERVER = "UDP_SERVER";
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
+    private static final short MIN_DERIVED_PORT = 22528;
     private final Bootstrap bootstrap;
     private Channel channel;
 
     UdpServer(final Bootstrap bootstrap,
               final Channel channel) {
-        this.bootstrap = bootstrap;
+        this.bootstrap = requireNonNull(bootstrap);
         this.channel = channel;
     }
 
@@ -82,21 +82,6 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                         .option(ChannelOption.SO_BROADCAST, false),
                 null
         );
-    }
-
-    /**
-     * Returns the {@link DatagramChannel} that fits best to the current environment. Under Linux
-     * the more performant {@link EpollDatagramChannel} is returned.
-     *
-     * @return {@link DatagramChannel} that fits best to the current environment
-     */
-    static Class<? extends DatagramChannel> getBestDatagramChannel() {
-        if (Epoll.isAvailable()) {
-            return EpollDatagramChannel.class;
-        }
-        else {
-            return NioDatagramChannel.class;
-        }
     }
 
     static Set<Endpoint> determineActualEndpoints(final Identity identity,
@@ -152,15 +137,15 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
             final int bindPort;
             if (ctx.config().getRemoteBindPort() == -1) {
                 /*
-                 derive a port in the range between 22528 and 65528 from its own identity.
-                 this is done because we also expose this port via UPnP-IGD/NAT-PMP/PCP and some
-                 NAT devices behave unexpectedly when multiple nodes in the local network try to
-                 expose the same local port.
+                 derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
+                 own identity. this is done because we also expose this port via
+                 UPnP-IGD/NAT-PMP/PCP and some NAT devices behave unexpectedly when multiple nodes
+                 in the local network try to expose the same local port.
                  a completely random port would have the disadvantage that every time the node is
                  started it would use a new port and this would make discovery more difficult
                 */
                 final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.identity().getPublicKey().byteArrayValue()).asBytes()).getValue();
-                bindPort = (int) (22528 + identityHash % 43000);
+                bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
             }
             else {
                 bindPort = ctx.config().getRemoteBindPort();
@@ -185,7 +170,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                 LOG.info("Server started and listening at {}", socketAddress);
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
-                ctx.fireEventTriggered(new NodeUpEvent(Node.of(ctx.identity(), socketAddress.getPort())), future);
+                ctx.fireEventTriggered(NodeUpEvent.of(Node.of(ctx.identity(), socketAddress.getPort())), future);
             }
             else {
                 // server start failed

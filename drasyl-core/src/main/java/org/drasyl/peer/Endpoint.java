@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class Endpoint {
+    private static final int MAX_PORT = 65536;
     private final String host;
     private final int port;
     private final CompressedPublicKey publicKey;
@@ -58,7 +59,7 @@ public class Endpoint {
                      final Integer networkId) {
         this.host = requireNonNull(host);
         this.port = port;
-        if (port < -1 || port > 65536) {
+        if (port < -1 || port > MAX_PORT) {
             throw new IllegalArgumentException("port out of range: " + port);
         }
         this.publicKey = requireNonNull(publicKey);
@@ -85,7 +86,7 @@ public class Endpoint {
      * @throws IllegalArgumentException If the created {@link URI} violates RFC&nbsp;2396
      */
     public URI getURI() {
-        return URI.create("udp://" + host + ":" + port + "?publicKey=" + publicKey + (networkId != null ? "&networkId=" + networkId : ""));
+        return URI.create("udp://" + host + ":" + port + "?publicKey=" + publicKey + (networkId != null ? ("&networkId=" + networkId) : ""));
     }
 
     /**
@@ -239,6 +240,6 @@ public class Endpoint {
     }
 
     private static boolean isUdpURI(final URI uri) {
-        return uri.getScheme() != null && uri.getScheme().equals("udp");
+        return "udp".equals(uri.getScheme());
     }
 }

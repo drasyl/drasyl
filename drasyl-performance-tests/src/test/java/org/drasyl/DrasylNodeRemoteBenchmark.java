@@ -18,6 +18,7 @@
  */
 package org.drasyl;
 
+import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.PeerDirectEvent;
@@ -25,7 +26,6 @@ import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -36,7 +36,6 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -92,7 +91,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
             final CompletableFuture<Void> node1Ready = new CompletableFuture<>();
             node1 = new DrasylNode(config1) {
                 @Override
-                public void onEvent(final @NotNull Event event) {
+                public void onEvent(final @NonNull Event event) {
                     if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getPublicKey().equals(identity2.getPublicKey()) && !node1Ready.isDone()) {
                         node1Ready.complete(null);
                     }
@@ -102,7 +101,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
             final CompletableFuture<Void> node2Ready = new CompletableFuture<>();
             node2 = new DrasylNode(config2) {
                 @Override
-                public void onEvent(final @NotNull Event event) {
+                public void onEvent(final @NonNull Event event) {
                     if (event instanceof MessageEvent && Objects.equals(((MessageEvent) event).getSender(), node1.identity().getPublicKey()) && ((MessageEvent) event).getPayload() instanceof Integer) {
                         final int index = (int) ((MessageEvent) event).getPayload();
                         futures[index].complete(null);

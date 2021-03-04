@@ -36,7 +36,7 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
  * <p>
  * Inspired by: <a href="https://doc.akka.io/docs/akka/current/typed/fsm.html">https://doc.akka.io/docs/akka/current/typed/fsm.html</a>
  */
-public class Behaviors {
+public final class Behaviors {
     private Behaviors() {
         // util class
     }

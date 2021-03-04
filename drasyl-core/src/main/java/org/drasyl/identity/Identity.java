@@ -18,6 +18,7 @@
  */
 package org.drasyl.identity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -35,9 +36,11 @@ public class Identity {
     private final ProofOfWork proofOfWork;
     private final CompressedKeyPair keyPair;
 
-    protected Identity(@JsonProperty("proofOfWork") final int proofOfWork,
-                       @JsonProperty("publicKey") final String publicKey,
-                       @JsonProperty("privateKey") final String privateKey) {
+    @SuppressWarnings("unused")
+    @JsonCreator
+    private Identity(@JsonProperty("proofOfWork") final int proofOfWork,
+                     @JsonProperty("publicKey") final String publicKey,
+                     @JsonProperty("privateKey") final String privateKey) {
         this(ProofOfWork.of(proofOfWork), CompressedKeyPair.of(publicKey, privateKey));
     }
 
@@ -46,6 +49,7 @@ public class Identity {
         this.keyPair = keyPair;
     }
 
+    @SuppressWarnings("unused")
     @JsonIgnore
     public CompressedKeyPair getKeyPair() {
         return keyPair;

@@ -30,7 +30,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class GroupJoinedEventTest {
@@ -76,9 +75,9 @@ class GroupJoinedEventTest {
         }
 
         @Test
-        void shouldNotBeEquals() {
+        void shouldNotBeEquals(@Mock final Group group2) {
             final GroupJoinedEvent event1 = new GroupJoinedEvent(group, Set.of(member), runnable);
-            final GroupJoinedEvent event2 = new GroupJoinedEvent(mock(Group.class), Set.of(member), runnable);
+            final GroupJoinedEvent event2 = new GroupJoinedEvent(group2, Set.of(member), runnable);
 
             assertNotEquals(event1, event2);
         }
@@ -95,9 +94,9 @@ class GroupJoinedEventTest {
         }
 
         @Test
-        void shouldNotBeEquals() {
+        void shouldNotBeEquals(@Mock final Group group2) {
             final GroupJoinedEvent event1 = new GroupJoinedEvent(group, Set.of(member), runnable);
-            final GroupJoinedEvent event2 = new GroupJoinedEvent(mock(Group.class), Set.of(member), runnable);
+            final GroupJoinedEvent event2 = new GroupJoinedEvent(group2, Set.of(member), runnable);
 
             assertNotEquals(event1.hashCode(), event2.hashCode());
         }

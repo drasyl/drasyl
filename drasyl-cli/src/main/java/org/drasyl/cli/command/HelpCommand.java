@@ -55,7 +55,9 @@ public class HelpCommand extends AbstractCommand {
         helpTemplate(
                 "",
                 "",
-                "Use \"drasyl [command] --help\" for more information about a command.",
+                String.format("Use \"drasyl [command] --help\" for more information about a command.%n" +
+                        "%n" +
+                        "The environment variable JAVA_OPTS can be used to pass options to the JVM."),
                 COMMANDS.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getDescription()))
         );
     }

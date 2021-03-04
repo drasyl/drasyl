@@ -26,6 +26,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("java:S118")
 abstract class MemberActionMessage extends GroupActionMessage {
     protected final CompressedPublicKey member;
 

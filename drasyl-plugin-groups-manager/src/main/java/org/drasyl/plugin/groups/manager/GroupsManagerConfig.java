@@ -19,9 +19,9 @@
 package org.drasyl.plugin.groups.manager;
 
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
+import org.drasyl.DrasylConfigException;
 import org.drasyl.plugin.groups.manager.data.Group;
 
 import java.net.InetAddress;
@@ -76,7 +76,7 @@ public class GroupsManagerConfig {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private Map<String, Group> getGroups(final Config config, final String path) {
+    private static Map<String, Group> getGroups(final Config config, final String path) {
         final Map<String, Group> groups = new HashMap<>();
 
         for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
@@ -111,7 +111,7 @@ public class GroupsManagerConfig {
                         timeout));
             }
             catch (final IllegalArgumentException e) {
-                throw new ConfigException.WrongType(groupConfig.origin(), "", "group", e.getMessage());
+                throw new DrasylConfigException(e);
             }
         }
 
@@ -174,8 +174,8 @@ public class GroupsManagerConfig {
      *
      * @return {@link GroupsManagerConfig} builder
      */
-    public static Builder builder() {
-        return builder(DEFAULT);
+    public static Builder newBuilder() {
+        return newBuilder(DEFAULT);
     }
 
     /**
@@ -183,13 +183,14 @@ public class GroupsManagerConfig {
      *
      * @return {@link GroupsManagerConfig} builder
      */
-    public static Builder builder(final GroupsManagerConfig config) {
+    public static Builder newBuilder(final GroupsManagerConfig config) {
         return new Builder(config);
     }
 
     /**
      * Implements the builder-pattern for this configuration.
      */
+    @SuppressWarnings("java:S2972")
     public static class Builder {
         Map<String, Group> groups;
         URI databaseUri;

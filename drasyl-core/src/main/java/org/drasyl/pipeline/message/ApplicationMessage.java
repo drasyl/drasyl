@@ -24,6 +24,9 @@ import org.drasyl.identity.CompressedPublicKey;
  * A message from or to the application.
  */
 public class ApplicationMessage extends DefaultAddressedEnvelope<CompressedPublicKey, Object> {
+    /**
+     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
+     */
     public ApplicationMessage(final CompressedPublicKey sender,
                               final CompressedPublicKey recipient,
                               final Object content) {

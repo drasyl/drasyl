@@ -36,28 +36,30 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.DOTALL;
+import static java.util.regex.Pattern.UNICODE_CHARACTER_CLASS;
 
 /**
  * Utility class for Universal Plug and Play (UPnP) Internet Gateway Device-related stuff.
  *
- * @see <a href="https://tools.ietf.org/html/rfc6970">https://tools.ietf.org/html/rfc6970</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6970">RFC 6970</a>
  */
 @SuppressWarnings({ "java:S1192" })
 public class UpnpIgdUtil {
     public static final InetSocketAddressWrapper SSDP_MULTICAST_ADDRESS = new InetSocketAddressWrapper("239.255.255.250", 1900);
     public static final Duration SSDP_MAX_WAIT_TIME = ofSeconds(3);
     public static final Pattern SSDP_DISCOVERY_RESPONSE_PATTERN = Pattern.compile("^HTTP/1\\.1 [0-9]+?");
-    public static final Pattern SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$");
+    public static final Pattern SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$", UNICODE_CHARACTER_CLASS);
     public static final Pattern UPNP_SERVICE_PATTERN = Pattern.compile("<serviceType>(urn:schemas-upnp-org:service:WANIPConnection:\\d+?)</serviceType>.*?<controlURL>(.+?)</controlURL>", DOTALL);
     public static final Pattern UPNP_EXTERNAL_IP_ADDRESS_PATTERN = Pattern.compile("<NewExternalIPAddress>(.+?)</NewExternalIPAddress>");
     public static final Pattern UPNP_ERROR_PATTERN = Pattern.compile("<errorCode>(\\d+?)</errorCode>");
@@ -66,6 +68,8 @@ public class UpnpIgdUtil {
     public static final Pattern UPNP_NEW_INTERNAL_PORT_PATTERN = Pattern.compile("<NewInternalPort>(.+?)</NewInternalPort>");
     public static final Pattern UPNP_NEW_INTERNAL_CLIENT_PATTERN = Pattern.compile("<NewInternalClient>(.+?)</NewInternalClient>");
     public static final Pattern UPNP_NEW_LEASE_DURATION_PATTERN = Pattern.compile("<NewLeaseDuration>(.+?)</NewLeaseDuration>");
+    public static final Pattern HTTP_HEADER_SEPARATOR_PATTERN = Pattern.compile("\r\n\r\n");
+    public static final Pattern HTTP_HEADER_FIELD_SEPARATOR_PATTERN = Pattern.compile("\r\n");
     private static final Logger LOG = LoggerFactory.getLogger(UpnpIgdUtil.class);
     private final HttpClient httpClient;
     private final Function<InetSocketAddress, InetAddress> remoteAddressProvider;
@@ -219,7 +223,8 @@ public class UpnpIgdUtil {
                 "NewInternalClient", localAddress.getHostAddress(),
                 "NewEnabled", 1,
                 "NewPortMappingDescription", description,
-                "NewLeaseDuration", 0 // see rfc6886, section 9.5., third paragraph...
+                // see rfc6886, section 9.5., third paragraph...
+                "NewLeaseDuration", 0
         );
         final String response = soapRequest(url, serviceType, "AddPortMapping", args);
         if (response == null) {
@@ -306,20 +311,20 @@ public class UpnpIgdUtil {
         return content.getBytes(UTF_8);
     }
 
+    @SuppressWarnings("java:S109")
     public static Message readMessage(final byte[] content) {
-        final String contentStr = new String(content);
-        final String[] parts = contentStr.split("\r\n\r\n", 2);
+        final String contentStr = new String(content, UTF_8);
+        final String[] parts = HTTP_HEADER_SEPARATOR_PATTERN.split(contentStr, 2);
 
         // read header
         if (parts.length > 0) {
             final String header = parts[0];
-            final String[] headerLines = header.split("\r\n");
+            final String[] headerLines = HTTP_HEADER_FIELD_SEPARATOR_PATTERN.split(header);
             if (headerLines.length > 0 && SSDP_DISCOVERY_RESPONSE_PATTERN.matcher(headerLines[0]).find()) {
-                final Map<String, String> headerFields = Arrays
-                        .stream(headerLines, 1, headerLines.length)
-                        .map(SSDP_HEADER_PATTERN::matcher)
-                        .filter(Matcher::matches)
-                        .collect(Collectors.toMap(m -> m.group(1).toUpperCase(), m -> m.group(2)));
+                final Map<String, String> headerFields = new TreeMap<>(CASE_INSENSITIVE_ORDER);
+                Arrays.stream(headerLines, 1, headerLines.length).map(SSDP_HEADER_PATTERN::matcher)
+                        .filter(Matcher::matches).forEach(m -> headerFields.put(m.group(1), m.group(2)));
+
                 final String serviceType = headerFields.get("ST");
                 final String location = headerFields.get("LOCATION");
 
@@ -393,7 +398,7 @@ public class UpnpIgdUtil {
             this.errorCode = errorCode;
             this.internalPort = internalPort;
             this.internalClient = internalClient;
-            this.description = description;
+            this.description = requireNonNull(description);
             this.leaseDuration = leaseDuration;
         }
 
@@ -440,7 +445,7 @@ public class UpnpIgdUtil {
         private final String newConnectionStatus;
 
         public StatusInfo(final String newConnectionStatus) {
-            this.newConnectionStatus = newConnectionStatus;
+            this.newConnectionStatus = requireNonNull(newConnectionStatus);
         }
 
         public String getNewConnectionStatus() {
@@ -448,7 +453,7 @@ public class UpnpIgdUtil {
         }
 
         public boolean isConnected() {
-            return newConnectionStatus.equals("Connected") || newConnectionStatus.equals("Up");
+            return "Connected".equals(newConnectionStatus) || "Up".equals(newConnectionStatus);
         }
 
         @Override
@@ -474,7 +479,7 @@ public class UpnpIgdUtil {
         private final InetAddress newExternalIpAddress;
 
         public ExternalIpAddress(final InetAddress newExternalIpAddress) {
-            this.newExternalIpAddress = newExternalIpAddress;
+            this.newExternalIpAddress = requireNonNull(newExternalIpAddress);
         }
 
         public InetAddress getNewExternalIpAddress() {

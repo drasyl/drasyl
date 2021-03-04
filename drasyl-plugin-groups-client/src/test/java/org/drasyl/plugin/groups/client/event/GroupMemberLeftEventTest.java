@@ -28,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class GroupMemberLeftEventTest {
@@ -65,9 +64,9 @@ class GroupMemberLeftEventTest {
         }
 
         @Test
-        void shouldNotBeEquals() {
+        void shouldNotBeEquals(@Mock final CompressedPublicKey member2) {
             final GroupMemberLeftEvent event1 = new GroupMemberLeftEvent(member, group);
-            final GroupMemberLeftEvent event2 = new GroupMemberLeftEvent(mock(CompressedPublicKey.class), group);
+            final GroupMemberLeftEvent event2 = new GroupMemberLeftEvent(member2, group);
 
             assertNotEquals(event1, event2);
         }
@@ -84,9 +83,9 @@ class GroupMemberLeftEventTest {
         }
 
         @Test
-        void shouldNotBeEquals() {
+        void shouldNotBeEquals(@Mock final CompressedPublicKey member2) {
             final GroupMemberLeftEvent event1 = new GroupMemberLeftEvent(member, group);
-            final GroupMemberLeftEvent event2 = new GroupMemberLeftEvent(mock(CompressedPublicKey.class), group);
+            final GroupMemberLeftEvent event2 = new GroupMemberLeftEvent(member2, group);
 
             assertNotEquals(event1.hashCode(), event2.hashCode());
         }

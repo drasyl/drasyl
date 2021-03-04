@@ -26,6 +26,7 @@ import java.net.InetSocketAddress;
 /**
  * A {@link InetSocketAddress} that can be used as an {@link Address} in the {@link Pipeline}.
  */
+@SuppressWarnings("java:S4926")
 public class InetSocketAddressWrapper extends InetSocketAddress implements Address {
     private static final long serialVersionUID = -453196965326684876L;
 

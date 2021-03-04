@@ -38,7 +38,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,54 +56,51 @@ class EmbeddedPipelineTest {
     }
 
     @Test
-    void shouldReturnInboundMessagesAndEvents() {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager);
-        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
-        final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
-        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+    void shouldReturnInboundMessagesAndEvents(@Mock final CompressedPublicKey sender,
+                                              @Mock final SerializedApplicationMessage msg) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+            final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
+            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        final SerializedApplicationMessage msg = mock(SerializedApplicationMessage.class);
+            when(msg.getSender()).thenReturn(sender);
 
-        when(msg.getSender()).thenReturn(sender);
+            pipeline.processInbound(msg.getSender(), msg);
 
-        pipeline.processInbound(msg.getSender(), msg);
-
-        inboundMessageTestObserver.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
-        eventTestObserver.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new MessageEvent(sender, msg));
-        outboundMessageTestObserver.assertNoValues();
-        pipeline.close();
+            inboundMessageTestObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+            eventTestObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(MessageEvent.of(sender, msg));
+            outboundMessageTestObserver.assertNoValues();
+        }
     }
 
     @Test
-    void shouldReturnOutboundMessages() {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+    void shouldReturnOutboundMessages(@Mock final CompressedPublicKey sender,
+                                      @Mock final CompressedPublicKey recipient) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
                 peersManager,
                 AddressedEnvelopeHandler.INSTANCE,
                 new HandlerAdapter(),
                 new HandlerAdapter()
-        );
-        final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
-        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+        )) {
+            final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-        when(identity.getPublicKey()).thenReturn(sender);
-        final byte[] msg = new byte[]{};
-        pipeline.processOutbound(recipient, msg);
+            when(identity.getPublicKey()).thenReturn(sender);
+            final byte[] msg = new byte[]{};
+            pipeline.processOutbound(recipient, msg);
 
-        outboundMessageTestObserver.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new ApplicationMessage(sender, recipient, msg));
-        inboundMessageTestObserver.assertNoValues();
-        eventTestObserver.assertNoValues();
-        pipeline.close();
+            outboundMessageTestObserver.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new ApplicationMessage(sender, recipient, msg));
+            inboundMessageTestObserver.assertNoValues();
+            eventTestObserver.assertNoValues();
+        }
     }
 }

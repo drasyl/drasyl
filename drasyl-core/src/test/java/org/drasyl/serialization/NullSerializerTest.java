@@ -49,7 +49,7 @@ class NullSerializerTest {
     class FromByteArray {
         @Test
         void shouldDeserializeToNull() throws IOException {
-            assertNull(serializer.fromByteArray(new byte[]{}, null));
+            assertNull(serializer.fromByteArray(new byte[]{}, (String) null));
         }
     }
 }

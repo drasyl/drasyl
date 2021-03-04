@@ -31,8 +31,9 @@ import java.util.Objects;
  * Inspired by: https://github.com/javatuples/javatuples/blob/master/src/main/java/org/javatuples/Pair.java
  */
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
-@SuppressWarnings({ "squid:S4144" })
+@SuppressWarnings({ "squid:S4144", "java:S4926" })
 public class Pair<A, B> implements Serializable {
+    private static final long serialVersionUID = -2782607293165108904L;
     private final A first; // NOSONAR
     private final B second; // NOSONAR
 

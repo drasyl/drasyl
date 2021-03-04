@@ -30,7 +30,7 @@ import static java.util.concurrent.CompletableFuture.failedFuture;
 /**
  * Utility class for future-related operations.
  */
-public class FutureUtil {
+public final class FutureUtil {
     private FutureUtil() {
         // util class
     }
