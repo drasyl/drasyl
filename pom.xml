@@ -113,7 +113,7 @@
         <logback.version>1.2.3</logback.version>
         <junit.version>5.7.1</junit.version>
         <mockito.version>3.8.0</mockito.version>
-        <jackson.version>2.12.1</jackson.version>
+        <jackson.version>2.12.2</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.68</bouncycastle.version>
         <awaitility.version>4.0.3</awaitility.version>
