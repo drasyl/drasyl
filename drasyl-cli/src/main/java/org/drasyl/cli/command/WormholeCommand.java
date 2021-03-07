@@ -19,6 +19,9 @@
 package org.drasyl.cli.command;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.cli.CliException;
@@ -78,6 +81,16 @@ public class WormholeCommand extends AbstractCommand {
     }
 
     @Override
+    protected Options getOptions() {
+        final Options options = super.getOptions();
+
+        final Option client = Option.builder().longOpt("text").hasArg().argName("message").type(String.class).desc("Text message to send.").build();
+        options.addOption(client);
+
+        return options;
+    }
+
+    @Override
     protected void help(final CommandLine cmd) {
         helpTemplate(
                 "wormhole",
@@ -118,19 +131,31 @@ public class WormholeCommand extends AbstractCommand {
             node = sendingNodeSupplier.apply(Triple.of(getDrasylConfig(cmd), out, err));
             node.start();
 
-            // obtain text
-            out.print("Text to send: ");
-            final String text = scannerSupplier.get().nextLine();
+            final String text;
+            if (!cmd.hasOption("text")) {
+                // obtain text
+                out.print("Text to send: ");
+                text = scannerSupplier.get().nextLine();
+            }
+            else {
+                text = cmd.getParsedOptionValue("text").toString();
+            }
             node.setText(text);
 
             // wait for node to finish
             node.doneFuture().get();
         }
-        catch (final DrasylException | ExecutionException e) {
-            throw new CliException(e);
+        catch (final DrasylException e) {
+            throw new CliException("Unable to create/run node", e);
+        }
+        catch (final ParseException e) {
+            throw new CliException("Unable to parse options", e);
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+        catch (final ExecutionException e) {
+            throw new CliException(e);
         }
         finally {
             if (node != null) {
@@ -172,11 +197,17 @@ public class WormholeCommand extends AbstractCommand {
             // wait for node to finish
             node.doneFuture().get();
         }
-        catch (final DrasylException | ExecutionException | IllegalArgumentException e) {
-            throw new CliException(e);
+        catch (final IllegalArgumentException e) {
+            throw new CliException("Invalid wormhole code supplied supplied", e);
+        }
+        catch (final DrasylException e) {
+            throw new CliException("Unable to create/run node", e);
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+        catch (final ExecutionException e) {
+            throw new CliException(e);
         }
         finally {
             if (node != null) {
