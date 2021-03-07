@@ -80,7 +80,7 @@ class MessagesThroughputHandlerTest {
         });
 
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
-        try (EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             pipeline.processInbound(nodeUp).join();
 
             verify(printStream).printf(anyString(), any(), any(), any(), any());
@@ -90,7 +90,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldStopTaskOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, disposable);
-        try (EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             pipeline.processInbound(event).join();
 
             verify(disposable).dispose();
@@ -100,7 +100,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldStopTaskOnNodeDownEvent(@Mock final NodeDownEvent event) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, disposable);
-        try (EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             pipeline.processInbound(event).join();
 
             verify(disposable).dispose();
@@ -110,7 +110,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldRecordOutboundMessage(@Mock final Address address) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
-        try (EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             pipeline.processOutbound(address, new Object()).join();
 
             verify(outboundMessages).increment();
@@ -121,7 +121,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldRecordInboundMessage(@Mock final Address address) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
-        try (EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
 
             pipeline.processInbound(address, new Object()).join();
         }
@@ -134,7 +134,7 @@ class MessagesThroughputHandlerTest {
     void shouldConsumeMatchingOutboundMessage(@Mock final Address address) {
         final Handler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
         final TestObserver<Object> observable;
-        try (EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             observable = pipeline.outboundMessages().test();
 
             pipeline.processOutbound(address, new Object()).join();
@@ -147,7 +147,7 @@ class MessagesThroughputHandlerTest {
     void shouldConsumeMatchingInboundMessage(@Mock final Address address) {
         final Handler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, scheduler, printStream, null);
         final TestObserver<Object> observable;
-        try (EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             observable = pipeline.inboundMessages().test();
 
             pipeline.processInbound(address, new Object()).join();
