@@ -34,6 +34,8 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.time.Duration;
@@ -45,11 +47,13 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.behaviour.Behaviors.ignore;
 import static org.drasyl.behaviour.Behaviors.same;
 import static org.drasyl.serialization.Serializers.SERIALIZER_JACKSON_JSON;
+import static org.drasyl.util.SecretUtil.maskSecret;
 
 @SuppressWarnings({ "java:S107" })
 public class SendingWormholeNode extends BehavioralDrasylNode {
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     public static final int PASSWORD_LENGTH = 16;
+    private static final Logger LOG = LoggerFactory.getLogger(SendingWormholeNode.class);
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream out;
     private final String password;
@@ -121,7 +125,8 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                         return ignore();
                     })
                     .onEvent(SetText.class, event -> text == null, event -> {
-                        this.handleSetText(event);
+                        // text has been set -> wait for node to become online
+                        this.text = event.text;
                         return offline();
                     })
                     .onEvent(OnlineTimeout.class, event -> fail())
@@ -134,22 +139,34 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
      * Node is connected to super peer.
      */
     private Behavior online() {
+        if (this.text != null) {
+            final String code = identity().getPublicKey().toString() + password;
+            out.println("Wormhole code is: " + code);
+            out.println("On the other computer, please run:");
+            out.println();
+            out.println("drasyl wormhole receive " + code);
+            out.println();
+        }
+
         return Behaviors.receive()
                 .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                 .onEvent(NodeOfflineEvent.class, event -> offline())
                 .onEvent(SetText.class, event -> text == null, event -> {
-                    this.handleSetText(event);
+                    // text has been set
+                    this.text = event.text;
                     return same();
                 })
                 .onMessage(PasswordMessage.class, (sender, payload) -> text != null && password.equals(payload.getPassword()), (sender, payload) -> {
                     // correct password -> send text
-                    send(sender, new TextMessage(text));
+                    LOG.debug("Got text request from '{}' with correct password '{}'. Reply with text.", () -> sender, () -> maskSecret(payload.getPassword()));
+
+                    send(sender, new TextMessage(text)).join();
                     out.println("text message sent");
                     return terminate();
                 })
                 .onMessage(PasswordMessage.class, (sender, payload) -> {
                     // wrong password -> send rejection
-                    send(sender, new WrongPasswordMessage());
+                    send(sender, new WrongPasswordMessage()).join();
                     return fail();
                 })
                 .onAnyEvent(event -> same())
@@ -175,20 +192,6 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                         "the attacker another chance."
         ));
         return ignore();
-    }
-
-    /**
-     * Node has received text and therefore prints the wormhole code.
-     */
-    private void handleSetText(final SetText event) {
-        // text has been set -> display wormhole code
-        this.text = event.text;
-        final String code = identity().getPublicKey().toString() + password;
-        out.println("Wormhole code is: " + code);
-        out.println("On the other computer, please run:");
-        out.println();
-        out.println("drasyl wormhole receive " + code);
-        out.println();
     }
 
     /**

@@ -50,17 +50,6 @@ public class WormholeCommand extends AbstractCommand {
     private final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
     private final Consumer<Integer> exitSupplier;
 
-    public WormholeCommand() {
-        this(
-                System.out, // NOSONAR
-                System.err, // NOSONAR
-                () -> new Scanner(System.in), // NOSONAR
-                SendingWormholeNode::new,
-                ReceivingWormholeNode::new,
-                System::exit
-        );
-    }
-
     WormholeCommand(final PrintStream out,
                     final PrintStream err,
                     final Supplier<Scanner> scannerSupplier,
@@ -72,6 +61,22 @@ public class WormholeCommand extends AbstractCommand {
         this.sendingNodeSupplier = requireNonNull(sendingNodeSupplier);
         this.receivingNodeSupplier = requireNonNull(receivingNodeSupplier);
         this.exitSupplier = requireNonNull(exitSupplier);
+    }
+
+    WormholeCommand(final PrintStream out,
+                    final Consumer<Integer> exitSupplier) {
+        this(
+                out,
+                System.err, // NOSONAR
+                () -> new Scanner(System.in), // NOSONAR
+                SendingWormholeNode::new,
+                ReceivingWormholeNode::new,
+                exitSupplier
+        );
+    }
+
+    public WormholeCommand() {
+        this(System.out, System::exit); // NOSONAR
     }
 
     @Override
