@@ -18,520 +18,414 @@
  */
 package org.drasyl.util.logging;
 
-import org.slf4j.Marker;
-
-import java.util.Arrays;
 import java.util.function.Supplier;
 
-/**
- * A {@link org.slf4j.Logger} that supports lazy evaluation of passend values.
- * <p>
- * Example:
- * <pre><code>
- * // without lazy logger
- * if (logger.isDebug()) {
- *     logger.debug("value: {}", this.expensiveComputation());
- * }
- *
- * // with lazy logger
- * logger.debug("value: {}", this::expensiveComputation);
- * </code></pre>
- *
- * @see LoggerFactory
- */
-public class Logger {
-    @SuppressWarnings("java:S1312")
-    private final org.slf4j.Logger delegate;
-
-    Logger(final org.slf4j.Logger delegate) {
-        this.delegate = delegate;
-    }
-
-    public org.slf4j.Logger delegate() {
-        return delegate;
-    }
-
-    public String getName() {
-        return delegate.getName();
-    }
-
-    public boolean isTraceEnabled() {
-        return delegate.isTraceEnabled();
-    }
-
-    public void trace(final String msg) {
-        delegate.trace(msg);
-    }
-
-    public void trace(final String format, final Object arg) {
-        delegate.trace(format, arg);
-    }
-
-    public void trace(final String format, final Supplier<Object> arg) {
-        if (isTraceEnabled()) {
-            trace(format, arg.get());
-        }
-    }
-
-    public void trace(final String format, final Object arg1, final Object arg2) {
-        delegate.trace(format, arg1, arg2);
-    }
-
-    public void trace(final String format,
-                      final Supplier<Object> arg1,
-                      final Supplier<Object> arg2) {
-        if (isTraceEnabled()) {
-            trace(format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void trace(final String format, final Object... arguments) {
-        delegate.trace(format, arguments);
-    }
-
-    @SafeVarargs
-    public final void trace(final String format, final Supplier<Object>... arguments) {
-        if (isTraceEnabled()) {
-            trace(format, Arrays.stream(arguments).map(Supplier::get).toArray());
-        }
-    }
-
-    public void trace(final String msg, final Throwable t) {
-        delegate.trace(msg, t);
-    }
-
-    public boolean isTraceEnabled(final Marker marker) {
-        return delegate.isTraceEnabled(marker);
-    }
-
-    public void trace(final Marker marker, final String msg) {
-        delegate.trace(marker, msg);
-    }
-
-    public void trace(final Marker marker, final String format, final Object arg) {
-        delegate.trace(marker, format, arg);
-    }
-
-    public void trace(final Marker marker, final String format, final Supplier<Object> arg) {
-        if (isTraceEnabled(marker)) {
-            trace(marker, format, arg.get());
-        }
-    }
-
-    public void trace(final Marker marker,
-                      final String format,
-                      final Object arg1,
-                      final Object arg2) {
-        delegate.trace(marker, format, arg1, arg2);
-    }
-
-    public void trace(final Marker marker,
-                      final String format,
-                      final Supplier<Object> arg1,
-                      final Supplier<Object> arg2) {
-        if (isTraceEnabled(marker)) {
-            trace(marker, format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void trace(final Marker marker, final String format, final Object... argArray) {
-        delegate.trace(marker, format, argArray);
-    }
-
-    @SafeVarargs
-    public final void trace(final Marker marker,
-                            final String format,
-                            final Supplier<Object>... argArray) {
-        if (isTraceEnabled(marker)) {
-            trace(marker, format, Arrays.stream(argArray).map(Supplier::get).toArray());
-        }
-    }
-
-    public void trace(final Marker marker, final String msg, final Throwable t) {
-        delegate.trace(marker, msg, t);
-    }
-
-    public boolean isDebugEnabled() {
-        return delegate.isDebugEnabled();
-    }
-
-    public void debug(final String msg) {
-        delegate.debug(msg);
-    }
-
-    public void debug(final String format, final Object arg) {
-        delegate.debug(format, arg);
-    }
-
-    public void debug(final String format, final Supplier<Object> arg) {
-        if (isDebugEnabled()) {
-            debug(format, arg.get());
-        }
-    }
-
-    public void debug(final String format, final Object arg1, final Object arg2) {
-        delegate.debug(format, arg1, arg2);
-    }
-
-    public void debug(final String format,
-                      final Supplier<Object> arg1,
-                      final Supplier<Object> arg2) {
-        if (isDebugEnabled()) {
-            debug(format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void debug(final String format, final Object... arguments) {
-        delegate.debug(format, arguments);
-    }
-
-    @SafeVarargs
-    public final void debug(final String format, final Supplier<Object>... arguments) {
-        if (isDebugEnabled()) {
-            debug(format, Arrays.stream(arguments).map(Supplier::get).toArray());
-        }
-    }
-
-    public void debug(final String msg, final Throwable t) {
-        delegate.debug(msg, t);
-    }
-
-    public boolean isDebugEnabled(final Marker marker) {
-        return delegate.isDebugEnabled(marker);
-    }
-
-    public void debug(final Marker marker, final String msg) {
-        delegate.debug(marker, msg);
-    }
-
-    public void debug(final Marker marker, final String format, final Object arg) {
-        delegate.debug(marker, format, arg);
-    }
-
-    public void debug(final Marker marker, final String format, final Supplier<Object> arg) {
-        if (isDebugEnabled(marker)) {
-            debug(marker, format, arg.get());
-        }
-    }
-
-    public void debug(final Marker marker,
-                      final String format,
-                      final Object arg1,
-                      final Object arg2) {
-        delegate.debug(marker, format, arg1, arg2);
-    }
-
-    public void debug(final Marker marker,
-                      final String format,
-                      final Supplier<Object> arg1,
-                      final Supplier<Object> arg2) {
-        if (isDebugEnabled(marker)) {
-            debug(marker, format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void debug(final Marker marker, final String format, final Object... arguments) {
-        delegate.debug(marker, format, arguments);
-    }
-
-    @SafeVarargs
-    public final void debug(final Marker marker,
-                            final String format,
-                            final Supplier<Object>... arguments) {
-        if (isDebugEnabled(marker)) {
-            debug(marker, format, Arrays.stream(arguments).map(Supplier::get).toArray());
-        }
-    }
-
-    public void debug(final Marker marker, final String msg, final Throwable t) {
-        delegate.debug(marker, msg, t);
-    }
-
-    public boolean isInfoEnabled() {
-        return delegate.isInfoEnabled();
-    }
-
-    public void info(final String msg) {
-        delegate.info(msg);
-    }
-
-    public void info(final String format, final Object arg) {
-        delegate.info(format, arg);
-    }
-
-    public void info(final String format, final Supplier<Object> arg) {
-        if (isInfoEnabled()) {
-            info(format, arg.get());
-        }
-    }
-
-    public void info(final String format, final Object arg1, final Object arg2) {
-        delegate.info(format, arg1, arg2);
-    }
-
-    public void info(final String format,
-                     final Supplier<Object> arg1,
-                     final Supplier<Object> arg2) {
-        if (isInfoEnabled()) {
-            info(format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void info(final String format, final Object... arguments) {
-        delegate.info(format, arguments);
-    }
-
-    @SafeVarargs
-    public final void info(final String format, final Supplier<Object>... arguments) {
-        if (isInfoEnabled()) {
-            info(format, Arrays.stream(arguments).map(Supplier::get).toArray());
-        }
-    }
-
-    public void info(final String msg, final Throwable t) {
-        delegate.info(msg, t);
-    }
-
-    public boolean isInfoEnabled(final Marker marker) {
-        return delegate.isInfoEnabled(marker);
-    }
-
-    public void info(final Marker marker, final String msg) {
-        delegate.info(marker, msg);
-    }
-
-    public void info(final Marker marker, final String format, final Object arg) {
-        delegate.info(marker, format, arg);
-    }
-
-    public void info(final Marker marker, final String format, final Supplier<Object> arg) {
-        if (isInfoEnabled(marker)) {
-            info(marker, format, arg.get());
-        }
-    }
-
-    public void info(final Marker marker,
-                     final String format,
-                     final Object arg1,
-                     final Object arg2) {
-        delegate.info(marker, format, arg1, arg2);
-    }
-
-    public void info(final Marker marker,
-                     final String format,
-                     final Supplier<Object> arg1,
-                     final Supplier<Object> arg2) {
-        if (isInfoEnabled(marker)) {
-            info(marker, format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void info(final Marker marker, final String format, final Object... arguments) {
-        delegate.info(marker, format, arguments);
-    }
-
-    @SafeVarargs
-    public final void info(final Marker marker,
-                           final String format,
-                           final Supplier<Object>... argArray) {
-        if (isInfoEnabled(marker)) {
-            info(marker, format, Arrays.stream(argArray).map(Supplier::get).toArray());
-        }
-    }
-
-    public void info(final Marker marker, final String msg, final Throwable t) {
-        delegate.info(marker, msg, t);
-    }
-
-    public boolean isWarnEnabled() {
-        return delegate.isWarnEnabled();
-    }
-
-    public void warn(final String msg) {
-        delegate.warn(msg);
-    }
-
-    public void warn(final String format, final Object arg) {
-        delegate.warn(format, arg);
-    }
-
-    public void warn(final String format, final Supplier<Object> arg) {
-        if (isWarnEnabled()) {
-            warn(format, arg.get());
-        }
-    }
-
-    public void warn(final String format, final Object arg1, final Object arg2) {
-        delegate.warn(format, arg1, arg2);
-    }
-
-    public void warn(final String format,
-                     final Supplier<Object> arg1,
-                     final Supplier<Object> arg2) {
-        if (isWarnEnabled()) {
-            warn(format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void warn(final String format, final Object... arguments) {
-        delegate.warn(format, arguments);
-    }
-
-    @SafeVarargs
-    public final void warn(final String format, final Supplier<Object>... arguments) {
-        if (isWarnEnabled()) {
-            warn(format, Arrays.stream(arguments).map(Supplier::get).toArray());
-        }
-    }
-
-    public void warn(final String msg, final Throwable t) {
-        delegate.warn(msg, t);
-    }
-
-    public boolean isWarnEnabled(final Marker marker) {
-        return delegate.isWarnEnabled(marker);
-    }
-
-    public void warn(final Marker marker, final String msg) {
-        delegate.warn(marker, msg);
-    }
-
-    public void warn(final Marker marker, final String format, final Object arg) {
-        delegate.warn(marker, format, arg);
-    }
-
-    public void warn(final Marker marker, final String format, final Supplier<Object> arg) {
-        if (isWarnEnabled(marker)) {
-            warn(marker, format, arg.get());
-        }
-    }
-
-    public void warn(final Marker marker,
-                     final String format,
-                     final Object arg1,
-                     final Object arg2) {
-        delegate.warn(marker, format, arg1, arg2);
-    }
-
-    public void warn(final Marker marker,
-                     final String format,
-                     final Supplier<Object> arg1,
-                     final Supplier<Object> arg2) {
-        if (isWarnEnabled(marker)) {
-            warn(marker, format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void warn(final Marker marker, final String format, final Object... arguments) {
-        delegate.warn(marker, format, arguments);
-    }
-
-    @SafeVarargs
-    public final void warn(final Marker marker,
-                           final String format,
-                           final Supplier<Object>... argArray) {
-        if (isWarnEnabled(marker)) {
-            warn(marker, format, Arrays.stream(argArray).map(Supplier::get).toArray());
-        }
-    }
-
-    public void warn(final Marker marker, final String msg, final Throwable t) {
-        delegate.warn(marker, msg, t);
-    }
-
-    public boolean isErrorEnabled() {
-        return delegate.isErrorEnabled();
-    }
-
-    public void error(final String msg) {
-        delegate.error(msg);
-    }
-
-    public void error(final String format, final Object arg) {
-        delegate.error(format, arg);
-    }
-
-    public void error(final String format, final Supplier<Object> arg) {
-        if (isErrorEnabled()) {
-            error(format, arg.get());
-        }
-    }
-
-    public void error(final String format, final Object arg1, final Object arg2) {
-        delegate.error(format, arg1, arg2);
-    }
-
-    public void error(final String format,
-                      final Supplier<Object> arg1,
-                      final Supplier<Object> arg2) {
-        if (isErrorEnabled()) {
-            error(format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void error(final String format, final Object... arguments) {
-        delegate.error(format, arguments);
-    }
-
-    @SafeVarargs
-    public final void error(final String format, final Supplier<Object>... arguments) {
-        if (isErrorEnabled()) {
-            error(format, Arrays.stream(arguments).map(Supplier::get).toArray());
-        }
-    }
-
-    public void error(final String msg, final Throwable t) {
-        delegate.error(msg, t);
-    }
-
-    public boolean isErrorEnabled(final Marker marker) {
-        return delegate.isErrorEnabled(marker);
-    }
-
-    public void error(final Marker marker, final String msg) {
-        delegate.error(marker, msg);
-    }
-
-    public void error(final Marker marker, final String format, final Object arg) {
-        delegate.error(marker, format, arg);
-    }
-
-    public void error(final Marker marker, final String format, final Supplier<Object> arg) {
-        if (isErrorEnabled(marker)) {
-            error(marker, format, arg.get());
-        }
-    }
-
-    public void error(final Marker marker,
-                      final String format,
-                      final Object arg1,
-                      final Object arg2) {
-        delegate.error(marker, format, arg1, arg2);
-    }
-
-    public void error(final Marker marker,
-                      final String format,
-                      final Supplier<Object> arg1,
-                      final Supplier<Object> arg2) {
-        if (isErrorEnabled(marker)) {
-            error(marker, format, arg1.get(), arg2.get());
-        }
-    }
-
-    public void error(final Marker marker, final String format, final Object... arguments) {
-        delegate.error(marker, format, arguments);
-    }
-
-    @SafeVarargs
-    public final void error(final Marker marker,
-                            final String format,
-                            final Supplier<Object>... argArray) {
-        if (isErrorEnabled(marker)) {
-            error(marker, format, Arrays.stream(argArray).map(Supplier::get).toArray());
-        }
-    }
-
-    public void error(final Marker marker, final String msg, final Throwable t) {
-        delegate.error(marker, msg, t);
-    }
+@SuppressWarnings("unchecked")
+public interface Logger {
+    /**
+     * Return the name of this {@code Logger} instance.
+     *
+     * @return name of this logger instance
+     */
+    String name();
+
+    /**
+     * Is the logger instance enabled for the TRACE level?
+     *
+     * @return {@code true} if this Logger is enabled for the TRACE level, {@code false} otherwise.
+     */
+    boolean isTraceEnabled();
+
+    /**
+     * Log a message at the TRACE level.
+     *
+     * @param msg the message string to be logged
+     */
+    void trace(String msg);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument.
+     *
+     * @param format the format string
+     * @param arg    the argument
+     */
+    void trace(String format, Object arg);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument supplier.
+     * <p/>
+     * <p>The supplier is not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format   the format string
+     * @param supplier the argument supplier
+     */
+    void trace(String format, Supplier<Object> supplier);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     */
+    void trace(String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     */
+    void trace(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format    the format string
+     * @param arguments a list of 3 or more arguments
+     */
+    void trace(String format, Object... arguments);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format    the format string
+     * @param suppliers a list of 3 or more argument suppliers
+     */
+    void trace(String format, Supplier<Object>... suppliers);
+
+    /**
+     * Log an exception (throwable) at the TRACE level with an accompanying message.
+     *
+     * @param msg the message accompanying the exception
+     * @param t   the exception (throwable) to log
+     */
+    void trace(String msg, Throwable t);
+
+    /**
+     * Is the logger instance enabled for the DEBUG level?
+     *
+     * @return {@code true} if this Logger is enabled for the DEBUG level, {@code false} otherwise.
+     */
+    boolean isDebugEnabled();
+
+    /**
+     * Log a message at the DEBUG level.
+     *
+     * @param msg the message string to be logged
+     */
+    void debug(String msg);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument.
+     *
+     * @param format the format string
+     * @param arg    the argument
+     */
+    void debug(String format, Object arg);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument supplier.
+     * <p/>
+     * <p>The supplier is not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format   the format string
+     * @param supplier the argument supplier
+     */
+    void debug(String format, Supplier<Object> supplier);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     */
+    void debug(String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     */
+    void debug(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format    the format string
+     * @param arguments a list of 3 or more arguments
+     */
+    void debug(String format, Object... arguments);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format    the format string
+     * @param suppliers a list of 3 or more argument suppliers
+     */
+    void debug(String format, Supplier<Object>... suppliers);
+
+    /**
+     * Log an exception (throwable) at the DEBUG level with an accompanying message.
+     *
+     * @param msg the message accompanying the exception
+     * @param t   the exception (throwable) to log
+     */
+    void debug(String msg, Throwable t);
+
+    /**
+     * Is the logger instance enabled for the INFO level?
+     *
+     * @return {@code true} if this Logger is enabled for the INFO level, {@code false} otherwise.
+     */
+    boolean isInfoEnabled();
+
+    /**
+     * Log a message at the INFO level.
+     *
+     * @param msg the message string to be logged
+     */
+    void info(String msg);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument.
+     *
+     * @param format the format string
+     * @param arg    the argument
+     */
+    void info(String format, Object arg);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument supplier.
+     * <p/>
+     * <p>The supplier is not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format   the format string
+     * @param supplier the argument supplier
+     */
+    void info(String format, Supplier<Object> supplier);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     */
+    void info(String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     */
+    void info(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format    the format string
+     * @param arguments a list of 3 or more arguments
+     */
+    void info(String format, Object... arguments);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format    the format string
+     * @param suppliers a list of 3 or more argument suppliers
+     */
+    void info(String format, Supplier<Object>... suppliers);
+
+    /**
+     * Log an exception (throwable) at the INFO level with an accompanying message.
+     *
+     * @param msg the message accompanying the exception
+     * @param t   the exception (throwable) to log
+     */
+    void info(String msg, Throwable t);
+
+    /**
+     * Is the logger instance enabled for the WARN level?
+     *
+     * @return {@code true} if this Logger is enabled for the WARN level, {@code false} otherwise.
+     */
+    boolean isWarnEnabled();
+
+    /**
+     * Log a message at the WARN level.
+     *
+     * @param msg the message string to be logged
+     */
+    void warn(String msg);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument.
+     *
+     * @param format the format string
+     * @param arg    the argument
+     */
+    void warn(String format, Object arg);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument supplier.
+     * <p/>
+     * <p>The supplier is not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format   the format string
+     * @param supplier the argument supplier
+     */
+    void warn(String format, Supplier<Object> supplier);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     */
+    void warn(String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     */
+    void warn(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format    the format string
+     * @param arguments a list of 3 or more arguments
+     */
+    void warn(String format, Object... arguments);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format    the format string
+     * @param suppliers a list of 3 or more argument suppliers
+     */
+    void warn(String format, Supplier<Object>... suppliers);
+
+    /**
+     * Log an exception (throwable) at the WARN level with an accompanying message.
+     *
+     * @param msg the message accompanying the exception
+     * @param t   the exception (throwable) to log
+     */
+    void warn(String msg, Throwable t);
+
+    /**
+     * Is the logger instance enabled for the ERROR level?
+     *
+     * @return {@code true} if this Logger is enabled for the ERROR level, {@code false} otherwise.
+     */
+    boolean isErrorEnabled();
+
+    /**
+     * Log a message at the ERROR level.
+     *
+     * @param msg the message string to be logged
+     */
+    void error(String msg);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument.
+     *
+     * @param format the format string
+     * @param arg    the argument
+     */
+    void error(String format, Object arg);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument supplier.
+     * <p/>
+     * <p>The supplier is not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format   the format string
+     * @param supplier the argument supplier
+     */
+    void error(String format, Supplier<Object> supplier);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     */
+    void error(String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     */
+    void error(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format    the format string
+     * @param arguments a list of 3 or more arguments
+     */
+    void error(String format, Object... arguments);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format    the format string
+     * @param suppliers a list of 3 or more argument suppliers
+     */
+    void error(String format, Supplier<Object>... suppliers);
+
+    /**
+     * Log an exception (throwable) at the ERROR level with an accompanying message.
+     *
+     * @param msg the message accompanying the exception
+     * @param t   the exception (throwable) to log
+     */
+    void error(String msg, Throwable t);
 }
