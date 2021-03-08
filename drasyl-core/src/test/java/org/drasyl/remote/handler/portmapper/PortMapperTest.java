@@ -68,7 +68,8 @@ class PortMapperTest {
 
                 pipeline.processInbound(event).join();
 
-                inboundEvents.assertValueCount(1);
+                inboundEvents.awaitCount(1)
+                        .assertValueCount(1);
                 verify(method).start(any(), any(), any());
             }
         }
@@ -85,7 +86,8 @@ class PortMapperTest {
 
                 pipeline.processInbound(event).join();
 
-                inboundEvents.assertValueCount(1);
+                inboundEvents.awaitCount(1)
+                        .assertValueCount(1);
                 verify(method).stop(any());
             }
         }
@@ -103,7 +105,8 @@ class PortMapperTest {
 
                 pipeline.processInbound(event).join();
 
-                inboundEvents.assertValueCount(1);
+                inboundEvents.awaitCount(1)
+                        .assertValueCount(1);
                 verify(method).stop(any());
                 verify(retryTask).dispose();
             }
@@ -146,7 +149,8 @@ class PortMapperTest {
 
                 pipeline.processInbound(sender, msg).join();
 
-                inboundMessages.assertValueCount(1);
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1);
             }
         }
     }
