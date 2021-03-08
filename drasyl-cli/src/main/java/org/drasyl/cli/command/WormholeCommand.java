@@ -28,8 +28,7 @@ import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.ThrowingFunction;
-import org.drasyl.util.Triple;
+import org.drasyl.util.ThrowingBiFunction;
 
 import java.io.PrintStream;
 import java.util.List;
@@ -47,8 +46,8 @@ import static org.drasyl.identity.CompressedPublicKey.PUBLIC_KEY_LENGTH;
  */
 public class WormholeCommand extends AbstractCommand {
     private final Supplier<Scanner> scannerSupplier;
-    private final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, SendingWormholeNode, DrasylException> sendingNodeSupplier;
-    private final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
+    private final ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
+    private final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
     private final Consumer<Integer> exitSupplier;
 
     public WormholeCommand() {
@@ -56,8 +55,8 @@ public class WormholeCommand extends AbstractCommand {
                 System.out, // NOSONAR
                 System.err, // NOSONAR
                 () -> new Scanner(System.in), // NOSONAR
-                triple -> new SendingWormholeNode(triple.first(), triple.second(), triple.third()),
-                triple -> new ReceivingWormholeNode(triple.first(), triple.second(), triple.third()),
+                SendingWormholeNode::new,
+                ReceivingWormholeNode::new,
                 System::exit
         );
     }
@@ -65,8 +64,8 @@ public class WormholeCommand extends AbstractCommand {
     WormholeCommand(final PrintStream out,
                     final PrintStream err,
                     final Supplier<Scanner> scannerSupplier,
-                    final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, SendingWormholeNode, DrasylException> sendingNodeSupplier,
-                    final ThrowingFunction<Triple<DrasylConfig, PrintStream, PrintStream>, ReceivingWormholeNode, DrasylException> receivingNodeSupplier,
+                    final ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier,
+                    final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier,
                     final Consumer<Integer> exitSupplier) {
         super(out, err);
         this.scannerSupplier = requireNonNull(scannerSupplier);
@@ -128,7 +127,7 @@ public class WormholeCommand extends AbstractCommand {
         SendingWormholeNode node = null;
         try {
             // prepare node
-            node = sendingNodeSupplier.apply(Triple.of(getDrasylConfig(cmd), out, err));
+            node = sendingNodeSupplier.apply(getDrasylConfig(cmd), out);
             node.start();
 
             final String text;
@@ -170,7 +169,7 @@ public class WormholeCommand extends AbstractCommand {
         ReceivingWormholeNode node = null;
         try {
             // prepare node
-            node = receivingNodeSupplier.apply(Triple.of(getDrasylConfig(cmd), out, err));
+            node = receivingNodeSupplier.apply(getDrasylConfig(cmd), out);
             node.start();
 
             // obtain code

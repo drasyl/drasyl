@@ -52,14 +52,12 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
     public static final int PASSWORD_LENGTH = 16;
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream out;
-    private final PrintStream err;
     private final String password;
     private String text;
 
     @SuppressWarnings("SameParameterValue")
     SendingWormholeNode(final CompletableFuture<Void> doneFuture,
                         final PrintStream out,
-                        final PrintStream err,
                         final String password,
                         final DrasylConfig config,
                         final Identity identity,
@@ -70,22 +68,19 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                         final AtomicReference<CompletableFuture<Void>> shutdownFuture,
                         final Scheduler scheduler) {
         super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
-        this.doneFuture = doneFuture;
-        this.out = out;
-        this.err = err;
+        this.doneFuture = requireNonNull(doneFuture);
+        this.out = requireNonNull(out);
         this.password = password;
     }
 
     public SendingWormholeNode(final DrasylConfig config,
-                               final PrintStream out,
-                               final PrintStream err) throws DrasylException {
+                               final PrintStream out) throws DrasylException {
         super(DrasylConfig.newBuilder(config)
                 .addSerializationsBindingsInbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
                 .addSerializationsBindingsOutbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
                 .build());
         this.doneFuture = new CompletableFuture<>();
         this.out = requireNonNull(out);
-        this.err = requireNonNull(err);
         this.password = Crypto.randomString(PASSWORD_LENGTH);
     }
 
@@ -116,15 +111,13 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
 
             return Behaviors.receive()
                     .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
-                        err.println("ERR: " + event.getError());
-                        doneFuture.complete(null);
+                        doneFuture.completeExceptionally(event.getError());
                         return ignore();
                     })
                     .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                     .onEvent(NodeOnlineEvent.class, event -> online())
                     .onEvent(OnlineTimeout.class, event -> {
-                        err.println("ERR: Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable.");
-                        doneFuture.complete(null);
+                        doneFuture.completeExceptionally(new Exception("Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable."));
                         return ignore();
                     })
                     .onEvent(SetText.class, event -> text == null, event -> {

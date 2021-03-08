@@ -56,12 +56,10 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(ReceivingWormholeNode.class);
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream out;
-    private final PrintStream err;
     private RequestText request;
 
     ReceivingWormholeNode(final CompletableFuture<Void> doneFuture,
                           final PrintStream out,
-                          final PrintStream err,
                           final RequestText request,
                           final DrasylConfig config,
                           final Identity identity,
@@ -72,22 +70,19 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
                           final AtomicReference<CompletableFuture<Void>> shutdownFuture,
                           final Scheduler scheduler) {
         super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
-        this.doneFuture = doneFuture;
-        this.out = out;
-        this.err = err;
+        this.doneFuture = requireNonNull(doneFuture);
+        this.out = requireNonNull(out);
         this.request = request;
     }
 
     public ReceivingWormholeNode(final DrasylConfig config,
-                                 final PrintStream out,
-                                 final PrintStream err) throws DrasylException {
+                                 final PrintStream out) throws DrasylException {
         super(DrasylConfig.newBuilder(config)
                 .addSerializationsBindingsInbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
                 .addSerializationsBindingsOutbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
                 .build());
         this.doneFuture = new CompletableFuture<>();
         this.out = requireNonNull(out);
-        this.err = requireNonNull(err);
     }
 
     @Override
@@ -117,15 +112,13 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
 
             return Behaviors.receive()
                     .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
-                        err.println("ERR: " + event.getError());
-                        doneFuture.complete(null);
+                        doneFuture.completeExceptionally(event.getError());
                         return ignore();
                     })
                     .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                     .onEvent(NodeOnlineEvent.class, event -> online())
                     .onEvent(OnlineTimeout.class, event -> {
-                        err.println("ERR: Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable.");
-                        doneFuture.complete(null);
+                        doneFuture.completeExceptionally(new Exception("Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable."));
                         return ignore();
                     })
                     .onEvent(RequestText.class, event -> request == null, event -> {
@@ -195,11 +188,10 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
      * Transfer failed.
      */
     private Behavior fail() {
-        err.println("ERR: Code confirmation failed. Either you or your correspondent");
-        err.println("typed the code wrong, or a would-be man-in-the-middle attacker guessed");
-        err.println("incorrectly. You could try again, giving both your correspondent and");
-        err.println("the attacker another chance.");
-        doneFuture.complete(null);
+        doneFuture.completeExceptionally(new Exception("Code confirmation failed. Either you or your correspondent\n" +
+                "typed the code wrong, or a would-be man-in-the-middle attacker guessed\n" +
+                "incorrectly. You could try again, giving both your correspondent and\n" +
+                "the attacker another chance."));
         return ignore();
     }
 
