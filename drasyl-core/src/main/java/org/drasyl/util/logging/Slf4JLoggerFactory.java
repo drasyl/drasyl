@@ -16,28 +16,24 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.util.logging;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.helpers.NOPLoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-@ExtendWith(MockitoExtension.class)
-class PipelineExceptionTest {
-    @Test
-    void shouldCreateExceptionWithCause(@Mock final Exception cause) {
-        final PipelineException exception = new PipelineException(cause);
-
-        assertEquals(cause, exception.getCause());
+/**
+ * Logger factory which creates a <a href="https://www.slf4j.org/">SLF4J</a> logger.
+ *
+ * @see Slf4JLogger
+ */
+public final class Slf4JLoggerFactory extends LoggerFactory {
+    public Slf4JLoggerFactory() {
+        if (org.slf4j.LoggerFactory.getILoggerFactory() instanceof NOPLoggerFactory) {
+            throw new NoClassDefFoundError("NOPLoggerFactory not supported");
+        }
     }
 
-    @Test
-    void shouldCreateExceptionWithMessage() {
-        final PipelineException exception = new PipelineException("error");
-
-        assertEquals("error", exception.getMessage());
+    @Override
+    protected Logger newLogger(final String name) {
+        return new Slf4JLogger(org.slf4j.LoggerFactory.getLogger(name));
     }
 }

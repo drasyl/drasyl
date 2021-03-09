@@ -18,6 +18,6 @@
  */
 
 /**
- * Provides a lazy {@link org.drasyl.util.logging.Logger} API (for internal use only).
+ * Logging API (for internal use only).
  */
 package org.drasyl.util.logging;

@@ -16,17 +16,24 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.util.logging;
 
 /**
- * RuntimeException thrown by the {@link Pipeline}.
+ * Logger factory which creates a
+ * <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/logging/">java.util.logging</a>
+ * logger.
+ *
+ * @see JdkLogger
  */
-public class PipelineException extends RuntimeException {
-    public PipelineException(final Throwable cause) {
-        super(cause);
+public final class JdkLoggerFactory extends LoggerFactory {
+    public static final LoggerFactory INSTANCE = new JdkLoggerFactory();
+
+    private JdkLoggerFactory() {
+        // singleton
     }
 
-    public PipelineException(final String cause) {
-        super(cause);
+    @Override
+    protected Logger newLogger(final String name) {
+        return new JdkLogger(java.util.logging.Logger.getLogger(name));
     }
 }
