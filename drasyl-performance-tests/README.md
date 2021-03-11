@@ -15,7 +15,7 @@ Create some nodes that will generate load on our super peers:
 
 ```
 mvn -DskipTests false package
-java -cp drasyl-performance-tests/target/drasyl-performance-tests-0.4.0-jar-with-dependencies.jar \
+java -cp drasyl-performance-tests/target/drasyl-performance-tests-0.4.1-jar-with-dependencies.jar \
   -Didentities=../drasyl-non-public/Identities \
   -Dnodes=500 \
   -Dchurn=1500 \

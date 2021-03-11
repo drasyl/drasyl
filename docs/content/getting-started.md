@@ -13,15 +13,15 @@ Maven:
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-core</artifactId>
-    <version>0.4.0</version>
+    <version>0.4.1</version>
 </dependency>
 ```
 
 Other dependency managers:
 ```java
-Gradle : compile "org.drasyl:drasyl-core:0.4.0" // build.gradle 
-   Ivy : <dependency org="org.drasyl" name="drasyl-core" rev="0.4.0" conf="build" /> // ivy.xml
-   SBT : libraryDependencies += "org.drasyl" % "drasyl-core" % "0.4.0" // build.sbt
+Gradle : compile "org.drasyl:drasyl-core:0.4.1" // build.gradle 
+   Ivy : <dependency org="org.drasyl" name="drasyl-core" rev="0.4.1" conf="build" /> // ivy.xml
+   SBT : libraryDependencies += "org.drasyl" % "drasyl-core" % "0.4.1" // build.sbt
 ```
 
 ## Implementing `DrasylNode`

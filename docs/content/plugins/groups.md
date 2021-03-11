@@ -14,15 +14,15 @@ Maven:
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-plugin-groups-client</artifactId>
-    <version>0.4.0</version>
+    <version>0.4.1</version>
 </dependency>
 ```
 
 Other dependency managers:
 ```java
-Gradle : compile "org.drasyl:drasyl-plugin-groups-client:0.4.0" // build.gradle 
-   Ivy : <dependency org="org.drasyl" name="drasyl-plugin-groups-client" rev="0.4.0" conf="build" /> // ivy.xml
-   SBT : libraryDependencies += "org.drasyl" % "drasyl-plugin-groups-client" % "0.4.0" // build.sbt
+Gradle : compile "org.drasyl:drasyl-plugin-groups-client:0.4.1" // build.gradle 
+   Ivy : <dependency org="org.drasyl" name="drasyl-plugin-groups-client" rev="0.4.1" conf="build" /> // ivy.xml
+   SBT : libraryDependencies += "org.drasyl" % "drasyl-plugin-groups-client" % "0.4.1" // build.sbt
 ```
 
 ### Configuration
@@ -57,15 +57,15 @@ Maven:
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-plugin-groups-manager</artifactId>
-    <version>0.4.0</version>
+    <version>0.4.1</version>
 </dependency>
 ```
 
 Other dependency managers:
 ```java
-Gradle : compile "org.drasyl:drasyl-plugin-groups-manager:0.4.0" // build.gradle 
-   Ivy : <dependency org="org.drasyl" name="drasyl-plugin-groups-manager" rev="0.4.0" conf="build" /> // ivy.xml
-   SBT : libraryDependencies += "org.drasyl" % "drasyl-plugin-groups-manager" % "0.4.0" // build.sbt
+Gradle : compile "org.drasyl:drasyl-plugin-groups-manager:0.4.1" // build.gradle 
+   Ivy : <dependency org="org.drasyl" name="drasyl-plugin-groups-manager" rev="0.4.1" conf="build" /> // ivy.xml
+   SBT : libraryDependencies += "org.drasyl" % "drasyl-plugin-groups-manager" % "0.4.1" // build.sbt
 ```
 
 ### Configuration
