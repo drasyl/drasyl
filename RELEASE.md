@@ -15,7 +15,7 @@ mvn clean release:prepare
 An additional call of `mvn release:perform` is not necessary! GitLab CI performs this tasks automatically.**
 
 * Wait for the GitLab CI to complete then.
-* Deploy the new version to the [public super peer](https://production.env.drasyl.org/) by starting the manual `production` job on the GitLab CI pipeline corresponding to the release.
+* Deploy to our public super peers (this is a manual process).
 * Release to Maven Central Repository by logging into the [Sonatype OSSRH Nexus Repository Manager](https://oss.sonatype.org), going to the "Staging Repositories" tab, and closing the corresponding release. Wait for the checks, then refresh and click "Release".
 * Create Release on GitHub:
   * Go to https://github.com/drasyl-overlay/drasyl/releases.
