@@ -82,7 +82,7 @@ public class UpnpIgdUtilTest {
     @Nested
     class GetSpecificPortMappingEntry {
         @Test
-        void shouldReturnMappingEntry() throws InterruptedException, UnknownHostException {
+        void shouldReturnCorrectMappingEntryOnSuccessfulResponse() throws InterruptedException, UnknownHostException {
             final UpnpIgdUtil underTest = spy(new UpnpIgdUtil());
             doReturn("<?xml version=\"1.0\"?>\n" +
                     "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:GetSpecificPortMappingEntryResponse xmlns:u=\"urn:schemas-upnp-org:service:WANIPConnection:2\"><NewInternalPort>57142</NewInternalPort><NewInternalClient>192.168.188.91</NewInternalClient><NewEnabled>1</NewEnabled><NewPortMappingDescription>drasyl03620addca</NewPortMappingDescription><NewLeaseDuration>604096</NewLeaseDuration></u:GetSpecificPortMappingEntryResponse></s:Body></s:Envelope>")
@@ -95,6 +95,35 @@ public class UpnpIgdUtilTest {
 
             final MappingEntry mapping = underTest.getSpecificPortMappingEntry(URI.create("http://192.168.188.1:5000/ctl/IPConn"), "urn:schemas-upnp-org:service:WANIPConnection:2", 57142);
             assertEquals(new MappingEntry(0, 57142, InetAddress.getByName("192.168.188.91"), "drasyl03620addca", 604096), mapping);
+        }
+
+        @Test
+        void shouldReturnCorrectMappingEntryOnFaultyResponse() throws InterruptedException {
+            final UpnpIgdUtil underTest = spy(new UpnpIgdUtil());
+            doReturn("<?xml version=\"1.0\"?>\n" +
+                    " <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                    "<s:Body>\n" +
+                    "<s:Fault>\n" +
+                    "<faultcode>s:Client</faultcode>\n" +
+                    "<faultstring>UPnPError</faultstring>\n" +
+                    "<detail>\n" +
+                    "<UPnPError xmlns=\"urn:schemas-upnp-org:control-1-0\">\n" +
+                    "<errorCode>714</errorCode>\n" +
+                    "<errorDescription>NoSuchEntryInArray</errorDescription>\n" +
+                    "</UPnPError>\n" +
+                    "</detail>\n" +
+                    "</s:Fault>\n" +
+                    "</s:Body>\n" +
+                    "</s:Envelope>\n")
+                    .when(underTest)
+                    .soapRequest(URI.create("http://192.168.188.1:5000/ctl/IPConn"), "urn:schemas-upnp-org:service:WANIPConnection:2", "GetSpecificPortMappingEntry", Map.of(
+                            "NewRemoteHost", "",
+                            "NewExternalPort", 57142,
+                            "NewProtocol", "UDP"
+                    ));
+
+            final MappingEntry mapping = underTest.getSpecificPortMappingEntry(URI.create("http://192.168.188.1:5000/ctl/IPConn"), "urn:schemas-upnp-org:service:WANIPConnection:2", 57142);
+            assertEquals(new MappingEntry(714, -1, null, null, -1), mapping);
         }
     }
 

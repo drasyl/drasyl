@@ -398,7 +398,7 @@ public class UpnpIgdUtil {
             this.errorCode = errorCode;
             this.internalPort = internalPort;
             this.internalClient = internalClient;
-            this.description = requireNonNull(description);
+            this.description = description;
             this.leaseDuration = leaseDuration;
         }
 
