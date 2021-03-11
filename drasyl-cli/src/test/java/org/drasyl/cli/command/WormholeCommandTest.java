@@ -35,7 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Scanner;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,8 +59,6 @@ class WormholeCommandTest {
     private ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
     @Mock
     private ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
-    @Mock
-    private Consumer<Integer> exitSupplier;
     private WormholeCommand underTest;
 
     @BeforeEach
@@ -70,7 +67,7 @@ class WormholeCommandTest {
         out = new PrintStream(outStream, true);
         errStream = new ByteArrayOutputStream();
         err = new PrintStream(errStream, true);
-        underTest = new WormholeCommand(out, err, scannerSupplier, sendingNodeSupplier, receivingNodeSupplier, exitSupplier);
+        underTest = new WormholeCommand(out, err, scannerSupplier, sendingNodeSupplier, receivingNodeSupplier);
     }
 
     @Nested

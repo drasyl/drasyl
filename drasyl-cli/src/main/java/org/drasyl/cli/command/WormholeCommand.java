@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -48,35 +47,30 @@ public class WormholeCommand extends AbstractCommand {
     private final Supplier<Scanner> scannerSupplier;
     private final ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
     private final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
-    private final Consumer<Integer> exitSupplier;
 
     WormholeCommand(final PrintStream out,
                     final PrintStream err,
                     final Supplier<Scanner> scannerSupplier,
                     final ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier,
-                    final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier,
-                    final Consumer<Integer> exitSupplier) {
+                    final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier) {
         super(out, err);
         this.scannerSupplier = requireNonNull(scannerSupplier);
         this.sendingNodeSupplier = requireNonNull(sendingNodeSupplier);
         this.receivingNodeSupplier = requireNonNull(receivingNodeSupplier);
-        this.exitSupplier = requireNonNull(exitSupplier);
     }
 
-    WormholeCommand(final PrintStream out,
-                    final Consumer<Integer> exitSupplier) {
+    WormholeCommand(final PrintStream out) {
         this(
                 out,
                 System.err, // NOSONAR
                 () -> new Scanner(System.in), // NOSONAR
                 SendingWormholeNode::new,
-                ReceivingWormholeNode::new,
-                exitSupplier
+                ReceivingWormholeNode::new
         );
     }
 
     public WormholeCommand() {
-        this(System.out, System::exit); // NOSONAR
+        this(System.out); // NOSONAR
     }
 
     @Override
@@ -165,8 +159,6 @@ public class WormholeCommand extends AbstractCommand {
             if (node != null) {
                 node.shutdown().join();
             }
-
-            exitSupplier.accept(0);
         }
     }
 
@@ -217,8 +209,6 @@ public class WormholeCommand extends AbstractCommand {
             if (node != null) {
                 node.shutdown().join();
             }
-
-            exitSupplier.accept(0);
         }
     }
 }

@@ -28,6 +28,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNode;
+import org.drasyl.cli.CliException;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.logging.Slf4JLogger;
@@ -78,8 +79,7 @@ abstract class AbstractCommand implements Command {
             }
         }
         catch (final ParseException e) {
-            err.println("ERR: Unable to parse args.");
-            e.printStackTrace(err);
+            throw new CliException(e);
         }
     }
 
