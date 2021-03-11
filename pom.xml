@@ -112,25 +112,22 @@
         <maven.compiler.target>11</maven.compiler.target>
         <logback.version>1.2.3</logback.version>
         <junit.version>5.7.1</junit.version>
-        <mockito.version>3.7.7</mockito.version>
-        <jackson.version>2.12.1</jackson.version>
+        <mockito.version>3.8.0</mockito.version>
+        <jackson.version>2.12.2</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.68</bouncycastle.version>
         <awaitility.version>4.0.3</awaitility.version>
-        <netty.version>4.1.59.Final</netty.version>
+        <netty.version>4.1.60.Final</netty.version>
         <guava.version>30.1-jre</guava.version>
-        <rxjava.version>3.0.10</rxjava.version>
-        <commons.version>4.4</commons.version>
+        <rxjava.version>3.0.11</rxjava.version>
         <micrometer.version>1.6.4</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
-        <nexus.staging>1.6.8</nexus.staging>
         <slf4j.version>1.7.30</slf4j.version>
         <typesafe.config.version>1.4.1</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
-        <commons-codec.version>1.15</commons-codec.version>
         <json-unit-assertj.version>2.24.0</json-unit-assertj.version>
         <commons-cli.version>1.4</commons-cli.version>
-        <protobuf.version>3.15.1</protobuf.version>
+        <protobuf.version>3.15.5</protobuf.version>
     </properties>
 
     <dependencyManagement>
@@ -244,17 +241,7 @@
             </dependency>
 
             <!-- Apache Commons -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-collections4</artifactId>
-                <version>${commons.version}</version>
-            </dependency>
 
-            <dependency>
-                <groupId>org.jetbrains</groupId>
-                <artifactId>annotations</artifactId>
-                <version>${jetbrains.annotations.version}</version>
-            </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
@@ -406,6 +393,21 @@
                     <artifactId>protoc-jar-maven-plugin</artifactId>
                     <version>3.11.4</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.5.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>1.6.8</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>3.1.2</version>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
@@ -470,6 +472,7 @@
                     <!-- Currently not supported by JUnit5: https://github.com/junit-team/junit5/issues/1424#issuecomment-390313944 -->
                     <!--<parallel>all</parallel>-->
                     <!-- Sets the VM argument line used when unit tests are run. -->
+                    <!--suppress MavenModelInspection -->
                     <argLine>-Dio.netty.leakDetectionLevel=PARANOID ${surefireArgLine}</argLine>
                     <runOrder>random</runOrder>
                 </configuration>
@@ -505,7 +508,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
                 <configuration>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
                 </configuration>
@@ -513,7 +515,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.1.2</version>
                 <configuration>
                     <consoleOutput>true</consoleOutput>
                     <logViolationsToConsole>true</logViolationsToConsole>
@@ -526,7 +527,7 @@
                 <version>3.0.0-M3</version>
                 <configuration>
                     <rules>
-                        <dependencyConvergence />
+                        <dependencyConvergence/>
                     </rules>
                 </configuration>
             </plugin>
@@ -562,9 +563,11 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
+                <!--suppress UnresolvedMavenProperty -->
                 <gpg.keyname>${env.GPG_KEYNAME}</gpg.keyname>
+                <!--suppress UnresolvedMavenProperty -->
                 <gpg.executable>${env.GPG_EXECUTABLE}</gpg.executable>
-                <gpg.passphrase />
+                <gpg.passphrase/>
             </properties>
         </profile>
         <profile>
@@ -600,7 +603,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-release-plugin</artifactId>
-                        <version>2.5.3</version>
                         <configuration>
                             <tagNameFormat>@{project.version}</tagNameFormat>
                             <localCheckout>true</localCheckout>
@@ -614,6 +616,7 @@
                             <dependency>
                                 <groupId>org.apache.maven.scm</groupId>
                                 <artifactId>maven-scm-provider-gitexe</artifactId>
+                                <!--suppress MavenModelInspection -->
                                 <version>1.11.2</version>
                             </dependency>
                         </dependencies>
@@ -621,7 +624,6 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus.staging}</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>

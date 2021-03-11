@@ -35,7 +35,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -56,7 +55,6 @@ public class NodeCommand extends AbstractCommand {
     }
 
     private final Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier;
-    private final Consumer<Integer> exitSupplier;
     private DrasylNode node;
 
     public NodeCommand() {
@@ -85,7 +83,6 @@ public class NodeCommand extends AbstractCommand {
                         return Pair.of(null, failedFuture(e));
                     }
                 },
-                System::exit,
                 null
         );
     }
@@ -93,11 +90,9 @@ public class NodeCommand extends AbstractCommand {
     NodeCommand(final PrintStream out,
                 final PrintStream err,
                 final Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier,
-                final Consumer<Integer> exitSupplier,
                 final DrasylNode node) {
         super(out, err);
         this.nodeSupplier = requireNonNull(nodeSupplier);
-        this.exitSupplier = requireNonNull(exitSupplier);
         this.node = node;
     }
 
@@ -114,7 +109,7 @@ public class NodeCommand extends AbstractCommand {
     public void execute(final CommandLine cmd) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (node != null) {
-                LOG.info("Shutdown drasyl Node");
+                LOG.info("Shutdown drasyl node.");
                 node.shutdown().join();
             }
         }));
@@ -137,8 +132,6 @@ public class NodeCommand extends AbstractCommand {
             if (node != null) {
                 node.shutdown().join();
             }
-
-            exitSupplier.accept(0);
         }
     }
 

@@ -19,6 +19,7 @@
 package org.drasyl.cli;
 
 import org.drasyl.cli.command.Command;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -28,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.PrintStream;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,49 +42,58 @@ class CliTest {
     private Map<String, Command> commands;
     @Mock
     private Command command;
+    @Mock
+    private Consumer<Integer> exitSupplier;
     @InjectMocks
     private Cli underTest;
 
-    @Test
-    void runShouldExecuteHelpCommandIfNothingIsGiven() {
-        when(commands.get("help")).thenReturn(command);
+    @Nested
+    class Run {
+        @Test
+        void shouldExecuteHelpCommandIfNothingIsGiven() {
+            when(commands.get("help")).thenReturn(command);
 
-        underTest.run(new String[]{});
+            underTest.run(new String[]{});
 
-        verify(commands.get("help")).execute(new String[]{});
-    }
+            verify(commands.get("help")).execute(new String[]{});
+            verify(exitSupplier).accept(0);
+        }
 
-    @Test
-    void runShouldExecuteHelpCommandIfNothingButHelpParameterIsGiven() {
-        when(commands.get("help")).thenReturn(command);
+        @Test
+        void shouldExecuteHelpCommandIfNothingButHelpParameterIsGiven() {
+            when(commands.get("help")).thenReturn(command);
 
-        underTest.run(new String[]{ "--help" });
+            underTest.run(new String[]{ "--help" });
 
-        verify(commands.get("help")).execute(new String[]{});
-    }
+            verify(commands.get("help")).execute(new String[]{});
+            verify(exitSupplier).accept(0);
+        }
 
-    @Test
-    void runShouldExecuteHelpCommandIfNothingButHParameterIsGiven() {
-        when(commands.get("help")).thenReturn(command);
+        @Test
+        void shouldExecuteHelpCommandIfNothingButHParameterIsGiven() {
+            when(commands.get("help")).thenReturn(command);
 
-        underTest.run(new String[]{ "-h" });
+            underTest.run(new String[]{ "-h" });
 
-        verify(commands.get("help")).execute(new String[]{});
-    }
+            verify(commands.get("help")).execute(new String[]{});
+            verify(exitSupplier).accept(0);
+        }
 
-    @Test
-    void runShouldExecuteGivenCommand() {
-        when(commands.get("version")).thenReturn(command);
+        @Test
+        void shouldExecuteGivenCommand() {
+            when(commands.get("version")).thenReturn(command);
 
-        underTest.run(new String[]{ "version" });
+            underTest.run(new String[]{ "version" });
 
-        verify(commands.get("version")).execute(new String[]{ "version" });
-    }
+            verify(commands.get("version")).execute(new String[]{ "version" });
+            verify(exitSupplier).accept(0);
+        }
 
-    @Test
-    void runShouldThrowExceptionForUnknownCommand() {
-        underTest.run(new String[]{ "sadassdaashdaskj" });
+        @Test
+        void shouldExitWithErrorForUnknownCommand() {
+            underTest.run(new String[]{ "sadassdaashdaskj" });
 
-        verify(err).println("ERR: Unknown command \"sadassdaashdaskj\" for \"drasyl\".");
+            verify(exitSupplier).accept(1);
+        }
     }
 }

@@ -22,7 +22,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
-import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.perf.PerfClientNode;
 import org.drasyl.cli.command.perf.PerfServerNode;
 import org.drasyl.identity.CompressedPublicKey;
@@ -36,7 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -58,8 +56,6 @@ class PerfCommandTest {
     private ThrowingBiFunction<DrasylConfig, PrintStream, PerfServerNode, DrasylException> serverNodeSupplier;
     @Mock
     private ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier;
-    @Mock
-    private Consumer<Integer> exitSupplier;
     private PerfCommand underTest;
 
     @BeforeEach
@@ -68,7 +64,7 @@ class PerfCommandTest {
         out = new PrintStream(outStream, true);
         errStream = new ByteArrayOutputStream();
         err = new PrintStream(errStream, true);
-        underTest = new PerfCommand(out, err, serverNodeSupplier, clientNodeSupplier, exitSupplier);
+        underTest = new PerfCommand(out, err, serverNodeSupplier, clientNodeSupplier);
     }
 
     @Nested

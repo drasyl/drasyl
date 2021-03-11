@@ -32,7 +32,6 @@ import static org.drasyl.util.JSONUtil.JACKSON_READER;
 
 abstract class AbstractCompressedKey<K> implements Address {
     public static final int LEGACY_KEY_LENGTH = 44;
-    @JsonValue
     protected final byte[] compressedKey;
     @JsonIgnore
     protected K key;
@@ -99,6 +98,7 @@ abstract class AbstractCompressedKey<K> implements Address {
         return Arrays.equals(compressedKey, that.compressedKey);
     }
 
+    @JsonValue
     @Override
     public String toString() {
         return HexUtil.bytesToHex(this.compressedKey);

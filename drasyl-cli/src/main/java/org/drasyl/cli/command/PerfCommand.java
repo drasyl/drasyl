@@ -24,16 +24,18 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
+import org.drasyl.DrasylNode;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.perf.PerfClientNode;
 import org.drasyl.cli.command.perf.PerfServerNode;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.ThrowingBiFunction;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,32 +44,30 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings("java:S1192")
 public class PerfCommand extends AbstractCommand {
+    private static final Logger LOG = LoggerFactory.getLogger(PerfCommand.class);
     private static final int DEFAULT_MPS = 100;
     private static final int DEFAULT_TIME = 10;
     private static final int DEFAULT_SIZE = 850;
     private final ThrowingBiFunction<DrasylConfig, PrintStream, PerfServerNode, DrasylException> serverNodeSupplier;
     private final ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier;
-    private final Consumer<Integer> exitSupplier;
+    private DrasylNode node;
 
     public PerfCommand() {
         this(
                 System.out, // NOSONAR
                 System.err, // NOSONAR
                 PerfServerNode::new,
-                PerfClientNode::new,
-                System::exit
+                PerfClientNode::new
         );
     }
 
     PerfCommand(final PrintStream out,
                 final PrintStream err,
                 final ThrowingBiFunction<DrasylConfig, PrintStream, PerfServerNode, DrasylException> serverNodeSupplier,
-                final ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier,
-                Consumer<Integer> exitSupplier) {
+                final ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier) {
         super(out, err);
         this.serverNodeSupplier = requireNonNull(serverNodeSupplier);
         this.clientNodeSupplier = requireNonNull(clientNodeSupplier);
-        this.exitSupplier = requireNonNull(exitSupplier);
     }
 
     @Override
@@ -123,17 +123,23 @@ public class PerfCommand extends AbstractCommand {
     }
 
     private void server(final CommandLine cmd) {
-        PerfServerNode node = null;
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (node != null) {
+                LOG.info("Shutdown perf server node.");
+                node.shutdown().join();
+            }
+        }));
+
         try {
             // prepare node
             node = serverNodeSupplier.apply(getDrasylConfig(cmd), out);
             node.start();
 
             // wait for node to finish
-            node.doneFuture().get();
+            ((PerfServerNode) node).doneFuture().get();
         }
         catch (final DrasylException e) {
-            throw new CliException("Unable to create/run perf server node", e);
+            throw new CliException("Unable to create/run perf server node.", e);
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -145,13 +151,10 @@ public class PerfCommand extends AbstractCommand {
             if (node != null) {
                 node.shutdown().join();
             }
-
-            exitSupplier.accept(0);
         }
     }
 
     private void client(final CommandLine cmd) {
-        PerfClientNode node = null;
         try {
             // prepare node
             node = clientNodeSupplier.apply(getDrasylConfig(cmd), out);
@@ -192,10 +195,10 @@ public class PerfCommand extends AbstractCommand {
             final boolean directConnection = cmd.hasOption("direct");
             final boolean reverse = cmd.hasOption("reverse");
 
-            node.setTestOptions(server, time, messagesPerSecond, size, directConnection, reverse);
+            ((PerfClientNode) node).setTestOptions(server, time, messagesPerSecond, size, directConnection, reverse);
 
             // wait for node to finish
-            node.doneFuture().get();
+            ((PerfClientNode) node).doneFuture().get();
         }
         catch (final IllegalArgumentException e) {
             throw new CliException("Invalid server address supplied", e);
@@ -204,7 +207,7 @@ public class PerfCommand extends AbstractCommand {
             throw new CliException("Unable to create/run perf client", e);
         }
         catch (final ParseException e) {
-            throw new CliException("Unable parse options", e);
+            throw new CliException("Unable to parse options", e);
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -216,8 +219,6 @@ public class PerfCommand extends AbstractCommand {
             if (node != null) {
                 node.shutdown().join();
             }
-
-            exitSupplier.accept(0);
         }
     }
 }

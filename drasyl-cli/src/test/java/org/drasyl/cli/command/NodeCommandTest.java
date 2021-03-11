@@ -34,7 +34,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -55,8 +54,6 @@ public class NodeCommandTest {
     private PrintStream err;
     @Mock
     private Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier;
-    @Mock
-    private Consumer<Integer> exitSupplier;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylNode node;
     private NodeCommand underTest;
@@ -67,7 +64,7 @@ public class NodeCommandTest {
         out = new PrintStream(outStream, true);
         errStream = new ByteArrayOutputStream();
         err = new PrintStream(errStream, true);
-        underTest = new NodeCommand(out, err, nodeSupplier, exitSupplier, node);
+        underTest = new NodeCommand(out, err, nodeSupplier, node);
     }
 
     @Nested

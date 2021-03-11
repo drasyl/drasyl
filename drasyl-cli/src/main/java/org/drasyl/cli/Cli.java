@@ -25,9 +25,11 @@ import org.drasyl.cli.command.NodeCommand;
 import org.drasyl.cli.command.PerfCommand;
 import org.drasyl.cli.command.VersionCommand;
 import org.drasyl.cli.command.WormholeCommand;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.PrintStream;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
@@ -37,7 +39,10 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings("SameParameterValue")
 public class Cli {
+    private static final Logger LOG = LoggerFactory.getLogger(Cli.class);
     public static final Map<String, Command> COMMANDS;
+    public static final int EXIT_SUCCESS = 0;
+    public static final int EXIT_FAILURE = 1;
 
     static {
         COMMANDS = Map.of(
@@ -50,18 +55,18 @@ public class Cli {
         );
     }
 
-    private final PrintStream err;
     private final Map<String, Command> myCommands;
+    private final Consumer<Integer> exitSupplier;
 
     public Cli() {
-        this(System.err, COMMANDS); // NOSONAR
+        this(COMMANDS, System::exit); // NOSONAR
     }
 
     @SuppressWarnings("SameParameterValue")
-    Cli(final PrintStream err,
-        final Map<String, Command> myCommands) {
-        this.err = requireNonNull(err);
+    Cli(final Map<String, Command> myCommands,
+        final Consumer<Integer> exitSupplier) {
         this.myCommands = requireNonNull(myCommands);
+        this.exitSupplier = requireNonNull(exitSupplier);
     }
 
     public static void main(final String[] args) {
@@ -78,12 +83,19 @@ public class Cli {
             args = new String[0];
         }
 
-        final Command command = myCommands.get(commandName);
-        if (command != null) {
-            command.execute(args);
+        try {
+            final Command command = myCommands.get(commandName);
+            if (command != null) {
+                command.execute(args);
+                exitSupplier.accept(EXIT_SUCCESS);
+            }
+            else {
+                throw new CliException("Unknown command \"" + commandName + "\" for \"drasyl\".");
+            }
         }
-        else {
-            err.println("ERR: Unknown command \"" + commandName + "\" for \"drasyl\".");
+        catch (final CliException e) {
+            LOG.error("", e);
+            exitSupplier.accept(EXIT_FAILURE);
         }
     }
 }

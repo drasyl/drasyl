@@ -15,8 +15,8 @@ cache:
     - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import --no-tty --batch --yes
     - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust --no-tty --batch --yes
   after_script:
-    - '/bin/bash coverage-jacoco.sh'
     - for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
+    - awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print 100*covered/instructions, "% covered" }' drasyl-all/target/site/jacoco-aggregate/jacoco.csv
   coverage: '/\d+.\d+ \% covered/'
   artifacts:
     reports:
@@ -42,7 +42,7 @@ maven-deploy:
   <<: *maven-base
   stage: deploy
   script:
-    - 'mvn $MAVEN_CLI_OPTS -Prelease,ossrh clean package source:jar gpg:sign install:install deploy:deploy sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS -Prelease,ossrh clean verify source:jar gpg:sign install:install deploy:deploy sonar:sonar'
   only:
     - master
     - /^v\d+\.\d+/

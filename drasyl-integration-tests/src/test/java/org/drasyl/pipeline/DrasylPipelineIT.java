@@ -18,9 +18,7 @@
  */
 package org.drasyl.pipeline;
 
-import io.reactivex.rxjava3.exceptions.UndeliverableException;
 import io.reactivex.rxjava3.observers.TestObserver;
-import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -51,10 +49,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
-import static org.drasyl.DrasylNode.getBestEventLoop;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.drasyl.util.NettyUtil.getBestEventLoopGroup;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,7 +88,7 @@ class DrasylPipelineIT {
                 .build();
 
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
-        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, getBestEventLoop(2));
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, getBestEventLoopGroup(2));
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
@@ -182,12 +177,6 @@ class DrasylPipelineIT {
         final TestObserver<Throwable> exceptions = receivedExceptions.test();
 
         final RuntimeException exception = new RuntimeException("Error!");
-        RxJavaPlugins.setErrorHandler(e -> {
-            assertThat(e, instanceOf(UndeliverableException.class));
-            assertThat(e.getCause(), instanceOf(PipelineException.class));
-            assertThat(e.getCause().getCause(), instanceOf(RuntimeException.class));
-            assertEquals(exception.getMessage(), e.getCause().getCause().getMessage());
-        });
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 

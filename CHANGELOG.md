@@ -5,7 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - 2020-02-27
+## [0.4.1] - 2021-03-11
+
+### Changed
+
+- Dependencies were updated.
+
+### Fixed
+
+- Fixed an NPE when requesting a port forwarding if the Internet Gateway Device responds with an
+  error.
+- Since the super peer sp-ham1 has connectivity problems, this has been replaced by the sp-fra1.
+- Public and private keys are now displayed everywhere in the classic format.
+- Unused dependencies removed.
+- Some additional minor fixes.
+
+## [0.4.0] - 2021-02-27
 
 ### Added
 
@@ -16,8 +31,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - When changing the network, new port mappings are now automatically created on the new network.
 - `DrasylNode`'s API has been enhanced with `@NotNull` and `@Nullable` annotations.
 - Messages that can be delivered within the same JVM are now passed by reference (previously these
-  messages have been unnecessarily serialized). 
-  **So make sure you either send copies of your objects or it's 
+  messages have been unnecessarily serialized).
+  **So make sure you either send copies of your objects or it's
   fine for other nodes to make changes to that object.**
 - Static routes to other remote peers can now be defined. This allows discovery to be omitted in
   static environments (or test setups).
@@ -33,7 +48,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- By default, each node now listens on a port in the range 22528 and 65528, which is derived from 
+- By default, each node now listens on a port in the range 22528 and 65528, which is derived from
   its identity. This means that the chance for a port collision is now reduced when
   multiple nodes are running on one computer.
 - UDP is now used instead of TCP for communication with remote peers.
@@ -43,7 +58,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Documentation has been revised (Javadoc and/or documentation at https://docs.drasyl.org).
 - Messages can now be additionally serialized by protobuf or Java. Furthermore, own serializers can
   be implemented. Read more at https://docs.drasyl.org.
-- The third-party portmapper library has been replaced with our own more lightweight 
+- The third-party portmapper library has been replaced with our own more lightweight
   and more resilient implementation.
 - All dependencies have been updated to the latest versions.
 

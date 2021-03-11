@@ -74,7 +74,7 @@ class CompressedPrivateKeyTest {
         void shouldSerializeToCorrectJson() throws IOException {
             assertThatJson(JACKSON_WRITER.writeValueAsString(privateKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo("A6PAHUG2p8MbCByfHuD4zV0R5863hDWbVziMdS049YE=");
+                    .isEqualTo("03a3c01d41b6a7c31b081c9f1ee0f8cd5d11e7ceb784359b57388c752d38f581");
         }
     }
 }

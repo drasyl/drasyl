@@ -74,7 +74,7 @@ class CompressedPublicKeyTest {
         void shouldSerializeToCorrectJson() throws IOException {
             assertThatJson(JACKSON_WRITER.writeValueAsString(publicKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo("AikEGyc91e4cK+8td64X29ANLwouk54i1C7xxL8FFH6p");
+                    .isEqualTo("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
         }
     }
 }
