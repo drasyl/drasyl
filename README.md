@@ -36,8 +36,9 @@ necessary for the project. However, drasyl is open to contributions made by the 
 * Automatic Handover to most local Communication Channel.
 * Overcomes Network Barriers (Statefull Firewalls, NATs).
 * UDP Hole Punching.
-* PortMapping (UPnP-IGD, NAT-PMP, PCP).  
-* Adapts to Network Changes.
+* Port Mapping (UPnP-IGD, NAT-PMP, PCP).  
+* Reacts to Network Changes.
+* Asynchronous and Event-Driven.
 * Lightweight.
 * Extensible.
 
