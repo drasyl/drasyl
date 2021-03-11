@@ -40,6 +40,7 @@ docker push drasyl/drasyl:latest
 ```
 
 * Re-add the nightly/snapshot information to the [getting-started.md](docs/content/getting-started.md) and the [index.md](docs/content/index.md).
+* Update the Homebrew Formula: https://github.com/drasyl-overlay/homebrew-drasyl/blob/main/Formula/drasyl.rb.
 * Push the new version to chocolatey. For instructions see this repo: [https://github.com/drasyl-overlay/drasyl-choco](https://github.com/drasyl-overlay/drasyl-choco/blob/master/RELEASE.md)
 
 ## Making a manual build of docker
