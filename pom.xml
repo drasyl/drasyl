@@ -23,7 +23,7 @@
 
     <groupId>org.drasyl</groupId>
     <artifactId>parent</artifactId>
-    <version>0.4.1-SNAPSHOT</version>
+    <version>0.4.1</version>
     <packaging>pom</packaging>
 
     <name>drasyl: General-Purpose Overlay Network Framework - Parent Package</name>
@@ -83,7 +83,7 @@
         <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
         <developerConnection>scm:git:ssh://git@git.informatik.uni-hamburg.de/sane-public/drasyl.git</developerConnection>
         <url>https://github.com/drasyl-overlay/drasyl</url>
-        <tag>HEAD</tag>
+        <tag>v0.4.1</tag>
     </scm>
 
     <issueManagement>
@@ -527,7 +527,7 @@
                 <version>3.0.0-M3</version>
                 <configuration>
                     <rules>
-                        <dependencyConvergence/>
+                        <dependencyConvergence />
                     </rules>
                 </configuration>
             </plugin>
@@ -567,7 +567,7 @@
                 <gpg.keyname>${env.GPG_KEYNAME}</gpg.keyname>
                 <!--suppress UnresolvedMavenProperty -->
                 <gpg.executable>${env.GPG_EXECUTABLE}</gpg.executable>
-                <gpg.passphrase/>
+                <gpg.passphrase />
             </properties>
         </profile>
         <profile>

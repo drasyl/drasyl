@@ -23,7 +23,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>org.drasyl</groupId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.1</version>
     </parent>
 
     <artifactId>drasyl-cli</artifactId>
