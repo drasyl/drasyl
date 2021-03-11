@@ -127,7 +127,7 @@ class TokenBucketTest {
 
                 assertEquals(1, provider.provide());
                 assertEquals(0, provider.provide());
-                await().atMost(ofMillis(250)).untilAsserted(() -> assertThat(provider.provide(), greaterThan(0L)));
+                await().atMost(ofMillis(1_000)).untilAsserted(() -> assertThat(provider.provide(), greaterThan(0L)));
                 assertEquals(0, provider.provide());
             }
         }

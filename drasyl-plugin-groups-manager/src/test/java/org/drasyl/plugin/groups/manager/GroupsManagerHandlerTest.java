@@ -289,6 +289,7 @@ class GroupsManagerHandlerTest {
 
                 future.join();
                 testObserver
+                        .awaitCount(2)
                         .assertValueCount(2)
                         .assertValues(
                                 new MemberLeftMessage(publicKey, msg.getGroup()),

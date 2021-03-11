@@ -31,6 +31,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+
 @ExtendWith(MockitoExtension.class)
 class OutboundMessagesThrottlingHandlerTest {
     @Mock
@@ -51,8 +54,8 @@ class OutboundMessagesThrottlingHandlerTest {
                 pipeline.processOutbound(recipient, msg);
             }
 
-            inboundMessages.assertValueCount(0)
-                    .awaitCount(10)
+            assertThat(inboundMessages.values().size(), lessThanOrEqualTo(10));
+            inboundMessages.awaitCount(10)
                     .assertValueCount(10);
         }
     }
