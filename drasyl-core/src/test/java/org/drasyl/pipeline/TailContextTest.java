@@ -41,7 +41,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TailContextTest {
@@ -142,18 +141,6 @@ class TailContextTest {
             verify(eventConsumer).accept(event);
             verifyNoInteractions(ctx);
         }
-
-        @Test
-        void shouldNotWriteToConsumerWhenFutureIsDone(@Mock final Event event) {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-
-            when(future.isDone()).thenReturn(true);
-
-            tailContext.eventTriggered(ctx, event, future);
-
-            verifyNoInteractions(eventConsumer);
-            verify(future, never()).complete(null);
-        }
     }
 
     @Nested
@@ -167,19 +154,6 @@ class TailContextTest {
 
             verify(eventConsumer).accept(MessageEvent.of(sender, msg));
             verifyNoInteractions(ctx);
-        }
-
-        @Test
-        void shouldNotWriteToConsumerWhenFutureIsDone(@Mock final CompressedPublicKey sender,
-                                                      @Mock final Object msg) {
-            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-
-            when(future.isDone()).thenReturn(true);
-
-            tailContext.read(ctx, sender, msg, future);
-
-            verifyNoInteractions(eventConsumer);
-            verify(future, never()).complete(null);
         }
 
         @Test

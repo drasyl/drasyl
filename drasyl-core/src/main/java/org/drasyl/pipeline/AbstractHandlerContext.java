@@ -171,6 +171,11 @@ abstract class AbstractHandlerContext implements HandlerContext {
     public CompletableFuture<Void> fireRead(final Address sender,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
+        // check if future is done
+        if (future.isDone()) {
+            return future;
+        }
+
         executeOnDependentScheduler(() -> invokeRead(sender, msg, future));
 
         return future;
@@ -197,6 +202,11 @@ abstract class AbstractHandlerContext implements HandlerContext {
     @Override
     public CompletableFuture<Void> fireEventTriggered(final Event event,
                                                       final CompletableFuture<Void> future) {
+        // check if future is done
+        if (future.isDone()) {
+            return future;
+        }
+
         executeOnDependentScheduler(() -> invokeEventTriggered(event, future));
 
         return future;
@@ -222,6 +232,11 @@ abstract class AbstractHandlerContext implements HandlerContext {
     public CompletableFuture<Void> write(final Address recipient,
                                          final Object msg,
                                          final CompletableFuture<Void> future) {
+        // check if future is done
+        if (future.isDone()) {
+            return future;
+        }
+
         executeOnDependentScheduler(() -> invokeWrite(recipient, msg, future));
 
         return future;

@@ -23,6 +23,7 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,7 @@ import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -503,6 +505,62 @@ class AbstractHandlerContextTest {
             final AbstractHandlerContext actual = ctx.findPrevOutbound(mask);
 
             assertEquals(context, actual);
+        }
+    }
+
+    @Nested
+    class DoneFutures {
+        @Test
+        void shouldNotCallAnyHandlerOnEventIfFutureIsAlreadyDone(@Mock final Handler newHandler,
+                                                                 @Mock final Event event) {
+            when(future.isDone()).thenReturn(true);
+
+            final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+                @Override
+                public Handler handler() {
+                    return handler;
+                }
+            };
+
+            ctx.fireEventTriggered(event, future);
+
+            verify(newHandler, never()).eventTriggered(next, event, future);
+        }
+
+        @Test
+        void shouldNotCallAnyHandlerOnReadIfFutureIsAlreadyDone(@Mock final Handler newHandler,
+                                                                @Mock final Address address,
+                                                                @Mock final Object msg) {
+            when(future.isDone()).thenReturn(true);
+
+            final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+                @Override
+                public Handler handler() {
+                    return handler;
+                }
+            };
+
+            ctx.fireRead(address, msg, future);
+
+            verify(newHandler, never()).read(next, address, msg, future);
+        }
+
+        @Test
+        void shouldNotCallAnyHandlerOnWriteIfFutureIsAlreadyDone(@Mock final Handler newHandler,
+                                                                 @Mock final Address address,
+                                                                 @Mock final Object msg) {
+            when(future.isDone()).thenReturn(true);
+
+            final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+                @Override
+                public Handler handler() {
+                    return handler;
+                }
+            };
+
+            ctx.write(address, msg, future);
+
+            verify(newHandler, never()).write(next, address, msg, future);
         }
     }
 }

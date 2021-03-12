@@ -76,11 +76,7 @@ class TailContext extends AbstractEndHandler {
             return;
         }
 
-        // Pass message to Application
-        if (future.isDone()) {
-            LOG.warn("Message `{}` was not written to the application, because the corresponding future was already completed.", msg);
-        }
-        else if (sender instanceof CompressedPublicKey) {
+        if (sender instanceof CompressedPublicKey) {
             final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
             final MessageEvent event = MessageEvent.of(senderAddress, msg);
             future.complete(null);
@@ -89,6 +85,7 @@ class TailContext extends AbstractEndHandler {
             eventConsumer.accept(event);
         }
         else {
+            future.completeExceptionally(new IllegalStateException("Message was not written to the application, because the corresponding address was not of correct type."));
             LOG.debug("Message '{}' was not written to the application, because the corresponding address was not of type {} (was type {}).", () -> msg, CompressedPublicKey.class::getSimpleName, sender.getClass()::getSimpleName);
         }
     }
@@ -97,15 +94,9 @@ class TailContext extends AbstractEndHandler {
     public void eventTriggered(final HandlerContext ctx,
                                final Event event,
                                final CompletableFuture<Void> future) {
-        // Pass event to Application
-        if (future.isDone()) {
-            LOG.warn("Event `{}` was not written to the application, because the corresponding future was already completed.", event);
-        }
-        else {
-            future.complete(null);
-            LOG.trace("Event has passed the pipeline: `{}` ", event);
+        future.complete(null);
+        LOG.trace("Event has passed the pipeline: `{}` ", event);
 
-            eventConsumer.accept(event);
-        }
+        eventConsumer.accept(event);
     }
 }

@@ -97,7 +97,7 @@ class MessageSerializerTest {
 
         @Test
         void shouldBeAbleToDeserializeNullMessage(@Mock final CompressedPublicKey address) {
-            final SerializedApplicationMessage message = new SerializedApplicationMessage(address, address, (String) null, new byte[0]);
+            final SerializedApplicationMessage message = new SerializedApplicationMessage(address, address, null, new byte[0]);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
