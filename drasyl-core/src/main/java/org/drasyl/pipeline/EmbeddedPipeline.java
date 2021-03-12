@@ -51,9 +51,9 @@ import static org.drasyl.util.RandomUtil.randomString;
 @SuppressWarnings({ "java:S107" })
 public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable {
     private static final short DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH = 16;
-    private final ReplaySubject<AddressedEnvelope<Address, Object>> inboundMessages;
+    private final Subject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
-    private final ReplaySubject<Object> outboundMessages;
+    private final Subject<Object> outboundMessages;
 
     public EmbeddedPipeline(final DrasylConfig config,
                             final Identity identity,
@@ -89,9 +89,9 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                              final DrasylScheduler dependentScheduler,
                              final DrasylScheduler independentScheduler) {
         this.config = config;
-        inboundMessages = ReplaySubject.create();
-        inboundEvents = ReplaySubject.create();
-        outboundMessages = ReplaySubject.create();
+        this.inboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
+        inboundEvents = ReplaySubject.<Event>create().toSerialized();
+        outboundMessages = ReplaySubject.create().toSerialized();
 
         this.handlerNames = new ConcurrentHashMap<>();
         this.dependentScheduler = dependentScheduler;
@@ -191,7 +191,6 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
      * This method does release all potentially acquired {@link io.netty.util.ReferenceCounted}
      * objects.
      */
-    @SuppressWarnings("unchecked")
     @Override
     public void close() {
         outboundMessages.onComplete();
@@ -202,13 +201,8 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
         for (final String ctx : new HashMap<>(handlerNames).keySet()) {
             this.remove(ctx);
         }
-        for (final Object o : outboundMessages.getValues()) {
-            ReferenceCountUtil.safeRelease(o);
-        }
-
-        for (final AddressedEnvelope<?, ?> o : inboundMessages.getValues(new AddressedEnvelope[]{})) {
-            ReferenceCountUtil.safeRelease(o.getContent());
-        }
+        outboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);
+        inboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);
     }
 
     private static boolean isInstance(final Type type, final Object obj) {
