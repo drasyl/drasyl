@@ -26,13 +26,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
+import java.util.function.Supplier;
 
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -121,13 +120,22 @@ class TokenBucketTest {
     class TestTokenProvider {
         @Nested
         class Refill {
+            @Mock
+            private Supplier<Long> elapsedTimeProvider;
+
             @Test
             void shouldRefillProvideToken() {
-                final TokenProvider provider = new TokenProvider(ofMillis(100));
+                when(elapsedTimeProvider.get())
+                        .thenReturn(50_000_000L)
+                        .thenReturn(60_000_000L)
+                        .thenReturn(150_000_000L)
+                        .thenReturn(160_000_000L);
+
+                final TokenProvider provider = new TokenProvider(100_000_000, elapsedTimeProvider);
 
                 assertEquals(1, provider.provide());
                 assertEquals(0, provider.provide());
-                await().atMost(ofMillis(1_000)).untilAsserted(() -> assertThat(provider.provide(), greaterThan(0L)));
+                assertEquals(1, provider.provide());
                 assertEquals(0, provider.provide());
             }
         }

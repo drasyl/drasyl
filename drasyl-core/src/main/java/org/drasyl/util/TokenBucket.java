@@ -22,6 +22,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.Uninterruptibles;
 
 import java.time.Duration;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -131,27 +132,30 @@ public class TokenBucket {
     }
 
     static class TokenProvider {
-        private final Stopwatch stopwatch;
+        private final Supplier<Long> elapsedTimeProvider;
         private final long refillInterval;
         private long lastRefillTime;
 
         TokenProvider(final long refillInterval,
-                      final Stopwatch stopwatch,
-                      final long lastRefillTime) {
+                      final Supplier<Long> elapsedTimeProvider) {
             if (refillInterval < 1) {
                 throw new IllegalArgumentException("refillIntervalDuration must be positive duration.");
             }
-            this.stopwatch = stopwatch;
+            this.elapsedTimeProvider = elapsedTimeProvider;
             this.refillInterval = refillInterval;
-            this.lastRefillTime = lastRefillTime;
+            this.lastRefillTime = -refillInterval;
         }
 
-        TokenProvider(final Duration refillIntervalDuration) {
-            this(refillIntervalDuration.toNanos(), Stopwatch.createStarted(), -refillIntervalDuration.toNanos());
+        TokenProvider(final Duration refillInterval, final Stopwatch elapsedTimeProvider) {
+            this(refillInterval.toNanos(), () -> elapsedTimeProvider.elapsed(NANOSECONDS));
+        }
+
+        TokenProvider(final Duration refillInterval) {
+            this(refillInterval, Stopwatch.createStarted());
         }
 
         public synchronized long provide() {
-            final long elapsedTime = stopwatch.elapsed(NANOSECONDS);
+            final long elapsedTime = elapsedTimeProvider.get();
             if (elapsedTime < lastRefillTime + refillInterval) {
                 return 0;
             }
