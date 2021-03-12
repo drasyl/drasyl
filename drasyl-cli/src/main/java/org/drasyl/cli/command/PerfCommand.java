@@ -52,15 +52,6 @@ public class PerfCommand extends AbstractCommand {
     private final ThrowingBiFunction<DrasylConfig, PrintStream, PerfClientNode, DrasylException> clientNodeSupplier;
     private DrasylNode node;
 
-    public PerfCommand() {
-        this(
-                System.out, // NOSONAR
-                System.err, // NOSONAR
-                PerfServerNode::new,
-                PerfClientNode::new
-        );
-    }
-
     PerfCommand(final PrintStream out,
                 final PrintStream err,
                 final ThrowingBiFunction<DrasylConfig, PrintStream, PerfServerNode, DrasylException> serverNodeSupplier,
@@ -68,6 +59,19 @@ public class PerfCommand extends AbstractCommand {
         super(out, err);
         this.serverNodeSupplier = requireNonNull(serverNodeSupplier);
         this.clientNodeSupplier = requireNonNull(clientNodeSupplier);
+    }
+
+    PerfCommand(final PrintStream out) {
+        this(
+                out,
+                System.err, // NOSONAR
+                PerfServerNode::new,
+                PerfClientNode::new
+        );
+    }
+
+    public PerfCommand() {
+        this(System.out); // NOSONAR
     }
 
     @Override
