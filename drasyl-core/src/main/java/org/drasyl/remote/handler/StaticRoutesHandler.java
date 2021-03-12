@@ -60,12 +60,12 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedA
             clearRoutes(ctx);
         }
 
+        if (event instanceof NodeUpEvent) {
+            populateRoutes(ctx);
+        }
+
         // passthrough event
-        ctx.fireEventTriggered(event, future).whenComplete((result, e) -> {
-            if (event instanceof NodeUpEvent) {
-                populateRoutes(ctx);
-            }
-        });
+        ctx.fireEventTriggered(event, future);
     }
 
     @Override
