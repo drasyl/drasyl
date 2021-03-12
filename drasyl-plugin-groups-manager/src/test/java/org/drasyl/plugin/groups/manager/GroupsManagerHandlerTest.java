@@ -278,24 +278,22 @@ class GroupsManagerHandlerTest {
     class Leave {
         @Test
         void shouldHandleLeaveRequest() throws DatabaseException {
+            when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
+
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+                final TestObserver<GroupsServerMessage> outboundMessages = pipeline.outboundMessages(GroupsServerMessage.class).test();
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
-                when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
+                pipeline.processInbound(publicKey, msg).join();
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
-
-                future.join();
-                testObserver
+                outboundMessages
                         .awaitCount(2)
                         .assertValueCount(2)
                         .assertValues(
                                 new MemberLeftMessage(publicKey, msg.getGroup()),
-                                new MemberLeftMessage(publicKey, msg.getGroup()));
-
-                assertTrue(future.isDone());
+                                new MemberLeftMessage(publicKey, msg.getGroup())
+                        );
             }
         }
 
