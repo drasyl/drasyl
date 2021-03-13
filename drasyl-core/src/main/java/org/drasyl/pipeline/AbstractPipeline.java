@@ -54,11 +54,11 @@ public abstract class AbstractPipeline implements Pipeline {
         this.head.setNextHandlerContext(this.tail);
         this.tail.setPrevHandlerContext(this.head);
         try {
-            this.head.handler().handlerAdded(this.head);
-            this.tail.handler().handlerAdded(this.head);
+            this.head.handler().onAdded(this.head);
+            this.tail.handler().onAdded(this.head);
         }
         catch (final Exception e) {
-            this.head.fireExceptionCaught(e);
+            this.head.passException(e);
         }
     }
 
@@ -106,10 +106,10 @@ public abstract class AbstractPipeline implements Pipeline {
 
         // Call handler added
         try {
-            handlerCtx.handler().handlerAdded(handlerCtx);
+            handlerCtx.handler().onAdded(handlerCtx);
         }
         catch (final Exception e) {
-            handlerCtx.fireExceptionCaught(e);
+            handlerCtx.passException(e);
             LOG.warn("Error on adding handler `{}`: ", handlerCtx::name, () -> e);
         }
     }
@@ -220,10 +220,10 @@ public abstract class AbstractPipeline implements Pipeline {
     private static void removeHandlerAction(final AbstractHandlerContext ctx) {
         // call remove action
         try {
-            ctx.handler().handlerRemoved(ctx);
+            ctx.handler().onRemoved(ctx);
         }
         catch (final Exception e) {
-            ctx.fireExceptionCaught(e);
+            ctx.passException(e);
             LOG.warn("Error on adding handler `{}`: ", ctx::name, () -> e);
         }
     }
@@ -285,7 +285,7 @@ public abstract class AbstractPipeline implements Pipeline {
                                                   final Object msg) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.dependentScheduler.scheduleDirect(() -> this.head.fireRead(sender, msg, rtn));
+        this.dependentScheduler.scheduleDirect(() -> this.head.passInbound(sender, msg, rtn));
 
         return rtn;
     }
@@ -294,7 +294,7 @@ public abstract class AbstractPipeline implements Pipeline {
     public CompletableFuture<Void> processInbound(final Event event) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.dependentScheduler.scheduleDirect(() -> this.head.fireEventTriggered(event, rtn));
+        this.dependentScheduler.scheduleDirect(() -> this.head.passEvent(event, rtn));
 
         return rtn;
     }
@@ -304,7 +304,7 @@ public abstract class AbstractPipeline implements Pipeline {
                                                    final Object msg) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.dependentScheduler.scheduleDirect(() -> this.tail.write(recipient, msg, rtn));
+        this.dependentScheduler.scheduleDirect(() -> this.tail.passOutbound(recipient, msg, rtn));
 
         return rtn;
     }

@@ -48,9 +48,9 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<ApplicationMes
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
             started = true;
         }
@@ -59,7 +59,7 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<ApplicationMes
         }
 
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     @Override
@@ -68,10 +68,10 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<ApplicationMes
                                 final ApplicationMessage msg,
                                 final CompletableFuture<Void> future) {
         if (started && ctx.identity().getPublicKey().equals(msg.getRecipient())) {
-            ctx.fireRead(msg.getSender(), msg, future);
+            ctx.passInbound(msg.getSender(), msg, future);
         }
         else {
-            ctx.write(recipient, msg, future);
+            ctx.passOutbound(recipient, msg, future);
         }
     }
 }

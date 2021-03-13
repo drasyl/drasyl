@@ -30,10 +30,10 @@ import java.lang.annotation.Target;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Indicates that the annotated handler method ({@link Handler#read(HandlerContext, Address, Object,
- * CompletableFuture)}, {@link Handler#write(HandlerContext, Address, Object, CompletableFuture)},
- * {@link Handler#eventTriggered(HandlerContext, Event, CompletableFuture)} or {@link
- * Handler#exceptionCaught(HandlerContext, Exception)}) in {@link Handler} will not be invoked by
+ * Indicates that the annotated handler method ({@link Handler#onInbound(HandlerContext, Address, Object,
+ * CompletableFuture)}, {@link Handler#onOutbound(HandlerContext, Address, Object, CompletableFuture)},
+ * {@link Handler#onEvent(HandlerContext, Event, CompletableFuture)} or {@link
+ * Handler#onException(HandlerContext, Exception)}) in {@link Handler} will not be invoked by
  * the {@link Pipeline} and so <strong>MUST</strong> only be used when the {@link Handler} method
  * does nothing except forward to the next {@link Handler} in the pipeline.
  * <p>

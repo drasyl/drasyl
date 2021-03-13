@@ -28,7 +28,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
@@ -110,7 +109,7 @@ class IntraVmDiscoveryTest {
                                                        @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message,
                                                        @Mock final HandlerContext ctx) {
             discoveries.put(Pair.of(0, message.getRecipient()), ctx);
-            when(ctx.fireRead(any(), any(), any())).thenAnswer(invocation -> {
+            when(ctx.passInbound(any(), any(), any())).thenAnswer(invocation -> {
                 @SuppressWarnings("unchecked") final CompletableFuture<Void> future = invocation.getArgument(2, CompletableFuture.class);
                 future.complete(null);
                 return null;
@@ -120,7 +119,7 @@ class IntraVmDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processOutbound(recipient, message).join();
 
-                verify(ctx).fireRead(any(), any(), any());
+                verify(ctx).passInbound(any(), any(), any());
             }
         }
 
@@ -143,7 +142,7 @@ class IntraVmDiscoveryTest {
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message,
                                                       @Mock final HandlerContext ctx) {
             discoveries.put(Pair.of(0, message.getRecipient()), ctx);
-            when(ctx.fireRead(any(), any(), any())).thenAnswer(invocation -> {
+            when(ctx.passInbound(any(), any(), any())).thenAnswer(invocation -> {
                 @SuppressWarnings("unchecked") final CompletableFuture<Void> future = invocation.getArgument(2, CompletableFuture.class);
                 future.complete(null);
                 return null;
@@ -153,7 +152,7 @@ class IntraVmDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(sender, message).join();
 
-                verify(ctx).fireRead(any(), any(), any());
+                verify(ctx).passInbound(any(), any(), any());
             }
         }
 

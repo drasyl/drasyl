@@ -54,7 +54,7 @@ public final class ByteBuf2MessageHandler extends SimpleInboundHandler<Addressed
                                final CompletableFuture<Void> future) {
         try {
             final AddressedIntermediateEnvelope<MessageLite> envelope = new AddressedIntermediateEnvelope<>(addressedByteBuf.getSender(), addressedByteBuf.getRecipient(), addressedByteBuf.getContent());
-            ctx.fireRead(sender, envelope, future);
+            ctx.passInbound(sender, envelope, future);
         }
         catch (final IOException e) {
             ReferenceCountUtil.safeRelease(addressedByteBuf);

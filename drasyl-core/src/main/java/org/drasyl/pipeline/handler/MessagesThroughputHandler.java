@@ -111,9 +111,9 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent && disposable == null) {
             start();
         }
@@ -122,7 +122,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
         }
 
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     private void start() {
@@ -158,7 +158,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
             future.complete(null);
         }
         else {
-            ctx.write(recipient, msg, future);
+            ctx.passOutbound(recipient, msg, future);
         }
     }
 
@@ -177,7 +177,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
             }
         }
         else {
-            ctx.fireRead(sender, msg, future);
+            ctx.passInbound(sender, msg, future);
         }
     }
 }

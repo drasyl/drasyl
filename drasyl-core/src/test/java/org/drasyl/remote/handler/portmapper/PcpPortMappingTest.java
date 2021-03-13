@@ -35,7 +35,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,7 +64,7 @@ public class PcpPortMappingTest {
 
             new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier).start(ctx, event, onFailure);
 
-            verify(ctx).write(any(), any(), any());
+            verify(ctx).passOutbound(any(), any(), any());
         }
     }
 
@@ -81,7 +80,7 @@ public class PcpPortMappingTest {
 
             verify(timeoutGuard).dispose();
             verify(refreshTask).dispose();
-            verify(ctx).write(any(), any(), any());
+            verify(ctx).passOutbound(any(), any(), any());
         }
     }
 

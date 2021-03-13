@@ -59,7 +59,7 @@ public final class HopCountGuard extends SimpleOutboundHandler<AddressedIntermed
                 // route message to next hop (node)
                 msg.getContent().incrementHopCount();
 
-                ctx.write(recipient, msg, future);
+                ctx.passOutbound(recipient, msg, future);
             }
             else {
                 // too many hops, discard message

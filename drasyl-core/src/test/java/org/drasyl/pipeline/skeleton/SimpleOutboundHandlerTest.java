@@ -53,7 +53,7 @@ class SimpleOutboundHandlerTest {
                                         final Address recipient,
                                         final byte[] msg,
                                         final CompletableFuture<Void> future) {
-                ctx.write(recipient, new String(msg), future);
+                ctx.passOutbound(recipient, new String(msg), future);
             }
         };
 
@@ -76,7 +76,7 @@ class SimpleOutboundHandlerTest {
                                         final Address recipient,
                                         final byte[] msg,
                                         final CompletableFuture<Void> future) {
-                ctx.write(recipient, new String(msg), future);
+                ctx.passOutbound(recipient, new String(msg), future);
             }
         };
 
@@ -91,6 +91,6 @@ class SimpleOutboundHandlerTest {
 
     @Test
     void shouldReturnCorrectHandlerMask() {
-        assertEquals(HandlerMask.WRITE_MASK, HandlerMask.mask(SimpleOutboundHandler.class));
+        assertEquals(HandlerMask.ON_OUTBOUND_MASK, HandlerMask.mask(SimpleOutboundHandler.class));
     }
 }

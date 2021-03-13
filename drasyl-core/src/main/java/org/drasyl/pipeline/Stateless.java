@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
 /**
  * Indicates that the annotated handler class is stateless and can safely be shared among multiple
  * instances. This means especially that the annotated handler does not manipulate any variable in
- * the {@link Handler#handlerAdded(HandlerContext)} or {@link Handler#handlerRemoved(HandlerContext)}
+ * the {@link Handler#onAdded(HandlerContext)} or {@link Handler#onRemoved(HandlerContext)}
  * methods.
  */
 @Target(ElementType.TYPE)

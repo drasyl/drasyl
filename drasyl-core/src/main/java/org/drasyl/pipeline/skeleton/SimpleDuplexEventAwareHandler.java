@@ -47,17 +47,17 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
     }
 
     @Override
-    public void write(final HandlerContext ctx,
-                      final Address recipient,
-                      final Object msg,
-                      final CompletableFuture<Void> future) {
+    public void onOutbound(final HandlerContext ctx,
+                           final Address recipient,
+                           final Object msg,
+                           final CompletableFuture<Void> future) {
         if (acceptOutbound(msg) && acceptAddress(recipient)) {
             @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
             matchedWrite(ctx, castedAddress, castedMsg, future);
         }
         else {
-            ctx.write(recipient, msg, future);
+            ctx.passOutbound(recipient, msg, future);
         }
     }
 

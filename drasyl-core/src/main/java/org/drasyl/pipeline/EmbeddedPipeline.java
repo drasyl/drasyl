@@ -98,10 +98,10 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
         this.independentScheduler = independentScheduler;
         this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
-            public void write(final HandlerContext ctx,
-                              final Address recipient,
-                              final Object msg,
-                              final CompletableFuture<Void> future) {
+            public void onOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final Object msg,
+                                   final CompletableFuture<Void> future) {
                 outboundMessages.onNext(msg);
 
                 future.complete(null);
@@ -109,10 +109,10 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
         };
         this.tail = new TailContext(inboundEvents::onNext, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
-            public void read(final HandlerContext ctx,
-                             final Address sender,
-                             final Object msg,
-                             final CompletableFuture<Void> future) {
+            public void onInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) {
                 if (sender instanceof CompressedPublicKey) {
                     final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
                     inboundEvents.onNext(MessageEvent.of(senderAddress, msg));

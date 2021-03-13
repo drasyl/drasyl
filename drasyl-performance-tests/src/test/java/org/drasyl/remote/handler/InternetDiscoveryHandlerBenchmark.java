@@ -125,27 +125,27 @@ public class InternetDiscoveryHandlerBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public HandlerContext fireExceptionCaught(final Exception cause) {
+        public HandlerContext passException(final Exception cause) {
             return null;
         }
 
         @Override
-        public CompletableFuture<Void> fireRead(final Address sender,
-                                                final Object msg,
-                                                final CompletableFuture<Void> future) {
+        public CompletableFuture<Void> passInbound(final Address sender,
+                                                   final Object msg,
+                                                   final CompletableFuture<Void> future) {
             return null;
         }
 
         @Override
-        public CompletableFuture<Void> fireEventTriggered(final Event event,
-                                                          final CompletableFuture<Void> future) {
+        public CompletableFuture<Void> passEvent(final Event event,
+                                                 final CompletableFuture<Void> future) {
             return null;
         }
 
         @Override
-        public CompletableFuture<Void> write(final Address recipient,
-                                             final Object msg,
-                                             final CompletableFuture<Void> future) {
+        public CompletableFuture<Void> passOutbound(final Address recipient,
+                                                    final Object msg,
+                                                    final CompletableFuture<Void> future) {
             return null;
         }
 

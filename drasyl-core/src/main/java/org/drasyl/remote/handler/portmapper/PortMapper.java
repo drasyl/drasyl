@@ -67,9 +67,9 @@ public class PortMapper extends SimpleInboundHandler<AddressedByteBuf, Address> 
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
             LOG.debug("Try to map port with method `{}`.", () -> methods.get(currentMethodPointer));
             methods.get(currentMethodPointer).start(ctx, (NodeUpEvent) event, () -> cycleNextMethod(ctx, (NodeUpEvent) event));
@@ -83,7 +83,7 @@ public class PortMapper extends SimpleInboundHandler<AddressedByteBuf, Address> 
         }
 
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class PortMapper extends SimpleInboundHandler<AddressedByteBuf, Address> 
         }
         else {
             // message was not for the mapper -> passthrough
-            ctx.fireRead(sender, msg, future);
+            ctx.passInbound(sender, msg, future);
         }
     }
 

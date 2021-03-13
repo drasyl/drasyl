@@ -66,7 +66,7 @@ public class UpnpIgdPortMappingTest {
                                       @Mock final Runnable onFailure) {
             new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
 
-            verify(ctx).write(any(), any(), any());
+            verify(ctx).passOutbound(any(), any(), any());
         }
 
         @Nested

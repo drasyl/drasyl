@@ -53,9 +53,9 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedA
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
             clearRoutes(ctx);
         }
@@ -65,7 +65,7 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedA
         }
 
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     @Override
@@ -77,11 +77,11 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedA
         if (staticAddress != null) {
             final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
             LOG.trace("Send message `{}` via static route {}.", () -> msg, () -> staticAddress);
-            ctx.write(staticAddress, new AddressedIntermediateEnvelope<>(null, staticAddress, envelope), future);
+            ctx.passOutbound(staticAddress, new AddressedIntermediateEnvelope<>(null, staticAddress, envelope), future);
         }
         else {
             // passthrough message
-            ctx.write(recipient, msg, future);
+            ctx.passOutbound(recipient, msg, future);
         }
     }
 

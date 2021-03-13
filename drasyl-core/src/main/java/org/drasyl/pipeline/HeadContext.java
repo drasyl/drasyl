@@ -51,20 +51,20 @@ class HeadContext extends AbstractEndHandler {
     }
 
     @Override
-    public void handlerAdded(final HandlerContext ctx) {
+    public void onAdded(final HandlerContext ctx) {
         LOG.debug("Pipeline head was added.");
     }
 
     @Override
-    public void handlerRemoved(final HandlerContext ctx) {
+    public void onRemoved(final HandlerContext ctx) {
         LOG.debug("Pipeline head was removed.");
     }
 
     @Override
-    public void write(final HandlerContext ctx,
-                      final Address recipient,
-                      final Object msg,
-                      final CompletableFuture<Void> future) {
+    public void onOutbound(final HandlerContext ctx,
+                           final Address recipient,
+                           final Object msg,
+                           final CompletableFuture<Void> future) {
         try {
             if (msg instanceof AutoSwallow) {
                 future.complete(null);

@@ -104,8 +104,8 @@ class PluginsIT {
         public void onAfterStart(final PluginEnvironment environment) {
             environment.getPipeline().addLast("TestHandler", new HandlerAdapter() {
                 @Override
-                public void handlerAdded(final HandlerContext ctx) {
-                    ctx.fireEventTriggered(event1, new CompletableFuture<>());
+                public void onAdded(final HandlerContext ctx) {
+                    ctx.passEvent(event1, new CompletableFuture<>());
                 }
             });
             environment.getPipeline().processInbound(event2);

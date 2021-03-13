@@ -126,9 +126,9 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
             startHeartbeat(ctx);
         }
@@ -140,7 +140,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
         }
 
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     synchronized void startHeartbeat(final HandlerContext ctx) {
@@ -266,7 +266,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
         }
         else {
             // passthrough message
-            ctx.write(recipient, msg, future);
+            ctx.passOutbound(recipient, msg, future);
         }
     }
 
@@ -311,16 +311,16 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
             }
 
             LOG.trace("Send message to {} to {}.", recipient, recipientSocketAddress);
-            ctx.write(recipientSocketAddress, new AddressedIntermediateEnvelope<>(null, recipientSocketAddress, msg), future);
+            ctx.passOutbound(recipientSocketAddress, new AddressedIntermediateEnvelope<>(null, recipientSocketAddress, msg), future);
         }
         else if (superPeerPeer != null) {
             final InetSocketAddressWrapper superPeerSocketAddress = superPeerPeer.getAddress();
             LOG.trace("No connection to {}. Send message to super peer.", recipient);
-            ctx.write(superPeerSocketAddress, new AddressedIntermediateEnvelope<>(null, superPeerSocketAddress, msg), future);
+            ctx.passOutbound(superPeerSocketAddress, new AddressedIntermediateEnvelope<>(null, superPeerSocketAddress, msg), future);
         }
         else {
             // passthrough message
-            ctx.write(recipient, msg, future);
+            ctx.passOutbound(recipient, msg, future);
         }
     }
 
@@ -343,13 +343,13 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
         final IntermediateEnvelope<Unite> senderRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
         final AddressedIntermediateEnvelope<Unite> addressedSenderRendezvousEnvelope = new AddressedIntermediateEnvelope<>(null, sender, senderRendezvousEnvelope);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
-        ctx.write(sender, addressedSenderRendezvousEnvelope, new CompletableFuture<>());
+        ctx.passOutbound(sender, addressedSenderRendezvousEnvelope, new CompletableFuture<>());
 
         // send sender's information to recipient
         final IntermediateEnvelope<Unite> recipientRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender);
         final AddressedIntermediateEnvelope<Unite> addressedSecipientRendezvousEnvelope = new AddressedIntermediateEnvelope<>(null, recipient, recipientRendezvousEnvelope);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
-        ctx.write(recipient, addressedSecipientRendezvousEnvelope, new CompletableFuture<>());
+        ctx.passOutbound(recipient, addressedSecipientRendezvousEnvelope, new CompletableFuture<>());
     }
 
     private synchronized boolean shouldTryUnite(final CompressedPublicKey sender,
@@ -413,7 +413,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
         else {
             envelope.getContent().retain();
             // passthrough message
-            ctx.fireRead(sender, envelope, future);
+            ctx.passInbound(sender, envelope, future);
         }
     }
 
@@ -445,7 +445,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
         final IntermediateEnvelope<Acknowledgement> responseEnvelope = IntermediateEnvelope.acknowledgement(networkId, myPublicKey, myProofOfWork, sender, id);
         LOG.trace("Send {} to {}", responseEnvelope, envelope.getSender());
         final AddressedIntermediateEnvelope<Acknowledgement> addressedResponseEnvelope = new AddressedIntermediateEnvelope<>(null, envelope.getSender(), responseEnvelope);
-        ctx.write(envelope.getSender(), addressedResponseEnvelope, future);
+        ctx.passOutbound(envelope.getSender(), addressedResponseEnvelope, future);
     }
 
     private void handlePong(final HandlerContext ctx,
@@ -529,7 +529,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
         // convert to ApplicationMessage
         final Application application = envelope.getContent().getBodyAndRelease();
         final SerializedApplicationMessage applicationMessage = new SerializedApplicationMessage(envelope.getContent().getSender(), envelope.getContent().getRecipient(), application.getType(), application.getPayload().toByteArray());
-        ctx.fireRead(envelope.getSender(), applicationMessage, future);
+        ctx.passInbound(envelope.getSender(), applicationMessage, future);
     }
 
     private void sendPing(final HandlerContext ctx,
@@ -547,7 +547,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
             openPingsCache.put(messageEnvelope.getId(), new Ping(recipientAddress));
             LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
             final AddressedIntermediateEnvelope<Discovery> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(null, recipientAddress, messageEnvelope);
-            ctx.write(recipientAddress, addressedMessageEnvelope, future);
+            ctx.passOutbound(recipientAddress, addressedMessageEnvelope, future);
         }
         catch (final IOException e) {
             // should never occur as we build the message ourselves

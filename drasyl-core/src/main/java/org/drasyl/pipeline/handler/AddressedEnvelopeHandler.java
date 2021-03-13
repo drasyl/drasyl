@@ -48,7 +48,7 @@ public final class AddressedEnvelopeHandler extends SimpleDuplexHandler<Addresse
                                 final CompletableFuture<Void> future) {
         // use recipient of the pipeline as recipient of the envelope
         // add own public key as sender
-        ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), recipient, msg), future);
+        ctx.passOutbound(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), recipient, msg), future);
     }
 
     @Override
@@ -57,6 +57,6 @@ public final class AddressedEnvelopeHandler extends SimpleDuplexHandler<Addresse
                                final AddressedEnvelope<?, ?> msg,
                                final CompletableFuture<Void> future) {
         // use sender of the envelope as sender of the pipeline
-        ctx.fireRead(msg.getSender(), msg.getContent(), future);
+        ctx.passInbound(msg.getSender(), msg.getContent(), future);
     }
 }

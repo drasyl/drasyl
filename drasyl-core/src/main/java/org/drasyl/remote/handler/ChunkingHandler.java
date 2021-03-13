@@ -74,7 +74,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
             }
             else {
                 // passthrough all messages not addressed to us
-                ctx.fireRead(sender, msg, future);
+                ctx.passInbound(sender, msg, future);
             }
         }
         catch (final IOException e) {
@@ -96,7 +96,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                 // message complete, pass it inbound
                 final AddressedIntermediateEnvelope<? extends MessageLite> addressedMessage = new AddressedIntermediateEnvelope<>(chunk.getSender(), chunk.getRecipient(), message);
                 getChunksCollectors(ctx.config()).remove(chunk.getContent().getId());
-                ctx.fireRead(sender, addressedMessage, future);
+                ctx.passInbound(sender, addressedMessage, future);
             }
             else {
                 // other chunks missing, but this chunk has been processed
@@ -145,11 +145,11 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                 }
                 else {
                     // message is small enough. No chunking required
-                    ctx.write(recipient, msg, future);
+                    ctx.passOutbound(recipient, msg, future);
                 }
             }
             else {
-                ctx.write(recipient, msg, future);
+                ctx.passOutbound(recipient, msg, future);
             }
         }
         catch (final IllegalStateException | IOException e) {
@@ -206,7 +206,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
                     final AddressedIntermediateEnvelope<MessageLite> addressedChunk = new AddressedIntermediateEnvelope<>(msg.getSender(), msg.getRecipient(), chunk);
 
                     chunkFutures[chunkNo.getValue()] = new CompletableFuture<>();
-                    ctx.write(recipient, addressedChunk, chunkFutures[chunkNo.getValue()]);
+                    ctx.passOutbound(recipient, addressedChunk, chunkFutures[chunkNo.getValue()]);
                 }
                 finally {
                     ReferenceCountUtil.safeRelease(chunkBodyByteBuf);

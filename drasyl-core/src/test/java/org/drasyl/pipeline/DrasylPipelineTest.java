@@ -165,7 +165,7 @@ class DrasylPipelineTest {
         verify(head).setNextHandlerContext(same(captor.getValue()));
         verify(head, never()).setPrevHandlerContext(any());
 
-        verify(captor.getValue().handler()).handlerAdded(same(captor.getValue()));
+        verify(captor.getValue().handler()).onAdded(same(captor.getValue()));
     }
 
     @Test
@@ -181,7 +181,7 @@ class DrasylPipelineTest {
         verify(baseCtx).setNextHandlerContext(captor.capture());
         verify(tail).setPrevHandlerContext(captor.getValue());
         assertEquals(handler, captor.getValue().handler());
-        verify(captor.getValue().handler()).handlerAdded(captor.getValue());
+        verify(captor.getValue().handler()).onAdded(captor.getValue());
     }
 
     @Test
@@ -203,7 +203,7 @@ class DrasylPipelineTest {
 
         verify(head).setNextHandlerContext(tail);
         verify(tail).setPrevHandlerContext(head);
-        verify(handler).handlerRemoved(ctx);
+        verify(handler).onRemoved(ctx);
     }
 
     @Test
@@ -221,14 +221,14 @@ class DrasylPipelineTest {
 
         pipeline.replace("oldName", "newName", newHandler);
 
-        verify(oldHandler).handlerRemoved(oldCtx);
+        verify(oldHandler).onRemoved(oldCtx);
         verify(head).setNextHandlerContext(captor1.capture());
         verify(tail).setPrevHandlerContext(captor2.capture());
 
         assertEquals(captor1.getValue(), captor2.getValue());
         assertEquals(newHandler, captor1.getValue().handler());
 
-        verify(newHandler).handlerAdded(captor1.getValue());
+        verify(newHandler).onAdded(captor1.getValue());
     }
 
     @Test
@@ -264,7 +264,7 @@ class DrasylPipelineTest {
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(head).fireRead(sender, msg, future);
+        verify(head).passInbound(sender, msg, future);
     }
 
     @Test
@@ -276,7 +276,7 @@ class DrasylPipelineTest {
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(head).fireEventTriggered(event, future);
+        verify(head).passEvent(event, future);
     }
 
     @Test
@@ -289,6 +289,6 @@ class DrasylPipelineTest {
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(tail).write(recipient, msg, future);
+        verify(tail).passOutbound(recipient, msg, future);
     }
 }

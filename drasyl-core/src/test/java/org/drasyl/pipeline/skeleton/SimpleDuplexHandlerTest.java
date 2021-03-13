@@ -79,7 +79,7 @@ class SimpleDuplexHandlerTest {
                 @Override
                 protected void matchedEventTriggered(final HandlerContext ctx, final Event event,
                                                      final CompletableFuture<Void> future) {
-                    ctx.fireEventTriggered(event, future);
+                    ctx.passEvent(event, future);
                 }
 
                 @Override
@@ -87,7 +87,7 @@ class SimpleDuplexHandlerTest {
                                            final CompressedPublicKey sender,
                                            final Object msg,
                                            final CompletableFuture<Void> future) {
-                    ctx.fireRead(sender, msg, future);
+                    ctx.passInbound(sender, msg, future);
                 }
 
                 @Override
@@ -120,7 +120,7 @@ class SimpleDuplexHandlerTest {
                 protected void matchedEventTriggered(final HandlerContext ctx,
                                                      final Event event,
                                                      final CompletableFuture<Void> future) {
-                    ctx.fireEventTriggered(event, future);
+                    ctx.passEvent(event, future);
                 }
 
                 @Override
@@ -128,7 +128,7 @@ class SimpleDuplexHandlerTest {
                                            final CompressedPublicKey sender,
                                            final Object msg,
                                            final CompletableFuture<Void> future) {
-                    ctx.fireRead(sender, msg, future);
+                    ctx.passInbound(sender, msg, future);
                 }
 
                 @Override
@@ -167,14 +167,14 @@ class SimpleDuplexHandlerTest {
                                             final Address recipient,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
-                    ctx.write(recipient, msg, future);
+                    ctx.passOutbound(recipient, msg, future);
                 }
 
                 @Override
                 protected void matchedEventTriggered(final HandlerContext ctx,
                                                      final Event event,
                                                      final CompletableFuture<Void> future) {
-                    super.eventTriggered(ctx, event, future);
+                    super.onEvent(ctx, event, future);
                 }
 
                 @Override
@@ -214,14 +214,14 @@ class SimpleDuplexHandlerTest {
                                             final Address recipient,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
-                    ctx.write(recipient, msg, future);
+                    ctx.passOutbound(recipient, msg, future);
                 }
 
                 @Override
                 protected void matchedEventTriggered(final HandlerContext ctx,
                                                      final Event event,
                                                      final CompletableFuture<Void> future) {
-                    ctx.fireEventTriggered(event, future);
+                    ctx.passEvent(event, future);
                 }
 
                 @Override
@@ -261,7 +261,7 @@ class SimpleDuplexHandlerTest {
                                             final Address recipient,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
-                    ctx.write(recipient, msg, future);
+                    ctx.passOutbound(recipient, msg, future);
                 }
 
                 @Override
@@ -276,7 +276,7 @@ class SimpleDuplexHandlerTest {
                                            final Address sender,
                                            final SerializedApplicationMessage msg,
                                            final CompletableFuture<Void> future) {
-                    ctx.fireRead(sender, msg, future);
+                    ctx.passInbound(sender, msg, future);
                 }
             };
 
@@ -298,7 +298,7 @@ class SimpleDuplexHandlerTest {
                                             final Address recipient,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
-                    ctx.write(recipient, msg, future);
+                    ctx.passOutbound(recipient, msg, future);
                 }
 
                 @Override
@@ -313,7 +313,7 @@ class SimpleDuplexHandlerTest {
                                            final Address sender,
                                            final MyMessage msg,
                                            final CompletableFuture<Void> future) {
-                    ctx.fireRead(sender, msg, future);
+                    ctx.passInbound(sender, msg, future);
                 }
             };
 
@@ -331,8 +331,8 @@ class SimpleDuplexHandlerTest {
         @Test
         void shouldReturnCorrectHandlerMask() {
             final int mask = HandlerMask.ALL
-                    & ~HandlerMask.EXCEPTION_CAUGHT_MASK
-                    & ~HandlerMask.EVENT_TRIGGERED_MASK;
+                    & ~HandlerMask.ON_EXCEPTION_MASK
+                    & ~HandlerMask.ON_EVENT_MASK;
 
             assertEquals(mask, HandlerMask.mask(SimpleDuplexHandler.class));
         }
@@ -340,7 +340,7 @@ class SimpleDuplexHandlerTest {
         @Test
         void shouldReturnCorrectHandlerMaskForEventAwareHandler() {
             final int mask = HandlerMask.ALL
-                    & ~HandlerMask.EXCEPTION_CAUGHT_MASK;
+                    & ~HandlerMask.ON_EXCEPTION_MASK;
 
             assertEquals(mask, HandlerMask.mask(SimpleDuplexEventAwareHandler.class));
         }

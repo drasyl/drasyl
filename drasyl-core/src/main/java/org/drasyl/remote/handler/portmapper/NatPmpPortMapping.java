@@ -196,7 +196,7 @@ public class NatPmpPortMapping implements PortMapping {
         final AddressedByteBuf envelope = new AddressedByteBuf(null, defaultGateway, Unpooled.wrappedBuffer(content));
         externalAddressRequested.set(true);
 
-        ctx.write(envelope.getRecipient(), envelope, new CompletableFuture<>());
+        ctx.passOutbound(envelope.getRecipient(), envelope, new CompletableFuture<>());
     }
 
     private void handleExternalAddress(final HandlerContext ctx,
@@ -222,7 +222,7 @@ public class NatPmpPortMapping implements PortMapping {
         final AddressedByteBuf envelope = new AddressedByteBuf(null, defaultGateway, Unpooled.wrappedBuffer(content));
         mappingRequested.set(true);
 
-        ctx.write(envelope.getRecipient(), envelope, new CompletableFuture<>());
+        ctx.passOutbound(envelope.getRecipient(), envelope, new CompletableFuture<>());
     }
 
     private void handleMapping(final HandlerContext ctx,

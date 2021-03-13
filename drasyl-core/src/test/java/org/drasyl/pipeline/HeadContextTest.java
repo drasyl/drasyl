@@ -42,7 +42,6 @@ import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class HeadContextTest {
@@ -80,7 +79,7 @@ class HeadContextTest {
         void shouldDoNothingOnHandlerAdded() {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            headContext.handlerAdded(ctx);
+            headContext.onAdded(ctx);
 
             verifyNoInteractions(ctx);
         }
@@ -89,7 +88,7 @@ class HeadContextTest {
         void shouldDoNothingOnHandlerRemoved() {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            headContext.handlerRemoved(ctx);
+            headContext.onRemoved(ctx);
 
             verifyNoInteractions(ctx);
         }
@@ -102,7 +101,7 @@ class HeadContextTest {
                                                                     @Mock final CompressedPublicKey recipient) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            headContext.write(ctx, recipient, msg, future);
+            headContext.onOutbound(ctx, recipient, msg, future);
 
             verify(future).completeExceptionally(isA(IllegalStateException.class));
         }
@@ -113,7 +112,7 @@ class HeadContextTest {
             final AutoSwallow msg = new AutoSwallow() {
             };
 
-            headContext.write(ctx, recipient, msg, future);
+            headContext.onOutbound(ctx, recipient, msg, future);
 
             verify(future, never()).completeExceptionally(any());
             verify(future).complete(null);
@@ -124,7 +123,7 @@ class HeadContextTest {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             final ByteBuf byteBuf = Unpooled.buffer();
 
-            headContext.write(ctx, address, byteBuf, CompletableFuture.completedFuture(null));
+            headContext.onOutbound(ctx, address, byteBuf, CompletableFuture.completedFuture(null));
 
             assertEquals(0, byteBuf.refCnt());
         }
@@ -136,9 +135,9 @@ class HeadContextTest {
         void shouldPassthroughsOnException(@Mock final Exception exception) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            headContext.exceptionCaught(ctx, exception);
+            headContext.onException(ctx, exception);
 
-            verify(ctx).fireExceptionCaught(exception);
+            verify(ctx).passException(exception);
         }
     }
 
@@ -148,9 +147,9 @@ class HeadContextTest {
         void shouldPassthroughsOnEvent(@Mock final Event event) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            headContext.eventTriggered(ctx, event, future);
+            headContext.onEvent(ctx, event, future);
 
-            verify(ctx).fireEventTriggered(event, future);
+            verify(ctx).passEvent(event, future);
         }
     }
 
@@ -161,9 +160,9 @@ class HeadContextTest {
                                       @Mock final Object msg) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            headContext.read(ctx, sender, msg, future);
+            headContext.onInbound(ctx, sender, msg, future);
 
-            verify(ctx).fireRead(sender, msg, future);
+            verify(ctx).passInbound(sender, msg, future);
         }
     }
 }

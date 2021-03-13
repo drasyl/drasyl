@@ -56,7 +56,7 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
                 final Object o = serializer.fromByteArray(msg.getContent(), msg.getType());
 
                 final ApplicationMessage deserializedMsg = new ApplicationMessage(msg.getSender(), msg.getRecipient(), o);
-                ctx.fireRead(msg.getSender(), deserializedMsg, future);
+                ctx.passInbound(msg.getSender(), deserializedMsg, future);
                 LOG.trace("Message has been deserialized to '{}'", () -> deserializedMsg);
             }
             else {
@@ -89,7 +89,7 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
             if (serializer != null) {
                 final byte[] bytes = serializer.toByteArray(msg.getContent());
                 final SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(msg.getSender(), msg.getRecipient(), type, bytes);
-                ctx.write(recipient, serializedMsg, future);
+                ctx.passOutbound(recipient, serializedMsg, future);
                 LOG.trace("Message has been serialized to '{}'", () -> serializedMsg);
             }
             else {
