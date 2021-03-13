@@ -55,7 +55,7 @@ class SimpleInboundHandlerTest {
                                        final Address sender,
                                        final byte[] msg,
                                        final CompletableFuture<Void> future) {
-                ctx.fireRead(sender, new String(msg), future);
+                ctx.passInbound(sender, new String(msg), future);
             }
         };
 
@@ -78,7 +78,7 @@ class SimpleInboundHandlerTest {
                                        final Address sender,
                                        final byte[] msg,
                                        final CompletableFuture<Void> future) {
-                ctx.fireRead(sender, new String(msg), future);
+                ctx.passInbound(sender, new String(msg), future);
             }
         };
 
@@ -95,13 +95,13 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldReturnCorrectHandlerMask() {
-        assertEquals(HandlerMask.READ_MASK, HandlerMask.mask(SimpleInboundHandler.class));
+        assertEquals(HandlerMask.ON_INBOUND_MASK, HandlerMask.mask(SimpleInboundHandler.class));
     }
 
     @Test
     void shouldReturnCorrectHandlerMaskForEventAwareHandler() {
-        final int mask = HandlerMask.READ_MASK
-                | HandlerMask.EVENT_TRIGGERED_MASK;
+        final int mask = HandlerMask.ON_INBOUND_MASK
+                | HandlerMask.ON_EVENT_MASK;
 
         assertEquals(mask, HandlerMask.mask(SimpleInboundEventAwareHandler.class));
     }

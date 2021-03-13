@@ -221,10 +221,10 @@ class AbstractHandlerContextTest {
             }
         };
 
-        ctx.fireExceptionCaught(exception);
+        ctx.passException(exception);
 
         verify(next, times(3)).handler();
-        verify(newHandler).exceptionCaught(next, exception);
+        verify(newHandler).onException(next, exception);
     }
 
     @Test
@@ -238,7 +238,7 @@ class AbstractHandlerContextTest {
             }
         };
 
-        final AbstractHandlerContext actual = ctx.findNextInbound(HandlerMask.READ_MASK);
+        final AbstractHandlerContext actual = ctx.findNextInbound(HandlerMask.ON_INBOUND_MASK);
 
         assertEquals(next, actual);
     }
@@ -257,10 +257,10 @@ class AbstractHandlerContextTest {
             }
         };
 
-        ctx.fireRead(sender, msg, future);
+        ctx.passInbound(sender, msg, future);
 
         verify(next, times(3)).handler();
-        verify(newHandler).read(next, sender, msg, future);
+        verify(newHandler).onInbound(next, sender, msg, future);
     }
 
     @Test
@@ -268,7 +268,7 @@ class AbstractHandlerContextTest {
                                                         @Mock final CompressedPublicKey sender,
                                                         @Mock final Object msg) {
         when(next.handler()).thenReturn(newHandler);
-        doThrow(RuntimeException.class).when(newHandler).read(any(), any(), any(), any());
+        doThrow(RuntimeException.class).when(newHandler).onInbound(any(), any(), any(), any());
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
         when(next.dependentScheduler()).thenReturn(dependentScheduler);
 
@@ -279,11 +279,11 @@ class AbstractHandlerContextTest {
             }
         };
 
-        ctx.fireRead(sender, msg, future);
+        ctx.passInbound(sender, msg, future);
 
         verify(next, times(3)).handler();
-        verify(newHandler).read(next, sender, msg, future);
-        verify(next).fireExceptionCaught(isA(RuntimeException.class));
+        verify(newHandler).onInbound(next, sender, msg, future);
+        verify(next).passException(isA(RuntimeException.class));
     }
 
     @Test
@@ -298,17 +298,17 @@ class AbstractHandlerContextTest {
             }
         };
 
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
 
         verify(next, times(3)).handler();
-        verify(newHandler).eventTriggered(next, event, future);
+        verify(newHandler).onEvent(next, event, future);
     }
 
     @Test
     void shouldRethrowIfExceptionOccursDuringFireEventTriggered(@Mock final Handler newHandler,
                                                                 @Mock final Event event) {
         when(next.handler()).thenReturn(newHandler);
-        doThrow(RuntimeException.class).when(newHandler).eventTriggered(any(), any(), any());
+        doThrow(RuntimeException.class).when(newHandler).onEvent(any(), any(), any());
         when(next.dependentScheduler()).thenReturn(dependentScheduler);
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
@@ -319,11 +319,11 @@ class AbstractHandlerContextTest {
             }
         };
 
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
 
         verify(next, times(3)).handler();
-        verify(newHandler).eventTriggered(next, event, future);
-        verify(next).fireExceptionCaught(isA(RuntimeException.class));
+        verify(newHandler).onEvent(next, event, future);
+        verify(next).passException(isA(RuntimeException.class));
     }
 
     @Test
@@ -340,10 +340,10 @@ class AbstractHandlerContextTest {
             }
         };
 
-        ctx.write(recipient, msg, future);
+        ctx.passOutbound(recipient, msg, future);
 
         verify(prev, times(3)).handler();
-        verify(newHandler).write(prev, recipient, msg, future);
+        verify(newHandler).onOutbound(prev, recipient, msg, future);
     }
 
     @Test
@@ -351,7 +351,7 @@ class AbstractHandlerContextTest {
                                                    @Mock final CompressedPublicKey recipient,
                                                    @Mock final Object msg) {
         when(prev.handler()).thenReturn(newHandler);
-        doThrow(RuntimeException.class).when(newHandler).write(any(), any(), any(), any());
+        doThrow(RuntimeException.class).when(newHandler).onOutbound(any(), any(), any(), any());
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
         when(prev.dependentScheduler()).thenReturn(dependentScheduler);
 
@@ -362,11 +362,11 @@ class AbstractHandlerContextTest {
             }
         };
 
-        ctx.write(recipient, msg, future);
+        ctx.passOutbound(recipient, msg, future);
 
         verify(prev, times(3)).handler();
-        verify(newHandler).write(prev, recipient, msg, future);
-        verify(prev).fireExceptionCaught(isA(RuntimeException.class));
+        verify(newHandler).onOutbound(prev, recipient, msg, future);
+        verify(prev).passException(isA(RuntimeException.class));
     }
 
     @Test
@@ -383,9 +383,9 @@ class AbstractHandlerContextTest {
 
         context.setNextHandlerContext(context1);
         when(context1.handler()).thenReturn(newHandler);
-        doThrow(RuntimeException.class).when(newHandler).exceptionCaught(any(), any());
+        doThrow(RuntimeException.class).when(newHandler).onException(any(), any());
 
-        assertDoesNotThrow(() -> context.fireExceptionCaught(exception));
+        assertDoesNotThrow(() -> context.passException(exception));
     }
 
     @Test
@@ -402,9 +402,9 @@ class AbstractHandlerContextTest {
 
         context.setNextHandlerContext(context1);
         when(context1.handler()).thenReturn(newHandler);
-        doThrow(IllegalArgumentException.class).when(newHandler).exceptionCaught(any(), any());
+        doThrow(IllegalArgumentException.class).when(newHandler).onException(any(), any());
 
-        assertDoesNotThrow(() -> context.fireExceptionCaught(exception));
+        assertDoesNotThrow(() -> context.passException(exception));
     }
 
     @Test
@@ -421,7 +421,7 @@ class AbstractHandlerContextTest {
             }
         };
 
-        final AbstractHandlerContext actual = ctx.findNextInbound(HandlerMask.READ_MASK);
+        final AbstractHandlerContext actual = ctx.findNextInbound(HandlerMask.ON_INBOUND_MASK);
 
         assertEquals(context, actual);
     }
@@ -440,7 +440,7 @@ class AbstractHandlerContextTest {
             }
         };
 
-        final AbstractHandlerContext actual = ctx.findPrevOutbound(HandlerMask.WRITE_MASK);
+        final AbstractHandlerContext actual = ctx.findPrevOutbound(HandlerMask.ON_OUTBOUND_MASK);
 
         assertEquals(context, actual);
     }
@@ -449,10 +449,10 @@ class AbstractHandlerContextTest {
     class Skippable {
         @ParameterizedTest
         @ValueSource(ints = {
-                HandlerMask.EVENT_TRIGGERED_MASK,
-                HandlerMask.EXCEPTION_CAUGHT_MASK,
-                HandlerMask.READ_MASK,
-                HandlerMask.WRITE_MASK,
+                HandlerMask.ON_EVENT_MASK,
+                HandlerMask.ON_EXCEPTION_MASK,
+                HandlerMask.ON_INBOUND_MASK,
+                HandlerMask.ON_OUTBOUND_MASK,
                 HandlerMask.ALL
         })
         void shouldSkipSkippableHandlerOnInbound(final int mask,
@@ -479,10 +479,10 @@ class AbstractHandlerContextTest {
 
         @ParameterizedTest
         @ValueSource(ints = {
-                HandlerMask.EVENT_TRIGGERED_MASK,
-                HandlerMask.EXCEPTION_CAUGHT_MASK,
-                HandlerMask.READ_MASK,
-                HandlerMask.WRITE_MASK,
+                HandlerMask.ON_EVENT_MASK,
+                HandlerMask.ON_EXCEPTION_MASK,
+                HandlerMask.ON_INBOUND_MASK,
+                HandlerMask.ON_OUTBOUND_MASK,
                 HandlerMask.ALL
         })
         void shouldSkipSkippableHandlerOnOutbound(final int mask,
@@ -522,9 +522,9 @@ class AbstractHandlerContextTest {
                 }
             };
 
-            ctx.fireEventTriggered(event, future);
+            ctx.passEvent(event, future);
 
-            verify(newHandler, never()).eventTriggered(next, event, future);
+            verify(newHandler, never()).onEvent(next, event, future);
         }
 
         @Test
@@ -540,9 +540,9 @@ class AbstractHandlerContextTest {
                 }
             };
 
-            ctx.fireRead(address, msg, future);
+            ctx.passInbound(address, msg, future);
 
-            verify(newHandler, never()).read(next, address, msg, future);
+            verify(newHandler, never()).onInbound(next, address, msg, future);
         }
 
         @Test
@@ -558,9 +558,9 @@ class AbstractHandlerContextTest {
                 }
             };
 
-            ctx.write(address, msg, future);
+            ctx.passOutbound(address, msg, future);
 
-            verify(newHandler, never()).write(next, address, msg, future);
+            verify(newHandler, never()).onOutbound(next, address, msg, future);
         }
     }
 }

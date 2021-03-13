@@ -68,7 +68,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     }
 
     @Override
-    public void handlerAdded(final HandlerContext ctx) {
+    public void onAdded(final HandlerContext ctx) {
         ctx.inboundSerialization().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
         ctx.outboundSerialization().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
 
@@ -99,7 +99,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     }
 
     @Override
-    public void handlerRemoved(final HandlerContext ctx) {
+    public void onRemoved(final HandlerContext ctx) {
         if (staleTask != null) {
             staleTask.dispose();
         }

@@ -80,7 +80,7 @@ class TailContextTest {
         void shouldDoNothingOnHandlerAdded() {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            tailContext.handlerAdded(ctx);
+            tailContext.onAdded(ctx);
 
             verifyNoInteractions(ctx);
         }
@@ -89,7 +89,7 @@ class TailContextTest {
         void shouldDoNothingOnHandlerRemoved() {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            tailContext.handlerRemoved(ctx);
+            tailContext.onRemoved(ctx);
 
             verifyNoInteractions(ctx);
         }
@@ -102,9 +102,9 @@ class TailContextTest {
                                        @Mock final Object msg) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            tailContext.write(ctx, recipient, msg, future);
+            tailContext.onOutbound(ctx, recipient, msg, future);
 
-            verify(ctx).write(recipient, msg, future);
+            verify(ctx).passOutbound(recipient, msg, future);
         }
     }
 
@@ -125,7 +125,7 @@ class TailContextTest {
                 }
             };
 
-            assertDoesNotThrow(() -> actx.fireExceptionCaught(exception));
+            assertDoesNotThrow(() -> actx.passException(exception));
             verifyNoInteractions(ctx);
         }
     }
@@ -136,7 +136,7 @@ class TailContextTest {
         void shouldPassEventToConsumer(@Mock final Event event) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            tailContext.eventTriggered(ctx, event, future);
+            tailContext.onEvent(ctx, event, future);
 
             verify(eventConsumer).accept(event);
             verifyNoInteractions(ctx);
@@ -150,7 +150,7 @@ class TailContextTest {
                                             @Mock final Object msg) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
-            tailContext.read(ctx, sender, msg, future);
+            tailContext.onInbound(ctx, sender, msg, future);
 
             verify(eventConsumer).accept(MessageEvent.of(sender, msg));
             verifyNoInteractions(ctx);
@@ -162,7 +162,7 @@ class TailContextTest {
             final AutoSwallow msg = new AutoSwallow() {
             };
 
-            tailContext.read(ctx, recipient, msg, future);
+            tailContext.onInbound(ctx, recipient, msg, future);
 
             verify(future, never()).completeExceptionally(any());
             verify(future).complete(null);

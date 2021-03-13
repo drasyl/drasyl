@@ -51,48 +51,48 @@ abstract class AbstractEndHandler extends AbstractHandlerContext implements Hand
     }
 
     @Override
-    public void handlerAdded(final HandlerContext ctx) {
+    public void onAdded(final HandlerContext ctx) {
         // skip
     }
 
     @Override
-    public void handlerRemoved(final HandlerContext ctx) {
+    public void onRemoved(final HandlerContext ctx) {
         // skip
     }
 
     @Skip
     @Override
-    public void read(final HandlerContext ctx,
-                     final Address sender,
-                     final Object msg,
-                     final CompletableFuture<Void> future) {
+    public void onInbound(final HandlerContext ctx,
+                          final Address sender,
+                          final Object msg,
+                          final CompletableFuture<Void> future) {
         // skip
-        ctx.fireRead(sender, msg, future);
+        ctx.passInbound(sender, msg, future);
     }
 
     @Skip
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         // skip
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     @Skip
     @Override
-    public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
+    public void onException(final HandlerContext ctx, final Exception cause) {
         //skip
-        ctx.fireExceptionCaught(cause);
+        ctx.passException(cause);
     }
 
     @Skip
     @Override
-    public void write(final HandlerContext ctx,
-                      final Address recipient,
-                      final Object msg,
-                      final CompletableFuture<Void> future) {
+    public void onOutbound(final HandlerContext ctx,
+                           final Address recipient,
+                           final Object msg,
+                           final CompletableFuture<Void> future) {
         // skip
-        ctx.write(recipient, msg, future);
+        ctx.passOutbound(recipient, msg, future);
     }
 }

@@ -37,12 +37,12 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class HandlerMask {
     // Using fast bitwise operations to compute if a method must be called
-    public static final int EVENT_TRIGGERED_MASK = 1;
-    public static final int EXCEPTION_CAUGHT_MASK = 1 << 1;
-    public static final int READ_MASK = 1 << 2;
-    public static final int WRITE_MASK = 1 << 3;
-    public static final int ALL = EVENT_TRIGGERED_MASK |
-            EXCEPTION_CAUGHT_MASK | READ_MASK | WRITE_MASK;
+    public static final int ON_EVENT_MASK = 1;
+    public static final int ON_EXCEPTION_MASK = 1 << 1;
+    public static final int ON_INBOUND_MASK = 1 << 2;
+    public static final int ON_OUTBOUND_MASK = 1 << 3;
+    public static final int ALL = ON_EVENT_MASK |
+            ON_EXCEPTION_MASK | ON_INBOUND_MASK | ON_OUTBOUND_MASK;
     private static final Logger LOG = LoggerFactory.getLogger(HandlerMask.class);
     private static final FastThreadLocal<Map<Class<? extends Handler>, Integer>> MASK_CACHE =
             new FastThreadLocal<>() {
@@ -81,24 +81,24 @@ public final class HandlerMask {
     private static int calcMask(final Class<? extends Handler> handlerClass) {
         int mask = ALL;
 
-        if (isSkippable(handlerClass, "eventTriggered",
+        if (isSkippable(handlerClass, "onEvent",
                 HandlerContext.class, Event.class, CompletableFuture.class)) {
-            mask &= ~EVENT_TRIGGERED_MASK;
+            mask &= ~ON_EVENT_MASK;
         }
 
-        if (isSkippable(handlerClass, "exceptionCaught",
+        if (isSkippable(handlerClass, "onException",
                 HandlerContext.class, Exception.class)) {
-            mask &= ~EXCEPTION_CAUGHT_MASK;
+            mask &= ~ON_EXCEPTION_MASK;
         }
 
-        if (isSkippable(handlerClass, "read",
+        if (isSkippable(handlerClass, "onInbound",
                 HandlerContext.class, Address.class, Object.class, CompletableFuture.class)) {
-            mask &= ~READ_MASK;
+            mask &= ~ON_INBOUND_MASK;
         }
 
-        if (isSkippable(handlerClass, "write",
+        if (isSkippable(handlerClass, "onOutbound",
                 HandlerContext.class, Address.class, Object.class, CompletableFuture.class)) {
-            mask &= ~WRITE_MASK;
+            mask &= ~ON_OUTBOUND_MASK;
         }
 
         return mask;

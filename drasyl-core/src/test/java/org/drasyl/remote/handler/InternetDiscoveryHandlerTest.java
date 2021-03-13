@@ -33,7 +33,6 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
@@ -292,7 +291,7 @@ class InternetDiscoveryHandlerTest {
             final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).write(any(), any(AddressedIntermediateEnvelope.class), any());
+            verify(ctx).passOutbound(any(), any(AddressedIntermediateEnvelope.class), any());
         }
 
         @Test
@@ -308,7 +307,7 @@ class InternetDiscoveryHandlerTest {
             final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).write(any(), any(AddressedIntermediateEnvelope.class), any());
+            verify(ctx).passOutbound(any(), any(AddressedIntermediateEnvelope.class), any());
         }
 
         @Test
@@ -321,7 +320,7 @@ class InternetDiscoveryHandlerTest {
             final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx, never()).write(any(), any(), any());
+            verify(ctx, never()).passOutbound(any(), any(), any());
             verify(ctx.peersManager()).removeChildrenAndPath(eq(publicKey), any());
         }
     }

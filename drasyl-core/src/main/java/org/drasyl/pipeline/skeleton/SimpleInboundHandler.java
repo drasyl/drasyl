@@ -62,16 +62,16 @@ public abstract class SimpleInboundHandler<I, A extends Address> extends SimpleI
 
     @Skip
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
+        ctx.passEvent(event, future);
     }
 
     @Override
     protected void matchedEventTriggered(final HandlerContext ctx,
                                          final Event event,
                                          final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 }

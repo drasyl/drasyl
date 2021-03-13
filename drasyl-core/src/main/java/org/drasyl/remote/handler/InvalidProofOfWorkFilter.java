@@ -54,7 +54,7 @@ public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<Address
                                final CompletableFuture<Void> future) {
         try {
             if (msg.getContent().isChunk() || msg.getContent().getProofOfWork().isValid(msg.getContent().getSender(), POW_DIFFICULTY)) {
-                ctx.fireRead(sender, msg, future);
+                ctx.passInbound(sender, msg, future);
             }
             else {
                 LOG.trace("Message with invalid proof of work dropped: '{}'", () -> sanitizeLogArg(msg));

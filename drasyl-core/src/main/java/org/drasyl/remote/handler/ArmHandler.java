@@ -57,10 +57,10 @@ public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateE
             if (ctx.identity().getPublicKey().equals(msg.getContent().getRecipient())) {
                 // disarm all messages addressed to us
                 final AddressedIntermediateEnvelope<MessageLite> disarmedMessage = new AddressedIntermediateEnvelope<>(msg.getSender(), msg.getRecipient(), msg.getContent().disarmAndRelease(ctx.identity().getPrivateKey()));
-                ctx.fireRead(sender, disarmedMessage, future);
+                ctx.passInbound(sender, disarmedMessage, future);
             }
             else {
-                ctx.fireRead(sender, msg, future);
+                ctx.passInbound(sender, msg, future);
             }
         }
         catch (final IOException e) {
@@ -79,10 +79,10 @@ public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateE
             if (ctx.identity().getPublicKey().equals(msg.getContent().getSender())) {
                 // arm all messages from us
                 final AddressedIntermediateEnvelope<MessageLite> armedMessage = new AddressedIntermediateEnvelope<>(msg.getSender(), msg.getRecipient(), msg.getContent().armAndRelease(ctx.identity().getPrivateKey()));
-                ctx.write(recipient, armedMessage, future);
+                ctx.passOutbound(recipient, armedMessage, future);
             }
             else {
-                ctx.write(recipient, msg, future);
+                ctx.passOutbound(recipient, msg, future);
             }
         }
         catch (final IOException e) {

@@ -31,10 +31,10 @@ import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.pipeline.HandlerMask.EVENT_TRIGGERED_MASK;
-import static org.drasyl.pipeline.HandlerMask.EXCEPTION_CAUGHT_MASK;
-import static org.drasyl.pipeline.HandlerMask.READ_MASK;
-import static org.drasyl.pipeline.HandlerMask.WRITE_MASK;
+import static org.drasyl.pipeline.HandlerMask.ON_EVENT_MASK;
+import static org.drasyl.pipeline.HandlerMask.ON_EXCEPTION_MASK;
+import static org.drasyl.pipeline.HandlerMask.ON_INBOUND_MASK;
+import static org.drasyl.pipeline.HandlerMask.ON_OUTBOUND_MASK;
 
 @SuppressWarnings({ "java:S107", "java:S3077" })
 abstract class AbstractHandlerContext implements HandlerContext {
@@ -116,22 +116,22 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public HandlerContext fireExceptionCaught(final Exception cause) {
-        executeOnDependentScheduler(() -> invokeExceptionCaught(cause));
+    public HandlerContext passException(final Exception cause) {
+        executeOnDependentScheduler(() -> invokeOnException(cause));
 
         return this;
     }
 
     @SuppressWarnings("java:S2221")
-    private void invokeExceptionCaught(final Exception cause) {
-        final AbstractHandlerContext inboundCtx = findNextInbound(EXCEPTION_CAUGHT_MASK);
+    private void invokeOnException(final Exception cause) {
+        final AbstractHandlerContext inboundCtx = findNextInbound(ON_EXCEPTION_MASK);
         try {
             if (inboundCtx != null) {
-                inboundCtx.handler().exceptionCaught(inboundCtx, cause);
+                inboundCtx.handler().onException(inboundCtx, cause);
             }
         }
         catch (final Exception e) {
-            LOG.warn("Failed to invoke exceptionCaught() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
+            LOG.warn("Failed to invoke onException() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
         }
     }
 
@@ -168,94 +168,94 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public CompletableFuture<Void> fireRead(final Address sender,
-                                            final Object msg,
-                                            final CompletableFuture<Void> future) {
+    public CompletableFuture<Void> passInbound(final Address sender,
+                                               final Object msg,
+                                               final CompletableFuture<Void> future) {
         // check if future is done
         if (future.isDone()) {
             return future;
         }
 
-        executeOnDependentScheduler(() -> invokeRead(sender, msg, future));
+        executeOnDependentScheduler(() -> invokeOnInbound(sender, msg, future));
 
         return future;
     }
 
     @SuppressWarnings("java:S2221")
-    private void invokeRead(final Address sender,
-                            final Object msg,
-                            final CompletableFuture<Void> future) {
-        final AbstractHandlerContext inboundCtx = findNextInbound(READ_MASK);
+    private void invokeOnInbound(final Address sender,
+                                 final Object msg,
+                                 final CompletableFuture<Void> future) {
+        final AbstractHandlerContext inboundCtx = findNextInbound(ON_INBOUND_MASK);
         try {
             if (inboundCtx != null) {
-                inboundCtx.handler().read(inboundCtx, sender, msg, future);
+                inboundCtx.handler().onInbound(inboundCtx, sender, msg, future);
             }
         }
         catch (final Exception e) {
-            LOG.warn("Failed to invoke read() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
+            LOG.warn("Failed to invoke onInbound() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
             future.completeExceptionally(e);
-            inboundCtx.fireExceptionCaught(e);
+            inboundCtx.passException(e);
             ReferenceCountUtil.safeRelease(msg);
         }
     }
 
     @Override
-    public CompletableFuture<Void> fireEventTriggered(final Event event,
-                                                      final CompletableFuture<Void> future) {
+    public CompletableFuture<Void> passEvent(final Event event,
+                                             final CompletableFuture<Void> future) {
         // check if future is done
         if (future.isDone()) {
             return future;
         }
 
-        executeOnDependentScheduler(() -> invokeEventTriggered(event, future));
+        executeOnDependentScheduler(() -> invokeOnEvent(event, future));
 
         return future;
     }
 
     @SuppressWarnings("java:S2221")
-    private void invokeEventTriggered(final Event event,
-                                      final CompletableFuture<Void> future) {
-        final AbstractHandlerContext inboundCtx = findNextInbound(EVENT_TRIGGERED_MASK);
+    private void invokeOnEvent(final Event event,
+                               final CompletableFuture<Void> future) {
+        final AbstractHandlerContext inboundCtx = findNextInbound(ON_EVENT_MASK);
         try {
             if (inboundCtx != null) {
-                inboundCtx.handler().eventTriggered(inboundCtx, event, future);
+                inboundCtx.handler().onEvent(inboundCtx, event, future);
             }
         }
         catch (final Exception e) {
-            LOG.warn("Failed to invoke eventTriggered() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
+            LOG.warn("Failed to invoke onEvent() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
             future.completeExceptionally(e);
-            inboundCtx.fireExceptionCaught(e);
+            inboundCtx.passException(e);
         }
     }
 
     @Override
-    public CompletableFuture<Void> write(final Address recipient,
-                                         final Object msg,
-                                         final CompletableFuture<Void> future) {
+    public CompletableFuture<Void> passOutbound(final Address recipient,
+                                                final Object msg,
+                                                final CompletableFuture<Void> future) {
         // check if future is done
         if (future.isDone()) {
             return future;
         }
 
-        executeOnDependentScheduler(() -> invokeWrite(recipient, msg, future));
+        executeOnDependentScheduler(() -> invokeOnOutbound(recipient, msg, future));
 
         return future;
     }
 
     @SuppressWarnings("java:S2221")
-    private void invokeWrite(final Address recipient,
-                             final Object msg,
-                             final CompletableFuture<Void> future) {
-        final AbstractHandlerContext outboundCtx = findPrevOutbound(WRITE_MASK);
+    private void invokeOnOutbound(final Address recipient,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) {
+        final AbstractHandlerContext outboundCtx = findPrevOutbound(ON_OUTBOUND_MASK);
         try {
             if (outboundCtx != null) {
-                outboundCtx.handler().write(outboundCtx, recipient, msg, future);
+                outboundCtx.handler().onOutbound(outboundCtx, recipient, msg, future);
             }
         }
         catch (final Exception e) {
-            LOG.warn("Failed to invoke write() on next handler `{}` do to the following error: ", outboundCtx::name, () -> e);
+            LOG.warn("Failed to invoke onOutbound() on next handler `{}` do to the following error: ", outboundCtx::name, () -> e);
             future.completeExceptionally(e);
-            outboundCtx.fireExceptionCaught(e);
+            outboundCtx.passException(e);
             ReferenceCountUtil.safeRelease(msg);
         }
     }

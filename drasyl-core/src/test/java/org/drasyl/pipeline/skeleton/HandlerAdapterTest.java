@@ -60,18 +60,18 @@ class HandlerAdapterTest {
     void shouldDoNothing() {
         final HandlerAdapter adapter = new HandlerAdapter() {
             @Override
-            public void handlerAdded(final HandlerContext ctx) {
-                super.handlerAdded(ctx);
+            public void onAdded(final HandlerContext ctx) {
+                super.onAdded(ctx);
             }
 
             @Override
-            public void handlerRemoved(final HandlerContext ctx) {
-                super.handlerRemoved(ctx);
+            public void onRemoved(final HandlerContext ctx) {
+                super.onRemoved(ctx);
             }
         };
 
-        adapter.handlerAdded(ctx);
-        adapter.handlerRemoved(ctx);
+        adapter.onAdded(ctx);
+        adapter.onRemoved(ctx);
 
         verifyNoInteractions(ctx);
     }
@@ -83,9 +83,9 @@ class HandlerAdapterTest {
                                        @Mock final Object msg) {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
-            handlerAdapter.write(ctx, recipient, msg, future);
+            handlerAdapter.onOutbound(ctx, recipient, msg, future);
 
-            verify(ctx).write(recipient, msg, future);
+            verify(ctx).passOutbound(recipient, msg, future);
         }
     }
 
@@ -96,27 +96,27 @@ class HandlerAdapterTest {
                                       @Mock final Object msg) {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
-            handlerAdapter.read(ctx, sender, msg, future);
+            handlerAdapter.onInbound(ctx, sender, msg, future);
 
-            verify(ctx).fireRead(sender, msg, future);
+            verify(ctx).passInbound(sender, msg, future);
         }
 
         @Test
         void shouldPassthroughsOnEventTriggered(@Mock final Event event) {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
-            handlerAdapter.eventTriggered(ctx, event, future);
+            handlerAdapter.onEvent(ctx, event, future);
 
-            verify(ctx).fireEventTriggered(event, future);
+            verify(ctx).passEvent(event, future);
         }
 
         @Test
         void shouldPassthroughsOnExceptionCaught(@Mock final Exception exception) {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
-            handlerAdapter.exceptionCaught(ctx, exception);
+            handlerAdapter.onException(ctx, exception);
 
-            verify(ctx).fireExceptionCaught(exception);
+            verify(ctx).passException(exception);
         }
 
         @Test

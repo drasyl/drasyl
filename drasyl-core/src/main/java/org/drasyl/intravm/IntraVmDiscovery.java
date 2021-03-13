@@ -62,9 +62,9 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
             startDiscovery(ctx);
         }
@@ -73,7 +73,7 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
         }
 
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     @SuppressWarnings("ReplaceNullCheck")
@@ -88,15 +88,15 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
 
             if (discoveree == null) {
                 // passthrough message
-                ctx.fireRead(sender, msg, future);
+                ctx.passInbound(sender, msg, future);
             }
             else {
-                discoveree.fireRead(sender, msg, future);
+                discoveree.passInbound(sender, msg, future);
             }
         }
         else {
             // passthrough message
-            ctx.fireRead(sender, msg, future);
+            ctx.passInbound(sender, msg, future);
         }
     }
 
@@ -109,10 +109,10 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
 
         if (discoveree == null) {
             // passthrough message
-            ctx.write(recipient, msg, future);
+            ctx.passOutbound(recipient, msg, future);
         }
         else {
-            discoveree.fireRead(msg.getSender(), msg, future);
+            discoveree.passInbound(msg.getSender(), msg, future);
         }
     }
 

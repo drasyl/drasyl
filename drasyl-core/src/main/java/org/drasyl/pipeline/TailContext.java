@@ -57,20 +57,20 @@ class TailContext extends AbstractEndHandler {
     }
 
     @Override
-    public void handlerAdded(final HandlerContext ctx) {
+    public void onAdded(final HandlerContext ctx) {
         LOG.debug("Pipeline tail was added.");
     }
 
     @Override
-    public void handlerRemoved(final HandlerContext ctx) {
+    public void onRemoved(final HandlerContext ctx) {
         LOG.debug("Pipeline tail was removed.");
     }
 
     @Override
-    public void read(final HandlerContext ctx,
-                     final Address sender,
-                     final Object msg,
-                     final CompletableFuture<Void> future) {
+    public void onInbound(final HandlerContext ctx,
+                          final Address sender,
+                          final Object msg,
+                          final CompletableFuture<Void> future) {
         if (msg instanceof AutoSwallow) {
             future.complete(null);
             return;
@@ -91,9 +91,9 @@ class TailContext extends AbstractEndHandler {
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         future.complete(null);
         LOG.trace("Event has passed the pipeline: `{}` ", event);
 

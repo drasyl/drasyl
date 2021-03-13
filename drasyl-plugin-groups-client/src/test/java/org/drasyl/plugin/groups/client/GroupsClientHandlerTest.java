@@ -97,7 +97,7 @@ class GroupsClientHandlerTest {
 
             final GroupsClientHandler handler = new GroupsClientHandler(Set.of());
 
-            handler.handlerAdded(ctx);
+            handler.onAdded(ctx);
 
             verify(inboundSerialization).addSerializer(eq(GroupsServerMessage.class), any(JacksonJsonSerializer.class));
             verify(outboundSerialization).addSerializer(eq(GroupsClientMessage.class), any(JacksonJsonSerializer.class));
@@ -111,7 +111,7 @@ class GroupsClientHandlerTest {
             final Map<Group, Disposable> renewTasks = new HashMap<>(Map.of(group, disposable));
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay);
 
-            handler.handlerRemoved(ctx);
+            handler.onRemoved(ctx);
 
             verify(disposable).dispose();
             assertTrue(renewTasks.isEmpty());

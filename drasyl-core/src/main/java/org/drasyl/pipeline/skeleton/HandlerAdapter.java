@@ -34,7 +34,7 @@ public class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void handlerAdded(final HandlerContext ctx) {
+    public void onAdded(final HandlerContext ctx) {
         // Do nothing
     }
 
@@ -42,39 +42,39 @@ public class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void handlerRemoved(final HandlerContext ctx) {
+    public void onRemoved(final HandlerContext ctx) {
         // Do nothing
     }
 
     @Skip
     @Override
-    public void read(final HandlerContext ctx,
-                     final Address sender,
-                     final Object msg,
-                     final CompletableFuture<Void> future) {
-        ctx.fireRead(sender, msg, future);
+    public void onInbound(final HandlerContext ctx,
+                          final Address sender,
+                          final Object msg,
+                          final CompletableFuture<Void> future) {
+        ctx.passInbound(sender, msg, future);
     }
 
     @Skip
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
+        ctx.passEvent(event, future);
     }
 
     @Skip
     @Override
-    public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
-        ctx.fireExceptionCaught(cause);
+    public void onException(final HandlerContext ctx, final Exception cause) {
+        ctx.passException(cause);
     }
 
     @Skip
     @Override
-    public void write(final HandlerContext ctx,
-                      final Address recipient,
-                      final Object msg,
-                      final CompletableFuture<Void> future) {
-        ctx.write(recipient, msg, future);
+    public void onOutbound(final HandlerContext ctx,
+                           final Address recipient,
+                           final Object msg,
+                           final CompletableFuture<Void> future) {
+        ctx.passOutbound(recipient, msg, future);
     }
 }

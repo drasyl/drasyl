@@ -217,7 +217,7 @@ public class PcpPortMapping implements PortMapping {
         final AddressedByteBuf envelope = new AddressedByteBuf(null, defaultGateway, Unpooled.wrappedBuffer(content));
         mappingRequested.incrementAndGet();
 
-        ctx.write(envelope.getRecipient(), envelope, new CompletableFuture<>());
+        ctx.passOutbound(envelope.getRecipient(), envelope, new CompletableFuture<>());
     }
 
     private synchronized void handleMapping(final HandlerContext ctx,

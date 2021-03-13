@@ -55,7 +55,7 @@ public final class Message2ByteBufHandler extends SimpleOutboundHandler<Addresse
         try {
             final ByteBuf byteBuf = msg.getContent().getOrBuildByteBuf();
 
-            ctx.write(recipient, new AddressedByteBuf(msg.getSender(), msg.getRecipient(), byteBuf), future);
+            ctx.passOutbound(recipient, new AddressedByteBuf(msg.getSender(), msg.getRecipient(), byteBuf), future);
         }
         catch (final IOException e) {
             LOG.error("Unable to serialize '{}'.", () -> sanitizeLogArg(msg), () -> e);

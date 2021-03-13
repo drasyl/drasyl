@@ -34,7 +34,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -62,7 +61,7 @@ class NatPmpPortMappingTest {
             final AtomicBoolean mappingRequested = new AtomicBoolean();
             new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, null, null, null, null, onFailure, defaultGatewaySupplier).start(ctx, event, onFailure);
 
-            verify(ctx).write(any(), any(), any());
+            verify(ctx).passOutbound(any(), any(), any());
             assertTrue(externalAddressRequested.get());
         }
     }
@@ -81,7 +80,7 @@ class NatPmpPortMappingTest {
 
             verify(timeoutGuard).dispose();
             verify(refreshTask).dispose();
-            verify(ctx).write(any(), any(), any());
+            verify(ctx).passOutbound(any(), any(), any());
         }
     }
 
@@ -102,7 +101,7 @@ class NatPmpPortMappingTest {
                     final AtomicBoolean mappingRequested = new AtomicBoolean();
                     new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, new InetSocketAddressWrapper(12345), null, null, null, null, defaultGatewaySupplier).handleMessage(ctx, msg);
 
-                    verify(ctx).write(any(), any(), any());
+                    verify(ctx).passOutbound(any(), any(), any());
                 }
                 finally {
                     ReferenceCountUtil.safeRelease(byteBuf);

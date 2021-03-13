@@ -120,11 +120,11 @@ class DrasylPipelineIT {
 
         pipeline.addLast("msgChanger", new HandlerAdapter() {
             @Override
-            public void read(final HandlerContext ctx,
-                             final Address sender,
-                             final Object msg,
-                             final CompletableFuture<Void> future) {
-                super.read(ctx, identity2.getPublicKey(), newPayload, future);
+            public void onInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) {
+                super.onInbound(ctx, identity2.getPublicKey(), newPayload, future);
             }
         });
 
@@ -152,12 +152,12 @@ class DrasylPipelineIT {
 
         pipeline.addLast("eventProducer", new HandlerAdapter() {
             @Override
-            public void read(final HandlerContext ctx,
-                             final Address sender,
-                             final Object msg,
-                             final CompletableFuture<Void> future) {
-                super.read(ctx, sender, msg, future);
-                ctx.fireEventTriggered(testEvent, new CompletableFuture<>());
+            public void onInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) {
+                super.onInbound(ctx, sender, msg, future);
+                ctx.passEvent(testEvent, new CompletableFuture<>());
             }
         });
 
@@ -182,19 +182,19 @@ class DrasylPipelineIT {
 
         pipeline.addFirst("exceptionCatcher", new HandlerAdapter() {
             @Override
-            public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
+            public void onException(final HandlerContext ctx, final Exception cause) {
                 exceptions.onNext(cause);
-                super.exceptionCaught(ctx, cause);
+                super.onException(ctx, cause);
             }
         });
 
         pipeline.addFirst("exceptionProducer", new HandlerAdapter() {
             @Override
-            public void read(final HandlerContext ctx,
-                             final Address sender,
-                             final Object msg,
-                             final CompletableFuture<Void> future) {
-                super.read(ctx, sender, msg, future);
+            public void onInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) {
+                super.onInbound(ctx, sender, msg, future);
                 throw exception;
             }
         });
@@ -221,11 +221,11 @@ class DrasylPipelineIT {
 
         pipeline.addLast("outboundChanger", new HandlerAdapter() {
             @Override
-            public void write(final HandlerContext ctx,
-                              final Address recipient,
-                              final Object msg,
-                              final CompletableFuture<Void> future) {
-                super.write(ctx, identity2.getPublicKey(), newPayload, future);
+            public void onOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final Object msg,
+                                   final CompletableFuture<Void> future) {
+                super.onOutbound(ctx, identity2.getPublicKey(), newPayload, future);
             }
         });
 
@@ -248,12 +248,12 @@ class DrasylPipelineIT {
 
         pipeline.addLast("outbound", new HandlerAdapter() {
             @Override
-            public void write(final HandlerContext ctx,
-                              final Address recipient,
-                              final Object msg,
-                              final CompletableFuture<Void> future) {
+            public void onOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final Object msg,
+                                   final CompletableFuture<Void> future) {
                 future.complete(null);
-                super.write(ctx, recipient, msg, future);
+                super.onOutbound(ctx, recipient, msg, future);
             }
         });
 
@@ -275,12 +275,12 @@ class DrasylPipelineIT {
 
         pipeline.addLast("outbound", new HandlerAdapter() {
             @Override
-            public void write(final HandlerContext ctx,
-                              final Address recipient,
-                              final Object msg,
-                              final CompletableFuture<Void> future) {
+            public void onOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final Object msg,
+                                   final CompletableFuture<Void> future) {
                 future.completeExceptionally(new Exception("Error!"));
-                super.write(ctx, recipient, msg, future);
+                super.onOutbound(ctx, recipient, msg, future);
             }
         });
 

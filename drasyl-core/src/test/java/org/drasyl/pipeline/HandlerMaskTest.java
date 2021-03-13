@@ -48,32 +48,32 @@ class HandlerMaskTest {
     class Skippable {
         @Test
         void shouldReturnFalseForAdded() {
-            assertFalse(HandlerMask.isSkippable(HandlerAdapter.class, "handlerAdded", HandlerContext.class));
+            assertFalse(HandlerMask.isSkippable(HandlerAdapter.class, "onAdded", HandlerContext.class));
         }
 
         @Test
         void shouldReturnFalseForRemoved() {
-            assertFalse(HandlerMask.isSkippable(HandlerAdapter.class, "handlerRemoved", HandlerContext.class));
+            assertFalse(HandlerMask.isSkippable(HandlerAdapter.class, "onRemoved", HandlerContext.class));
         }
 
         @Test
         void shouldReturnTrueForWrite() {
-            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "write", HandlerContext.class, Address.class, Object.class, CompletableFuture.class));
+            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onOutbound", HandlerContext.class, Address.class, Object.class, CompletableFuture.class));
         }
 
         @Test
         void shouldReturnTrueForRead() {
-            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "read", HandlerContext.class, Address.class, Object.class, CompletableFuture.class));
+            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onInbound", HandlerContext.class, Address.class, Object.class, CompletableFuture.class));
         }
 
         @Test
         void shouldReturnTrueForEventTriggered() {
-            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "eventTriggered", HandlerContext.class, Event.class, CompletableFuture.class));
+            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onEvent", HandlerContext.class, Event.class, CompletableFuture.class));
         }
 
         @Test
         void shouldReturnTrueForExceptionCaught() {
-            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "exceptionCaught", HandlerContext.class, Exception.class));
+            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onException", HandlerContext.class, Exception.class));
         }
 
         @Test

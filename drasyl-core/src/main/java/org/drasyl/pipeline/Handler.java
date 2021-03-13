@@ -46,13 +46,13 @@ public interface Handler {
      * Gets called after the {@link Handler} was added to the actual context and it's ready to
      * handle events.
      */
-    void handlerAdded(HandlerContext ctx);
+    void onAdded(HandlerContext ctx);
 
     /**
      * Gets called after the {@link Handler} was removed from the actual context and it doesn't
      * handle events anymore.
      */
-    void handlerRemoved(HandlerContext ctx);
+    void onRemoved(HandlerContext ctx);
 
     /**
      * Gets called if a {@link Object} was received.
@@ -62,10 +62,10 @@ public interface Handler {
      * @param msg    the message
      * @param future a future for the message
      */
-    void read(HandlerContext ctx,
-              Address sender,
-              Object msg,
-              CompletableFuture<Void> future);
+    void onInbound(HandlerContext ctx,
+                   Address sender,
+                   Object msg,
+                   CompletableFuture<Void> future);
 
     /**
      * Gets called if a {@link Event} was emitted.
@@ -74,14 +74,14 @@ public interface Handler {
      * @param event  the event
      * @param future a future for the message
      */
-    void eventTriggered(HandlerContext ctx,
-                        Event event,
-                        CompletableFuture<Void> future);
+    void onEvent(HandlerContext ctx,
+                 Event event,
+                 CompletableFuture<Void> future);
 
     /**
      * Gets called if a {@link Exception} was thrown.
      */
-    void exceptionCaught(HandlerContext ctx, Exception cause);
+    void onException(HandlerContext ctx, Exception cause);
 
     /**
      * Gets called if a {@link Object} was send from the application to a recipient.
@@ -91,8 +91,8 @@ public interface Handler {
      * @param msg       the message
      * @param future    a future for the message
      */
-    void write(HandlerContext ctx,
-               Address recipient,
-               Object msg,
-               CompletableFuture<Void> future);
+    void onOutbound(HandlerContext ctx,
+                    Address recipient,
+                    Object msg,
+                    CompletableFuture<Void> future);
 }

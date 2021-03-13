@@ -54,11 +54,11 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
     }
 
     @Override
-    public void write(final HandlerContext ctx,
-                      final Address recipient,
-                      final Object msg,
-                      final CompletableFuture<Void> future) {
-        queue.add(ctx, () -> ctx.write(recipient, msg, future));
+    public void onOutbound(final HandlerContext ctx,
+                           final Address recipient,
+                           final Object msg,
+                           final CompletableFuture<Void> future) {
+        queue.add(ctx, () -> ctx.passOutbound(recipient, msg, future));
     }
 
     public static class RateLimitedQueue {

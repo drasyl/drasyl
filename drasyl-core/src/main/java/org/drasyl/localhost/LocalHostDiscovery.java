@@ -110,9 +110,9 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
             startDiscovery(ctx, ((NodeUpEvent) event).getNode().getPort());
         }
@@ -121,7 +121,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         }
 
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     @Override
@@ -133,11 +133,11 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
         if (localAddress != null) {
             final IntermediateEnvelope<Protocol.Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
             LOG.trace("Send message `{}` via local route {}.", () -> msg, () -> localAddress);
-            ctx.write(localAddress, new AddressedIntermediateEnvelope<>(null, localAddress, envelope), future);
+            ctx.passOutbound(localAddress, new AddressedIntermediateEnvelope<>(null, localAddress, envelope), future);
         }
         else {
             // passthrough message
-            ctx.write(recipient, msg, future);
+            ctx.passOutbound(recipient, msg, future);
         }
     }
 

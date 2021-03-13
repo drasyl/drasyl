@@ -46,9 +46,9 @@ public class InboundMessageGuard extends SimpleInboundHandler<ApplicationMessage
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
             started = true;
         }
@@ -57,7 +57,7 @@ public class InboundMessageGuard extends SimpleInboundHandler<ApplicationMessage
         }
 
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class InboundMessageGuard extends SimpleInboundHandler<ApplicationMessage
         }
         else {
             // passthrough message
-            ctx.fireRead(sender, msg, future);
+            ctx.passInbound(sender, msg, future);
         }
     }
 }

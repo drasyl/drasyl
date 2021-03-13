@@ -243,7 +243,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                 }
             }
         }, SSDP_DISCOVERY_TIMEOUT.toMillis(), MILLISECONDS);
-        ctx.write(envelope.getRecipient(), envelope, new CompletableFuture<>());
+        ctx.passOutbound(envelope.getRecipient(), envelope, new CompletableFuture<>());
     }
 
     @SuppressWarnings({ "java:S1142", "java:S1541" })

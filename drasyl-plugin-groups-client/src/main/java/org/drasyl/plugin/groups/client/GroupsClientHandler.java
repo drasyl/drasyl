@@ -78,13 +78,13 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     }
 
     @Override
-    public void handlerAdded(final HandlerContext ctx) {
+    public void onAdded(final HandlerContext ctx) {
         ctx.inboundSerialization().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
         ctx.outboundSerialization().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
     }
 
     @Override
-    public void handlerRemoved(final HandlerContext ctx) {
+    public void onRemoved(final HandlerContext ctx) {
         // Stop all renew tasks
         for (final Disposable renewTask : renewTasks.values()) {
             renewTask.dispose();
@@ -120,7 +120,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         ctx.independentScheduler().scheduleDirect(() -> groups.values().forEach(group ->
                 joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
 
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     @Override

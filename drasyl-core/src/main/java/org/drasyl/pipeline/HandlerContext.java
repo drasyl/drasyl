@@ -50,22 +50,22 @@ public interface HandlerContext {
     Handler handler();
 
     /**
-     * Received an {@link Throwable} in one of the inbound operations.
+     * Passes the {@code cause} to the next handler in the pipeline.
      * <p>
-     * This will result in having the  {@link Handler#exceptionCaught(HandlerContext, Exception)}
-     * method  called of the next  {@link Handler} contained in the  {@link Pipeline}.
+     * This will result in having the  {@link Handler#onException(HandlerContext, Exception)} method
+     * called of the next  {@link Handler} contained in the  {@link Pipeline}.
      * <p>
      * Note: It is guaranteed that this method will always be executed inside the {@link
      * #dependentScheduler()}.
      *
      * @param cause the cause
      */
-    HandlerContext fireExceptionCaught(Exception cause);
+    HandlerContext passException(Exception cause);
 
     /**
-     * Received a message.
+     * Passes the {@code msg} to the next handler in the pipeline.
      * <p>
-     * This will result in having the {@link Handler#read(HandlerContext, Address, Object,
+     * This will result in having the {@link Handler#onInbound(HandlerContext, Address, Object,
      * CompletableFuture)} method called of the next {@link Handler} contained in the {@link
      * Pipeline}.
      * <p>
@@ -79,14 +79,14 @@ public interface HandlerContext {
      * @param msg    the message
      * @param future the future of the message
      */
-    CompletableFuture<Void> fireRead(Address sender,
-                                     Object msg,
-                                     CompletableFuture<Void> future);
+    CompletableFuture<Void> passInbound(Address sender,
+                                        Object msg,
+                                        CompletableFuture<Void> future);
 
     /**
-     * Received an event.
+     * Passes the {@code event} to the next handler in the pipeline.
      * <p>
-     * This will result in having the  {@link Handler#eventTriggered(HandlerContext, Event,
+     * This will result in having the  {@link Handler#onEvent(HandlerContext, Event,
      * CompletableFuture)} method  called of the next  {@link Handler} contained in the  {@link
      * Pipeline}.
      * <p>
@@ -97,12 +97,12 @@ public interface HandlerContext {
      * @param future the future of the message
      */
     @SuppressWarnings("UnusedReturnValue")
-    CompletableFuture<Void> fireEventTriggered(Event event, CompletableFuture<Void> future);
+    CompletableFuture<Void> passEvent(Event event, CompletableFuture<Void> future);
 
     /**
-     * Request to write a message via this {@link HandlerContext} through the {@link Pipeline}.
+     * Passes the {@code msg} to the next handler in the pipeline.
      * <p>
-     * This will result in having the  {@link Handler#write(HandlerContext, Address, Object,
+     * This will result in having the  {@link Handler#onOutbound(HandlerContext, Address, Object,
      * CompletableFuture)} method  called of the next  {@link Handler} contained in the  {@link
      * Pipeline}.
      * <p>
@@ -116,9 +116,9 @@ public interface HandlerContext {
      * @param msg       the message
      * @param future    the future of the message
      */
-    CompletableFuture<Void> write(Address recipient,
-                                  Object msg,
-                                  CompletableFuture<Void> future);
+    CompletableFuture<Void> passOutbound(Address recipient,
+                                         Object msg,
+                                         CompletableFuture<Void> future);
 
     /**
      * Returns the corresponding {@link DrasylConfig}.

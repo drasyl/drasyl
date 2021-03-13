@@ -113,9 +113,9 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
             startServer(ctx, event, future);
         }
@@ -124,7 +124,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
         }
         else {
             // passthrough event
-            ctx.fireEventTriggered(event, future);
+            ctx.passEvent(event, future);
         }
     }
 
@@ -157,7 +157,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                                                     final DatagramPacket packet) {
                             LOG.trace("Datagram received {}", packet);
                             final AddressedByteBuf addressedByteBuf = new AddressedByteBuf(packet.sender(), packet.recipient(), packet.content().retain());
-                            ctx.fireRead(addressedByteBuf.getSender(), addressedByteBuf, new CompletableFuture<>());
+                            ctx.passInbound(addressedByteBuf.getSender(), addressedByteBuf, new CompletableFuture<>());
                         }
                     })
                     .bind(ctx.config().getRemoteBindHost(), bindPort);
@@ -170,7 +170,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
                 LOG.info("Server started and listening at {}", socketAddress);
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
-                ctx.fireEventTriggered(NodeUpEvent.of(Node.of(ctx.identity(), socketAddress.getPort())), future);
+                ctx.passEvent(NodeUpEvent.of(Node.of(ctx.identity(), socketAddress.getPort())), future);
             }
             else {
                 // server start failed
@@ -181,7 +181,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
         }
         else {
             // passthrough event
-            ctx.fireEventTriggered(event, future);
+            ctx.passEvent(event, future);
         }
     }
 
@@ -198,7 +198,7 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
         }
 
         // passthrough event
-        ctx.fireEventTriggered(event, future);
+        ctx.passEvent(event, future);
     }
 
     @Override

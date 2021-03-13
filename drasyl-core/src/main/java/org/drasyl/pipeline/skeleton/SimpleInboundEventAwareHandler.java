@@ -86,30 +86,30 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
     }
 
     @Override
-    public void read(final HandlerContext ctx,
-                     final Address sender,
-                     final Object msg,
-                     final CompletableFuture<Void> future) {
+    public void onInbound(final HandlerContext ctx,
+                          final Address sender,
+                          final Object msg,
+                          final CompletableFuture<Void> future) {
         if (acceptInbound(msg) && acceptAddress(sender)) {
             @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
             matchedRead(ctx, castedAddress, castedMsg, future);
         }
         else {
-            ctx.fireRead(sender, msg, future);
+            ctx.passInbound(sender, msg, future);
         }
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
+    public void onEvent(final HandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
         if (acceptEvent(event)) {
             @SuppressWarnings("unchecked") final E castedEvent = (E) event;
             matchedEventTriggered(ctx, castedEvent, future);
         }
         else {
-            ctx.fireEventTriggered(event, future);
+            ctx.passEvent(event, future);
         }
     }
 
