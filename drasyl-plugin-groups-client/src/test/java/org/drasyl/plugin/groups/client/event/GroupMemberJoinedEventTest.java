@@ -40,14 +40,14 @@ class GroupMemberJoinedEventTest {
     class Getters {
         @Test
         void shouldReturnCorrectMember() {
-            final GroupMemberJoinedEvent event = new GroupMemberJoinedEvent(member, group);
+            final GroupMemberJoinedEvent event = GroupMemberJoinedEvent.of(member, group);
 
             assertEquals(member, event.getMember());
         }
 
         @Test
         void shouldReturnCorrectGroup() {
-            final GroupMemberJoinedEvent event = new GroupMemberJoinedEvent(member, group);
+            final GroupMemberJoinedEvent event = GroupMemberJoinedEvent.of(member, group);
 
             assertEquals(member, event.getMember());
         }
@@ -57,16 +57,16 @@ class GroupMemberJoinedEventTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final GroupMemberLeftEvent event1 = new GroupMemberLeftEvent(member, group);
-            final GroupMemberLeftEvent event2 = new GroupMemberLeftEvent(member, group);
+            final GroupMemberLeftEvent event1 = GroupMemberLeftEvent.of(member, group);
+            final GroupMemberLeftEvent event2 = GroupMemberLeftEvent.of(member, group);
 
             assertEquals(event1, event2);
         }
 
         @Test
         void shouldNotBeEquals(@Mock final CompressedPublicKey member2) {
-            final GroupMemberJoinedEvent event1 = new GroupMemberJoinedEvent(member, group);
-            final GroupMemberJoinedEvent event2 = new GroupMemberJoinedEvent(member2, group);
+            final GroupMemberJoinedEvent event1 = GroupMemberJoinedEvent.of(member, group);
+            final GroupMemberJoinedEvent event2 = GroupMemberJoinedEvent.of(member2, group);
 
             assertNotEquals(event1, event2);
         }
@@ -76,16 +76,16 @@ class GroupMemberJoinedEventTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final GroupMemberJoinedEvent event1 = new GroupMemberJoinedEvent(member, group);
-            final GroupMemberJoinedEvent event2 = new GroupMemberJoinedEvent(member, group);
+            final GroupMemberJoinedEvent event1 = GroupMemberJoinedEvent.of(member, group);
+            final GroupMemberJoinedEvent event2 = GroupMemberJoinedEvent.of(member, group);
 
             assertEquals(event1.hashCode(), event2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals(@Mock final CompressedPublicKey member2) {
-            final GroupMemberJoinedEvent event1 = new GroupMemberJoinedEvent(member, group);
-            final GroupMemberJoinedEvent event2 = new GroupMemberJoinedEvent(member2, group);
+            final GroupMemberJoinedEvent event1 = GroupMemberJoinedEvent.of(member, group);
+            final GroupMemberJoinedEvent event2 = GroupMemberJoinedEvent.of(member2, group);
 
             assertNotEquals(event1.hashCode(), event2.hashCode());
         }

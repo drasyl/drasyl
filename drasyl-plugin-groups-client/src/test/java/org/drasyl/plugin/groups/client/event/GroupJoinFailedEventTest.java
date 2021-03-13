@@ -40,21 +40,21 @@ class GroupJoinFailedEventTest {
     class Getters {
         @Test
         void shouldReturnCorrectReason() {
-            final GroupJoinFailedEvent event = new GroupJoinFailedEvent(group, Error.ERROR_UNKNOWN, runnable);
+            final GroupJoinFailedEvent event = GroupJoinFailedEvent.of(group, Error.ERROR_UNKNOWN, runnable);
 
             assertEquals(Error.ERROR_UNKNOWN, event.getReason());
         }
 
         @Test
         void shouldReturnCorrectGroup() {
-            final GroupJoinFailedEvent event = new GroupJoinFailedEvent(group, Error.ERROR_UNKNOWN, runnable);
+            final GroupJoinFailedEvent event = GroupJoinFailedEvent.of(group, Error.ERROR_UNKNOWN, runnable);
 
             assertEquals(group, event.getGroup());
         }
 
         @Test
         void shouldReturnCorrectRunnable() {
-            final GroupJoinFailedEvent event = new GroupJoinFailedEvent(group, Error.ERROR_UNKNOWN, runnable);
+            final GroupJoinFailedEvent event = GroupJoinFailedEvent.of(group, Error.ERROR_UNKNOWN, runnable);
 
             assertEquals(runnable, event.getReJoin());
         }
@@ -64,16 +64,16 @@ class GroupJoinFailedEventTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final GroupJoinFailedEvent event1 = new GroupJoinFailedEvent(group, Error.ERROR_UNKNOWN, runnable);
-            final GroupJoinFailedEvent event2 = new GroupJoinFailedEvent(group, Error.ERROR_UNKNOWN, runnable);
+            final GroupJoinFailedEvent event1 = GroupJoinFailedEvent.of(group, Error.ERROR_UNKNOWN, runnable);
+            final GroupJoinFailedEvent event2 = GroupJoinFailedEvent.of(group, Error.ERROR_UNKNOWN, runnable);
 
             assertEquals(event1, event2);
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupJoinFailedEvent event1 = new GroupJoinFailedEvent(group, Error.ERROR_UNKNOWN, runnable);
-            final GroupJoinFailedEvent event2 = new GroupJoinFailedEvent(group, Error.ERROR_GROUP_NOT_FOUND, runnable);
+            final GroupJoinFailedEvent event1 = GroupJoinFailedEvent.of(group, Error.ERROR_UNKNOWN, runnable);
+            final GroupJoinFailedEvent event2 = GroupJoinFailedEvent.of(group, Error.ERROR_GROUP_NOT_FOUND, runnable);
 
             assertNotEquals(event1, event2);
         }
@@ -83,16 +83,16 @@ class GroupJoinFailedEventTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final GroupJoinFailedEvent event1 = new GroupJoinFailedEvent(group, Error.ERROR_UNKNOWN, runnable);
-            final GroupJoinFailedEvent event2 = new GroupJoinFailedEvent(group, Error.ERROR_UNKNOWN, runnable);
+            final GroupJoinFailedEvent event1 = GroupJoinFailedEvent.of(group, Error.ERROR_UNKNOWN, runnable);
+            final GroupJoinFailedEvent event2 = GroupJoinFailedEvent.of(group, Error.ERROR_UNKNOWN, runnable);
 
             assertEquals(event1.hashCode(), event2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupJoinFailedEvent event1 = new GroupJoinFailedEvent(group, Error.ERROR_UNKNOWN, runnable);
-            final GroupJoinFailedEvent event2 = new GroupJoinFailedEvent(group, Error.ERROR_GROUP_NOT_FOUND, runnable);
+            final GroupJoinFailedEvent event1 = GroupJoinFailedEvent.of(group, Error.ERROR_UNKNOWN, runnable);
+            final GroupJoinFailedEvent event2 = GroupJoinFailedEvent.of(group, Error.ERROR_GROUP_NOT_FOUND, runnable);
 
             assertNotEquals(event1.hashCode(), event2.hashCode());
         }

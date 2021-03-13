@@ -27,6 +27,12 @@ import org.drasyl.plugin.groups.client.Group;
  * This is an immutable object.
  */
 public class GroupMemberLeftEvent extends GroupMemberActionEvent {
+    /**
+     * @throws NullPointerException if {@code member} or {@code group} is {@code null}
+     * @deprecated Use {@link #of(CompressedPublicKey, Group)} instead.
+     */
+    // make method private on next release
+    @Deprecated(since = "0.5.0", forRemoval = true)
     public GroupMemberLeftEvent(final CompressedPublicKey member,
                                 final Group group) {
         super(member, group);
@@ -38,5 +44,13 @@ public class GroupMemberLeftEvent extends GroupMemberActionEvent {
                 "member=" + member +
                 ", group=" + group +
                 '}';
+    }
+
+    /**
+     * @throws NullPointerException if {@code member} or {@code group} is {@code null}
+     */
+    public static GroupMemberLeftEvent of(final CompressedPublicKey member,
+                                          final Group group) {
+        return new GroupMemberLeftEvent(member, group);
     }
 }

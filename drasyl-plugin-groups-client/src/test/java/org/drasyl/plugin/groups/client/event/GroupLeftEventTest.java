@@ -39,14 +39,14 @@ class GroupLeftEventTest {
     class Getters {
         @Test
         void shouldReturnCorrectGroup() {
-            final GroupLeftEvent event = new GroupLeftEvent(group, runnable);
+            final GroupLeftEvent event = GroupLeftEvent.of(group, runnable);
 
             assertEquals(group, event.getGroup());
         }
 
         @Test
         void shouldReturnCorrectRunnable() {
-            final GroupLeftEvent event = new GroupLeftEvent(group, runnable);
+            final GroupLeftEvent event = GroupLeftEvent.of(group, runnable);
 
             assertEquals(runnable, event.getReJoin());
         }
@@ -56,16 +56,16 @@ class GroupLeftEventTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final GroupLeftEvent event1 = new GroupLeftEvent(group, runnable);
-            final GroupLeftEvent event2 = new GroupLeftEvent(group, runnable);
+            final GroupLeftEvent event1 = GroupLeftEvent.of(group, runnable);
+            final GroupLeftEvent event2 = GroupLeftEvent.of(group, runnable);
 
             assertEquals(event1, event2);
         }
 
         @Test
         void shouldNotBeEquals(@Mock final Group group2) {
-            final GroupLeftEvent event1 = new GroupLeftEvent(group, runnable);
-            final GroupLeftEvent event2 = new GroupLeftEvent(group2, runnable);
+            final GroupLeftEvent event1 = GroupLeftEvent.of(group, runnable);
+            final GroupLeftEvent event2 = GroupLeftEvent.of(group2, runnable);
 
             assertNotEquals(event1, event2);
         }
@@ -75,16 +75,16 @@ class GroupLeftEventTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final GroupLeftEvent event1 = new GroupLeftEvent(group, runnable);
-            final GroupLeftEvent event2 = new GroupLeftEvent(group, runnable);
+            final GroupLeftEvent event1 = GroupLeftEvent.of(group, runnable);
+            final GroupLeftEvent event2 = GroupLeftEvent.of(group, runnable);
 
             assertEquals(event1.hashCode(), event2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals(@Mock final Group group2) {
-            final GroupLeftEvent event1 = new GroupLeftEvent(group, runnable);
-            final GroupLeftEvent event2 = new GroupLeftEvent(group2, runnable);
+            final GroupLeftEvent event1 = GroupLeftEvent.of(group, runnable);
+            final GroupLeftEvent event2 = GroupLeftEvent.of(group2, runnable);
 
             assertNotEquals(event1.hashCode(), event2.hashCode());
         }

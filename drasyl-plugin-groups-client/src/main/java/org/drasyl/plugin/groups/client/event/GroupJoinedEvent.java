@@ -36,6 +36,13 @@ public class GroupJoinedEvent implements GroupEvent {
     private final Set<CompressedPublicKey> members;
     private final Runnable leaveRun;
 
+    /**
+     * @throws NullPointerException if {@code group}, {@code members} or {@code leaveRun} is {@code
+     *                              null}
+     * @deprecated Use {@link #of(Group, Set, Runnable)} instead.
+     */
+    // make method private on next release
+    @Deprecated(since = "0.5.0", forRemoval = true)
     public GroupJoinedEvent(final Group group,
                             final Set<CompressedPublicKey> members,
                             final Runnable leaveRun) {
@@ -85,5 +92,15 @@ public class GroupJoinedEvent implements GroupEvent {
      */
     public Runnable getLeaveRun() {
         return leaveRun;
+    }
+
+    /**
+     * @throws NullPointerException if {@code group}, {@code members} or {@code leaveRun} is {@code
+     *                              null}
+     */
+    public static GroupJoinedEvent of(final Group group,
+                                      final Set<CompressedPublicKey> members,
+                                      final Runnable leaveRun) {
+        return new GroupJoinedEvent(group, members, leaveRun);
     }
 }

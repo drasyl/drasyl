@@ -44,21 +44,21 @@ class GroupJoinedEventTest {
     class Getters {
         @Test
         void shouldReturnCorrectGroup() {
-            final GroupJoinedEvent event = new GroupJoinedEvent(group, Set.of(member), runnable);
+            final GroupJoinedEvent event = GroupJoinedEvent.of(group, Set.of(member), runnable);
 
             assertEquals(group, event.getGroup());
         }
 
         @Test
         void shouldReturnCorrectMember() {
-            final GroupJoinedEvent event = new GroupJoinedEvent(group, Set.of(member), runnable);
+            final GroupJoinedEvent event = GroupJoinedEvent.of(group, Set.of(member), runnable);
 
             assertEquals(Set.of(member), event.getMembers());
         }
 
         @Test
         void shouldReturnCorrectRunnable() {
-            final GroupJoinedEvent event = new GroupJoinedEvent(group, Set.of(member), runnable);
+            final GroupJoinedEvent event = GroupJoinedEvent.of(group, Set.of(member), runnable);
 
             assertEquals(runnable, event.getLeaveRun());
         }
@@ -68,16 +68,16 @@ class GroupJoinedEventTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final GroupJoinedEvent event1 = new GroupJoinedEvent(group, Set.of(member), runnable);
-            final GroupJoinedEvent event2 = new GroupJoinedEvent(group, Set.of(), runnable);
+            final GroupJoinedEvent event1 = GroupJoinedEvent.of(group, Set.of(member), runnable);
+            final GroupJoinedEvent event2 = GroupJoinedEvent.of(group, Set.of(), runnable);
 
             assertEquals(event1, event2);
         }
 
         @Test
         void shouldNotBeEquals(@Mock final Group group2) {
-            final GroupJoinedEvent event1 = new GroupJoinedEvent(group, Set.of(member), runnable);
-            final GroupJoinedEvent event2 = new GroupJoinedEvent(group2, Set.of(member), runnable);
+            final GroupJoinedEvent event1 = GroupJoinedEvent.of(group, Set.of(member), runnable);
+            final GroupJoinedEvent event2 = GroupJoinedEvent.of(group2, Set.of(member), runnable);
 
             assertNotEquals(event1, event2);
         }
@@ -87,16 +87,16 @@ class GroupJoinedEventTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final GroupJoinedEvent event1 = new GroupJoinedEvent(group, Set.of(member), runnable);
-            final GroupJoinedEvent event2 = new GroupJoinedEvent(group, Set.of(), runnable);
+            final GroupJoinedEvent event1 = GroupJoinedEvent.of(group, Set.of(member), runnable);
+            final GroupJoinedEvent event2 = GroupJoinedEvent.of(group, Set.of(), runnable);
 
             assertEquals(event1.hashCode(), event2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals(@Mock final Group group2) {
-            final GroupJoinedEvent event1 = new GroupJoinedEvent(group, Set.of(member), runnable);
-            final GroupJoinedEvent event2 = new GroupJoinedEvent(group2, Set.of(member), runnable);
+            final GroupJoinedEvent event1 = GroupJoinedEvent.of(group, Set.of(member), runnable);
+            final GroupJoinedEvent event2 = GroupJoinedEvent.of(group2, Set.of(member), runnable);
 
             assertNotEquals(event1.hashCode(), event2.hashCode());
         }

@@ -23,8 +23,16 @@ import org.drasyl.plugin.groups.client.Group;
 
 /**
  * An event that signals that a new member joined a group.
+ * <p>
+ * This is an immutable object.
  */
 public class GroupMemberJoinedEvent extends GroupMemberActionEvent {
+    /**
+     * @throws NullPointerException if {@code member} or {@code group} is {@code null}
+     * @deprecated Use {@link #of(CompressedPublicKey, Group)} instead.
+     */
+    // make method private on next release
+    @Deprecated(since = "0.5.0", forRemoval = true)
     public GroupMemberJoinedEvent(final CompressedPublicKey member,
                                   final Group group) {
         super(member, group);
@@ -36,5 +44,13 @@ public class GroupMemberJoinedEvent extends GroupMemberActionEvent {
                 "member=" + member +
                 ", group=" + group +
                 '}';
+    }
+
+    /**
+     * @throws NullPointerException if {@code member} or {@code group} is {@code null}
+     */
+    public static GroupMemberJoinedEvent of(final CompressedPublicKey member,
+                                            final Group group) {
+        return new GroupMemberJoinedEvent(member, group);
     }
 }

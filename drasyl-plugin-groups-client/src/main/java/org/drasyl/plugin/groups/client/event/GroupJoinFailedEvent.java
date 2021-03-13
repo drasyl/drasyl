@@ -23,6 +23,8 @@ import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error;
 
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An event that signals, that a joining a specific group has failed.
  * <p>
@@ -33,10 +35,17 @@ public class GroupJoinFailedEvent implements GroupEvent {
     private final Error reason;
     private final Runnable reJoin;
 
+    /**
+     * @throws NullPointerException if {@code group}, {@code reason} or {@code reJoin} is {@code
+     *                              null}
+     * @deprecated Use {@link #of(Group, Error, Runnable)} instead.
+     */
+    // make method private on next release
+    @Deprecated(since = "0.5.0", forRemoval = true)
     public GroupJoinFailedEvent(final Group group, final Error reason, final Runnable reJoin) {
-        this.group = group;
-        this.reason = reason;
-        this.reJoin = reJoin;
+        this.group = requireNonNull(group);
+        this.reason = requireNonNull(reason);
+        this.reJoin = requireNonNull(reJoin);
     }
 
     public Error getReason() {
@@ -81,5 +90,15 @@ public class GroupJoinFailedEvent implements GroupEvent {
                 "group=" + group +
                 ", reason='" + reason + '\'' +
                 '}';
+    }
+
+    /**
+     * @throws NullPointerException if {@code group}, {@code reason} or {@code reJoin} is {@code
+     *                              null}
+     */
+    public static GroupJoinFailedEvent of(final Group group,
+                                          final Error reason,
+                                          final Runnable reJoin) {
+        return new GroupJoinFailedEvent(group, reason, reJoin);
     }
 }

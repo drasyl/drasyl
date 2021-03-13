@@ -191,7 +191,7 @@ class GroupsClientHandlerTest {
                 future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new GroupMemberJoinedEvent(publicKey, group));
+                        .assertValue(GroupMemberJoinedEvent.of(publicKey, group));
                 assertTrue(future.isDone());
             }
         }
@@ -208,7 +208,7 @@ class GroupsClientHandlerTest {
                 future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new GroupMemberLeftEvent(publicKey, group));
+                        .assertValue(GroupMemberLeftEvent.of(publicKey, group));
                 assertTrue(future.isDone());
             }
         }
@@ -227,7 +227,7 @@ class GroupsClientHandlerTest {
                 future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new GroupLeftEvent(group, () -> {
+                        .assertValue(GroupLeftEvent.of(group, () -> {
                         }));
                 assertTrue(future.isDone());
             }
@@ -248,7 +248,7 @@ class GroupsClientHandlerTest {
                 future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new GroupJoinedEvent(group, Set.of(publicKey), () -> {
+                        .assertValue(GroupJoinedEvent.of(group, Set.of(publicKey), () -> {
                         }));
                 assertTrue(future.isDone());
             }
@@ -267,7 +267,7 @@ class GroupsClientHandlerTest {
                 future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new GroupJoinFailedEvent(group, error, () -> {
+                        .assertValue(GroupJoinFailedEvent.of(group, error, () -> {
                         }));
 
                 assertTrue(future.isDone());

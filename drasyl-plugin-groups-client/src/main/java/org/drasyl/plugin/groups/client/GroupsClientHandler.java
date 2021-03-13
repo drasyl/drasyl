@@ -153,7 +153,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                                        final MemberJoinedMessage msg,
                                        final CompletableFuture<Void> future) {
         FutureUtil.completeOnAllOf(future,
-                ctx.pipeline().processInbound(new GroupMemberJoinedEvent(msg.getMember(), msg.getGroup())));
+                ctx.pipeline().processInbound(GroupMemberJoinedEvent.of(msg.getMember(), msg.getGroup())));
     }
 
     /**
@@ -174,7 +174,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
             disposable.dispose();
         }
 
-        FutureUtil.completeOnAllOf(future, ctx.pipeline().processInbound(new GroupJoinFailedEvent(group, msg.getReason(),
+        FutureUtil.completeOnAllOf(future, ctx.pipeline().processInbound(GroupJoinFailedEvent.of(group, msg.getReason(),
                 () -> joinGroup(ctx, groups.get(group), false))));
     }
 
@@ -198,11 +198,11 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
             }
 
             FutureUtil.completeOnAllOf(future,
-                    ctx.pipeline().processInbound(new GroupLeftEvent(group, () -> joinGroup(ctx, groups.get(group), false))));
+                    ctx.pipeline().processInbound(GroupLeftEvent.of(group, () -> joinGroup(ctx, groups.get(group), false))));
         }
         else {
             FutureUtil.completeOnAllOf(future,
-                    ctx.pipeline().processInbound(new GroupMemberLeftEvent(msg.getMember(), group)));
+                    ctx.pipeline().processInbound(GroupMemberLeftEvent.of(msg.getMember(), group)));
         }
     }
 
@@ -233,7 +233,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                 timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
 
         FutureUtil.completeOnAllOf(future, ctx.pipeline().processInbound(
-                new GroupJoinedEvent(
+                GroupJoinedEvent.of(
                         group,
                         msg.getMembers(),
                         () -> ctx.pipeline().processOutbound(sender, new GroupLeaveMessage(group)))));
