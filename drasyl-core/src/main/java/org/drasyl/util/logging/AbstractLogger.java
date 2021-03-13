@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
  * logger.debug("value: {}", this::expensiveComputation);
  * </code></pre>
  */
+@SuppressWarnings("DuplicatedCode")
 abstract class AbstractLogger implements Logger {
     private final String name;
 
@@ -166,6 +167,227 @@ abstract class AbstractLogger implements Logger {
     public final void error(final String format, final Supplier<Object>... suppliers) {
         if (isErrorEnabled()) {
             error(format, Arrays.stream(suppliers).map(Supplier::get).toArray());
+        }
+    }
+
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public boolean isEnabled(final LogLevel level) {
+        switch (level) {
+            case TRACE:
+                return isTraceEnabled();
+            case DEBUG:
+                return isDebugEnabled();
+            case INFO:
+                return isInfoEnabled();
+            case WARN:
+                return isWarnEnabled();
+            case ERROR:
+                return isErrorEnabled();
+            default:
+                throw new Error("Unexpected level: " + level);
+        }
+    }
+
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public void log(final LogLevel level, final String msg) {
+        switch (level) {
+            case TRACE:
+                trace(msg);
+                break;
+            case DEBUG:
+                debug(msg);
+                break;
+            case INFO:
+                info(msg);
+                break;
+            case WARN:
+                warn(msg);
+                break;
+            case ERROR:
+                error(msg);
+                break;
+            default:
+                throw new Error("Unexpected level: " + level);
+        }
+    }
+
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public void log(final LogLevel level, final String format, final Object arg) {
+        switch (level) {
+            case TRACE:
+                trace(format, arg);
+                break;
+            case DEBUG:
+                debug(format, arg);
+                break;
+            case INFO:
+                info(format, arg);
+                break;
+            case WARN:
+                warn(format, arg);
+                break;
+            case ERROR:
+                error(format, arg);
+                break;
+            default:
+                throw new Error("Unexpected level: " + level);
+        }
+    }
+
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public void log(final LogLevel level,
+                    final String format,
+                    final Supplier<Object> supplier) {
+        switch (level) {
+            case TRACE:
+                trace(format, supplier);
+                break;
+            case DEBUG:
+                debug(format, supplier);
+                break;
+            case INFO:
+                info(format, supplier);
+                break;
+            case WARN:
+                warn(format, supplier);
+                break;
+            case ERROR:
+                error(format, supplier);
+                break;
+            default:
+                throw new Error("Unexpected level: " + level);
+        }
+    }
+
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public void log(final LogLevel level,
+                    final String format,
+                    final Object arg1,
+                    final Object arg2) {
+        switch (level) {
+            case TRACE:
+                trace(format, arg1, arg2);
+                break;
+            case DEBUG:
+                debug(format, arg1, arg2);
+                break;
+            case INFO:
+                info(format, arg1, arg2);
+                break;
+            case WARN:
+                warn(format, arg1, arg2);
+                break;
+            case ERROR:
+                error(format, arg1, arg2);
+                break;
+            default:
+                throw new Error("Unexpected level: " + level);
+        }
+    }
+
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public void log(final LogLevel level,
+                    final String format,
+                    final Supplier<Object> supplier1, final Supplier<Object> supplier2) {
+        switch (level) {
+            case TRACE:
+                trace(format, supplier1, supplier2);
+                break;
+            case DEBUG:
+                debug(format, supplier1, supplier2);
+                break;
+            case INFO:
+                info(format, supplier1, supplier2);
+                break;
+            case WARN:
+                warn(format, supplier1, supplier2);
+                break;
+            case ERROR:
+                error(format, supplier1, supplier2);
+                break;
+            default:
+                throw new Error("Unexpected level: " + level);
+        }
+    }
+
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public void log(final LogLevel level, final String format, final Object... arguments) {
+        switch (level) {
+            case TRACE:
+                trace(format, arguments);
+                break;
+            case DEBUG:
+                debug(format, arguments);
+                break;
+            case INFO:
+                info(format, arguments);
+                break;
+            case WARN:
+                warn(format, arguments);
+                break;
+            case ERROR:
+                error(format, arguments);
+                break;
+            default:
+                throw new Error("Unexpected level: " + level);
+        }
+    }
+
+    @SafeVarargs
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public final void log(final LogLevel level,
+                          final String format,
+                          final Supplier<Object>... suppliers) {
+        switch (level) {
+            case TRACE:
+                trace(format, suppliers);
+                break;
+            case DEBUG:
+                debug(format, suppliers);
+                break;
+            case INFO:
+                info(format, suppliers);
+                break;
+            case WARN:
+                warn(format, suppliers);
+                break;
+            case ERROR:
+                error(format, suppliers);
+                break;
+            default:
+                throw new Error("Unexpected level: " + level);
+        }
+    }
+
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public void log(final LogLevel level, final String msg, final Throwable t) {
+        switch (level) {
+            case TRACE:
+                trace(msg, t);
+                break;
+            case DEBUG:
+                debug(msg, t);
+                break;
+            case INFO:
+                info(msg, t);
+                break;
+            case WARN:
+                warn(msg, t);
+                break;
+            case ERROR:
+                error(msg, t);
+                break;
+            default:
+                throw new Error("Unexpected level: " + level);
         }
     }
 }

@@ -325,6 +325,58 @@ class JdkLoggerTest {
                 verify(logger).log(argThatRecord(new LogRecord(level, "format")));
             }
         }
+
+        @Nested
+        class DynamicLevel {
+            private final Level level = SEVERE;
+
+            @BeforeEach
+            void setUp() {
+                when(logger.isLoggable(level)).thenReturn(true);
+            }
+
+            @Test
+            void isEnabled() {
+                assertTrue(underTest.isEnabled(LogLevel.ERROR));
+            }
+
+            @Test
+            void format() {
+                underTest.log(LogLevel.ERROR, "format");
+
+                verify(logger).log(argThatRecord(new LogRecord(level, "format")));
+            }
+
+            @Test
+            void formatObject(@Mock final Object arg) {
+                underTest.log(LogLevel.ERROR, "format {}", arg);
+
+                verify(logger).log(argThatRecord(new LogRecord(level, "format " + arg.toString())));
+            }
+
+            @Test
+            void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
+                underTest.log(LogLevel.ERROR, "format {} {}", arg1, arg2);
+
+                verify(logger).log(argThatRecord(new LogRecord(level, "format " + arg1.toString() + " " + arg2.toString())));
+            }
+
+            @Test
+            void formatArguments(@Mock final Object arg1,
+                                 @Mock final Object arg2,
+                                 @Mock final Object arg3) {
+                underTest.log(LogLevel.ERROR, "format {} {} {}", arg1, arg2, arg3);
+
+                verify(logger).log(argThatRecord(new LogRecord(level, "format " + arg1.toString() + " " + arg2.toString() + " " + arg3.toString())));
+            }
+
+            @Test
+            void formatThrowable(@Mock final Throwable t) {
+                underTest.log(LogLevel.ERROR, "format", t);
+
+                verify(logger).log(argThatRecord(new LogRecord(level, "format")));
+            }
+        }
     }
 
     @Nested
@@ -686,6 +738,79 @@ class JdkLoggerTest {
                                      @Mock final Supplier<Object> arg2,
                                      @Mock final Supplier<Object> arg3) {
                     underTest.error("format", arg1, arg2, arg3);
+
+                    verify(arg1, never()).get();
+                    verify(arg2, never()).get();
+                    verify(arg3, never()).get();
+                }
+            }
+        }
+
+        @Nested
+        class DynamicLevel {
+            @Nested
+            class WhenEnabled {
+                @BeforeEach
+                void setUp() {
+                    when(logger.isLoggable(SEVERE)).thenReturn(true);
+                }
+
+                @Test
+                void formatObject(@Mock final Supplier<Object> arg) {
+                    underTest.log(LogLevel.ERROR, "format", arg);
+
+                    verify(arg).get();
+                }
+
+                @Test
+                void formatObjectObject(@Mock final Supplier<Object> arg1,
+                                        @Mock final Supplier<Object> arg2) {
+                    underTest.log(LogLevel.ERROR, "format", arg1, arg2);
+
+                    verify(arg1).get();
+                    verify(arg2).get();
+                }
+
+                @Test
+                void formatArguments(@Mock final Supplier<Object> arg1,
+                                     @Mock final Supplier<Object> arg2,
+                                     @Mock final Supplier<Object> arg3) {
+                    underTest.log(LogLevel.ERROR, "format", arg1, arg2, arg3);
+
+                    verify(arg1).get();
+                    verify(arg2).get();
+                    verify(arg3).get();
+                }
+            }
+
+            @Nested
+            class WhenDisabled {
+                @BeforeEach
+                void setUp() {
+                    when(logger.isLoggable(SEVERE)).thenReturn(false);
+                }
+
+                @Test
+                void formatObject(@Mock final Supplier<Object> arg) {
+                    underTest.log(LogLevel.ERROR, "format", arg);
+
+                    verify(arg, never()).get();
+                }
+
+                @Test
+                void formatObjectObject(@Mock final Supplier<Object> arg1,
+                                        @Mock final Supplier<Object> arg2) {
+                    underTest.log(LogLevel.ERROR, "format", arg1, arg2);
+
+                    verify(arg1, never()).get();
+                    verify(arg2, never()).get();
+                }
+
+                @Test
+                void formatArguments(@Mock final Supplier<Object> arg1,
+                                     @Mock final Supplier<Object> arg2,
+                                     @Mock final Supplier<Object> arg3) {
+                    underTest.log(LogLevel.ERROR, "format", arg1, arg2, arg3);
 
                     verify(arg1, never()).get();
                     verify(arg2, never()).get();
