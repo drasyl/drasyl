@@ -111,7 +111,7 @@ public abstract class DrasylNode {
             putObjectVolatile.invoke(unsafe, loggerClass, offset, null);
         }
         catch (final Exception e) { // NOSONAR
-            LOG.debug("", e);
+            LOG.debug(e);
         }
     }
 

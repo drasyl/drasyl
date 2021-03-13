@@ -94,7 +94,7 @@ public class Cli {
             }
         }
         catch (final CliException e) {
-            LOG.error("", e);
+            LOG.error(e);
             exitSupplier.accept(EXIT_FAILURE);
         }
     }

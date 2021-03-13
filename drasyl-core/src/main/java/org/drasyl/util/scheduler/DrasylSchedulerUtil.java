@@ -55,7 +55,7 @@ public final class DrasylSchedulerUtil {
     static {
         RxJavaPlugins.setErrorHandler(error -> {
             if (!(error.getCause() instanceof RejectedExecutionException)) {
-                LOG.warn("", error);
+                LOG.warn(error);
             }
         });
     }
@@ -189,7 +189,7 @@ public final class DrasylSchedulerUtil {
                 }
                 catch (final InterruptedException e) {
                     executor.shutdownNow();
-                    LOG.debug("", e);
+                    LOG.debug(e);
                     Thread.currentThread().interrupt();
                 }
 

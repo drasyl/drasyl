@@ -39,6 +39,7 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings("DuplicatedCode")
 abstract class AbstractLogger implements Logger {
+    private static final String THROWABLE_MESSAGE = "Exception occurred:";
     private final String name;
 
     protected AbstractLogger(final String name) {
@@ -75,6 +76,11 @@ abstract class AbstractLogger implements Logger {
     }
 
     @Override
+    public void trace(final Throwable t) {
+        trace(THROWABLE_MESSAGE, t);
+    }
+
+    @Override
     public void debug(final String format, final Supplier<Object> supplier) {
         if (isDebugEnabled()) {
             debug(format, supplier.get());
@@ -96,6 +102,11 @@ abstract class AbstractLogger implements Logger {
         if (isDebugEnabled()) {
             debug(format, Arrays.stream(suppliers).map(Supplier::get).toArray());
         }
+    }
+
+    @Override
+    public void debug(final Throwable t) {
+        debug(THROWABLE_MESSAGE, t);
     }
 
     @Override
@@ -123,6 +134,11 @@ abstract class AbstractLogger implements Logger {
     }
 
     @Override
+    public void info(final Throwable t) {
+        info(THROWABLE_MESSAGE, t);
+    }
+
+    @Override
     public void warn(final String format, final Supplier<Object> supplier) {
         if (isWarnEnabled()) {
             warn(format, supplier.get());
@@ -147,6 +163,11 @@ abstract class AbstractLogger implements Logger {
     }
 
     @Override
+    public void warn(final Throwable t) {
+        warn(THROWABLE_MESSAGE, t);
+    }
+
+    @Override
     public void error(final String format, final Supplier<Object> supplier) {
         if (isErrorEnabled()) {
             error(format, supplier.get());
@@ -168,6 +189,11 @@ abstract class AbstractLogger implements Logger {
         if (isErrorEnabled()) {
             error(format, Arrays.stream(suppliers).map(Supplier::get).toArray());
         }
+    }
+
+    @Override
+    public void error(final Throwable t) {
+        error(THROWABLE_MESSAGE, t);
     }
 
     @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
@@ -385,6 +411,30 @@ abstract class AbstractLogger implements Logger {
                 break;
             case ERROR:
                 error(msg, t);
+                break;
+            default:
+                throw new Error("Unexpected level: " + level);
+        }
+    }
+
+    @SuppressWarnings({ "java:S112", "java:S1142", "java:S1192" })
+    @Override
+    public void log(final LogLevel level, final Throwable t) {
+        switch (level) {
+            case TRACE:
+                trace(t);
+                break;
+            case DEBUG:
+                debug(t);
+                break;
+            case INFO:
+                info(t);
+                break;
+            case WARN:
+                warn(t);
+                break;
+            case ERROR:
+                error(t);
                 break;
             default:
                 throw new Error("Unexpected level: " + level);

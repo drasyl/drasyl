@@ -110,6 +110,13 @@ public interface Logger {
     void trace(String msg, Throwable t);
 
     /**
+     * Log an exception (throwable) at the TRACE level.
+     *
+     * @param t the exception (throwable) to log
+     */
+    void trace(Throwable t);
+
+    /**
      * Is the logger instance enabled for the DEBUG level?
      *
      * @return {@code true} if this Logger is enabled for the DEBUG level, {@code false} otherwise.
@@ -188,6 +195,13 @@ public interface Logger {
      * @param t   the exception (throwable) to log
      */
     void debug(String msg, Throwable t);
+
+    /**
+     * Log an exception (throwable) at the DEBUG level.
+     *
+     * @param t the exception (throwable) to log
+     */
+    void debug(Throwable t);
 
     /**
      * Is the logger instance enabled for the INFO level?
@@ -270,6 +284,13 @@ public interface Logger {
     void info(String msg, Throwable t);
 
     /**
+     * Log an exception (throwable) at the INFO level.
+     *
+     * @param t the exception (throwable) to log
+     */
+    void info(Throwable t);
+
+    /**
      * Is the logger instance enabled for the WARN level?
      *
      * @return {@code true} if this Logger is enabled for the WARN level, {@code false} otherwise.
@@ -350,6 +371,13 @@ public interface Logger {
     void warn(String msg, Throwable t);
 
     /**
+     * Log an exception (throwable) at the WARN level.
+     *
+     * @param t the exception (throwable) to log
+     */
+    void warn(Throwable t);
+
+    /**
      * Is the logger instance enabled for the ERROR level?
      *
      * @return {@code true} if this Logger is enabled for the ERROR level, {@code false} otherwise.
@@ -428,6 +456,13 @@ public interface Logger {
      * @param t   the exception (throwable) to log
      */
     void error(String msg, Throwable t);
+
+    /**
+     * Log an exception (throwable) at the ERROR level.
+     *
+     * @param t the exception (throwable) to log
+     */
+    void error(Throwable t);
 
     /**
      * Is the logger instance enabled for the specified {@code level}?
@@ -528,4 +563,12 @@ public interface Logger {
      * @param t     the exception (throwable) to log
      */
     void log(LogLevel level, String msg, Throwable t);
+
+    /**
+     * Log an exception (throwable) at the specified {@code level} level.
+     *
+     * @param level the log level
+     * @param t     the exception (throwable) to log
+     */
+    void log(LogLevel level, Throwable t);
 }
