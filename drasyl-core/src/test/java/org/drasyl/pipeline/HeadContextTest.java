@@ -98,23 +98,9 @@ class HeadContextTest {
     @Nested
     class OnWrite {
         @Test
-        void shouldSkipOnFutureCompleted(@Mock final Object msg,
-                                         @Mock final CompressedPublicKey recipient) {
-            final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-
-            when(future.isDone()).thenReturn(true);
-
-            headContext.write(ctx, recipient, msg, future);
-
-            verify(future, never()).completeExceptionally(any());
-        }
-
-        @Test
         void shouldWriteCompleteExceptionallyIfFutureIsNotCompleted(@Mock final Object msg,
                                                                     @Mock final CompressedPublicKey recipient) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-
-            when(future.isDone()).thenReturn(false);
 
             headContext.write(ctx, recipient, msg, future);
 

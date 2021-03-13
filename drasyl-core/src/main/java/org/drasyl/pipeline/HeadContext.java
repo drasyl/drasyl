@@ -71,14 +71,9 @@ class HeadContext extends AbstractEndHandler {
                 return;
             }
 
-            if (future.isDone()) {
-                LOG.debug("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was already completed.", msg, recipient);
-            }
-            else {
-                LOG.warn("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped.\n" +
-                        "This can happen if none of the handlers in the pipeline can process this message or have no route to the recipient.", msg, recipient);
-                future.completeExceptionally(new IllegalStateException("Message has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped. This can happen if none of the handlers in the pipeline can process this message or have no route to the recipient."));
-            }
+            LOG.warn("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped.\n" +
+                    "This can happen if none of the handlers in the pipeline can process this message or have no route to the recipient.", msg, recipient);
+            future.completeExceptionally(new IllegalStateException("Message has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped. This can happen if none of the handlers in the pipeline can process this message or have no route to the recipient."));
         }
         finally {
             ReferenceCountUtil.safeRelease(msg);
