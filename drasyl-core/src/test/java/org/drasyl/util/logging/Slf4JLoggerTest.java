@@ -26,7 +26,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
+import static java.util.logging.Level.SEVERE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
@@ -288,6 +291,53 @@ class Slf4JLoggerTest {
             @Test
             void formatThrowable(@Mock final Throwable t) {
                 underTest.error("format", t);
+
+                verify(logger).error("format", t);
+            }
+        }
+
+        @Nested
+        class DynamicLevel {
+            @Test
+            void isEnabled() {
+                when(logger.isErrorEnabled()).thenReturn(true);
+
+                assertTrue(underTest.isEnabled(LogLevel.ERROR));
+            }
+
+            @Test
+            void format() {
+                underTest.log(LogLevel.ERROR, "format");
+
+                verify(logger).error("format");
+            }
+
+            @Test
+            void formatObject(@Mock final Object arg) {
+                underTest.log(LogLevel.ERROR, "format {}", arg);
+
+                verify(logger).error("format {}", arg);
+            }
+
+            @Test
+            void formatObjectObject(@Mock final Object arg1, @Mock final Object arg2) {
+                underTest.log(LogLevel.ERROR, "format {} {}", arg1, arg2);
+
+                verify(logger).error("format {} {}", arg1, arg2);
+            }
+
+            @Test
+            void formatArguments(@Mock final Object arg1,
+                                 @Mock final Object arg2,
+                                 @Mock final Object arg3) {
+                underTest.log(LogLevel.ERROR, "format {} {} {}", arg1, arg2, arg3);
+
+                verify(logger).error("format {} {} {}", arg1, arg2, arg3);
+            }
+
+            @Test
+            void formatThrowable(@Mock final Throwable t) {
+                underTest.log(LogLevel.ERROR, "format", t);
 
                 verify(logger).error("format", t);
             }
@@ -653,6 +703,79 @@ class Slf4JLoggerTest {
                                      @Mock final Supplier<Object> arg2,
                                      @Mock final Supplier<Object> arg3) {
                     underTest.error("format", arg1, arg2, arg3);
+
+                    verify(arg1, never()).get();
+                    verify(arg2, never()).get();
+                    verify(arg3, never()).get();
+                }
+            }
+        }
+
+        @Nested
+        class DynamicLevel {
+            @Nested
+            class WhenEnabled {
+                @BeforeEach
+                void setUp() {
+                    when(logger.isErrorEnabled()).thenReturn(true);
+                }
+
+                @Test
+                void formatObject(@Mock final Supplier<Object> arg) {
+                    underTest.log(LogLevel.ERROR, "format", arg);
+
+                    verify(arg).get();
+                }
+
+                @Test
+                void formatObjectObject(@Mock final Supplier<Object> arg1,
+                                        @Mock final Supplier<Object> arg2) {
+                    underTest.log(LogLevel.ERROR, "format", arg1, arg2);
+
+                    verify(arg1).get();
+                    verify(arg2).get();
+                }
+
+                @Test
+                void formatArguments(@Mock final Supplier<Object> arg1,
+                                     @Mock final Supplier<Object> arg2,
+                                     @Mock final Supplier<Object> arg3) {
+                    underTest.log(LogLevel.ERROR, "format", arg1, arg2, arg3);
+
+                    verify(arg1).get();
+                    verify(arg2).get();
+                    verify(arg3).get();
+                }
+            }
+
+            @Nested
+            class WhenDisabled {
+                @BeforeEach
+                void setUp() {
+                    when(logger.isErrorEnabled()).thenReturn(false);
+                }
+
+                @Test
+                void formatObject(@Mock final Supplier<Object> arg) {
+                    underTest.log(LogLevel.ERROR, "format", arg);
+
+                    verify(arg, never()).get();
+                }
+
+                @Test
+                void formatObjectObject(@Mock final Supplier<Object> arg1,
+                                        @Mock final Supplier<Object> arg2) {
+                    underTest.log(LogLevel.ERROR, "format", arg1, arg2);
+
+                    verify(arg1, never()).get();
+                    verify(arg2, never()).get();
+                }
+
+                @Test
+                void formatArguments(@Mock final Supplier<Object> arg1,
+                                     @Mock final Supplier<Object> arg2,
+                                     @Mock final Supplier<Object> arg3) {
+                    underTest.log(LogLevel.ERROR, "format", arg1, arg2, arg3);
 
                     verify(arg1, never()).get();
                     verify(arg2, never()).get();

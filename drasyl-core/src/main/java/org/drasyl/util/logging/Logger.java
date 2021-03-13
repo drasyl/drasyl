@@ -428,4 +428,104 @@ public interface Logger {
      * @param t   the exception (throwable) to log
      */
     void error(String msg, Throwable t);
+
+    /**
+     * Is the logger instance enabled for the specified {@code level}?
+     *
+     * @param level the log level
+     * @return {@code true} if this Logger is enabled for the specified {@code level}, {@code false}
+     * otherwise.
+     */
+    boolean isEnabled(LogLevel level);
+
+    /**
+     * Log a message at the specified {@code level} level.
+     *
+     * @param level the log level
+     * @param msg   the message string to be logged
+     */
+    void log(LogLevel level, String msg);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg    the argument
+     */
+    void log(LogLevel level, String format, Object arg);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument supplier.
+     * <p/>
+     * <p>The supplier is not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level    the log level
+     * @param format   the format string
+     * @param supplier the argument supplier
+     */
+    void log(LogLevel level, String format, Supplier<Object> supplier);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     */
+    void log(LogLevel level, String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     */
+    void log(LogLevel level, String format,
+             Supplier<Object> supplier1,
+             Supplier<Object> supplier2);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param arguments a list of 3 or more arguments
+     */
+    void log(LogLevel level, String format, Object... arguments);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param suppliers a list of 3 or more argument suppliers
+     */
+    void log(LogLevel level, String format, Supplier<Object>... suppliers);
+
+    /**
+     * Log an exception (throwable) at the specified {@code level} level with an accompanying
+     * message.
+     *
+     * @param level the log level
+     * @param msg   the message accompanying the exception
+     * @param t     the exception (throwable) to log
+     */
+    void log(LogLevel level, String msg, Throwable t);
 }
