@@ -28,10 +28,10 @@ import org.drasyl.annotation.NonNull;
 import java.util.concurrent.TimeUnit;
 
 public class DrasylScheduler extends Scheduler {
-    private final String schedulerNamePrefix;
+    protected final String schedulerNamePrefix;
     private final Scheduler wrappedScheduler;
 
-    private DrasylScheduler(final Scheduler scheduler, final String schedulerNamePrefix) {
+    protected DrasylScheduler(final Scheduler scheduler, final String schedulerNamePrefix) {
         this.wrappedScheduler = scheduler;
         this.schedulerNamePrefix = schedulerNamePrefix;
     }
