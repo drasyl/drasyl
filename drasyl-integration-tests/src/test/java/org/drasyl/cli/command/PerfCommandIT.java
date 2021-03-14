@@ -29,7 +29,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
@@ -106,7 +105,6 @@ class PerfCommandIT {
     }
 
     @Test
-    @Disabled
     @Timeout(value = 30_000, unit = MILLISECONDS)
     void shouldTransferText(@TempDir final Path path) throws IOException {
         // create server
