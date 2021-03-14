@@ -34,4 +34,11 @@ public class DeferredBehavior extends Behavior {
     public Behavior apply(final DrasylNode node) {
         return factory.apply(node);
     }
+
+    @Override
+    public String toString() {
+        return "DeferredBehavior{" +
+                "factory=" + factory +
+                '}';
+    }
 }

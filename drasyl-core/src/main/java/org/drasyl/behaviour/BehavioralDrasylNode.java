@@ -42,13 +42,14 @@ import static java.util.Objects.requireNonNull;
  * Note: Unlike the default {@link DrasylNode}, this node can only process one event at a time.
  * Please consider to run long-running operations asynchronously in a separate thread.
  */
-@SuppressWarnings({ "java:S107", "java:S118", "java:S1192" })
+@SuppressWarnings({ "java:S107", "java:S118", "java:S1192", "java:S1312" })
 public abstract class BehavioralDrasylNode extends DrasylNode {
-    private static final Logger LOG = LoggerFactory.getLogger(BehavioralDrasylNode.class);
+    private final Logger logger;
     Behavior behavior;
 
     @SuppressWarnings("unused")
     protected BehavioralDrasylNode() throws DrasylException {
+        logger = LoggerFactory.getLogger(getClass());
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {
             behavior = ((DeferredBehavior) behavior).apply(this);
@@ -58,6 +59,7 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     @SuppressWarnings("unused")
     protected BehavioralDrasylNode(final DrasylConfig config) throws DrasylException {
         super(config);
+        logger = LoggerFactory.getLogger(getClass());
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {
             behavior = ((DeferredBehavior) behavior).apply(this);
@@ -75,6 +77,7 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
                                    final Scheduler scheduler,
                                    final Behavior behavior) {
         super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        logger = LoggerFactory.getLogger(getClass());
         if (behavior instanceof DeferredBehavior) {
             this.behavior = ((DeferredBehavior) behavior).apply(this);
         }
@@ -93,12 +96,14 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
                                    final AtomicReference<CompletableFuture<Void>> shutdownFuture,
                                    final Scheduler scheduler) {
         super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        logger = LoggerFactory.getLogger(getClass());
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {
             behavior = ((DeferredBehavior) behavior).apply(this);
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public final synchronized void onEvent(final @NonNull Event event) {
         Behavior result = behavior.receive(event);
@@ -107,12 +112,15 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
             result = ((DeferredBehavior) result).apply(this);
         }
 
+        final Behavior finalResult = result;
+        logger.debug("[{}] old behavior={}; event={}; new behavior={}", identity()::getPublicKey, () -> behavior, () -> event, () -> finalResult);
+
         if (result == Behaviors.shutdown()) {
             shutdown();
         }
 
         if (result == Behaviors.unhandled()) {
-            LOG.debug("Unhandled event: {}", event);
+            logger.debug("Unhandled event: {}", event);
         }
         else if (result != Behaviors.same()) {
             behavior = result;

@@ -102,6 +102,13 @@ public class Behavior {
         return UNHANDLED;
     }
 
+    @Override
+    public String toString() {
+        return "Behavior{" +
+                "handlers=" + handlers +
+                '}';
+    }
+
     /**
      * Immutable builder for creating {@link Behavior} by chaining event handlers.
      * <p>
@@ -177,7 +184,7 @@ public class Behavior {
         }
 
         /**
-         * Add a new predicated case to the event matching matching events of type {@class
+         * Add a new predicated case to the event matching matching events of type {@link
          * MessageEvent} with {@link MessageEvent#getPayload()} matching {@code messageType}.
          *
          * @param messageType type of the event to match
@@ -198,7 +205,7 @@ public class Behavior {
         }
 
         /**
-         * Add a new case to the event matching matching events of type {@class MessageEvent} with
+         * Add a new case to the event matching matching events of type {@link MessageEvent} with
          * {@link MessageEvent#getPayload()} matching {@code messageType}.
          *
          * @param messageType type of the event to match
@@ -212,7 +219,7 @@ public class Behavior {
         }
 
         /**
-         * Add a new case to the event handling matching events of type {@class MessageEvent} with
+         * Add a new case to the event handling matching events of type {@link MessageEvent} with
          * equal {@link MessageEvent#getPayload()}.
          *
          * @param sender  the message sender to compare to
@@ -231,7 +238,7 @@ public class Behavior {
         }
 
         /**
-         * Adds a new case to the event handling matching any {@class MessageEvent}. Subsequent
+         * Adds a new case to the event handling matching any {@link MessageEvent}. Subsequent
          * {@code onMessage(...)} clauses will never see any messages.
          *
          * @param handler action to apply for any message
