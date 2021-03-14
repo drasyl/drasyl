@@ -158,7 +158,10 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
      */
     private Behavior requestText(final RequestText request) {
         LOG.debug("Requesting text from '{}' with password '{}'", request::getSender, () -> maskSecret(request.getPassword()));
-        send(request.getSender(), new PasswordMessage(request.getPassword())).join();
+        send(request.getSender(), new PasswordMessage(request.getPassword())).exceptionally(e -> {
+            doneFuture.completeExceptionally(e);
+            return null;
+        });
 
         return Behaviors.withScheduler(scheduler -> {
             scheduler.scheduleEvent(new RequestTextTimeout(), REQUEST_TEXT_TIMEOUT);

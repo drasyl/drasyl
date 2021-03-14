@@ -118,7 +118,10 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                         doneFuture.completeExceptionally(event.getError());
                         return ignore();
                     })
-                    .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
+                    .onEvent(NodeNormalTerminationEvent.class, event -> {
+                        doneFuture.complete(null);
+                        return ignore();
+                    })
                     .onEvent(NodeOnlineEvent.class, event -> online())
                     .onEvent(OnlineTimeout.class, event -> {
                         doneFuture.completeExceptionally(new Exception("Node did not come online within " + ONLINE_TIMEOUT.toSeconds() + "s. Look like super peer is unavailable."));
@@ -129,7 +132,15 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                         this.text = event.text;
                         return offline();
                     })
-                    .onEvent(OnlineTimeout.class, event -> fail())
+                    .onEvent(OnlineTimeout.class, event -> {
+                        doneFuture.completeExceptionally(new Exception(
+                                "Code confirmation failed. Either you or your correspondent\n" +
+                                        "typed the code wrong, or a would-be man-in-the-middle attacker guessed\n" +
+                                        "incorrectly. You could try again, giving both your correspondent and\n" +
+                                        "the attacker another chance."
+                        ));
+                        return ignore();
+                    })
                     .onAnyEvent(event -> same())
                     .build();
         });
@@ -149,7 +160,10 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
         }
 
         return Behaviors.receive()
-                .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
+                .onEvent(NodeNormalTerminationEvent.class, event -> {
+                    doneFuture.complete(null);
+                    return ignore();
+                })
                 .onEvent(NodeOfflineEvent.class, event -> offline())
                 .onEvent(SetText.class, event -> text == null, event -> {
                     // text has been set
@@ -160,38 +174,29 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                     // correct password -> send text
                     LOG.debug("Got text request from '{}' with correct password '{}'. Reply with text.", () -> sender, () -> maskSecret(payload.getPassword()));
 
-                    send(sender, new TextMessage(text)).join();
-                    out.println("text message sent");
-                    return terminate();
+                    send(sender, new TextMessage(text)).whenComplete((result, e) -> {
+                        if (e == null) {
+                            out.println("text message sent");
+                            doneFuture.complete(null);
+                        }
+                        else {
+                            doneFuture.completeExceptionally(e);
+                        }
+                    });
+                    return ignore();
                 })
                 .onMessage(PasswordMessage.class, (sender, payload) -> {
                     // wrong password -> send rejection
-                    send(sender, new WrongPasswordMessage()).join();
-                    return fail();
+                    send(sender, new WrongPasswordMessage()).whenComplete((result, e) -> doneFuture.completeExceptionally(new Exception(
+                            "Code confirmation failed. Either you or your correspondent\n" +
+                                    "typed the code wrong, or a would-be man-in-the-middle attacker guessed\n" +
+                                    "incorrectly. You could try again, giving both your correspondent and\n" +
+                                    "the attacker another chance."
+                    )));
+                    return ignore();
                 })
                 .onAnyEvent(event -> same())
                 .build();
-    }
-
-    /**
-     * Terminate this node.
-     */
-    private Behavior terminate() {
-        doneFuture.complete(null);
-        return ignore();
-    }
-
-    /**
-     * Transfer failed.
-     */
-    private Behavior fail() {
-        doneFuture.completeExceptionally(new Exception(
-                "Code confirmation failed. Either you or your correspondent\n" +
-                        "typed the code wrong, or a would-be man-in-the-middle attacker guessed\n" +
-                        "incorrectly. You could try again, giving both your correspondent and\n" +
-                        "the attacker another chance."
-        ));
-        return ignore();
     }
 
     /**
