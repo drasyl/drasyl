@@ -24,11 +24,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.address.Address;
 
-import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
 
 abstract class AbstractCompressedKey<K> implements Address {
     public static final int LEGACY_KEY_LENGTH = 44;
@@ -50,7 +49,7 @@ abstract class AbstractCompressedKey<K> implements Address {
     /**
      * @throws NullPointerException     if {@code compressedKey} is {@code null}
      * @throws IllegalArgumentException if {@code compressedKey} does not conform to a valid
-     *                                  hexadecimal
+     *                                  hexadecimal or base64 scheme
      */
     @JsonCreator
     protected AbstractCompressedKey(final String compressedKey) {
@@ -58,12 +57,7 @@ abstract class AbstractCompressedKey<K> implements Address {
         // a normal string.
         // base64 encoded 32 up to 33 bytes long key ((4 * n / 3) + 3) & ~3
         if (compressedKey.length() == LEGACY_KEY_LENGTH) {
-            try {
-                this.compressedKey = JACKSON_READER.readValue("\"" + compressedKey + "\"", byte[].class);
-            }
-            catch (final IOException e) {
-                throw new IllegalArgumentException("Given string does not conform to a valid key", e);
-            }
+            this.compressedKey = Base64.getDecoder().decode(compressedKey);
         }
         else {
             this.compressedKey = HexUtil.fromString(compressedKey);
