@@ -22,12 +22,20 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueServerSocketChannel;
+import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.ServerSocketChannel;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.annotation.NonNull;
 
 /**
@@ -44,6 +52,8 @@ public final class NettyUtil {
      * Under Linux the more performant {@link EpollEventLoopGroup} is returned.
      * <p>
      * Under MacOS/BSD the more performant {@link KQueueEventLoopGroup} is returned.
+     * <p>
+     * In all other environments {@link NioEventLoopGroup} is returned.
      *
      * @return {@link EventLoopGroup} that fits best to the current environment
      */
@@ -66,6 +76,8 @@ public final class NettyUtil {
      * Under Linux the more performant {@link EpollDatagramChannel} is returned.
      * <p>
      * Under MacOS/BSD the more performant {@link KQueueDatagramChannel} is returned.
+     * <p>
+     * In all other environments {@link NioDatagramChannel} is returned.
      *
      * @return {@link DatagramChannel} that fits best to the current environment
      */
@@ -78,6 +90,52 @@ public final class NettyUtil {
         }
         else {
             return NioDatagramChannel.class;
+        }
+    }
+
+    /**
+     * Returns the {@link ServerSocketChannel} that fits best to the current environment.
+     * <p>
+     * Under Linux the more performant {@link EpollServerSocketChannel} is returned.
+     * <p>
+     * Under MacOS/BSD the more performant {@link KQueueServerSocketChannel} is returned.
+     * <p>
+     * In all other environments {@link NioServerSocketChannel} is returned.
+     *
+     * @return {@link ServerSocketChannel} that fits best to the current environment
+     */
+    public static Class<? extends ServerSocketChannel> getBestServerSocketChannel() {
+        if (Epoll.isAvailable()) {
+            return EpollServerSocketChannel.class;
+        }
+        else if (KQueue.isAvailable()) {
+            return KQueueServerSocketChannel.class;
+        }
+        else {
+            return NioServerSocketChannel.class;
+        }
+    }
+
+    /**
+     * Returns the {@link SocketChannel} that fits best to the current environment.
+     * <p>
+     * Under Linux the more performant {@link EpollSocketChannel} is returned.
+     * <p>
+     * Under MacOS/BSD the more performant {@link KQueueSocketChannel} is returned.
+     * <p>
+     * In all other environments {@link NioSocketChannel} is returned.
+     *
+     * @return {@link SocketChannel} that fits best to the current environment
+     */
+    public static Class<? extends SocketChannel> getBestSocketChannel() {
+        if (Epoll.isAvailable()) {
+            return EpollSocketChannel.class;
+        }
+        else if (KQueue.isAvailable()) {
+            return KQueueSocketChannel.class;
+        }
+        else {
+            return NioSocketChannel.class;
         }
     }
 }
