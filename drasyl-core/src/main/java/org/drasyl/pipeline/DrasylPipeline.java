@@ -43,7 +43,6 @@ import org.drasyl.remote.handler.StaticRoutesHandler;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.util.scheduler.DrasylScheduler;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,6 +66,8 @@ import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.remote.handler.StaticRoutesHandler.STATIC_ROUTES_HANDLER;
 import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
 import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
+import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
+import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
 
 /**
  * The default {@link Pipeline} implementation. Used to implement plugins for drasyl.
@@ -78,16 +79,18 @@ public class DrasylPipeline extends AbstractPipeline {
                           final Identity identity,
                           final PeersManager peersManager,
                           final EventLoopGroup bossGroup) {
-        this.handlerNames = new ConcurrentHashMap<>();
-        this.inboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound());
-        this.outboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound());
-        this.dependentScheduler = DrasylSchedulerUtil.getInstanceLight();
-        this.independentScheduler = DrasylSchedulerUtil.getInstanceHeavy();
+        super(
+                new ConcurrentHashMap<>(),
+                getInstanceLight(),
+                getInstanceHeavy(),
+                config,
+                identity,
+                peersManager,
+                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
+                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())
+        );
         this.head = new HeadContext(config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
         this.tail = new TailContext(eventConsumer, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-        this.config = config;
-        this.identity = identity;
-        this.peersManager = peersManager;
 
         initPointer();
 
@@ -157,14 +160,21 @@ public class DrasylPipeline extends AbstractPipeline {
     DrasylPipeline(final Map<String, AbstractHandlerContext> handlerNames,
                    final AbstractEndHandler head,
                    final AbstractEndHandler tail,
-                   final DrasylScheduler scheduler,
+                   final DrasylScheduler dependentScheduler,
                    final DrasylConfig config,
                    final Identity identity) {
-        this.handlerNames = handlerNames;
+        super(
+                handlerNames,
+                dependentScheduler,
+                getInstanceHeavy(),
+                config,
+                identity,
+                new PeersManager(event -> {
+                }, identity),
+                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
+                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())
+        );
         this.head = head;
         this.tail = tail;
-        this.dependentScheduler = scheduler;
-        this.config = config;
-        this.identity = identity;
     }
 }

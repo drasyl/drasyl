@@ -30,24 +30,44 @@ import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Abstract {@link Pipeline} implementation, that needs head and tail.
  */
 public abstract class AbstractPipeline implements Pipeline {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractPipeline.class);
-    protected Map<String, AbstractHandlerContext> handlerNames;
+    protected final Map<String, AbstractHandlerContext> handlerNames;
     protected AbstractEndHandler head;
     protected AbstractEndHandler tail;
-    protected DrasylScheduler dependentScheduler;
-    protected DrasylScheduler independentScheduler;
-    protected DrasylConfig config;
-    protected Identity identity;
-    protected PeersManager peersManager;
-    protected Serialization inboundSerialization;
-    protected Serialization outboundSerialization;
+    protected final DrasylScheduler dependentScheduler;
+    protected final DrasylScheduler independentScheduler;
+    protected final DrasylConfig config;
+    protected final Identity identity;
+    protected final PeersManager peersManager;
+    protected final Serialization inboundSerialization;
+    protected final Serialization outboundSerialization;
+
+    @SuppressWarnings("java:S107")
+    protected AbstractPipeline(final Map<String, AbstractHandlerContext> handlerNames,
+                               final DrasylScheduler dependentScheduler,
+                               final DrasylScheduler independentScheduler,
+                               final DrasylConfig config,
+                               final Identity identity,
+                               final PeersManager peersManager,
+                               final Serialization inboundSerialization,
+                               final Serialization outboundSerialization) {
+        this.handlerNames = requireNonNull(handlerNames);
+        this.dependentScheduler = requireNonNull(dependentScheduler);
+        this.independentScheduler = requireNonNull(independentScheduler);
+        this.config = requireNonNull(config);
+        this.identity = requireNonNull(identity);
+        this.peersManager = requireNonNull(peersManager);
+        this.inboundSerialization = requireNonNull(inboundSerialization);
+        this.outboundSerialization = requireNonNull(outboundSerialization);
+    }
 
     @SuppressWarnings("java:S2221")
     protected void initPointer() {
@@ -64,8 +84,8 @@ public abstract class AbstractPipeline implements Pipeline {
 
     @Override
     public Pipeline addFirst(final String name, final Handler handler) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(handler);
+        requireNonNull(name);
+        requireNonNull(handler);
         final AbstractHandlerContext newCtx;
 
         synchronized (this) {
@@ -116,8 +136,8 @@ public abstract class AbstractPipeline implements Pipeline {
 
     @Override
     public Pipeline addLast(final String name, final Handler handler) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(handler);
+        requireNonNull(name);
+        requireNonNull(handler);
         final AbstractHandlerContext newCtx;
 
         synchronized (this) {
@@ -140,16 +160,16 @@ public abstract class AbstractPipeline implements Pipeline {
 
     @Override
     public Pipeline addBefore(final String baseName, final String name, final Handler handler) {
-        Objects.requireNonNull(baseName);
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(handler);
+        requireNonNull(baseName);
+        requireNonNull(name);
+        requireNonNull(handler);
         final AbstractHandlerContext newCtx;
 
         synchronized (this) {
             collisionCheck(name);
 
             final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
-            Objects.requireNonNull(baseCtx);
+            requireNonNull(baseCtx);
 
             newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             // Set correct pointer on new context
@@ -168,16 +188,16 @@ public abstract class AbstractPipeline implements Pipeline {
 
     @Override
     public Pipeline addAfter(final String baseName, final String name, final Handler handler) {
-        Objects.requireNonNull(baseName);
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(handler);
+        requireNonNull(baseName);
+        requireNonNull(name);
+        requireNonNull(handler);
         final AbstractHandlerContext newCtx;
 
         synchronized (this) {
             collisionCheck(name);
 
             final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
-            Objects.requireNonNull(baseCtx);
+            requireNonNull(baseCtx);
 
             newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             // Set correct pointer on new context
@@ -196,7 +216,7 @@ public abstract class AbstractPipeline implements Pipeline {
 
     @Override
     public Pipeline remove(final String name) {
-        Objects.requireNonNull(name);
+        requireNonNull(name);
 
         synchronized (this) {
             final AbstractHandlerContext ctx = handlerNames.remove(name);
@@ -230,9 +250,9 @@ public abstract class AbstractPipeline implements Pipeline {
 
     @Override
     public Pipeline replace(final String oldName, final String newName, final Handler newHandler) {
-        Objects.requireNonNull(oldName);
-        Objects.requireNonNull(newName);
-        Objects.requireNonNull(newHandler);
+        requireNonNull(oldName);
+        requireNonNull(newName);
+        requireNonNull(newHandler);
         final AbstractHandlerContext newCtx;
 
         synchronized (this) {
@@ -264,7 +284,7 @@ public abstract class AbstractPipeline implements Pipeline {
 
     @Override
     public Handler get(final String name) {
-        Objects.requireNonNull(name);
+        requireNonNull(name);
 
         if (handlerNames.containsKey(name)) {
             return handlerNames.get(name).handler();
@@ -275,7 +295,7 @@ public abstract class AbstractPipeline implements Pipeline {
 
     @Override
     public HandlerContext context(final String name) {
-        Objects.requireNonNull(name);
+        requireNonNull(name);
 
         return handlerNames.get(name);
     }

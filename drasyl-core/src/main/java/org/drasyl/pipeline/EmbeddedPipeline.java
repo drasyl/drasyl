@@ -88,14 +88,11 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                              final Serialization outboundSerialization,
                              final DrasylScheduler dependentScheduler,
                              final DrasylScheduler independentScheduler) {
-        this.config = config;
+        super(new ConcurrentHashMap<>(), dependentScheduler, independentScheduler, config, identity, peersManager, inboundSerialization, outboundSerialization);
         this.inboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
         inboundEvents = ReplaySubject.<Event>create().toSerialized();
         outboundMessages = ReplaySubject.create().toSerialized();
 
-        this.handlerNames = new ConcurrentHashMap<>();
-        this.dependentScheduler = dependentScheduler;
-        this.independentScheduler = independentScheduler;
         this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             public void onOutbound(final HandlerContext ctx,
@@ -122,10 +119,6 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                 future.complete(null);
             }
         };
-        this.identity = identity;
-        this.peersManager = peersManager;
-        this.inboundSerialization = inboundSerialization;
-        this.outboundSerialization = outboundSerialization;
 
         initPointer();
     }
