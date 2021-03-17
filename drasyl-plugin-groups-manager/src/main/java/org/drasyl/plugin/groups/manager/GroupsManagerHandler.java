@@ -131,10 +131,10 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final CompressedPublicKey sender,
-                               final GroupsClientMessage msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final CompressedPublicKey sender,
+                                  final GroupsClientMessage msg,
+                                  final CompletableFuture<Void> future) {
         if (msg instanceof GroupJoinMessage) {
             ctx.independentScheduler().scheduleDirect(() -> handleJoinRequest(ctx, sender, (GroupJoinMessage) msg, future));
         }

@@ -63,10 +63,10 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<ApplicationMes
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final ApplicationMessage msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final ApplicationMessage msg,
+                                   final CompletableFuture<Void> future) {
         if (started && ctx.identity().getPublicKey().equals(msg.getRecipient())) {
             ctx.passInbound(msg.getSender(), msg, future);
         }

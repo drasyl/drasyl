@@ -113,9 +113,9 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     }
 
     @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final NodeUpEvent event,
-                                         final CompletableFuture<Void> future) {
+    protected void matchedEvent(final HandlerContext ctx,
+                                final NodeUpEvent event,
+                                final CompletableFuture<Void> future) {
         // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
         ctx.independentScheduler().scheduleDirect(() -> groups.values().forEach(group ->
                 joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
@@ -124,10 +124,10 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final GroupsServerMessage msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final GroupsServerMessage msg,
+                                  final CompletableFuture<Void> future) {
         if (msg instanceof MemberJoinedMessage) {
             onMemberJoined(ctx, (MemberJoinedMessage) msg, future);
         }

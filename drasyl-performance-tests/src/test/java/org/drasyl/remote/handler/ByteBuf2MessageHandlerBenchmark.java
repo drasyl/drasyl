@@ -28,9 +28,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
@@ -74,7 +74,7 @@ public class ByteBuf2MessageHandlerBenchmark extends AbstractBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void matchedRead(final Blackhole blackhole) {
-        ByteBuf2MessageHandler.INSTANCE.matchedRead(ctx, sender, msg, future);
+        ByteBuf2MessageHandler.INSTANCE.matchedInbound(ctx, sender, msg, future);
     }
 
     private static class MyHandlerContext implements HandlerContext {

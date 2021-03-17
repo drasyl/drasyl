@@ -49,9 +49,9 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Simpl
     }
 
     @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
+    protected void matchedEvent(final HandlerContext ctx,
+                                final Event event,
+                                final CompletableFuture<Void> future) {
         ctx.passEvent(event, future);
     }
 }

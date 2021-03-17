@@ -47,10 +47,10 @@ public final class OtherNetworkFilter extends SimpleInboundHandler<AddressedInte
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final AddressedIntermediateEnvelope<MessageLite> msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final AddressedIntermediateEnvelope<MessageLite> msg,
+                                  final CompletableFuture<Void> future) {
         try {
             if (msg.getContent().isChunk() || ctx.config().getNetworkId() == msg.getContent().getNetworkId()) {
                 ctx.passInbound(sender, msg, future);

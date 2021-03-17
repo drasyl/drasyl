@@ -36,7 +36,7 @@ import java.util.concurrent.CompletableFuture;
  *             {@link SimpleInboundHandler}&lt;{@code MyMessage}, {@link CompressedPublicKey}&gt; {
  *
  *        {@code @Override}
- *         protected void matchedRead({@link HandlerContext} ctx,
+ *         protected void matchedInbound({@link HandlerContext} ctx,
  *             {@link CompressedPublicKey} sender, {@code MyMessage} msg,
  *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
@@ -69,9 +69,9 @@ public abstract class SimpleInboundHandler<I, A extends Address> extends SimpleI
     }
 
     @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
+    protected void matchedEvent(final HandlerContext ctx,
+                                final Event event,
+                                final CompletableFuture<Void> future) {
         ctx.passEvent(event, future);
     }
 }

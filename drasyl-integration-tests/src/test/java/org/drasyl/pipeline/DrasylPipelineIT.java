@@ -91,10 +91,10 @@ class DrasylPipelineIT {
         pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, getBestEventLoopGroup(2));
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<>() {
             @Override
-            protected void matchedWrite(final HandlerContext ctx,
-                                        final Address recipient,
-                                        final Object msg,
-                                        final CompletableFuture<Void> future) {
+            protected void matchedOutbound(final HandlerContext ctx,
+                                           final Address recipient,
+                                           final Object msg,
+                                           final CompletableFuture<Void> future) {
                 if (!future.isDone()) {
                     outboundMessages.onNext(msg);
                     future.complete(null);

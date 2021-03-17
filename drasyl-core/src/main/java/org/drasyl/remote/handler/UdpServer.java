@@ -202,10 +202,10 @@ public class UdpServer extends SimpleOutboundHandler<AddressedByteBuf, InetSocke
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final InetSocketAddressWrapper recipient,
-                                final AddressedByteBuf addressedByteBuf,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final InetSocketAddressWrapper recipient,
+                                   final AddressedByteBuf addressedByteBuf,
+                                   final CompletableFuture<Void> future) {
         if (channel != null && channel.isWritable()) {
             final DatagramPacket packet = new DatagramPacket(addressedByteBuf.getContent(), addressedByteBuf.getRecipient());
             LOG.trace("Send Datagram {}", packet);

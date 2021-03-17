@@ -49,10 +49,10 @@ public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateE
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final AddressedIntermediateEnvelope<MessageLite> msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final AddressedIntermediateEnvelope<MessageLite> msg,
+                                  final CompletableFuture<Void> future) {
         try {
             if (ctx.identity().getPublicKey().equals(msg.getContent().getRecipient())) {
                 // disarm all messages addressed to us
@@ -71,10 +71,10 @@ public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateE
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final AddressedIntermediateEnvelope<MessageLite> msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final AddressedIntermediateEnvelope<MessageLite> msg,
+                                   final CompletableFuture<Void> future) {
         try {
             if (ctx.identity().getPublicKey().equals(msg.getContent().getSender())) {
                 // arm all messages from us

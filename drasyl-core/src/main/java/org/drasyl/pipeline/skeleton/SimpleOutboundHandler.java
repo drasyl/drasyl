@@ -38,7 +38,7 @@ import java.util.concurrent.CompletableFuture;
  *             {@link SimpleOutboundHandler}&lt;{@code MyMessage}, {@link CompressedPublicKey}&gt; {
  *
  *        {@code @Override}
- *         protected void matchedWrite({@link HandlerContext} ctx,
+ *         protected void matchedOutbound({@link HandlerContext} ctx,
  *             {@link CompressedPublicKey} recipient, {@code MyMessage} msg,
  *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
@@ -78,7 +78,7 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Addres
         if (acceptOutbound(msg) && acceptAddress(recipient)) {
             @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
-            matchedWrite(ctx, castedAddress, castedMsg, future);
+            matchedOutbound(ctx, castedAddress, castedMsg, future);
         }
         else {
             ctx.passOutbound(recipient, msg, future);
@@ -101,8 +101,8 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Addres
      * @param msg       the message
      * @param future    a future for the message
      */
-    protected abstract void matchedWrite(HandlerContext ctx,
-                                         A recipient,
-                                         O msg,
-                                         CompletableFuture<Void> future);
+    protected abstract void matchedOutbound(HandlerContext ctx,
+                                            A recipient,
+                                            O msg,
+                                            CompletableFuture<Void> future);
 }

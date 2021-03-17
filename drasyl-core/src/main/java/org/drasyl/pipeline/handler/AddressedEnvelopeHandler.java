@@ -42,20 +42,20 @@ public final class AddressedEnvelopeHandler extends SimpleDuplexHandler<Addresse
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final CompressedPublicKey recipient,
-                                final Object msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final CompressedPublicKey recipient,
+                                   final Object msg,
+                                   final CompletableFuture<Void> future) {
         // use recipient of the pipeline as recipient of the envelope
         // add own public key as sender
         ctx.passOutbound(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), recipient, msg), future);
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final CompressedPublicKey sender,
-                               final AddressedEnvelope<?, ?> msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final CompressedPublicKey sender,
+                                  final AddressedEnvelope<?, ?> msg,
+                                  final CompletableFuture<Void> future) {
         // use sender of the envelope as sender of the pipeline
         ctx.passInbound(msg.getSender(), msg.getContent(), future);
     }

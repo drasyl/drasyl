@@ -29,9 +29,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.remote.handler.InternetDiscoveryHandler.Peer;
 import org.drasyl.remote.protocol.MessageId;
@@ -94,7 +94,7 @@ public class InternetDiscoveryHandlerBenchmark extends AbstractBenchmark {
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
     public void matchedWrite() {
-        handler.matchedWrite(ctx, msg.getRecipient(), msg, future);
+        handler.matchedOutbound(ctx, msg.getRecipient(), msg, future);
     }
 
     private static class MyHandlerContext implements HandlerContext {

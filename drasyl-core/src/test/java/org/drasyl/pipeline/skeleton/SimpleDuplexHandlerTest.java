@@ -77,24 +77,24 @@ class SimpleDuplexHandlerTest {
 
             final SimpleDuplexHandler<Object, byte[], CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
-                protected void matchedEventTriggered(final HandlerContext ctx, final Event event,
-                                                     final CompletableFuture<Void> future) {
+                protected void matchedEvent(final HandlerContext ctx, final Event event,
+                                            final CompletableFuture<Void> future) {
                     ctx.passEvent(event, future);
                 }
 
                 @Override
-                protected void matchedRead(final HandlerContext ctx,
-                                           final CompressedPublicKey sender,
-                                           final Object msg,
-                                           final CompletableFuture<Void> future) {
+                protected void matchedInbound(final HandlerContext ctx,
+                                              final CompressedPublicKey sender,
+                                              final Object msg,
+                                              final CompletableFuture<Void> future) {
                     ctx.passInbound(sender, msg, future);
                 }
 
                 @Override
-                protected void matchedWrite(final HandlerContext ctx,
-                                            final CompressedPublicKey recipient,
-                                            final byte[] msg,
-                                            final CompletableFuture<Void> future) {
+                protected void matchedOutbound(final HandlerContext ctx,
+                                               final CompressedPublicKey recipient,
+                                               final byte[] msg,
+                                               final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
                     ctx.pipeline().processInbound(identity.getPublicKey(), new SerializedApplicationMessage(identity.getPublicKey(), recipient, byte[].class.getName(), msg));
                 }
@@ -117,25 +117,25 @@ class SimpleDuplexHandlerTest {
                                                   @Mock final CompressedPublicKey recipient) {
             final SimpleDuplexEventAwareHandler<Object, Event, MyMessage, CompressedPublicKey> handler = new SimpleDuplexEventAwareHandler<>(Object.class, Event.class, MyMessage.class, CompressedPublicKey.class) {
                 @Override
-                protected void matchedEventTriggered(final HandlerContext ctx,
-                                                     final Event event,
-                                                     final CompletableFuture<Void> future) {
+                protected void matchedEvent(final HandlerContext ctx,
+                                            final Event event,
+                                            final CompletableFuture<Void> future) {
                     ctx.passEvent(event, future);
                 }
 
                 @Override
-                protected void matchedRead(final HandlerContext ctx,
-                                           final CompressedPublicKey sender,
-                                           final Object msg,
-                                           final CompletableFuture<Void> future) {
+                protected void matchedInbound(final HandlerContext ctx,
+                                              final CompressedPublicKey sender,
+                                              final Object msg,
+                                              final CompletableFuture<Void> future) {
                     ctx.passInbound(sender, msg, future);
                 }
 
                 @Override
-                protected void matchedWrite(final HandlerContext ctx,
-                                            final CompressedPublicKey recipient,
-                                            final MyMessage msg,
-                                            final CompletableFuture<Void> future) {
+                protected void matchedOutbound(final HandlerContext ctx,
+                                               final CompressedPublicKey recipient,
+                                               final MyMessage msg,
+                                               final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
                     ctx.pipeline().processInbound(msg.getSender(), msg);
                 }
@@ -163,25 +163,25 @@ class SimpleDuplexHandlerTest {
         void shouldTriggerOnMatchedMessage(@Mock final CompressedPublicKey sender) throws JsonProcessingException {
             final SimpleDuplexEventAwareHandler<byte[], Event, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
-                protected void matchedWrite(final HandlerContext ctx,
-                                            final Address recipient,
-                                            final Object msg,
-                                            final CompletableFuture<Void> future) {
+                protected void matchedOutbound(final HandlerContext ctx,
+                                               final Address recipient,
+                                               final Object msg,
+                                               final CompletableFuture<Void> future) {
                     ctx.passOutbound(recipient, msg, future);
                 }
 
                 @Override
-                protected void matchedEventTriggered(final HandlerContext ctx,
-                                                     final Event event,
-                                                     final CompletableFuture<Void> future) {
+                protected void matchedEvent(final HandlerContext ctx,
+                                            final Event event,
+                                            final CompletableFuture<Void> future) {
                     super.onEvent(ctx, event, future);
                 }
 
                 @Override
-                protected void matchedRead(final HandlerContext ctx,
-                                           final Address sender,
-                                           final byte[] msg,
-                                           final CompletableFuture<Void> future) {
+                protected void matchedInbound(final HandlerContext ctx,
+                                              final Address sender,
+                                              final byte[] msg,
+                                              final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
                     ctx.pipeline().processOutbound(sender, msg);
                 }
@@ -210,25 +210,25 @@ class SimpleDuplexHandlerTest {
                                                   @Mock final CompressedPublicKey sender) {
             final SimpleDuplexHandler<List<?>, Object, Address> handler = new SimpleDuplexHandler<>() {
                 @Override
-                protected void matchedWrite(final HandlerContext ctx,
-                                            final Address recipient,
-                                            final Object msg,
-                                            final CompletableFuture<Void> future) {
+                protected void matchedOutbound(final HandlerContext ctx,
+                                               final Address recipient,
+                                               final Object msg,
+                                               final CompletableFuture<Void> future) {
                     ctx.passOutbound(recipient, msg, future);
                 }
 
                 @Override
-                protected void matchedEventTriggered(final HandlerContext ctx,
-                                                     final Event event,
-                                                     final CompletableFuture<Void> future) {
+                protected void matchedEvent(final HandlerContext ctx,
+                                            final Event event,
+                                            final CompletableFuture<Void> future) {
                     ctx.passEvent(event, future);
                 }
 
                 @Override
-                protected void matchedRead(final HandlerContext ctx,
-                                           final Address sender,
-                                           final List<?> msg,
-                                           final CompletableFuture<Void> future) {
+                protected void matchedInbound(final HandlerContext ctx,
+                                              final Address sender,
+                                              final List<?> msg,
+                                              final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
                     ctx.pipeline().processOutbound(sender, msg);
                 }
@@ -257,25 +257,25 @@ class SimpleDuplexHandlerTest {
         void shouldTriggerOnMatchedEvent(@Mock final NodeUpEvent event) throws InterruptedException {
             final SimpleDuplexEventAwareHandler<SerializedApplicationMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>(SerializedApplicationMessage.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
                 @Override
-                protected void matchedWrite(final HandlerContext ctx,
-                                            final Address recipient,
-                                            final Object msg,
-                                            final CompletableFuture<Void> future) {
+                protected void matchedOutbound(final HandlerContext ctx,
+                                               final Address recipient,
+                                               final Object msg,
+                                               final CompletableFuture<Void> future) {
                     ctx.passOutbound(recipient, msg, future);
                 }
 
                 @Override
-                protected void matchedEventTriggered(final HandlerContext ctx,
-                                                     final NodeUpEvent event,
-                                                     final CompletableFuture<Void> future) {
+                protected void matchedEvent(final HandlerContext ctx,
+                                            final NodeUpEvent event,
+                                            final CompletableFuture<Void> future) {
                     // Do nothing
                 }
 
                 @Override
-                protected void matchedRead(final HandlerContext ctx,
-                                           final Address sender,
-                                           final SerializedApplicationMessage msg,
-                                           final CompletableFuture<Void> future) {
+                protected void matchedInbound(final HandlerContext ctx,
+                                              final Address sender,
+                                              final SerializedApplicationMessage msg,
+                                              final CompletableFuture<Void> future) {
                     ctx.passInbound(sender, msg, future);
                 }
             };
@@ -294,25 +294,25 @@ class SimpleDuplexHandlerTest {
         void shouldPassthroughsNotMatchingEvents(@Mock final Event event) {
             final SimpleDuplexEventAwareHandler<MyMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
-                protected void matchedWrite(final HandlerContext ctx,
-                                            final Address recipient,
-                                            final Object msg,
-                                            final CompletableFuture<Void> future) {
+                protected void matchedOutbound(final HandlerContext ctx,
+                                               final Address recipient,
+                                               final Object msg,
+                                               final CompletableFuture<Void> future) {
                     ctx.passOutbound(recipient, msg, future);
                 }
 
                 @Override
-                protected void matchedEventTriggered(final HandlerContext ctx,
-                                                     final NodeUpEvent event,
-                                                     final CompletableFuture<Void> future) {
+                protected void matchedEvent(final HandlerContext ctx,
+                                            final NodeUpEvent event,
+                                            final CompletableFuture<Void> future) {
                     // Do nothing
                 }
 
                 @Override
-                protected void matchedRead(final HandlerContext ctx,
-                                           final Address sender,
-                                           final MyMessage msg,
-                                           final CompletableFuture<Void> future) {
+                protected void matchedInbound(final HandlerContext ctx,
+                                              final Address sender,
+                                              final MyMessage msg,
+                                              final CompletableFuture<Void> future) {
                     ctx.passInbound(sender, msg, future);
                 }
             };

@@ -61,10 +61,10 @@ public class InboundMessageGuard extends SimpleInboundHandler<ApplicationMessage
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final ApplicationMessage msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final ApplicationMessage msg,
+                                  final CompletableFuture<Void> future) {
         if (!ctx.identity().getPublicKey().equals(msg.getRecipient())) {
             future.completeExceptionally(new Exception("I'm not the recipient"));
         }

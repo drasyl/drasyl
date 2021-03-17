@@ -50,10 +50,10 @@ public final class HopCountGuard extends SimpleOutboundHandler<AddressedIntermed
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final AddressedIntermediateEnvelope<MessageLite> msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final AddressedIntermediateEnvelope<MessageLite> msg,
+                                   final CompletableFuture<Void> future) {
         try {
             if (msg.getContent().getHopCount() < ctx.config().getRemoteMessageHopLimit()) {
                 // route message to next hop (node)

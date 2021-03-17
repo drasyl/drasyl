@@ -78,10 +78,10 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
 
     @SuppressWarnings("ReplaceNullCheck")
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final ApplicationMessage msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final ApplicationMessage msg,
+                                  final CompletableFuture<Void> future) {
         final CompressedPublicKey recipient = msg.getRecipient();
         if (!ctx.identity().getPublicKey().equals(recipient)) {
             final HandlerContext discoveree = discoveries.get(Pair.of(ctx.config().getNetworkId(), recipient));
@@ -101,10 +101,10 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final ApplicationMessage msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final ApplicationMessage msg,
+                                   final CompletableFuture<Void> future) {
         final HandlerContext discoveree = discoveries.get(Pair.of(ctx.config().getNetworkId(), msg.getRecipient()));
 
         if (discoveree == null) {

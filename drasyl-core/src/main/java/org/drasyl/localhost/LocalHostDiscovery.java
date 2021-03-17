@@ -125,10 +125,10 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final CompressedPublicKey recipient,
-                                final SerializedApplicationMessage msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final CompressedPublicKey recipient,
+                                   final SerializedApplicationMessage msg,
+                                   final CompletableFuture<Void> future) {
         final InetSocketAddressWrapper localAddress = routes.get(msg.getRecipient());
         if (localAddress != null) {
             final IntermediateEnvelope<Protocol.Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());

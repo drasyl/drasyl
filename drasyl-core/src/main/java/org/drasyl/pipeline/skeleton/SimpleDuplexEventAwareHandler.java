@@ -54,7 +54,7 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
         if (acceptOutbound(msg) && acceptAddress(recipient)) {
             @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
-            matchedWrite(ctx, castedAddress, castedMsg, future);
+            matchedOutbound(ctx, castedAddress, castedMsg, future);
         }
         else {
             ctx.passOutbound(recipient, msg, future);
@@ -77,8 +77,8 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
      * @param msg       the message
      * @param future    a future for the message
      */
-    protected abstract void matchedWrite(HandlerContext ctx,
-                                         A recipient,
-                                         O msg,
-                                         CompletableFuture<Void> future);
+    protected abstract void matchedOutbound(HandlerContext ctx,
+                                            A recipient,
+                                            O msg,
+                                            CompletableFuture<Void> future);
 }

@@ -45,10 +45,10 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final SerializedApplicationMessage msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final SerializedApplicationMessage msg,
+                                  final CompletableFuture<Void> future) {
         try {
             final Serializer serializer = ctx.inboundSerialization().findSerializerFor(msg.getType());
 
@@ -71,10 +71,10 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final ApplicationMessage msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final ApplicationMessage msg,
+                                   final CompletableFuture<Void> future) {
         try {
             final Serializer serializer = ctx.outboundSerialization().findSerializerFor(msg.getContent() != null ? msg.getContent().getClass().getName() : null);
 

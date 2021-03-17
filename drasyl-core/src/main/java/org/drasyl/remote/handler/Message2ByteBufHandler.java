@@ -48,10 +48,10 @@ public final class Message2ByteBufHandler extends SimpleOutboundHandler<Addresse
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final AddressedIntermediateEnvelope<MessageLite> msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final AddressedIntermediateEnvelope<MessageLite> msg,
+                                   final CompletableFuture<Void> future) {
         try {
             final ByteBuf byteBuf = msg.getContent().getOrBuildByteBuf();
 

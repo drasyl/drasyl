@@ -86,10 +86,10 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     handler,
                     new SimpleInboundHandler<AddressedByteBuf, Address>() {
                         @Override
-                        protected void matchedRead(final HandlerContext ctx,
-                                                   final Address sender,
-                                                   final AddressedByteBuf msg,
-                                                   final CompletableFuture<Void> future) {
+                        protected void matchedInbound(final HandlerContext ctx,
+                                                      final Address sender,
+                                                      final AddressedByteBuf msg,
+                                                      final CompletableFuture<Void> future) {
                             try {
                                 final int index = msg.getContent().readableBytes();
                                 futures[index].complete(null);

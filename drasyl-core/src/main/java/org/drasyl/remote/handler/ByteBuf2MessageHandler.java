@@ -48,10 +48,10 @@ public final class ByteBuf2MessageHandler extends SimpleInboundHandler<Addressed
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final AddressedByteBuf addressedByteBuf,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final AddressedByteBuf addressedByteBuf,
+                                  final CompletableFuture<Void> future) {
         try {
             final AddressedIntermediateEnvelope<MessageLite> envelope = new AddressedIntermediateEnvelope<>(addressedByteBuf.getSender(), addressedByteBuf.getRecipient(), addressedByteBuf.getContent());
             ctx.passInbound(sender, envelope, future);

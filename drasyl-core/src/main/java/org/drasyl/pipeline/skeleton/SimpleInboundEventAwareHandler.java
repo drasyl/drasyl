@@ -42,13 +42,13 @@ import java.util.concurrent.CompletableFuture;
  *             {@link CompressedPublicKey}&gt; {
  *
  *        {@code @Override}
- *         protected void matchedEventTriggered({@link HandlerContext} ctx,
+ *         protected void matchedEvent({@link HandlerContext} ctx,
  *             {@link MessageEvent} event) {
  *             System.out.println(event);
  *         }
  *
  *        {@code @Override}
- *         protected void matchedRead({@link HandlerContext} ctx,
+ *         protected void matchedInbound({@link HandlerContext} ctx,
  *             {@link CompressedPublicKey} sender, {@code MyMessage} msg,
  *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
@@ -93,7 +93,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
         if (acceptInbound(msg) && acceptAddress(sender)) {
             @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
-            matchedRead(ctx, castedAddress, castedMsg, future);
+            matchedInbound(ctx, castedAddress, castedMsg, future);
         }
         else {
             ctx.passInbound(sender, msg, future);
@@ -106,7 +106,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
                         final CompletableFuture<Void> future) {
         if (acceptEvent(event)) {
             @SuppressWarnings("unchecked") final E castedEvent = (E) event;
-            matchedEventTriggered(ctx, castedEvent, future);
+            matchedEvent(ctx, castedEvent, future);
         }
         else {
             ctx.passEvent(event, future);
@@ -128,9 +128,9 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
      * @param event  the event
      * @param future the future of the message
      */
-    protected abstract void matchedEventTriggered(HandlerContext ctx,
-                                                  E event,
-                                                  CompletableFuture<Void> future);
+    protected abstract void matchedEvent(HandlerContext ctx,
+                                         E event,
+                                         CompletableFuture<Void> future);
 
     /**
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
@@ -148,8 +148,8 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
      * @param msg    the message
      * @param future the future of the message
      */
-    protected abstract void matchedRead(HandlerContext ctx,
-                                        A sender,
-                                        I msg,
-                                        CompletableFuture<Void> future);
+    protected abstract void matchedInbound(HandlerContext ctx,
+                                           A sender,
+                                           I msg,
+                                           CompletableFuture<Void> future);
 }

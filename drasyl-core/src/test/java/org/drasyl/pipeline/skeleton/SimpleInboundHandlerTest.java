@@ -51,10 +51,10 @@ class SimpleInboundHandlerTest {
     void shouldTriggerOnMatchedMessage(@Mock final Address sender) {
         final SimpleInboundEventAwareHandler<byte[], Event, Address> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedRead(final HandlerContext ctx,
-                                       final Address sender,
-                                       final byte[] msg,
-                                       final CompletableFuture<Void> future) {
+            protected void matchedInbound(final HandlerContext ctx,
+                                          final Address sender,
+                                          final byte[] msg,
+                                          final CompletableFuture<Void> future) {
                 ctx.passInbound(sender, new String(msg), future);
             }
         };
@@ -74,10 +74,10 @@ class SimpleInboundHandlerTest {
     void shouldPassthroughsNotMatchingMessage(@Mock final Address sender) {
         final SimpleInboundHandler<byte[], Address> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedRead(final HandlerContext ctx,
-                                       final Address sender,
-                                       final byte[] msg,
-                                       final CompletableFuture<Void> future) {
+            protected void matchedInbound(final HandlerContext ctx,
+                                          final Address sender,
+                                          final byte[] msg,
+                                          final CompletableFuture<Void> future) {
                 ctx.passInbound(sender, new String(msg), future);
             }
         };

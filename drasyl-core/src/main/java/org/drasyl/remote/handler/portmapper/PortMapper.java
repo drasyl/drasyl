@@ -87,10 +87,10 @@ public class PortMapper extends SimpleInboundHandler<AddressedByteBuf, Address> 
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final AddressedByteBuf msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final AddressedByteBuf msg,
+                                  final CompletableFuture<Void> future) {
         if (methods.get(currentMethodPointer).acceptMessage(msg)) {
             future.complete(null);
             ctx.independentScheduler().scheduleDirect(() -> methods.get(currentMethodPointer).handleMessage(ctx, msg));

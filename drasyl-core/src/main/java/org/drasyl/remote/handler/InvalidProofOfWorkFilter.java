@@ -48,10 +48,10 @@ public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<Address
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final AddressedIntermediateEnvelope<MessageLite> msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final AddressedIntermediateEnvelope<MessageLite> msg,
+                                  final CompletableFuture<Void> future) {
         try {
             if (msg.getContent().isChunk() || msg.getContent().getProofOfWork().isValid(msg.getContent().getSender(), POW_DIFFICULTY)) {
                 ctx.passInbound(sender, msg, future);

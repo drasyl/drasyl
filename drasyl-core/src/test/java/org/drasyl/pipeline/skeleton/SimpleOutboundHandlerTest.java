@@ -49,10 +49,10 @@ class SimpleOutboundHandlerTest {
     void shouldTriggerOnMatchedMessage(@Mock final Address recipient) {
         final SimpleOutboundHandler<byte[], Address> handler = new SimpleOutboundHandler<>() {
             @Override
-            protected void matchedWrite(final HandlerContext ctx,
-                                        final Address recipient,
-                                        final byte[] msg,
-                                        final CompletableFuture<Void> future) {
+            protected void matchedOutbound(final HandlerContext ctx,
+                                           final Address recipient,
+                                           final byte[] msg,
+                                           final CompletableFuture<Void> future) {
                 ctx.passOutbound(recipient, new String(msg), future);
             }
         };
@@ -72,10 +72,10 @@ class SimpleOutboundHandlerTest {
     void shouldPassthroughsNotMatchingMessage(@Mock final CompressedPublicKey recipient) {
         final SimpleOutboundHandler<byte[], Address> handler = new SimpleOutboundHandler<>() {
             @Override
-            protected void matchedWrite(final HandlerContext ctx,
-                                        final Address recipient,
-                                        final byte[] msg,
-                                        final CompletableFuture<Void> future) {
+            protected void matchedOutbound(final HandlerContext ctx,
+                                           final Address recipient,
+                                           final byte[] msg,
+                                           final CompletableFuture<Void> future) {
                 ctx.passOutbound(recipient, new String(msg), future);
             }
         };

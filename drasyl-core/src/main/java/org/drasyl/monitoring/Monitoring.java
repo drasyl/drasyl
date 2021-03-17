@@ -113,10 +113,10 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final Object msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) {
         ctx.independentScheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
 
         // passthrough message
@@ -124,10 +124,10 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final Object msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final Object msg,
+                                   final CompletableFuture<Void> future) {
         ctx.independentScheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
 
         // passthrough message

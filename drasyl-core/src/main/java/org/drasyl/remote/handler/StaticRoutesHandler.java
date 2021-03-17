@@ -69,10 +69,10 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedA
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final CompressedPublicKey recipient,
-                                final SerializedApplicationMessage msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final CompressedPublicKey recipient,
+                                   final SerializedApplicationMessage msg,
+                                   final CompletableFuture<Void> future) {
         final InetSocketAddressWrapper staticAddress = ctx.config().getRemoteStaticRoutes().get(msg.getRecipient());
         if (staticAddress != null) {
             final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());

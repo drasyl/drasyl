@@ -242,10 +242,10 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final SerializedApplicationMessage msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final SerializedApplicationMessage msg,
+                                   final CompletableFuture<Void> future) {
         // record communication to keep active connections alive
         if (directConnectionPeers.contains(msg.getRecipient())) {
             final Peer peer = peers.computeIfAbsent(msg.getRecipient(), key -> new Peer());
@@ -365,10 +365,10 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final AddressedIntermediateEnvelope<? extends MessageLite> envelope,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final AddressedIntermediateEnvelope<? extends MessageLite> envelope,
+                                  final CompletableFuture<Void> future) {
         requireNonNull(envelope);
         requireNonNull(sender);
 

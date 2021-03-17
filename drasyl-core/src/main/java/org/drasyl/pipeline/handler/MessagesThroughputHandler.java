@@ -149,10 +149,10 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final Object msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final Object msg,
+                                   final CompletableFuture<Void> future) {
         outboundMessages.increment();
         if (consumeOutbound.test(recipient, msg)) {
             future.complete(null);
@@ -163,10 +163,10 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final Object msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) {
         inboundMessages.increment();
         if (consumeInbound.test(sender, msg)) {
             try {

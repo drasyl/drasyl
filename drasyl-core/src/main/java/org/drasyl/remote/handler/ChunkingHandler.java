@@ -63,10 +63,10 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
     }
 
     @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final AddressedIntermediateEnvelope<? extends MessageLite> msg,
-                               final CompletableFuture<Void> future) {
+    protected void matchedInbound(final HandlerContext ctx,
+                                  final Address sender,
+                                  final AddressedIntermediateEnvelope<? extends MessageLite> msg,
+                                  final CompletableFuture<Void> future) {
         try {
             // message is addressed to me and chunked
             if (ctx.identity().getPublicKey().equals(msg.getContent().getRecipient()) && msg.getContent().isChunk()) {
@@ -124,10 +124,10 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
     }
 
     @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final AddressedIntermediateEnvelope<? extends MessageLite> msg,
-                                final CompletableFuture<Void> future) {
+    protected void matchedOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final AddressedIntermediateEnvelope<? extends MessageLite> msg,
+                                   final CompletableFuture<Void> future) {
         try {
             if (ctx.identity().getPublicKey().equals(msg.getContent().getSender())) {
                 // message from us, check if we have to chunk it
