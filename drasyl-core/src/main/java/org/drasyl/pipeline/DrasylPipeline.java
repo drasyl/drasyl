@@ -91,7 +91,7 @@ public class DrasylPipeline extends AbstractPipeline {
 
         initPointer();
 
-        // convert msg <-> AddressedEnvelopeHandler(msg)
+        // convert msg <-> ApplicationMessage(msg)
         addFirst(ADDRESSED_ENVELOPE_HANDLER, AddressedEnvelopeHandler.INSTANCE);
 
         // drop messages not addressed to us
@@ -106,7 +106,7 @@ public class DrasylPipeline extends AbstractPipeline {
         }
 
         if (config.isRemoteEnabled()) {
-            // convert messages from/to byte arrays
+            // convert ApplicationMessage(msg) <-> SerializedApplicationMessage(msg)
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
             // route outbound messages to pre-configures ip addresses
@@ -120,6 +120,7 @@ public class DrasylPipeline extends AbstractPipeline {
             }
 
             // register at super peers/discover nodes in other networks
+            // convert SerializedApplicationMessage(msg) <-> AddressedIntermediateEnvelope(msg)
             addFirst(INTERNET_DISCOVERY_HANDLER, new InternetDiscoveryHandler(config));
 
             // outbound message guards
@@ -141,9 +142,11 @@ public class DrasylPipeline extends AbstractPipeline {
             // split messages too big for udp
             addFirst(CHUNKING_HANDLER, new ChunkingHandler());
 
-            // udp server
+            // convert AddressedIntermediateEnvelope(msg) <-> AddressedByteBuf(msg)
             addFirst(MESSAGE_2_BYTE_BUF_HANDLER, Message2ByteBufHandler.INSTANCE);
             addFirst(BYTE_BUF_2_MESSAGE_HANDLER, ByteBuf2MessageHandler.INSTANCE);
+
+            // udp server
             if (config.isRemoteExposeEnabled()) {
                 addFirst(PORT_MAPPER, new PortMapper());
             }
