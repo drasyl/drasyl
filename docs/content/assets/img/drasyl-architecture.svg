@@ -214,10 +214,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.70710678"
-     inkscape:cx="57.112409"
-     inkscape:cy="643.19996"
+     inkscape:cx="-75.608556"
+     inkscape:cy="606.19208"
      inkscape:document-units="mm"
-     inkscape:current-layer="g6663"
+     inkscape:current-layer="g5613"
      showgrid="false"
      inkscape:window-width="2560"
      inkscape:window-height="1377"
@@ -493,12 +493,14 @@
                        id="arrow_from"
                        transform="rotate(-179.79506,70.897047,124.55517)">
                       <g
-                         id="g5429">
+                         id="g5429"
+                         transform="rotate(-0.55293919,39.91887,171.3419)">
                         <g
                            id="g5613">
                           <g
                              inkscape:label="arrow"
-                             id="arrow">
+                             id="arrow"
+                             transform="rotate(0.55630377,39.919907,171.33641)">
                             <rect
                                ry="1.2402343"
                                y="159.74741"
