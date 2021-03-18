@@ -26,9 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.handler.AddressedEnvelopeHandler;
 import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -84,21 +82,19 @@ class EmbeddedPipelineTest {
                 config,
                 identity,
                 peersManager,
-                AddressedEnvelopeHandler.INSTANCE,
                 new HandlerAdapter(),
                 new HandlerAdapter()
         )) {
             final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            when(identity.getPublicKey()).thenReturn(sender);
             final byte[] msg = new byte[]{};
             pipeline.processOutbound(recipient, msg);
 
             outboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(new ApplicationMessage(sender, recipient, msg));
+                    .assertValue(msg);
             inboundMessageTestObserver.assertNoValues();
             eventTestObserver.assertNoValues();
         }

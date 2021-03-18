@@ -462,6 +462,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
             peer.inboundControlTrafficOccurred();
             peer.inboundPongOccurred(ping);
             if (superPeers.contains(envelope.getContent().getSender())) {
+                //noinspection unchecked
                 LOG.trace("Latency to super peer `{}` ({}): {}ms", () -> sender, peer.getAddress()::getHostName, peer::getLatency);
                 determineBestSuperPeer();
 
@@ -529,7 +530,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
         // convert to ApplicationMessage
         final Application application = envelope.getContent().getBodyAndRelease();
         final SerializedApplicationMessage applicationMessage = new SerializedApplicationMessage(envelope.getContent().getSender(), envelope.getContent().getRecipient(), application.getType(), application.getPayload().toByteArray());
-        ctx.passInbound(envelope.getSender(), applicationMessage, future);
+        ctx.passInbound(envelope.getContent().getSender(), applicationMessage, future);
     }
 
     private void sendPing(final HandlerContext ctx,

@@ -40,6 +40,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,6 +51,8 @@ import static org.drasyl.util.RandomUtil.randomString;
  */
 @SuppressWarnings({ "java:S107" })
 public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable {
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    public static final Optional<Object> NULL_MESSAGE = Optional.empty();
     private static final short DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH = 16;
     private final Subject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
@@ -99,7 +102,12 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                                    final Address recipient,
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
-                outboundMessages.onNext(msg);
+                if (msg == null) {
+                    outboundMessages.onNext(NULL_MESSAGE);
+                }
+                else {
+                    outboundMessages.onNext(msg);
+                }
 
                 future.complete(null);
             }
@@ -128,7 +136,7 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
      */
     @SuppressWarnings("unchecked")
     public <T> Observable<T> inboundMessages(final Class<T> clazz) {
-        return (Observable<T>) inboundMessages.map(AddressedEnvelope::getContent).filter(clazz::isInstance);
+        return (Observable<T>) inboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(clazz::isInstance);
     }
 
     /**
@@ -136,11 +144,11 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
      */
     @SuppressWarnings("unchecked")
     public <T> Observable<T> inboundMessages(final TypeReference<T> typeReference) {
-        return (Observable<T>) inboundMessages.map(AddressedEnvelope::getContent).filter(m -> isInstance(typeReference.getType(), m));
+        return (Observable<T>) inboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(m -> isInstance(typeReference.getType(), m));
     }
 
     public Observable<Object> inboundMessages() {
-        return inboundMessages.map(AddressedEnvelope::getContent);
+        return inboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE);
     }
 
     /**

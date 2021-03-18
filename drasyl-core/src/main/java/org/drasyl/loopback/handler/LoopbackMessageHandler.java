@@ -25,7 +25,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 
 import java.util.concurrent.CompletableFuture;
@@ -35,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
  * addressed to the local node.
  */
 @Stateless
-public class LoopbackMessageHandler extends SimpleOutboundHandler<ApplicationMessage, Address> {
+public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Address> {
     public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
     private boolean started;
 
@@ -65,10 +64,10 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<ApplicationMes
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final Address recipient,
-                                   final ApplicationMessage msg,
+                                   final Object msg,
                                    final CompletableFuture<Void> future) {
-        if (started && ctx.identity().getPublicKey().equals(msg.getRecipient())) {
-            ctx.passInbound(msg.getSender(), msg, future);
+        if (started && ctx.identity().getPublicKey().equals(recipient)) {
+            ctx.passInbound(ctx.identity().getPublicKey(), msg, future);
         }
         else {
             ctx.passOutbound(recipient, msg, future);

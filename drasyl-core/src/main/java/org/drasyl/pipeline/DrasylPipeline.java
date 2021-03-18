@@ -27,7 +27,6 @@ import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.handler.AddressedEnvelopeHandler;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.ArmHandler;
@@ -51,7 +50,6 @@ import static org.drasyl.intravm.IntraVmDiscovery.INTRA_VM_DISCOVERY;
 import static org.drasyl.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
 import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
 import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
-import static org.drasyl.pipeline.handler.AddressedEnvelopeHandler.ADDRESSED_ENVELOPE_HANDLER;
 import static org.drasyl.pipeline.serialization.MessageSerializer.MESSAGE_SERIALIZER;
 import static org.drasyl.remote.handler.ArmHandler.ARM_HANDLER;
 import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
@@ -92,9 +90,6 @@ public class DrasylPipeline extends AbstractPipeline {
 
         initPointer();
 
-        // convert msg <-> ApplicationMessage(msg)
-        addFirst(ADDRESSED_ENVELOPE_HANDLER, AddressedEnvelopeHandler.INSTANCE);
-
         // convert outbound messages addresses to us to inbound messages
         addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
 
@@ -104,7 +99,7 @@ public class DrasylPipeline extends AbstractPipeline {
         }
 
         if (config.isRemoteEnabled()) {
-            // convert ApplicationMessage(msg) <-> SerializedApplicationMessage(msg)
+            // convert msg <-> SerializedApplicationMessage(msg)
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
             // route outbound messages to pre-configures ip addresses

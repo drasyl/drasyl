@@ -18,10 +18,9 @@
  */
 package org.drasyl.pipeline.serialization;
 
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
@@ -35,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class MessageSerializer extends SimpleDuplexHandler<SerializedApplicationMessage, ApplicationMessage, Address> {
+public final class MessageSerializer extends SimpleDuplexHandler<SerializedApplicationMessage, Object, CompressedPublicKey> {
     public static final MessageSerializer INSTANCE = new MessageSerializer();
     public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
@@ -46,7 +45,7 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
 
     @Override
     protected void matchedInbound(final HandlerContext ctx,
-                                  final Address sender,
+                                  final CompressedPublicKey sender,
                                   final SerializedApplicationMessage msg,
                                   final CompletableFuture<Void> future) {
         try {
@@ -55,9 +54,8 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
             if (serializer != null) {
                 final Object o = serializer.fromByteArray(msg.getContent(), msg.getType());
 
-                final ApplicationMessage deserializedMsg = new ApplicationMessage(msg.getSender(), msg.getRecipient(), o);
-                ctx.passInbound(msg.getSender(), deserializedMsg, future);
-                LOG.trace("Message has been deserialized to '{}'", () -> deserializedMsg);
+                ctx.passInbound(sender, o, future);
+                LOG.trace("Message has been deserialized to '{}'", () -> o);
             }
             else {
                 LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", msg::getType);
@@ -72,23 +70,23 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
 
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
-                                   final Address recipient,
-                                   final ApplicationMessage msg,
+                                   final CompressedPublicKey recipient,
+                                   final Object msg,
                                    final CompletableFuture<Void> future) {
         try {
-            final Serializer serializer = ctx.outboundSerialization().findSerializerFor(msg.getContent() != null ? msg.getContent().getClass().getName() : null);
+            final Serializer serializer = ctx.outboundSerialization().findSerializerFor(msg != null ? msg.getClass().getName() : null);
 
             final String type;
-            if (msg.getContent() != null) {
-                type = msg.getContent().getClass().getName();
+            if (msg != null) {
+                type = msg.getClass().getName();
             }
             else {
                 type = null;
             }
 
             if (serializer != null) {
-                final byte[] bytes = serializer.toByteArray(msg.getContent());
-                final SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(msg.getSender(), msg.getRecipient(), type, bytes);
+                final byte[] bytes = serializer.toByteArray(msg);
+                final SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(null, recipient, type, bytes);
                 ctx.passOutbound(recipient, serializedMsg, future);
                 LOG.trace("Message has been serialized to '{}'", () -> serializedMsg);
             }

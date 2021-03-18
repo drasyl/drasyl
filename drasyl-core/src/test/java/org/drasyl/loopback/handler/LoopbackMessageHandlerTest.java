@@ -24,7 +24,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.message.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -44,7 +43,7 @@ class LoopbackMessageHandlerTest {
 
     @Test
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final CompressedPublicKey recipient,
-                                                    @Mock final ApplicationMessage message) {
+                                                    @Mock final Object message) {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler())) {
             final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
@@ -57,9 +56,8 @@ class LoopbackMessageHandlerTest {
 
     @Test
     void shouldBounceMessageIfRecipientIsLocalNode(@Mock final CompressedPublicKey recipient,
-                                                   @Mock(answer = Answers.RETURNS_DEEP_STUBS) final ApplicationMessage message) {
+                                                   @Mock(answer = Answers.RETURNS_DEEP_STUBS) final Object message) {
         when(identity.getPublicKey()).thenReturn(recipient);
-        when(message.getRecipient()).thenReturn(recipient);
 
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler(true))) {
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();

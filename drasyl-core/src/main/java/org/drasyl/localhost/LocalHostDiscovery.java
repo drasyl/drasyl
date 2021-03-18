@@ -129,9 +129,9 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
                                    final CompressedPublicKey recipient,
                                    final SerializedApplicationMessage msg,
                                    final CompletableFuture<Void> future) {
-        final InetSocketAddressWrapper localAddress = routes.get(msg.getRecipient());
+        final InetSocketAddressWrapper localAddress = routes.get(recipient);
         if (localAddress != null) {
-            final IntermediateEnvelope<Protocol.Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
+            final IntermediateEnvelope<Protocol.Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, msg.getType(), msg.getContent());
             LOG.trace("Send message `{}` via local route {}.", () -> msg, () -> localAddress);
             ctx.passOutbound(localAddress, new AddressedIntermediateEnvelope<>(null, localAddress, envelope), future);
         }

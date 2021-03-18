@@ -25,7 +25,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
@@ -43,7 +42,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java
  */
 @SuppressWarnings({ "java:S110" })
-public class IntraVmDiscovery extends SimpleOutboundHandler<ApplicationMessage, Address> {
+public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
     public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
     public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
@@ -79,16 +78,16 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<ApplicationMessage, 
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final Address recipient,
-                                   final ApplicationMessage msg,
+                                   final Object msg,
                                    final CompletableFuture<Void> future) {
-        final HandlerContext discoveree = discoveries.get(Pair.of(ctx.config().getNetworkId(), msg.getRecipient()));
+        final HandlerContext discoveree = discoveries.get(Pair.of(ctx.config().getNetworkId(), recipient));
 
         if (discoveree == null) {
             // passthrough message
             ctx.passOutbound(recipient, msg, future);
         }
         else {
-            discoveree.passInbound(msg.getSender(), msg, future);
+            discoveree.passInbound(ctx.identity().getPublicKey(), msg, future);
         }
     }
 

@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline.skeleton;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -31,12 +30,9 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.handler.AddressedEnvelopeHandler;
 import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
-import org.drasyl.util.JSONUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -96,13 +92,13 @@ class SimpleDuplexHandlerTest {
                                                final byte[] msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.pipeline().processInbound(identity.getPublicKey(), new SerializedApplicationMessage(identity.getPublicKey(), recipient, byte[].class.getName(), msg));
+                    ctx.pipeline().processInbound(identity.getPublicKey(), msg);
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
-                final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
+                final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
                 pipeline.processOutbound(recipient, payload);
 
                 inboundMessageTestObserver.awaitCount(1)
@@ -141,17 +137,16 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-                final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+                final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
-                when(identity.getPublicKey()).thenReturn(sender);
                 final byte[] payload = new byte[]{};
                 pipeline.processOutbound(recipient, payload);
 
                 outboundMessageTestObserver.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new ApplicationMessage(sender, recipient, payload));
+                        .assertValue(payload);
                 inboundMessageTestObserver.assertNoValues();
             }
         }
@@ -160,7 +155,7 @@ class SimpleDuplexHandlerTest {
     @Nested
     class InboundTest {
         @Test
-        void shouldTriggerOnMatchedMessage(@Mock final CompressedPublicKey sender) throws JsonProcessingException {
+        void shouldTriggerOnMatchedMessage(@Mock final CompressedPublicKey sender) {
             final SimpleDuplexEventAwareHandler<byte[], Event, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
                 protected void matchedOutbound(final HandlerContext ctx,
@@ -187,19 +182,17 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, AddressedEnvelopeHandler.INSTANCE, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-                final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+                final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-                when(identity.getPublicKey()).thenReturn(sender);
-                final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
-                final SerializedApplicationMessage msg1 = new SerializedApplicationMessage(sender, sender, byte[].class.getName(), msg);
-                pipeline.processInbound(msg1.getSender(), msg1);
+                final byte[] msg = new byte[]{};
+                pipeline.processInbound(sender, msg);
 
                 outboundMessageTestObserver.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new ApplicationMessage(sender, sender, msg));
+                        .assertValue(msg);
                 inboundMessageTestObserver.assertNoValues();
                 eventTestObserver.assertNoValues();
             }
