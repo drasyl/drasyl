@@ -136,37 +136,5 @@ class IntraVmDiscoveryTest {
                 outboundMessages.assertValueCount(1);
             }
         }
-
-        @Test
-        void shouldSendIngoingMessageToKnownRecipient(@Mock final CompressedPublicKey sender,
-                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message,
-                                                      @Mock final HandlerContext ctx) {
-            discoveries.put(Pair.of(0, message.getRecipient()), ctx);
-            when(ctx.passInbound(any(), any(), any())).thenAnswer(invocation -> {
-                @SuppressWarnings("unchecked") final CompletableFuture<Void> future = invocation.getArgument(2, CompletableFuture.class);
-                future.complete(null);
-                return null;
-            });
-
-            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                pipeline.processInbound(sender, message).join();
-
-                verify(ctx).passInbound(any(), any(), any());
-            }
-        }
-
-        @Test
-        void shouldPasstroughIngoingMessageForUnknownRecipients(@Mock final CompressedPublicKey sender,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
-
-                pipeline.processInbound(sender, message).join();
-
-                inboundMessages.assertValueCount(1);
-            }
-        }
     }
 }

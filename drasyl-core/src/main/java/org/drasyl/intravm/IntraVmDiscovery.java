@@ -26,7 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.ApplicationMessage;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
+import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java
  */
 @SuppressWarnings({ "java:S110" })
-public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, ApplicationMessage, Address> {
+public class IntraVmDiscovery extends SimpleOutboundHandler<ApplicationMessage, Address> {
     public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
     public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
@@ -74,30 +74,6 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<ApplicationMessage, Ap
 
         // passthrough event
         ctx.passEvent(event, future);
-    }
-
-    @SuppressWarnings("ReplaceNullCheck")
-    @Override
-    protected void matchedInbound(final HandlerContext ctx,
-                                  final Address sender,
-                                  final ApplicationMessage msg,
-                                  final CompletableFuture<Void> future) {
-        final CompressedPublicKey recipient = msg.getRecipient();
-        if (!ctx.identity().getPublicKey().equals(recipient)) {
-            final HandlerContext discoveree = discoveries.get(Pair.of(ctx.config().getNetworkId(), recipient));
-
-            if (discoveree == null) {
-                // passthrough message
-                ctx.passInbound(sender, msg, future);
-            }
-            else {
-                discoveree.passInbound(sender, msg, future);
-            }
-        }
-        else {
-            // passthrough message
-            ctx.passInbound(sender, msg, future);
-        }
     }
 
     @Override
