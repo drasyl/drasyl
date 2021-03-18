@@ -24,7 +24,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
-import org.drasyl.loopback.handler.InboundMessageGuard;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
@@ -50,7 +49,6 @@ import java.util.function.Consumer;
 
 import static org.drasyl.intravm.IntraVmDiscovery.INTRA_VM_DISCOVERY;
 import static org.drasyl.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
-import static org.drasyl.loopback.handler.InboundMessageGuard.INBOUND_MESSAGE_GUARD;
 import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
 import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
 import static org.drasyl.pipeline.handler.AddressedEnvelopeHandler.ADDRESSED_ENVELOPE_HANDLER;
@@ -96,9 +94,6 @@ public class DrasylPipeline extends AbstractPipeline {
 
         // convert msg <-> ApplicationMessage(msg)
         addFirst(ADDRESSED_ENVELOPE_HANDLER, AddressedEnvelopeHandler.INSTANCE);
-
-        // drop messages not addressed to us
-        addFirst(INBOUND_MESSAGE_GUARD, new InboundMessageGuard());
 
         // convert outbound messages addresses to us to inbound messages
         addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
