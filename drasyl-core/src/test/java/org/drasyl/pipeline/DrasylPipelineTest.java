@@ -256,9 +256,7 @@ class DrasylPipelineTest {
         final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
         final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity);
 
-        when(msg.getSender()).thenReturn(sender);
-
-        final CompletableFuture<Void> future = pipeline.processInbound(msg.getSender(), msg);
+        final CompletableFuture<Void> future = pipeline.processInbound(sender, msg);
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();

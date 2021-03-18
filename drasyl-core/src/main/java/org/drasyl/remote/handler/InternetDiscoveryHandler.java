@@ -247,15 +247,15 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
                                    final SerializedApplicationMessage msg,
                                    final CompletableFuture<Void> future) {
         // record communication to keep active connections alive
-        if (directConnectionPeers.contains(msg.getRecipient())) {
-            final Peer peer = peers.computeIfAbsent(msg.getRecipient(), key -> new Peer());
+        if (directConnectionPeers.contains(recipient)) {
+            final Peer peer = peers.computeIfAbsent((CompressedPublicKey) recipient, key -> new Peer());
             peer.applicationTrafficOccurred();
         }
 
         if (recipient instanceof CompressedPublicKey) {
             IntermediateEnvelope<Application> remoteMessageEnvelope = null;
             try {
-                remoteMessageEnvelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
+                remoteMessageEnvelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), (CompressedPublicKey) recipient, msg.getType(), msg.getContent());
                 processMessage(ctx, (CompressedPublicKey) recipient, remoteMessageEnvelope, future);
             }
             catch (final IOException e) {
@@ -529,7 +529,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
 
         // convert to ApplicationMessage
         final Application application = envelope.getContent().getBodyAndRelease();
-        final SerializedApplicationMessage applicationMessage = new SerializedApplicationMessage(envelope.getContent().getSender(), envelope.getContent().getRecipient(), application.getType(), application.getPayload().toByteArray());
+        final SerializedApplicationMessage applicationMessage = new SerializedApplicationMessage(application.getType(), application.getPayload().toByteArray());
         ctx.passInbound(envelope.getContent().getSender(), applicationMessage, future);
     }
 

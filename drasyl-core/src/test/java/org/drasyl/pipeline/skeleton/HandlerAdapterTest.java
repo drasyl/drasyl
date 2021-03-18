@@ -41,7 +41,6 @@ import java.util.stream.IntStream;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class HandlerAdapterTest {
@@ -138,9 +137,7 @@ class HandlerAdapterTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
 
-                when(msg.getSender()).thenReturn(sender);
-
-                pipeline.processInbound(msg.getSender(), msg);
+                pipeline.processInbound(sender, msg);
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)

@@ -36,8 +36,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class EmbeddedPipelineTest {
     @Mock
@@ -61,9 +59,7 @@ class EmbeddedPipelineTest {
             final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            when(msg.getSender()).thenReturn(sender);
-
-            pipeline.processInbound(msg.getSender(), msg);
+            pipeline.processInbound(sender, msg);
 
             inboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)

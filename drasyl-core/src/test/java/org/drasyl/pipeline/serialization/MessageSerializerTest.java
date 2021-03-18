@@ -97,7 +97,7 @@ class MessageSerializerTest {
 
         @Test
         void shouldBeAbleToDeserializeNullMessage(@Mock final CompressedPublicKey address) {
-            final SerializedApplicationMessage message = new SerializedApplicationMessage(address, address, null, null);
+            final SerializedApplicationMessage message = new SerializedApplicationMessage(null, null);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
@@ -210,8 +210,7 @@ class MessageSerializerTest {
         }
 
         @Test
-        void shouldBeAbleToSerializeNullMessage(@Mock final CompressedPublicKey recipient,
-                                                @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
+        void shouldBeAbleToSerializeNullMessage(@Mock final CompressedPublicKey recipient) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
@@ -219,7 +218,7 @@ class MessageSerializerTest {
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new SerializedApplicationMessage(null, recipient, null, new byte[0]));
+                        .assertValue(new SerializedApplicationMessage(null, new byte[0]));
             }
         }
     }

@@ -73,9 +73,9 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedA
                                    final CompressedPublicKey recipient,
                                    final SerializedApplicationMessage msg,
                                    final CompletableFuture<Void> future) {
-        final InetSocketAddressWrapper staticAddress = ctx.config().getRemoteStaticRoutes().get(msg.getRecipient());
+        final InetSocketAddressWrapper staticAddress = ctx.config().getRemoteStaticRoutes().get(recipient);
         if (staticAddress != null) {
-            final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getType(), msg.getContent());
+            final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, msg.getType(), msg.getContent());
             LOG.trace("Send message `{}` via static route {}.", () -> msg, () -> staticAddress);
             ctx.passOutbound(staticAddress, new AddressedIntermediateEnvelope<>(null, staticAddress, envelope), future);
         }

@@ -18,9 +18,6 @@
  */
 package org.drasyl.pipeline.serialization;
 
-import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -28,18 +25,30 @@ import java.util.Objects;
  * A message from or to the application whose content has been serialized to a byte array so that
  * the message can be delivered to remote nodes.
  */
-public class SerializedApplicationMessage extends DefaultAddressedEnvelope<CompressedPublicKey, byte[]> {
+public class SerializedApplicationMessage {
     private final String type;
+    private final byte[] content;
 
-    /**
-     * @throws IllegalArgumentException if {@code sender} and {@code recipient} are {@code null}
-     */
-    public SerializedApplicationMessage(final CompressedPublicKey sender,
-                                        final CompressedPublicKey recipient,
-                                        final String type,
+    public SerializedApplicationMessage(final String type,
                                         final byte[] content) {
-        super(sender, recipient, content);
+        this.content = content != null ? content.clone() : null;
         this.type = type;
+    }
+
+    @Override
+    public String toString() {
+        return "SerializedApplicationMessage{" +
+                "type='" + type + "'," +
+                "content=byte[" + content.length + "]" +
+                '}';
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public byte[] getContent() {
+        return content != null ? content.clone() : null;
     }
 
     @Override
@@ -50,29 +59,14 @@ public class SerializedApplicationMessage extends DefaultAddressedEnvelope<Compr
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        if (!super.equals(o)) {
-            return false;
-        }
         final SerializedApplicationMessage that = (SerializedApplicationMessage) o;
-        return Objects.equals(type, that.type);
+        return Objects.equals(type, that.type) && Arrays.equals(content, that.content);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getSender(), getRecipient(), Arrays.hashCode(getContent()), type);
-    }
-
-    @Override
-    public String toString() {
-        return "SerializedApplicationMessage{" +
-                "sender='" + getSender() + "'," +
-                "recipient='" + getRecipient() + "'," +
-                "type='" + type + "'," +
-                "content=byte[" + getContent().length + "]" +
-                '}';
-    }
-
-    public String getType() {
-        return type;
+        int result = Objects.hash(type);
+        result = 31 * result + Arrays.hashCode(content);
+        return result;
     }
 }

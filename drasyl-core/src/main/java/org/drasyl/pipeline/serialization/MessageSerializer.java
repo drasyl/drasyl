@@ -86,7 +86,7 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
 
             if (serializer != null) {
                 final byte[] bytes = serializer.toByteArray(msg);
-                final SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(null, recipient, type, bytes);
+                final SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(type, bytes);
                 ctx.passOutbound(recipient, serializedMsg, future);
                 LOG.trace("Message has been serialized to '{}'", () -> serializedMsg);
             }

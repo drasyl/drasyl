@@ -18,11 +18,9 @@
  */
 package org.drasyl.pipeline.serialization;
 
-import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,11 +32,10 @@ class SerializedApplicationMessageTest {
     @Nested
     class Equals {
         @Test
-        void shouldRecognizeEqualMessages(@Mock final CompressedPublicKey sender,
-                                          @Mock final CompressedPublicKey recipient) {
-            final SerializedApplicationMessage messageA = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes());
-            final SerializedApplicationMessage messageB = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes());
-            final SerializedApplicationMessage messageC = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Bye".getBytes());
+        void shouldRecognizeEqualMessages() {
+            final SerializedApplicationMessage messageA = new SerializedApplicationMessage(String.class.getName(), "Hello".getBytes());
+            final SerializedApplicationMessage messageB = new SerializedApplicationMessage(String.class.getName(), "Hello".getBytes());
+            final SerializedApplicationMessage messageC = new SerializedApplicationMessage(String.class.getName(), "Bye".getBytes());
 
             assertEquals(messageA, messageA);
             assertEquals(messageA, messageB);
@@ -51,11 +48,10 @@ class SerializedApplicationMessageTest {
     @Nested
     class HashCode {
         @Test
-        void shouldRecognizeEqualMessages(@Mock final CompressedPublicKey sender,
-                                          @Mock final CompressedPublicKey recipient) {
-            final SerializedApplicationMessage messageA = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes());
-            final SerializedApplicationMessage messageB = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes());
-            final SerializedApplicationMessage messageC = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Bye".getBytes());
+        void shouldRecognizeEqualMessages() {
+            final SerializedApplicationMessage messageA = new SerializedApplicationMessage(String.class.getName(), "Hello".getBytes());
+            final SerializedApplicationMessage messageB = new SerializedApplicationMessage(String.class.getName(), "Hello".getBytes());
+            final SerializedApplicationMessage messageC = new SerializedApplicationMessage(String.class.getName(), "Bye".getBytes());
 
             assertEquals(messageA.hashCode(), messageB.hashCode());
             assertNotEquals(messageA.hashCode(), messageC.hashCode());
@@ -66,9 +62,8 @@ class SerializedApplicationMessageTest {
     @Nested
     class ToString {
         @Test
-        void shouldReturnCorrectString(@Mock final CompressedPublicKey sender,
-                                       @Mock final CompressedPublicKey recipient) {
-            final String string = new SerializedApplicationMessage(sender, recipient, String.class.getName(), "Hello".getBytes()).toString();
+        void shouldReturnCorrectString() {
+            final String string = new SerializedApplicationMessage(String.class.getName(), "Hello".getBytes()).toString();
 
             assertNotNull(string);
         }

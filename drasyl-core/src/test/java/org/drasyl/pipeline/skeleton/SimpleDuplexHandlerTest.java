@@ -232,16 +232,14 @@ class SimpleDuplexHandlerTest {
                 final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-                when(msg.getSender()).thenReturn(sender);
-
-                pipeline.processInbound(msg.getSender(), msg);
+                pipeline.processInbound(sender, msg);
 
                 inboundMessageTestObserver.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(new DefaultAddressedEnvelope<>(msg.getSender(), null, msg));
+                        .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
                 eventTestObserver.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(MessageEvent.of(msg.getSender(), msg));
+                        .assertValue(MessageEvent.of(sender, msg));
                 outboundMessageTestObserver.assertNoValues();
             }
         }

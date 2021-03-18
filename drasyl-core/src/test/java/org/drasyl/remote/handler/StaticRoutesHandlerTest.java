@@ -83,7 +83,6 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
-        when(message.getRecipient()).thenReturn(publicKey);
         when(message.getType()).thenReturn(byte[].class.getName());
         when(message.getContent()).thenReturn(new byte[0]);
 

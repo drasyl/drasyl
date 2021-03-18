@@ -457,9 +457,8 @@ class InternetDiscoveryHandlerTest {
             @Test
             void shouldRelayMessageToKnowRecipient(@Mock final Peer recipientPeer) {
                 final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(22527);
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class.getName(), "Hallo Welt".getBytes());
+                final SerializedApplicationMessage message = new SerializedApplicationMessage(byte[].class.getName(), "Hallo Welt".getBytes());
 
                 when(recipientPeer.getAddress()).thenReturn(recipientSocketAddress);
                 when(recipientPeer.isReachable(any())).thenReturn(true);
@@ -480,9 +479,8 @@ class InternetDiscoveryHandlerTest {
             @Test
             void shouldRelayMessageToSuperPeerForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeerPeer) {
                 final InetSocketAddressWrapper superPeerSocketAddress = new InetSocketAddressWrapper(22527);
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class.getName(), "Hallo Welt".getBytes());
+                final SerializedApplicationMessage message = new SerializedApplicationMessage(byte[].class.getName(), "Hallo Welt".getBytes());
 
                 when(superPeerPeer.getAddress()).thenReturn(superPeerSocketAddress);
                 when(identity.getPublicKey()).thenReturn(recipient);
@@ -504,7 +502,7 @@ class InternetDiscoveryHandlerTest {
             void shouldPassthroughForUnknownRecipientWhenNoSuperPeerIsPresent() {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class.getName(), "Hallo Welt".getBytes());
+                final SerializedApplicationMessage message = new SerializedApplicationMessage(byte[].class.getName(), "Hallo Welt".getBytes());
 
                 when(identity.getPublicKey()).thenReturn(sender);
 
@@ -524,14 +522,13 @@ class InternetDiscoveryHandlerTest {
             @SuppressWarnings("SuspiciousMethodCalls")
             @Test
             void shouldUpdateLastCommunicationTimeForApplicationMessages(@Mock final Peer peer) {
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final SerializedApplicationMessage message = new SerializedApplicationMessage(sender, recipient, byte[].class.getName(), "Hallo Welt".getBytes());
+                final SerializedApplicationMessage message = new SerializedApplicationMessage(byte[].class.getName(), "Hallo Welt".getBytes());
 
                 when(rendezvousPeers.contains(any())).thenReturn(true);
                 when(identity.getPublicKey()).thenReturn(recipient);
 
-                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(message.getRecipient(), peer)), rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(recipient, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     pipeline.processOutbound(recipient, message).join();
 
