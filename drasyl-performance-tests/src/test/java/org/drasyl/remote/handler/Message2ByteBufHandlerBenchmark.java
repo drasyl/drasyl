@@ -50,7 +50,7 @@ import java.util.concurrent.CompletableFuture;
 @State(Scope.Benchmark)
 public class Message2ByteBufHandlerBenchmark extends AbstractBenchmark {
     private HandlerContext ctx;
-    private InetSocketAddressWrapper recipient;
+    private Address recipient;
     private AddressedIntermediateEnvelope<MessageLite> msg;
     private CompletableFuture<Void> future;
 
@@ -58,7 +58,7 @@ public class Message2ByteBufHandlerBenchmark extends AbstractBenchmark {
     public void setup() {
         try {
             ctx = new MyHandlerContext();
-            recipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
+            recipient = new MyAddress();
             final InetSocketAddressWrapper msgSender = new InetSocketAddressWrapper("127.0.0.1", 25527);
             final InetSocketAddressWrapper msgRecipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
             final byte[] payload = RandomUtil.randomBytes(1024);
@@ -152,5 +152,8 @@ public class Message2ByteBufHandlerBenchmark extends AbstractBenchmark {
         public Serialization outboundSerialization() {
             return null;
         }
+    }
+
+    private static class MyAddress implements Address {
     }
 }

@@ -26,6 +26,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
@@ -73,7 +74,7 @@ class Message2ByteBufHandlerTest {
     }
 
     @Test
-    void shouldCompleteFutureExceptionallyWhenConversionFail(@Mock final InetSocketAddressWrapper recipient,
+    void shouldCompleteFutureExceptionallyWhenConversionFail(@Mock final Address recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> messageEnvelope) throws IOException {
         when(messageEnvelope.getContent().getOrBuildByteBuf()).thenThrow(RuntimeException.class);
 
