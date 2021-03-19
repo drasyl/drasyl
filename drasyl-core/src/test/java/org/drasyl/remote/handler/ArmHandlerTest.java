@@ -78,7 +78,7 @@ class ArmHandlerTest {
                 final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
                 }).test();
 
-                pipeline.processOutbound(recipient, addressedMessageEnvelope).get();
+                pipeline.processOutbound(recipientAddress, addressedMessageEnvelope).get();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -135,7 +135,7 @@ class ArmHandlerTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
 
-                assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, addressedMessageEnvelope).get());
+                assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipientAddress, addressedMessageEnvelope).get());
                 outboundMessages.await(1, SECONDS);
                 outboundMessages.assertNoValues();
 
@@ -161,7 +161,7 @@ class ArmHandlerTest {
                 final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
                 }).test();
 
-                pipeline.processInbound(sender, addressedMessageEnvelope).get();
+                pipeline.processInbound(senderAddress, addressedMessageEnvelope).get();
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)

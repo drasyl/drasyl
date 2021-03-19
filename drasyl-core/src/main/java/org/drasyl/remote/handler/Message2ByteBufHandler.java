@@ -22,7 +22,7 @@ import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
@@ -38,7 +38,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * Handler that converts a given {@link AddressedIntermediateEnvelope} to a {@link ByteBuf}.
  */
 @Stateless
-public final class Message2ByteBufHandler extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class Message2ByteBufHandler extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, InetSocketAddressWrapper> {
     public static final Message2ByteBufHandler INSTANCE = new Message2ByteBufHandler();
     public static final String MESSAGE_2_BYTE_BUF_HANDLER = "MESSAGE_2_BYTE_BUF_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(Message2ByteBufHandler.class);
@@ -49,7 +49,7 @@ public final class Message2ByteBufHandler extends SimpleOutboundHandler<Addresse
 
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
-                                   final Address recipient,
+                                   final InetSocketAddressWrapper recipient,
                                    final AddressedIntermediateEnvelope<MessageLite> msg,
                                    final CompletableFuture<Void> future) {
         try {
