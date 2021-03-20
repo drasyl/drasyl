@@ -246,13 +246,13 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
                                    final Address recipient,
                                    final SerializedApplicationMessage msg,
                                    final CompletableFuture<Void> future) {
-        // record communication to keep active connections alive
-        if (directConnectionPeers.contains(recipient)) {
-            final Peer peer = peers.computeIfAbsent((CompressedPublicKey) recipient, key -> new Peer());
-            peer.applicationTrafficOccurred();
-        }
-
         if (recipient instanceof CompressedPublicKey) {
+            // record communication to keep active connections alive
+            if (directConnectionPeers.contains(recipient)) {
+                final Peer peer = peers.computeIfAbsent((CompressedPublicKey) recipient, key -> new Peer());
+                peer.applicationTrafficOccurred();
+            }
+
             IntermediateEnvelope<Application> remoteMessageEnvelope = null;
             try {
                 remoteMessageEnvelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), (CompressedPublicKey) recipient, msg.getType(), msg.getContent());
