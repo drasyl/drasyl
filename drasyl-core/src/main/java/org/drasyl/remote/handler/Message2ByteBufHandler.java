@@ -23,42 +23,30 @@ import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.pipeline.handler.codec.MessageToMessageEncoder;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-
-import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
+import java.util.List;
 
 /**
  * Handler that converts a given {@link IntermediateEnvelope} to a {@link ByteBuf}.
  */
+@SuppressWarnings("java:S110")
 @Stateless
-public final class Message2ByteBufHandler extends SimpleOutboundHandler<IntermediateEnvelope<MessageLite>, InetSocketAddressWrapper> {
+public final class Message2ByteBufHandler extends MessageToMessageEncoder<IntermediateEnvelope<MessageLite>, InetSocketAddressWrapper> {
     public static final Message2ByteBufHandler INSTANCE = new Message2ByteBufHandler();
     public static final String MESSAGE_2_BYTE_BUF_HANDLER = "MESSAGE_2_BYTE_BUF_HANDLER";
-    private static final Logger LOG = LoggerFactory.getLogger(Message2ByteBufHandler.class);
 
     private Message2ByteBufHandler() {
         // singleton
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
-                                   final InetSocketAddressWrapper recipient,
-                                   final IntermediateEnvelope<MessageLite> msg,
-                                   final CompletableFuture<Void> future) {
-        try {
-            final ByteBuf byteBuf = msg.getOrBuildByteBuf();
-
-            ctx.passOutbound(recipient, byteBuf, future);
-        }
-        catch (final IOException e) {
-            LOG.error("Unable to serialize '{}'.", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Message could not be serialized. This could indicate a bug in drasyl.", e));
-        }
+    protected void encode(final HandlerContext ctx,
+                          final InetSocketAddressWrapper recipient,
+                          final IntermediateEnvelope<MessageLite> msg,
+                          final List<Object> out) throws IOException {
+        out.add(msg.getOrBuildByteBuf().retain());
     }
 }

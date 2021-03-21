@@ -89,7 +89,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
     public void onInbound(final HandlerContext ctx,
                           final Address sender,
                           final Object msg,
-                          final CompletableFuture<Void> future) {
+                          final CompletableFuture<Void> future) throws Exception {
         if (acceptInbound(msg) && acceptAddress(sender)) {
             @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
@@ -148,8 +148,9 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
      * @param msg    the message
      * @param future the future of the message
      */
+    @SuppressWarnings("java:S112")
     protected abstract void matchedInbound(HandlerContext ctx,
                                            A sender,
                                            I msg,
-                                           CompletableFuture<Void> future);
+                                           CompletableFuture<Void> future) throws Exception;
 }

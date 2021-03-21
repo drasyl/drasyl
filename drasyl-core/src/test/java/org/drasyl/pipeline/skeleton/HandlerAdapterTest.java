@@ -79,7 +79,7 @@ class HandlerAdapterTest {
     class Outbound {
         @Test
         void shouldPassthroughsOnWrite(@Mock final CompressedPublicKey recipient,
-                                       @Mock final Object msg) {
+                                       @Mock final Object msg) throws Exception {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
             handlerAdapter.onOutbound(ctx, recipient, msg, future);
@@ -92,7 +92,7 @@ class HandlerAdapterTest {
     class Inbound {
         @Test
         void shouldPassthroughsOnRead(@Mock final CompressedPublicKey sender,
-                                      @Mock final Object msg) {
+                                      @Mock final Object msg) throws Exception {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
             handlerAdapter.onInbound(ctx, sender, msg, future);

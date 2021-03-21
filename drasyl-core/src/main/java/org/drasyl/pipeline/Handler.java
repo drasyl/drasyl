@@ -62,10 +62,11 @@ public interface Handler {
      * @param msg    the message
      * @param future a future for the message
      */
+    @SuppressWarnings("java:S112")
     void onInbound(HandlerContext ctx,
                    Address sender,
                    Object msg,
-                   CompletableFuture<Void> future);
+                   CompletableFuture<Void> future) throws Exception;
 
     /**
      * Gets called if a {@link Event} was emitted.
@@ -91,8 +92,9 @@ public interface Handler {
      * @param msg       the message
      * @param future    a future for the message
      */
+    @SuppressWarnings("java:S112")
     void onOutbound(HandlerContext ctx,
                     Address recipient,
                     Object msg,
-                    CompletableFuture<Void> future);
+                    CompletableFuture<Void> future) throws Exception;
 }

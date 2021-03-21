@@ -18,46 +18,34 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
+import org.drasyl.pipeline.handler.codec.MessageToMessageDecoder;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
-import org.drasyl.util.ReferenceCountUtil;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
+import java.util.List;
 
 /**
  * Handler that converts a given {@link ByteBuf} to a {@link IntermediateEnvelope}.
  */
+@SuppressWarnings("java:S110")
 @Stateless
-public final class ByteBuf2MessageHandler extends SimpleInboundHandler<ByteBuf, Address> {
+public final class ByteBuf2MessageHandler extends MessageToMessageDecoder<ByteBuf, Address> {
     public static final ByteBuf2MessageHandler INSTANCE = new ByteBuf2MessageHandler();
     public static final String BYTE_BUF_2_MESSAGE_HANDLER = "BYTE_BUF_2_MESSAGE_HANDLER";
-    private static final Logger LOG = LoggerFactory.getLogger(ByteBuf2MessageHandler.class);
 
     private ByteBuf2MessageHandler() {
         // singleton
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
-                                  final Address sender,
-                                  final ByteBuf byteBuf,
-                                  final CompletableFuture<Void> future) {
-        try {
-            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(byteBuf);
-            ctx.passInbound(sender, envelope, future);
-        }
-        catch (final IOException e) {
-            ReferenceCountUtil.safeRelease(byteBuf);
-            LOG.debug("Unable deserialize message of type {} to {}.", byteBuf.getClass()::getSimpleName, IntermediateEnvelope.class::getSimpleName, () -> e);
-            future.completeExceptionally(new Exception("Message could not be deserialized.", e));
-        }
+    protected void decode(final HandlerContext ctx,
+                          final Address recipient,
+                          final ByteBuf msg,
+                          final List<Object> out) throws IOException {
+        out.add(IntermediateEnvelope.of(msg.retain()));
     }
 }

@@ -30,7 +30,6 @@ import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
@@ -45,6 +44,8 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @State(Scope.Benchmark)
@@ -52,19 +53,17 @@ public class ByteBuf2MessageHandlerBenchmark extends AbstractBenchmark {
     private HandlerContext ctx;
     private Address sender;
     private ByteBuf msg;
-    private CompletableFuture<Void> future;
+    private List<Object> out;
 
     @Setup
     public void setup() {
         try {
             ctx = new MyHandlerContext();
             sender = new MyAddress();
-            final InetSocketAddressWrapper msgSender = new InetSocketAddressWrapper("127.0.0.1", 25527);
-            final InetSocketAddressWrapper msgRecipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
             final byte[] payload = RandomUtil.randomBytes(1024);
             final IntermediateEnvelope<Application> acknowledgementMessage = IntermediateEnvelope.application(1337, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class.getName(), payload);
             msg = acknowledgementMessage.getOrBuildByteBuf();
-            future = new CompletableFuture<>();
+            out = new ArrayList<>();
         }
         catch (final IOException e) {
             handleUnexpectedException(e);
@@ -74,7 +73,13 @@ public class ByteBuf2MessageHandlerBenchmark extends AbstractBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void matchedRead(final Blackhole blackhole) {
-        ByteBuf2MessageHandler.INSTANCE.matchedInbound(ctx, sender, msg, future);
+        try {
+            ByteBuf2MessageHandler.INSTANCE.decode(ctx, sender, msg, out);
+            blackhole.consume(out);
+        }
+        catch (final IOException e) {
+            handleUnexpectedException(e);
+        }
     }
 
     private static class MyHandlerContext implements HandlerContext {

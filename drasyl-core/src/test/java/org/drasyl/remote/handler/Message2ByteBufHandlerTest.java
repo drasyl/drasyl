@@ -58,7 +58,7 @@ class Message2ByteBufHandlerTest {
             final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
-                pipeline.processOutbound(recipient, message);
+                pipeline.processOutbound(recipient, message).join();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)

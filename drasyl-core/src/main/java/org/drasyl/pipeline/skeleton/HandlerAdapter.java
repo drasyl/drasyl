@@ -51,7 +51,7 @@ public class HandlerAdapter implements Handler {
     public void onInbound(final HandlerContext ctx,
                           final Address sender,
                           final Object msg,
-                          final CompletableFuture<Void> future) {
+                          final CompletableFuture<Void> future) throws Exception {
         ctx.passInbound(sender, msg, future);
     }
 
@@ -74,7 +74,7 @@ public class HandlerAdapter implements Handler {
     public void onOutbound(final HandlerContext ctx,
                            final Address recipient,
                            final Object msg,
-                           final CompletableFuture<Void> future) {
+                           final CompletableFuture<Void> future) throws Exception {
         ctx.passOutbound(recipient, msg, future);
     }
 }

@@ -121,7 +121,7 @@ class DrasylPipelineIT {
             public void onInbound(final HandlerContext ctx,
                                   final Address sender,
                                   final Object msg,
-                                  final CompletableFuture<Void> future) {
+                                  final CompletableFuture<Void> future) throws Exception {
                 super.onInbound(ctx, identity2.getPublicKey(), newPayload, future);
             }
         });
@@ -151,7 +151,7 @@ class DrasylPipelineIT {
             public void onInbound(final HandlerContext ctx,
                                   final Address sender,
                                   final Object msg,
-                                  final CompletableFuture<Void> future) {
+                                  final CompletableFuture<Void> future) throws Exception {
                 super.onInbound(ctx, sender, msg, future);
                 ctx.passEvent(testEvent, new CompletableFuture<>());
             }
@@ -188,7 +188,7 @@ class DrasylPipelineIT {
             public void onInbound(final HandlerContext ctx,
                                   final Address sender,
                                   final Object msg,
-                                  final CompletableFuture<Void> future) {
+                                  final CompletableFuture<Void> future) throws Exception {
                 super.onInbound(ctx, sender, msg, future);
                 throw exception;
             }
@@ -217,7 +217,7 @@ class DrasylPipelineIT {
             public void onOutbound(final HandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
-                                   final CompletableFuture<Void> future) {
+                                   final CompletableFuture<Void> future) throws Exception {
                 super.onOutbound(ctx, identity2.getPublicKey(), newPayload, future);
             }
         });
@@ -244,7 +244,7 @@ class DrasylPipelineIT {
             public void onOutbound(final HandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
-                                   final CompletableFuture<Void> future) {
+                                   final CompletableFuture<Void> future) throws Exception {
                 future.complete(null);
                 super.onOutbound(ctx, recipient, msg, future);
             }
@@ -271,7 +271,7 @@ class DrasylPipelineIT {
             public void onOutbound(final HandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
-                                   final CompletableFuture<Void> future) {
+                                   final CompletableFuture<Void> future) throws Exception {
                 future.completeExceptionally(new Exception("Error!"));
                 super.onOutbound(ctx, recipient, msg, future);
             }

@@ -71,7 +71,7 @@ class ByteBuf2MessageHandlerTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<IntermediateEnvelope<MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<IntermediateEnvelope<MessageLite>>() {
                 }).test();
-                pipeline.processInbound(senderPublicKey, byteBuf);
+                pipeline.processInbound(senderPublicKey, byteBuf).join();
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);

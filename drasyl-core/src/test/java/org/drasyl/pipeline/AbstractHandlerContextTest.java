@@ -246,7 +246,7 @@ class AbstractHandlerContextTest {
     @Test
     void shouldInvokeRead(@Mock final Handler newHandler,
                           @Mock final CompressedPublicKey sender,
-                          @Mock final Object msg) {
+                          @Mock final Object msg) throws Exception {
         when(next.handler()).thenReturn(newHandler);
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
@@ -266,7 +266,7 @@ class AbstractHandlerContextTest {
     @Test
     void shouldRethrowIfExceptionOccursDuringInvokeRead(@Mock final Handler newHandler,
                                                         @Mock final CompressedPublicKey sender,
-                                                        @Mock final Object msg) {
+                                                        @Mock final Object msg) throws Exception {
         when(next.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).onInbound(any(), any(), any(), any());
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
@@ -329,7 +329,7 @@ class AbstractHandlerContextTest {
     @Test
     void shouldWrite(@Mock final Handler newHandler,
                      @Mock final CompressedPublicKey recipient,
-                     @Mock final Object msg) {
+                     @Mock final Object msg) throws Exception {
         when(prev.handler()).thenReturn(newHandler);
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
@@ -349,7 +349,7 @@ class AbstractHandlerContextTest {
     @Test
     void shouldRethrowIfExceptionOccursDuringWrite(@Mock final Handler newHandler,
                                                    @Mock final CompressedPublicKey recipient,
-                                                   @Mock final Object msg) {
+                                                   @Mock final Object msg) throws Exception {
         when(prev.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).onOutbound(any(), any(), any(), any());
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
@@ -530,7 +530,7 @@ class AbstractHandlerContextTest {
         @Test
         void shouldNotCallAnyHandlerOnReadIfFutureIsAlreadyDone(@Mock final Handler newHandler,
                                                                 @Mock final Address address,
-                                                                @Mock final Object msg) {
+                                                                @Mock final Object msg) throws Exception {
             when(future.isDone()).thenReturn(true);
 
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
@@ -548,7 +548,7 @@ class AbstractHandlerContextTest {
         @Test
         void shouldNotCallAnyHandlerOnWriteIfFutureIsAlreadyDone(@Mock final Handler newHandler,
                                                                  @Mock final Address address,
-                                                                 @Mock final Object msg) {
+                                                                 @Mock final Object msg) throws Exception {
             when(future.isDone()).thenReturn(true);
 
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {

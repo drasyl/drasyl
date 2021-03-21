@@ -42,8 +42,11 @@ import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @State(Scope.Benchmark)
@@ -51,19 +54,17 @@ public class Message2ByteBufHandlerBenchmark extends AbstractBenchmark {
     private HandlerContext ctx;
     private InetSocketAddressWrapper recipient;
     private IntermediateEnvelope<MessageLite> msg;
-    private CompletableFuture<Void> future;
+    private List<Object> out;
 
     @Setup
     public void setup() {
         try {
             ctx = new MyHandlerContext();
             recipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
-            final InetSocketAddressWrapper msgSender = new InetSocketAddressWrapper("127.0.0.1", 25527);
-            final InetSocketAddressWrapper msgRecipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
             final byte[] payload = RandomUtil.randomBytes(1024);
             final IntermediateEnvelope<Application> content = IntermediateEnvelope.application(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), byte[].class.getName(), payload);
             msg = IntermediateEnvelope.of(content.getOrBuildByteBuf());
-            future = new CompletableFuture<>();
+            out = new ArrayList<>();
         }
         catch (final IOException e) {
             handleUnexpectedException(e);
@@ -72,8 +73,14 @@ public class Message2ByteBufHandlerBenchmark extends AbstractBenchmark {
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void matchedRead() {
-        Message2ByteBufHandler.INSTANCE.matchedOutbound(ctx, recipient, msg, future);
+    public void matchedRead(final Blackhole blackhole) {
+        try {
+            Message2ByteBufHandler.INSTANCE.encode(ctx, recipient, msg, out);
+            blackhole.consume(out);
+        }
+        catch (final IOException e) {
+            handleUnexpectedException(e);
+        }
     }
 
     private static class MyHandlerContext implements HandlerContext {
