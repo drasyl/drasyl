@@ -29,7 +29,6 @@ import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.logging.Logger;
@@ -77,7 +76,7 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedA
         if (staticAddress != null) {
             final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, msg.getType(), msg.getContent());
             LOG.trace("Send message `{}` via static route {}.", () -> msg, () -> staticAddress);
-            ctx.passOutbound(staticAddress, new AddressedIntermediateEnvelope<>(null, staticAddress, envelope), future);
+            ctx.passOutbound(staticAddress, envelope, future);
         }
         else {
             // passthrough message

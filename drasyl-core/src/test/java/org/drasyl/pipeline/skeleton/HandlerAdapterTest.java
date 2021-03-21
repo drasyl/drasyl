@@ -135,7 +135,7 @@ class HandlerAdapterTest {
         void shouldPassthroughsOnReadWithMultipleHandler(@Mock final CompressedPublicKey sender,
                                                          @Mock final SerializedApplicationMessage msg) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
-                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithRecipient().test();
+                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
                 pipeline.processInbound(sender, msg);
 

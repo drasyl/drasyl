@@ -58,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -79,9 +80,9 @@ class GroupsClientHandlerTest {
     private PeersManager peersManager;
     @Mock
     private ProofOfWork proofOfWork;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Group group;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private GroupUri uri;
     @Mock
     private CompressedPublicKey publicKey;

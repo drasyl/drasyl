@@ -24,8 +24,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.protocol.AddressedByteBuf;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -35,10 +34,10 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
- * Handler that converts a given {@link AddressedIntermediateEnvelope} to a {@link ByteBuf}.
+ * Handler that converts a given {@link IntermediateEnvelope} to a {@link ByteBuf}.
  */
 @Stateless
-public final class Message2ByteBufHandler extends SimpleOutboundHandler<AddressedIntermediateEnvelope<MessageLite>, InetSocketAddressWrapper> {
+public final class Message2ByteBufHandler extends SimpleOutboundHandler<IntermediateEnvelope<MessageLite>, InetSocketAddressWrapper> {
     public static final Message2ByteBufHandler INSTANCE = new Message2ByteBufHandler();
     public static final String MESSAGE_2_BYTE_BUF_HANDLER = "MESSAGE_2_BYTE_BUF_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(Message2ByteBufHandler.class);
@@ -50,12 +49,12 @@ public final class Message2ByteBufHandler extends SimpleOutboundHandler<Addresse
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
-                                   final AddressedIntermediateEnvelope<MessageLite> msg,
+                                   final IntermediateEnvelope<MessageLite> msg,
                                    final CompletableFuture<Void> future) {
         try {
-            final ByteBuf byteBuf = msg.getContent().getOrBuildByteBuf();
+            final ByteBuf byteBuf = msg.getOrBuildByteBuf();
 
-            ctx.passOutbound(recipient, new AddressedByteBuf(msg.getSender(), msg.getRecipient(), byteBuf), future);
+            ctx.passOutbound(recipient, byteBuf, future);
         }
         catch (final IOException e) {
             LOG.error("Unable to serialize '{}'.", () -> sanitizeLogArg(msg), () -> e);

@@ -32,7 +32,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.ReferenceCountUtil;
@@ -162,9 +161,8 @@ class DrasylPipelineIT {
         });
 
         final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes()).armAndRelease(identity2.getPrivateKey());
-        final AddressedIntermediateEnvelope<Application> addressedMessage = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, message);
 
-        pipeline.processInbound(message.getSender(), addressedMessage);
+        pipeline.processInbound(message.getSender(), message);
 
         events.awaitCount(3);
         events.assertValueAt(1, MessageEvent.of(message.getSender(), "Hallo Welt".getBytes()));

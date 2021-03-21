@@ -18,6 +18,8 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
+import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
@@ -25,9 +27,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.remote.protocol.AddressedByteBuf;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
@@ -62,14 +61,13 @@ class ByteBuf2MessageHandlerTest {
     }
 
     @Test
-    void shouldConvertByteBufToEnvelope(@Mock final InetSocketAddressWrapper senderAddress,
-                                        @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
+    void shouldConvertByteBufToEnvelope() throws IOException {
         final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
-        final AddressedByteBuf byteBuf = new AddressedByteBuf(senderAddress, recipientAddress, acknowledgementMessage.getOrBuildByteBuf());
+        final ByteBuf byteBuf = acknowledgementMessage.getOrBuildByteBuf();
 
         final ByteBuf2MessageHandler handler = ByteBuf2MessageHandler.INSTANCE;
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-            final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+            final TestObserver<IntermediateEnvelope<MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<IntermediateEnvelope<MessageLite>>() {
             }).test();
             pipeline.processInbound(senderPublicKey, byteBuf);
 

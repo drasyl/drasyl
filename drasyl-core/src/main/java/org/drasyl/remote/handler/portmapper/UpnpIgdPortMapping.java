@@ -18,13 +18,14 @@
  */
 package org.drasyl.remote.handler.portmapper;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.remote.protocol.AddressedByteBuf;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -123,16 +124,19 @@ public class UpnpIgdPortMapping implements PortMapping {
     }
 
     @Override
-    public boolean acceptMessage(final AddressedByteBuf msg) {
-        return msg.getSender() != null
-                && msg.getSender().getPort() == SSDP_MULTICAST_ADDRESS.getPort();
+    public boolean acceptMessage(final InetSocketAddressWrapper sender,
+                                 final ByteBuf msg) {
+        return sender != null
+                && sender.getPort() == SSDP_MULTICAST_ADDRESS.getPort();
     }
 
     @Override
-    public void handleMessage(final HandlerContext ctx, final AddressedByteBuf msg) {
+    public void handleMessage(final HandlerContext ctx,
+                              final InetSocketAddressWrapper sender,
+                              final ByteBuf msg) {
         try {
             if (ssdpDiscoveryActive.get()) {
-                final Message message = UpnpIgdUtil.readMessage(ByteBufUtil.getBytes(msg.getContent()));
+                final Message message = UpnpIgdUtil.readMessage(ByteBufUtil.getBytes(msg));
 
                 if (message instanceof DiscoveryResponseMessage) {
                     final String serviceType = ((DiscoveryResponseMessage) message).getServiceType();
@@ -140,7 +144,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                     if (serviceType.startsWith("urn:schemas-upnp-org:service:WANCommonInterfaceConfig:")) {
                         try {
                             ssdpServices.add(new URI(location));
-                            LOG.debug("Got UPnP service of type `{}` with location `{}` reported from `{}`", () -> serviceType, () -> location, msg.getSender()::getHostString);
+                            LOG.debug("Got UPnP service of type `{}` with location `{}` reported from `{}`", () -> serviceType, () -> location, sender::getHostString);
                         }
                         catch (final URISyntaxException e) {
                             LOG.debug("Unable to parse received service location.", e);
@@ -148,7 +152,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                     }
                 }
                 else {
-                    LOG.warn("Unexpected message received from `{}`. Discard it!", msg.getSender()::getHostString);
+                    LOG.warn("Unexpected message received from `{}`. Discard it!", sender::getHostString);
                 }
             }
         }
@@ -207,7 +211,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     private void doSsdpDiscovery(final HandlerContext ctx) {
         LOG.debug("Send SSDP discovery message to broadcast address `{}`.", SSDP_MULTICAST_ADDRESS);
         final byte[] content = UpnpIgdUtil.buildDiscoveryMessage();
-        final AddressedByteBuf envelope = new AddressedByteBuf(null, SSDP_MULTICAST_ADDRESS, Unpooled.wrappedBuffer(content));
+        final ByteBuf msg = Unpooled.wrappedBuffer(content);
         ssdpServices.clear();
         ssdpDiscoveryActive.set(true);
         ssdpDiscoverTask = ctx.independentScheduler().scheduleDirect(() -> {
@@ -243,7 +247,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                 }
             }
         }, SSDP_DISCOVERY_TIMEOUT.toMillis(), MILLISECONDS);
-        ctx.passOutbound(envelope.getRecipient(), envelope, new CompletableFuture<>());
+        ctx.passOutbound(SSDP_MULTICAST_ADDRESS, msg, new CompletableFuture<>());
     }
 
     @SuppressWarnings({ "java:S1142", "java:S1541" })

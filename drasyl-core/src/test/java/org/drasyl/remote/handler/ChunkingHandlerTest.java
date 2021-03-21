@@ -24,6 +24,7 @@ import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
+import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
@@ -34,7 +35,8 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Application;
@@ -60,13 +62,14 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.remote.protocol.MessageId.randomMessageId;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ChunkingHandlerTest {
     @Mock
     private DrasylConfig config;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock
     private PeersManager peersManager;
@@ -79,29 +82,25 @@ class ChunkingHandlerTest {
         @Nested
         class WhenAddressedToMe {
             @Test
-            void shouldPassthroughNonChunkedMessage(@Mock final InetSocketAddressWrapper senderAddress,
-                                                    @Mock final InetSocketAddressWrapper recipientAddress) {
+            void shouldPassthroughNonChunkedMessage() {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                when(identity.getPublicKey()).thenReturn(recipient);
 
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
-                final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                    final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                    pipeline.processInbound(sender, addressedMsg).join();
+                    pipeline.processInbound(sender, msg).join();
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
-                            .assertValue(addressedMsg);
+                            .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
                 }
             }
 
             @Test
-            void shouldCacheChunkedMessageIfOtherChunksAreStillMissing(@Mock final InetSocketAddressWrapper senderAddress,
-                                                                       @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, InterruptedException {
+            void shouldCacheChunkedMessageIfOtherChunksAreStillMissing(@Mock final InetSocketAddressWrapper senderAddress) throws IOException, InterruptedException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
@@ -126,8 +125,7 @@ class ChunkingHandlerTest {
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
 
                     final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload);
-                    final AddressedIntermediateEnvelope<MessageLite> addressedHeadChunk = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, headChunk);
-                    pipeline.processInbound(sender, addressedHeadChunk).join();
+                    pipeline.processInbound(senderAddress, headChunk).join();
                     inboundMessages.await(1, SECONDS);
                     inboundMessages.assertNoValues();
 
@@ -136,8 +134,7 @@ class ChunkingHandlerTest {
             }
 
             @Test
-            void shouldBuildMessageAfterReceivingLastMissingChunk(@Mock final InetSocketAddressWrapper senderAddress,
-                                                                  @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
+            void shouldBuildMessageAfterReceivingLastMissingChunk(@Mock final InetSocketAddressWrapper senderAddress) throws IOException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
@@ -148,7 +145,7 @@ class ChunkingHandlerTest {
 
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                    final TestObserver<IntermediateEnvelope<? extends MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<IntermediateEnvelope<? extends MessageLite>>() {
                     }).test();
 
                     // normal chunk
@@ -163,8 +160,7 @@ class ChunkingHandlerTest {
                     final ByteBuf chunkPayload = Unpooled.wrappedBuffer(chunkBytes);
 
                     final IntermediateEnvelope<MessageLite> chunk = IntermediateEnvelope.of(chunkHeader, chunkPayload);
-                    final AddressedIntermediateEnvelope<MessageLite> addressedChunk = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, chunk);
-                    pipeline.processInbound(sender, addressedChunk).join();
+                    pipeline.processInbound(senderAddress, chunk).join();
 
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
@@ -178,14 +174,13 @@ class ChunkingHandlerTest {
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(headChunkBytes);
 
                     final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload);
-                    final AddressedIntermediateEnvelope<MessageLite> addressedHeadChunk = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, headChunk);
-                    pipeline.processInbound(sender, addressedHeadChunk).join();
+                    pipeline.processInbound(senderAddress, headChunk).join();
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
                             .assertValue(m -> {
                                 try {
-                                    return Objects.deepEquals(Bytes.concat(headChunkBytes, chunkBytes), ByteBufUtil.getBytes(m.getContent().copy()));
+                                    return Objects.deepEquals(Bytes.concat(headChunkBytes, chunkBytes), ByteBufUtil.getBytes(m.copy()));
                                 }
                                 finally {
                                     ReferenceCountUtil.safeRelease(m);
@@ -195,8 +190,7 @@ class ChunkingHandlerTest {
             }
 
             @Test
-            void shouldCompleteExceptionallyWhenChunkedMessageExceedMaxSize(@Mock final InetSocketAddressWrapper senderAddress,
-                                                                            @Mock final InetSocketAddressWrapper recipientAddress) throws IOException, InterruptedException {
+            void shouldCompleteExceptionallyWhenChunkedMessageExceedMaxSize(@Mock final InetSocketAddressWrapper senderAddress) throws IOException, InterruptedException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
@@ -232,12 +226,10 @@ class ChunkingHandlerTest {
                     final ByteBuf chunkPayload = Unpooled.wrappedBuffer(bytes);
 
                     final IntermediateEnvelope<MessageLite> chunk = IntermediateEnvelope.of(chunkHeader, chunkPayload);
-                    final AddressedIntermediateEnvelope<MessageLite> addressedChunk = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, chunk);
-                    pipeline.processInbound(sender, addressedChunk).join();
+                    pipeline.processInbound(senderAddress, chunk).join();
 
                     final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload);
-                    final AddressedIntermediateEnvelope<MessageLite> addressedHeadChunk = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, headChunk);
-                    assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, addressedHeadChunk).get());
+                    assertThrows(ExecutionException.class, () -> pipeline.processInbound(senderAddress, headChunk).get());
                     inboundMessages.await(1, SECONDS);
                     inboundMessages.assertNoValues();
                 }
@@ -247,37 +239,32 @@ class ChunkingHandlerTest {
         @Nested
         class WhenNotAddressedToMe {
             @Test
-            void shouldPassthroughNonChunkedMessage(@Mock final InetSocketAddressWrapper senderAddress,
-                                                    @Mock final InetSocketAddressWrapper recipientAddress) {
+            void shouldPassthroughNonChunkedMessage() {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                when(identity.getPublicKey()).thenReturn(sender);
 
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
-                final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                    final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                    pipeline.processInbound(sender, addressedMsg).join();
+                    pipeline.processInbound(sender, msg).join();
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
-                            .assertValue(addressedMsg);
+                            .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
                 }
             }
 
             @Test
-            void shouldPassthroughChunkedMessage(@Mock final InetSocketAddressWrapper senderAddress,
-                                                 @Mock final InetSocketAddressWrapper recipientAddress) throws IOException {
+            void shouldPassthroughChunkedMessage() throws IOException {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 final MessageId messageId = randomMessageId();
-                when(identity.getPublicKey()).thenReturn(sender);
 
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<AddressedIntermediateEnvelope<?>> inboundMessages = pipeline.inboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                    final TestObserver<IntermediateEnvelope<MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<IntermediateEnvelope<MessageLite>>() {
                     }).test();
 
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
@@ -290,13 +277,12 @@ class ChunkingHandlerTest {
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
                     final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload);
-                    final AddressedIntermediateEnvelope<MessageLite> addressedHeadChunk = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, headChunk);
-                    pipeline.processInbound(sender, addressedHeadChunk).join();
+                    pipeline.processInbound(sender, headChunk).join();
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
-                            .assertValue(p -> p.getContent().isChunk());
-                    ReferenceCountUtil.safeRelease(addressedHeadChunk);
+                            .assertValue(IntermediateEnvelope::isChunk);
+                    ReferenceCountUtil.safeRelease(headChunk);
                 }
             }
         }
@@ -308,9 +294,7 @@ class ChunkingHandlerTest {
         class FromMe {
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldPassthroughMessageNotExceedingMtuSize(@Mock final Address address,
-                                                             @Mock final InetSocketAddressWrapper senderAddress,
-                                                             @Mock final InetSocketAddressWrapper recipientAddress) {
+            void shouldPassthroughMessageNotExceedingMtuSize(@Mock final Address recipientAddress) {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
@@ -319,25 +303,22 @@ class ChunkingHandlerTest {
                 when(identity.getPublicKey()).thenReturn(sender);
 
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
-                final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                    final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(address, addressedMsg).join();
+                    pipeline.processOutbound(recipientAddress, msg).join();
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
-                            .assertValue(addressedMsg);
-                    ReferenceCountUtil.safeRelease(addressedMsg);
+                            .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
+                    ReferenceCountUtil.safeRelease(msg);
                 }
             }
 
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldDropMessageExceedingMaximumMessageSize(@Mock final Address address,
-                                                              @Mock final InetSocketAddressWrapper senderAddress,
-                                                              @Mock final InetSocketAddressWrapper recipientAddress) throws InterruptedException {
+            void shouldDropMessageExceedingMaximumMessageSize(@Mock final Address address) throws InterruptedException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
@@ -345,12 +326,11 @@ class ChunkingHandlerTest {
                 when(identity.getPublicKey()).thenReturn(sender);
 
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMaxContentLength]);
-                final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-                    assertThrows(ExecutionException.class, () -> pipeline.processOutbound(address, addressedMsg).get());
+                    assertThrows(ExecutionException.class, () -> pipeline.processOutbound(address, msg).get());
                     outboundMessages.await(1, SECONDS);
                     outboundMessages.assertNoValues();
                 }
@@ -358,9 +338,7 @@ class ChunkingHandlerTest {
 
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldChunkMessageExceedingMtuSize(@Mock final Address address,
-                                                    @Mock final InetSocketAddressWrapper senderAddress,
-                                                    @Mock final InetSocketAddressWrapper recipientAddress) {
+            void shouldChunkMessageExceedingMtuSize(@Mock final Address address) {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
@@ -369,38 +347,37 @@ class ChunkingHandlerTest {
                 when(identity.getPublicKey()).thenReturn(sender);
 
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), RandomUtil.randomBytes(remoteMessageMtu * 2));
-                final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<AddressedIntermediateEnvelope<?>> outboundMessages = pipeline.outboundMessages(new TypeReference<AddressedIntermediateEnvelope<?>>() {
+                    final TestObserver<IntermediateEnvelope<MessageLite>> outboundMessages = pipeline.outboundMessages(new TypeReference<IntermediateEnvelope<MessageLite>>() {
                     }).test();
 
-                    pipeline.processOutbound(address, addressedMsg).join();
+                    pipeline.processOutbound(address, msg).join();
 
                     outboundMessages.awaitCount(3)
                             .assertValueCount(3)
                             .assertValueAt(0, m -> {
                                 try {
-                                    return m.getContent().getTotalChunks().getValue() == 3 && m.getContent().copy().readableBytes() <= remoteMessageMtu;
+                                    return m.getTotalChunks().getValue() == 3 && m.copy().readableBytes() <= remoteMessageMtu;
                                 }
                                 finally {
-                                    ReferenceCountUtil.safeRelease(m.getContent());
+                                    ReferenceCountUtil.safeRelease(m);
                                 }
                             })
                             .assertValueAt(1, m -> {
                                 try {
-                                    return m.getContent().getChunkNo().getValue() == 1 && m.getContent().copy().readableBytes() <= remoteMessageMtu;
+                                    return m.getChunkNo().getValue() == 1 && m.copy().readableBytes() <= remoteMessageMtu;
                                 }
                                 finally {
-                                    ReferenceCountUtil.safeRelease(m.getContent());
+                                    ReferenceCountUtil.safeRelease(m);
                                 }
                             })
                             .assertValueAt(2, m -> {
                                 try {
-                                    return m.getContent().getChunkNo().getValue() == 2 && m.getContent().copy().readableBytes() <= remoteMessageMtu;
+                                    return m.getChunkNo().getValue() == 2 && m.copy().readableBytes() <= remoteMessageMtu;
                                 }
                                 finally {
-                                    ReferenceCountUtil.safeRelease(m.getContent());
+                                    ReferenceCountUtil.safeRelease(m);
                                 }
                             });
                 }
@@ -411,24 +388,20 @@ class ChunkingHandlerTest {
         class NotFromMe {
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldPassthroughMessage(@Mock final Address address,
-                                          @Mock final InetSocketAddressWrapper senderAddress,
-                                          @Mock final InetSocketAddressWrapper recipientAddress) {
+            void shouldPassthroughMessage(@Mock final Address recipientAddress) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                when(identity.getPublicKey()).thenReturn(recipient);
 
                 final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
-                final AddressedIntermediateEnvelope<Application> addressedMsg = new AddressedIntermediateEnvelope<>(senderAddress, recipientAddress, msg);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                    final @NonNull TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(address, addressedMsg).join();
+                    pipeline.processOutbound(recipientAddress, msg).join();
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
-                            .assertValue(m -> m.equals(addressedMsg));
+                            .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
                 }
             }
         }

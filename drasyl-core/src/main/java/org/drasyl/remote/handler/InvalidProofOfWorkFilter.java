@@ -23,7 +23,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -38,7 +38,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * This handler filters out all messages received with invalid proof of work.
  */
 @Stateless
-public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<IntermediateEnvelope<MessageLite>, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
     public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
@@ -50,10 +50,10 @@ public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<Address
     @Override
     protected void matchedInbound(final HandlerContext ctx,
                                   final Address sender,
-                                  final AddressedIntermediateEnvelope<MessageLite> msg,
+                                  final IntermediateEnvelope<MessageLite> msg,
                                   final CompletableFuture<Void> future) {
         try {
-            if (msg.getContent().isChunk() || msg.getContent().getProofOfWork().isValid(msg.getContent().getSender(), POW_DIFFICULTY)) {
+            if (msg.isChunk() || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY)) {
                 ctx.passInbound(sender, msg, future);
             }
             else {

@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import io.netty.buffer.ByteBuf;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Node;
@@ -31,7 +32,6 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
-import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.ReferenceCountUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -84,14 +84,14 @@ public class UdpServerBenchmark extends AbstractBenchmark {
             pipeline = new EmbeddedPipeline(config2, identity2, new PeersManager((e) -> {
             }, identity2),
                     handler,
-                    new SimpleInboundHandler<AddressedByteBuf, Address>() {
+                    new SimpleInboundHandler<ByteBuf, Address>() {
                         @Override
                         protected void matchedInbound(final HandlerContext ctx,
                                                       final Address sender,
-                                                      final AddressedByteBuf msg,
+                                                      final ByteBuf msg,
                                                       final CompletableFuture<Void> future) {
                             try {
-                                final int index = msg.getContent().readableBytes();
+                                final int index = msg.readableBytes();
                                 futures[index].complete(null);
                                 future.complete(null);
                             }

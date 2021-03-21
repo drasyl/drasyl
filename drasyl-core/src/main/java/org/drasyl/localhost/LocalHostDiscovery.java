@@ -29,9 +29,8 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
-import org.drasyl.remote.protocol.Protocol;
+import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
@@ -131,9 +130,9 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
                                    final CompletableFuture<Void> future) {
         final InetSocketAddressWrapper localAddress = routes.get(recipient);
         if (localAddress != null) {
-            final IntermediateEnvelope<Protocol.Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, msg.getType(), msg.getContent());
+            final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, msg.getType(), msg.getContent());
             LOG.trace("Send message `{}` via local route {}.", () -> msg, () -> localAddress);
-            ctx.passOutbound(localAddress, new AddressedIntermediateEnvelope<>(null, localAddress, envelope), future);
+            ctx.passOutbound(localAddress, envelope, future);
         }
         else {
             // passthrough message

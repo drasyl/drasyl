@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler.portmapper;
 
+import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -28,8 +29,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.remote.protocol.AddressedByteBuf;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +41,7 @@ import java.util.List;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -117,9 +118,9 @@ class PortMapperTest {
     class MessageHandling {
         @Test
         void shouldConsumeMethodMessages(@Mock final PortMapping method,
-                                         @Mock final Address sender,
-                                         @Mock final AddressedByteBuf msg) {
-            when(method.acceptMessage(any())).thenReturn(true);
+                                         @Mock final InetSocketAddressWrapper sender,
+                                         @Mock final ByteBuf msg) {
+            when(method.acceptMessage(eq(sender), any())).thenReturn(true);
 
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
@@ -136,10 +137,8 @@ class PortMapperTest {
 
         @Test
         void shouldPassthroughNonMethodMessages(@Mock final PortMapping method,
-                                                @Mock final Address sender,
-                                                @Mock final AddressedByteBuf msg) {
-            when(method.acceptMessage(any())).thenReturn(false);
-
+                                                @Mock final InetSocketAddressWrapper sender,
+                                                @Mock final ByteBuf msg) {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);

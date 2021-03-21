@@ -25,7 +25,10 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -48,29 +51,29 @@ class HopCountGuardTest {
     private PeersManager peersManager;
 
     @Test
-    void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final CompressedPublicKey address,
-                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws IOException {
+    void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final CompressedPublicKey recipient,
+                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<? extends MessageLite> message) throws IOException {
         when(config.getRemoteMessageHopLimit()).thenReturn((byte) 2);
-        when(message.getContent().getHopCount()).thenReturn((byte) 1);
+        when(message.getHopCount()).thenReturn((byte) 1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-            pipeline.processOutbound(address, message);
+            pipeline.processOutbound(recipient, message);
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
-                    .assertValue(m -> m instanceof AddressedIntermediateEnvelope);
-            verify(message.getContent()).incrementHopCount();
+                    .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message));
+            verify(message).incrementHopCount();
         }
     }
 
     @Test
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final AddressedIntermediateEnvelope<MessageLite> message) throws InterruptedException, IOException {
+                                                                @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<? extends MessageLite> message) throws InterruptedException, IOException {
         when(config.getRemoteMessageHopLimit()).thenReturn((byte) 1);
-        when(message.getContent().getHopCount()).thenReturn((byte) 1);
+        when(message.getHopCount()).thenReturn((byte) 1);
         when(message.refCnt()).thenReturn(1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;

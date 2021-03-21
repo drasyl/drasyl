@@ -18,15 +18,15 @@
  */
 package org.drasyl.remote.handler.portmapper;
 
+import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
-import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * all methods fail, the program waits for {@link #RETRY_DELAY} and then tries all methods again. It
  * never gives up.
  */
-public class PortMapper extends SimpleInboundHandler<AddressedByteBuf, Address> {
+public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressWrapper> {
     public static final String PORT_MAPPER = "PORT_MAPPER";
     public static final Duration MAPPING_LIFETIME = ofMinutes(10);
     public static final Duration RETRY_DELAY = ofMinutes(5);
@@ -88,12 +88,12 @@ public class PortMapper extends SimpleInboundHandler<AddressedByteBuf, Address> 
 
     @Override
     protected void matchedInbound(final HandlerContext ctx,
-                                  final Address sender,
-                                  final AddressedByteBuf msg,
+                                  final InetSocketAddressWrapper sender,
+                                  final ByteBuf msg,
                                   final CompletableFuture<Void> future) {
-        if (methods.get(currentMethodPointer).acceptMessage(msg)) {
+        if (methods.get(currentMethodPointer).acceptMessage(sender, msg)) {
             future.complete(null);
-            ctx.independentScheduler().scheduleDirect(() -> methods.get(currentMethodPointer).handleMessage(ctx, msg));
+            ctx.independentScheduler().scheduleDirect(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, msg));
         }
         else {
             // message was not for the mapper -> passthrough

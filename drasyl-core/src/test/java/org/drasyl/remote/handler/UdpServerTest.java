@@ -36,7 +36,6 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -151,16 +150,14 @@ class UdpServerTest {
     @Nested
     class MessagePassing {
         @Test
-        void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final AddressedByteBuf msg) {
-            final InetSocketAddressWrapper recipient = new InetSocketAddressWrapper(22527);
+        void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
+            final InetSocketAddressWrapper recipient = new InetSocketAddressWrapper(1234);
             when(channel.isWritable()).thenReturn(true);
-            when(msg.getRecipient()).thenReturn(new InetSocketAddressWrapper(1234));
             when(channel.writeAndFlush(any()).isDone()).thenReturn(true);
             when(channel.writeAndFlush(any()).isSuccess()).thenReturn(true);
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-
                 pipeline.processOutbound(recipient, msg).join();
 
                 verify(channel, times(3)).writeAndFlush(any());
@@ -187,7 +184,7 @@ class UdpServerTest {
             final UdpServer handler = new UdpServer(bootstrap, null);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<AddressedByteBuf> inboundMessages = pipeline.inboundMessages(AddressedByteBuf.class).test();
+                final TestObserver<ByteBuf> inboundMessages = pipeline.inboundMessages(ByteBuf.class).test();
 
                 pipeline.processInbound(event).join();
 

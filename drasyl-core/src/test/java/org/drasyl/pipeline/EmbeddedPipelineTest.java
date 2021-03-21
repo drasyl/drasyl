@@ -55,7 +55,7 @@ class EmbeddedPipelineTest {
     void shouldReturnInboundMessagesAndEvents(@Mock final CompressedPublicKey sender,
                                               @Mock final SerializedApplicationMessage msg) {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
-            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
             final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 

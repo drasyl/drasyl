@@ -1,5 +1,6 @@
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
@@ -12,7 +13,8 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -75,7 +77,6 @@ class StaticRoutesHandlerTest {
         verify(peersManager, timeout(1_000)).removePath(eq(publicKey), any());
     }
 
-    @SuppressWarnings("rawtypes")
     @Test
     void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
@@ -87,12 +88,13 @@ class StaticRoutesHandlerTest {
         when(message.getContent()).thenReturn(new byte[0]);
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
-        final TestObserver<AddressedIntermediateEnvelope> outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
+        final TestObserver<IntermediateEnvelope<? extends MessageLite>> outboundMessages = pipeline.outboundMessages(new TypeReference<IntermediateEnvelope<? extends MessageLite>>() {
+        }).test();
 
         pipeline.processOutbound(publicKey, message).join();
 
         outboundMessages.awaitCount(1)
-                .assertValueAt(0, m -> m.getRecipient().equals(address));
+                .assertValueCount(1);
     }
 
     @Test

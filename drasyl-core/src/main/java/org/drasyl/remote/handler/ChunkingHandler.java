@@ -29,8 +29,8 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
@@ -53,7 +53,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * splitting outgoing too large messages into chunks.
  */
 @SuppressWarnings({ "java:S110" })
-public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<? extends MessageLite>, AddressedIntermediateEnvelope<? extends MessageLite>, Address> {
+public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(ChunkingHandler.class);
     private final Worm<Map<MessageId, ChunksCollector>> chunksCollectors;
@@ -65,12 +65,12 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
     @Override
     protected void matchedInbound(final HandlerContext ctx,
                                   final Address sender,
-                                  final AddressedIntermediateEnvelope<? extends MessageLite> msg,
+                                  final IntermediateEnvelope<? extends MessageLite> msg,
                                   final CompletableFuture<Void> future) {
         try {
             // message is addressed to me and chunked
-            if (ctx.identity().getPublicKey().equals(msg.getContent().getRecipient()) && msg.getContent().isChunk()) {
-                handleInboundChunk(ctx, sender, msg, future);
+            if (sender instanceof InetSocketAddressWrapper && ctx.identity().getPublicKey().equals(msg.getRecipient()) && msg.isChunk()) {
+                handleInboundChunk(ctx, (InetSocketAddressWrapper) sender, msg, future);
             }
             else {
                 // passthrough all messages not addressed to us
@@ -85,18 +85,17 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
     }
 
     private void handleInboundChunk(final HandlerContext ctx,
-                                    final Address sender,
-                                    final AddressedIntermediateEnvelope<? extends MessageLite> chunk,
+                                    final InetSocketAddressWrapper sender,
+                                    final IntermediateEnvelope<? extends MessageLite> chunk,
                                     final CompletableFuture<Void> future) throws IOException {
         try {
-            final ChunksCollector chunksCollector = getChunksCollectors(ctx.config()).computeIfAbsent(chunk.getContent().getId(), id -> new ChunksCollector(ctx.config().getRemoteMessageMaxContentLength(), id));
-            final IntermediateEnvelope<? extends MessageLite> message = chunksCollector.addChunk(chunk.getContent());
+            final ChunksCollector chunksCollector = getChunksCollectors(ctx.config()).computeIfAbsent(chunk.getId(), id -> new ChunksCollector(ctx.config().getRemoteMessageMaxContentLength(), id));
+            final IntermediateEnvelope<? extends MessageLite> message = chunksCollector.addChunk(chunk);
 
             if (message != null) {
                 // message complete, pass it inbound
-                final AddressedIntermediateEnvelope<? extends MessageLite> addressedMessage = new AddressedIntermediateEnvelope<>(chunk.getSender(), chunk.getRecipient(), message);
-                getChunksCollectors(ctx.config()).remove(chunk.getContent().getId());
-                ctx.passInbound(sender, addressedMessage, future);
+                getChunksCollectors(ctx.config()).remove(chunk.getId());
+                ctx.passInbound(sender, message, future);
             }
             else {
                 // other chunks missing, but this chunk has been processed
@@ -104,7 +103,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
             }
         }
         catch (final IllegalStateException e) {
-            getChunksCollectors(ctx.config()).remove(chunk.getContent().getId());
+            getChunksCollectors(ctx.config()).remove(chunk.getId());
             throw e;
         }
     }
@@ -126,12 +125,12 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final Address recipient,
-                                   final AddressedIntermediateEnvelope<? extends MessageLite> msg,
+                                   final IntermediateEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) {
         try {
-            if (ctx.identity().getPublicKey().equals(msg.getContent().getSender())) {
+            if (ctx.identity().getPublicKey().equals(msg.getSender())) {
                 // message from us, check if we have to chunk it
-                final ByteBuf messageByteBuf = msg.getContent().getOrBuildByteBuf();
+                final ByteBuf messageByteBuf = msg.getOrBuildByteBuf();
                 final int messageLength = messageByteBuf.readableBytes();
                 final int messageMaxContentLength = ctx.config().getRemoteMessageMaxContentLength();
                 if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
@@ -162,13 +161,13 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
     @SuppressWarnings("unchecked")
     private static void chunkMessage(final HandlerContext ctx,
                                      final Address recipient,
-                                     final AddressedIntermediateEnvelope<? extends MessageLite> msg,
+                                     final IntermediateEnvelope<? extends MessageLite> msg,
                                      final CompletableFuture<Void> future,
                                      final ByteBuf messageByteBuf,
                                      final int messageSize) throws IOException {
         try {
             // create & send chunks
-            final PublicHeader msgPublicHeader = msg.getContent().getPublicHeader();
+            final PublicHeader msgPublicHeader = msg.getPublicHeader();
             UnsignedShort chunkNo = UnsignedShort.of(0);
 
             final PublicHeader partialChunkHeader = PublicHeader.newBuilder()
@@ -203,10 +202,9 @@ public class ChunkingHandler extends SimpleDuplexHandler<AddressedIntermediateEn
 
                     // send chunk
                     final IntermediateEnvelope<MessageLite> chunk = IntermediateEnvelope.of(chunkByteBuf);
-                    final AddressedIntermediateEnvelope<MessageLite> addressedChunk = new AddressedIntermediateEnvelope<>(msg.getSender(), msg.getRecipient(), chunk);
 
                     chunkFutures[chunkNo.getValue()] = new CompletableFuture<>();
-                    ctx.passOutbound(recipient, addressedChunk, chunkFutures[chunkNo.getValue()]);
+                    ctx.passOutbound(recipient, chunk, chunkFutures[chunkNo.getValue()]);
                 }
                 finally {
                     ReferenceCountUtil.safeRelease(chunkBodyByteBuf);

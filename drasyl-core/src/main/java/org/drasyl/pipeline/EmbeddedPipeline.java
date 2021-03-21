@@ -56,7 +56,7 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
     private static final short DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH = 16;
     private final Subject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
-    private final Subject<Object> outboundMessages;
+    private final Subject<AddressedEnvelope<Address, Object>> outboundMessages;
 
     public EmbeddedPipeline(final DrasylConfig config,
                             final Identity identity,
@@ -94,7 +94,7 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
         super(new ConcurrentHashMap<>(), dependentScheduler, independentScheduler, config, identity, peersManager, inboundSerialization, outboundSerialization);
         this.inboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
         inboundEvents = ReplaySubject.<Event>create().toSerialized();
-        outboundMessages = ReplaySubject.create().toSerialized();
+        outboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
 
         this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
@@ -102,12 +102,7 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                                    final Address recipient,
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
-                if (msg == null) {
-                    outboundMessages.onNext(NULL_MESSAGE);
-                }
-                else {
-                    outboundMessages.onNext(msg);
-                }
+                outboundMessages.onNext(new DefaultAddressedEnvelope<>(null, recipient, msg));
 
                 future.complete(null);
             }
@@ -154,7 +149,7 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
     /**
      * @return all messages that passes the pipeline until the end
      */
-    public Observable<AddressedEnvelope<Address, Object>> inboundMessagesWithRecipient() {
+    public Observable<AddressedEnvelope<Address, Object>> inboundMessagesWithSender() {
         return inboundMessages;
     }
 
@@ -170,7 +165,7 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
      */
     @SuppressWarnings("unchecked")
     public <T> Observable<T> outboundMessages(final Class<T> clazz) {
-        return (Observable<T>) outboundMessages.filter(clazz::isInstance);
+        return (Observable<T>) outboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(clazz::isInstance);
     }
 
     /**
@@ -178,13 +173,20 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
      */
     @SuppressWarnings("unchecked")
     public <T> Observable<T> outboundMessages(final TypeReference<T> typeReference) {
-        return (Observable<T>) outboundMessages.filter(m -> isInstance(typeReference.getType(), m));
+        return (Observable<T>) outboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(m -> isInstance(typeReference.getType(), m));
     }
 
     /**
      * @return all messages that passes the pipeline until the end
      */
     public Observable<Object> outboundMessages() {
+        return outboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE);
+    }
+
+    /**
+     * @return all messages that passes the pipeline until the end
+     */
+    public Observable<AddressedEnvelope<Address, Object>> outboundMessagesWithRecipient() {
         return outboundMessages;
     }
 

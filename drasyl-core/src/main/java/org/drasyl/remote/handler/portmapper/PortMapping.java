@@ -18,9 +18,10 @@
  */
 package org.drasyl.remote.handler.portmapper;
 
+import io.netty.buffer.ByteBuf;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.remote.protocol.AddressedByteBuf;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 
 /**
  * Represents a method for creating port forwarding (e.g., PCP, NAT-PMP, or UPnP-IGD).
@@ -46,18 +47,23 @@ public interface PortMapping {
     /**
      * Is called for incoming messages and thus enables this method to react to relevant messages.
      *
-     * @param ctx the handler context
-     * @param msg the message
+     * @param ctx    the handler context
+     * @param sender the sender of the message
+     * @param msg    the message
      */
-    void handleMessage(HandlerContext ctx, AddressedByteBuf msg);
+    void handleMessage(HandlerContext ctx,
+                       InetSocketAddressWrapper sender,
+                       ByteBuf msg);
 
     /**
      * Is called for incoming messages and returns true if the message should be consumed and
      * removed from the pipeline.
      *
-     * @param msg the message
+     * @param sender the sender of the message
+     * @param msg    the message
      * @return {@code true} if the message is relevant for the current port forwarding method.
      * Otherwise {@code false}
      */
-    boolean acceptMessage(AddressedByteBuf msg);
+    boolean acceptMessage(InetSocketAddressWrapper sender,
+                          ByteBuf msg);
 }

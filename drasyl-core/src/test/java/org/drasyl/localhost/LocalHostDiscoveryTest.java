@@ -32,7 +32,7 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
@@ -252,22 +252,21 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
             final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
-            final CompressedPublicKey publicKey = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
-            routes.put(publicKey, address);
+            final CompressedPublicKey recipient = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
+            routes.put(recipient, address);
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
             when(message.getType()).thenReturn(byte[].class.getName());
             when(message.getContent()).thenReturn(new byte[0]);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
-            final TestObserver<AddressedIntermediateEnvelope> outboundMessages;
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                outboundMessages = pipeline.outboundMessages(AddressedIntermediateEnvelope.class).test();
+                final TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundMessages(IntermediateEnvelope.class).test();
 
-                pipeline.processOutbound(publicKey, message).join();
+                pipeline.processOutbound(recipient, message).join();
 
                 outboundMessages.awaitCount(1)
-                        .assertValueAt(0, m -> m.getRecipient().equals(address));
+                        .assertValueCount(1);
             }
         }
 

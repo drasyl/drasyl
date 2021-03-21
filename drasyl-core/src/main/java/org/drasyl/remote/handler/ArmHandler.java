@@ -23,7 +23,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -39,7 +39,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<MessageLite>, AddressedIntermediateEnvelope<MessageLite>, Address> {
+public final class ArmHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final ArmHandler INSTANCE = new ArmHandler();
     public static final String ARM_HANDLER = "ARM_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(ArmHandler.class);
@@ -51,13 +51,13 @@ public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateE
     @Override
     protected void matchedInbound(final HandlerContext ctx,
                                   final Address sender,
-                                  final AddressedIntermediateEnvelope<MessageLite> msg,
+                                  final IntermediateEnvelope<? extends MessageLite> msg,
                                   final CompletableFuture<Void> future) {
         try {
-            if (ctx.identity().getPublicKey().equals(msg.getContent().getRecipient())) {
+            if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
                 // disarm all messages addressed to us
-                final AddressedIntermediateEnvelope<MessageLite> disarmedMessage = new AddressedIntermediateEnvelope<>(msg.getSender(), msg.getRecipient(), msg.getContent().disarmAndRelease(ctx.identity().getPrivateKey()));
-                ctx.passInbound(sender, disarmedMessage, future);
+                final IntermediateEnvelope<? extends MessageLite> disarmedMsg = msg.disarmAndRelease(ctx.identity().getPrivateKey());
+                ctx.passInbound(sender, disarmedMsg, future);
             }
             else {
                 ctx.passInbound(sender, msg, future);
@@ -73,13 +73,13 @@ public final class ArmHandler extends SimpleDuplexHandler<AddressedIntermediateE
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final Address recipient,
-                                   final AddressedIntermediateEnvelope<MessageLite> msg,
+                                   final IntermediateEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) {
         try {
-            if (ctx.identity().getPublicKey().equals(msg.getContent().getSender())) {
+            if (ctx.identity().getPublicKey().equals(msg.getSender())) {
                 // arm all messages from us
-                final AddressedIntermediateEnvelope<MessageLite> armedMessage = new AddressedIntermediateEnvelope<>(msg.getSender(), msg.getRecipient(), msg.getContent().armAndRelease(ctx.identity().getPrivateKey()));
-                ctx.passOutbound(recipient, armedMessage, future);
+                final IntermediateEnvelope<? extends MessageLite> armedMsg = msg.armAndRelease(ctx.identity().getPrivateKey());
+                ctx.passOutbound(recipient, armedMsg, future);
             }
             else {
                 ctx.passOutbound(recipient, msg, future);

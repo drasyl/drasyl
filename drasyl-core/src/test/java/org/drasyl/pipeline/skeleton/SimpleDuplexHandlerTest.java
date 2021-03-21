@@ -97,7 +97,7 @@ class SimpleDuplexHandlerTest {
             };
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
                 final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
                 pipeline.processOutbound(recipient, payload);
 
@@ -228,7 +228,7 @@ class SimpleDuplexHandlerTest {
             };
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithRecipient().test();
+                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
                 final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 

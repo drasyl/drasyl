@@ -18,13 +18,13 @@
  */
 package org.drasyl.remote.handler.portmapper;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -128,20 +128,23 @@ public class PcpPortMapping implements PortMapping {
     }
 
     @Override
-    public boolean acceptMessage(final AddressedByteBuf msg) {
-        return defaultGateway != null && defaultGateway.equals(msg.getSender());
+    public boolean acceptMessage(final InetSocketAddressWrapper sender,
+                                 final ByteBuf msg) {
+        return defaultGateway != null && defaultGateway.equals(sender);
     }
 
     @Override
-    public void handleMessage(final HandlerContext ctx, final AddressedByteBuf msg) {
-        try (final DataInputStream in = new DataInputStream(new ByteBufInputStream(msg.getContent()))) {
+    public void handleMessage(final HandlerContext ctx,
+                              final InetSocketAddressWrapper sender,
+                              final ByteBuf msg) {
+        try (final DataInputStream in = new DataInputStream(new ByteBufInputStream(msg))) {
             final Message message = PcpPortUtil.readMessage(in);
 
             if (message instanceof MappingResponseMessage) {
                 handleMapping(ctx, (MappingResponseMessage) message);
             }
             else {
-                LOG.warn("Unexpected message received from `{}`. Discard it!", msg.getSender()::getHostString);
+                LOG.warn("Unexpected message received from `{}`. Discard it!", sender::getHostString);
             }
         }
         catch (final IOException e) {
@@ -214,10 +217,10 @@ public class PcpPortMapping implements PortMapping {
         LOG.debug("Send MAP opcode request for `{}:{}/UDP` to `{}:{}/UDP` with lifetime of {}s to gateway `{}`.", externalAddress::getHostAddress, () -> port, clientAddress::getHostAddress, () -> port, lifetime::toSeconds, defaultGateway::getHostName);
 
         final byte[] content = PcpPortUtil.buildMappingRequestMessage(lifetime, clientAddress, nonce, protocol, port, externalAddress);
-        final AddressedByteBuf envelope = new AddressedByteBuf(null, defaultGateway, Unpooled.wrappedBuffer(content));
+        final ByteBuf msg = Unpooled.wrappedBuffer(content);
         mappingRequested.incrementAndGet();
 
-        ctx.passOutbound(envelope.getRecipient(), envelope, new CompletableFuture<>());
+        ctx.passOutbound(defaultGateway, msg, new CompletableFuture<>());
     }
 
     private synchronized void handleMapping(final HandlerContext ctx,

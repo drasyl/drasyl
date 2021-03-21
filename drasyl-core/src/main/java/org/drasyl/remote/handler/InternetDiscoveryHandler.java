@@ -34,7 +34,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.remote.protocol.AddressedIntermediateEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
@@ -77,7 +76,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * </ul>
  */
 @SuppressWarnings({ "java:S110", "java:S1192" })
-public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedIntermediateEnvelope<? extends MessageLite>, SerializedApplicationMessage, Address> {
+public class InternetDiscoveryHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, SerializedApplicationMessage, Address> {
     public static final String INTERNET_DISCOVERY_HANDLER = "INTERNET_DISCOVERY_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryHandler.class);
     private static final Object path = InternetDiscoveryHandler.class;
@@ -311,12 +310,12 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
             }
 
             LOG.trace("Send message to {} to {}.", recipient, recipientSocketAddress);
-            ctx.passOutbound(recipientSocketAddress, new AddressedIntermediateEnvelope<>(null, recipientSocketAddress, msg), future);
+            ctx.passOutbound(recipientSocketAddress, msg, future);
         }
         else if (superPeerPeer != null) {
             final InetSocketAddressWrapper superPeerSocketAddress = superPeerPeer.getAddress();
             LOG.trace("No connection to {}. Send message to super peer.", recipient);
-            ctx.passOutbound(superPeerSocketAddress, new AddressedIntermediateEnvelope<>(null, superPeerSocketAddress, msg), future);
+            ctx.passOutbound(superPeerSocketAddress, msg, future);
         }
         else {
             // passthrough message
@@ -341,15 +340,13 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
                                    final InetSocketAddressWrapper sender) {
         // send recipient's information to sender
         final IntermediateEnvelope<Unite> senderRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
-        final AddressedIntermediateEnvelope<Unite> addressedSenderRendezvousEnvelope = new AddressedIntermediateEnvelope<>(null, sender, senderRendezvousEnvelope);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
-        ctx.passOutbound(sender, addressedSenderRendezvousEnvelope, new CompletableFuture<>());
+        ctx.passOutbound(sender, senderRendezvousEnvelope, new CompletableFuture<>());
 
         // send sender's information to recipient
         final IntermediateEnvelope<Unite> recipientRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender);
-        final AddressedIntermediateEnvelope<Unite> addressedSecipientRendezvousEnvelope = new AddressedIntermediateEnvelope<>(null, recipient, recipientRendezvousEnvelope);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
-        ctx.passOutbound(recipient, addressedSecipientRendezvousEnvelope, new CompletableFuture<>());
+        ctx.passOutbound(recipient, recipientRendezvousEnvelope, new CompletableFuture<>());
     }
 
     private synchronized boolean shouldTryUnite(final CompressedPublicKey sender,
@@ -367,117 +364,118 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
     @Override
     protected void matchedInbound(final HandlerContext ctx,
                                   final Address sender,
-                                  final AddressedIntermediateEnvelope<? extends MessageLite> envelope,
+                                  final IntermediateEnvelope<? extends MessageLite> msg,
                                   final CompletableFuture<Void> future) {
-        requireNonNull(envelope);
+        requireNonNull(msg);
         requireNonNull(sender);
 
         try {
             // This message is for us and we will fully decode it
-            if (envelope.getContent().getRecipient().equals(ctx.identity().getPublicKey())) {
-                handleMessage(ctx, sender, envelope, future);
+            if (msg.getRecipient().equals(ctx.identity().getPublicKey())) {
+                handleMessage(ctx, sender, msg, future);
             }
             else {
                 if (!ctx.config().isRemoteSuperPeerEnabled()) {
-                    processMessage(ctx, envelope.getContent().getRecipient(), envelope.getContent(), future);
+                    processMessage(ctx, msg.getRecipient(), msg, future);
                 }
                 else if (LOG.isDebugEnabled()) {
-                    LOG.debug("We're not a super peer. Message `{}` from `{}` (`{}`) to `{}` for relaying was dropped.", envelope, envelope.getContent().getSender(), sender, envelope.getContent().getRecipient());
+                    LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", msg, sender, msg.getRecipient());
                 }
             }
         }
         catch (final IOException e) {
-            LOG.warn("Unable to deserialize '{}'.", () -> sanitizeLogArg(envelope.getContent()), () -> e);
+            LOG.warn("Unable to deserialize '{}'.", () -> sanitizeLogArg(msg), () -> e);
             future.completeExceptionally(new Exception("Message could not be deserialized.", e));
-            ReferenceCountUtil.safeRelease(envelope);
+            ReferenceCountUtil.safeRelease(msg);
         }
     }
 
     @SuppressWarnings("unchecked")
     private void handleMessage(final HandlerContext ctx,
                                final Address sender,
-                               final AddressedIntermediateEnvelope<? extends MessageLite> envelope,
+                               final IntermediateEnvelope<? extends MessageLite> msg,
                                final CompletableFuture<Void> future) throws IOException {
-        if (envelope.getContent().getPrivateHeader().getType() == DISCOVERY) {
-            handlePing(ctx, (AddressedIntermediateEnvelope<Discovery>) envelope, future);
+        if (msg.getPrivateHeader().getType() == DISCOVERY) {
+            handlePing(ctx, (InetSocketAddressWrapper) sender, (IntermediateEnvelope<Discovery>) msg, future);
         }
-        else if (envelope.getContent().getPrivateHeader().getType() == ACKNOWLEDGEMENT) {
-            handlePong(ctx, (AddressedIntermediateEnvelope<Acknowledgement>) envelope, future);
+        else if (msg.getPrivateHeader().getType() == ACKNOWLEDGEMENT) {
+            handlePong(ctx, (InetSocketAddressWrapper) sender, (IntermediateEnvelope<Acknowledgement>) msg, future);
         }
-        else if (envelope.getContent().getPrivateHeader().getType() == UNITE && superPeers.contains(envelope.getContent().getSender())) {
-            handleUnite(ctx, (AddressedIntermediateEnvelope<Unite>) envelope, future);
+        else if (msg.getPrivateHeader().getType() == UNITE && superPeers.contains(msg.getSender())) {
+            handleUnite(ctx, (IntermediateEnvelope<Unite>) msg, future);
         }
-        else if (envelope.getContent().getPrivateHeader().getType() == APPLICATION) {
-            handleApplication(ctx, (AddressedIntermediateEnvelope<Application>) envelope, future);
+        else if (msg.getPrivateHeader().getType() == APPLICATION) {
+            handleApplication(ctx, (IntermediateEnvelope<Application>) msg, future);
         }
         else {
-            envelope.getContent().retain();
+            msg.retain();
             // passthrough message
-            ctx.passInbound(sender, envelope, future);
+            ctx.passInbound(sender, msg, future);
         }
     }
 
     private void handlePing(final HandlerContext ctx,
-                            final AddressedIntermediateEnvelope<Discovery> envelope,
+                            final InetSocketAddressWrapper sender,
+                            final IntermediateEnvelope<Discovery> msg,
                             final CompletableFuture<Void> future) throws IOException {
-        final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getContent().getPublicHeader().getSender().toByteArray()));
-        final MessageId id = requireNonNull(MessageId.of(envelope.getContent().getPublicHeader().getId()));
-        final Discovery body = envelope.getContent().getBodyAndRelease();
+        final CompressedPublicKey envelopeSender = requireNonNull(CompressedPublicKey.of(msg.getPublicHeader().getSender().toByteArray()));
+        final MessageId id = requireNonNull(MessageId.of(msg.getPublicHeader().getId()));
+        final Discovery body = msg.getBodyAndRelease();
         final boolean childrenJoin = body.getChildrenTime() > 0;
-        LOG.trace("Got {} from {}", envelope.getContent(), envelope.getSender());
-        final Peer peer = peers.computeIfAbsent(sender, key -> new Peer());
-        peer.setAddress(envelope.getSender());
+        LOG.trace("Got {} from {}", msg, sender);
+        final Peer peer = peers.computeIfAbsent(envelopeSender, key -> new Peer());
+        peer.setAddress(sender);
         peer.inboundControlTrafficOccurred();
 
         if (childrenJoin) {
             peer.inboundPingOccurred();
             // store peer information
-            if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
-                LOG.debug("PING! Add {} as children", sender);
+            if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(envelopeSender) && !ctx.peersManager().getPaths(envelopeSender).contains(path)) {
+                LOG.debug("PING! Add {} as children", envelopeSender);
             }
-            ctx.peersManager().addPathAndChildren(sender, path);
+            ctx.peersManager().addPathAndChildren(envelopeSender, path);
         }
 
         // reply with pong
         final int networkId = ctx.config().getNetworkId();
         final CompressedPublicKey myPublicKey = ctx.identity().getPublicKey();
         final ProofOfWork myProofOfWork = ctx.identity().getProofOfWork();
-        final IntermediateEnvelope<Acknowledgement> responseEnvelope = IntermediateEnvelope.acknowledgement(networkId, myPublicKey, myProofOfWork, sender, id);
-        LOG.trace("Send {} to {}", responseEnvelope, envelope.getSender());
-        final AddressedIntermediateEnvelope<Acknowledgement> addressedResponseEnvelope = new AddressedIntermediateEnvelope<>(null, envelope.getSender(), responseEnvelope);
-        ctx.passOutbound(envelope.getSender(), addressedResponseEnvelope, future);
+        final IntermediateEnvelope<Acknowledgement> responseEnvelope = IntermediateEnvelope.acknowledgement(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
+        LOG.trace("Send {} to {}", responseEnvelope, sender);
+        ctx.passOutbound(sender, responseEnvelope, future);
     }
 
     private void handlePong(final HandlerContext ctx,
-                            final AddressedIntermediateEnvelope<Acknowledgement> envelope,
+                            final InetSocketAddressWrapper sender,
+                            final IntermediateEnvelope<Acknowledgement> msg,
                             final CompletableFuture<Void> future) throws IOException {
-        final Acknowledgement body = envelope.getContent().getBodyAndRelease();
+        final Acknowledgement body = msg.getBodyAndRelease();
         final MessageId correspondingId = requireNonNull(MessageId.of(body.getCorrespondingId()));
-        final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getContent().getPublicHeader().getSender().toByteArray()));
-        LOG.trace("Got {} from {}", envelope.getContent(), envelope.getSender());
+        final CompressedPublicKey envelopeSender = requireNonNull(CompressedPublicKey.of(msg.getPublicHeader().getSender().toByteArray()));
+        LOG.trace("Got {} from {}", msg, sender);
         final Ping ping = openPingsCache.remove(correspondingId);
         if (ping != null) {
-            final Peer peer = peers.computeIfAbsent(sender, key -> new Peer());
-            peer.setAddress(envelope.getSender());
+            final Peer peer = peers.computeIfAbsent(envelopeSender, key -> new Peer());
+            peer.setAddress(sender);
             peer.inboundControlTrafficOccurred();
             peer.inboundPongOccurred(ping);
-            if (superPeers.contains(envelope.getContent().getSender())) {
+            if (superPeers.contains(msg.getSender())) {
                 //noinspection unchecked
-                LOG.trace("Latency to super peer `{}` ({}): {}ms", () -> sender, peer.getAddress()::getHostName, peer::getLatency);
+                LOG.trace("Latency to super peer `{}` ({}): {}ms", () -> envelopeSender, peer.getAddress()::getHostName, peer::getLatency);
                 determineBestSuperPeer();
 
                 // store peer information
-                if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(sender) && !ctx.peersManager().getPaths(sender).contains(path)) {
-                    LOG.debug("PONG! Add {} as super peer", sender);
+                if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(envelopeSender) && !ctx.peersManager().getPaths(envelopeSender).contains(path)) {
+                    LOG.debug("PONG! Add {} as super peer", envelopeSender);
                 }
-                ctx.peersManager().addPathAndSuperPeer(sender, path);
+                ctx.peersManager().addPathAndSuperPeer(envelopeSender, path);
             }
             else {
                 // store peer information
-                if (LOG.isDebugEnabled() && !ctx.peersManager().getPaths(sender).contains(path)) {
-                    LOG.debug("PONG! Add {} as peer", sender);
+                if (LOG.isDebugEnabled() && !ctx.peersManager().getPaths(envelopeSender).contains(path)) {
+                    LOG.debug("PONG! Add {} as peer", envelopeSender);
                 }
-                ctx.peersManager().addPath(sender, path);
+                ctx.peersManager().addPath(envelopeSender, path);
             }
         }
         future.complete(null);
@@ -505,12 +503,12 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
     }
 
     private void handleUnite(final HandlerContext ctx,
-                             final AddressedIntermediateEnvelope<Unite> envelope,
+                             final IntermediateEnvelope<Unite> msg,
                              final CompletableFuture<Void> future) throws IOException {
-        final Unite body = envelope.getContent().getBodyAndRelease();
+        final Unite body = msg.getBodyAndRelease();
         final CompressedPublicKey publicKey = requireNonNull(CompressedPublicKey.of(body.getPublicKey().toByteArray()));
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(body.getAddress(), UnsignedShort.of(body.getPort().toByteArray()).getValue());
-        LOG.trace("Got {}", envelope.getContent());
+        LOG.trace("Got {}", msg);
         final Peer peer = peers.computeIfAbsent(publicKey, key -> new Peer());
         peer.setAddress(address);
         peer.inboundControlTrafficOccurred();
@@ -520,17 +518,17 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
     }
 
     private void handleApplication(final HandlerContext ctx,
-                                   final AddressedIntermediateEnvelope<Application> envelope,
+                                   final IntermediateEnvelope<Application> msg,
                                    final CompletableFuture<Void> future) throws IOException {
-        if (directConnectionPeers.contains(envelope.getContent().getSender())) {
-            final Peer peer = peers.computeIfAbsent(envelope.getContent().getSender(), key -> new Peer());
+        if (directConnectionPeers.contains(msg.getSender())) {
+            final Peer peer = peers.computeIfAbsent(msg.getSender(), key -> new Peer());
             peer.applicationTrafficOccurred();
         }
 
         // convert to ApplicationMessage
-        final Application application = envelope.getContent().getBodyAndRelease();
+        final Application application = msg.getBodyAndRelease();
         final SerializedApplicationMessage applicationMessage = new SerializedApplicationMessage(application.getType(), application.getPayload().toByteArray());
-        ctx.passInbound(envelope.getContent().getSender(), applicationMessage, future);
+        ctx.passInbound(msg.getSender(), applicationMessage, future);
     }
 
     private void sendPing(final HandlerContext ctx,
@@ -547,8 +545,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<AddressedInter
             messageEnvelope = IntermediateEnvelope.discovery(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
             openPingsCache.put(messageEnvelope.getId(), new Ping(recipientAddress));
             LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
-            final AddressedIntermediateEnvelope<Discovery> addressedMessageEnvelope = new AddressedIntermediateEnvelope<>(null, recipientAddress, messageEnvelope);
-            ctx.passOutbound(recipientAddress, addressedMessageEnvelope, future);
+            ctx.passOutbound(recipientAddress, messageEnvelope, future);
         }
         catch (final IOException e) {
             // should never occur as we build the message ourselves

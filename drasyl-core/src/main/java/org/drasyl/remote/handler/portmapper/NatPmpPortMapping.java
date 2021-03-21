@@ -18,13 +18,13 @@
  */
 package org.drasyl.remote.handler.portmapper;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.remote.protocol.AddressedByteBuf;
 import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -113,13 +113,16 @@ public class NatPmpPortMapping implements PortMapping {
     }
 
     @Override
-    public boolean acceptMessage(final AddressedByteBuf msg) {
-        return defaultGateway != null && defaultGateway.equals(msg.getSender());
+    public boolean acceptMessage(final InetSocketAddressWrapper sender,
+                                 final ByteBuf msg) {
+        return defaultGateway != null && defaultGateway.equals(sender);
     }
 
     @Override
-    public void handleMessage(final HandlerContext ctx, final AddressedByteBuf msg) {
-        try (final InputStream in = new DataInputStream(new ByteBufInputStream(msg.getContent()))) {
+    public void handleMessage(final HandlerContext ctx,
+                              final InetSocketAddressWrapper sender,
+                              final ByteBuf msg) {
+        try (final InputStream in = new DataInputStream(new ByteBufInputStream(msg))) {
             final Message message = NatPmpUtil.readMessage(in);
 
             if (message instanceof ExternalAddressResponseMessage) {
@@ -129,7 +132,7 @@ public class NatPmpPortMapping implements PortMapping {
                 handleMapping(ctx, (MappingUdpResponseMessage) message);
             }
             else {
-                LOG.warn("Unexpected message received from `{}`. Discard it!", msg.getSender()::getHostString);
+                LOG.warn("Unexpected message received from `{}`. Discard it!", sender::getHostString);
             }
         }
         catch (final IOException e) {
@@ -193,10 +196,10 @@ public class NatPmpPortMapping implements PortMapping {
         LOG.debug("Request external address from gateway `{}`.", defaultGateway::getHostName);
 
         final byte[] content = NatPmpUtil.buildExternalAddressRequestMessage();
-        final AddressedByteBuf envelope = new AddressedByteBuf(null, defaultGateway, Unpooled.wrappedBuffer(content));
+        final ByteBuf msg = Unpooled.wrappedBuffer(content);
         externalAddressRequested.set(true);
 
-        ctx.passOutbound(envelope.getRecipient(), envelope, new CompletableFuture<>());
+        ctx.passOutbound(defaultGateway, msg, new CompletableFuture<>());
     }
 
     private void handleExternalAddress(final HandlerContext ctx,
@@ -219,10 +222,10 @@ public class NatPmpPortMapping implements PortMapping {
         LOG.debug("Request mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, () -> port, () -> port, lifetime::toSeconds, defaultGateway::getHostName);
 
         final byte[] content = NatPmpUtil.buildMappingRequestMessage(port, port, lifetime);
-        final AddressedByteBuf envelope = new AddressedByteBuf(null, defaultGateway, Unpooled.wrappedBuffer(content));
+        final ByteBuf msg = Unpooled.wrappedBuffer(content);
         mappingRequested.set(true);
 
-        ctx.passOutbound(envelope.getRecipient(), envelope, new CompletableFuture<>());
+        ctx.passOutbound(defaultGateway, msg, new CompletableFuture<>());
     }
 
     private void handleMapping(final HandlerContext ctx,
