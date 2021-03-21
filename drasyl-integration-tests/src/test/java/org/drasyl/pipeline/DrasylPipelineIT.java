@@ -34,7 +34,6 @@ import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.util.ReferenceCountUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -127,14 +126,12 @@ class DrasylPipelineIT {
             }
         });
 
-        final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey());
+        try (final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey())) {
+            pipeline.processInbound(message.getSender(), message);
 
-        pipeline.processInbound(message.getSender(), message);
-
-        events.awaitCount(1).assertValueCount(1);
-        events.assertValue(MessageEvent.of(identity2.getPublicKey(), newPayload));
-
-        ReferenceCountUtil.safeRelease(message);
+            events.awaitCount(1).assertValueCount(1);
+            events.assertValue(MessageEvent.of(identity2.getPublicKey(), newPayload));
+        }
     }
 
     @Test
@@ -197,14 +194,12 @@ class DrasylPipelineIT {
             }
         });
 
-        final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey());
+        try (final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey())) {
+            pipeline.processInbound(message.getSender(), message);
 
-        pipeline.processInbound(message.getSender(), message);
-
-        exceptions.awaitCount(1).assertValueCount(1);
-        exceptions.assertValue(exception);
-
-        ReferenceCountUtil.safeRelease(message);
+            exceptions.awaitCount(1).assertValueCount(1);
+            exceptions.assertValue(exception);
+        }
     }
 
     @Test

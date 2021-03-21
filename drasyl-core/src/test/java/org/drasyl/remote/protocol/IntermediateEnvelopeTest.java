@@ -35,6 +35,7 @@ import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.ReferenceCountUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -111,55 +112,45 @@ class IntermediateEnvelopeTest {
         }
     }
 
+    @AfterEach
+    void tearDown() {
+        ReferenceCountUtil.safeRelease(message);
+    }
+
     @Nested
     class Of {
         @Nested
         class WithByteBuf {
             @Test
             void shouldOnlyReturnHeaderAndNotChangingTheUnderlyingByteBuf() throws IOException {
-                try {
-                    final byte[] backedByte = message.array();
-                    final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+                final byte[] backedByte = message.array();
+                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                    assertEquals(publicHeader, envelope.getPublicHeader());
-                    assertEquals((privateHeaderLength + bodyLength), envelope.getInternalByteBuf().readableBytes());
-                    assertEquals(backedByte, envelope.getInternalByteBuf().array());
-                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
-                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
-                }
-                finally {
-                    ReferenceCountUtil.safeRelease(message);
-                }
+                assertEquals(publicHeader, envelope.getPublicHeader());
+                assertEquals((privateHeaderLength + bodyLength), envelope.getInternalByteBuf().readableBytes());
+                assertEquals(backedByte, envelope.getInternalByteBuf().array());
+                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
+                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
             }
 
             @Test
             void shouldOnlyReturnPrivateHeaderButReadAlsoPublicHeader() throws IOException {
-                try {
-                    final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                    assertEquals(privateHeader, envelope.getPrivateHeader());
-                    assertEquals(bodyLength, envelope.getInternalByteBuf().readableBytes());
-                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
-                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
-                }
-                finally {
-                    ReferenceCountUtil.safeRelease(message);
-                }
+                assertEquals(privateHeader, envelope.getPrivateHeader());
+                assertEquals(bodyLength, envelope.getInternalByteBuf().readableBytes());
+                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
+                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
             }
 
             @Test
             void shouldOnlyReturnBodyButReadAll() throws IOException {
-                try {
-                    final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                    assertEquals(body, envelope.getBody());
-                    assertEquals(0, envelope.getInternalByteBuf().readableBytes());
-                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
-                    assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
-                }
-                finally {
-                    ReferenceCountUtil.safeRelease(message);
-                }
+                assertEquals(body, envelope.getBody());
+                assertEquals(0, envelope.getInternalByteBuf().readableBytes());
+                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
+                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
             }
 
             @Test
@@ -272,13 +263,8 @@ class IntermediateEnvelopeTest {
     class ToString {
         @Test
         void shouldNotFail() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
-
+            try (final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message)) {
                 assertNotNull(envelope.toString());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
             }
         }
     }
@@ -287,27 +273,17 @@ class IntermediateEnvelopeTest {
     class GetId {
         @Test
         void shouldReturnId() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
-
+            try (final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message)) {
                 assertEquals(messageId, envelope.getId());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
             }
         }
 
         @Test
         void shouldThrowExceptionOnError() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
-                when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
+            when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IOException.class, envelope::getId);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertThrows(IOException.class, envelope::getId);
         }
     }
 
@@ -315,27 +291,17 @@ class IntermediateEnvelopeTest {
     class GetNetworkId {
         @Test
         void shouldReturnNetworkId() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                assertEquals(1, envelope.getNetworkId());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertEquals(1, envelope.getNetworkId());
         }
 
         @Test
         void shouldThrowExceptionOnError() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
-                when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
+            when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IOException.class, envelope::getNetworkId);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertThrows(IOException.class, envelope::getNetworkId);
         }
     }
 
@@ -343,27 +309,17 @@ class IntermediateEnvelopeTest {
     class GetProofOfWork {
         @Test
         void shouldReturnProofOfWork() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                assertEquals(ProofOfWork.of(6657650), envelope.getProofOfWork());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertEquals(ProofOfWork.of(6657650), envelope.getProofOfWork());
         }
 
         @Test
         void shouldThrowExceptionOnError() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
-                when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
+            when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IOException.class, envelope::getProofOfWork);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertThrows(IOException.class, envelope::getProofOfWork);
         }
     }
 
@@ -371,27 +327,17 @@ class IntermediateEnvelopeTest {
     class GetRecipient {
         @Test
         void shouldReturnRecipient() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                assertEquals(recipientPublicKey, envelope.getRecipient());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertEquals(recipientPublicKey, envelope.getRecipient());
         }
 
         @Test
         void shouldThrowExceptionOnError() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
-                when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
+            when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IOException.class, envelope::getRecipient);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertThrows(IOException.class, envelope::getRecipient);
         }
     }
 
@@ -399,15 +345,10 @@ class IntermediateEnvelopeTest {
     class GetSender {
         @Test
         void shouldThrowExceptionOnError() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
-                when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
+            when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IOException.class, envelope::getSender);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertThrows(IOException.class, envelope::getSender);
         }
     }
 
@@ -415,27 +356,17 @@ class IntermediateEnvelopeTest {
     class GetHopCount {
         @Test
         void shouldReturnHopCount() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                assertEquals((byte) 0, envelope.getHopCount());
-            }
-            finally {
-                ReferenceCountUtil.release(message);
-            }
+            assertEquals((byte) 0, envelope.getHopCount());
         }
 
         @Test
         void shouldThrowExceptionOnError() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
-                when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
+            when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IOException.class, envelope::getHopCount);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertThrows(IOException.class, envelope::getHopCount);
         }
     }
 
@@ -443,47 +374,31 @@ class IntermediateEnvelopeTest {
     class IncrementHopCount {
         @Test
         void shouldIncrementIfMessageIsPresentOnlyInByteBuf() throws IOException {
-            IntermediateEnvelope<Application> envelope = null;
-            try {
-                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
-                envelope = new IntermediateEnvelope<>(message, null, null, null);
-
+            final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
+            try (final IntermediateEnvelope<Application> envelope = new IntermediateEnvelope<>(message, null, null, null)) {
                 envelope.incrementHopCount();
 
                 assertEquals(1, envelope.getHopCount());
                 assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
-            }
-            finally {
-                if (envelope != null) {
-                    ReferenceCountUtil.safeRelease(envelope);
-                }
             }
         }
 
         @Test
         void shouldIncrementIfMessageIsPresentInByteBufAndEnvelope() throws IOException {
-            IntermediateEnvelope<Application> envelope = null;
-            try {
-                final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
-                final PublicHeader publicHeader = IntermediateEnvelope.buildPublicHeader(0, CompressedPublicKey.of("1e3f50015609fc450176d19fd6192221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f2238021e3f50015c0a085672b26b94d530ef120200002221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
-                final PrivateHeader privateHeader = PrivateHeader.newBuilder()
-                        .setType(APPLICATION)
-                        .build();
-                final Application body = Application.newBuilder()
-                        .setType(byte[].class.getName())
-                        .setPayload(ByteString.copyFrom("Hallo Welt".getBytes()))
-                        .build();
-                envelope = new IntermediateEnvelope<>(message, publicHeader, privateHeader, body);
-
+            final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
+            final PublicHeader publicHeader = IntermediateEnvelope.buildPublicHeader(0, CompressedPublicKey.of("1e3f50015609fc450176d19fd6192221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f2238021e3f50015c0a085672b26b94d530ef120200002221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
+            final PrivateHeader privateHeader = PrivateHeader.newBuilder()
+                    .setType(APPLICATION)
+                    .build();
+            final Application body = Application.newBuilder()
+                    .setType(byte[].class.getName())
+                    .setPayload(ByteString.copyFrom("Hallo Welt".getBytes()))
+                    .build();
+            try (final IntermediateEnvelope<Application> envelope = new IntermediateEnvelope<>(message, publicHeader, privateHeader, body)) {
                 envelope.incrementHopCount();
 
                 assertEquals(1, envelope.getHopCount());
                 assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
-            }
-            finally {
-                if (envelope != null) {
-                    ReferenceCountUtil.safeRelease(envelope);
-                }
             }
         }
 
@@ -498,13 +413,12 @@ class IntermediateEnvelopeTest {
                     .setPayload(ByteString.copyFrom("Hallo Welt".getBytes()))
                     .build();
 
-            final IntermediateEnvelope<Application> envelope = new IntermediateEnvelope<>(null, publicHeader, privateHeader, body);
+            try (final IntermediateEnvelope<Application> envelope = new IntermediateEnvelope<>(null, publicHeader, privateHeader, body)) {
+                envelope.incrementHopCount();
 
-            envelope.incrementHopCount();
-
-            assertEquals(1, envelope.getHopCount());
-            assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
-            envelope.releaseAll();
+                assertEquals(1, envelope.getHopCount());
+                assertEquals(1, IntermediateEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
+            }
         }
     }
 
@@ -512,27 +426,17 @@ class IntermediateEnvelopeTest {
     class GetSignature {
         @Test
         void shouldReturnSignature() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
-                assertArrayEquals(new byte[]{}, envelope.getSignature());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertArrayEquals(new byte[]{}, envelope.getSignature());
         }
 
         @Test
         void shouldThrowExceptionOnError() throws IOException {
-            try {
-                final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
-                when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            final IntermediateEnvelope<MessageLite> envelope = spy(IntermediateEnvelope.of(message));
+            when(envelope.getPublicHeader()).thenThrow(IOException.class);
 
-                assertThrows(IOException.class, envelope::getSignature);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(message);
-            }
+            assertThrows(IOException.class, envelope::getSignature);
         }
     }
 
@@ -541,39 +445,24 @@ class IntermediateEnvelopeTest {
         @Test
         void shouldReturnSignedMessage() throws IOException {
             final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
-            final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey);
-
-            try {
+            try (final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey)) {
                 assertNotNull(armedEnvelop.getPublicHeader().getSignature());
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(armedEnvelop);
             }
         }
 
         @Test
         void getPrivatHeaderShouldFailOnArmedMessage() throws IOException {
             final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
-            final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey);
-
-            try {
+            try (final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey)) {
                 assertThrows(IOException.class, armedEnvelop::getPrivateHeader);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(armedEnvelop);
             }
         }
 
         @Test
         void getBodyShouldFailOnArmedMessage() throws IOException {
             final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
-            final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey);
-
-            try {
+            try (final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey)) {
                 assertThrows(IOException.class, armedEnvelop::getBody);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(armedEnvelop);
             }
         }
     }
@@ -589,6 +478,11 @@ class IntermediateEnvelopeTest {
             armedEnvelop = envelope.armAndRelease(senderPrivateKey);
         }
 
+        @AfterEach
+        void tearDown() {
+            ReferenceCountUtil.safeRelease(armedEnvelop);
+        }
+
         @Test
         void shouldReturnDisarmedMessageIfSignatureIsValid() throws IOException {
             final IntermediateEnvelope<MessageLite> disarmedMessage = armedEnvelop.disarmAndRelease(senderPrivateKey);
@@ -599,13 +493,9 @@ class IntermediateEnvelopeTest {
         @Test
         void shouldThrowExceptionIfSignatureIsNotValid() throws IOException {
             final IntermediateEnvelope<MessageLite> rearmed = envelope.armAndRelease(recipientPrivateKey);
-            try {
-                // arm with wrong private key
-                assertThrows(IOException.class, () -> rearmed.disarmAndRelease(recipientPrivateKey));
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(armedEnvelop);
-            }
+
+            // arm with wrong private key
+            assertThrows(IOException.class, () -> rearmed.disarmAndRelease(recipientPrivateKey));
         }
 
         @Test

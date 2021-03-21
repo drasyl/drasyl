@@ -31,7 +31,6 @@ import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.util.ReferenceCountUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -55,17 +54,16 @@ class Message2ByteBufHandlerTest {
 
     @Test
     void shouldConvertEnvelopeToByteBuf(@Mock final InetSocketAddressWrapper recipient) throws IOException {
-        final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), byte[].class.getName(), "Hello World".getBytes());
-        final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-            final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
-            pipeline.processOutbound(recipient, message);
+        try (final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), byte[].class.getName(), "Hello World".getBytes())) {
+            final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+                pipeline.processOutbound(recipient, message);
 
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message.getOrBuildByteBuf()));
-
-            ReferenceCountUtil.safeRelease(message);
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message.getOrBuildByteBuf()));
+            }
         }
     }
 

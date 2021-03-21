@@ -25,7 +25,6 @@ import org.drasyl.crypto.HexUtil;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.util.ReferenceCountUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,18 +90,12 @@ class NatPmpPortMappingTest {
             void shouldRequestMappingAfterReceivingExternalAddressMessage(@Mock final HandlerContext ctx,
                                                                           @Mock final InetSocketAddressWrapper sender,
                                                                           @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
-                ByteBuf byteBuf = null;
-                try {
-                    byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008000000004f79fc0a8b202"));
-                    final AtomicBoolean externalAddressRequested = new AtomicBoolean(true);
-                    final AtomicBoolean mappingRequested = new AtomicBoolean();
-                    new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, new InetSocketAddressWrapper(12345), null, null, null, null, defaultGatewaySupplier).handleMessage(ctx, sender, byteBuf);
+                final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008000000004f79fc0a8b202"));
+                final AtomicBoolean externalAddressRequested = new AtomicBoolean(true);
+                final AtomicBoolean mappingRequested = new AtomicBoolean();
+                new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, new InetSocketAddressWrapper(12345), null, null, null, null, defaultGatewaySupplier).handleMessage(ctx, sender, byteBuf);
 
-                    verify(ctx).passOutbound(any(), any(), any());
-                }
-                finally {
-                    ReferenceCountUtil.safeRelease(byteBuf);
-                }
+                verify(ctx).passOutbound(any(), any(), any());
             }
 
             @Test
@@ -111,19 +104,13 @@ class NatPmpPortMappingTest {
                                                        @Mock final Disposable timeoutGuard,
                                                        @Mock final InetAddress externalAddress,
                                                        @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
-                ByteBuf byteBuf = null;
-                try {
-                    byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008100000004f9bf63f163f100000258"));
-                    final AtomicBoolean externalAddressRequested = new AtomicBoolean();
-                    final AtomicBoolean mappingRequested = new AtomicBoolean(true);
-                    new NatPmpPortMapping(externalAddressRequested, mappingRequested, 25585, new InetSocketAddressWrapper(12345), externalAddress, timeoutGuard, null, null, defaultGatewaySupplier).handleMessage(ctx, sender, byteBuf);
+                final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008100000004f9bf63f163f100000258"));
+                final AtomicBoolean externalAddressRequested = new AtomicBoolean();
+                final AtomicBoolean mappingRequested = new AtomicBoolean(true);
+                new NatPmpPortMapping(externalAddressRequested, mappingRequested, 25585, new InetSocketAddressWrapper(12345), externalAddress, timeoutGuard, null, null, defaultGatewaySupplier).handleMessage(ctx, sender, byteBuf);
 
-                    verify(timeoutGuard).dispose();
-                    verify(ctx.independentScheduler()).scheduleDirect(any(), eq((long) 300), eq(SECONDS));
-                }
-                finally {
-                    ReferenceCountUtil.safeRelease(byteBuf);
-                }
+                verify(timeoutGuard).dispose();
+                verify(ctx.independentScheduler()).scheduleDirect(any(), eq((long) 300), eq(SECONDS));
             }
         }
 

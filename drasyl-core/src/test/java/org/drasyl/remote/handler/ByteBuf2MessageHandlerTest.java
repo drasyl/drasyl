@@ -63,17 +63,21 @@ class ByteBuf2MessageHandlerTest {
     @Test
     void shouldConvertByteBufToEnvelope() throws IOException {
         final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
-        final ByteBuf byteBuf = acknowledgementMessage.getOrBuildByteBuf();
+        ByteBuf byteBuf = null;
+        try {
+            byteBuf = acknowledgementMessage.getOrBuildByteBuf();
 
-        final ByteBuf2MessageHandler handler = ByteBuf2MessageHandler.INSTANCE;
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-            final TestObserver<IntermediateEnvelope<MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<IntermediateEnvelope<MessageLite>>() {
-            }).test();
-            pipeline.processInbound(senderPublicKey, byteBuf);
+            final ByteBuf2MessageHandler handler = ByteBuf2MessageHandler.INSTANCE;
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                final TestObserver<IntermediateEnvelope<MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<IntermediateEnvelope<MessageLite>>() {
+                }).test();
+                pipeline.processInbound(senderPublicKey, byteBuf);
 
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1);
-
+                inboundMessages.awaitCount(1)
+                        .assertValueCount(1);
+            }
+        }
+        finally {
             ReferenceCountUtil.safeRelease(byteBuf);
         }
     }

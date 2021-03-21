@@ -42,7 +42,6 @@ import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.util.RandomUtil;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
 import org.drasyl.util.UnsignedShort;
 import org.junit.jupiter.api.Nested;
@@ -124,12 +123,11 @@ class ChunkingHandlerTest {
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
 
-                    final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload);
-                    pipeline.processInbound(senderAddress, headChunk).join();
-                    inboundMessages.await(1, SECONDS);
-                    inboundMessages.assertNoValues();
-
-                    ReferenceCountUtil.safeRelease(headChunk);
+                    try (final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload)) {
+                        pipeline.processInbound(senderAddress, headChunk).join();
+                        inboundMessages.await(1, SECONDS);
+                        inboundMessages.assertNoValues();
+                    }
                 }
             }
 
@@ -183,7 +181,7 @@ class ChunkingHandlerTest {
                                     return Objects.deepEquals(Bytes.concat(headChunkBytes, chunkBytes), ByteBufUtil.getBytes(m.copy()));
                                 }
                                 finally {
-                                    ReferenceCountUtil.safeRelease(m);
+                                    m.releaseAll();
                                 }
                             });
                 }
@@ -276,13 +274,13 @@ class ChunkingHandlerTest {
                             .build();
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
-                    final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload);
-                    pipeline.processInbound(sender, headChunk).join();
+                    try (final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload)) {
+                        pipeline.processInbound(sender, headChunk).join();
 
-                    inboundMessages.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(IntermediateEnvelope::isChunk);
-                    ReferenceCountUtil.safeRelease(headChunk);
+                        inboundMessages.awaitCount(1)
+                                .assertValueCount(1)
+                                .assertValue(IntermediateEnvelope::isChunk);
+                    }
                 }
             }
         }
@@ -302,17 +300,17 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(sender);
 
-                final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
-                final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+                try (final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
+                    final Handler handler = new ChunkingHandler();
+                    try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipientAddress, msg).join();
+                        pipeline.processOutbound(recipientAddress, msg).join();
 
-                    outboundMessages.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
-                    ReferenceCountUtil.safeRelease(msg);
+                        outboundMessages.awaitCount(1)
+                                .assertValueCount(1)
+                                .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
+                    }
                 }
             }
 
@@ -361,7 +359,7 @@ class ChunkingHandlerTest {
                                     return m.getTotalChunks().getValue() == 3 && m.copy().readableBytes() <= remoteMessageMtu;
                                 }
                                 finally {
-                                    ReferenceCountUtil.safeRelease(m);
+                                    m.releaseAll();
                                 }
                             })
                             .assertValueAt(1, m -> {
@@ -369,7 +367,7 @@ class ChunkingHandlerTest {
                                     return m.getChunkNo().getValue() == 1 && m.copy().readableBytes() <= remoteMessageMtu;
                                 }
                                 finally {
-                                    ReferenceCountUtil.safeRelease(m);
+                                    m.releaseAll();
                                 }
                             })
                             .assertValueAt(2, m -> {
@@ -377,7 +375,7 @@ class ChunkingHandlerTest {
                                     return m.getChunkNo().getValue() == 2 && m.copy().readableBytes() <= remoteMessageMtu;
                                 }
                                 finally {
-                                    ReferenceCountUtil.safeRelease(m);
+                                    m.releaseAll();
                                 }
                             });
                 }

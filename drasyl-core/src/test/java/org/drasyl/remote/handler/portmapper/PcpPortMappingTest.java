@@ -26,7 +26,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.util.ReferenceCountUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,17 +92,11 @@ public class PcpPortMappingTest {
                                                        @Mock final Disposable timeoutGuard,
                                                        @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                                        @Mock final Supplier<Set<InetAddress>> interfaceSupplier) {
-                ByteBuf byteBuf = null;
-                try {
-                    byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("02810000000002580004ea00000000000000000000000000027c2af0012b29445e68a77e1100000063f163f100000000000000000000ffffc0a8b202"));
-                    new PcpPortMapping(new AtomicInteger(1), 25585, null, new byte[]{}, new InetSocketAddressWrapper(12345), timeoutGuard, null, null, defaultGatewaySupplier, interfaceSupplier).handleMessage(ctx, sender, byteBuf);
+                final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("02810000000002580004ea00000000000000000000000000027c2af0012b29445e68a77e1100000063f163f100000000000000000000ffffc0a8b202"));
+                new PcpPortMapping(new AtomicInteger(1), 25585, null, new byte[]{}, new InetSocketAddressWrapper(12345), timeoutGuard, null, null, defaultGatewaySupplier, interfaceSupplier).handleMessage(ctx, sender, byteBuf);
 
-                    verify(timeoutGuard).dispose();
-                    verify(ctx.independentScheduler()).scheduleDirect(any(), eq((long) 300), eq(SECONDS));
-                }
-                finally {
-                    ReferenceCountUtil.safeRelease(byteBuf);
-                }
+                verify(timeoutGuard).dispose();
+                verify(ctx.independentScheduler()).scheduleDirect(any(), eq((long) 300), eq(SECONDS));
             }
         }
 

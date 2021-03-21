@@ -63,7 +63,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
  * decoding the requested parts of the given {@link ByteBuf}. If a part was request it will be
  * translated into a Java object.
  */
-public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCounted {
+public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCounted, AutoCloseable {
     private static final byte[] MAGIC_NUMBER = new byte[]{ 0x1E, 0x3F, 0x50, 0x01 };
     public static final short MAGIC_NUMBER_LENGTH = 4;
     private ByteBuf message;
@@ -114,6 +114,11 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                 ", privateHeader=" + (privateHeader != null ? TextFormat.shortDebugString(privateHeader) : null) +
                 ", body=" + (body instanceof MessageOrBuilder ? TextFormat.shortDebugString((MessageOrBuilder) body) : null) +
                 '}';
+    }
+
+    @Override
+    public void close() {
+        releaseAll();
     }
 
     /**
@@ -611,6 +616,26 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         finally {
             releaseAll();
         }
+    }
+
+    /**
+     * Returns {@code true} if message is armed. Otherwise {@code false} is returned.
+     *
+     * @return {@code true} if message is armed. Otherwise {@code false} is returned.
+     * @throws IOException if the public header cannot be read
+     */
+    public boolean isArmed() throws IOException {
+        return getSignature().length != 0;
+    }
+
+    /**
+     * Returns {@code true} if message is not armed. Otherwise {@code false} is returned.
+     *
+     * @return {@code true} if message is not armed. Otherwise {@code false} is returned.
+     * @throws IOException if the public header cannot be read
+     */
+    public boolean isDisarmed() throws IOException {
+        return !isArmed();
     }
 
     @SuppressWarnings({ "unchecked", "java:S1142" })
