@@ -50,7 +50,7 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
     public void onOutbound(final HandlerContext ctx,
                            final Address recipient,
                            final Object msg,
-                           final CompletableFuture<Void> future) {
+                           final CompletableFuture<Void> future) throws Exception {
         if (acceptOutbound(msg) && acceptAddress(recipient)) {
             @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
@@ -77,8 +77,9 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
      * @param msg       the message
      * @param future    a future for the message
      */
+    @SuppressWarnings("java:S112")
     protected abstract void matchedOutbound(HandlerContext ctx,
                                             A recipient,
                                             O msg,
-                                            CompletableFuture<Void> future);
+                                            CompletableFuture<Void> future) throws Exception;
 }
