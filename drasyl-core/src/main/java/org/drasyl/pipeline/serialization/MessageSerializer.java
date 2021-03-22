@@ -21,20 +21,19 @@ package org.drasyl.pipeline.serialization;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
+import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
+import java.util.List;
 
 /**
- * This handler serializes messages to byte array an vice vera.
+ * This handler serializes messages to {@link SerializedApplicationMessage} an vice vera.
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class MessageSerializer extends SimpleDuplexHandler<SerializedApplicationMessage, Object, CompressedPublicKey> {
+public final class MessageSerializer extends MessageToMessageCodec<SerializedApplicationMessage, Object, CompressedPublicKey> {
     public static final MessageSerializer INSTANCE = new MessageSerializer();
     public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
@@ -44,60 +43,45 @@ public final class MessageSerializer extends SimpleDuplexHandler<SerializedAppli
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
-                                  final CompressedPublicKey sender,
-                                  final SerializedApplicationMessage msg,
-                                  final CompletableFuture<Void> future) {
-        try {
-            final Serializer serializer = ctx.inboundSerialization().findSerializerFor(msg.getType());
+    protected void decode(final HandlerContext ctx,
+                          final CompressedPublicKey sender,
+                          final SerializedApplicationMessage msg,
+                          final List<Object> out) throws Exception {
+        final Serializer serializer = ctx.inboundSerialization().findSerializerFor(msg.getType());
 
-            if (serializer != null) {
-                final Object o = serializer.fromByteArray(msg.getContent(), msg.getType());
-
-                ctx.passInbound(sender, o, future);
-                LOG.trace("Message has been deserialized to '{}'", () -> o);
-            }
-            else {
-                LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", msg::getType);
-                future.completeExceptionally(new Exception("No serializer was found for type '" + msg.getType() + "'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/"));
-            }
+        if (serializer != null) {
+            final Object o = serializer.fromByteArray(msg.getContent(), msg.getType());
+            out.add(o);
+            LOG.trace("Message has been deserialized to '{}'", () -> o);
         }
-        catch (final IOException | IllegalArgumentException e) {
-            LOG.warn("Deserialization of '{}' failed:", () -> msg, () -> e);
-            future.completeExceptionally(new Exception("Deserialization failed", e));
+        else {
+            LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", msg::getType);
         }
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
-                                   final CompressedPublicKey recipient,
-                                   final Object msg,
-                                   final CompletableFuture<Void> future) {
-        try {
-            final Serializer serializer = ctx.outboundSerialization().findSerializerFor(msg != null ? msg.getClass().getName() : null);
+    protected void encode(final HandlerContext ctx,
+                          final CompressedPublicKey recipient,
+                          final Object o,
+                          final List<Object> out) throws Exception {
+        final Serializer serializer = ctx.outboundSerialization().findSerializerFor(o != null ? o.getClass().getName() : null);
 
-            final String type;
-            if (msg != null) {
-                type = msg.getClass().getName();
-            }
-            else {
-                type = null;
-            }
-
-            if (serializer != null) {
-                final byte[] bytes = serializer.toByteArray(msg);
-                final SerializedApplicationMessage serializedMsg = new SerializedApplicationMessage(type, bytes);
-                ctx.passOutbound(recipient, serializedMsg, future);
-                LOG.trace("Message has been serialized to '{}'", () -> serializedMsg);
-            }
-            else {
-                LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
-                future.completeExceptionally(new Exception("No serializer was found for type '" + type + "'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/"));
-            }
+        final String type;
+        if (o != null) {
+            type = o.getClass().getName();
         }
-        catch (final IOException e) {
-            LOG.warn("Serialization of '{}' failed:", () -> msg, () -> e);
-            future.completeExceptionally(new Exception("Deserialization failed", e));
+        else {
+            type = null;
+        }
+
+        if (serializer != null) {
+            final byte[] bytes = serializer.toByteArray(o);
+            final SerializedApplicationMessage msg = new SerializedApplicationMessage(type, bytes);
+            out.add(msg);
+            LOG.trace("Message has been serialized to '{}'", () -> msg);
+        }
+        else {
+            LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
         }
     }
 }
