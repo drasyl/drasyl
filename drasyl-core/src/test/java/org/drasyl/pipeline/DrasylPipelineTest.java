@@ -44,12 +44,11 @@ import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
 import static org.drasyl.pipeline.serialization.MessageSerializer.MESSAGE_SERIALIZER;
 import static org.drasyl.remote.handler.ArmHandler.ARM_HANDLER;
-import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
 import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
+import static org.drasyl.remote.handler.IntermediateEnvelopeToByteBufCodec.INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC;
 import static org.drasyl.remote.handler.InternetDiscoveryHandler.INTERNET_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
-import static org.drasyl.remote.handler.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
 import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.remote.handler.StaticRoutesHandler.STATIC_ROUTES_HANDLER;
 import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
@@ -115,8 +114,7 @@ class DrasylPipelineTest {
         assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(CHUNKING_HANDLER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(MESSAGE_2_BYTE_BUF_HANDLER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(BYTE_BUF_2_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(PORT_MAPPER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(UDP_SERVER), "This handler is required in the DrasylPipeline");
     }

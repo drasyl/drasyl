@@ -18,34 +18,42 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.handler.codec.MessageToMessageDecoder;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
- * Handler that converts a given {@link ByteBuf} to a {@link IntermediateEnvelope}.
+ * This codec converts {@link IntermediateEnvelope} to {@link ByteBuf} an vice vera.
  */
 @SuppressWarnings("java:S110")
 @Stateless
-public final class ByteBuf2MessageHandler extends MessageToMessageDecoder<ByteBuf, Address> {
-    public static final ByteBuf2MessageHandler INSTANCE = new ByteBuf2MessageHandler();
-    public static final String BYTE_BUF_2_MESSAGE_HANDLER = "BYTE_BUF_2_MESSAGE_HANDLER";
+public final class IntermediateEnvelopeToByteBufCodec extends MessageToMessageCodec<ByteBuf, IntermediateEnvelope<? extends MessageLite>, InetSocketAddressWrapper> {
+    public static final IntermediateEnvelopeToByteBufCodec INSTANCE = new IntermediateEnvelopeToByteBufCodec();
+    public static final String INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC = "INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC";
 
-    private ByteBuf2MessageHandler() {
+    private IntermediateEnvelopeToByteBufCodec() {
         // singleton
     }
 
     @Override
     protected void decode(final HandlerContext ctx,
-                          final Address recipient,
+                          final InetSocketAddressWrapper sender,
                           final ByteBuf msg,
-                          final List<Object> out) throws IOException {
+                          final List<Object> out) throws Exception {
         out.add(IntermediateEnvelope.of(msg.retain()));
+    }
+
+    @Override
+    protected void encode(final HandlerContext ctx,
+                          final InetSocketAddressWrapper recipient,
+                          final IntermediateEnvelope<? extends MessageLite> msg,
+                          final List<Object> out) throws Exception {
+        out.add(msg.getOrBuildByteBuf().retain());
     }
 }

@@ -30,12 +30,11 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.ArmHandler;
-import org.drasyl.remote.handler.ByteBuf2MessageHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
+import org.drasyl.remote.handler.IntermediateEnvelopeToByteBufCodec;
 import org.drasyl.remote.handler.InternetDiscoveryHandler;
 import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
-import org.drasyl.remote.handler.Message2ByteBufHandler;
 import org.drasyl.remote.handler.OtherNetworkFilter;
 import org.drasyl.remote.handler.StaticRoutesHandler;
 import org.drasyl.remote.handler.UdpServer;
@@ -52,12 +51,11 @@ import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAG
 import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
 import static org.drasyl.pipeline.serialization.MessageSerializer.MESSAGE_SERIALIZER;
 import static org.drasyl.remote.handler.ArmHandler.ARM_HANDLER;
-import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
 import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
+import static org.drasyl.remote.handler.IntermediateEnvelopeToByteBufCodec.INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC;
 import static org.drasyl.remote.handler.InternetDiscoveryHandler.INTERNET_DISCOVERY_HANDLER;
 import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
-import static org.drasyl.remote.handler.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
 import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.remote.handler.StaticRoutesHandler.STATIC_ROUTES_HANDLER;
 import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
@@ -136,8 +134,7 @@ public class DrasylPipeline extends AbstractPipeline {
             addFirst(CHUNKING_HANDLER, new ChunkingHandler());
 
             // convert IntermediateEnvelope <-> ByteBuf
-            addFirst(MESSAGE_2_BYTE_BUF_HANDLER, Message2ByteBufHandler.INSTANCE);
-            addFirst(BYTE_BUF_2_MESSAGE_HANDLER, ByteBuf2MessageHandler.INSTANCE);
+            addFirst(INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC, IntermediateEnvelopeToByteBufCodec.INSTANCE);
 
             // udp server
             if (config.isRemoteExposeEnabled()) {
