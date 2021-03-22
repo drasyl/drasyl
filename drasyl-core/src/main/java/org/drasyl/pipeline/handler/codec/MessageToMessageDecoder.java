@@ -25,7 +25,6 @@ import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.ReferenceCountUtil;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -53,7 +52,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @SuppressWarnings("java:S118")
 public abstract class MessageToMessageDecoder<I, A extends Address> extends SimpleInboundHandler<I, A> {
-    @SuppressWarnings({ "unchecked", "java:S112", "java:S2221" })
+    @SuppressWarnings({ "java:S112", "java:S2221" })
     @Override
     protected void matchedInbound(final HandlerContext ctx,
                                   final A sender,
@@ -91,8 +90,20 @@ public abstract class MessageToMessageDecoder<I, A extends Address> extends Simp
         }
     }
 
+    /**
+     * Decode from one message to one or more other. This method will be called for each inbound
+     * message that can be handled by this decoder.
+     *
+     * @param ctx    the {@link HandlerContext} which this {@link MessageToMessageDecoder} belongs
+     *               to
+     * @param sender the sender of the message
+     * @param msg    the message to decode
+     * @param out    the {@link List} to which decoded messages should be added
+     * @throws Exception is thrown if an error occurs
+     */
+    @SuppressWarnings("java:S112")
     protected abstract void decode(final HandlerContext ctx,
-                                   final A recipient,
+                                   final A sender,
                                    final I msg,
-                                   final List<Object> out) throws IOException;
+                                   final List<Object> out) throws Exception;
 }
