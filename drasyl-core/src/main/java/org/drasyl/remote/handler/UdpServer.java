@@ -40,6 +40,7 @@ import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedInteger;
@@ -208,7 +209,9 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         if (channel != null && channel.isWritable()) {
             final DatagramPacket packet = new DatagramPacket(msg, recipient);
             LOG.trace("Send Datagram {}", packet);
-            FutureUtil.completeOnAllOf(future, FutureUtil.toFuture(channel.writeAndFlush(packet)));
+            FutureCombiner.getInstance()
+                    .add(FutureUtil.toFuture(channel.writeAndFlush(packet)))
+                    .combine(future);
         }
         else {
             ReferenceCountUtil.safeRelease(msg);

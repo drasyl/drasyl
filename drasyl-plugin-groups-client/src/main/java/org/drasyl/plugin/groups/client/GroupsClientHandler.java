@@ -39,7 +39,7 @@ import org.drasyl.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
 import org.drasyl.serialization.JacksonJsonSerializer;
-import org.drasyl.util.FutureUtil;
+import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -152,8 +152,9 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     private static void onMemberJoined(final HandlerContext ctx,
                                        final MemberJoinedMessage msg,
                                        final CompletableFuture<Void> future) {
-        FutureUtil.completeOnAllOf(future,
-                ctx.pipeline().processInbound(GroupMemberJoinedEvent.of(msg.getMember(), msg.getGroup())));
+        FutureCombiner.getInstance()
+                .add(ctx.pipeline().processInbound(GroupMemberJoinedEvent.of(msg.getMember(), msg.getGroup())))
+                .combine(future);
     }
 
     /**
@@ -174,8 +175,10 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
             disposable.dispose();
         }
 
-        FutureUtil.completeOnAllOf(future, ctx.pipeline().processInbound(GroupJoinFailedEvent.of(group, msg.getReason(),
-                () -> joinGroup(ctx, groups.get(group), false))));
+        FutureCombiner.getInstance()
+                .add(ctx.pipeline().processInbound(GroupJoinFailedEvent.of(group, msg.getReason(),
+                        () -> joinGroup(ctx, groups.get(group), false))))
+                .combine(future);
     }
 
     /**
@@ -197,12 +200,14 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                 disposable.dispose();
             }
 
-            FutureUtil.completeOnAllOf(future,
-                    ctx.pipeline().processInbound(GroupLeftEvent.of(group, () -> joinGroup(ctx, groups.get(group), false))));
+            FutureCombiner.getInstance()
+                    .add(ctx.pipeline().processInbound(GroupLeftEvent.of(group, () -> joinGroup(ctx, groups.get(group), false))))
+                    .combine(future);
         }
         else {
-            FutureUtil.completeOnAllOf(future,
-                    ctx.pipeline().processInbound(GroupMemberLeftEvent.of(msg.getMember(), group)));
+            FutureCombiner.getInstance()
+                    .add(ctx.pipeline().processInbound(GroupMemberLeftEvent.of(msg.getMember(), group)))
+                    .combine(future);
         }
     }
 
@@ -232,11 +237,13 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                         joinGroup(ctx, groups.get(group), true),
                 timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
 
-        FutureUtil.completeOnAllOf(future, ctx.pipeline().processInbound(
-                GroupJoinedEvent.of(
-                        group,
-                        msg.getMembers(),
-                        () -> ctx.pipeline().processOutbound(sender, new GroupLeaveMessage(group)))));
+        FutureCombiner.getInstance()
+                .add(ctx.pipeline().processInbound(
+                        GroupJoinedEvent.of(
+                                group,
+                                msg.getMembers(),
+                                () -> ctx.pipeline().processOutbound(sender, new GroupLeaveMessage(group)))))
+                .combine(future);
     }
 
     /**

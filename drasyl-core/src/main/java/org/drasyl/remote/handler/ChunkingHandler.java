@@ -34,7 +34,7 @@ import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
-import org.drasyl.util.FutureUtil;
+import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedShort;
 import org.drasyl.util.Worm;
@@ -181,8 +181,8 @@ public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? 
             final int mtu = ctx.config().getRemoteMessageMtu();
             final UnsignedShort totalChunks = totalChunks(messageSize, mtu, partialChunkHeader);
             LOG.debug("The message `{}` has a size of {} bytes and must be split to {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> mtu);
-            final CompletableFuture<Void>[] chunkFutures = new CompletableFuture[totalChunks.getValue()];
 
+            final FutureCombiner futureCombiner = FutureCombiner.getInstance();
             final int chunkSize = getChunkSize(partialChunkHeader, mtu);
 
             while (messageByteBuf.readableBytes() > 0) {
@@ -203,8 +203,9 @@ public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? 
                     // send chunk
                     final IntermediateEnvelope<MessageLite> chunk = IntermediateEnvelope.of(chunkByteBuf);
 
-                    chunkFutures[chunkNo.getValue()] = new CompletableFuture<>();
-                    ctx.passOutbound(recipient, chunk, chunkFutures[chunkNo.getValue()]);
+                    final CompletableFuture<Void> f = new CompletableFuture<>();
+                    futureCombiner.add(f);
+                    ctx.passOutbound(recipient, chunk, f);
                 }
                 finally {
                     ReferenceCountUtil.safeRelease(chunkBodyByteBuf);
@@ -213,7 +214,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? 
                 chunkNo = chunkNo.increment();
             }
 
-            FutureUtil.completeOnAllOf(future, chunkFutures);
+            futureCombiner.combine(future);
         }
         finally {
             ReferenceCountUtil.safeRelease(messageByteBuf);

@@ -22,7 +22,7 @@ import io.netty.util.ReferenceCounted;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.util.FutureUtil;
+import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.ReferenceCountUtil;
 
 import java.io.IOException;
@@ -77,13 +77,13 @@ public abstract class MessageToMessageEncoder<O, A extends Address> extends Simp
                 ctx.passOutbound(recipient, out.get(0), future);
             }
             else {
-                final CompletableFuture<Void>[] outFutures = new CompletableFuture[size];
-                for (int i = 0; i < size; i++) {
-                    outFutures[i] = new CompletableFuture<>();
-                    ctx.passOutbound(recipient, out.get(i), outFutures[i]);
+                final FutureCombiner combiner = FutureCombiner.getInstance();
+
+                for (final Object o : out) {
+                    combiner.add(ctx.passOutbound(recipient, o, new CompletableFuture<>()));
                 }
 
-                FutureUtil.completeOnAllOf(future, outFutures);
+                combiner.combine(future);
             }
         }
         catch (final Exception e) {
