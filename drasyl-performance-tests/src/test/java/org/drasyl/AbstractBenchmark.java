@@ -18,9 +18,7 @@
  */
 package org.drasyl;
 
-import io.netty.util.ResourceLeakDetector;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.openjdk.jmh.results.RunResult;
@@ -72,8 +70,8 @@ public abstract class AbstractBenchmark {
         }
 
         if (getReportDir() != null) {
-            String filePath = getReportDir() + className + ".json";
-            File file = new File(filePath);
+            final String filePath = getReportDir() + className + ".json";
+            final File file = new File(filePath);
             if (file.exists()) {
                 file.delete();
             }
@@ -110,7 +108,7 @@ public abstract class AbstractBenchmark {
     }
 
     @SuppressWarnings("unused")
-    public static void handleUnexpectedException(Throwable t) {
+    public static void handleUnexpectedException(final Throwable t) {
         assertNull(t);
     }
 }
