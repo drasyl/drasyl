@@ -22,7 +22,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.util.internal.SystemPropertyUtil;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import org.drasyl.util.FutureUtil;
+import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -109,7 +109,9 @@ public final class DrasylSchedulerUtil {
             heavySchedulerFuture = CompletableFuture.completedFuture(null);
         }
 
-        return FutureUtil.getCompleteOnAllOf(lightSchedulerFuture, heavySchedulerFuture);
+        return FutureCombiner.getInstance()
+                .addAll(lightSchedulerFuture, heavySchedulerFuture)
+                .combine(new CompletableFuture<>());
     }
 
     private static final class LazyLightSchedulerHolder {
