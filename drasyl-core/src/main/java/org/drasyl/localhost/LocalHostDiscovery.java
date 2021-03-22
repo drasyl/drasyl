@@ -27,7 +27,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
@@ -75,7 +74,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</a>
  */
 @SuppressWarnings("java:S1192")
-public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicationMessage, CompressedPublicKey> {
+public class LocalHostDiscovery extends SimpleOutboundHandler<IntermediateEnvelope<Application>, CompressedPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
     private static final Object path = LocalHostDiscovery.class;
     public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
@@ -126,17 +125,16 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<SerializedApplicat
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final CompressedPublicKey recipient,
-                                   final SerializedApplicationMessage msg,
+                                   final IntermediateEnvelope<Application> envelope,
                                    final CompletableFuture<Void> future) {
         final InetSocketAddressWrapper localAddress = routes.get(recipient);
         if (localAddress != null) {
-            final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, msg.getType(), msg.getContent());
-            LOG.trace("Send message `{}` via local route {}.", () -> msg, () -> localAddress);
+            LOG.trace("Send message `{}` via local route {}.", () -> envelope, () -> localAddress);
             ctx.passOutbound(localAddress, envelope, future);
         }
         else {
             // passthrough message
-            ctx.passOutbound(recipient, msg, future);
+            ctx.passOutbound(recipient, envelope, future);
         }
     }
 

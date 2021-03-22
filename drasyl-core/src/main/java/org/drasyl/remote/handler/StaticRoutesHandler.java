@@ -27,7 +27,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
@@ -41,7 +40,7 @@ import java.util.concurrent.CompletableFuture;
  * String)}) to deliver messages.
  */
 @Stateless
-public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedApplicationMessage, CompressedPublicKey> {
+public final class StaticRoutesHandler extends SimpleOutboundHandler<IntermediateEnvelope<Application>, CompressedPublicKey> {
     public static final StaticRoutesHandler INSTANCE = new StaticRoutesHandler();
     public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
@@ -70,17 +69,16 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<SerializedA
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final CompressedPublicKey recipient,
-                                   final SerializedApplicationMessage msg,
+                                   final IntermediateEnvelope<Application> envelope,
                                    final CompletableFuture<Void> future) {
         final InetSocketAddressWrapper staticAddress = ctx.config().getRemoteStaticRoutes().get(recipient);
         if (staticAddress != null) {
-            final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, msg.getType(), msg.getContent());
-            LOG.trace("Send message `{}` via static route {}.", () -> msg, () -> staticAddress);
+            LOG.trace("Send message `{}` via static route {}.", () -> envelope, () -> staticAddress);
             ctx.passOutbound(staticAddress, envelope, future);
         }
         else {
             // passthrough message
-            ctx.passOutbound(recipient, msg, future);
+            ctx.passOutbound(recipient, envelope, future);
         }
     }
 

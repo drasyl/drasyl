@@ -1,6 +1,5 @@
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
@@ -12,9 +11,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
-import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -77,19 +74,17 @@ class StaticRoutesHandlerTest {
         verify(peersManager, timeout(1_000)).removePath(eq(publicKey), any());
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
-    void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
+    void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message) {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
         final CompressedPublicKey publicKey = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
         when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
-        when(message.getType()).thenReturn(byte[].class.getName());
-        when(message.getContent()).thenReturn(new byte[0]);
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
-        final TestObserver<IntermediateEnvelope<? extends MessageLite>> outboundMessages = pipeline.outboundMessages(new TypeReference<IntermediateEnvelope<? extends MessageLite>>() {
-        }).test();
+        final TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundMessages(IntermediateEnvelope.class).test();
 
         pipeline.processOutbound(publicKey, message).join();
 
@@ -97,13 +92,14 @@ class StaticRoutesHandlerTest {
                 .assertValueCount(1);
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey publicKey,
-                                                         @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
+                                                         @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message) {
         when(config.getRemoteStaticRoutes()).thenReturn(Map.of());
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
-        final TestObserver<SerializedApplicationMessage> outboundMessages = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
+        final TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundMessages(IntermediateEnvelope.class).test();
 
         pipeline.processOutbound(publicKey, message).join();
 

@@ -32,7 +32,6 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
@@ -76,7 +75,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * </ul>
  */
 @SuppressWarnings({ "java:S110", "java:S1192" })
-public class InternetDiscoveryHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, SerializedApplicationMessage, Address> {
+public class InternetDiscoveryHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<Application>, Address> {
     public static final String INTERNET_DISCOVERY_HANDLER = "INTERNET_DISCOVERY_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryHandler.class);
     private static final Object path = InternetDiscoveryHandler.class;
@@ -243,7 +242,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<IntermediateEn
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final Address recipient,
-                                   final SerializedApplicationMessage msg,
+                                   final IntermediateEnvelope<Application> msg,
                                    final CompletableFuture<Void> future) {
         if (recipient instanceof CompressedPublicKey) {
             // record communication to keep active connections alive
@@ -252,15 +251,13 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<IntermediateEn
                 peer.applicationTrafficOccurred();
             }
 
-            IntermediateEnvelope<Application> remoteMessageEnvelope = null;
             try {
-                remoteMessageEnvelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), (CompressedPublicKey) recipient, msg.getType(), msg.getContent());
-                processMessage(ctx, (CompressedPublicKey) recipient, remoteMessageEnvelope, future);
+                processMessage(ctx, (CompressedPublicKey) recipient, msg, future);
             }
             catch (final IOException e) {
                 // should never occur as we build the message ourselves
                 future.completeExceptionally(e);
-                ReferenceCountUtil.safeRelease(remoteMessageEnvelope);
+                ReferenceCountUtil.safeRelease(msg);
             }
         }
         else {
@@ -525,10 +522,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<IntermediateEn
             peer.applicationTrafficOccurred();
         }
 
-        // convert to ApplicationMessage
-        final Application application = msg.getBodyAndRelease();
-        final SerializedApplicationMessage applicationMessage = new SerializedApplicationMessage(application.getType(), application.getPayload().toByteArray());
-        ctx.passInbound(msg.getSender(), applicationMessage, future);
+        ctx.passInbound(msg.getSender(), msg, future);
     }
 
     private void sendPing(final HandlerContext ctx,

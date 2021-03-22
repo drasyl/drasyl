@@ -25,7 +25,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -248,9 +248,10 @@ class DrasylPipelineTest {
         assertEquals(ctx, pipeline.context("name"));
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     void shouldExecuteInboundMessage(@Mock final CompressedPublicKey sender,
-                                     @Mock final SerializedApplicationMessage msg) {
+                                     @Mock final IntermediateEnvelope msg) {
         final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
         final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity);
 

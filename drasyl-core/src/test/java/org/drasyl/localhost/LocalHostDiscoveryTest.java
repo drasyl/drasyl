@@ -30,8 +30,10 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.scheduler.DrasylScheduler;
@@ -250,14 +252,12 @@ class LocalHostDiscoveryTest {
     class MessagePassing {
         @SuppressWarnings("rawtypes")
         @Test
-        void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
+        void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message) {
             final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
             final CompressedPublicKey recipient = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
             routes.put(recipient, address);
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
-            when(message.getType()).thenReturn(byte[].class.getName());
-            when(message.getContent()).thenReturn(new byte[0]);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -270,17 +270,19 @@ class LocalHostDiscoveryTest {
             }
         }
 
+        @SuppressWarnings("rawtypes")
         @Test
-        void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey publicKey,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final SerializedApplicationMessage message) {
+        void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey recipient,
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message) {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
-            final TestObserver<SerializedApplicationMessage> outboundMessages;
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                outboundMessages = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
+                final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                pipeline.processOutbound(publicKey, message).join();
+                pipeline.processOutbound(recipient, message).join();
 
-                outboundMessages.awaitCount(1);
+                outboundMessages.awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message));
             }
         }
     }

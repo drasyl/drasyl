@@ -28,8 +28,8 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.pipeline.serialization.SerializedApplicationMessage;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,12 +51,13 @@ class EmbeddedPipelineTest {
                 .build();
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     void shouldReturnInboundMessagesAndEvents(@Mock final CompressedPublicKey sender,
-                                              @Mock final SerializedApplicationMessage msg) {
+                                              @Mock final IntermediateEnvelope msg) {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
-            final TestObserver<SerializedApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(SerializedApplicationMessage.class).test();
+            final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             pipeline.processInbound(sender, msg);

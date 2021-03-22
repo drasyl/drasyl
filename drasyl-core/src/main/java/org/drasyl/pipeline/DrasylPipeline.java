@@ -97,7 +97,7 @@ public class DrasylPipeline extends AbstractPipeline {
         }
 
         if (config.isRemoteEnabled()) {
-            // convert Object <-> SerializedApplicationMessage
+            // convert Object <-> IntermediateEnvelope<Application>
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
             // route outbound messages to pre-configures ip addresses
@@ -111,7 +111,6 @@ public class DrasylPipeline extends AbstractPipeline {
             }
 
             // register at super peers/discover nodes in other networks
-            // convert SerializedApplicationMessage <-> IntermediateEnvelope
             addFirst(INTERNET_DISCOVERY_HANDLER, new InternetDiscoveryHandler(config));
 
             // outbound message guards

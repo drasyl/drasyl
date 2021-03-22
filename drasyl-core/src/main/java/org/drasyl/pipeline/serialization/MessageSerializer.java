@@ -22,6 +22,8 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -29,11 +31,11 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.List;
 
 /**
- * This handler serializes messages to {@link SerializedApplicationMessage} an vice vera.
+ * This handler serializes messages to {@link IntermediateEnvelope<Application>} an vice vera.
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class MessageSerializer extends MessageToMessageCodec<SerializedApplicationMessage, Object, CompressedPublicKey> {
+public final class MessageSerializer extends MessageToMessageCodec<IntermediateEnvelope<Application>, Object, CompressedPublicKey> {
     public static final MessageSerializer INSTANCE = new MessageSerializer();
     public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
@@ -45,17 +47,18 @@ public final class MessageSerializer extends MessageToMessageCodec<SerializedApp
     @Override
     protected void decode(final HandlerContext ctx,
                           final CompressedPublicKey sender,
-                          final SerializedApplicationMessage msg,
+                          final IntermediateEnvelope<Application> envelope,
                           final List<Object> out) throws Exception {
-        final Serializer serializer = ctx.inboundSerialization().findSerializerFor(msg.getType());
+        final Application body = envelope.getBodyAndRelease();
+        final Serializer serializer = ctx.inboundSerialization().findSerializerFor(body.getType());
 
         if (serializer != null) {
-            final Object o = serializer.fromByteArray(msg.getContent(), msg.getType());
+            final Object o = serializer.fromByteArray(body.getPayload().toByteArray(), body.getType());
             out.add(o);
             LOG.trace("Message has been deserialized to '{}'", () -> o);
         }
         else {
-            LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", msg::getType);
+            LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", body::getType);
         }
     }
 
@@ -64,8 +67,6 @@ public final class MessageSerializer extends MessageToMessageCodec<SerializedApp
                           final CompressedPublicKey recipient,
                           final Object o,
                           final List<Object> out) throws Exception {
-        final Serializer serializer = ctx.outboundSerialization().findSerializerFor(o != null ? o.getClass().getName() : null);
-
         final String type;
         if (o != null) {
             type = o.getClass().getName();
@@ -74,11 +75,12 @@ public final class MessageSerializer extends MessageToMessageCodec<SerializedApp
             type = null;
         }
 
+        final Serializer serializer = ctx.outboundSerialization().findSerializerFor(type);
+
         if (serializer != null) {
-            final byte[] bytes = serializer.toByteArray(o);
-            final SerializedApplicationMessage msg = new SerializedApplicationMessage(type, bytes);
-            out.add(msg);
-            LOG.trace("Message has been serialized to '{}'", () -> msg);
+            final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, type, serializer.toByteArray(o));
+            out.add(envelope);
+            LOG.trace("Message has been serialized to '{}'", () -> envelope);
         }
         else {
             LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
