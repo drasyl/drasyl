@@ -125,7 +125,7 @@
         <slf4j.version>1.7.30</slf4j.version>
         <typesafe.config.version>1.4.1</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
-        <json-unit-assertj.version>2.24.0</json-unit-assertj.version>
+        <json-unit-assertj.version>2.25.0</json-unit-assertj.version>
         <commons-cli.version>1.4</commons-cli.version>
         <protobuf.version>3.15.6</protobuf.version>
     </properties>
