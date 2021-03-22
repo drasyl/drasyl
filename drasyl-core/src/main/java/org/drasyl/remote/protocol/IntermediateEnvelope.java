@@ -360,22 +360,34 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
 
     @Override
     public ReferenceCounted retain() {
-        return message.retain();
+        if (message != null) {
+            message.retain();
+        }
+        return this;
     }
 
     @Override
     public ReferenceCounted retain(final int increment) {
-        return message.retain(increment);
+        if (message != null) {
+            message.retain(increment);
+        }
+        return this;
     }
 
     @Override
     public ReferenceCounted touch() {
-        return message.touch();
+        if (message != null) {
+            message.touch();
+        }
+        return this;
     }
 
     @Override
     public ReferenceCounted touch(final Object hint) {
-        return message.touch(hint);
+        if (message != null) {
+            message.touch(hint);
+        }
+        return this;
     }
 
     @Override
