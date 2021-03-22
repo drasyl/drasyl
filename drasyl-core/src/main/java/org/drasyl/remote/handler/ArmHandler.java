@@ -22,16 +22,10 @@ import com.google.protobuf.MessageLite;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
+import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
-import org.drasyl.util.ReferenceCountUtil;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-
-import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
+import java.util.List;
 
 /**
  * Arms (sign/encrypt) outbound and disarms (verify/decrypt) inbound messages. Considers only
@@ -39,56 +33,41 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class ArmHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<? extends MessageLite>, Address> {
+public final class ArmHandler extends MessageToMessageCodec<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final ArmHandler INSTANCE = new ArmHandler();
     public static final String ARM_HANDLER = "ARM_HANDLER";
-    private static final Logger LOG = LoggerFactory.getLogger(ArmHandler.class);
 
     private ArmHandler() {
         // singleton
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
-                                  final Address sender,
-                                  final IntermediateEnvelope<? extends MessageLite> msg,
-                                  final CompletableFuture<Void> future) {
-        try {
-            if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
-                // disarm all messages addressed to us
-                final IntermediateEnvelope<? extends MessageLite> disarmedMsg = msg.disarmAndRelease(ctx.identity().getPrivateKey());
-                ctx.passInbound(sender, disarmedMsg, future);
-            }
-            else {
-                ctx.passInbound(sender, msg, future);
-            }
+    protected void decode(final HandlerContext ctx,
+                          final Address sender,
+                          final IntermediateEnvelope<? extends MessageLite> msg,
+                          final List<Object> out) throws Exception {
+        if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
+            // disarm all messages addressed to us
+            final IntermediateEnvelope<? extends MessageLite> disarmedMsg = msg.disarmAndRelease(ctx.identity().getPrivateKey());
+            out.add(disarmedMsg.retain());
         }
-        catch (final IOException e) {
-            LOG.debug("Can't disarm message `{}`. Message dropped.", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Unable to disarm message", e));
-            ReferenceCountUtil.safeRelease(msg);
+        else {
+            out.add(msg.retain());
         }
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
-                                   final Address recipient,
-                                   final IntermediateEnvelope<? extends MessageLite> msg,
-                                   final CompletableFuture<Void> future) {
-        try {
-            if (ctx.identity().getPublicKey().equals(msg.getSender())) {
-                // arm all messages from us
-                final IntermediateEnvelope<? extends MessageLite> armedMsg = msg.armAndRelease(ctx.identity().getPrivateKey());
-                ctx.passOutbound(recipient, armedMsg, future);
-            }
-            else {
-                ctx.passOutbound(recipient, msg, future);
-            }
+    protected void encode(final HandlerContext ctx,
+                          final Address recipient,
+                          final IntermediateEnvelope<? extends MessageLite> msg,
+                          final List<Object> out) throws Exception {
+        if (ctx.identity().getPublicKey().equals(msg.getSender())) {
+            // arm all messages from us
+            final IntermediateEnvelope<? extends MessageLite> armedMsg = msg.armAndRelease(ctx.identity().getPrivateKey());
+            out.add(armedMsg.retain());
         }
-        catch (final IOException e) {
-            LOG.debug("Can't arm message `{}`. Message dropped.", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Unable to arm message", e));
-            ReferenceCountUtil.safeRelease(msg);
+        else {
+            out.add(msg.retain());
         }
     }
 }
