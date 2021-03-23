@@ -22,13 +22,11 @@ import com.google.protobuf.MessageLite;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
+import org.drasyl.pipeline.handler.InboundMessageFilter;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
@@ -37,8 +35,9 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 /**
  * This handler filters out all messages received with invalid proof of work.
  */
+@SuppressWarnings("java:S110")
 @Stateless
-public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<IntermediateEnvelope<? extends MessageLite>, Address> {
+public final class InvalidProofOfWorkFilter extends InboundMessageFilter<IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
 
@@ -47,24 +46,18 @@ public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<Interme
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
-                                  final Address sender,
-                                  final IntermediateEnvelope<? extends MessageLite> msg,
-                                  final CompletableFuture<Void> future) {
-        try {
-            if (msg.isChunk() || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY)) {
-                ctx.passInbound(sender, msg, future);
-            }
-            else {
-                LOG.trace("Message with invalid proof of work dropped: '{}'", () -> sanitizeLogArg(msg));
-                future.completeExceptionally(new Exception("Message with invalid proof of work dropped."));
-                ReferenceCountUtil.safeRelease(msg);
-            }
-        }
-        catch (final IOException e) {
-            LOG.debug("Message {} can't be read and was dropped: '{}'", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Message can't be read and was dropped due to the following error: ", e));
-            ReferenceCountUtil.safeRelease(msg);
-        }
+    protected boolean accept(final HandlerContext ctx,
+                             final Address sender,
+                             final IntermediateEnvelope<? extends MessageLite> msg) throws Exception {
+        return msg.isChunk() || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
+    }
+
+    @Override
+    protected void messageRejected(final HandlerContext ctx,
+                                   final Address sender,
+                                   final IntermediateEnvelope<? extends MessageLite> msg,
+                                   final CompletableFuture<Void> future) {
+        LOG.trace("Message with invalid proof of work dropped: '{}'", () -> sanitizeLogArg(msg));
+        future.completeExceptionally(new Exception("Message with invalid proof of work dropped."));
     }
 }

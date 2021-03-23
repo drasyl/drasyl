@@ -22,13 +22,11 @@ import com.google.protobuf.MessageLite;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
+import org.drasyl.pipeline.handler.InboundMessageFilter;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
@@ -36,8 +34,9 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 /**
  * This handler filters out all messages received from other networks.
  */
+@SuppressWarnings("java:S110")
 @Stateless
-public final class OtherNetworkFilter extends SimpleInboundHandler<IntermediateEnvelope<? extends MessageLite>, Address> {
+public final class OtherNetworkFilter extends InboundMessageFilter<IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
 
@@ -46,24 +45,18 @@ public final class OtherNetworkFilter extends SimpleInboundHandler<IntermediateE
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
-                                  final Address sender,
-                                  final IntermediateEnvelope<? extends MessageLite> msg,
-                                  final CompletableFuture<Void> future) {
-        try {
-            if (msg.isChunk() || ctx.config().getNetworkId() == msg.getNetworkId()) {
-                ctx.passInbound(sender, msg, future);
-            }
-            else {
-                LOG.trace("Message from other network dropped: {}", () -> sanitizeLogArg(msg));
-                ReferenceCountUtil.safeRelease(msg);
-                future.completeExceptionally(new Exception("Message from other network dropped"));
-            }
-        }
-        catch (final IOException e) {
-            LOG.debug("Message {} can't be read and and was dropped: '{}'", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Message can't be read and was dropped due to the following error: ", e));
-            ReferenceCountUtil.safeRelease(msg);
-        }
+    protected boolean accept(final HandlerContext ctx,
+                             final Address sender,
+                             final IntermediateEnvelope<? extends MessageLite> msg) throws Exception {
+        return msg.isChunk() || ctx.config().getNetworkId() == msg.getNetworkId();
+    }
+
+    @Override
+    protected void messageRejected(final HandlerContext ctx,
+                                   final Address sender,
+                                   final IntermediateEnvelope<? extends MessageLite> msg,
+                                   final CompletableFuture<Void> future) {
+        LOG.trace("Message from other network dropped: {}", () -> sanitizeLogArg(msg));
+        future.completeExceptionally(new Exception("Message from other network dropped"));
     }
 }
