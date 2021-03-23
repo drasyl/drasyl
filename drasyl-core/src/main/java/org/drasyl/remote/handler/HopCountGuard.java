@@ -22,13 +22,11 @@ import com.google.protobuf.MessageLite;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.pipeline.handler.OutboundMessageFilter;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
@@ -39,7 +37,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * the message is discarded. Otherwise the message can pass.
  */
 @Stateless
-public final class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvelope<? extends MessageLite>, Address> {
+public final class HopCountGuard extends OutboundMessageFilter<IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
     private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
 
@@ -48,28 +46,27 @@ public final class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvel
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
-                                   final Address recipient,
+    protected boolean accept(final HandlerContext ctx,
+                             final Address recipient,
+                             final IntermediateEnvelope<? extends MessageLite> msg) throws Exception {
+        if (msg.getHopCount() < ctx.config().getRemoteMessageHopLimit()) {
+            // route message to next hop (node)
+            msg.incrementHopCount();
+
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    @Override
+    protected void messageRejected(final HandlerContext ctx,
+                                   final Address sender,
                                    final IntermediateEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) {
-        try {
-            if (msg.getHopCount() < ctx.config().getRemoteMessageHopLimit()) {
-                // route message to next hop (node)
-                msg.incrementHopCount();
-
-                ctx.passOutbound(recipient, msg, future);
-            }
-            else {
-                // too many hops, discard message
-                LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message '{}'", () -> sanitizeLogArg(msg));
-                ReferenceCountUtil.safeRelease(msg);
-                future.completeExceptionally(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
-            }
-        }
-        catch (final IOException e) {
-            LOG.error("Unable to read/increment hop count from message. Discard message '{}'", () -> sanitizeLogArg(msg), () -> e);
-            ReferenceCountUtil.safeRelease(msg);
-            future.completeExceptionally(new Exception("Unable to read/increment hop count from message.", e));
-        }
+        // too many hops, discard message
+        LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message '{}'", () -> sanitizeLogArg(msg));
+        future.completeExceptionally(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
     }
 }
