@@ -87,7 +87,7 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
-    private static final boolean BOSS_GROUP_CREATED = false;
+    private static boolean bossGroupCreated;
     private static String version;
 
     static {
@@ -221,7 +221,7 @@ public abstract class DrasylNode {
      * </p>
      */
     public static void irrevocablyTerminate() {
-        if (INSTANCES.isEmpty() && BOSS_GROUP_CREATED) {
+        if (INSTANCES.isEmpty() && bossGroupCreated) {
             LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
         }
     }
@@ -436,6 +436,8 @@ public abstract class DrasylNode {
     private static final class LazyBossGroupHolder {
         // https://github.com/netty/netty/issues/639#issuecomment-9263566
         static final EventLoopGroup INSTANCE = getBestEventLoopGroup(2);
+        @SuppressWarnings("unused")
+        static final boolean LOCK = bossGroupCreated = true;
 
         private LazyBossGroupHolder() {
         }
