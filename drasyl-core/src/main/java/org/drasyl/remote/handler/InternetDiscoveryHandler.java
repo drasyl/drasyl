@@ -363,40 +363,41 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<IntermediateEn
                                   final Address sender,
                                   final IntermediateEnvelope<? extends MessageLite> msg,
                                   final CompletableFuture<Void> future) {
-        requireNonNull(msg);
-        requireNonNull(sender);
-
-        try {
-            // This message is for us and we will fully decode it
-            if (msg.getRecipient().equals(ctx.identity().getPublicKey())) {
-                handleMessage(ctx, sender, msg, future);
-            }
-            else {
-                if (!ctx.config().isRemoteSuperPeerEnabled()) {
+        if (sender instanceof InetSocketAddressWrapper) {
+            try {
+                // This message is for us and we will fully decode it
+                if (msg.getRecipient().equals(ctx.identity().getPublicKey())) {
+                    handleMessage(ctx, (InetSocketAddressWrapper) sender, msg, future);
+                }
+                else if (!ctx.config().isRemoteSuperPeerEnabled()) {
                     processMessage(ctx, msg.getRecipient(), msg, future);
                 }
                 else if (LOG.isDebugEnabled()) {
                     LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", msg, sender, msg.getRecipient());
                 }
             }
+            catch (final IOException e) {
+                LOG.warn("Unable to deserialize '{}'.", () -> sanitizeLogArg(msg), () -> e);
+                future.completeExceptionally(new Exception("Message could not be deserialized.", e));
+                ReferenceCountUtil.safeRelease(msg);
+            }
         }
-        catch (final IOException e) {
-            LOG.warn("Unable to deserialize '{}'.", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Message could not be deserialized.", e));
-            ReferenceCountUtil.safeRelease(msg);
+        else {
+            // passthrough message
+            ctx.passInbound(sender, msg, future);
         }
     }
 
     @SuppressWarnings("unchecked")
     private void handleMessage(final HandlerContext ctx,
-                               final Address sender,
+                               final InetSocketAddressWrapper sender,
                                final IntermediateEnvelope<? extends MessageLite> msg,
                                final CompletableFuture<Void> future) throws IOException {
         if (msg.getPrivateHeader().getType() == DISCOVERY) {
-            handlePing(ctx, (InetSocketAddressWrapper) sender, (IntermediateEnvelope<Discovery>) msg, future);
+            handlePing(ctx, sender, (IntermediateEnvelope<Discovery>) msg, future);
         }
         else if (msg.getPrivateHeader().getType() == ACKNOWLEDGEMENT) {
-            handlePong(ctx, (InetSocketAddressWrapper) sender, (IntermediateEnvelope<Acknowledgement>) msg, future);
+            handlePong(ctx, sender, (IntermediateEnvelope<Acknowledgement>) msg, future);
         }
         else if (msg.getPrivateHeader().getType() == UNITE && superPeers.contains(msg.getSender())) {
             handleUnite(ctx, (IntermediateEnvelope<Unite>) msg, future);
