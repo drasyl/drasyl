@@ -34,8 +34,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.util.concurrent.CompletionException;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
@@ -49,7 +50,7 @@ class OtherNetworkFilterTest {
     private PeersManager peersManager;
 
     @Test
-    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws InterruptedException, IOException {
+    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws IOException {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getNetworkId()).thenReturn(456);
         when(message.refCnt()).thenReturn(1);
@@ -58,9 +59,8 @@ class OtherNetworkFilterTest {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(message.getSender(), message);
+            assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
 
-            inboundMessages.await(1, SECONDS);
             inboundMessages.assertNoValues();
         }
     }
@@ -75,7 +75,7 @@ class OtherNetworkFilterTest {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-            pipeline.processInbound(sender, message);
+            pipeline.processInbound(sender, message).join();
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1)

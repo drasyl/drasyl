@@ -35,8 +35,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.util.concurrent.CompletionException;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,7 +61,7 @@ class HopCountGuardTest {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-            pipeline.processOutbound(recipient, message);
+            pipeline.processOutbound(recipient, message).join();
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -71,7 +72,7 @@ class HopCountGuardTest {
 
     @Test
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<? extends MessageLite> message) throws InterruptedException, IOException {
+                                                                @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<? extends MessageLite> message) throws IOException {
         when(config.getRemoteMessageHopLimit()).thenReturn((byte) 1);
         when(message.getHopCount()).thenReturn((byte) 1);
         when(message.refCnt()).thenReturn(1);
@@ -80,9 +81,8 @@ class HopCountGuardTest {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-            pipeline.processOutbound(address, message);
+            assertThrows(CompletionException.class, pipeline.processOutbound(message.getSender(), message)::join);
 
-            outboundMessages.await(1, SECONDS);
             outboundMessages.assertNoValues();
         }
     }
