@@ -41,7 +41,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.spy;
@@ -103,12 +102,19 @@ class ArmHandlerTest {
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(IntermediateEnvelope::isDisarmed);
+                        .assertValue(m -> {
+                            try {
+                                return m.isDisarmed();
+                            }
+                            finally {
+                                m.releaseAll();
+                            }
+                        });
             }
         }
 
         @Test
-        void shouldCompleteFutureExceptionallyAndNotPassOutgoingMessageIfArmingFailed(@Mock final InetSocketAddressWrapper recipient) throws InterruptedException, IOException {
+        void shouldCompleteFutureExceptionallyAndNotPassOutgoingMessageIfArmingFailed(@Mock final InetSocketAddressWrapper recipient) throws IOException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -122,7 +128,7 @@ class ArmHandlerTest {
                     }).test();
 
                     assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
-                    outboundMessages.await(1, SECONDS);
+
                     outboundMessages.assertNoValues();
                 }
             }
@@ -172,7 +178,7 @@ class ArmHandlerTest {
         }
 
         @Test
-        void shouldCompleteFutureExceptionallyAndNotPassIngoingMessageIfDisarmingFailed(@Mock final CompressedPublicKey sender) throws InterruptedException, IOException {
+        void shouldCompleteFutureExceptionallyAndNotPassIngoingMessageIfDisarmingFailed(@Mock final CompressedPublicKey sender) throws IOException {
             when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
@@ -187,7 +193,7 @@ class ArmHandlerTest {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
-                inboundMessages.await(1, SECONDS);
+
                 inboundMessages.assertNoValues();
             }
         }
