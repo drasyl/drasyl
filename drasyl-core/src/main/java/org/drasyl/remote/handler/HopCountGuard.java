@@ -41,7 +41,6 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 @Stateless
 public final class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
-    public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
 
     private HopCountGuard() {

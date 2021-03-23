@@ -45,21 +45,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-import static org.drasyl.intravm.IntraVmDiscovery.INTRA_VM_DISCOVERY;
-import static org.drasyl.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
-import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
-import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
-import static org.drasyl.pipeline.serialization.MessageSerializer.MESSAGE_SERIALIZER;
-import static org.drasyl.remote.handler.ArmHandler.ARM_HANDLER;
-import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
-import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
-import static org.drasyl.remote.handler.IntermediateEnvelopeToByteBufCodec.INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC;
-import static org.drasyl.remote.handler.InternetDiscoveryHandler.INTERNET_DISCOVERY_HANDLER;
-import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
-import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
-import static org.drasyl.remote.handler.StaticRoutesHandler.STATIC_ROUTES_HANDLER;
-import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
-import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
 import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
 
@@ -67,6 +52,22 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
  * The default {@link Pipeline} implementation. Used to implement plugins for drasyl.
  */
 public class DrasylPipeline extends AbstractPipeline {
+    public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
+    public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
+    public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
+    public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
+    public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
+    public static final String INTERNET_DISCOVERY_HANDLER = "INTERNET_DISCOVERY_HANDLER";
+    public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
+    public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
+    public static final String ARM_HANDLER = "ARM_HANDLER";
+    public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
+    public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
+    public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
+    public static final String INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC = "INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC";
+    public static final String PORT_MAPPER = "PORT_MAPPER";
+    public static final String UDP_SERVER = "UDP_SERVER";
+
     @SuppressWarnings({ "java:S107" })
     public DrasylPipeline(final Consumer<Event> eventConsumer,
                           final DrasylConfig config,

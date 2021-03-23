@@ -39,7 +39,6 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 @Stateless
 public final class OtherNetworkFilter extends SimpleInboundHandler<IntermediateEnvelope<MessageLite>, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
-    public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
 
     private OtherNetworkFilter() {

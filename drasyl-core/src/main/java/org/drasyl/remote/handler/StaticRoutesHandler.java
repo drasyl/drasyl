@@ -42,7 +42,6 @@ import java.util.concurrent.CompletableFuture;
 @Stateless
 public final class StaticRoutesHandler extends SimpleOutboundHandler<IntermediateEnvelope<Application>, CompressedPublicKey> {
     public static final StaticRoutesHandler INSTANCE = new StaticRoutesHandler();
-    public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
 

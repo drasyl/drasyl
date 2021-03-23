@@ -35,7 +35,6 @@ import java.util.concurrent.CompletableFuture;
  */
 @Stateless
 public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Address> {
-    public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
     private boolean started;
 
     LoopbackMessageHandler(final boolean started) {

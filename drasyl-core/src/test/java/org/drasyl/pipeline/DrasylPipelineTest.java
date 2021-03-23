@@ -38,21 +38,23 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import static org.drasyl.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
-import static org.drasyl.loopback.handler.LoopbackMessageHandler.LOOPBACK_MESSAGE_HANDLER;
+import static org.drasyl.pipeline.DrasylPipeline.ARM_HANDLER;
+import static org.drasyl.pipeline.DrasylPipeline.CHUNKING_HANDLER;
+import static org.drasyl.pipeline.DrasylPipeline.HOP_COUNT_GUARD;
+import static org.drasyl.pipeline.DrasylPipeline.INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC;
+import static org.drasyl.pipeline.DrasylPipeline.INTERNET_DISCOVERY_HANDLER;
+import static org.drasyl.pipeline.DrasylPipeline.INTRA_VM_DISCOVERY;
+import static org.drasyl.pipeline.DrasylPipeline.INVALID_PROOF_OF_WORK_FILTER;
+import static org.drasyl.pipeline.DrasylPipeline.LOCAL_HOST_DISCOVERY;
+import static org.drasyl.pipeline.DrasylPipeline.LOOPBACK_MESSAGE_HANDLER;
+import static org.drasyl.pipeline.DrasylPipeline.MESSAGE_SERIALIZER;
+import static org.drasyl.pipeline.DrasylPipeline.MONITORING_HANDLER;
+import static org.drasyl.pipeline.DrasylPipeline.OTHER_NETWORK_FILTER;
+import static org.drasyl.pipeline.DrasylPipeline.PORT_MAPPER;
+import static org.drasyl.pipeline.DrasylPipeline.STATIC_ROUTES_HANDLER;
+import static org.drasyl.pipeline.DrasylPipeline.UDP_SERVER;
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
-import static org.drasyl.pipeline.serialization.MessageSerializer.MESSAGE_SERIALIZER;
-import static org.drasyl.remote.handler.ArmHandler.ARM_HANDLER;
-import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
-import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
-import static org.drasyl.remote.handler.IntermediateEnvelopeToByteBufCodec.INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC;
-import static org.drasyl.remote.handler.InternetDiscoveryHandler.INTERNET_DISCOVERY_HANDLER;
-import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
-import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
-import static org.drasyl.remote.handler.StaticRoutesHandler.STATIC_ROUTES_HANDLER;
-import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
-import static org.drasyl.remote.handler.portmapper.PortMapper.PORT_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -89,11 +91,13 @@ class DrasylPipelineTest {
 
     @Test
     void shouldCreateNewPipeline() {
+        when(config.isIntraVmDiscoveryEnabled()).thenReturn(true);
         when(config.isRemoteEnabled()).thenReturn(true);
-        when(config.isRemoteExposeEnabled()).thenReturn(true);
         when(config.getRemoteStaticRoutes().isEmpty()).thenReturn(false);
         when(config.isRemoteLocalHostDiscoveryEnabled()).thenReturn(true);
+        when(config.isMonitoringEnabled()).thenReturn(true);
         when(config.isRemoteMessageArmEnabled()).thenReturn(true);
+        when(config.isRemoteExposeEnabled()).thenReturn(true);
 
         final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, workerGroup);
 
@@ -104,12 +108,14 @@ class DrasylPipelineTest {
         assertNull(pipeline.context(DRASYL_TAIL_HANDLER));
 
         // Test if default handler are added
-        assertNotNull(pipeline.get(MESSAGE_SERIALIZER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(LOOPBACK_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(INTRA_VM_DISCOVERY), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(MESSAGE_SERIALIZER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(STATIC_ROUTES_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(LOCAL_HOST_DISCOVERY), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(INTERNET_DISCOVERY_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(MONITORING_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(ARM_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");

@@ -63,7 +63,6 @@ import static org.drasyl.util.NetworkUtil.getAddresses;
  * {@link DrasylPipeline}.
  */
 public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressWrapper> {
-    public static final String UDP_SERVER = "UDP_SERVER";
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private static final short MIN_DERIVED_PORT = 22528;
     private final Bootstrap bootstrap;
@@ -174,6 +173,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             }
             else {
                 // server start failed
+                //noinspection unchecked
                 LOG.warn("Unable to bind server to address {}:{}: {}", ctx.config()::getRemoteBindHost, () -> bindPort, channelFuture.cause()::getMessage);
 
                 future.completeExceptionally(new Exception("Unable to bind server to address " + ctx.config().getRemoteBindHost() + ":" + bindPort + ": " + channelFuture.cause().getMessage()));

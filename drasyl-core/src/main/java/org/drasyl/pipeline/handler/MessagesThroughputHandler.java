@@ -48,7 +48,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 @SuppressWarnings({ "java:S110", "java:S106", "unused" })
 public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Object, Address> {
-    public static final String MESSAGES_THROUGHPUT_HANDLER = "MESSAGES_THROUGHPUT_HANDLER";
     public static final Duration INTERVAL = ofSeconds(1);
     private final BiPredicate<Address, Object> consumeOutbound;
     private final BiPredicate<Address, Object> consumeInbound;

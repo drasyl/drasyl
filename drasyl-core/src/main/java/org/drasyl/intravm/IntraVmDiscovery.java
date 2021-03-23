@@ -44,7 +44,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @SuppressWarnings({ "java:S110" })
 public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
     public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
-    public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
     private final Map<Pair<Integer, CompressedPublicKey>, HandlerContext> discoveries;

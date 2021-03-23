@@ -37,7 +37,6 @@ import java.util.List;
 @SuppressWarnings({ "java:S110" })
 public final class MessageSerializer extends MessageToMessageCodec<IntermediateEnvelope<Application>, Object, CompressedPublicKey> {
     public static final MessageSerializer INSTANCE = new MessageSerializer();
-    public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
 
     private MessageSerializer() {

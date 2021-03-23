@@ -45,7 +45,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * never gives up.
  */
 public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressWrapper> {
-    public static final String PORT_MAPPER = "PORT_MAPPER";
     public static final Duration MAPPING_LIFETIME = ofMinutes(10);
     public static final Duration RETRY_DELAY = ofMinutes(5);
     private static final Logger LOG = LoggerFactory.getLogger(PortMapper.class);
@@ -105,6 +104,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
         final int oldMethodPointer = currentMethodPointer;
         currentMethodPointer = (currentMethodPointer + 1) % methods.size();
         if (currentMethodPointer == 0) {
+            //noinspection unchecked
             LOG.debug("Method `{}` was unable to create mapping. All methods have failed. Wait {}s and then give next method `{}` a try.", () -> methods.get(oldMethodPointer), RETRY_DELAY::toSeconds, () -> methods.get(currentMethodPointer));
             retryTask = ctx.independentScheduler().scheduleDirect(() -> {
                 LOG.debug("Try to map port with method `{}`.", () -> methods.get(currentMethodPointer));

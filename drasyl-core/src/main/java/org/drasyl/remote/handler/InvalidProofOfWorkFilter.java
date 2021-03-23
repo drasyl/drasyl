@@ -40,7 +40,6 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 @Stateless
 public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<IntermediateEnvelope<MessageLite>, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
-    public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
 
     private InvalidProofOfWorkFilter() {

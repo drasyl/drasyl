@@ -35,7 +35,6 @@ import java.util.List;
 @SuppressWarnings({ "java:S110" })
 public final class ArmHandler extends MessageToMessageCodec<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final ArmHandler INSTANCE = new ArmHandler();
-    public static final String ARM_HANDLER = "ARM_HANDLER";
 
     private ArmHandler() {
         // singleton

@@ -54,7 +54,6 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  */
 @SuppressWarnings({ "java:S110" })
 public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<? extends MessageLite>, InetSocketAddressWrapper> {
-    public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(ChunkingHandler.class);
     private final Worm<Map<MessageId, ChunksCollector>> chunksCollectors;
 
@@ -114,6 +113,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? 
                 .expireAfterWrite(config.getRemoteMessageComposedMessageTransferTimeout())
                 .removalListener((RemovalListener<MessageId, ChunksCollector>) entry -> {
                     if (entry.getValue().hasChunks()) {
+                        //noinspection unchecked
                         LOG.debug("Not all chunks of message `{}` were received within {}ms ({} of {} present). Message dropped.", entry::getKey, config.getRemoteMessageComposedMessageTransferTimeout()::toMillis, entry.getValue()::getPresentChunks, entry.getValue()::getTotalChunks);
                         entry.getValue().release();
                     }
@@ -134,6 +134,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? 
                 final int messageLength = messageByteBuf.readableBytes();
                 final int messageMaxContentLength = ctx.config().getRemoteMessageMaxContentLength();
                 if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
+                    //noinspection unchecked
                     LOG.debug("The message `{}` has a size of {} bytes and is too large. The max allowed size is {} bytes. Message dropped.", () -> sanitizeLogArg(msg), () -> messageLength, () -> messageMaxContentLength);
                     future.completeExceptionally(new Exception("The message has a size of " + messageLength + " bytes and is too large. The max. allowed size is " + messageMaxContentLength + " bytes. Message dropped."));
                     ReferenceCountUtil.safeRelease(messageByteBuf);

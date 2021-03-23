@@ -77,7 +77,6 @@ import static org.drasyl.util.RandomUtil.randomLong;
 public class LocalHostDiscovery extends SimpleOutboundHandler<IntermediateEnvelope<Application>, CompressedPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
     private static final Object path = LocalHostDiscovery.class;
-    public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     public static final String FILE_SUFFIX = ".json";

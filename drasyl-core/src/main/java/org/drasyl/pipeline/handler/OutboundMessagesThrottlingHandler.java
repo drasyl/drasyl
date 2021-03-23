@@ -40,8 +40,6 @@ import static java.util.Objects.requireNonNull;
  * pipeline.
  */
 public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
-    @SuppressWarnings("unused")
-    public static final String OUTBOUND_MESSAGES_THROTTLING_HANDLER = "OUTBOUND_MESSAGES_THROTTLING_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(OutboundMessagesThrottlingHandler.class);
     private final RateLimitedQueue queue;
 

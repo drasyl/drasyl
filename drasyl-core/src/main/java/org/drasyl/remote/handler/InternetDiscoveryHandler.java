@@ -76,7 +76,6 @@ import static org.drasyl.util.RandomUtil.randomLong;
  */
 @SuppressWarnings({ "java:S110", "java:S1192" })
 public class InternetDiscoveryHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<Application>, Address> {
-    public static final String INTERNET_DISCOVERY_HANDLER = "INTERNET_DISCOVERY_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryHandler.class);
     private static final Object path = InternetDiscoveryHandler.class;
     private final Map<MessageId, Ping> openPingsCache;

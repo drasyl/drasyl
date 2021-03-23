@@ -35,7 +35,6 @@ import java.util.List;
 @Stateless
 public final class IntermediateEnvelopeToByteBufCodec extends MessageToMessageCodec<ByteBuf, IntermediateEnvelope<? extends MessageLite>, InetSocketAddressWrapper> {
     public static final IntermediateEnvelopeToByteBufCodec INSTANCE = new IntermediateEnvelopeToByteBufCodec();
-    public static final String INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC = "INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC";
 
     private IntermediateEnvelopeToByteBufCodec() {
         // singleton
