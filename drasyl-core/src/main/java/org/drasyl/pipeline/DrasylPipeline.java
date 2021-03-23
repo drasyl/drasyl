@@ -44,6 +44,7 @@ import org.drasyl.util.scheduler.DrasylScheduler;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
@@ -69,11 +70,11 @@ public class DrasylPipeline extends AbstractPipeline {
     public static final String UDP_SERVER = "UDP_SERVER";
 
     @SuppressWarnings({ "java:S107" })
-    public DrasylPipeline(final Consumer<Event> eventConsumer,
-                          final DrasylConfig config,
-                          final Identity identity,
-                          final PeersManager peersManager,
-                          final EventLoopGroup bossGroup) {
+    DrasylPipeline(final Consumer<Event> eventConsumer,
+                   final DrasylConfig config,
+                   final Identity identity,
+                   final PeersManager peersManager,
+                   final Supplier<UdpServer> udpServerProvider) {
         super(
                 new ConcurrentHashMap<>(),
                 getInstanceLight(),
@@ -140,7 +141,7 @@ public class DrasylPipeline extends AbstractPipeline {
             if (config.isRemoteExposeEnabled()) {
                 addFirst(PORT_MAPPER, new PortMapper());
             }
-            addFirst(UDP_SERVER, new UdpServer(bossGroup));
+            addFirst(UDP_SERVER, udpServerProvider.get());
         }
     }
 
@@ -163,5 +164,13 @@ public class DrasylPipeline extends AbstractPipeline {
         );
         this.head = head;
         this.tail = tail;
+    }
+
+    public DrasylPipeline(final Consumer<Event> eventConsumer,
+                          final DrasylConfig config,
+                          final Identity identity,
+                          final PeersManager peersManager,
+                          final EventLoopGroup bossGroup) {
+        this(eventConsumer, config, identity, peersManager, () -> new UdpServer(bossGroup));
     }
 }

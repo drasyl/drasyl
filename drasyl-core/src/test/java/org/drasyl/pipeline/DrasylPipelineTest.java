@@ -18,13 +18,13 @@
  */
 package org.drasyl.pipeline;
 
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Test;
@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.drasyl.pipeline.DrasylPipeline.ARM_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.CHUNKING_HANDLER;
@@ -87,10 +88,10 @@ class DrasylPipelineTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    private EventLoopGroup workerGroup;
+    private Supplier<UdpServer> udpServerSupplier;
 
     @Test
-    void shouldCreateNewPipeline() {
+    void shouldCreateNewPipeline(@Mock final UdpServer udpServer) {
         when(config.isIntraVmDiscoveryEnabled()).thenReturn(true);
         when(config.isRemoteEnabled()).thenReturn(true);
         when(config.getRemoteStaticRoutes().isEmpty()).thenReturn(false);
@@ -98,8 +99,9 @@ class DrasylPipelineTest {
         when(config.isMonitoringEnabled()).thenReturn(true);
         when(config.isRemoteMessageArmEnabled()).thenReturn(true);
         when(config.isRemoteExposeEnabled()).thenReturn(true);
+        when(udpServerSupplier.get()).thenReturn(udpServer);
 
-        final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, workerGroup);
+        final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, udpServerSupplier);
 
         // Test if head and tail handlers are added
         assertNull(pipeline.get(DRASYL_HEAD_HANDLER));
