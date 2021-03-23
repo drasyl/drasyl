@@ -27,7 +27,7 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -50,7 +50,7 @@ class OtherNetworkFilterTest {
     private PeersManager peersManager;
 
     @Test
-    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws IOException {
+    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws IOException {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getNetworkId()).thenReturn(456);
         when(message.refCnt()).thenReturn(1);
@@ -67,7 +67,7 @@ class OtherNetworkFilterTest {
 
     @Test
     void shouldPassMessagesFromSameNetwork(@Mock final Address sender,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws IOException {
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws IOException {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getNetworkId()).thenReturn(123);
 

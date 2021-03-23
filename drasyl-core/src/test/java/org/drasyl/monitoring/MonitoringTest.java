@@ -32,7 +32,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -119,7 +119,7 @@ class MonitoringTest {
 
         @Test
         void shouldPassthroughInboundMessages(@Mock final Address sender,
-                                              @Mock final IntermediateEnvelope<MessageLite> message) {
+                                              @Mock final RemoteEnvelope<MessageLite> message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
@@ -133,7 +133,7 @@ class MonitoringTest {
 
         @Test
         void shouldPassthroughOutboundMessages(@Mock final Address recipient,
-                                               @Mock final IntermediateEnvelope<MessageLite> message) {
+                                               @Mock final RemoteEnvelope<MessageLite> message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();

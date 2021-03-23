@@ -22,8 +22,8 @@ import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -65,7 +65,7 @@ class ChunksCollector {
      * @throws IllegalStateException if an attempt is made to add a chunk from another message or to
      *                               an already composed message
      */
-    public synchronized <T extends MessageLite> IntermediateEnvelope<T> addChunk(final IntermediateEnvelope<? extends MessageLite> chunk) throws IOException {
+    public synchronized <T extends MessageLite> RemoteEnvelope<T> addChunk(final RemoteEnvelope<? extends MessageLite> chunk) throws IOException {
         // already composed?
         if (allChunksPresent()) {
             ReferenceCountUtil.safeRelease(chunk);
@@ -102,6 +102,7 @@ class ChunksCollector {
             totalChunks = chunk.getTotalChunks().getValue();
         }
 
+        //noinspection unchecked
         LOG.trace("[{}] {} of {} chunks collected ({} total bytes; last received chunk: {})", () -> messageId, chunks::size, () -> totalChunks, () -> messageSize, () -> chunkNo + 1);
 
         // message complete?
@@ -112,7 +113,7 @@ class ChunksCollector {
                 final ByteBuf chunkByteBuf = chunks.remove(i);
                 messageByteBuf.addComponent(true, chunkByteBuf);
             }
-            return IntermediateEnvelope.of(messageByteBuf);
+            return RemoteEnvelope.of(messageByteBuf);
         }
         else {
             // message not complete, return null!

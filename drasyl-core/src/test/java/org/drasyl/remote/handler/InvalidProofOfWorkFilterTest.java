@@ -27,7 +27,7 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -52,7 +52,7 @@ class InvalidProofOfWorkFilterTest {
     private DrasylConfig config;
 
     @Test
-    void shouldDropMessagesWithInvalidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws IOException {
+    void shouldDropMessagesWithInvalidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws IOException {
         when(message.getProofOfWork().isValid(any(), anyByte())).thenReturn(false);
         when(message.isChunk()).thenReturn(false);
         when(message.refCnt()).thenReturn(1);
@@ -69,7 +69,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldPassMessagesWithValidProofOfWork(@Mock final Address sender,
-                                                @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws IOException {
+                                                @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws IOException {
         when(message.getProofOfWork().isValid(any(), anyByte())).thenReturn(true);
         when(message.isChunk()).thenReturn(false);
 
@@ -86,7 +86,7 @@ class InvalidProofOfWorkFilterTest {
     }
 
     @Test
-    void shouldPassChunks(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws IOException {
+    void shouldPassChunks(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws IOException {
         when(message.isChunk()).thenThrow(IOException.class);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;

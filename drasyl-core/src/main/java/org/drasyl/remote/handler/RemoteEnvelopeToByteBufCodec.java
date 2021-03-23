@@ -24,19 +24,19 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 
 import java.util.List;
 
 /**
- * This codec converts {@link IntermediateEnvelope} to {@link ByteBuf} an vice vera.
+ * This codec converts {@link RemoteEnvelope} to {@link ByteBuf} an vice vera.
  */
 @SuppressWarnings("java:S110")
 @Stateless
-public final class IntermediateEnvelopeToByteBufCodec extends MessageToMessageCodec<ByteBuf, IntermediateEnvelope<? extends MessageLite>, InetSocketAddressWrapper> {
-    public static final IntermediateEnvelopeToByteBufCodec INSTANCE = new IntermediateEnvelopeToByteBufCodec();
+public final class RemoteEnvelopeToByteBufCodec extends MessageToMessageCodec<ByteBuf, RemoteEnvelope<? extends MessageLite>, InetSocketAddressWrapper> {
+    public static final RemoteEnvelopeToByteBufCodec INSTANCE = new RemoteEnvelopeToByteBufCodec();
 
-    private IntermediateEnvelopeToByteBufCodec() {
+    private RemoteEnvelopeToByteBufCodec() {
         // singleton
     }
 
@@ -45,13 +45,13 @@ public final class IntermediateEnvelopeToByteBufCodec extends MessageToMessageCo
                           final InetSocketAddressWrapper sender,
                           final ByteBuf msg,
                           final List<Object> out) throws Exception {
-        out.add(IntermediateEnvelope.of(msg.retain()));
+        out.add(RemoteEnvelope.of(msg.retain()));
     }
 
     @Override
     protected void encode(final HandlerContext ctx,
                           final InetSocketAddressWrapper recipient,
-                          final IntermediateEnvelope<? extends MessageLite> msg,
+                          final RemoteEnvelope<? extends MessageLite> msg,
                           final List<Object> out) throws Exception {
         out.add(msg.getOrBuildByteBuf().retain());
     }

@@ -28,8 +28,8 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
@@ -74,7 +74,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</a>
  */
 @SuppressWarnings("java:S1192")
-public class LocalHostDiscovery extends SimpleOutboundHandler<IntermediateEnvelope<Application>, CompressedPublicKey> {
+public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<Application>, CompressedPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
     private static final Object path = LocalHostDiscovery.class;
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
@@ -124,7 +124,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<IntermediateEnvelo
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final CompressedPublicKey recipient,
-                                   final IntermediateEnvelope<Application> envelope,
+                                   final RemoteEnvelope<Application> envelope,
                                    final CompletableFuture<Void> future) {
         final InetSocketAddressWrapper localAddress = routes.get(recipient);
         if (localAddress != null) {

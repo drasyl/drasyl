@@ -32,8 +32,8 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,7 +126,7 @@ class DrasylPipelineIT {
             }
         });
 
-        try (final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey())) {
+        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey())) {
             pipeline.processInbound(message.getSender(), message);
 
             events.awaitCount(1).assertValueCount(1);
@@ -157,7 +157,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes()).armAndRelease(identity2.getPrivateKey());
+        final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes()).armAndRelease(identity2.getPrivateKey());
 
         pipeline.processInbound(message.getSender(), message);
 
@@ -194,7 +194,7 @@ class DrasylPipelineIT {
             }
         });
 
-        try (final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey())) {
+        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey())) {
             pipeline.processInbound(message.getSender(), message);
 
             exceptions.awaitCount(1).assertValueCount(1);
@@ -225,7 +225,7 @@ class DrasylPipelineIT {
         final CompletableFuture<Void> future = pipeline.processOutbound(identity1.getPublicKey(), payload);
 
         outbounds.awaitCount(1).assertValueCount(1);
-        outbounds.assertValue(m -> m instanceof IntermediateEnvelope);
+        outbounds.assertValue(m -> m instanceof RemoteEnvelope);
         future.join();
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
@@ -235,7 +235,7 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithDoneFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload);
+        final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
@@ -262,7 +262,7 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload);
+        final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 

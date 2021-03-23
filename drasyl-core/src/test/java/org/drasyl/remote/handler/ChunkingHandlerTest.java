@@ -37,10 +37,10 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.TypeReference;
 import org.drasyl.util.UnsignedShort;
@@ -85,7 +85,7 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
-                final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
+                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
@@ -123,7 +123,7 @@ class ChunkingHandlerTest {
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
 
-                    try (final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload)) {
+                    try (final RemoteEnvelope<MessageLite> headChunk = RemoteEnvelope.of(headChunkHeader, headChunkPayload)) {
                         pipeline.processInbound(senderAddress, headChunk).join();
                         inboundMessages.await(1, SECONDS);
                         inboundMessages.assertNoValues();
@@ -143,7 +143,7 @@ class ChunkingHandlerTest {
 
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<IntermediateEnvelope<? extends MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<IntermediateEnvelope<? extends MessageLite>>() {
+                    final TestObserver<RemoteEnvelope<? extends MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<RemoteEnvelope<? extends MessageLite>>() {
                     }).test();
 
                     // normal chunk
@@ -157,7 +157,7 @@ class ChunkingHandlerTest {
                     final byte[] chunkBytes = RandomUtil.randomBytes(remoteMessageMtu / 2);
                     final ByteBuf chunkPayload = Unpooled.wrappedBuffer(chunkBytes);
 
-                    final IntermediateEnvelope<MessageLite> chunk = IntermediateEnvelope.of(chunkHeader, chunkPayload);
+                    final RemoteEnvelope<MessageLite> chunk = RemoteEnvelope.of(chunkHeader, chunkPayload);
                     pipeline.processInbound(senderAddress, chunk).join();
 
                     // head chunk
@@ -171,7 +171,7 @@ class ChunkingHandlerTest {
                     final byte[] headChunkBytes = RandomUtil.randomBytes(remoteMessageMtu / 2);
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(headChunkBytes);
 
-                    final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload);
+                    final RemoteEnvelope<MessageLite> headChunk = RemoteEnvelope.of(headChunkHeader, headChunkPayload);
                     pipeline.processInbound(senderAddress, headChunk).join();
 
                     inboundMessages.awaitCount(1)
@@ -223,10 +223,10 @@ class ChunkingHandlerTest {
                     final byte[] bytes = new byte[remoteMaxContentLength];
                     final ByteBuf chunkPayload = Unpooled.wrappedBuffer(bytes);
 
-                    final IntermediateEnvelope<MessageLite> chunk = IntermediateEnvelope.of(chunkHeader, chunkPayload);
+                    final RemoteEnvelope<MessageLite> chunk = RemoteEnvelope.of(chunkHeader, chunkPayload);
                     pipeline.processInbound(senderAddress, chunk).join();
 
-                    final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload);
+                    final RemoteEnvelope<MessageLite> headChunk = RemoteEnvelope.of(headChunkHeader, headChunkPayload);
                     assertThrows(ExecutionException.class, () -> pipeline.processInbound(senderAddress, headChunk).get());
                     inboundMessages.await(1, SECONDS);
                     inboundMessages.assertNoValues();
@@ -241,7 +241,7 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
-                final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
+                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
@@ -262,7 +262,7 @@ class ChunkingHandlerTest {
 
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<IntermediateEnvelope<MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<IntermediateEnvelope<MessageLite>>() {
+                    final TestObserver<RemoteEnvelope<MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<RemoteEnvelope<MessageLite>>() {
                     }).test();
 
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
@@ -274,12 +274,12 @@ class ChunkingHandlerTest {
                             .build();
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
-                    try (final IntermediateEnvelope<MessageLite> headChunk = IntermediateEnvelope.of(headChunkHeader, headChunkPayload)) {
+                    try (final RemoteEnvelope<MessageLite> headChunk = RemoteEnvelope.of(headChunkHeader, headChunkPayload)) {
                         pipeline.processInbound(sender, headChunk).join();
 
                         inboundMessages.awaitCount(1)
                                 .assertValueCount(1)
-                                .assertValue(IntermediateEnvelope::isChunk);
+                                .assertValue(RemoteEnvelope::isChunk);
                     }
                 }
             }
@@ -300,7 +300,7 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(sender);
 
-                try (final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
+                try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
                     final Handler handler = new ChunkingHandler();
                     try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
@@ -323,7 +323,7 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(sender);
 
-                final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMaxContentLength]);
+                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMaxContentLength]);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
@@ -344,10 +344,10 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(sender);
 
-                final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), RandomUtil.randomBytes(remoteMessageMtu * 2));
+                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), RandomUtil.randomBytes(remoteMessageMtu * 2));
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<IntermediateEnvelope<MessageLite>> outboundMessages = pipeline.outboundMessages(new TypeReference<IntermediateEnvelope<MessageLite>>() {
+                    final TestObserver<RemoteEnvelope<MessageLite>> outboundMessages = pipeline.outboundMessages(new TypeReference<RemoteEnvelope<MessageLite>>() {
                     }).test();
 
                     pipeline.processOutbound(address, msg).join();
@@ -390,7 +390,7 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
-                final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
+                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     final @NonNull TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();

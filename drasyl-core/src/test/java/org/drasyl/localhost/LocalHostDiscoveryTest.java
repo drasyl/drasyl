@@ -34,7 +34,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
@@ -252,7 +252,7 @@ class LocalHostDiscoveryTest {
     class MessagePassing {
         @SuppressWarnings("rawtypes")
         @Test
-        void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message) {
+        void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
             final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
             final CompressedPublicKey recipient = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
             routes.put(recipient, address);
@@ -261,7 +261,7 @@ class LocalHostDiscoveryTest {
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundMessages(IntermediateEnvelope.class).test();
+                final TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
 
                 pipeline.processOutbound(recipient, message).join();
 
@@ -273,7 +273,7 @@ class LocalHostDiscoveryTest {
         @SuppressWarnings("rawtypes")
         @Test
         void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey recipient,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message) {
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();

@@ -33,9 +33,9 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.InternetDiscoveryHandler.Peer;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Application;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.Pair;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.scheduler.DrasylScheduler;
@@ -64,7 +64,7 @@ public class InternetDiscoveryHandlerBenchmark extends AbstractBenchmark {
     private InternetDiscoveryHandler handler;
     private HandlerContext ctx;
     private Address recipient;
-    private IntermediateEnvelope<Application> msg;
+    private RemoteEnvelope<Application> msg;
     private CompletableFuture<Void> future;
     private Set<CompressedPublicKey> superPeers;
     private CompressedPublicKey bestSuperPeer;
@@ -82,7 +82,7 @@ public class InternetDiscoveryHandlerBenchmark extends AbstractBenchmark {
         recipient = new MyAddress();
         final byte[] payload = RandomUtil.randomBytes(1024);
         final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-        msg = IntermediateEnvelope.application(1, CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), ProofOfWork.of(16425882), CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), byte[].class.getName(), new byte[]{});
+        msg = RemoteEnvelope.application(1, CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), ProofOfWork.of(16425882), CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), byte[].class.getName(), new byte[]{});
 
         future = new CompletableFuture<>();
 

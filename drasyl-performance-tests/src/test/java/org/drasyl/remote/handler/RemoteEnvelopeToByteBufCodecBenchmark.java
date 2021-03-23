@@ -32,8 +32,8 @@ import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.Serialization;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -50,12 +50,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @State(Scope.Benchmark)
-public class IntermediateEnvelopeToByteBufCodecBenchmark extends AbstractBenchmark {
+public class RemoteEnvelopeToByteBufCodecBenchmark extends AbstractBenchmark {
     private HandlerContext ctx;
     private InetSocketAddressWrapper sender;
     private InetSocketAddressWrapper recipient;
     private ByteBuf byteBuf;
-    private IntermediateEnvelope<Application> envelope;
+    private RemoteEnvelope<Application> envelope;
 
     @Setup
     public void setup() {
@@ -64,7 +64,7 @@ public class IntermediateEnvelopeToByteBufCodecBenchmark extends AbstractBenchma
             sender = new InetSocketAddressWrapper("127.0.0.1", 25527);
             recipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
             final byte[] payload = RandomUtil.randomBytes(1024);
-            envelope = IntermediateEnvelope.application(1337, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class.getName(), payload);
+            envelope = RemoteEnvelope.application(1337, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class.getName(), payload);
             byteBuf = envelope.getOrBuildByteBuf();
         }
         catch (final IOException e) {
@@ -77,7 +77,7 @@ public class IntermediateEnvelopeToByteBufCodecBenchmark extends AbstractBenchma
     public void decode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            IntermediateEnvelopeToByteBufCodec.INSTANCE.decode(ctx, sender, byteBuf, out);
+            RemoteEnvelopeToByteBufCodec.INSTANCE.decode(ctx, sender, byteBuf, out);
             byteBuf.release();
             blackhole.consume(out);
         }
@@ -91,7 +91,7 @@ public class IntermediateEnvelopeToByteBufCodecBenchmark extends AbstractBenchma
     public void encode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            IntermediateEnvelopeToByteBufCodec.INSTANCE.encode(ctx, recipient, envelope, out);
+            RemoteEnvelopeToByteBufCodec.INSTANCE.encode(ctx, recipient, envelope, out);
             byteBuf.release();
             blackhole.consume(out);
         }

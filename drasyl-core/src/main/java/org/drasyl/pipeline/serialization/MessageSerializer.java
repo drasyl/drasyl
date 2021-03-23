@@ -22,8 +22,8 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -31,11 +31,11 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.List;
 
 /**
- * This handler serializes messages to {@link IntermediateEnvelope<Application>} an vice vera.
+ * This handler serializes messages to {@link RemoteEnvelope <Application>} an vice vera.
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class MessageSerializer extends MessageToMessageCodec<IntermediateEnvelope<Application>, Object, CompressedPublicKey> {
+public final class MessageSerializer extends MessageToMessageCodec<RemoteEnvelope<Application>, Object, CompressedPublicKey> {
     public static final MessageSerializer INSTANCE = new MessageSerializer();
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
 
@@ -46,7 +46,7 @@ public final class MessageSerializer extends MessageToMessageCodec<IntermediateE
     @Override
     protected void decode(final HandlerContext ctx,
                           final CompressedPublicKey sender,
-                          final IntermediateEnvelope<Application> envelope,
+                          final RemoteEnvelope<Application> envelope,
                           final List<Object> out) throws Exception {
         final Application body = envelope.getBodyAndRelease();
         final Serializer serializer = ctx.inboundSerialization().findSerializerFor(body.getType());
@@ -77,7 +77,7 @@ public final class MessageSerializer extends MessageToMessageCodec<IntermediateE
         final Serializer serializer = ctx.outboundSerialization().findSerializerFor(type);
 
         if (serializer != null) {
-            final IntermediateEnvelope<Application> envelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, type, serializer.toByteArray(o));
+            final RemoteEnvelope<Application> envelope = RemoteEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, type, serializer.toByteArray(o));
             out.add(envelope);
             LOG.trace("Message has been serialized to '{}'", () -> envelope);
         }

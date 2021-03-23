@@ -23,7 +23,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.OutboundMessageFilter;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -32,12 +32,12 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
- * This handler ensures that {@link IntermediateEnvelope}s do not infinitely circulate in the
- * network. It increments the hop counter of each outgoing message. If the limit of hops is reached,
- * the message is discarded. Otherwise the message can pass.
+ * This handler ensures that {@link RemoteEnvelope}s do not infinitely circulate in the network. It
+ * increments the hop counter of each outgoing message. If the limit of hops is reached, the message
+ * is discarded. Otherwise the message can pass.
  */
 @Stateless
-public final class HopCountGuard extends OutboundMessageFilter<IntermediateEnvelope<? extends MessageLite>, Address> {
+public final class HopCountGuard extends OutboundMessageFilter<RemoteEnvelope<? extends MessageLite>, Address> {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
     private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
 
@@ -48,7 +48,7 @@ public final class HopCountGuard extends OutboundMessageFilter<IntermediateEnvel
     @Override
     protected boolean accept(final HandlerContext ctx,
                              final Address recipient,
-                             final IntermediateEnvelope<? extends MessageLite> msg) throws Exception {
+                             final RemoteEnvelope<? extends MessageLite> msg) throws Exception {
         if (msg.getHopCount() < ctx.config().getRemoteMessageHopLimit()) {
             // route message to next hop (node)
             msg.incrementHopCount();
@@ -63,7 +63,7 @@ public final class HopCountGuard extends OutboundMessageFilter<IntermediateEnvel
     @Override
     protected void messageRejected(final HandlerContext ctx,
                                    final Address sender,
-                                   final IntermediateEnvelope<? extends MessageLite> msg,
+                                   final RemoteEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) {
         // too many hops, discard message
         LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message '{}'", () -> sanitizeLogArg(msg));

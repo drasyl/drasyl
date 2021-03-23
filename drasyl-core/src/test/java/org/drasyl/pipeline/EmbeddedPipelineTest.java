@@ -29,7 +29,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,7 +54,7 @@ class EmbeddedPipelineTest {
     @SuppressWarnings("rawtypes")
     @Test
     void shouldReturnInboundMessagesAndEvents(@Mock final CompressedPublicKey sender,
-                                              @Mock final IntermediateEnvelope msg) {
+                                              @Mock final RemoteEnvelope msg) {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
             final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();

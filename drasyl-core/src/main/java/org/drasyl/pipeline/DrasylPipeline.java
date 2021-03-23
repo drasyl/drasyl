@@ -32,10 +32,10 @@ import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.ArmHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
-import org.drasyl.remote.handler.IntermediateEnvelopeToByteBufCodec;
 import org.drasyl.remote.handler.InternetDiscoveryHandler;
 import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
 import org.drasyl.remote.handler.OtherNetworkFilter;
+import org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec;
 import org.drasyl.remote.handler.StaticRoutesHandler;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.portmapper.PortMapper;
@@ -65,7 +65,7 @@ public class DrasylPipeline extends AbstractPipeline {
     public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
-    public static final String INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC = "INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC";
+    public static final String REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC = "REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC";
     public static final String PORT_MAPPER = "PORT_MAPPER";
     public static final String UDP_SERVER = "UDP_SERVER";
 
@@ -99,7 +99,7 @@ public class DrasylPipeline extends AbstractPipeline {
         }
 
         if (config.isRemoteEnabled()) {
-            // convert Object <-> IntermediateEnvelope<Application>
+            // convert Object <-> RemoteEnvelope<Application>
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
             // route outbound messages to pre-configures ip addresses
@@ -134,8 +134,8 @@ public class DrasylPipeline extends AbstractPipeline {
             // split messages too big for udp
             addFirst(CHUNKING_HANDLER, new ChunkingHandler());
 
-            // convert IntermediateEnvelope <-> ByteBuf
-            addFirst(INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC, IntermediateEnvelopeToByteBufCodec.INSTANCE);
+            // convert RemoteEnvelope <-> ByteBuf
+            addFirst(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC, RemoteEnvelopeToByteBufCodec.INSTANCE);
 
             // udp server
             if (config.isRemoteExposeEnabled()) {

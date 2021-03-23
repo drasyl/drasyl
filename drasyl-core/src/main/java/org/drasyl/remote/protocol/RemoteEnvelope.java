@@ -63,7 +63,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
  * decoding the requested parts of the given {@link ByteBuf}. If a part was request it will be
  * translated into a Java object.
  */
-public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCounted, AutoCloseable {
+public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, AutoCloseable {
     private static final byte[] MAGIC_NUMBER = new byte[]{ 0x1E, 0x3F, 0x50, 0x01 };
     public static final short MAGIC_NUMBER_LENGTH = 4;
     private ByteBuf message;
@@ -71,17 +71,17 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     private PrivateHeader privateHeader;
     private T body;
 
-    IntermediateEnvelope(final ByteBuf message,
-                         final PublicHeader publicHeader,
-                         final PrivateHeader privateHeader,
-                         final T body) {
+    RemoteEnvelope(final ByteBuf message,
+                   final PublicHeader publicHeader,
+                   final PrivateHeader privateHeader,
+                   final T body) {
         this.message = message;
         this.publicHeader = publicHeader;
         this.privateHeader = privateHeader;
         this.body = body;
     }
 
-    private IntermediateEnvelope(final ByteBuf message) throws IOException {
+    private RemoteEnvelope(final ByteBuf message) throws IOException {
         if (!message.isReadable()) {
             try {
                 throw new IOException("The given message has no readable data.");
@@ -97,9 +97,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         this.body = null;
     }
 
-    private IntermediateEnvelope(final PublicHeader publicHeader,
-                                 final PrivateHeader privateHeader,
-                                 final T body) {
+    private RemoteEnvelope(final PublicHeader publicHeader,
+                           final PrivateHeader privateHeader,
+                           final T body) {
         this.message = null;
         this.publicHeader = publicHeader;
         this.privateHeader = privateHeader;
@@ -108,7 +108,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
 
     @Override
     public String toString() {
-        return "IntermediateEnvelope{" +
+        return "RemoteEnvelope{" +
                 "message=" + message +
                 ", publicHeader=" + (publicHeader != null ? TextFormat.shortDebugString(publicHeader) : null) +
                 ", privateHeader=" + (privateHeader != null ? TextFormat.shortDebugString(privateHeader) : null) +
@@ -122,21 +122,21 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     }
 
     /**
-     * Wraps the given {@link ByteBuf} into an {@link IntermediateEnvelope}.
+     * Wraps the given {@link ByteBuf} into an {@link RemoteEnvelope}.
      * <p>
      * <b>Note: The given {@code message} {@link ByteBuf} will not be modified. This object
      * uses a duplicate of the given {@link ByteBuf}.</b>
      * <p>
      * {@link ByteBuf#release()} ownership of {@code message} is transferred to this {@link
-     * IntermediateEnvelope}.
+     * RemoteEnvelope}.
      *
      * @param message the message that should be wrapped. {@link ByteBuf#release()} ownership is
-     *                transferred to this {@link IntermediateEnvelope}.
-     * @return an IntermediateEnvelope
+     *                transferred to this {@link RemoteEnvelope}.
+     * @return an RemoteEnvelope
      * @throws IOException if the given {@link ByteBuf} is not readable
      */
-    public static <T extends MessageLite> IntermediateEnvelope<T> of(final ByteBuf message) throws IOException {
-        return new IntermediateEnvelope<>(message);
+    public static <T extends MessageLite> RemoteEnvelope<T> of(final ByteBuf message) throws IOException {
+        return new RemoteEnvelope<>(message);
     }
 
     /**
@@ -146,12 +146,12 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @param publicHeader  message's public header
      * @param privateHeader message's private header
      * @param body          the message
-     * @return an IntermediateEnvelope
+     * @return an RemoteEnvelope
      */
-    public static <T extends MessageLite> IntermediateEnvelope<T> of(final PublicHeader publicHeader,
-                                                                     final PrivateHeader privateHeader,
-                                                                     final T body) {
-        return new IntermediateEnvelope<>(publicHeader, privateHeader, body);
+    public static <T extends MessageLite> RemoteEnvelope<T> of(final PublicHeader publicHeader,
+                                                               final PrivateHeader privateHeader,
+                                                               final T body) {
+        return new RemoteEnvelope<>(publicHeader, privateHeader, body);
     }
 
     /**
@@ -159,11 +159,11 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      *
      * @param publicHeader message's public header
      * @param bytes        message's remainder as bytes (may be encrypted)
-     * @return an IntermediateEnvelope
+     * @return an RemoteEnvelope
      * @throws IOException if {@code publicHeader} and {@code bytes} can not be serialized
      */
-    public static <T extends MessageLite> IntermediateEnvelope<T> of(final PublicHeader publicHeader,
-                                                                     final byte[] bytes) throws IOException {
+    public static <T extends MessageLite> RemoteEnvelope<T> of(final PublicHeader publicHeader,
+                                                               final byte[] bytes) throws IOException {
         return of(publicHeader, Unpooled.wrappedBuffer(bytes));
     }
 
@@ -171,17 +171,17 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * Creates a message envelope from {@code publicHeader} and {@code bytes}.
      * <p>
      * {@link ByteBuf#release()} ownership of {@code bytes} is transferred to this {@link
-     * IntermediateEnvelope}.
+     * RemoteEnvelope}.
      *
      * @param publicHeader message's public header
      * @param bytes        message's remainder as bytes (may be encrypted). {@link
      *                     ByteBuf#release()} ownership is transferred to this {@link
-     *                     IntermediateEnvelope}.
-     * @return an IntermediateEnvelope
+     *                     RemoteEnvelope}.
+     * @return an RemoteEnvelope
      * @throws IOException if {@code publicHeader} and {@code bytes} can not be serialized
      */
-    public static <T extends MessageLite> IntermediateEnvelope<T> of(final PublicHeader publicHeader,
-                                                                     final ByteBuf bytes) throws IOException {
+    public static <T extends MessageLite> RemoteEnvelope<T> of(final PublicHeader publicHeader,
+                                                               final ByteBuf bytes) throws IOException {
         final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
             outputStream.write(MAGIC_NUMBER);
@@ -292,8 +292,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     }
 
     /**
-     * This method returns a copy of the {@link IntermediateEnvelope} and resets the reader index to
-     * 0.
+     * This method returns a copy of the {@link RemoteEnvelope} and resets the reader index to 0.
      *
      * @return the wrapped {@link ByteBuf} of this envelope
      */
@@ -308,8 +307,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     }
 
     /**
-     * This method returns the internal wrapped {@link ByteBuf} of this {@link
-     * IntermediateEnvelope}.
+     * This method returns the internal wrapped {@link ByteBuf} of this {@link RemoteEnvelope}.
      *
      * @return the internal wrapped {@link ByteBuf}
      */
@@ -509,7 +507,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @return the armed version of this envelope
      * @throws IOException if arming was not possible
      */
-    public IntermediateEnvelope<T> arm(final CompressedPrivateKey privateKey) throws IOException {
+    public RemoteEnvelope<T> arm(final CompressedPrivateKey privateKey) throws IOException {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             getPrivateHeader().writeDelimitedTo(outputStream);
             getBody().writeDelimitedTo(outputStream);
@@ -548,7 +546,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @return the armed version of this envelope
      * @throws IOException if arming was not possible
      */
-    public IntermediateEnvelope<T> armAndRelease(final CompressedPrivateKey privateKey) throws IOException {
+    public RemoteEnvelope<T> armAndRelease(final CompressedPrivateKey privateKey) throws IOException {
         try {
             return arm(privateKey);
         }
@@ -574,7 +572,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @throws IOException if disarming was not possible
      */
     @SuppressWarnings({ "java:S1172" })
-    public IntermediateEnvelope<T> disarm(final CompressedPrivateKey privateKey) throws IOException {
+    public RemoteEnvelope<T> disarm(final CompressedPrivateKey privateKey) throws IOException {
         try {
             final PublicKey sender = getSender().toUncompressedKey();
             final byte[] signature = getPublicHeader().getSignature().toByteArray();
@@ -621,7 +619,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @return the disarmed version of this envelope
      * @throws IOException if disarming was not possible
      */
-    public IntermediateEnvelope<T> disarmAndRelease(final CompressedPrivateKey privateKey) throws IOException {
+    public RemoteEnvelope<T> disarmAndRelease(final CompressedPrivateKey privateKey) throws IOException {
         try {
             return disarm(privateKey);
         }
@@ -714,11 +712,11 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @param recipient       the public key of the recipient
      * @param correspondingId the corresponding id of the previous join message
      */
-    public static IntermediateEnvelope<Acknowledgement> acknowledgement(final int networkId,
-                                                                        final CompressedPublicKey sender,
-                                                                        final ProofOfWork proofOfWork,
-                                                                        final CompressedPublicKey recipient,
-                                                                        final MessageId correspondingId) {
+    public static RemoteEnvelope<Acknowledgement> acknowledgement(final int networkId,
+                                                                  final CompressedPublicKey sender,
+                                                                  final ProofOfWork proofOfWork,
+                                                                  final CompressedPublicKey recipient,
+                                                                  final MessageId correspondingId) {
         return of(
                 buildPublicHeader(networkId, sender, proofOfWork, recipient),
                 PrivateHeader.newBuilder()
@@ -753,12 +751,12 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @param type        the payload type
      * @param payload     the data to be sent
      */
-    public static IntermediateEnvelope<Application> application(final int networkId,
-                                                                final CompressedPublicKey sender,
-                                                                final ProofOfWork proofOfWork,
-                                                                final CompressedPublicKey recipient,
-                                                                final String type,
-                                                                final byte[] payload) {
+    public static RemoteEnvelope<Application> application(final int networkId,
+                                                          final CompressedPublicKey sender,
+                                                          final ProofOfWork proofOfWork,
+                                                          final CompressedPublicKey recipient,
+                                                          final String type,
+                                                          final byte[] payload) {
         final Application.Builder messageBuilder = Application.newBuilder();
         if (type != null) {
             messageBuilder.setType(type).setPayload(ByteString.copyFrom(payload));
@@ -780,11 +778,11 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @param recipient   the public key of the node to join
      * @param joinTime    if {@code 0} greater then 0, node will join a children.
      */
-    public static IntermediateEnvelope<Discovery> discovery(final int networkId,
-                                                            final CompressedPublicKey sender,
-                                                            final ProofOfWork proofOfWork,
-                                                            final CompressedPublicKey recipient,
-                                                            final long joinTime) {
+    public static RemoteEnvelope<Discovery> discovery(final int networkId,
+                                                      final CompressedPublicKey sender,
+                                                      final ProofOfWork proofOfWork,
+                                                      final CompressedPublicKey recipient,
+                                                      final long joinTime) {
         return of(
                 buildPublicHeader(networkId, sender, proofOfWork, recipient),
                 PrivateHeader.newBuilder()
@@ -795,12 +793,12 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         );
     }
 
-    public static IntermediateEnvelope<Unite> unite(final int networkId,
-                                                    final CompressedPublicKey sender,
-                                                    final ProofOfWork proofOfWork,
-                                                    final CompressedPublicKey recipient,
-                                                    final CompressedPublicKey publicKey,
-                                                    final InetSocketAddress address) {
+    public static RemoteEnvelope<Unite> unite(final int networkId,
+                                              final CompressedPublicKey sender,
+                                              final ProofOfWork proofOfWork,
+                                              final CompressedPublicKey recipient,
+                                              final CompressedPublicKey publicKey,
+                                              final InetSocketAddress address) {
         return of(
                 buildPublicHeader(networkId, sender, proofOfWork, recipient),
                 PrivateHeader.newBuilder()

@@ -23,7 +23,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 
 import java.util.List;
 
@@ -33,7 +33,7 @@ import java.util.List;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class ArmHandler extends MessageToMessageCodec<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<? extends MessageLite>, Address> {
+public final class ArmHandler extends MessageToMessageCodec<RemoteEnvelope<? extends MessageLite>, RemoteEnvelope<? extends MessageLite>, Address> {
     public static final ArmHandler INSTANCE = new ArmHandler();
 
     private ArmHandler() {
@@ -43,11 +43,11 @@ public final class ArmHandler extends MessageToMessageCodec<IntermediateEnvelope
     @Override
     protected void decode(final HandlerContext ctx,
                           final Address sender,
-                          final IntermediateEnvelope<? extends MessageLite> msg,
+                          final RemoteEnvelope<? extends MessageLite> msg,
                           final List<Object> out) throws Exception {
         if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
             // disarm all messages addressed to us
-            final IntermediateEnvelope<? extends MessageLite> disarmedMsg = msg.disarmAndRelease(ctx.identity().getPrivateKey());
+            final RemoteEnvelope<? extends MessageLite> disarmedMsg = msg.disarmAndRelease(ctx.identity().getPrivateKey());
             out.add(disarmedMsg.retain());
         }
         else {
@@ -58,11 +58,11 @@ public final class ArmHandler extends MessageToMessageCodec<IntermediateEnvelope
     @Override
     protected void encode(final HandlerContext ctx,
                           final Address recipient,
-                          final IntermediateEnvelope<? extends MessageLite> msg,
+                          final RemoteEnvelope<? extends MessageLite> msg,
                           final List<Object> out) throws Exception {
         if (ctx.identity().getPublicKey().equals(msg.getSender())) {
             // arm all messages from us
-            final IntermediateEnvelope<? extends MessageLite> armedMsg = msg.armAndRelease(ctx.identity().getPrivateKey());
+            final RemoteEnvelope<? extends MessageLite> armedMsg = msg.armAndRelease(ctx.identity().getPrivateKey());
             out.add(armedMsg.retain());
         }
         else {

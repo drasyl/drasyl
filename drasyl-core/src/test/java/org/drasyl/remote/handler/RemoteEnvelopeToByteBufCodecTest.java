@@ -31,9 +31,9 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -50,7 +50,7 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class IntermediateEnvelopeToByteBufCodecTest {
+class RemoteEnvelopeToByteBufCodecTest {
     private final MessageId correspondingId = MessageId.of("412176952b5b81fd");
     @Mock
     private DrasylConfig config;
@@ -73,10 +73,10 @@ class IntermediateEnvelopeToByteBufCodecTest {
     class Decode {
         @Test
         void shouldConvertByteBufToEnvelope(@Mock final InetSocketAddressWrapper sender) throws IOException {
-            try (final IntermediateEnvelope<Protocol.Acknowledgement> message = IntermediateEnvelope.acknowledgement(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId)) {
-                final Handler handler = IntermediateEnvelopeToByteBufCodec.INSTANCE;
+            try (final RemoteEnvelope<Protocol.Acknowledgement> message = RemoteEnvelope.acknowledgement(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId)) {
+                final Handler handler = RemoteEnvelopeToByteBufCodec.INSTANCE;
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<IntermediateEnvelope<MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<IntermediateEnvelope<MessageLite>>() {
+                    final TestObserver<RemoteEnvelope<MessageLite>> inboundMessages = pipeline.inboundMessages(new TypeReference<RemoteEnvelope<MessageLite>>() {
                     }).test();
                     pipeline.processInbound(sender, message.getOrBuildByteBuf()).join();
 
@@ -91,8 +91,8 @@ class IntermediateEnvelopeToByteBufCodecTest {
     class Encode {
         @Test
         void shouldConvertEnvelopeToByteBuf(@Mock final InetSocketAddressWrapper recipient) throws IOException {
-            try (final IntermediateEnvelope<Protocol.Application> message = IntermediateEnvelope.application(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), byte[].class.getName(), "Hello World".getBytes())) {
-                final Handler handler = IntermediateEnvelopeToByteBufCodec.INSTANCE;
+            try (final RemoteEnvelope<Protocol.Application> message = RemoteEnvelope.application(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), byte[].class.getName(), "Hello World".getBytes())) {
+                final Handler handler = RemoteEnvelopeToByteBufCodec.INSTANCE;
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
                     pipeline.processOutbound(recipient, message).join();
@@ -106,10 +106,10 @@ class IntermediateEnvelopeToByteBufCodecTest {
 
         @Test
         void shouldCompleteFutureExceptionallyWhenConversionFail(@Mock final InetSocketAddressWrapper recipient,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<Protocol.Application> messageEnvelope) throws IOException {
+                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<Protocol.Application> messageEnvelope) throws IOException {
             when(messageEnvelope.getOrBuildByteBuf()).thenThrow(RuntimeException.class);
 
-            final Handler handler = IntermediateEnvelopeToByteBufCodec.INSTANCE;
+            final Handler handler = RemoteEnvelopeToByteBufCodec.INSTANCE;
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, messageEnvelope).get());
             }

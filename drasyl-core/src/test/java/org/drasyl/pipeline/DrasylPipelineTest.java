@@ -25,7 +25,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.remote.handler.UdpServer;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +42,6 @@ import java.util.function.Supplier;
 import static org.drasyl.pipeline.DrasylPipeline.ARM_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.CHUNKING_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.HOP_COUNT_GUARD;
-import static org.drasyl.pipeline.DrasylPipeline.INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC;
 import static org.drasyl.pipeline.DrasylPipeline.INTERNET_DISCOVERY_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.INTRA_VM_DISCOVERY;
 import static org.drasyl.pipeline.DrasylPipeline.INVALID_PROOF_OF_WORK_FILTER;
@@ -52,6 +51,7 @@ import static org.drasyl.pipeline.DrasylPipeline.MESSAGE_SERIALIZER;
 import static org.drasyl.pipeline.DrasylPipeline.MONITORING_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.OTHER_NETWORK_FILTER;
 import static org.drasyl.pipeline.DrasylPipeline.PORT_MAPPER;
+import static org.drasyl.pipeline.DrasylPipeline.REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC;
 import static org.drasyl.pipeline.DrasylPipeline.STATIC_ROUTES_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.UDP_SERVER;
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
@@ -122,7 +122,7 @@ class DrasylPipelineTest {
         assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(CHUNKING_HANDLER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(INTERMEDIATE_ENVELOPE_TO_BYTE_BUF_CODEC), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(PORT_MAPPER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(UDP_SERVER), "This handler is required in the DrasylPipeline");
     }
@@ -259,7 +259,7 @@ class DrasylPipelineTest {
     @SuppressWarnings("rawtypes")
     @Test
     void shouldExecuteInboundMessage(@Mock final CompressedPublicKey sender,
-                                     @Mock final IntermediateEnvelope msg) {
+                                     @Mock final RemoteEnvelope msg) {
         final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
         final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity);
 

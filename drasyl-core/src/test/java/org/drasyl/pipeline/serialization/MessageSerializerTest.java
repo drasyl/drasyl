@@ -25,8 +25,8 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.serialization.StringSerializer;
 import org.junit.jupiter.api.Nested;
@@ -60,7 +60,7 @@ class MessageSerializerTest {
     class OnInboundMessage {
         @Test
         void shouldDeserializeMessageIfSerializerForConcreteClassExist(@Mock final CompressedPublicKey address) {
-            final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), String.class.getName(), "Hallo Welt".getBytes());
+            final RemoteEnvelope<Application> message = RemoteEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), String.class.getName(), "Hallo Welt".getBytes());
             when(config.getSerializationSerializers()).thenReturn(Map.of("string", new StringSerializer()));
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(String.class, "string"));
 
@@ -78,7 +78,7 @@ class MessageSerializerTest {
         @Test
         void shouldDeserializeMessageIfSerializerForSuperClassExist(@Mock final CompressedPublicKey address,
                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Serializer serializer) throws IOException {
-            final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), String.class.getName(), "Hallo Welt".getBytes());
+            final RemoteEnvelope<Application> message = RemoteEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), String.class.getName(), "Hallo Welt".getBytes());
             when(config.getSerializationSerializers()).thenReturn(Map.of("object", serializer));
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(Object.class, "object"));
             when(serializer.fromByteArray(any(), anyString())).thenReturn("Hallo Welt");
@@ -96,7 +96,7 @@ class MessageSerializerTest {
 
         @Test
         void shouldBeAbleToDeserializeNullMessage(@Mock final CompressedPublicKey address) {
-            final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), null, null);
+            final RemoteEnvelope<Application> message = RemoteEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), null, null);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
@@ -111,7 +111,7 @@ class MessageSerializerTest {
 
         @Test
         void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final CompressedPublicKey sender) throws InterruptedException {
-            final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), String.class.getName(), "Hallo Welt".getBytes());
+            final RemoteEnvelope<Application> message = RemoteEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), String.class.getName(), "Hallo Welt".getBytes());
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
@@ -125,7 +125,7 @@ class MessageSerializerTest {
         @Test
         void shouldCompleteExceptionallyIfDeserializationFail(@Mock final CompressedPublicKey sender,
                                                               @Mock final Serializer serializer) throws IOException, InterruptedException {
-            final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), String.class.getName(), "Hallo Welt".getBytes());
+            final RemoteEnvelope<Application> message = RemoteEnvelope.application(1, CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(16425882), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), String.class.getName(), "Hallo Welt".getBytes());
             when(serializer.fromByteArray(any(), anyString())).thenThrow(IOException.class);
             when(config.getSerializationSerializers()).thenReturn(Map.of("string", serializer));
             when(config.getSerializationsBindingsInbound()).thenReturn(Map.of(String.class, "string"));
@@ -156,7 +156,7 @@ class MessageSerializerTest {
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(m -> m instanceof IntermediateEnvelope);
+                        .assertValue(m -> m instanceof RemoteEnvelope);
             }
         }
 
@@ -176,7 +176,7 @@ class MessageSerializerTest {
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(m -> m instanceof IntermediateEnvelope);
+                        .assertValue(m -> m instanceof RemoteEnvelope);
             }
         }
 
@@ -220,7 +220,7 @@ class MessageSerializerTest {
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(m -> m instanceof IntermediateEnvelope);
+                        .assertValue(m -> m instanceof RemoteEnvelope);
             }
         }
     }

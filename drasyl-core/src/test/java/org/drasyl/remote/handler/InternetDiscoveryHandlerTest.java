@@ -39,12 +39,12 @@ import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.handler.InternetDiscoveryHandler.Peer;
 import org.drasyl.remote.handler.InternetDiscoveryHandler.Ping;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.MessageId;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.Protocol.Unite;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -170,13 +170,13 @@ class InternetDiscoveryHandlerTest {
                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address) {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            final IntermediateEnvelope<Discovery> discoveryMessage = IntermediateEnvelope.discovery(0, sender, ProofOfWork.of(6518542), recipient, System.currentTimeMillis());
+            final RemoteEnvelope<Discovery> discoveryMessage = RemoteEnvelope.discovery(0, sender, ProofOfWork.of(6518542), recipient, System.currentTimeMillis());
 
             when(identity.getPublicKey()).thenReturn(recipient);
 
             final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundMessages(IntermediateEnvelope.class).test();
+                final TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
 
                 pipeline.processInbound(address, discoveryMessage);
 
@@ -192,7 +192,7 @@ class InternetDiscoveryHandlerTest {
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
+            final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
 
             when(identity.getPublicKey()).thenReturn(recipient);
 
@@ -210,7 +210,7 @@ class InternetDiscoveryHandlerTest {
                                                                               @Mock final Endpoint superPeerEndpoint) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            final IntermediateEnvelope<Acknowledgement> acknowledgementMessage = IntermediateEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
+            final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
 
             when(peer.getAddress()).thenReturn(new InetSocketAddressWrapper(22527));
             when(identity.getPublicKey()).thenReturn(recipient);
@@ -281,7 +281,7 @@ class InternetDiscoveryHandlerTest {
             final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, peers, new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).passOutbound(any(), any(IntermediateEnvelope.class), any());
+            verify(ctx).passOutbound(any(), any(RemoteEnvelope.class), any());
         }
 
         @Test
@@ -297,7 +297,7 @@ class InternetDiscoveryHandlerTest {
             final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).passOutbound(any(), any(IntermediateEnvelope.class), any());
+            verify(ctx).passOutbound(any(), any(RemoteEnvelope.class), any());
         }
 
         @Test
@@ -323,7 +323,7 @@ class InternetDiscoveryHandlerTest {
                                                    @Mock final Endpoint superPeerEndpoint) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            final IntermediateEnvelope<Unite> uniteMessage = IntermediateEnvelope.unite(0, sender, ProofOfWork.of(6518542), recipient, CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), new InetSocketAddress(22527));
+            final RemoteEnvelope<Unite> uniteMessage = RemoteEnvelope.unite(0, sender, ProofOfWork.of(6518542), recipient, CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), new InetSocketAddress(22527));
 
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(Set.of(superPeerEndpoint));
             when(identity.getPublicKey()).thenReturn(recipient);
@@ -340,7 +340,7 @@ class InternetDiscoveryHandlerTest {
         @SuppressWarnings("rawtypes")
         @Test
         void shouldInitiateUniteForInboundMessageWithKnownSenderAndRecipient(@Mock final InetSocketAddressWrapper sender,
-                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message,
+                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer senderPeer,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) throws IOException {
             final InetSocketAddressWrapper senderSocketAddress = new InetSocketAddressWrapper(80);
@@ -358,7 +358,7 @@ class InternetDiscoveryHandlerTest {
 
             final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getSender(), senderPeer, message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundMessages(IntermediateEnvelope.class).test();
+                final TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
 
                 pipeline.processInbound(sender, message).join();
 
@@ -376,7 +376,7 @@ class InternetDiscoveryHandlerTest {
         class Inbound {
             @SuppressWarnings("rawtypes")
             @Test
-            void shouldRelayMessageForKnownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message,
+            void shouldRelayMessageForKnownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) throws IOException {
                 final Address sender = new InetSocketAddressWrapper(22527);
                 when(recipientPeer.isReachable(any())).thenReturn(true);
@@ -384,7 +384,7 @@ class InternetDiscoveryHandlerTest {
 
                 final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final @NonNull TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundMessages(IntermediateEnvelope.class).test();
+                    final @NonNull TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
 
                     pipeline.processInbound(sender, message).join();
 
@@ -397,7 +397,7 @@ class InternetDiscoveryHandlerTest {
             @SuppressWarnings("rawtypes")
             @Test
             void shouldCompleteExceptionallyOnInvalidMessage(@Mock final InetSocketAddressWrapper sender,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message,
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey recipient) throws InterruptedException, IOException {
                 when(message.getRecipient()).thenThrow(IllegalArgumentException.class);
@@ -419,7 +419,7 @@ class InternetDiscoveryHandlerTest {
                     @Mock final InetSocketAddressWrapper address) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final IntermediateEnvelope<Application> applicationMessage = IntermediateEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[]{});
+                final RemoteEnvelope<Application> applicationMessage = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[]{});
 
                 when(rendezvousPeers.contains(any())).thenReturn(true);
                 when(identity.getPublicKey()).thenReturn(recipient);
@@ -443,7 +443,7 @@ class InternetDiscoveryHandlerTest {
             @SuppressWarnings("rawtypes")
             @Test
             void shouldRelayMessageToKnowRecipient(@Mock final Peer recipientPeer,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message) {
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
                 final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(22527);
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
@@ -465,7 +465,7 @@ class InternetDiscoveryHandlerTest {
             @SuppressWarnings("rawtypes")
             @Test
             void shouldRelayMessageToSuperPeerForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeerPeer,
-                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message) {
+                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
                 final InetSocketAddressWrapper superPeerSocketAddress = new InetSocketAddressWrapper(22527);
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
@@ -485,7 +485,7 @@ class InternetDiscoveryHandlerTest {
 
             @SuppressWarnings("rawtypes")
             @Test
-            void shouldPassthroughForUnknownRecipientWhenNoSuperPeerIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope message) {
+            void shouldPassthroughForUnknownRecipientWhenNoSuperPeerIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
@@ -506,7 +506,7 @@ class InternetDiscoveryHandlerTest {
             @SuppressWarnings({ "SuspiciousMethodCalls", "rawtypes" })
             @Test
             void shouldUpdateLastCommunicationTimeForApplicationMessages(@Mock final Peer peer,
-                                                                         @Mock final IntermediateEnvelope message) {
+                                                                         @Mock final RemoteEnvelope message) {
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
                 when(rendezvousPeers.contains(any())).thenReturn(true);

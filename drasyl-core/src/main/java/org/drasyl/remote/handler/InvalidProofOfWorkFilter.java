@@ -23,7 +23,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.InboundMessageFilter;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -37,7 +37,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  */
 @SuppressWarnings("java:S110")
 @Stateless
-public final class InvalidProofOfWorkFilter extends InboundMessageFilter<IntermediateEnvelope<? extends MessageLite>, Address> {
+public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteEnvelope<? extends MessageLite>, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
 
@@ -48,14 +48,14 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<Interme
     @Override
     protected boolean accept(final HandlerContext ctx,
                              final Address sender,
-                             final IntermediateEnvelope<? extends MessageLite> msg) throws Exception {
+                             final RemoteEnvelope<? extends MessageLite> msg) throws Exception {
         return msg.isChunk() || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
     }
 
     @Override
     protected void messageRejected(final HandlerContext ctx,
                                    final Address sender,
-                                   final IntermediateEnvelope<? extends MessageLite> msg,
+                                   final RemoteEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) {
         LOG.trace("Message with invalid proof of work dropped: '{}'", () -> sanitizeLogArg(msg));
         future.completeExceptionally(new Exception("Message with invalid proof of work dropped."));

@@ -32,7 +32,7 @@ import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -200,7 +200,7 @@ class SimpleDuplexHandlerTest {
 
         @SuppressWarnings("rawtypes")
         @Test
-        void shouldPassthroughsNotMatchingMessage(@Mock final IntermediateEnvelope msg,
+        void shouldPassthroughsNotMatchingMessage(@Mock final RemoteEnvelope msg,
                                                   @Mock final CompressedPublicKey sender) {
             final SimpleDuplexHandler<List<?>, Object, Address> handler = new SimpleDuplexHandler<>() {
                 @Override
@@ -230,7 +230,7 @@ class SimpleDuplexHandlerTest {
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
-                final TestObserver<IntermediateEnvelope> outboundMessageTestObserver = pipeline.outboundMessages(IntermediateEnvelope.class).test();
+                final TestObserver<RemoteEnvelope> outboundMessageTestObserver = pipeline.outboundMessages(RemoteEnvelope.class).test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(sender, msg);
@@ -248,7 +248,7 @@ class SimpleDuplexHandlerTest {
         @SuppressWarnings("rawtypes")
         @Test
         void shouldTriggerOnMatchedEvent(@Mock final NodeUpEvent event) throws InterruptedException {
-            final SimpleDuplexEventAwareHandler<IntermediateEnvelope, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>(IntermediateEnvelope.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
+            final SimpleDuplexEventAwareHandler<RemoteEnvelope, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>(RemoteEnvelope.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
                 @Override
                 protected void matchedOutbound(final HandlerContext ctx,
                                                final Address recipient,
@@ -267,7 +267,7 @@ class SimpleDuplexHandlerTest {
                 @Override
                 protected void matchedInbound(final HandlerContext ctx,
                                               final Address sender,
-                                              final IntermediateEnvelope msg,
+                                              final RemoteEnvelope msg,
                                               final CompletableFuture<Void> future) {
                     ctx.passInbound(sender, msg, future);
                 }
