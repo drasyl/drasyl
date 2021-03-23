@@ -292,7 +292,7 @@ class ChunkingHandlerTest {
         class FromMe {
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldPassthroughMessageNotExceedingMtuSize(@Mock final Address recipientAddress) {
+            void shouldPassthroughMessageNotExceedingMtuSize(@Mock final InetSocketAddressWrapper recipientAddress) {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
@@ -316,7 +316,7 @@ class ChunkingHandlerTest {
 
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldDropMessageExceedingMaximumMessageSize(@Mock final Address address) throws InterruptedException {
+            void shouldDropMessageExceedingMaximumMessageSize(@Mock final InetSocketAddressWrapper address) throws InterruptedException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
@@ -336,7 +336,7 @@ class ChunkingHandlerTest {
 
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldChunkMessageExceedingMtuSize(@Mock final Address address) {
+            void shouldChunkMessageExceedingMtuSize(@Mock final InetSocketAddressWrapper address) {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
@@ -386,7 +386,7 @@ class ChunkingHandlerTest {
         class NotFromMe {
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldPassthroughMessage(@Mock final Address recipientAddress) {
+            void shouldPassthroughMessage(@Mock final InetSocketAddressWrapper recipientAddress) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 

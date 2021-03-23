@@ -53,7 +53,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * splitting outgoing too large messages into chunks.
  */
 @SuppressWarnings({ "java:S110" })
-public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<? extends MessageLite>, Address> {
+public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, IntermediateEnvelope<? extends MessageLite>, InetSocketAddressWrapper> {
     public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(ChunkingHandler.class);
     private final Worm<Map<MessageId, ChunksCollector>> chunksCollectors;
@@ -64,13 +64,13 @@ public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? 
 
     @Override
     protected void matchedInbound(final HandlerContext ctx,
-                                  final Address sender,
+                                  final InetSocketAddressWrapper sender,
                                   final IntermediateEnvelope<? extends MessageLite> msg,
                                   final CompletableFuture<Void> future) {
         try {
             // message is addressed to me and chunked
-            if (sender instanceof InetSocketAddressWrapper && ctx.identity().getPublicKey().equals(msg.getRecipient()) && msg.isChunk()) {
-                handleInboundChunk(ctx, (InetSocketAddressWrapper) sender, msg, future);
+            if (ctx.identity().getPublicKey().equals(msg.getRecipient()) && msg.isChunk()) {
+                handleInboundChunk(ctx, sender, msg, future);
             }
             else {
                 // passthrough all messages not addressed to us
@@ -124,7 +124,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? 
 
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
-                                   final Address recipient,
+                                   final InetSocketAddressWrapper recipient,
                                    final IntermediateEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) {
         try {
