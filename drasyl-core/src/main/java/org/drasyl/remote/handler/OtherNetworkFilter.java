@@ -37,7 +37,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * This handler filters out all messages received from other networks.
  */
 @Stateless
-public final class OtherNetworkFilter extends SimpleInboundHandler<IntermediateEnvelope<MessageLite>, Address> {
+public final class OtherNetworkFilter extends SimpleInboundHandler<IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
 
@@ -48,7 +48,7 @@ public final class OtherNetworkFilter extends SimpleInboundHandler<IntermediateE
     @Override
     protected void matchedInbound(final HandlerContext ctx,
                                   final Address sender,
-                                  final IntermediateEnvelope<MessageLite> msg,
+                                  final IntermediateEnvelope<? extends MessageLite> msg,
                                   final CompletableFuture<Void> future) {
         try {
             if (msg.isChunk() || ctx.config().getNetworkId() == msg.getNetworkId()) {

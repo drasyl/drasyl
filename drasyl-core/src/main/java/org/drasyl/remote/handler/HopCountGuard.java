@@ -34,9 +34,9 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
- * This handler ensures that {@link IntermediateEnvelope<MessageLite>}s do not infinitely circulate
- * in the network. It increments the hop counter of each outgoing message. If the limit of hops is
- * reached, the message is discarded. Otherwise the message can pass.
+ * This handler ensures that {@link IntermediateEnvelope}s do not infinitely circulate in the
+ * network. It increments the hop counter of each outgoing message. If the limit of hops is reached,
+ * the message is discarded. Otherwise the message can pass.
  */
 @Stateless
 public final class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvelope<? extends MessageLite>, Address> {

@@ -202,7 +202,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<IntermediateEnvelope<? 
                     chunkByteBuf.writeBytes(chunkBodyByteBuf);
 
                     // send chunk
-                    final IntermediateEnvelope<MessageLite> chunk = IntermediateEnvelope.of(chunkByteBuf);
+                    final IntermediateEnvelope<? extends MessageLite> chunk = IntermediateEnvelope.of(chunkByteBuf);
 
                     final CompletableFuture<Void> f = new CompletableFuture<>();
                     futureCombiner.add(f);

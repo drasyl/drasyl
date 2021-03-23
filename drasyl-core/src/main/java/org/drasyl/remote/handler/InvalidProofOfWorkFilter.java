@@ -38,7 +38,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * This handler filters out all messages received with invalid proof of work.
  */
 @Stateless
-public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<IntermediateEnvelope<MessageLite>, Address> {
+public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<IntermediateEnvelope<? extends MessageLite>, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
 
@@ -49,7 +49,7 @@ public final class InvalidProofOfWorkFilter extends SimpleInboundHandler<Interme
     @Override
     protected void matchedInbound(final HandlerContext ctx,
                                   final Address sender,
-                                  final IntermediateEnvelope<MessageLite> msg,
+                                  final IntermediateEnvelope<? extends MessageLite> msg,
                                   final CompletableFuture<Void> future) {
         try {
             if (msg.isChunk() || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY)) {
