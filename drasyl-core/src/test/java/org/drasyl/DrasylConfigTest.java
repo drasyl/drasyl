@@ -90,6 +90,7 @@ import static org.drasyl.DrasylConfig.SERIALIZATION_BINDINGS_INBOUND;
 import static org.drasyl.DrasylConfig.SERIALIZATION_BINDINGS_OUTBOUND;
 import static org.drasyl.DrasylConfig.SERIALIZATION_SERIALIZERS;
 import static org.drasyl.DrasylConfig.getByte;
+import static org.drasyl.DrasylConfig.getEndpoint;
 import static org.drasyl.DrasylConfig.getEndpointList;
 import static org.drasyl.DrasylConfig.getInetAddress;
 import static org.drasyl.DrasylConfig.getInetSocketAddress;
@@ -455,6 +456,16 @@ class DrasylConfigTest {
             final Config config = ConfigFactory.parseString("foo.bar = [\"http://foo.bar\"]");
 
             assertThrows(DrasylConfigException.class, () -> getEndpointList(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetEndpoint {
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            final Config config = ConfigFactory.parseString("foo.bar = \"http://foo.bar\"");
+
+            assertThrows(DrasylConfigException.class, () -> getEndpoint(config, "foo.bar"));
         }
     }
 
