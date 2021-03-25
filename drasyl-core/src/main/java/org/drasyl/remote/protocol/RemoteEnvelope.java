@@ -81,10 +81,10 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         this.body = body;
     }
 
-    private RemoteEnvelope(final ByteBuf message) throws IOException {
+    private RemoteEnvelope(final ByteBuf message) throws InvalidMessageFormatException {
         if (!message.isReadable()) {
             try {
-                throw new IOException("The given message has no readable data.");
+                throw new InvalidMessageFormatException("The given message has no readable data.");
             }
             finally {
                 ReferenceCountUtil.safeRelease(message);
@@ -133,9 +133,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @param message the message that should be wrapped. {@link ByteBuf#release()} ownership is
      *                transferred to this {@link RemoteEnvelope}.
      * @return an RemoteEnvelope
-     * @throws IOException if the given {@link ByteBuf} is not readable
+     * @throws InvalidMessageFormatException if the given {@link ByteBuf} is not readable
      */
-    public static <T extends MessageLite> RemoteEnvelope<T> of(final ByteBuf message) throws IOException {
+    public static <T extends MessageLite> RemoteEnvelope<T> of(final ByteBuf message) throws InvalidMessageFormatException {
         return new RemoteEnvelope<>(message);
     }
 
@@ -160,10 +160,11 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @param publicHeader message's public header
      * @param bytes        message's remainder as bytes (may be encrypted)
      * @return an RemoteEnvelope
-     * @throws IOException if {@code publicHeader} and {@code bytes} can not be serialized
+     * @throws InvalidMessageFormatException if {@code publicHeader} and {@code bytes} can not be
+     *                                       serialized
      */
     public static <T extends MessageLite> RemoteEnvelope<T> of(final PublicHeader publicHeader,
-                                                               final byte[] bytes) throws IOException {
+                                                               final byte[] bytes) throws InvalidMessageFormatException {
         return of(publicHeader, Unpooled.wrappedBuffer(bytes));
     }
 
@@ -178,10 +179,11 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      *                     ByteBuf#release()} ownership is transferred to this {@link
      *                     RemoteEnvelope}.
      * @return an RemoteEnvelope
-     * @throws IOException if {@code publicHeader} and {@code bytes} can not be serialized
+     * @throws InvalidMessageFormatException if {@code publicHeader} and {@code bytes} can not be
+     *                                       serialized
      */
     public static <T extends MessageLite> RemoteEnvelope<T> of(final PublicHeader publicHeader,
-                                                               final ByteBuf bytes) throws IOException {
+                                                               final ByteBuf bytes) throws InvalidMessageFormatException {
         final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
             outputStream.write(MAGIC_NUMBER);
@@ -192,7 +194,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         }
         catch (final IOException e) {
             ReferenceCountUtil.safeRelease(byteBuf);
-            throw e;
+            throw new InvalidMessageFormatException(e);
         }
         finally {
             bytes.release();
@@ -204,22 +206,22 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * representation of the full message.
      *
      * @return header of the message
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public PublicHeader getPublicHeader() throws IOException {
+    public PublicHeader getPublicHeader() throws InvalidMessageFormatException {
         synchronized (this) {
             if (publicHeader == null) {
                 try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
                     final byte[] magicNumber = in.readNBytes(MAGIC_NUMBER_LENGTH);
 
                     if (!Arrays.equals(MAGIC_NUMBER, magicNumber)) {
-                        throw new IOException("Magic Number mismatch!");
+                        throw new InvalidMessageFormatException("Magic Number mismatch!");
                     }
 
                     publicHeader = PublicHeader.parseDelimitedFrom(in);
                 }
                 catch (final IOException e) {
-                    throw new IOException("Can't read public header of the given message do to the following exception: ", e);
+                    throw new InvalidMessageFormatException("Can't read public header of the given message do to the following exception: ", e);
                 }
             }
 
@@ -232,9 +234,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * representation of the full message.
      *
      * @return the private header
-     * @throws IOException if the private header cannot be read
+     * @throws InvalidMessageFormatException if the private header cannot be read
      */
-    public PrivateHeader getPrivateHeader() throws IOException {
+    public PrivateHeader getPrivateHeader() throws InvalidMessageFormatException {
         synchronized (this) {
             getPublicHeader();
             if (privateHeader == null) {
@@ -242,7 +244,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                     privateHeader = PrivateHeader.parseDelimitedFrom(in);
                 }
                 catch (final IOException e) {
-                    throw new IOException("Can't read private header of the given message do to the following exception: ", e);
+                    throw new InvalidMessageFormatException("Can't read private header of the given message do to the following exception: ", e);
                 }
             }
 
@@ -255,9 +257,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * the full message.
      *
      * @return the body
-     * @throws IOException if the body cannot be read
+     * @throws InvalidMessageFormatException if the body cannot be read
      */
-    public T getBody() throws IOException {
+    public T getBody() throws InvalidMessageFormatException {
         synchronized (this) {
             getPrivateHeader();
             if (body == null) {
@@ -265,7 +267,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                     body = bodyFromInputStream(privateHeader.getType(), in);
                 }
                 catch (final IOException e) {
-                    throw new IOException("Can't read the given message do to the following exception: ", e);
+                    throw new InvalidMessageFormatException("Can't read the given message do to the following exception: ", e);
                 }
             }
 
@@ -278,9 +280,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * the full message.
      *
      * @return the body
-     * @throws IOException if the body cannot be read
+     * @throws InvalidMessageFormatException if the body cannot be read
      */
-    public T getBodyAndRelease() throws IOException {
+    public T getBodyAndRelease() throws InvalidMessageFormatException {
         synchronized (this) {
             try {
                 return getBody();
@@ -321,9 +323,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * The <b>external</b> {@link ByteBuf} or if {@code null} builds it first.
      *
      * @return the envelope as {@link ByteBuf}
-     * @throws IOException if the envelope can't be build
+     * @throws InvalidMessageFormatException if the envelope can't be build
      */
-    public ByteBuf getOrBuildByteBuf() throws IOException {
+    public ByteBuf getOrBuildByteBuf() throws InvalidMessageFormatException {
         synchronized (this) {
             if (message == null || message.writerIndex() == 0) {
                 this.message = proto2ByteBuf();
@@ -337,9 +339,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * The <b>internal</b> {@link ByteBuf} or if {@code null} builds it first.
      *
      * @return the envelope as {@link ByteBuf}
-     * @throws IOException if the envelope can't be build
+     * @throws InvalidMessageFormatException if the envelope can't be build
      */
-    ByteBuf getOrBuildInternalByteBuf() throws IOException {
+    ByteBuf getOrBuildInternalByteBuf() throws InvalidMessageFormatException {
         synchronized (this) {
             getOrBuildByteBuf();
 
@@ -413,57 +415,57 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     }
 
     /**
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public MessageId getId() throws IOException {
+    public MessageId getId() throws InvalidMessageFormatException {
         return MessageId.of(getPublicHeader().getId());
     }
 
     /**
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public int getNetworkId() throws IOException {
+    public int getNetworkId() throws InvalidMessageFormatException {
         return getPublicHeader().getNetworkId();
     }
 
     /**
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public CompressedPublicKey getSender() throws IOException {
+    public CompressedPublicKey getSender() throws InvalidMessageFormatException {
         return CompressedPublicKey.of(getPublicHeader().getSender().toByteArray());
     }
 
     /**
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public ProofOfWork getProofOfWork() throws IOException {
+    public ProofOfWork getProofOfWork() throws InvalidMessageFormatException {
         return ProofOfWork.of(getPublicHeader().getProofOfWork());
     }
 
     /**
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public CompressedPublicKey getRecipient() throws IOException {
+    public CompressedPublicKey getRecipient() throws InvalidMessageFormatException {
         return CompressedPublicKey.of(getPublicHeader().getRecipient().toByteArray());
     }
 
     /**
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public byte getHopCount() throws IOException {
+    public byte getHopCount() throws InvalidMessageFormatException {
         return (byte) (getPublicHeader().getHopCount() - 1);
     }
 
     /**
-     * @throws IOException if the public header cannot be read or be updated
+     * @throws InvalidMessageFormatException if the public header cannot be read or be updated
      */
-    public void incrementHopCount() throws IOException {
+    public void incrementHopCount() throws InvalidMessageFormatException {
         synchronized (this) {
             final PublicHeader existingPublicHeader = getPublicHeader();
             final byte newHopCount = (byte) (existingPublicHeader.getHopCount() + 1);
 
             if (newHopCount == 0) {
-                throw new IOException("hop count overflow");
+                throw new InvalidMessageFormatException("hop count overflow");
             }
 
             this.publicHeader = PublicHeader.newBuilder(existingPublicHeader)
@@ -475,18 +477,21 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
 
                 try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(publicHeaderByteBuf)) {
                     publicHeader.writeDelimitedTo(outputStream);
-                }
 
-                this.message = ByteBufUtil.prepend(message, Unpooled.copiedBuffer(MAGIC_NUMBER), publicHeaderByteBuf);
+                    this.message = ByteBufUtil.prepend(message, Unpooled.copiedBuffer(MAGIC_NUMBER), publicHeaderByteBuf);
+                }
+                catch (final IOException e) {
+                    throw new InvalidMessageFormatException(e);
+                }
             }
         }
     }
 
     /**
      * @return signature as byte array
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public byte[] getSignature() throws IOException {
+    public byte[] getSignature() throws InvalidMessageFormatException {
         return getPublicHeader().getSignature().toByteArray();
     }
 
@@ -505,9 +510,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      *
      * @param privateKey message is signed with this key
      * @return the armed version of this envelope
-     * @throws IOException if arming was not possible
+     * @throws InvalidMessageFormatException if arming was not possible
      */
-    public RemoteEnvelope<T> arm(final CompressedPrivateKey privateKey) throws IOException {
+    public RemoteEnvelope<T> arm(final CompressedPrivateKey privateKey) throws InvalidMessageFormatException {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             getPrivateHeader().writeDelimitedTo(outputStream);
             getBody().writeDelimitedTo(outputStream);
@@ -526,7 +531,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
             return of(newPublicHeader, bytes);
         }
         catch (final IOException | CryptoException e) {
-            throw new IOException("Unable to arm message", e);
+            throw new InvalidMessageFormatException("Unable to arm message", e);
         }
     }
 
@@ -544,9 +549,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      *
      * @param privateKey message is signed with this key
      * @return the armed version of this envelope
-     * @throws IOException if arming was not possible
+     * @throws InvalidMessageFormatException if arming was not possible
      */
-    public RemoteEnvelope<T> armAndRelease(final CompressedPrivateKey privateKey) throws IOException {
+    public RemoteEnvelope<T> armAndRelease(final CompressedPrivateKey privateKey) throws InvalidMessageFormatException {
         try {
             return arm(privateKey);
         }
@@ -569,10 +574,10 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * <b>Note: Do not forget to release the original {@link #message}</b>
      *
      * @return the disarmed version of this envelope
-     * @throws IOException if disarming was not possible
+     * @throws InvalidMessageFormatException if disarming was not possible
      */
     @SuppressWarnings({ "java:S1172" })
-    public RemoteEnvelope<T> disarm(final CompressedPrivateKey privateKey) throws IOException {
+    public RemoteEnvelope<T> disarm(final CompressedPrivateKey privateKey) throws InvalidMessageFormatException {
         try {
             final PublicKey sender = getSender().toUncompressedKey();
             final byte[] signature = getPublicHeader().getSignature().toByteArray();
@@ -581,7 +586,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
 
                 // verify signature
                 if (signature.length == 0) {
-                    throw new IOException("No signature");
+                    throw new InvalidMessageFormatException("No signature");
                 }
                 if (Crypto.verifySignature(sender, bytes, signature)) {
                     // FIXME: decrypt payload
@@ -595,12 +600,12 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                     }
                 }
                 else {
-                    throw new IOException("Invalid signature");
+                    throw new InvalidMessageFormatException("Invalid signature");
                 }
             }
         }
         catch (final IOException e) {
-            throw new IOException("Unable to disarm message", e);
+            throw new InvalidMessageFormatException("Unable to disarm message", e);
         }
     }
 
@@ -617,9 +622,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * <p>This method will release all resources even in case of an exception.
      *
      * @return the disarmed version of this envelope
-     * @throws IOException if disarming was not possible
+     * @throws InvalidMessageFormatException if disarming was not possible
      */
-    public RemoteEnvelope<T> disarmAndRelease(final CompressedPrivateKey privateKey) throws IOException {
+    public RemoteEnvelope<T> disarmAndRelease(final CompressedPrivateKey privateKey) throws InvalidMessageFormatException {
         try {
             return disarm(privateKey);
         }
@@ -632,9 +637,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * Returns {@code true} if message is armed. Otherwise {@code false} is returned.
      *
      * @return {@code true} if message is armed. Otherwise {@code false} is returned.
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public boolean isArmed() throws IOException {
+    public boolean isArmed() throws InvalidMessageFormatException {
         return getSignature().length != 0;
     }
 
@@ -642,25 +647,31 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * Returns {@code true} if message is not armed. Otherwise {@code false} is returned.
      *
      * @return {@code true} if message is not armed. Otherwise {@code false} is returned.
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public boolean isDisarmed() throws IOException {
+    public boolean isDisarmed() throws InvalidMessageFormatException {
         return !isArmed();
     }
 
     @SuppressWarnings({ "unchecked", "java:S1142" })
-    private T bodyFromInputStream(final MessageType type, final InputStream in) throws IOException {
-        switch (type) {
-            case ACKNOWLEDGEMENT:
-                return (T) Acknowledgement.parseDelimitedFrom(in);
-            case APPLICATION:
-                return (T) Application.parseDelimitedFrom(in);
-            case UNITE:
-                return (T) Unite.parseDelimitedFrom(in);
-            case DISCOVERY:
-                return (T) Discovery.parseDelimitedFrom(in);
-            default:
-                throw new IOException("Message is not of any known type.");
+    private T bodyFromInputStream(final MessageType type,
+                                  final InputStream in) throws InvalidMessageFormatException {
+        try {
+            switch (type) {
+                case ACKNOWLEDGEMENT:
+                    return (T) Acknowledgement.parseDelimitedFrom(in);
+                case APPLICATION:
+                    return (T) Application.parseDelimitedFrom(in);
+                case UNITE:
+                    return (T) Unite.parseDelimitedFrom(in);
+                case DISCOVERY:
+                    return (T) Discovery.parseDelimitedFrom(in);
+                default:
+                    throw new InvalidMessageFormatException("Message is not of any known type.");
+            }
+        }
+        catch (final IOException e) {
+            throw new InvalidMessageFormatException("Unable to read message body.", e);
         }
     }
 
@@ -686,7 +697,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         }
     }
 
-    private ByteBuf proto2ByteBuf() throws IOException {
+    private ByteBuf proto2ByteBuf() throws InvalidMessageFormatException {
         final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
 
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
@@ -699,7 +710,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         }
         catch (final Exception e) {
             ReferenceCountUtil.safeRelease(byteBuf);
-            throw new IOException(e);
+            throw new InvalidMessageFormatException(e);
         }
     }
 
@@ -815,9 +826,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * Returns {@code true} if this message is a chunk. Otherwise {@code false} is returned.
      *
      * @return {@code true} if this message is a chunk. Otherwise {@code false}.
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public boolean isChunk() throws IOException {
+    public boolean isChunk() throws InvalidMessageFormatException {
         return getPublicHeader().getTotalChunks() > 0 || getPublicHeader().getChunkNo() > 0;
     }
 
@@ -825,9 +836,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * Returns the number of the chunk. If the message is not a chunk, {@code 0} is returned.
      *
      * @return number of the chunk or {@code 0} if message is not a chunk
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public UnsignedShort getChunkNo() throws IOException {
+    public UnsignedShort getChunkNo() throws InvalidMessageFormatException {
         return UnsignedShort.of(getPublicHeader().getChunkNo());
     }
 
@@ -835,9 +846,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * Returns the total chunks number. If the message is not a chunk, {@code 0} is returned.
      *
      * @return total chunks number or {@code 0} if message is not a chunk
-     * @throws IOException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public UnsignedShort getTotalChunks() throws IOException {
+    public UnsignedShort getTotalChunks() throws InvalidMessageFormatException {
         return UnsignedShort.of(getPublicHeader().getTotalChunks());
     }
 

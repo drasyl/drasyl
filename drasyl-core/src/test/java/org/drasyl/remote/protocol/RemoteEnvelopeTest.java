@@ -272,101 +272,101 @@ class RemoteEnvelopeTest {
     @Nested
     class GetId {
         @Test
-        void shouldReturnId() throws IOException {
+        void shouldReturnId() throws InvalidMessageFormatException {
             try (final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message)) {
                 assertEquals(messageId, envelope.getId());
             }
         }
 
         @Test
-        void shouldThrowExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = spy(RemoteEnvelope.of(message));
-            when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            when(envelope.getPublicHeader()).thenThrow(InvalidMessageFormatException.class);
 
-            assertThrows(IOException.class, envelope::getId);
+            assertThrows(InvalidMessageFormatException.class, envelope::getId);
         }
     }
 
     @Nested
     class GetNetworkId {
         @Test
-        void shouldReturnNetworkId() throws IOException {
+        void shouldReturnNetworkId() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
 
             assertEquals(1, envelope.getNetworkId());
         }
 
         @Test
-        void shouldThrowExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = spy(RemoteEnvelope.of(message));
-            when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            when(envelope.getPublicHeader()).thenThrow(InvalidMessageFormatException.class);
 
-            assertThrows(IOException.class, envelope::getNetworkId);
+            assertThrows(InvalidMessageFormatException.class, envelope::getNetworkId);
         }
     }
 
     @Nested
     class GetProofOfWork {
         @Test
-        void shouldReturnProofOfWork() throws IOException {
+        void shouldReturnProofOfWork() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
 
             assertEquals(ProofOfWork.of(6657650), envelope.getProofOfWork());
         }
 
         @Test
-        void shouldThrowExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = spy(RemoteEnvelope.of(message));
-            when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            when(envelope.getPublicHeader()).thenThrow(InvalidMessageFormatException.class);
 
-            assertThrows(IOException.class, envelope::getProofOfWork);
+            assertThrows(InvalidMessageFormatException.class, envelope::getProofOfWork);
         }
     }
 
     @Nested
     class GetRecipient {
         @Test
-        void shouldReturnRecipient() throws IOException {
+        void shouldReturnRecipient() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
 
             assertEquals(recipientPublicKey, envelope.getRecipient());
         }
 
         @Test
-        void shouldThrowExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = spy(RemoteEnvelope.of(message));
-            when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            when(envelope.getPublicHeader()).thenThrow(InvalidMessageFormatException.class);
 
-            assertThrows(IOException.class, envelope::getRecipient);
+            assertThrows(InvalidMessageFormatException.class, envelope::getRecipient);
         }
     }
 
     @Nested
     class GetSender {
         @Test
-        void shouldThrowExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = spy(RemoteEnvelope.of(message));
-            when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            when(envelope.getPublicHeader()).thenThrow(InvalidMessageFormatException.class);
 
-            assertThrows(IOException.class, envelope::getSender);
+            assertThrows(InvalidMessageFormatException.class, envelope::getSender);
         }
     }
 
     @Nested
     class GetHopCount {
         @Test
-        void shouldReturnHopCount() throws IOException {
+        void shouldReturnHopCount() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
 
             assertEquals((byte) 0, envelope.getHopCount());
         }
 
         @Test
-        void shouldThrowExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = spy(RemoteEnvelope.of(message));
-            when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            when(envelope.getPublicHeader()).thenThrow(InvalidMessageFormatException.class);
 
-            assertThrows(IOException.class, envelope::getHopCount);
+            assertThrows(InvalidMessageFormatException.class, envelope::getHopCount);
         }
     }
 
@@ -432,11 +432,11 @@ class RemoteEnvelopeTest {
         }
 
         @Test
-        void shouldThrowExceptionOnError() throws IOException {
+        void shouldThrowExceptionOnError() throws InvalidMessageFormatException {
             final RemoteEnvelope<MessageLite> envelope = spy(RemoteEnvelope.of(message));
-            when(envelope.getPublicHeader()).thenThrow(IOException.class);
+            when(envelope.getPublicHeader()).thenThrow(InvalidMessageFormatException.class);
 
-            assertThrows(IOException.class, envelope::getSignature);
+            assertThrows(InvalidMessageFormatException.class, envelope::getSignature);
         }
     }
 

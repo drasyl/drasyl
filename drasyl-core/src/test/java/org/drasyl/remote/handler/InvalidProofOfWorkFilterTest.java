@@ -27,13 +27,13 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
 import java.util.concurrent.CompletionException;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,7 +52,7 @@ class InvalidProofOfWorkFilterTest {
     private DrasylConfig config;
 
     @Test
-    void shouldDropMessagesWithInvalidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws IOException {
+    void shouldDropMessagesWithInvalidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws InvalidMessageFormatException {
         when(message.getProofOfWork().isValid(any(), anyByte())).thenReturn(false);
         when(message.isChunk()).thenReturn(false);
         when(message.refCnt()).thenReturn(1);
@@ -69,7 +69,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldPassMessagesWithValidProofOfWork(@Mock final Address sender,
-                                                @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws IOException {
+                                                @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws InvalidMessageFormatException {
         when(message.getProofOfWork().isValid(any(), anyByte())).thenReturn(true);
         when(message.isChunk()).thenReturn(false);
 
@@ -86,8 +86,8 @@ class InvalidProofOfWorkFilterTest {
     }
 
     @Test
-    void shouldPassChunks(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws IOException {
-        when(message.isChunk()).thenThrow(IOException.class);
+    void shouldPassChunks(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws InvalidMessageFormatException {
+        when(message.isChunk()).thenThrow(InvalidMessageFormatException.class);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
