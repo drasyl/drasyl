@@ -78,9 +78,9 @@ class PerfCommandIT {
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteSuperPeerEnabled(false)
-                .intraVmDiscoveryEnabled(false)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
+                .intraVmDiscoveryEnabled(false)
                 .build();
         superPeer = new EmbeddedNode(superPeerConfig).started();
         LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
@@ -114,9 +114,11 @@ class PerfCommandIT {
                 .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
                 .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
                 .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
-                .intraVmDiscoveryEnabled(false)
+                .remoteBindHost(createInetAddress("127.0.0.1"))
+                .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
+                .intraVmDiscoveryEnabled(false)
                 .build();
         final Path serverPath = path.resolve("server.conf");
         Files.writeString(serverPath, renderConfig(serverConfig), CREATE);
@@ -145,9 +147,11 @@ class PerfCommandIT {
                 .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
                 .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
                 .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
-                .intraVmDiscoveryEnabled(false)
+                .remoteBindHost(createInetAddress("127.0.0.1"))
+                .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
+                .intraVmDiscoveryEnabled(false)
                 .build();
         final Path clientPath = path.resolve("client.conf");
         Files.writeString(clientPath, renderConfig(clientConfig), CREATE);

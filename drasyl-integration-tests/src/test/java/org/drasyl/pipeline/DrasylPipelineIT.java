@@ -48,6 +48,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
 import static org.drasyl.util.NettyUtil.getBestEventLoopGroup;
+import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -83,6 +84,8 @@ class DrasylPipelineIT {
                 .remoteExposeEnabled(false)
                 .remoteSuperPeerEnabled(false)
                 .remoteLocalHostDiscoveryEnabled(false)
+                .remoteBindHost(createInetAddress("127.0.0.1"))
+                .remoteBindPort(0)
                 .build();
 
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
