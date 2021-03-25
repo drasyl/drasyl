@@ -153,7 +153,7 @@ public class DrasylConfig {
      * @param config config to be loaded
      * @throws DrasylConfigException if config is invalid
      */
-    @SuppressWarnings("java:S3776")
+    @SuppressWarnings({ "java:S1192", "java:S1541", "java:S3776" })
     public DrasylConfig(final Config config) {
         try {
             config.checkValid(ConfigFactory.defaultReference(), "drasyl");
@@ -190,10 +190,25 @@ public class DrasylConfig {
             this.remoteEndpoints = Set.copyOf(getEndpointList(config, REMOTE_ENDPOINTS));
             this.remoteExposeEnabled = config.getBoolean(REMOTE_EXPOSE_ENABLED);
             this.remotePingInterval = config.getDuration(REMOTE_PING_INTERVAL);
+            if (this.remotePingInterval.isNegative() || this.remotePingInterval.isZero()) {
+                throw new DrasylConfigException(REMOTE_PING_INTERVAL, "Must be a positive value.");
+            }
             this.remotePingTimeout = config.getDuration(REMOTE_PING_TIMEOUT);
+            if (this.remotePingTimeout.isNegative() || this.remotePingTimeout.isZero()) {
+                throw new DrasylConfigException(REMOTE_PING_TIMEOUT, "Must be a positive value.");
+            }
             this.remotePingCommunicationTimeout = config.getDuration(REMOTE_PING_COMMUNICATION_TIMEOUT);
+            if (this.remotePingCommunicationTimeout.isNegative() || this.remotePingCommunicationTimeout.isZero()) {
+                throw new DrasylConfigException(REMOTE_PING_COMMUNICATION_TIMEOUT, "Must be a positive value.");
+            }
             this.remotePingMaxPeers = config.getInt(REMOTE_PING_MAX_PEERS);
+            if (this.remotePingMaxPeers < 0) {
+                throw new DrasylConfigException(REMOTE_PING_COMMUNICATION_TIMEOUT, "Must be a non-negative value.");
+            }
             this.remoteUniteMinInterval = config.getDuration(REMOTE_UNITE_MIN_INTERVAL);
+            if (this.remoteUniteMinInterval.isNegative()) {
+                throw new DrasylConfigException(REMOTE_UNITE_MIN_INTERVAL, "Must be a non-negative value.");
+            }
             this.remoteSuperPeerEnabled = config.getBoolean(REMOTE_SUPER_PEER_ENABLED);
             this.remoteSuperPeerEndpoints = Set.copyOf(getEndpointList(config, REMOTE_SUPER_PEER_ENDPOINTS));
             if (remoteSuperPeerEnabled) {
@@ -204,11 +219,6 @@ public class DrasylConfig {
                 }
             }
             this.remoteStaticRoutes = getStaticRoutes(config, REMOTE_STATIC_ROUTES);
-            this.remoteMessageMtu = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MTU).toBytes(), Integer.MAX_VALUE);
-            this.remoteMessageMaxContentLength = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
-            this.remoteMessageComposedMessageTransferTimeout = config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
-            this.remoteMessageHopLimit = getByte(config, REMOTE_MESSAGE_HOP_LIMIT);
-            this.remoteMessageArmEnabled = config.getBoolean(REMOTE_MESSAGE_ARM_ENABLED);
             this.remoteLocalHostDiscoveryEnabled = config.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED);
             if (isNullOrEmpty(config.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH))) {
                 this.remoteLocalHostDiscoveryPath = Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery");
@@ -217,6 +227,23 @@ public class DrasylConfig {
                 this.remoteLocalHostDiscoveryPath = getPath(config, REMOTE_LOCAL_HOST_DISCOVERY_PATH);
             }
             this.remoteLocalHostDiscoveryLeaseTime = config.getDuration(REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME);
+            if (this.remoteLocalHostDiscoveryLeaseTime.isNegative() || this.remoteLocalHostDiscoveryLeaseTime.isZero()) {
+                throw new DrasylConfigException(REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME, "Must be a positive value.");
+            }
+            this.remoteMessageMtu = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MTU).toBytes(), Integer.MAX_VALUE);
+            if (this.remoteMessageMtu < 1) {
+                throw new DrasylConfigException(REMOTE_MESSAGE_MTU, "Must be a positive value.");
+            }
+            this.remoteMessageMaxContentLength = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
+            if (this.remoteMessageMaxContentLength < 0) {
+                throw new DrasylConfigException(REMOTE_MESSAGE_MAX_CONTENT_LENGTH, "Must be a non-negative value.");
+            }
+            this.remoteMessageComposedMessageTransferTimeout = config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
+            if (this.remoteMessageComposedMessageTransferTimeout.isNegative() || this.remoteMessageComposedMessageTransferTimeout.isZero()) {
+                throw new DrasylConfigException(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT, "Must be a positive value.");
+            }
+            this.remoteMessageHopLimit = getByte(config, REMOTE_MESSAGE_HOP_LIMIT);
+            this.remoteMessageArmEnabled = config.getBoolean(REMOTE_MESSAGE_ARM_ENABLED);
 
             // Init monitoring config
             monitoringEnabled = config.getBoolean(MONITORING_ENABLED);
@@ -624,7 +651,7 @@ public class DrasylConfig {
      * @throws DrasylConfigException if value at path is invalid
      */
     public static Map<CompressedPublicKey, InetSocketAddressWrapper> getStaticRoutes(final Config config,
-                                                                              final String path) {
+                                                                                     final String path) {
         try {
             final Map<CompressedPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
             for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {

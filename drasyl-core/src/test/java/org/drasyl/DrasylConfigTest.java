@@ -83,7 +83,9 @@ import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_T
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_HOP_LIMIT;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_MAX_CONTENT_LENGTH;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_MTU;
+import static org.drasyl.DrasylConfig.REMOTE_PING_COMMUNICATION_TIMEOUT;
 import static org.drasyl.DrasylConfig.REMOTE_PING_INTERVAL;
+import static org.drasyl.DrasylConfig.REMOTE_PING_TIMEOUT;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINTS;
 import static org.drasyl.DrasylConfig.SERIALIZATION_BINDINGS_INBOUND;
@@ -123,10 +125,10 @@ class DrasylConfigTest {
     private CompressedPrivateKey identityPrivateKey;
     @Mock
     private Path identityPath;
-    private InetAddress serverBindHost;
-    private boolean serverEnabled;
-    private int serverBindPort;
-    private Duration serverHandshakeTimeout;
+    private InetAddress remoteBindHost;
+    private boolean remoteEnabled;
+    private int remoteBindPort;
+    private Duration remotePingInterval;
     private Set<Endpoint> serverEndpoints;
     private boolean remoteExposeEnabled;
     @SuppressWarnings("unused")
@@ -168,10 +170,10 @@ class DrasylConfigTest {
     @BeforeEach
     void setUp() {
         networkId = 1337;
-        serverBindHost = createInetAddress("0.0.0.0");
-        serverEnabled = true;
-        serverBindPort = 22527;
-        serverHandshakeTimeout = ofSeconds(30);
+        remoteBindHost = createInetAddress("0.0.0.0");
+        remoteEnabled = true;
+        remoteBindPort = 22527;
+        remotePingInterval = ofSeconds(30);
         serverEndpoints = Set.of();
         remoteExposeEnabled = true;
         remoteMessageMaxContentLength = 1024;
@@ -198,6 +200,8 @@ class DrasylConfigTest {
         serializationsBindingsOutbound = Map.of();
         remotePingCommunicationTimeout = ofSeconds(80);
         remoteUniteMinInterval = ofSeconds(90);
+        remotePingTimeout = ofSeconds(10);
+        remoteMessageMtu = 1024;
     }
 
     @Nested
@@ -211,10 +215,12 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d");
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(123);
             when(typesafeConfig.getString(IDENTITY_PATH)).thenReturn(identityPathAsString);
-            when(typesafeConfig.getBoolean(REMOTE_ENABLED)).thenReturn(serverEnabled);
-            when(typesafeConfig.getString(REMOTE_BIND_HOST)).thenReturn(serverBindHost.getHostAddress());
-            when(typesafeConfig.getInt(REMOTE_BIND_PORT)).thenReturn(serverBindPort);
-            when(typesafeConfig.getDuration(REMOTE_PING_INTERVAL)).thenReturn(serverHandshakeTimeout);
+            when(typesafeConfig.getBoolean(REMOTE_ENABLED)).thenReturn(remoteEnabled);
+            when(typesafeConfig.getString(REMOTE_BIND_HOST)).thenReturn(remoteBindHost.getHostAddress());
+            when(typesafeConfig.getInt(REMOTE_BIND_PORT)).thenReturn(remoteBindPort);
+            when(typesafeConfig.getDuration(REMOTE_PING_INTERVAL)).thenReturn(remotePingInterval);
+            when(typesafeConfig.getDuration(REMOTE_PING_TIMEOUT)).thenReturn(remotePingTimeout);
+            when(typesafeConfig.getDuration(REMOTE_PING_COMMUNICATION_TIMEOUT)).thenReturn(remotePingCommunicationTimeout);
             when(typesafeConfig.getMemorySize(REMOTE_MESSAGE_MTU)).thenReturn(ConfigMemorySize.ofBytes(remoteMessageMtu));
             when(typesafeConfig.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(remoteMessageMaxContentLength));
             when(typesafeConfig.getInt(REMOTE_MESSAGE_HOP_LIMIT)).thenReturn((int) remoteMessageHopLimit);
@@ -243,14 +249,14 @@ class DrasylConfigTest {
             final DrasylConfig config = new DrasylConfig(typesafeConfig);
 
             assertEquals(networkId, config.getNetworkId());
-            assertEquals(serverBindHost, config.getRemoteBindHost());
-            assertEquals(serverBindPort, config.getRemoteBindPort());
+            assertEquals(remoteBindHost, config.getRemoteBindHost());
+            assertEquals(remoteBindPort, config.getRemoteBindPort());
             assertEquals(ProofOfWork.of(123), config.getIdentityProofOfWork());
             assertEquals(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), config.getIdentityPublicKey());
             assertEquals(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"), config.getIdentityPrivateKey());
             assertEquals(Paths.get("drasyl.identity.json"), config.getIdentityPath());
-            assertEquals(serverEnabled, config.isRemoteEnabled());
-            assertEquals(serverHandshakeTimeout, config.getRemotePingInterval());
+            assertEquals(remoteEnabled, config.isRemoteEnabled());
+            assertEquals(remotePingInterval, config.getRemotePingInterval());
             assertEquals(Set.of(), config.getRemoteEndpoints());
             assertEquals(remoteExposeEnabled, config.isRemoteExposeEnabled());
             assertEquals(remoteMessageMtu, config.getRemoteMessageMtu());
@@ -297,10 +303,10 @@ class DrasylConfigTest {
                     identityPrivateKey,
                     identityPath,
                     intraVmDiscoveryEnabled,
-                    serverBindHost,
-                    serverEnabled,
-                    serverBindPort,
-                    serverHandshakeTimeout,
+                    remoteBindHost,
+                    remoteEnabled,
+                    remoteBindPort,
+                    remotePingInterval,
                     remotePingTimeout,
                     remotePingCommunicationTimeout,
                     remoteUniteMinInterval,
