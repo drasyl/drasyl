@@ -21,6 +21,7 @@ package org.drasyl.peer;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.UriUtil;
 
 import java.net.URI;
@@ -123,6 +124,14 @@ public class Endpoint {
      */
     public Integer getNetworkId() {
         return networkId;
+    }
+
+    /**
+     * @throws IllegalArgumentException if the port parameter is outside the range of valid port
+     *                                  values, or if the hostname parameter is {@code null}.
+     */
+    public InetSocketAddressWrapper toInetSocketAddress() {
+        return new InetSocketAddressWrapper(host, port);
     }
 
     @Override

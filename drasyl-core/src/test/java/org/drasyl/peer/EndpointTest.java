@@ -20,6 +20,7 @@ package org.drasyl.peer;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -118,6 +119,14 @@ class EndpointTest {
         @Test
         void shouldReturnPortContainedInEndpoint() {
             assertEquals(123, Endpoint.of("udp://localhost:123?publicKey=030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").getPort());
+        }
+    }
+
+    @Nested
+    class ToInetSocketAddress {
+        @Test
+        void shouldReturnCorrectAddress() {
+            assertEquals(new InetSocketAddressWrapper("localhost", 123), Endpoint.of("udp://localhost:123?publicKey=030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").toInetSocketAddress());
         }
     }
 
