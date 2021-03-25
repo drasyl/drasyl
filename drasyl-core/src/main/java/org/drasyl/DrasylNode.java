@@ -88,6 +88,7 @@ public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
     private static boolean bossGroupCreated;
+    private static boolean workerGroupCreated;
     private static String version;
 
     static {
@@ -221,8 +222,13 @@ public abstract class DrasylNode {
      * </p>
      */
     public static void irrevocablyTerminate() {
-        if (INSTANCES.isEmpty() && bossGroupCreated) {
-            LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
+        if (INSTANCES.isEmpty()) {
+            if (bossGroupCreated) {
+                LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
+            }
+            if (workerGroupCreated) {
+                LazyWorkerGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
+            }
         }
     }
 
@@ -440,6 +446,16 @@ public abstract class DrasylNode {
         static final boolean LOCK = bossGroupCreated = true;
 
         private LazyBossGroupHolder() {
+        }
+    }
+
+    private static final class LazyWorkerGroupHolder {
+        // https://github.com/netty/netty/issues/639#issuecomment-9263566
+        static final EventLoopGroup INSTANCE = getBestEventLoopGroup(2);
+        @SuppressWarnings("unused")
+        static final boolean LOCK = workerGroupCreated = true;
+
+        private LazyWorkerGroupHolder() {
         }
     }
 }
