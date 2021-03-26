@@ -91,7 +91,7 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                              final Serialization outboundSerialization,
                              final DrasylScheduler dependentScheduler,
                              final DrasylScheduler independentScheduler) {
-        super(new ConcurrentHashMap<>(), dependentScheduler, independentScheduler, config, identity, peersManager, inboundSerialization, outboundSerialization);
+        super(new ConcurrentHashMap<>(), dependentScheduler, independentScheduler, config, identity, peersManager, inboundSerialization, outboundSerialization, null);
         this.inboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
         inboundEvents = ReplaySubject.<Event>create().toSerialized();
         outboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
@@ -206,6 +206,16 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
         }
         outboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);
         inboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);
+    }
+
+    @Override
+    public boolean isWritable() {
+        return false;
+    }
+
+    @Override
+    public int messagesBeforeUnwritable() {
+        return 0;
     }
 
     private static boolean isInstance(final Type type, final Object obj) {

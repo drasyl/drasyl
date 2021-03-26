@@ -263,4 +263,18 @@ public interface Pipeline {
      * exceptionally future
      */
     CompletableFuture<Void> processOutbound(Address recipient, Object msg);
+
+    /**
+     * Returns {@code true} if the pipeline accepts new outbound messages for processing. Any calls
+     * to {@link #processOutbound(Address, Object)} while this method returns {@code false} will be
+     * rejected with an exceptionally future.
+     */
+    boolean isWritable();
+
+    /**
+     * Returns the remaining number of messages the pipeline will accept for processing before
+     * {@link #isWritable()} returns {@code false}. This quantity will always be non-negative. If
+     * {@link #isWritable()} is {@code false} then {@code 0} will be returned.
+     */
+    int messagesBeforeUnwritable();
 }
