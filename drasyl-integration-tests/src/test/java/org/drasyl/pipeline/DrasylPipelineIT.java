@@ -160,13 +160,13 @@ class DrasylPipelineIT {
             }
         });
 
-        final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes()).armAndRelease(identity2.getPrivateKey());
+        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes()).armAndRelease(identity2.getPrivateKey())) {
+            pipeline.processInbound(message.getSender(), message);
 
-        pipeline.processInbound(message.getSender(), message);
-
-        events.awaitCount(3);
-        events.assertValueAt(1, MessageEvent.of(message.getSender(), "Hallo Welt".getBytes()));
-        events.assertValueAt(2, testEvent);
+            events.awaitCount(3);
+            events.assertValueAt(1, MessageEvent.of(message.getSender(), "Hallo Welt".getBytes()));
+            events.assertValueAt(2, testEvent);
+        }
     }
 
     @Test
@@ -238,54 +238,46 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithDoneFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload);
+        final CompletableFuture<Void> future;
+        try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload)) {
+            IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
+            pipeline.addLast("outbound", new HandlerAdapter() {
+                @Override
+                public void onOutbound(final HandlerContext ctx,
+                                       final Address recipient,
+                                       final Object msg,
+                                       final CompletableFuture<Void> future) throws Exception {
+                    future.complete(null);
+                    super.onOutbound(ctx, recipient, msg, future);
+                }
+            });
 
-        pipeline.addLast("outbound", new HandlerAdapter() {
-            @Override
-            public void onOutbound(final HandlerContext ctx,
-                                   final Address recipient,
-                                   final Object msg,
-                                   final CompletableFuture<Void> future) throws Exception {
-                future.complete(null);
-                super.onOutbound(ctx, recipient, msg, future);
-            }
-        });
+            pipeline.processOutbound(identity2.getPublicKey(), msg).join();
 
-        final CompletableFuture<Void> future = pipeline.processOutbound(identity2.getPublicKey(), msg);
-
-        future.join();
-        outbounds.assertNoValues();
-        assertTrue(future.isDone());
-        assertFalse(future.isCancelled());
-        assertFalse(future.isCompletedExceptionally());
+            outbounds.assertNoValues();
+        }
     }
 
     @Test
     void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload);
+        try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload)) {
+            IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
+            pipeline.addLast("outbound", new HandlerAdapter() {
+                @Override
+                public void onOutbound(final HandlerContext ctx,
+                                       final Address recipient,
+                                       final Object msg,
+                                       final CompletableFuture<Void> future) throws Exception {
+                    future.completeExceptionally(new Exception("Error!"));
+                    super.onOutbound(ctx, recipient, msg, future);
+                }
+            });
 
-        pipeline.addLast("outbound", new HandlerAdapter() {
-            @Override
-            public void onOutbound(final HandlerContext ctx,
-                                   final Address recipient,
-                                   final Object msg,
-                                   final CompletableFuture<Void> future) throws Exception {
-                future.completeExceptionally(new Exception("Error!"));
-                super.onOutbound(ctx, recipient, msg, future);
-            }
-        });
-
-        final CompletableFuture<Void> future = pipeline.processOutbound(identity2.getPublicKey(), msg);
-
-        assertThrows(CompletionException.class, future::join);
-        outbounds.assertNoValues();
-        assertTrue(future.isDone());
-        assertFalse(future.isCancelled());
-        assertTrue(future.isCompletedExceptionally());
+            assertThrows(CompletionException.class, pipeline.processOutbound(identity2.getPublicKey(), msg)::join);
+            outbounds.assertNoValues();
+        }
     }
 }

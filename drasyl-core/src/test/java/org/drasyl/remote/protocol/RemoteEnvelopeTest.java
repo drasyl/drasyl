@@ -517,11 +517,11 @@ class RemoteEnvelopeTest {
     class TestAcknowledgement {
         @Test
         void shouldCreateEnvelopeWithAcknowledgementMessage() throws IOException {
-            final RemoteEnvelope<Acknowledgement> acknowledgement = RemoteEnvelope.acknowledgement(1, senderPublicKey, senderProofOfWork, recipientPublicKey, messageId);
-
-            assertEquals(1, acknowledgement.getPublicHeader().getNetworkId());
-            assertEquals(ACKNOWLEDGEMENT, acknowledgement.getPrivateHeader().getType());
-            assertEquals(messageId.longValue(), acknowledgement.getBodyAndRelease().getCorrespondingId());
+            try (final RemoteEnvelope<Acknowledgement> acknowledgement = RemoteEnvelope.acknowledgement(1, senderPublicKey, senderProofOfWork, recipientPublicKey, messageId)) {
+                assertEquals(1, acknowledgement.getPublicHeader().getNetworkId());
+                assertEquals(ACKNOWLEDGEMENT, acknowledgement.getPrivateHeader().getType());
+                assertEquals(messageId.longValue(), acknowledgement.getBodyAndRelease().getCorrespondingId());
+            }
         }
     }
 
@@ -529,11 +529,11 @@ class RemoteEnvelopeTest {
     class TestApplication {
         @Test
         void shouldCreateEnvelopeWithApplicationMessage() throws IOException {
-            final RemoteEnvelope<Application> application = RemoteEnvelope.application(1, senderPublicKey, senderProofOfWork, recipientPublicKey, String.class.getName(), new byte[]{});
-
-            assertEquals(1, application.getPublicHeader().getNetworkId());
-            assertEquals(APPLICATION, application.getPrivateHeader().getType());
-            assertEquals(String.class.getName(), application.getBodyAndRelease().getType());
+            try (final RemoteEnvelope<Application> application = RemoteEnvelope.application(1, senderPublicKey, senderProofOfWork, recipientPublicKey, String.class.getName(), new byte[]{})) {
+                assertEquals(1, application.getPublicHeader().getNetworkId());
+                assertEquals(APPLICATION, application.getPrivateHeader().getType());
+                assertEquals(String.class.getName(), application.getBodyAndRelease().getType());
+            }
         }
     }
 
@@ -541,11 +541,11 @@ class RemoteEnvelopeTest {
     class TestDiscovery {
         @Test
         void shouldCreateEnvelopeWithDiscoveryMessage() throws IOException {
-            final RemoteEnvelope<Discovery> discovery = RemoteEnvelope.discovery(1, senderPublicKey, senderProofOfWork, recipientPublicKey, 1337L);
-
-            assertEquals(1, discovery.getPublicHeader().getNetworkId());
-            assertEquals(DISCOVERY, discovery.getPrivateHeader().getType());
-            assertEquals(1337L, discovery.getBodyAndRelease().getChildrenTime());
+            try (final RemoteEnvelope<Discovery> discovery = RemoteEnvelope.discovery(1, senderPublicKey, senderProofOfWork, recipientPublicKey, 1337L)) {
+                assertEquals(1, discovery.getPublicHeader().getNetworkId());
+                assertEquals(DISCOVERY, discovery.getPrivateHeader().getType());
+                assertEquals(1337L, discovery.getBodyAndRelease().getChildrenTime());
+            }
         }
     }
 
@@ -553,11 +553,11 @@ class RemoteEnvelopeTest {
     class TestUnite {
         @Test
         void shouldCreateEnvelopeWithDiscoveryMessage() throws IOException {
-            final RemoteEnvelope<Unite> unite = RemoteEnvelope.unite(1, senderPublicKey, senderProofOfWork, recipientPublicKey, senderPublicKey, new InetSocketAddress(22527));
-
-            assertEquals(1, unite.getPublicHeader().getNetworkId());
-            assertEquals(UNITE, unite.getPrivateHeader().getType());
-            assertEquals(ByteString.copyFrom(senderPublicKey.byteArrayValue()), unite.getBodyAndRelease().getPublicKey());
+            try (final RemoteEnvelope<Unite> unite = RemoteEnvelope.unite(1, senderPublicKey, senderProofOfWork, recipientPublicKey, senderPublicKey, new InetSocketAddress(22527))) {
+                assertEquals(1, unite.getPublicHeader().getNetworkId());
+                assertEquals(UNITE, unite.getPrivateHeader().getType());
+                assertEquals(ByteString.copyFrom(senderPublicKey.byteArrayValue()), unite.getBodyAndRelease().getPublicKey());
+            }
         }
     }
 

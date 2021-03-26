@@ -170,20 +170,19 @@ class InternetDiscoveryHandlerTest {
                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address) {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            final RemoteEnvelope<Discovery> discoveryMessage = RemoteEnvelope.discovery(0, sender, ProofOfWork.of(6518542), recipient, System.currentTimeMillis());
-
             when(identity.getPublicKey()).thenReturn(recipient);
+            try (final RemoteEnvelope<Discovery> discoveryMessage = RemoteEnvelope.discovery(0, sender, ProofOfWork.of(6518542), recipient, System.currentTimeMillis())) {
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
+                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                    final TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
 
-            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                    pipeline.processInbound(address, discoveryMessage);
 
-                pipeline.processInbound(address, discoveryMessage);
-
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(m -> m.getPrivateHeader().getType() == ACKNOWLEDGEMENT);
-                verify(peersManager, never()).addPath(any(), any());
+                    outboundMessages.awaitCount(1)
+                            .assertValueCount(1)
+                            .assertValue(m -> m.getPrivateHeader().getType() == ACKNOWLEDGEMENT);
+                    verify(peersManager, never()).addPath(any(), any());
+                }
             }
         }
 
@@ -192,15 +191,14 @@ class InternetDiscoveryHandlerTest {
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
-
             when(identity.getPublicKey()).thenReturn(recipient);
+            try (final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId())) {
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
+                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                    pipeline.processInbound(address, acknowledgementMessage).join();
 
-            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                pipeline.processInbound(address, acknowledgementMessage).join();
-
-                verify(peersManager).addPath(any(), any());
+                    verify(peersManager).addPath(any(), any());
+                }
             }
         }
 
@@ -210,17 +208,17 @@ class InternetDiscoveryHandlerTest {
                                                                               @Mock final Endpoint superPeerEndpoint) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId());
-
             when(peer.getAddress()).thenReturn(new InetSocketAddressWrapper(22527));
             when(identity.getPublicKey()).thenReturn(recipient);
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(Set.of(superPeerEndpoint));
 
-            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                pipeline.processInbound(address, acknowledgementMessage).join();
+            try (final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId())) {
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
+                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                    pipeline.processInbound(address, acknowledgementMessage).join();
 
-                verify(peersManager).addPathAndSuperPeer(any(), any());
+                    verify(peersManager).addPathAndSuperPeer(any(), any());
+                }
             }
         }
 
@@ -323,17 +321,17 @@ class InternetDiscoveryHandlerTest {
                                                    @Mock final Endpoint superPeerEndpoint) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            final RemoteEnvelope<Unite> uniteMessage = RemoteEnvelope.unite(0, sender, ProofOfWork.of(6518542), recipient, CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), new InetSocketAddress(22527));
-
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(Set.of(superPeerEndpoint));
             when(identity.getPublicKey()).thenReturn(recipient);
             when(superPeers.contains(sender)).thenReturn(true);
 
-            final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(CompressedPublicKey.of(uniteMessage.getBody().getPublicKey().toByteArray()), peer)), rendezvousPeers, superPeers, bestSuperPeer);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                pipeline.processInbound(address, uniteMessage).join();
+            try (final RemoteEnvelope<Unite> uniteMessage = RemoteEnvelope.unite(0, sender, ProofOfWork.of(6518542), recipient, CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), new InetSocketAddress(22527))) {
+                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(CompressedPublicKey.of(uniteMessage.getBody().getPublicKey().toByteArray()), peer)), rendezvousPeers, superPeers, bestSuperPeer);
+                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                    pipeline.processInbound(address, uniteMessage).join();
 
-                verify(rendezvousPeers).add(any());
+                    verify(rendezvousPeers).add(any());
+                }
             }
         }
 
@@ -419,21 +417,21 @@ class InternetDiscoveryHandlerTest {
                     @Mock final InetSocketAddressWrapper address) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final RemoteEnvelope<Application> applicationMessage = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[]{});
-
                 when(rendezvousPeers.contains(any())).thenReturn(true);
                 when(identity.getPublicKey()).thenReturn(recipient);
 
-                final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
-                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
+                try (final RemoteEnvelope<Application> applicationMessage = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[]{})) {
+                    final InternetDiscoveryHandler handler = new InternetDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
+                    try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                    pipeline.processInbound(address, applicationMessage).join();
+                        pipeline.processInbound(address, applicationMessage).join();
 
-                    verify(peer).applicationTrafficOccurred();
-                    inboundMessages.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(new DefaultAddressedEnvelope<>(sender, null, applicationMessage));
+                        verify(peer).applicationTrafficOccurred();
+                        inboundMessages.awaitCount(1)
+                                .assertValueCount(1)
+                                .assertValue(new DefaultAddressedEnvelope<>(sender, null, applicationMessage));
+                    }
                 }
             }
         }

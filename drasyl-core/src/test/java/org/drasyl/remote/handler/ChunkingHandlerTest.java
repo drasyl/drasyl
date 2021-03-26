@@ -85,16 +85,17 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
-                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
+                try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
+                    try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                    pipeline.processInbound(sender, msg).join();
+                        pipeline.processInbound(sender, msg).join();
 
-                    inboundMessages.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+                        inboundMessages.awaitCount(1)
+                                .assertValueCount(1)
+                                .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+                    }
                 }
             }
 
@@ -241,16 +242,17 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
-                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
+                try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
+                    try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                        final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                    pipeline.processInbound(sender, msg).join();
+                        pipeline.processInbound(sender, msg).join();
 
-                    inboundMessages.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+                        inboundMessages.awaitCount(1)
+                                .assertValueCount(1)
+                                .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+                    }
                 }
             }
 
@@ -300,8 +302,8 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(sender);
 
+                final Handler handler = new ChunkingHandler();
                 try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
-                    final Handler handler = new ChunkingHandler();
                     try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
@@ -323,14 +325,15 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(sender);
 
-                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMaxContentLength]);
                 final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMaxContentLength])) {
+                    try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                        final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-                    assertThrows(ExecutionException.class, () -> pipeline.processOutbound(address, msg).get());
-                    outboundMessages.await(1, SECONDS);
-                    outboundMessages.assertNoValues();
+                        assertThrows(ExecutionException.class, () -> pipeline.processOutbound(address, msg).get());
+                        outboundMessages.await(1, SECONDS);
+                        outboundMessages.assertNoValues();
+                    }
                 }
             }
 
@@ -344,40 +347,41 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
                 when(identity.getPublicKey()).thenReturn(sender);
 
-                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), RandomUtil.randomBytes(remoteMessageMtu * 2));
-                final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final TestObserver<RemoteEnvelope<MessageLite>> outboundMessages = pipeline.outboundMessages(new TypeReference<RemoteEnvelope<MessageLite>>() {
-                    }).test();
+                try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), RandomUtil.randomBytes(remoteMessageMtu * 2))) {
+                    final Handler handler = new ChunkingHandler();
+                    try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                        final TestObserver<RemoteEnvelope<MessageLite>> outboundMessages = pipeline.outboundMessages(new TypeReference<RemoteEnvelope<MessageLite>>() {
+                        }).test();
 
-                    pipeline.processOutbound(address, msg).join();
+                        pipeline.processOutbound(address, msg).join();
 
-                    outboundMessages.awaitCount(3)
-                            .assertValueCount(3)
-                            .assertValueAt(0, m -> {
-                                try {
-                                    return m.getTotalChunks().getValue() == 3 && m.copy().readableBytes() <= remoteMessageMtu;
-                                }
-                                finally {
-                                    m.releaseAll();
-                                }
-                            })
-                            .assertValueAt(1, m -> {
-                                try {
-                                    return m.getChunkNo().getValue() == 1 && m.copy().readableBytes() <= remoteMessageMtu;
-                                }
-                                finally {
-                                    m.releaseAll();
-                                }
-                            })
-                            .assertValueAt(2, m -> {
-                                try {
-                                    return m.getChunkNo().getValue() == 2 && m.copy().readableBytes() <= remoteMessageMtu;
-                                }
-                                finally {
-                                    m.releaseAll();
-                                }
-                            });
+                        outboundMessages.awaitCount(3)
+                                .assertValueCount(3)
+                                .assertValueAt(0, m -> {
+                                    try {
+                                        return m.getTotalChunks().getValue() == 3 && m.copy().readableBytes() <= remoteMessageMtu;
+                                    }
+                                    finally {
+                                        m.releaseAll();
+                                    }
+                                })
+                                .assertValueAt(1, m -> {
+                                    try {
+                                        return m.getChunkNo().getValue() == 1 && m.copy().readableBytes() <= remoteMessageMtu;
+                                    }
+                                    finally {
+                                        m.releaseAll();
+                                    }
+                                })
+                                .assertValueAt(2, m -> {
+                                    try {
+                                        return m.getChunkNo().getValue() == 2 && m.copy().readableBytes() <= remoteMessageMtu;
+                                    }
+                                    finally {
+                                        m.releaseAll();
+                                    }
+                                });
+                    }
                 }
             }
         }
@@ -390,16 +394,17 @@ class ChunkingHandlerTest {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
-                final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2]);
                 final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                    final @NonNull TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+                try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
+                    try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                        final @NonNull TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipientAddress, msg).join();
+                        pipeline.processOutbound(recipientAddress, msg).join();
 
-                    outboundMessages.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
+                        outboundMessages.awaitCount(1)
+                                .assertValueCount(1)
+                                .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
+                    }
                 }
             }
         }
