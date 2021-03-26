@@ -105,18 +105,16 @@ class ArmHandlerTest {
             when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
             try (final RemoteEnvelope<Application> message = spy(RemoteEnvelope.application(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), byte[].class.getName(), new byte[]{}))) {
-                try (final RemoteEnvelope<Application> armedMessage = message.armAndRelease(identity.getPrivateKey())) {
-                    when(armedMessage).thenThrow(IllegalStateException.class);
+                when(message.arm(identity.getPrivateKey())).thenThrow(IllegalStateException.class);
 
-                    final ArmHandler handler = ArmHandler.INSTANCE;
-                    try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                        final TestObserver<RemoteEnvelope<? extends MessageLite>> outboundMessages = pipeline.outboundMessages(new TypeReference<RemoteEnvelope<? extends MessageLite>>() {
-                        }).test();
+                final ArmHandler handler = ArmHandler.INSTANCE;
+                try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+                    final TestObserver<RemoteEnvelope<? extends MessageLite>> outboundMessages = pipeline.outboundMessages(new TypeReference<RemoteEnvelope<? extends MessageLite>>() {
+                    }).test();
 
-                        assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
+                    assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
 
-                        outboundMessages.assertNoValues();
-                    }
+                    outboundMessages.assertNoValues();
                 }
             }
         }
