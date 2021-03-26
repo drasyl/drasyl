@@ -61,6 +61,7 @@ import static org.drasyl.DrasylConfig.IDENTITY_PRIVATE_KEY;
 import static org.drasyl.DrasylConfig.IDENTITY_PROOF_OF_WORK;
 import static org.drasyl.DrasylConfig.IDENTITY_PUBLIC_KEY;
 import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
+import static org.drasyl.DrasylConfig.MESSAGE_BUFFER_SIZE;
 import static org.drasyl.DrasylConfig.MONITORING_ENABLED;
 import static org.drasyl.DrasylConfig.MONITORING_HOST_TAG;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_DATABASE;
@@ -125,6 +126,7 @@ class DrasylConfigTest {
     private CompressedPrivateKey identityPrivateKey;
     @Mock
     private Path identityPath;
+    private int messageBufferSize;
     private InetAddress remoteBindHost;
     private boolean remoteEnabled;
     private int remoteBindPort;
@@ -178,10 +180,12 @@ class DrasylConfigTest {
         remoteExposeEnabled = true;
         remoteMessageMaxContentLength = 1024;
         remoteMessageHopLimit = (byte) 64;
+        remoteMessageArmEnabled = false;
         superPeerEnabled = true;
         superPeerEndpoints = Set.of(Endpoint.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337"));
         remoteStaticRoutes = Map.of();
         identityPathAsString = "drasyl.identity.json";
+        messageBufferSize = 0;
         intraVmDiscoveryEnabled = true;
         remoteLocalHostDiscoveryEnabled = true;
         remoteLocalHostDiscoveryPathAsString = "foo/bar";
@@ -215,6 +219,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d");
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(123);
             when(typesafeConfig.getString(IDENTITY_PATH)).thenReturn(identityPathAsString);
+when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
             when(typesafeConfig.getBoolean(REMOTE_ENABLED)).thenReturn(remoteEnabled);
             when(typesafeConfig.getString(REMOTE_BIND_HOST)).thenReturn(remoteBindHost.getHostAddress());
             when(typesafeConfig.getInt(REMOTE_BIND_PORT)).thenReturn(remoteBindPort);
@@ -255,6 +260,7 @@ class DrasylConfigTest {
             assertEquals(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), config.getIdentityPublicKey());
             assertEquals(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"), config.getIdentityPrivateKey());
             assertEquals(Paths.get("drasyl.identity.json"), config.getIdentityPath());
+            assertEquals(messageBufferSize, config.getMessageBufferSize());
             assertEquals(remoteEnabled, config.isRemoteEnabled());
             assertEquals(remotePingInterval, config.getRemotePingInterval());
             assertEquals(Set.of(), config.getRemoteEndpoints());
@@ -302,6 +308,7 @@ class DrasylConfigTest {
                     identityPublicKey,
                     identityPrivateKey,
                     identityPath,
+                    messageBufferSize,
                     intraVmDiscoveryEnabled,
                     remoteBindHost,
                     remoteEnabled,
@@ -717,6 +724,7 @@ class DrasylConfigTest {
                     .identityPublicKey(DEFAULT.getIdentityPublicKey())
                     .identityPrivateKey(DEFAULT.getIdentityPrivateKey())
                     .identityPath(DEFAULT.getIdentityPath())
+                    .messageBufferSize(DEFAULT.getMessageBufferSize())
                     .remoteBindHost(DEFAULT.getRemoteBindHost())
                     .remoteEnabled(DEFAULT.isRemoteEnabled())
                     .remoteBindPort(DEFAULT.getRemoteBindPort())

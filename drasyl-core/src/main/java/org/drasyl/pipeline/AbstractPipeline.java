@@ -31,8 +31,10 @@ import org.drasyl.util.scheduler.DrasylScheduler;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 
 /**
  * Abstract {@link Pipeline} implementation, that needs head and tail.
@@ -49,6 +51,7 @@ public abstract class AbstractPipeline implements Pipeline {
     protected final PeersManager peersManager;
     protected final Serialization inboundSerialization;
     protected final Serialization outboundSerialization;
+    protected final Semaphore outboundMessagesBuffer;
 
     @SuppressWarnings("java:S107")
     protected AbstractPipeline(final Map<String, AbstractHandlerContext> handlerNames,
@@ -58,7 +61,8 @@ public abstract class AbstractPipeline implements Pipeline {
                                final Identity identity,
                                final PeersManager peersManager,
                                final Serialization inboundSerialization,
-                               final Serialization outboundSerialization) {
+                               final Serialization outboundSerialization,
+                               final Semaphore outboundMessagesBuffer) {
         this.handlerNames = requireNonNull(handlerNames);
         this.dependentScheduler = requireNonNull(dependentScheduler);
         this.independentScheduler = requireNonNull(independentScheduler);
@@ -67,6 +71,7 @@ public abstract class AbstractPipeline implements Pipeline {
         this.peersManager = requireNonNull(peersManager);
         this.inboundSerialization = requireNonNull(inboundSerialization);
         this.outboundSerialization = requireNonNull(outboundSerialization);
+        this.outboundMessagesBuffer = outboundMessagesBuffer;
     }
 
     @SuppressWarnings("java:S2221")
@@ -322,10 +327,34 @@ public abstract class AbstractPipeline implements Pipeline {
     @Override
     public CompletableFuture<Void> processOutbound(final Address recipient,
                                                    final Object msg) {
-        final CompletableFuture<Void> rtn = new CompletableFuture<>();
+        if (outboundMessagesBuffer == null) {
+            final CompletableFuture<Void> rtn = new CompletableFuture<>();
+            this.dependentScheduler.scheduleDirect(() -> this.tail.passOutbound(recipient, msg, rtn));
+            return rtn;
+        }
+        else if (outboundMessagesBuffer.tryAcquire()) {
+            final CompletableFuture<Void> rtn = new CompletableFuture<>();
+            rtn.whenComplete((unused, e) -> outboundMessagesBuffer.release());
+            this.dependentScheduler.scheduleDirect(() -> this.tail.passOutbound(recipient, msg, rtn));
+            return rtn;
+        }
+        else {
+            return failedFuture(new Exception("Outbound messages buffer capacity exceeded. New messages can only be enqueued once the previous ones have been processed. Alternatively drasyl.message.buffer-size can be increased."));
+        }
+    }
 
-        this.dependentScheduler.scheduleDirect(() -> this.tail.passOutbound(recipient, msg, rtn));
+    @Override
+    public boolean isWritable() {
+        return outboundMessagesBuffer == null || outboundMessagesBuffer.availablePermits() > 0;
+    }
 
-        return rtn;
+    @Override
+    public int messagesBeforeUnwritable() {
+        if (outboundMessagesBuffer != null) {
+            return outboundMessagesBuffer.availablePermits();
+        }
+        else {
+            return Integer.MAX_VALUE;
+        }
     }
 }

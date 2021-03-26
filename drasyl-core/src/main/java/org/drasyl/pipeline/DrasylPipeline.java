@@ -43,6 +43,7 @@ import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -83,8 +84,8 @@ public class DrasylPipeline extends AbstractPipeline {
                 identity,
                 peersManager,
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
-                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())
-        );
+                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()),
+                config.getMessageBufferSize() > 0 ? new Semaphore(config.getMessageBufferSize()) : null);
         this.head = new HeadContext(config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
         this.tail = new TailContext(eventConsumer, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
@@ -150,7 +151,8 @@ public class DrasylPipeline extends AbstractPipeline {
                    final AbstractEndHandler tail,
                    final DrasylScheduler dependentScheduler,
                    final DrasylConfig config,
-                   final Identity identity) {
+                   final Identity identity,
+                   final Semaphore outboundMessagesBuffer) {
         super(
                 handlerNames,
                 dependentScheduler,
@@ -160,8 +162,8 @@ public class DrasylPipeline extends AbstractPipeline {
                 new PeersManager(event -> {
                 }, identity),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
-                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())
-        );
+                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()),
+                outboundMessagesBuffer);
         this.head = head;
         this.tail = tail;
     }

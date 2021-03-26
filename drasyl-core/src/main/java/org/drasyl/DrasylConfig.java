@@ -70,6 +70,7 @@ public class DrasylConfig {
     public static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
     public static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
     public static final String IDENTITY_PATH = "drasyl.identity.path";
+    public static final String MESSAGE_BUFFER_SIZE = "drasyl.message.buffer-size";
     public static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     public static final String REMOTE_ENABLED = "drasyl.remote.enabled";
     public static final String REMOTE_BIND_HOST = "drasyl.remote.bind-host";
@@ -109,6 +110,7 @@ public class DrasylConfig {
     private final CompressedPublicKey identityPublicKey;
     private final CompressedPrivateKey identityPrivateKey;
     private final Path identityPath;
+    private final int messageBufferSize;
     private final boolean intraVmDiscoveryEnabled;
     private final InetAddress remoteBindHost;
     private final boolean remoteEnabled;
@@ -153,7 +155,7 @@ public class DrasylConfig {
      * @param config config to be loaded
      * @throws DrasylConfigException if config is invalid
      */
-    @SuppressWarnings({ "java:S1192", "java:S1541", "java:S3776" })
+    @SuppressWarnings({ "java:S138", "java:S1192", "java:S1541", "java:S3776" })
     public DrasylConfig(final Config config) {
         try {
             config.checkValid(ConfigFactory.defaultReference(), "drasyl");
@@ -180,6 +182,11 @@ public class DrasylConfig {
                 this.identityPrivateKey = null;
             }
             this.identityPath = getPath(config, IDENTITY_PATH);
+
+            this.messageBufferSize = config.getInt(MESSAGE_BUFFER_SIZE);
+            if (this.messageBufferSize < 0) {
+                throw new DrasylConfigException(MESSAGE_BUFFER_SIZE, "Must be a non-negative value.");
+            }
 
             this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
 
@@ -273,6 +280,7 @@ public class DrasylConfig {
                  final CompressedPublicKey identityPublicKey,
                  final CompressedPrivateKey identityPrivateKey,
                  final Path identityPath,
+                 final int messageBufferSize,
                  final boolean intraVmDiscoveryEnabled,
                  final InetAddress remoteBindHost,
                  final boolean remoteEnabled,
@@ -311,6 +319,7 @@ public class DrasylConfig {
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
+        this.messageBufferSize = messageBufferSize;
         this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
         this.remoteBindHost = requireNonNull(remoteBindHost);
         this.remoteEnabled = remoteEnabled;
@@ -717,6 +726,7 @@ public class DrasylConfig {
                 config.identityPublicKey,
                 config.identityPrivateKey,
                 config.identityPath,
+                config.messageBufferSize,
                 config.intraVmDiscoveryEnabled,
                 config.remoteBindHost,
                 config.remoteEnabled,
@@ -761,6 +771,7 @@ public class DrasylConfig {
                 identityPublicKey,
                 identityPrivateKey,
                 identityPath,
+                messageBufferSize,
                 intraVmDiscoveryEnabled,
                 remoteBindHost,
                 remoteEnabled,
@@ -806,6 +817,7 @@ public class DrasylConfig {
         }
         final DrasylConfig that = (DrasylConfig) o;
         return networkId == that.networkId &&
+                messageBufferSize == that.messageBufferSize &&
                 intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
                 remoteEnabled == that.remoteEnabled &&
                 remoteBindPort == that.remoteBindPort &&
@@ -852,6 +864,7 @@ public class DrasylConfig {
                 ", identityPublicKey=" + identityPublicKey +
                 ", identityPrivateKey=" + maskSecret(identityPrivateKey) +
                 ", identityPath=" + identityPath +
+                ", messageBufferSize=" + messageBufferSize +
                 ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
                 ", remoteBindHost=" + remoteBindHost +
                 ", remoteEnabled=" + remoteEnabled +
@@ -1042,6 +1055,10 @@ public class DrasylConfig {
         return serializationsBindingsOutbound;
     }
 
+    public int getMessageBufferSize() {
+        return messageBufferSize;
+    }
+
     @SuppressWarnings("java:S2972")
     public static final class Builder {
         //======================================= Config Values ========================================
@@ -1050,6 +1067,7 @@ public class DrasylConfig {
         private CompressedPublicKey identityPublicKey;
         private CompressedPrivateKey identityPrivateKey;
         private Path identityPath;
+        private int messageBufferSize;
         private boolean intraVmDiscoveryEnabled;
         private InetAddress remoteBindHost;
         private boolean remoteEnabled;
@@ -1090,6 +1108,7 @@ public class DrasylConfig {
                        final CompressedPublicKey identityPublicKey,
                        final CompressedPrivateKey identityPrivateKey,
                        final Path identityPath,
+                       final int messageBufferSize,
                        final boolean intraVmDiscoveryEnabled,
                        final InetAddress remoteBindHost,
                        final boolean remoteEnabled,
@@ -1128,6 +1147,7 @@ public class DrasylConfig {
             this.identityPublicKey = identityPublicKey;
             this.identityPrivateKey = identityPrivateKey;
             this.identityPath = identityPath;
+            this.messageBufferSize = messageBufferSize;
             this.remoteBindHost = requireNonNull(remoteBindHost);
             this.remoteEnabled = remoteEnabled;
             this.monitoringHostTag = requireNonNull(monitoringHostTag);
@@ -1185,6 +1205,11 @@ public class DrasylConfig {
 
         public Builder identityPath(final Path identityPath) {
             this.identityPath = identityPath;
+            return this;
+        }
+
+        public Builder messageBufferSize(final int messageBufferSize) {
+            this.messageBufferSize = messageBufferSize;
             return this;
         }
 
@@ -1372,6 +1397,7 @@ public class DrasylConfig {
                     identityPublicKey,
                     identityPrivateKey,
                     identityPath,
+                    messageBufferSize,
                     intraVmDiscoveryEnabled,
                     remoteBindHost,
                     remoteEnabled,
