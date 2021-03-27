@@ -18,6 +18,7 @@
  */
 package org.drasyl.example.chat;
 
+import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
@@ -36,6 +37,7 @@ import org.drasyl.event.PeerEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -57,24 +59,30 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
-@SuppressWarnings({ "java:S126", "java:S138", "java:S1188", "java:S2096" })
+@SuppressWarnings({ "java:S126", "java:S138", "java:S1188", "java:S1192", "java:S2096" })
 public class ChatGui {
     private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity.json");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
+    private final JButton startShutdownButton = new JButton("Start");
     private final JFrame frame = new JFrame();
     private final JTextFieldWithPlaceholder recipientField = new JTextFieldWithPlaceholder(10, "Enter Recipient");
     private final JTextField messageField = new JTextFieldWithPlaceholder("Enter Message");
     private final JTextArea messagesArea = new JTextArea(30, 70);
     private final DrasylConfig config;
     private DrasylNode node;
+    private Disposable onlineTimeoutDisposable;
 
     public ChatGui(final DrasylConfig config) {
         this.config = config;
 
         // initial fields state
+        startShutdownButton.setEnabled(false);
         recipientField.setEditable(false);
         messageField.setEditable(false);
         messagesArea.setEditable(false);
+
+        // control
+        frame.getContentPane().add(startShutdownButton, BorderLayout.NORTH);
 
         // output
         frame.getContentPane().add(new JScrollPane(messagesArea), BorderLayout.CENTER);
@@ -86,6 +94,15 @@ public class ChatGui {
         panel.add(messageField, BorderLayout.CENTER);
         frame.getContentPane().add(panel, BorderLayout.SOUTH);
 
+        startShutdownButton.addActionListener(e -> {
+            if ("Start".equals(startShutdownButton.getText())) {
+                startNode();
+            }
+            else {
+                shutdownNode();
+            }
+        });
+
         // send message on enter
         messageField.addActionListener(event -> {
             if (node != null) {
@@ -96,10 +113,9 @@ public class ChatGui {
                         if (e != null) {
                             JOptionPane.showMessageDialog(frame, e, "Error", ERROR_MESSAGE);
                         }
-                        messagesArea.append(" To " + recipient + ": " + messageField.getText() + "\n");
+                        appendTextToMessageArea(" To " + recipient + ": " + messageField.getText() + "\n");
                         messageField.setText("");
                         messageField.setEditable(true);
-                        messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
                     });
                 }
             }
@@ -109,9 +125,7 @@ public class ChatGui {
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(final WindowEvent e) {
-                if (node != null) {
-                    node.shutdown();
-                }
+                shutdownNode();
             }
         });
 
@@ -119,6 +133,8 @@ public class ChatGui {
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
         frame.setVisible(true);
+
+        recipientField.requestFocus();
     }
 
     private void run() throws DrasylException {
@@ -135,29 +151,29 @@ public class ChatGui {
                 messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
                 return Behaviors.receive()
                         .onEvent(NodeUpEvent.class, event -> {
-                            messagesArea.append("drasyl Node started. Connecting to super peer...\n");
+                            appendTextToMessageArea("drasyl Node started. Connecting to super peer...\n");
                             recipientField.setEditable(true);
                             messageField.setEditable(true);
                             return Behaviors.withScheduler(scheduler -> {
-                                scheduler.scheduleEvent(new OnlineTimeout(), ONLINE_TIMEOUT);
+                                onlineTimeoutDisposable = scheduler.scheduleEvent(new OnlineTimeout(), ONLINE_TIMEOUT);
                                 return offline();
                             });
                         })
                         .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
-                            messagesArea.append("drasyl Node encountered an unrecoverable error: " + event.getError().getMessage() + " \n");
+                            appendTextToMessageArea("drasyl Node encountered an unrecoverable error: " + event.getError().getMessage() + " \n");
                             return Behaviors.shutdown();
                         })
                         .onEvent(NodeNormalTerminationEvent.class, event -> {
-                            messagesArea.append("drasyl Node has been shut down.\n");
-                            return Behaviors.ignore();
+                            appendTextToMessageArea("drasyl Node has been shut down.\n");
+                            return Behaviors.same();
                         })
                         .onEvent(NodeDownEvent.class, this::downEvent)
                         .onEvent(NodeOnlineEvent.class, event -> {
-                            messagesArea.append("drasyl Node is connected to super peer. Relayed communication and discovery available.\n");
+                            appendTextToMessageArea("drasyl Node is connected to super peer. Relayed communication and discovery available.\n");
                             return online();
                         })
                         .onEvent(OnlineTimeout.class, event -> {
-                            messagesArea.append("No response from the Super Peer within " + ONLINE_TIMEOUT.toSeconds() + "s. Probably the Super Peer is unavailable or your configuration is faulty.\n");
+                            appendTextToMessageArea("No response from the Super Peer within " + ONLINE_TIMEOUT.toSeconds() + "s. Probably the Super Peer is unavailable or your configuration is faulty.\n");
                             return Behaviors.same();
                         })
                         .onEvent(PeerEvent.class, this::peerEvent)
@@ -174,7 +190,7 @@ public class ChatGui {
                 return Behaviors.receive()
                         .onEvent(NodeDownEvent.class, this::downEvent)
                         .onEvent(NodeOfflineEvent.class, event -> {
-                            messagesArea.append("drasyl Node lost connection to super peer. Relayed communication and discovery not available.\n");
+                            appendTextToMessageArea("drasyl Node lost connection to super peer. Relayed communication and discovery not available.\n");
                             return Behaviors.same();
                         })
                         .onEvent(PeerEvent.class, this::peerEvent)
@@ -187,17 +203,21 @@ public class ChatGui {
              * Reaction to a {@link NodeDownEvent}.
              */
             private Behavior downEvent(final NodeDownEvent event) {
-                messagesArea.append("drasyl Node is shutting down. No more communication possible.\n");
+                appendTextToMessageArea("drasyl Node is shutting down. No more communication possible.\n");
+                if (onlineTimeoutDisposable != null) {
+                    onlineTimeoutDisposable.dispose();
+                    onlineTimeoutDisposable = null;
+                }
                 recipientField.setEditable(false);
                 messageField.setEditable(false);
-                return Behaviors.same();
+                return offline();
             }
 
             /**
              * Reaction to a {@link org.drasyl.event.MessageEvent}.
              */
             private Behavior messageEvent(final CompressedPublicKey sender, final String payload) {
-                messagesArea.append(" From " + sender + ": " + payload + "\n");
+                appendTextToMessageArea(" From " + sender + ": " + payload + "\n");
                 Toolkit.getDefaultToolkit().beep();
                 return Behaviors.same();
             }
@@ -207,10 +227,10 @@ public class ChatGui {
              */
             private Behavior peerEvent(final PeerEvent event) {
                 if (event instanceof PeerDirectEvent) {
-                    messagesArea.append("Direct connection to " + event.getPeer().getPublicKey() + " available.\n");
+                    appendTextToMessageArea("Direct connection to " + event.getPeer().getPublicKey() + " available.\n");
                 }
                 else if (event instanceof PeerRelayEvent) {
-                    messagesArea.append("Relayed connection to " + event.getPeer().getPublicKey() + " available.\n");
+                    appendTextToMessageArea("Relayed connection to " + event.getPeer().getPublicKey() + " available.\n");
                 }
                 return Behaviors.same();
             }
@@ -222,13 +242,34 @@ public class ChatGui {
             }
         };
         frame.setTitle("Chat: " + node.identity().getPublicKey().toString());
-        messagesArea.append("*******************************************************************************************************\n");
-        messagesArea.append("This is an Example of a Chat Application running on the drasyl Overlay Network.\n");
-        messagesArea.append("It allows you to send Text Messages to other drasyl Nodes running this Chat Application.\n");
-        messagesArea.append("Your address is " + node.identity().getPublicKey() + "\n");
-        messagesArea.append("*******************************************************************************************************\n");
+        appendTextToMessageArea("*******************************************************************************************************\n");
+        appendTextToMessageArea("This is an Example of a Chat Application running on the drasyl Overlay Network.\n");
+        appendTextToMessageArea("It allows you to send Text Messages to other drasyl Nodes running this Chat Application.\n");
+        appendTextToMessageArea("Your address is " + node.identity().getPublicKey() + "\n");
+        appendTextToMessageArea("*******************************************************************************************************\n");
 
-        node.start();
+        startNode();
+    }
+
+    private void startNode() {
+        startShutdownButton.setEnabled(false);
+        node.start().whenComplete((result, e) -> {
+            startShutdownButton.setText("Shutdown");
+            startShutdownButton.setEnabled(true);
+        });
+    }
+
+    private void shutdownNode() {
+        startShutdownButton.setEnabled(false);
+        node.shutdown().whenComplete((result, e) -> {
+            startShutdownButton.setText("Start");
+            startShutdownButton.setEnabled(true);
+        });
+    }
+
+    private void appendTextToMessageArea(final String text) {
+        messagesArea.append(text);
+        messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
     }
 
     public static void main(final String[] args) throws DrasylException {
