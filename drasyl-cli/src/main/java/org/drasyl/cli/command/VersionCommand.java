@@ -16,9 +16,10 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.cli.command;
 
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.kqueue.KQueue;
 import org.apache.commons.cli.CommandLine;
 import org.drasyl.DrasylNode;
 
@@ -48,6 +49,8 @@ public class VersionCommand extends AbstractCommand {
         out.println("- os.version " + System.getProperty("os.version"));
         out.println("- os.arch " + System.getProperty("os.arch"));
         out.println("- java.version " + System.getProperty("java.version"));
+        out.println("- netty.epoll " + Epoll.isAvailable());
+        out.println("- netty.kqueue " + KQueue.isAvailable());
     }
 
     @Override
