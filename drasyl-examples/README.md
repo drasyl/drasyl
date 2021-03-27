@@ -2,7 +2,7 @@
 
 This package contains examples of how to use drasyl.
 
-* [Discard Protocol](src/main/java/org/drasyl/example/chat/README.md)
+* [Discard Protocol](src/main/java/org/drasyl/example/discard/README.md)
 * [Echo Protocol](src/main/java/org/drasyl/example/echo/README.md)
 * [Time Protocol](src/main/java/org/drasyl/example/time/README.md)
 * [Quote of the Moment Server / Client](src/main/java/org/drasyl/example/qotm/README.md)
