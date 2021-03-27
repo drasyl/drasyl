@@ -166,7 +166,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                 // server successfully started
                 this.channel = channelFuture.channel();
                 final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-                LOG.info("Server started and listening at {}", socketAddress);
+                LOG.info("Server started and listening at udp:/{}", socketAddress);
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
                 ctx.passEvent(NodeUpEvent.of(Node.of(ctx.identity(), socketAddress.getPort())), future);
@@ -174,9 +174,9 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             else {
                 // server start failed
                 //noinspection unchecked
-                LOG.warn("Unable to bind server to address {}:{}: {}", ctx.config()::getRemoteBindHost, () -> bindPort, channelFuture.cause()::getMessage);
+                LOG.warn("Unable to bind server to address udp://{}:{}: {}", ctx.config()::getRemoteBindHost, () -> bindPort, channelFuture.cause()::getMessage);
 
-                future.completeExceptionally(new Exception("Unable to bind server to address " + ctx.config().getRemoteBindHost() + ":" + bindPort + ": " + channelFuture.cause().getMessage()));
+                future.completeExceptionally(new Exception("Unable to bind server to address udp://" + ctx.config().getRemoteBindHost() + ":" + bindPort + ": " + channelFuture.cause().getMessage()));
             }
         }
         else {
@@ -190,7 +190,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                                          final CompletableFuture<Void> future) {
         if (channel != null) {
             final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-            LOG.debug("Stop Server listening at {}...", socketAddress);
+            LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
             // shutdown server
             channel.close().awaitUninterruptibly();
             channel = null;
@@ -215,7 +215,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
         else {
             ReferenceCountUtil.safeRelease(msg);
-            future.completeExceptionally(new Exception("Udp Channel is not present or is not writable."));
+            future.completeExceptionally(new Exception("UDP channel is not present or is not writable."));
         }
     }
 }

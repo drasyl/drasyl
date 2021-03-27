@@ -159,7 +159,7 @@ public abstract class DrasylNode {
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent, identity);
-            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager, LazyBossGroupHolder.INSTANCE);
+            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager, LazyBossGroupHolder.INSTANCE, LazyWorkerGroupHolder.INSTANCE);
             this.pluginManager = new PluginManager(config, identity, pipeline);
             this.startFuture = new AtomicReference<>();
             this.shutdownFuture = new AtomicReference<>(completedFuture(null));

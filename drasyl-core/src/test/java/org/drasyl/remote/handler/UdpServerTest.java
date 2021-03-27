@@ -126,7 +126,6 @@ class UdpServerTest {
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-
                 pipeline.processInbound(event).join();
 
                 verify(channel).close();
@@ -139,7 +138,6 @@ class UdpServerTest {
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-
                 pipeline.processInbound(event).join();
 
                 verify(channel).close();

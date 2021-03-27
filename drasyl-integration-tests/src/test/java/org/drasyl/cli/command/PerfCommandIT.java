@@ -80,6 +80,7 @@ class PerfCommandIT {
                 .remoteSuperPeerEnabled(false)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
+                .remoteTcpFallbackEnabled(false)
                 .intraVmDiscoveryEnabled(false)
                 .build();
         superPeer = new EmbeddedNode(superPeerConfig).started();
@@ -118,6 +119,7 @@ class PerfCommandIT {
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
+                .remoteTcpFallbackEnabled(false)
                 .intraVmDiscoveryEnabled(false)
                 .build();
         final Path serverPath = path.resolve("server.conf");
@@ -151,6 +153,7 @@ class PerfCommandIT {
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
+                .remoteTcpFallbackEnabled(false)
                 .intraVmDiscoveryEnabled(false)
                 .build();
         final Path clientPath = path.resolve("client.conf");

@@ -93,6 +93,11 @@ public class DrasylConfig {
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.remote.local-host-discovery.enabled";
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_PATH = "drasyl.remote.local-host-discovery.path";
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME = "drasyl.remote.local-host-discovery.lease-time";
+    public static final String REMOTE_TCP_FALLBACK_ENABLED = "drasyl.remote.tcp-fallback.enabled";
+    public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_HOST = "drasyl.remote.tcp-fallback.server.bind-host";
+    public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_PORT = "drasyl.remote.tcp-fallback.server.bind-port";
+    public static final String REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT = "drasyl.remote.tcp-fallback.client.timeout";
+    public static final String REMOTE_TCP_FALLBACK_CLIENT_ADDRESS = "drasyl.remote.tcp-fallback.client.address";
     public static final String MONITORING_ENABLED = "drasyl.monitoring.enabled";
     public static final String MONITORING_HOST_TAG = "drasyl.monitoring.host-tag";
     public static final String MONITORING_INFLUX_URI = "drasyl.monitoring.influx.uri";
@@ -133,6 +138,11 @@ public class DrasylConfig {
     private final boolean remoteLocalHostDiscoveryEnabled;
     private final Path remoteLocalHostDiscoveryPath;
     private final Duration remoteLocalHostDiscoveryLeaseTime;
+    private final boolean remoteTcpFallbackEnabled;
+    private final InetAddress remoteTcpFallbackServerBindHost;
+    private final int remoteTcpFallbackServerBindPort;
+    private final Duration remoteTcpFallbackClientTimeout;
+    private final InetSocketAddress remoteTcpFallbackClientAddress;
     private final boolean monitoringEnabled;
     private final String monitoringHostTag;
     private final URI monitoringInfluxUri;
@@ -251,6 +261,11 @@ public class DrasylConfig {
             }
             this.remoteMessageHopLimit = getByte(config, REMOTE_MESSAGE_HOP_LIMIT);
             this.remoteMessageArmEnabled = config.getBoolean(REMOTE_MESSAGE_ARM_ENABLED);
+            this.remoteTcpFallbackEnabled = config.getBoolean(REMOTE_TCP_FALLBACK_ENABLED);
+            this.remoteTcpFallbackServerBindHost = getInetAddress(config, REMOTE_TCP_FALLBACK_SERVER_BIND_HOST);
+            this.remoteTcpFallbackServerBindPort = config.getInt(REMOTE_TCP_FALLBACK_SERVER_BIND_PORT);
+            this.remoteTcpFallbackClientTimeout = config.getDuration(REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT);
+            this.remoteTcpFallbackClientAddress = getInetSocketAddress(config, REMOTE_TCP_FALLBACK_CLIENT_ADDRESS);
 
             // Init monitoring config
             monitoringEnabled = config.getBoolean(MONITORING_ENABLED);
@@ -303,6 +318,11 @@ public class DrasylConfig {
                  final boolean remoteLocalHostDiscoveryEnabled,
                  final Path remoteLocalHostDiscoveryPath,
                  final Duration remoteLocalHostDiscoveryLeaseTime,
+                 final boolean remoteTcpFallbackEnabled,
+                 final InetAddress remoteTcpFallbackServerBindHost,
+                 final int remoteTcpFallbackServerBindPort,
+                 final Duration remoteTcpFallbackClientTimeout,
+                 final InetSocketAddress remoteTcpFallbackClientAddress,
                  final boolean monitoringEnabled,
                  final String monitoringHostTag,
                  final URI monitoringInfluxUri,
@@ -342,6 +362,11 @@ public class DrasylConfig {
         this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
         this.remoteLocalHostDiscoveryPath = requireNonNull(remoteLocalHostDiscoveryPath);
         this.remoteLocalHostDiscoveryLeaseTime = requireNonNull(remoteLocalHostDiscoveryLeaseTime);
+        this.remoteTcpFallbackEnabled = remoteTcpFallbackEnabled;
+        this.remoteTcpFallbackServerBindHost = requireNonNull(remoteTcpFallbackServerBindHost);
+        this.remoteTcpFallbackServerBindPort = remoteTcpFallbackServerBindPort;
+        this.remoteTcpFallbackClientTimeout = remoteTcpFallbackClientTimeout;
+        this.remoteTcpFallbackClientAddress = requireNonNull(remoteTcpFallbackClientAddress);
         this.monitoringEnabled = monitoringEnabled;
         this.monitoringHostTag = requireNonNull(monitoringHostTag);
         this.monitoringInfluxUri = requireNonNull(monitoringInfluxUri);
@@ -749,6 +774,11 @@ public class DrasylConfig {
                 config.remoteLocalHostDiscoveryEnabled,
                 config.remoteLocalHostDiscoveryPath,
                 config.remoteLocalHostDiscoveryLeaseTime,
+                config.remoteTcpFallbackEnabled,
+                config.remoteTcpFallbackServerBindHost,
+                config.remoteTcpFallbackServerBindPort,
+                config.remoteTcpFallbackClientTimeout,
+                config.remoteTcpFallbackClientAddress,
                 config.monitoringEnabled,
                 config.monitoringHostTag,
                 config.monitoringInfluxUri,
@@ -828,6 +858,8 @@ public class DrasylConfig {
                 remoteMessageHopLimit == that.remoteMessageHopLimit &&
                 remoteSuperPeerEnabled == that.remoteSuperPeerEnabled &&
                 remoteLocalHostDiscoveryEnabled == that.remoteLocalHostDiscoveryEnabled &&
+                remoteTcpFallbackEnabled == that.remoteTcpFallbackEnabled &&
+                remoteTcpFallbackServerBindPort == that.remoteTcpFallbackServerBindPort &&
                 monitoringEnabled == that.monitoringEnabled &&
                 Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
@@ -844,6 +876,9 @@ public class DrasylConfig {
                 Objects.equals(remoteStaticRoutes, that.remoteStaticRoutes) &&
                 Objects.equals(remoteLocalHostDiscoveryPath, that.remoteLocalHostDiscoveryPath) &&
                 Objects.equals(remoteLocalHostDiscoveryLeaseTime, that.remoteLocalHostDiscoveryLeaseTime) &&
+                Objects.equals(remoteTcpFallbackServerBindHost, that.remoteTcpFallbackServerBindHost) &&
+                Objects.equals(remoteTcpFallbackClientTimeout, that.remoteTcpFallbackClientTimeout) &&
+                Objects.equals(remoteTcpFallbackClientAddress, that.remoteTcpFallbackClientAddress) &&
                 Objects.equals(monitoringHostTag, that.monitoringHostTag) &&
                 Objects.equals(monitoringInfluxUri, that.monitoringInfluxUri) &&
                 Objects.equals(monitoringInfluxUser, that.monitoringInfluxUser) &&
@@ -886,6 +921,11 @@ public class DrasylConfig {
                 ", remoteLocalHostDiscoveryEnabled=" + remoteLocalHostDiscoveryEnabled +
                 ", remoteLocalHostDiscoveryPath=" + remoteLocalHostDiscoveryPath +
                 ", remoteLocalHostDiscoveryLeaseTime=" + remoteLocalHostDiscoveryLeaseTime +
+                ", remoteTcpFallbackEnabled=" + remoteTcpFallbackEnabled +
+                ", remoteTcpFallbackServerBindHost=" + remoteTcpFallbackServerBindHost +
+                ", remoteTcpFallbackServerBindPort=" + remoteTcpFallbackServerBindPort +
+                ", remoteTcpFallbackClientTimeout=" + remoteTcpFallbackClientTimeout +
+                ", remoteTcpFallbackClientEndpoints=" + remoteTcpFallbackClientAddress +
                 ", monitoringEnabled=" + monitoringEnabled +
                 ", monitoringHostTag=" + monitoringHostTag +
                 ", monitoringInfluxUri=" + monitoringInfluxUri +
@@ -980,6 +1020,27 @@ public class DrasylConfig {
     @SuppressWarnings("java:S2384")
     public Set<Endpoint> getRemoteSuperPeerEndpoints() {
         return remoteSuperPeerEndpoints;
+    }
+
+    public boolean isRemoteTcpFallbackEnabled() {
+        return remoteTcpFallbackEnabled;
+    }
+
+    public InetAddress getRemoteTcpFallbackServerBindHost() {
+        return remoteTcpFallbackServerBindHost;
+    }
+
+    public int getRemoteTcpFallbackServerBindPort() {
+        return remoteTcpFallbackServerBindPort;
+    }
+
+    public Duration getRemoteTcpFallbackClientTimeout() {
+        return remoteTcpFallbackClientTimeout;
+    }
+
+    @SuppressWarnings("java:S2384")
+    public InetSocketAddress getRemoteTcpFallbackClientAddress() {
+        return remoteTcpFallbackClientAddress;
     }
 
     public ProofOfWork getIdentityProofOfWork() {
@@ -1090,6 +1151,11 @@ public class DrasylConfig {
         private boolean remoteLocalHostDiscoveryEnabled;
         private Path remoteLocalHostDiscoveryPath;
         private Duration remoteLocalHostDiscoveryLeaseTime;
+        private boolean remoteTcpFallbackEnabled;
+        private Duration remoteTcpFallbackClientTimeout;
+        private InetAddress remoteTcpFallbackServerBindHost;
+        private int remoteTcpFallbackServerBindPort;
+        private InetSocketAddress remoteTcpFallbackClientAddress;
         private boolean monitoringEnabled;
         private String monitoringHostTag;
         private URI monitoringInfluxUri;
@@ -1131,6 +1197,11 @@ public class DrasylConfig {
                        final boolean remoteLocalHostDiscoveryEnabled,
                        final Path remoteLocalHostDiscoveryPath,
                        final Duration remoteLocalHostDiscoveryLeaseTime,
+                       final boolean remoteTcpFallbackEnabled,
+                       final InetAddress remoteTcpFallbackServerBindHost,
+                       final int remoteTcpFallbackServerBindPort,
+                       final Duration remoteTcpFallbackClientTimeout,
+                       final InetSocketAddress remoteTcpFallbackClientAddress,
                        final boolean monitoringEnabled,
                        final String monitoringHostTag,
                        final URI monitoringInfluxUri,
@@ -1167,6 +1238,11 @@ public class DrasylConfig {
             this.remoteSuperPeerEnabled = remoteSuperPeerEnabled;
             this.remoteSuperPeerEndpoints = requireNonNull(remoteSuperPeerEndpoints);
             this.remoteStaticRoutes = requireNonNull(remoteStaticRoutes);
+            this.remoteTcpFallbackEnabled = remoteTcpFallbackEnabled;
+            this.remoteTcpFallbackServerBindHost = requireNonNull(remoteTcpFallbackServerBindHost);
+            this.remoteTcpFallbackServerBindPort = remoteTcpFallbackServerBindPort;
+            this.remoteTcpFallbackClientTimeout = remoteTcpFallbackClientTimeout;
+            this.remoteTcpFallbackClientAddress = requireNonNull(remoteTcpFallbackClientAddress);
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
             this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
             this.remoteLocalHostDiscoveryPath = requireNonNull(remoteLocalHostDiscoveryPath);
@@ -1323,6 +1399,31 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder remoteTcpFallbackEnabled(final boolean remoteTcpFallbackEnabled) {
+            this.remoteTcpFallbackEnabled = remoteTcpFallbackEnabled;
+            return this;
+        }
+
+        public Builder remoteTcpFallbackServerBindHost(final InetAddress remoteTcpFallbackServerBindHost) {
+            this.remoteTcpFallbackServerBindHost = requireNonNull(remoteTcpFallbackServerBindHost);
+            return this;
+        }
+
+        public Builder remoteTcpFallbackServerBindPort(final int remoteTcpFallbackServerBindPort) {
+            this.remoteTcpFallbackServerBindPort = remoteTcpFallbackServerBindPort;
+            return this;
+        }
+
+        public Builder remoteTcpFallbackClientTimeout(final Duration remoteTcpFallbackClientTimeout) {
+            this.remoteTcpFallbackClientTimeout = requireNonNull(remoteTcpFallbackClientTimeout);
+            return this;
+        }
+
+        public Builder remoteTcpFallbackClientAddress(final InetSocketAddress remoteTcpFallbackClientAddress) {
+            this.remoteTcpFallbackClientAddress = requireNonNull(remoteTcpFallbackClientAddress);
+            return this;
+        }
+
         public Builder monitoringEnabled(final boolean monitoringEnabled) {
             this.monitoringEnabled = monitoringEnabled;
             return this;
@@ -1420,6 +1521,11 @@ public class DrasylConfig {
                     remoteLocalHostDiscoveryEnabled,
                     remoteLocalHostDiscoveryPath,
                     remoteLocalHostDiscoveryLeaseTime,
+                    remoteTcpFallbackEnabled,
+                    remoteTcpFallbackServerBindHost,
+                    remoteTcpFallbackServerBindPort,
+                    remoteTcpFallbackClientTimeout,
+                    remoteTcpFallbackClientAddress,
                     monitoringEnabled,
                     monitoringHostTag,
                     monitoringInfluxUri,

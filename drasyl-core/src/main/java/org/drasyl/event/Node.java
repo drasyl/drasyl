@@ -34,18 +34,23 @@ import static java.util.Objects.requireNonNull;
 public class Node {
     private final Identity identity;
     private final int port;
+    private final int tcpFallbackPort;
 
-    private Node(final Identity identity, final int port) {
+    private Node(final Identity identity, final int port, final int tcpFallbackPort) {
         this.identity = requireNonNull(identity);
         if (port < 0) {
             throw new IllegalArgumentException("port must be non-negative.");
         }
         this.port = port;
+        if (tcpFallbackPort < 0) {
+            throw new IllegalArgumentException("tcpFallbackPort must be non-negative.");
+        }
+        this.tcpFallbackPort = tcpFallbackPort;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identity, port);
+        return Objects.hash(identity, port, tcpFallbackPort);
     }
 
     @Override
@@ -58,7 +63,8 @@ public class Node {
         }
         final Node node = (Node) o;
         return Objects.equals(identity, node.identity) &&
-                port == node.port;
+                port == node.port &&
+                tcpFallbackPort == node.tcpFallbackPort;
     }
 
     @Override
@@ -66,6 +72,7 @@ public class Node {
         return "Node{" +
                 "identity=" + identity +
                 ", port=" + port +
+                ", tcpFallbackPort=" + tcpFallbackPort +
                 '}';
     }
 
@@ -89,6 +96,15 @@ public class Node {
     }
 
     /**
+     * Returns the node's tcp fallback server port.
+     *
+     * @return the node's tcp fallback server port
+     */
+    public int getTcpFallbackPort() {
+        return tcpFallbackPort;
+    }
+
+    /**
      * @throws NullPointerException if {@code identity} is {@code null}
      */
     public static Node of(final Identity identity) {
@@ -100,6 +116,14 @@ public class Node {
      * @throws IllegalArgumentException if {@code port} is negative
      */
     public static Node of(final Identity identity, final int port) {
-        return new Node(identity, port);
+        return new Node(identity, port, 0);
+    }
+
+    /**
+     * @throws NullPointerException     if {@code identity} is {@code null}
+     * @throws IllegalArgumentException if {@code port} or {@code tcpFallbackPort} is negative
+     */
+    public static Node of(final Identity identity, final int port, final int tcpFallbackPort) {
+        return new Node(identity, port, tcpFallbackPort);
     }
 }

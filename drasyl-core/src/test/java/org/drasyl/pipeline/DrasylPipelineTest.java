@@ -25,6 +25,8 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.remote.handler.UdpServer;
+import org.drasyl.remote.handler.tcp.TcpClient;
+import org.drasyl.remote.handler.tcp.TcpServer;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
@@ -56,6 +58,7 @@ import static org.drasyl.pipeline.DrasylPipeline.OTHER_NETWORK_FILTER;
 import static org.drasyl.pipeline.DrasylPipeline.PORT_MAPPER;
 import static org.drasyl.pipeline.DrasylPipeline.REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC;
 import static org.drasyl.pipeline.DrasylPipeline.STATIC_ROUTES_HANDLER;
+import static org.drasyl.pipeline.DrasylPipeline.TCP_CLIENT;
 import static org.drasyl.pipeline.DrasylPipeline.UDP_SERVER;
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
@@ -95,11 +98,16 @@ class DrasylPipelineTest {
     private Supplier<UdpServer> udpServerSupplier;
     @Mock
     private Semaphore outboundMessagesBuffer;
+    @Mock
+    private Supplier<TcpServer> tcpServerSupplier;
+    @Mock
+    private Supplier<TcpClient> tcpClientSupplier;
 
     @Nested
     class Constructor {
         @Test
-        void shouldCreateNewPipeline(@Mock final UdpServer udpServer) {
+        void shouldCreateNewPipeline(@Mock final UdpServer udpServer,
+                                     @Mock final TcpClient tcpClient) {
             when(config.isIntraVmDiscoveryEnabled()).thenReturn(true);
             when(config.isRemoteEnabled()).thenReturn(true);
             when(config.getRemoteStaticRoutes().isEmpty()).thenReturn(false);
@@ -107,9 +115,12 @@ class DrasylPipelineTest {
             when(config.isMonitoringEnabled()).thenReturn(true);
             when(config.isRemoteMessageArmEnabled()).thenReturn(true);
             when(config.isRemoteExposeEnabled()).thenReturn(true);
+            when(config.isRemoteTcpFallbackEnabled()).thenReturn(true);
+            when(config.isRemoteSuperPeerEnabled()).thenReturn(true);
             when(udpServerSupplier.get()).thenReturn(udpServer);
+            when(tcpClientSupplier.get()).thenReturn(tcpClient);
 
-            final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, udpServerSupplier);
+            final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, udpServerSupplier, tcpServerSupplier, tcpClientSupplier);
 
             // Test if head and tail handlers are added
             assertNull(pipeline.get(DRASYL_HEAD_HANDLER));
@@ -131,6 +142,7 @@ class DrasylPipelineTest {
             assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(CHUNKING_HANDLER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC), "This handler is required in the DrasylPipeline");
+            assertNotNull(pipeline.get(TCP_CLIENT), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(PORT_MAPPER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(UDP_SERVER), "This handler is required in the DrasylPipeline");
         }

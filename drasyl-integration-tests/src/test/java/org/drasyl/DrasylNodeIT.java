@@ -18,16 +18,21 @@
  */
 package org.drasyl;
 
+import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOfflineEvent;
+import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
+import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.handler.OutboundMessageFilter;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -43,10 +48,13 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.pipeline.DrasylPipeline.UDP_SERVER;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -111,6 +119,7 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 superPeer = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
@@ -131,6 +140,7 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 client1 = new EmbeddedNode(config).started().online();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client1"));
@@ -150,6 +160,7 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 client2 = new EmbeddedNode(config).started().online();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client2"));
@@ -324,6 +335,7 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 client1 = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client1"));
@@ -344,6 +356,7 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 client2 = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client2"));
@@ -405,6 +418,111 @@ class DrasylNodeIT {
                 client2Messages.awaitCount(10).assertValueCount(10);
             }
         }
+
+        /**
+         * Network Layout:
+         * <pre>
+         * +-------+
+         * | Super |
+         * | Peer  |
+         * +---+---+
+         *     |
+         *     | (UDP blocked)
+         *     |
+         * +---+----+
+         * |Client 1|
+         * +--------+
+         * </pre>
+         * <p>
+         * We simulate blocked UDP traffic by adding a handler to the client's pipeline dropping all
+         * udp messages.
+         */
+        @Nested
+        class SuperPeerAndOneClientWhenOnlyRemoteIsEnabledAndAllUdpTrafficIsBlocked {
+            private EmbeddedNode superPeer;
+            private EmbeddedNode client;
+
+            @BeforeEach
+            void setUp() throws DrasylException {
+                //
+                // create nodes
+                //
+                DrasylConfig config;
+
+                // super peer
+                config = DrasylConfig.newBuilder()
+                        .networkId(0)
+                        .identityProofOfWork(ProofOfWork.of(6518542))
+                        .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                        .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("127.0.0.1"))
+                        .remoteBindPort(0)
+                        .remotePingInterval(ofSeconds(1))
+                        .remoteSuperPeerEnabled(false)
+                        .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteTcpFallbackServerBindHost(createInetAddress("127.0.0.1"))
+                        .remoteTcpFallbackServerBindPort(0)
+                        .intraVmDiscoveryEnabled(false)
+                        .build();
+                superPeer = new EmbeddedNode(config).started();
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
+
+                // client
+                config = DrasylConfig.newBuilder()
+                        .networkId(0)
+                        .identityProofOfWork(ProofOfWork.of(12304070))
+                        .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
+                        .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("127.0.0.1"))
+                        .remoteBindPort(0)
+                        .remotePingInterval(ofSeconds(1))
+                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
+                        .remoteLocalHostDiscoveryEnabled(false)
+                        .intraVmDiscoveryEnabled(false)
+                        .remoteTcpFallbackEnabled(true)
+                        .remoteTcpFallbackClientTimeout(ofSeconds(2))
+                        .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
+                        .build();
+                client = new EmbeddedNode(config).started();
+                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new OutboundMessageFilter<ByteBuf, Address>() {
+                    @Override
+                    protected boolean accept(final HandlerContext ctx,
+                                             final Address sender,
+                                             final ByteBuf msg) {
+                        return false; // drop all messages
+                    }
+
+                    @Override
+                    protected void messageRejected(final HandlerContext ctx,
+                                                   final Address sender,
+                                                   final ByteBuf msg,
+                                                   final CompletableFuture<Void> future) {
+                        LOG.trace("UDP message blocked: {}", msg);
+                        future.complete(null);
+                    }
+                });
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client"));
+            }
+
+            @AfterEach
+            void tearDown() {
+                superPeer.close();
+                client.close();
+            }
+
+            @Test
+            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            void correctPeerEventsShouldBeEmitted() {
+                superPeer.events(PeerDirectEvent.class).test()
+                        .awaitCount(1)
+                        .assertValueCount(1);
+                client.events(NodeOnlineEvent.class).test()
+                        .awaitCount(1)
+                        .assertValueCount(1);
+            }
+        }
     }
 
     @Nested
@@ -441,6 +559,7 @@ class DrasylNodeIT {
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
@@ -455,6 +574,7 @@ class DrasylNodeIT {
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 node2 = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
@@ -469,6 +589,7 @@ class DrasylNodeIT {
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 node3 = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node3"));
@@ -483,6 +604,7 @@ class DrasylNodeIT {
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 node4 = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node4"));
@@ -607,6 +729,7 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(true)
                         .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
                         .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
@@ -625,6 +748,7 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(true)
                         .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
                         .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 node2 = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
@@ -711,6 +835,7 @@ class DrasylNodeIT {
                     .remoteSuperPeerEnabled(false)
                     .intraVmDiscoveryEnabled(false)
                     .remoteLocalHostDiscoveryEnabled(false)
+                    .remoteTcpFallbackEnabled(false)
                     .build();
             node = new EmbeddedNode(config).started();
             LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
@@ -765,6 +890,7 @@ class DrasylNodeIT {
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteTcpFallbackEnabled(false)
                         .build();
                 node = new EmbeddedNode(config);
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node"));

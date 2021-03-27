@@ -81,6 +81,7 @@ class WormholeCommandIT {
                 .intraVmDiscoveryEnabled(false)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
+                .remoteTcpFallbackEnabled(false)
                 .build();
         superPeer = new EmbeddedNode(superPeerConfig).started();
         LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
@@ -118,6 +119,7 @@ class WormholeCommandIT {
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
+                .remoteTcpFallbackEnabled(false)
                 .intraVmDiscoveryEnabled(false)
                 .build();
         final Path senderPath = path.resolve("sender.conf");
@@ -154,6 +156,7 @@ class WormholeCommandIT {
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
+                .remoteTcpFallbackEnabled(false)
                 .intraVmDiscoveryEnabled(false)
                 .build();
         final Path receiverPath = path.resolve("receiver.conf");

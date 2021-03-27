@@ -39,6 +39,8 @@ import org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec;
 import org.drasyl.remote.handler.StaticRoutesHandler;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.portmapper.PortMapper;
+import org.drasyl.remote.handler.tcp.TcpClient;
+import org.drasyl.remote.handler.tcp.TcpServer;
 import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.Map;
@@ -67,15 +69,19 @@ public class DrasylPipeline extends AbstractPipeline {
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
     public static final String REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC = "REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC";
+    public static final String TCP_SERVER = "TCP_SERVER";
+    public static final String TCP_CLIENT = "TCP_CLIENT";
     public static final String PORT_MAPPER = "PORT_MAPPER";
     public static final String UDP_SERVER = "UDP_SERVER";
 
-    @SuppressWarnings({ "java:S107" })
+    @SuppressWarnings({ "java:S107", "java:S1541", "java:S3776" })
     DrasylPipeline(final Consumer<Event> eventConsumer,
                    final DrasylConfig config,
                    final Identity identity,
                    final PeersManager peersManager,
-                   final Supplier<UdpServer> udpServerProvider) {
+                   final Supplier<UdpServer> udpServerProvider,
+                   final Supplier<TcpServer> tcpServerProvider,
+                   final Supplier<TcpClient> tcpClientProvider) {
         super(
                 new ConcurrentHashMap<>(),
                 getInstanceLight(),
@@ -138,6 +144,16 @@ public class DrasylPipeline extends AbstractPipeline {
             // convert RemoteEnvelope <-> ByteBuf
             addFirst(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC, RemoteEnvelopeToByteBufCodec.INSTANCE);
 
+            // tcp fallback
+            if (config.isRemoteTcpFallbackEnabled()) {
+                if (!config.isRemoteSuperPeerEnabled()) {
+                    addFirst(TCP_SERVER, tcpServerProvider.get());
+                }
+                else {
+                    addFirst(TCP_CLIENT, tcpClientProvider.get());
+                }
+            }
+
             // udp server
             if (config.isRemoteExposeEnabled()) {
                 addFirst(PORT_MAPPER, new PortMapper());
@@ -172,7 +188,8 @@ public class DrasylPipeline extends AbstractPipeline {
                           final DrasylConfig config,
                           final Identity identity,
                           final PeersManager peersManager,
-                          final EventLoopGroup bossGroup) {
-        this(eventConsumer, config, identity, peersManager, () -> new UdpServer(bossGroup));
+                          final EventLoopGroup bossGroup,
+                          final EventLoopGroup workerGroup) {
+        this(eventConsumer, config, identity, peersManager, () -> new UdpServer(bossGroup), () -> new TcpServer(bossGroup, workerGroup), () -> new TcpClient(config, bossGroup));
     }
 }

@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 public class EmbeddedNode extends DrasylNode implements Closeable {
     private final Subject<Event> events;
     private int port;
+    private int tcpFallbackPort;
 
     private EmbeddedNode(final DrasylConfig config,
                          final Subject<Event> events) throws DrasylException {
@@ -56,6 +57,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
         else {
             if (event instanceof NodeUpEvent) {
                 port = ((NodeUpEvent) event).getNode().getPort();
+                tcpFallbackPort = ((NodeUpEvent) event).getNode().getTcpFallbackPort();
             }
 
             events.onNext(event);
@@ -106,5 +108,12 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
             throw new IllegalStateException("Port not set. You have to start the node first.");
         }
         return port;
+    }
+
+    public int getTcpFallbackPort() {
+        if (tcpFallbackPort == 0) {
+            throw new IllegalStateException("TCP Fallback Port not set. You have to start the node running in super peer mode with TCP fallback enabled first.");
+        }
+        return tcpFallbackPort;
     }
 }

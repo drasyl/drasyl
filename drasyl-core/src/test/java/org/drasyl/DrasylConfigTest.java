@@ -89,6 +89,11 @@ import static org.drasyl.DrasylConfig.REMOTE_PING_INTERVAL;
 import static org.drasyl.DrasylConfig.REMOTE_PING_TIMEOUT;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINTS;
+import static org.drasyl.DrasylConfig.REMOTE_TCP_FALLBACK_CLIENT_ADDRESS;
+import static org.drasyl.DrasylConfig.REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT;
+import static org.drasyl.DrasylConfig.REMOTE_TCP_FALLBACK_ENABLED;
+import static org.drasyl.DrasylConfig.REMOTE_TCP_FALLBACK_SERVER_BIND_HOST;
+import static org.drasyl.DrasylConfig.REMOTE_TCP_FALLBACK_SERVER_BIND_PORT;
 import static org.drasyl.DrasylConfig.SERIALIZATION_BINDINGS_INBOUND;
 import static org.drasyl.DrasylConfig.SERIALIZATION_BINDINGS_OUTBOUND;
 import static org.drasyl.DrasylConfig.SERIALIZATION_SERIALIZERS;
@@ -149,6 +154,11 @@ class DrasylConfigTest {
     private String remoteLocalHostDiscoveryPathAsString;
     private Duration remoteLocalHostDiscoveryLeaseTime;
     private Duration composedMessageTransferTimeout;
+    private boolean remoteTcpFallbackEnabled;
+    private InetAddress remoteTcpFallbackServerBindHost;
+    private int remoteTcpFallbackServerBindPort;
+    private Duration remoteTcpFallbackClientTimeout;
+    private InetSocketAddress remoteTcpFallbackClientAddress;
     private boolean monitoringEnabled;
     private String monitoringHostTag;
     private URI monitoringInfluxUri;
@@ -183,6 +193,11 @@ class DrasylConfigTest {
         remoteMessageArmEnabled = false;
         superPeerEnabled = true;
         superPeerEndpoints = Set.of(Endpoint.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337"));
+        remoteTcpFallbackEnabled = true;
+        remoteTcpFallbackServerBindHost = createInetAddress("0.0.0.0");
+        remoteTcpFallbackServerBindPort = 443;
+        remoteTcpFallbackClientTimeout = ofSeconds(60);
+        remoteTcpFallbackClientAddress = InetSocketAddress.createUnresolved("127.0.0.1", 443);
         remoteStaticRoutes = Map.of();
         identityPathAsString = "drasyl.identity.json";
         messageBufferSize = 0;
@@ -234,11 +249,16 @@ when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
             when(typesafeConfig.getBoolean(REMOTE_EXPOSE_ENABLED)).thenReturn(remoteExposeEnabled);
             when(typesafeConfig.getBoolean(REMOTE_SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
             when(typesafeConfig.getStringList(REMOTE_SUPER_PEER_ENDPOINTS)).thenReturn(List.of("udp://foo.bar:123?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22&networkId=1337"));
-            when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
             when(typesafeConfig.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED)).thenReturn(remoteLocalHostDiscoveryEnabled);
             when(typesafeConfig.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH)).thenReturn(remoteLocalHostDiscoveryPathAsString);
             when(typesafeConfig.getDuration(REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME)).thenReturn(remoteLocalHostDiscoveryLeaseTime);
             when(typesafeConfig.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
+            when(typesafeConfig.getBoolean(REMOTE_TCP_FALLBACK_ENABLED)).thenReturn(remoteTcpFallbackEnabled);
+            when(typesafeConfig.getString(REMOTE_TCP_FALLBACK_SERVER_BIND_HOST)).thenReturn(remoteTcpFallbackServerBindHost.getHostAddress());
+            when(typesafeConfig.getInt(REMOTE_TCP_FALLBACK_SERVER_BIND_PORT)).thenReturn(remoteTcpFallbackServerBindPort);
+            when(typesafeConfig.getDuration(REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT)).thenReturn(remoteTcpFallbackClientTimeout);
+            when(typesafeConfig.getString(REMOTE_TCP_FALLBACK_CLIENT_ADDRESS)).thenReturn(remoteTcpFallbackClientAddress.getHostName() + ":" + remoteTcpFallbackClientAddress.getPort());
+            when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
             when(typesafeConfig.getBoolean(MONITORING_ENABLED)).thenReturn(monitoringEnabled);
             when(typesafeConfig.getString(MONITORING_HOST_TAG)).thenReturn(monitoringHostTag);
             when(typesafeConfig.getString(MONITORING_INFLUX_URI)).thenReturn(monitoringInfluxUri.toString());
@@ -271,10 +291,15 @@ when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
             assertEquals(remoteMessageArmEnabled, config.isRemoteMessageArmEnabled());
             assertEquals(superPeerEnabled, config.isRemoteSuperPeerEnabled());
             assertEquals(superPeerEndpoints, config.getRemoteSuperPeerEndpoints());
-            assertEquals(intraVmDiscoveryEnabled, config.isIntraVmDiscoveryEnabled());
             assertEquals(remoteLocalHostDiscoveryEnabled, config.isRemoteLocalHostDiscoveryEnabled());
             assertEquals(Path.of(remoteLocalHostDiscoveryPathAsString), config.getRemoteLocalHostDiscoveryPath());
             assertEquals(remoteLocalHostDiscoveryLeaseTime, config.getRemoteLocalHostDiscoveryLeaseTime());
+            assertEquals(remoteTcpFallbackEnabled, config.isRemoteTcpFallbackEnabled());
+            assertEquals(remoteTcpFallbackServerBindHost, config.getRemoteTcpFallbackServerBindHost());
+            assertEquals(remoteTcpFallbackServerBindPort, config.getRemoteTcpFallbackServerBindPort());
+            assertEquals(remoteTcpFallbackClientTimeout, config.getRemoteTcpFallbackClientTimeout());
+            assertEquals(remoteTcpFallbackClientAddress, config.getRemoteTcpFallbackClientAddress());
+            assertEquals(intraVmDiscoveryEnabled, config.isIntraVmDiscoveryEnabled());
             assertEquals(composedMessageTransferTimeout, config.getRemoteMessageComposedMessageTransferTimeout());
             assertEquals(monitoringEnabled, config.isMonitoringEnabled());
             assertEquals(monitoringHostTag, config.getMonitoringHostTag());
@@ -331,6 +356,11 @@ when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
                     remoteLocalHostDiscoveryEnabled,
                     Path.of(remoteLocalHostDiscoveryPathAsString),
                     remoteLocalHostDiscoveryLeaseTime,
+                    remoteTcpFallbackEnabled,
+                    remoteTcpFallbackServerBindHost,
+                    remoteTcpFallbackServerBindPort,
+                    remoteTcpFallbackClientTimeout,
+                    remoteTcpFallbackClientAddress,
                     monitoringEnabled,
                     monitoringHostTag,
                     monitoringInfluxUri,
@@ -747,6 +777,11 @@ when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
                     .remoteLocalHostDiscoveryEnabled(DEFAULT.isRemoteLocalHostDiscoveryEnabled())
                     .remoteLocalHostDiscoveryPath(DEFAULT.getRemoteLocalHostDiscoveryPath())
                     .remoteLocalHostDiscoveryLeaseTime(DEFAULT.getRemoteLocalHostDiscoveryLeaseTime())
+                    .remoteTcpFallbackEnabled(DEFAULT.isRemoteTcpFallbackEnabled())
+                    .remoteTcpFallbackServerBindHost(DEFAULT.getRemoteTcpFallbackServerBindHost())
+                    .remoteTcpFallbackServerBindPort(DEFAULT.getRemoteTcpFallbackServerBindPort())
+                    .remoteTcpFallbackClientTimeout(DEFAULT.getRemoteTcpFallbackClientTimeout())
+                    .remoteTcpFallbackClientAddress(DEFAULT.getRemoteTcpFallbackClientAddress())
                     .monitoringEnabled(DEFAULT.isMonitoringEnabled())
                     .monitoringHostTag(DEFAULT.getMonitoringHostTag())
                     .monitoringInfluxUri(DEFAULT.getMonitoringInfluxUri())
