@@ -86,10 +86,11 @@ class DrasylPipelineIT {
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
+                .remoteTcpFallbackEnabled(false)
                 .build();
 
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
-        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, getBestEventLoopGroup(2));
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, getBestEventLoopGroup(2), getBestEventLoopGroup(2));
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<>() {
             @Override
             protected void matchedOutbound(final HandlerContext ctx,

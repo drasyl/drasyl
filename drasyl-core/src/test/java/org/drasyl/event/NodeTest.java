@@ -38,11 +38,13 @@ class NodeTest {
         void shouldAcceptValidInputs(@Mock final Identity identity) {
             assertNotNull(Node.of(identity));
             assertNotNull(Node.of(identity, 1));
+            assertNotNull(Node.of(identity, 1, 2));
         }
 
         @Test
         void shouldRejectNegativePort(@Mock final Identity identity) {
             assertThrows(IllegalArgumentException.class, () -> Node.of(identity, -1));
+            assertThrows(IllegalArgumentException.class, () -> Node.of(identity, 1, -1));
         }
     }
 
@@ -50,8 +52,8 @@ class NodeTest {
     class Equals {
         @Test
         void shouldBeEquals(@Mock final Identity identity) {
-            final Node node1 = Node.of(identity, 1);
-            final Node node2 = Node.of(identity, 1);
+            final Node node1 = Node.of(identity, 1, 2);
+            final Node node2 = Node.of(identity, 1, 2);
 
             assertEquals(node1, node1);
             assertEquals(node1, node2);
@@ -59,8 +61,8 @@ class NodeTest {
 
         @Test
         void shouldNotBeEquals(@Mock final Identity identity) {
-            final Node node1 = Node.of(identity, 1);
-            final Node node2 = Node.of(identity, 2);
+            final Node node1 = Node.of(identity, 1, 2);
+            final Node node2 = Node.of(identity, 2, 2);
 
             assertNotEquals(node1, node2);
             assertNotEquals(node1, new Object());
@@ -71,16 +73,16 @@ class NodeTest {
     class HashCode {
         @Test
         void shouldBeEquals(@Mock final Identity identity) {
-            final Node node1 = Node.of(identity, 1);
-            final Node node2 = Node.of(identity, 1);
+            final Node node1 = Node.of(identity, 1, 2);
+            final Node node2 = Node.of(identity, 1, 2);
 
             assertEquals(node1.hashCode(), node2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals(@Mock final Identity identity) {
-            final Node node1 = Node.of(identity, 1);
-            final Node node2 = Node.of(identity, 2);
+            final Node node1 = Node.of(identity, 1, 2);
+            final Node node2 = Node.of(identity, 2, 2);
 
             assertNotEquals(node1.hashCode(), node2.hashCode());
         }
@@ -98,10 +100,11 @@ class NodeTest {
     class Getters {
         @Test
         void shouldReturnCorrectValues(@Mock final Identity identity) {
-            final Node node = Node.of(identity, 1);
+            final Node node = Node.of(identity, 1, 2);
 
             assertEquals(identity, node.getIdentity());
             assertEquals(1, node.getPort());
+            assertEquals(2, node.getTcpFallbackPort());
         }
     }
 }

@@ -29,7 +29,7 @@ RUN echo '<configuration>\n\
     </root>\n\
 </configuration>' >> /usr/local/share/drasyl/logback.xml
 
-EXPOSE 22527
+EXPOSE 22527 443
 
 ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
 
