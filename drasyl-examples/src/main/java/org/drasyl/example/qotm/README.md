@@ -1,4 +1,4 @@
-# drasyl as Quote of the Moment Server / Client
+# Quote of the Moment Server / Client
 
 This example demonstrates how to implement the quote server / client example from Oracle in drasyl: [https://docs.oracle.com/javase/tutorial/networking/datagrams/clientServer.html](https://docs.oracle.com/javase/tutorial/networking/datagrams/clientServer.html)
 
