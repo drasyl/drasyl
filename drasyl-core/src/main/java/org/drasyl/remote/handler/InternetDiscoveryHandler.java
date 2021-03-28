@@ -365,7 +365,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
         if (sender instanceof InetSocketAddressWrapper) {
             try {
                 // This message is for us and we will fully decode it
-                if (msg.getRecipient().equals(ctx.identity().getPublicKey())) {
+                if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
                     handleMessage(ctx, (InetSocketAddressWrapper) sender, msg, future);
                 }
                 else if (!ctx.config().isRemoteSuperPeerEnabled()) {
