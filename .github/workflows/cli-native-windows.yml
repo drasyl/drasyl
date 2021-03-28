@@ -1,10 +1,13 @@
 name: drasyl-cli Native Image Windows
 
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  #push:
+  #  branches: [ master ]
+  #pull_request:
+  #  branches: [ master ]
+  workflow_dispatch:
+  #schedule:
+  #  - cron:  '0 6 * * 1' # every monday 6am
 
 jobs:
   build:
@@ -33,10 +36,6 @@ jobs:
         env:
           VERSION: ${{ github.event.release.tag_name }}
         run: |
-          mkdir -p drasyl-cli-macos-amd64-snapshot/bin
-          mv ./drasyl drasyl-cli-macos-amd64-snapshot/bin
-          cp ./LICENSE drasyl-cli-macos-amd64-snapshot/
-          zip -r drasyl-cli-macos-amd64-snapshot.zip ./drasyl-cli-macos-amd64-snapshot -x '*.DS_Store*' -x '__MAC_OSX'
           New-Item "./drasyl-cli-windows-amd64-snapshot/bin" -ItemType Directory -ea 0
           Move-Item -Path ./drasyl.exe -Destination "./drasyl-cli-windows-amd64-snapshot/bin"
           Copy-Item "./LICENSE" -Destination "./drasyl-cli-windows-amd64-snapshot"
