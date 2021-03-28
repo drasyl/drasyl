@@ -362,8 +362,8 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
                                   final Address sender,
                                   final RemoteEnvelope<? extends MessageLite> msg,
                                   final CompletableFuture<Void> future) {
-        if (sender instanceof InetSocketAddressWrapper) {
-            try {
+        try {
+            if (sender instanceof InetSocketAddressWrapper) {
                 // This message is for us and we will fully decode it
                 if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
                     handleMessage(ctx, (InetSocketAddressWrapper) sender, msg, future);
@@ -375,15 +375,15 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
                     LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", msg, sender, msg.getRecipient());
                 }
             }
-            catch (final IOException e) {
-                LOG.warn("Unable to deserialize '{}'.", () -> sanitizeLogArg(msg), () -> e);
-                future.completeExceptionally(new Exception("Message could not be deserialized.", e));
-                ReferenceCountUtil.safeRelease(msg);
+            else {
+                // passthrough message
+                ctx.passInbound(sender, msg, future);
             }
         }
-        else {
-            // passthrough message
-            ctx.passInbound(sender, msg, future);
+        catch (final IOException e) {
+            LOG.warn("Unable to deserialize '{}'.", () -> sanitizeLogArg(msg), () -> e);
+            future.completeExceptionally(new Exception("Message could not be deserialized.", e));
+            ReferenceCountUtil.safeRelease(msg);
         }
     }
 
