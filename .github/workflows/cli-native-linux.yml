@@ -18,7 +18,7 @@ jobs:
         env:
           GRAAL_VERSION: 21.0.0.2
           GRAAL_OS: linux-amd64
-        run: ./install-graal.sh
+        run: ./.github/install-graal.sh
       - name: Install Native Image
         run: ./graalvm/bin/gu install native-image
       - name: Build Native Image
