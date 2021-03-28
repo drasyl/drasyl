@@ -39,8 +39,8 @@ jobs:
           mv ./drasyl drasyl-cli-linux-amd64-snapshot/bin
           cp ./LICENSE drasyl-cli-linux-amd64-snapshot/
           zip -r drasyl-cli-linux-amd64-snapshot.zip ./drasyl-cli-linux-amd64-snapshot
-      - name: Upload Snapshot
-        if: success() && github.event_name == 'push'
+      - name: Publish artifact
+        if: success()
         uses: actions/upload-artifact@v2.2.2
         with:
           name: drasyl-cli-linux-amd64-snapshot

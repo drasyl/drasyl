@@ -39,8 +39,8 @@ jobs:
           mv ./drasyl drasyl-cli-macos-amd64-snapshot/bin
           cp ./LICENSE drasyl-cli-macos-amd64-snapshot/
           zip -r drasyl-cli-macos-amd64-snapshot.zip ./drasyl-cli-macos-amd64-snapshot -x '*.DS_Store*' -x '__MAC_OSX'
-      - name: Upload Snapshot
-        if: success() && github.event_name == 'push'
+      - name: Publish artifact
+        if: success()
         uses: actions/upload-artifact@v2.2.2
         with:
           name: drasyl-cli-macos-amd64-snapshot

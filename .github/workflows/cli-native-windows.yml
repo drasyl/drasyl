@@ -40,9 +40,9 @@ jobs:
           Move-Item -Path ./drasyl.exe -Destination "./drasyl-cli-windows-amd64-snapshot/bin"
           Copy-Item "./LICENSE" -Destination "./drasyl-cli-windows-amd64-snapshot"
           Compress-Archive -Path "./drasyl-cli-windows-amd64-snapshot" -Update -DestinationPath ./drasyl-cli-windows-amd64-snapshot.zip
-      - name: Upload Snapshot
-        if: success() && github.event_name == 'push'
+      - name: Publish artifact
+        if: success()
         uses: actions/upload-artifact@v2.2.2
         with:
           name: drasyl-cli-windows-amd64-snapshot
-          path: drasyl-cli-windows-amd64-snapshot.zip
+          path: ./drasyl-cli-windows-amd64-snapshot.zip
