@@ -27,8 +27,6 @@ import org.drasyl.pipeline.address.Address;
 import java.util.Arrays;
 import java.util.Base64;
 
-import static java.util.Objects.requireNonNull;
-
 abstract class AbstractCompressedKey<K> implements Address {
     public static final int LEGACY_KEY_LENGTH = 44;
     @JsonValue
@@ -41,18 +39,28 @@ abstract class AbstractCompressedKey<K> implements Address {
         key = null;
     }
 
+    /**
+     * @throws NullPointerException     if {@code compressedKey} is {@code null}
+     * @throws IllegalArgumentException if {@code compressedKey} is empty
+     */
     protected AbstractCompressedKey(final byte[] compressedKey) {
-        this.compressedKey = requireNonNull(compressedKey);
+        if (compressedKey.length == 0) {
+            throw new IllegalArgumentException("compressedKey must not be empty.");
+        }
+        this.compressedKey = compressedKey;
         this.key = null;
     }
 
     /**
      * @throws NullPointerException     if {@code compressedKey} is {@code null}
      * @throws IllegalArgumentException if {@code compressedKey} does not conform to a valid
-     *                                  hexadecimal or base64 scheme
+     *                                  hexadecimal or base64 scheme or is empty
      */
     @JsonCreator
     protected AbstractCompressedKey(final String compressedKey) {
+        if (compressedKey.isEmpty()) {
+            throw new IllegalArgumentException("compressedKey must not be empty.");
+        }
         // For backwards compatibility we check if the given string represents a base64 (new) or
         // a normal string.
         // base64 encoded 32 up to 33 bytes long key ((4 * n / 3) + 3) & ~3

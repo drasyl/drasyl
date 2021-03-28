@@ -66,6 +66,8 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      * Creates a new compressed private key from the given byte array.
      *
      * @param compressedKey compressed private key
+     * @throws NullPointerException     if {@code compressedKey} is {@code null}
+     * @throws IllegalArgumentException if {@code compressedKey} is empty
      */
     private CompressedPrivateKey(final byte[] compressedKey) {
         super(compressedKey);

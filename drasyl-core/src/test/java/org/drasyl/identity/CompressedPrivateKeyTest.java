@@ -29,6 +29,7 @@ import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CompressedPrivateKeyTest {
     private CompressedPrivateKey privateKey;
@@ -52,6 +53,12 @@ class CompressedPrivateKeyTest {
             assertEquals(compressedPrivateKey1.hashCode(), compressedPrivateKey2.hashCode());
             assertEquals(compressedPrivateKey1.hashCode(), compressedPrivateKey3.hashCode());
             assertEquals(compressedPrivateKey2.hashCode(), compressedPrivateKey3.hashCode());
+        }
+
+        @Test
+        void shouldRejectInvalidKeys() {
+            assertThrows(IllegalArgumentException.class, () -> CompressedPrivateKey.of(new byte[0]));
+            assertThrows(IllegalArgumentException.class, () -> CompressedPrivateKey.of(""));
         }
     }
 
