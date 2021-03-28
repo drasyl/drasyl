@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Builds Native Image of drasyl-cli for Windows
-    runs-on: macOS-latest
+    runs-on: windows-2016
 
     steps:
       - name: Checkout the repository
