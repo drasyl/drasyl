@@ -1,0 +1,39 @@
+name: drasyl-cli native image Linux
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Builds native image of drasyl-cli for Linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2.3.4
+      - name: Install GraalVM
+        env:
+          GRAAL_VERSION: 21.0.0.2
+          GRAAL_OS: linux-amd64
+        run: ./install-graal.sh
+      - name: Install Native Image
+        run: ./graalvm/bin/gu install native-image
+      - name: Build Native Image
+        run: ./mvnw -Pnative -DskipTests package
+      - name: Package Build
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          mkdir -p drasyl-cli-linux-amd64-snapshot/bin
+          mv ./drasyl drasyl-cli-linux-amd64-snapshot/bin
+          cp ./LICENSE drasyl-cli-linux-amd64-snapshot/
+          zip -r drasyl-cli-linux-amd64-snapshot.zip ./drasyl-cli-linux-amd64-snapshot
+      - name: Upload Snapshot
+        if: success() && github.event_name == 'push'
+        uses: actions/upload-artifact@v2.2.2
+        with:
+          name: drasyl-cli-linux-amd64-snapshot
+          path: drasyl-cli-linux-amd64-snapshot.zip
