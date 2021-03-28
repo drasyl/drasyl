@@ -48,7 +48,6 @@ abstract class AbstractCommand implements Command {
     private static final String OPT_HELP = "help";
     private static final String OPT_VERBOSE = "verbose";
     private static final String OPT_CONFIG = "config";
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractCommand.class);
     private static final int LINE_WIDTH = 100;
     private static final int DESCRIPTION_PADDING = 6;
     protected final PrintStream out;
@@ -69,7 +68,7 @@ abstract class AbstractCommand implements Command {
             final CommandLine cmd = parser.parse(flags, args);
 
             setLogLevel(cmd);
-            LOG.debug("drasyl: Version '{}' starting with parameters [{}]", DrasylNode::getVersion, () -> args.length > 0 ? ("'" + String.join("', '", args) + "'") : "");
+            log().debug("drasyl: Version '{}' starting with parameters [{}]", DrasylNode::getVersion, () -> args.length > 0 ? ("'" + String.join("', '", args) + "'") : "");
 
             if (cmd.hasOption(OPT_HELP)) {
                 help(cmd);
@@ -82,6 +81,8 @@ abstract class AbstractCommand implements Command {
             throw new CliException(e);
         }
     }
+
+    protected abstract Logger log();
 
     @SuppressWarnings("SameParameterValue")
     protected void helpTemplate(final String name, final String header, final String footer) {
@@ -170,15 +171,15 @@ abstract class AbstractCommand implements Command {
         final DrasylConfig config;
         if (cmd.hasOption(OPT_CONFIG)) {
             final File file = new File(cmd.getOptionValue(OPT_CONFIG));
-            LOG.info("Using config file from '{}'", file);
+            log().info("Using config file from '{}'", file);
             config = DrasylConfig.parseFile(file);
         }
         else if (DEFAULT_CONF_PATH.toFile().exists()) {
-            LOG.info("Using config file from '{}'", DEFAULT_CONF_PATH);
+            log().info("Using config file from '{}'", DEFAULT_CONF_PATH);
             config = DrasylConfig.parseFile(DEFAULT_CONF_PATH.toFile());
         }
         else {
-            LOG.info("Config file '{}' not found - using defaults", DEFAULT_CONF_PATH);
+            log().info("Config file '{}' not found - using defaults", DEFAULT_CONF_PATH);
             config = new DrasylConfig();
         }
 

@@ -22,6 +22,8 @@ import io.netty.channel.epoll.Epoll;
 import io.netty.channel.kqueue.KQueue;
 import org.apache.commons.cli.CommandLine;
 import org.drasyl.DrasylNode;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 
@@ -29,12 +31,19 @@ import java.io.PrintStream;
  * Show the version number.
  */
 public class VersionCommand extends AbstractCommand {
+    private static final Logger LOG = LoggerFactory.getLogger(VersionCommand.class);
+
     public VersionCommand() {
         this(System.out, System.err); // NOSONAR
     }
 
     VersionCommand(final PrintStream out, final PrintStream err) {
         super(out, err);
+    }
+
+    @Override
+    protected Logger log() {
+        return LOG;
     }
 
     @Override

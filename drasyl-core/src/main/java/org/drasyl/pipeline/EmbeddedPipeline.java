@@ -33,6 +33,8 @@ import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
@@ -54,6 +56,7 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static final Optional<Object> NULL_MESSAGE = Optional.empty();
     private static final short DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH = 16;
+    private static final Logger LOG = LoggerFactory.getLogger(EmbeddedPipeline.class);
     private final Subject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
     private final Subject<AddressedEnvelope<Address, Object>> outboundMessages;
@@ -97,6 +100,11 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
         outboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
 
         this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return LOG;
+            }
+
             @Override
             public void onOutbound(final HandlerContext ctx,
                                    final Address recipient,
@@ -216,6 +224,11 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
     @Override
     public int messagesBeforeUnwritable() {
         return 0;
+    }
+
+    @Override
+    protected Logger log() {
+        return LOG;
     }
 
     private static boolean isInstance(final Type type, final Object obj) {

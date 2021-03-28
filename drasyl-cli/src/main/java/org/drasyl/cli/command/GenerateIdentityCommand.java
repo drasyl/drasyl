@@ -26,6 +26,8 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.ThrowingSupplier;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -37,6 +39,7 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * Generate and output new Identity in JSON format.
  */
 public class GenerateIdentityCommand extends AbstractCommand {
+    private static final Logger LOG = LoggerFactory.getLogger(GenerateIdentityCommand.class);
     private final ThrowingSupplier<Identity, IOException> identitySupplier;
     private final ThrowingBiConsumer<PrintStream, Identity, IOException> jsonWriter;
 
@@ -56,6 +59,11 @@ public class GenerateIdentityCommand extends AbstractCommand {
                 IdentityManager::generateIdentity,
                 (myOut, identity) -> JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(myOut, identity)
         );
+    }
+
+    @Override
+    protected Logger log() {
+        return LOG;
     }
 
     @Override

@@ -80,6 +80,11 @@ public class PerfCommand extends AbstractCommand {
     }
 
     @Override
+    protected Logger log() {
+        return LOG;
+    }
+
+    @Override
     protected Options getOptions() {
         final Options options = super.getOptions();
 

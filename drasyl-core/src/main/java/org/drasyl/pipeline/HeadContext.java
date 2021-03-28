@@ -79,4 +79,9 @@ class HeadContext extends AbstractEndHandler {
             ReferenceCountUtil.safeRelease(msg);
         }
     }
+
+    @Override
+    protected Logger log() {
+        return LOG;
+    }
 }

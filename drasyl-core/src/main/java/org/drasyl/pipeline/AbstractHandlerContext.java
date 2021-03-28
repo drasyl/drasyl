@@ -26,7 +26,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
@@ -38,7 +37,6 @@ import static org.drasyl.pipeline.HandlerMask.ON_OUTBOUND_MASK;
 
 @SuppressWarnings({ "java:S107", "java:S3077" })
 abstract class AbstractHandlerContext implements HandlerContext {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractHandlerContext.class);
     private final DrasylConfig config;
     private final Object prevLock = new Object();
     private final Object nextLock = new Object();
@@ -131,7 +129,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
             }
         }
         catch (final Exception e) {
-            LOG.warn("Failed to invoke onException() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
+            log().warn("Failed to invoke onException() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
         }
     }
 
@@ -192,7 +190,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
             }
         }
         catch (final Exception e) {
-            LOG.warn("Failed to invoke onInbound() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
+            log().warn("Failed to invoke onInbound() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
             future.completeExceptionally(e);
             inboundCtx.passException(e);
             ReferenceCountUtil.safeRelease(msg);
@@ -222,7 +220,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
             }
         }
         catch (final Exception e) {
-            LOG.warn("Failed to invoke onEvent() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
+            log().warn("Failed to invoke onEvent() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
             future.completeExceptionally(e);
             inboundCtx.passException(e);
         }
@@ -253,7 +251,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
             }
         }
         catch (final Exception e) {
-            LOG.warn("Failed to invoke onOutbound() on next handler `{}` do to the following error: ", outboundCtx::name, () -> e);
+            log().warn("Failed to invoke onOutbound() on next handler `{}` do to the following error: ", outboundCtx::name, () -> e);
             future.completeExceptionally(e);
             outboundCtx.passException(e);
             ReferenceCountUtil.safeRelease(msg);
@@ -317,4 +315,6 @@ abstract class AbstractHandlerContext implements HandlerContext {
 
         return mask;
     }
+
+    protected abstract Logger log();
 }

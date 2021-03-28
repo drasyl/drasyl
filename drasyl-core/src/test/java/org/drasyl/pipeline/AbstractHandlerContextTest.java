@@ -25,6 +25,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
+import org.drasyl.util.logging.Logger;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -86,6 +87,11 @@ class AbstractHandlerContextTest {
     void shouldSetCorrectPrevHandlerContext(@Mock final AbstractHandlerContext newPrev) {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return handler;
             }
@@ -100,6 +106,11 @@ class AbstractHandlerContextTest {
     @Test
     void shouldSetCorrectNextHandlerContext(@Mock final AbstractHandlerContext newNext) {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return handler;
@@ -116,6 +127,11 @@ class AbstractHandlerContextTest {
     void shouldSetCorrectName() {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return handler;
             }
@@ -127,6 +143,11 @@ class AbstractHandlerContextTest {
     @Test
     void shouldSetCorrectConfig() {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return handler;
@@ -140,6 +161,11 @@ class AbstractHandlerContextTest {
     void shouldSetPipeline() {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return handler;
             }
@@ -151,6 +177,11 @@ class AbstractHandlerContextTest {
     @Test
     void shouldSetDependentScheduler() {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return handler;
@@ -164,6 +195,11 @@ class AbstractHandlerContextTest {
     void shouldSetIndependentScheduler() {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return handler;
             }
@@ -175,6 +211,11 @@ class AbstractHandlerContextTest {
     @Test
     void shouldSetIdentity() {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return handler;
@@ -188,6 +229,11 @@ class AbstractHandlerContextTest {
     void shouldSetInboundValidator() {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return handler;
             }
@@ -199,6 +245,11 @@ class AbstractHandlerContextTest {
     @Test
     void shouldSetOutboundValidator() {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return handler;
@@ -216,6 +267,11 @@ class AbstractHandlerContextTest {
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return handler;
             }
@@ -232,6 +288,11 @@ class AbstractHandlerContextTest {
         when(next.handler()).thenReturn(handler);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return handler;
@@ -251,6 +312,11 @@ class AbstractHandlerContextTest {
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return handler;
@@ -274,6 +340,11 @@ class AbstractHandlerContextTest {
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return handler;
             }
@@ -292,6 +363,11 @@ class AbstractHandlerContextTest {
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return handler;
@@ -314,6 +390,11 @@ class AbstractHandlerContextTest {
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return handler;
             }
@@ -334,6 +415,11 @@ class AbstractHandlerContextTest {
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return handler;
@@ -357,6 +443,11 @@ class AbstractHandlerContextTest {
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return handler;
             }
@@ -376,6 +467,11 @@ class AbstractHandlerContextTest {
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
         final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return null;
             }
@@ -394,6 +490,11 @@ class AbstractHandlerContextTest {
                                               @Mock(answer = CALLS_REAL_METHODS) final AbstractHandlerContext context1) {
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
         final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return null;
@@ -416,6 +517,11 @@ class AbstractHandlerContextTest {
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
+            protected Logger log() {
+                return null;
+            }
+
+            @Override
             public Handler handler() {
                 return AbstractHandlerContextTest.this.handler;
             }
@@ -434,6 +540,11 @@ class AbstractHandlerContextTest {
         when(context.handler()).thenReturn(handler);
 
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return null;
+            }
+
             @Override
             public Handler handler() {
                 return AbstractHandlerContextTest.this.handler;
@@ -467,6 +578,11 @@ class AbstractHandlerContextTest {
 
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
                 @Override
+                protected Logger log() {
+                    return null;
+                }
+
+                @Override
                 public Handler handler() {
                     return AbstractHandlerContextTest.this.handler;
                 }
@@ -497,6 +613,11 @@ class AbstractHandlerContextTest {
 
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
                 @Override
+                protected Logger log() {
+                    return null;
+                }
+
+                @Override
                 public Handler handler() {
                     return AbstractHandlerContextTest.this.handler;
                 }
@@ -517,6 +638,11 @@ class AbstractHandlerContextTest {
 
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
                 @Override
+                protected Logger log() {
+                    return null;
+                }
+
+                @Override
                 public Handler handler() {
                     return handler;
                 }
@@ -535,6 +661,11 @@ class AbstractHandlerContextTest {
 
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
                 @Override
+                protected Logger log() {
+                    return null;
+                }
+
+                @Override
                 public Handler handler() {
                     return handler;
                 }
@@ -552,6 +683,11 @@ class AbstractHandlerContextTest {
             when(future.isDone()).thenReturn(true);
 
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+                @Override
+                protected Logger log() {
+                    return null;
+                }
+
                 @Override
                 public Handler handler() {
                     return handler;

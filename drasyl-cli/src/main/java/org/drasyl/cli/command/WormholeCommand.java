@@ -29,6 +29,8 @@ import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.ThrowingBiFunction;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.util.List;
@@ -44,6 +46,7 @@ import static org.drasyl.identity.CompressedPublicKey.PUBLIC_KEY_LENGTH;
  * Inspired by <a href="https://github.com/warner/magic-wormhole">Magic Wormhole</a>.
  */
 public class WormholeCommand extends AbstractCommand {
+    private static final Logger LOG = LoggerFactory.getLogger(WormholeCommand.class);
     private final Supplier<Scanner> scannerSupplier;
     private final ThrowingBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
     private final ThrowingBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
@@ -76,6 +79,11 @@ public class WormholeCommand extends AbstractCommand {
     @Override
     public String getDescription() {
         return "Transfer a text message from one node to another, safely.";
+    }
+
+    @Override
+    protected Logger log() {
+        return LOG;
     }
 
     @Override

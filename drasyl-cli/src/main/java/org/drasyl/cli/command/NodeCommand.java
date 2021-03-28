@@ -87,6 +87,11 @@ public class NodeCommand extends AbstractCommand {
         this.node = node;
     }
 
+    @Override
+    protected Logger log() {
+        return LOG;
+    }
+
     @SuppressWarnings({ "java:S1192" })
     @Override
     protected void help(final CommandLine cmd) {

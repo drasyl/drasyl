@@ -20,6 +20,8 @@
 package org.drasyl.cli.command;
 
 import org.apache.commons.cli.CommandLine;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.util.Map;
@@ -31,12 +33,19 @@ import static org.drasyl.cli.Cli.COMMANDS;
  * Show help for drasyl commands and flags.
  */
 public class HelpCommand extends AbstractCommand {
+    private static final Logger LOG = LoggerFactory.getLogger(HelpCommand.class);
+
     public HelpCommand() {
         this(System.out, System.err); // NOSONAR
     }
 
     HelpCommand(final PrintStream out, final PrintStream err) {
         super(out, err);
+    }
+
+    @Override
+    protected Logger log() {
+        return LOG;
     }
 
     @Override

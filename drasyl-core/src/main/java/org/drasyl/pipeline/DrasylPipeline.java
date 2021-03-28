@@ -41,6 +41,8 @@ import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.Map;
@@ -56,6 +58,7 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
  * The default {@link Pipeline} implementation. Used to implement plugins for drasyl.
  */
 public class DrasylPipeline extends AbstractPipeline {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylPipeline.class);
     public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
     public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
     public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
@@ -191,5 +194,10 @@ public class DrasylPipeline extends AbstractPipeline {
                           final EventLoopGroup bossGroup,
                           final EventLoopGroup workerGroup) {
         this(eventConsumer, config, identity, peersManager, () -> new UdpServer(bossGroup), () -> new TcpServer(bossGroup, workerGroup), () -> new TcpClient(config, bossGroup));
+    }
+
+    @Override
+    protected Logger log() {
+        return LOG;
     }
 }

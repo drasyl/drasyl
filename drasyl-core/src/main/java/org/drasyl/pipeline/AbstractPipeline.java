@@ -25,7 +25,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.Map;
@@ -40,7 +39,6 @@ import static java.util.concurrent.CompletableFuture.failedFuture;
  * Abstract {@link Pipeline} implementation, that needs head and tail.
  */
 public abstract class AbstractPipeline implements Pipeline {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractPipeline.class);
     protected final Map<String, AbstractHandlerContext> handlerNames;
     protected AbstractEndHandler head;
     protected AbstractEndHandler tail;
@@ -135,7 +133,7 @@ public abstract class AbstractPipeline implements Pipeline {
         }
         catch (final Exception e) {
             handlerCtx.passException(e);
-            LOG.warn("Error on adding handler `{}`: ", handlerCtx::name, () -> e);
+            log().warn("Error on adding handler `{}`: ", handlerCtx::name, () -> e);
         }
     }
 
@@ -242,14 +240,14 @@ public abstract class AbstractPipeline implements Pipeline {
     }
 
     @SuppressWarnings("java:S2221")
-    private static void removeHandlerAction(final AbstractHandlerContext ctx) {
+    private void removeHandlerAction(final AbstractHandlerContext ctx) {
         // call remove action
         try {
             ctx.handler().onRemoved(ctx);
         }
         catch (final Exception e) {
             ctx.passException(e);
-            LOG.warn("Error on adding handler `{}`: ", ctx::name, () -> e);
+            log().warn("Error on adding handler `{}`: ", ctx::name, () -> e);
         }
     }
 
@@ -357,4 +355,6 @@ public abstract class AbstractPipeline implements Pipeline {
             return Integer.MAX_VALUE;
         }
     }
+
+    protected abstract Logger log();
 }

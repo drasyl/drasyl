@@ -22,6 +22,8 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
 
 /**
@@ -29,6 +31,7 @@ import org.drasyl.util.scheduler.DrasylScheduler;
  */
 @SuppressWarnings({ "java:S107" })
 public class DefaultHandlerContext extends AbstractHandlerContext {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultHandlerContext.class);
     private final Handler handler;
 
     /**
@@ -62,5 +65,10 @@ public class DefaultHandlerContext extends AbstractHandlerContext {
     @Override
     public Handler handler() {
         return handler;
+    }
+
+    @Override
+    protected Logger log() {
+        return LOG;
     }
 }

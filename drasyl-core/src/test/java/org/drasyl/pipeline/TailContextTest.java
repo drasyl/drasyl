@@ -25,6 +25,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
+import org.drasyl.util.logging.Logger;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -122,6 +123,11 @@ class TailContextTest {
                 @Override
                 void executeOnDependentScheduler(final Runnable task) {
                     task.run();
+                }
+
+                @Override
+                protected Logger log() {
+                    return null;
                 }
             };
 
