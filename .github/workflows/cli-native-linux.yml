@@ -22,7 +22,9 @@ jobs:
       - name: Install Native Image
         run: ./graalvm/bin/gu install native-image
       - name: Build Native Image
-        run: ./mvnw -Pnative -DskipTests package
+        run: |
+          export PATH=./graalvm/bin:$PATH
+          ./mvnw -Pnative -DskipTests package
       - name: Package Build
         env:
           VERSION: ${{ github.event.release.tag_name }}
