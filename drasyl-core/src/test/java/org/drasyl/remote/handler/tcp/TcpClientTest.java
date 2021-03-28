@@ -199,10 +199,10 @@ public class TcpClientTest {
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, null);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-
                 pipeline.processOutbound(recipient, msg).join();
 
                 verify(bootstrap.handler(any()), timeout(1_000L)).connect(any(InetSocketAddress.class));
+                verify(superPeerChannel, timeout(1_000L)).addListener(any());
             }
         }
     }
