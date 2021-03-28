@@ -1,4 +1,4 @@
-name: drasyl-cli Native Image Linux
+name: drasyl-cli Native Image macOS
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
 
 jobs:
   build:
-    name: Builds Native Image of drasyl-cli for Linux
-    runs-on: ubuntu-latest
+    name: Builds Native Image of drasyl-cli for macOS
+    runs-on: macOS-latest
 
     steps:
       - name: Checkout the repository
@@ -18,13 +18,13 @@ jobs:
         env:
           JAVA_VERSION: 11
           GRAAL_VERSION: 21.0.0.2
-          GRAAL_OS: linux-amd64
+          GRAAL_OS: darwin-amd64
         run: ./.github/install-graal.sh
       - name: Install Native Image
-        run: ./graalvm/bin/gu install native-image
+        run: ./graalvm/Contents/Home/bin/gu install native-image
       - name: Build Native Image
         env:
-          JAVA_HOME: ./graalvm
+          JAVA_HOME: ./graalvm/Contents/Home
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
           MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
         run: ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests package
@@ -32,13 +32,13 @@ jobs:
         env:
           VERSION: ${{ github.event.release.tag_name }}
         run: |
-          mkdir -p drasyl-cli-linux-amd64-snapshot/bin
-          mv ./drasyl drasyl-cli-linux-amd64-snapshot/bin
-          cp ./LICENSE drasyl-cli-linux-amd64-snapshot/
-          zip -r drasyl-cli-linux-amd64-snapshot.zip ./drasyl-cli-linux-amd64-snapshot
+          mkdir -p drasyl-cli-macos-amd64-snapshot/bin
+          mv ./drasyl drasyl-cli-macos-amd64-snapshot/bin
+          cp ./LICENSE drasyl-cli-macos-amd64-snapshot/
+          zip -r drasyl-cli-macos-amd64-snapshot.zip ./drasyl-cli-macos-amd64-snapshot -x '*.DS_Store*' -x '__MAC_OSX'
       - name: Upload Snapshot
         if: success() && github.event_name == 'push'
         uses: actions/upload-artifact@v2.2.2
         with:
-          name: drasyl-cli-linux-amd64-snapshot
-          path: drasyl-cli-linux-amd64-snapshot.zip
+          name: drasyl-cli-macos-amd64-snapshot
+          path: drasyl-cli-macos-amd64-snapshot.zip
