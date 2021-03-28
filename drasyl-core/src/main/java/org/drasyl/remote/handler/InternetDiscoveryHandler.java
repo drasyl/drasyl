@@ -243,25 +243,28 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
                                    final Address recipient,
                                    final RemoteEnvelope<Application> msg,
                                    final CompletableFuture<Void> future) {
-        if (recipient instanceof CompressedPublicKey) {
-            // record communication to keep active connections alive
-            if (directConnectionPeers.contains(recipient)) {
-                final Peer peer = peers.computeIfAbsent((CompressedPublicKey) recipient, key -> new Peer());
-                peer.applicationTrafficOccurred();
-            }
+        try {
+            if (recipient instanceof CompressedPublicKey) {
+                // record communication to keep active connections alive
+                if (directConnectionPeers.contains(recipient)) {
+                    final Peer peer = peers.computeIfAbsent((CompressedPublicKey) recipient, key -> new Peer());
+                    peer.applicationTrafficOccurred();
+                }
 
-            try {
-                processMessage(ctx, (CompressedPublicKey) recipient, msg, future);
+                if (!processMessage(ctx, (CompressedPublicKey) recipient, msg, future)) {
+                    // passthrough message
+                    ctx.passOutbound(recipient, msg, future);
+                }
             }
-            catch (final IOException e) {
-                // should never occur as we build the message ourselves
-                future.completeExceptionally(e);
-                ReferenceCountUtil.safeRelease(msg);
+            else {
+                // passthrough message
+                ctx.passOutbound(recipient, msg, future);
             }
         }
-        else {
-            // passthrough message
-            ctx.passOutbound(recipient, msg, future);
+        catch (final IOException e) {
+            LOG.warn("Unable to read '{}'.", () -> sanitizeLogArg(msg), () -> e);
+            future.completeExceptionally(new Exception("Message could not be read.", e));
+            ReferenceCountUtil.safeRelease(msg);
         }
     }
 
@@ -273,12 +276,14 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
      * @param recipient the recipient of the message
      * @param msg       the message
      * @param future    the future
+     * @return {@code true} if message could be processed. Otherwise {@code false}
      * @throws IOException if public header of {@code msg} cannot be read
      */
-    private void processMessage(final HandlerContext ctx,
-                                final CompressedPublicKey recipient,
-                                final RemoteEnvelope<? extends MessageLite> msg,
-                                final CompletableFuture<Void> future) throws IOException {
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private boolean processMessage(final HandlerContext ctx,
+                                   final CompressedPublicKey recipient,
+                                   final RemoteEnvelope<? extends MessageLite> msg,
+                                   final CompletableFuture<Void> future) throws IOException {
         final Peer recipientPeer = peers.get(recipient);
 
         final Peer superPeerPeer;
@@ -307,15 +312,18 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
 
             LOG.trace("Send message to {} to {}.", recipient, recipientSocketAddress);
             ctx.passOutbound(recipientSocketAddress, msg, future);
+
+            return true;
         }
         else if (superPeerPeer != null) {
             final InetSocketAddressWrapper superPeerSocketAddress = superPeerPeer.getAddress();
             LOG.trace("No connection to {}. Send message to super peer.", recipient);
             ctx.passOutbound(superPeerSocketAddress, msg, future);
+
+            return true;
         }
         else {
-            // passthrough message
-            ctx.passOutbound(recipient, msg, future);
+            return false;
         }
     }
 
@@ -369,7 +377,10 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
                     handleMessage(ctx, (InetSocketAddressWrapper) sender, msg, future);
                 }
                 else if (!ctx.config().isRemoteSuperPeerEnabled()) {
-                    processMessage(ctx, msg.getRecipient(), msg, future);
+                    if (!processMessage(ctx, msg.getRecipient(), msg, future)) {
+                        // passthrough message
+                        ctx.passInbound(sender, msg, future);
+                    }
                 }
                 else if (LOG.isDebugEnabled()) {
                     LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", msg, sender, msg.getRecipient());
@@ -381,8 +392,8 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
             }
         }
         catch (final IOException e) {
-            LOG.warn("Unable to deserialize '{}'.", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Message could not be deserialized.", e));
+            LOG.warn("Unable to read '{}'.", () -> sanitizeLogArg(msg), () -> e);
+            future.completeExceptionally(new Exception("Message could not be read.", e));
             ReferenceCountUtil.safeRelease(msg);
         }
     }
