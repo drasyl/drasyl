@@ -120,7 +120,7 @@ public class PcpPortMapping implements PortMapping {
             mapPort(ctx);
         }
         else {
-            LOG.warn("Es konnten keinen Netzwerk Interfaces ermittelt werden.");
+            LOG.warn("Network interfaces could not be determined.");
             fail();
         }
     }
@@ -217,6 +217,7 @@ public class PcpPortMapping implements PortMapping {
                                 final int protocol,
                                 final int port,
                                 final InetAddress externalAddress) {
+        //noinspection unchecked
         LOG.debug("Send MAP opcode request for `{}:{}/UDP` to `{}:{}/UDP` with lifetime of {}s to gateway `{}`.", externalAddress::getHostAddress, () -> port, clientAddress::getHostAddress, () -> port, lifetime::toSeconds, defaultGateway::getHostName);
 
         final byte[] content = PcpPortUtil.buildMappingRequestMessage(lifetime, clientAddress, nonce, protocol, port, externalAddress);
@@ -234,6 +235,7 @@ public class PcpPortMapping implements PortMapping {
                 timeoutGuard.dispose();
                 if (message.getExternalSuggestedPort() == port) {
                     mappingRequested.set(0);
+                    //noinspection unchecked
                     LOG.info("Got port mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostName);
                     if (message.getLifetime() > 0) {
                         final long delay = message.getLifetime() / 2;
@@ -246,6 +248,7 @@ public class PcpPortMapping implements PortMapping {
                     return;
                 }
                 else {
+                    //noinspection unchecked
                     LOG.info("Got port mapping for wrong port `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostName);
                 }
             }
