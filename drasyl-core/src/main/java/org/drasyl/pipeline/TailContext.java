@@ -88,9 +88,9 @@ class TailContext extends AbstractEndHandler {
             eventConsumer.accept(event);
         }
         else {
-            future.completeExceptionally(new IllegalStateException("Message was not written to the application, because the corresponding address was not of correct type."));
+            future.completeExceptionally(new IllegalStateException("Message was not written to the application, because the sender address was not of type `" + CompressedPublicKey.class.getSimpleName() + "` (was type `" + sender.getClass().getSimpleName() + "`)."));
             //noinspection unchecked
-            LOG.debug("Message '{}' was not written to the application, because the corresponding address was not of type {} (was type {}).", () -> msg, CompressedPublicKey.class::getSimpleName, sender.getClass()::getSimpleName);
+            LOG.debug("Message '{}' was not written to the application, because the sender address was not of type `{}` (was type `{}`).", () -> msg, CompressedPublicKey.class::getSimpleName, sender.getClass()::getSimpleName);
         }
     }
 
