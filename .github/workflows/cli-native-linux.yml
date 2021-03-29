@@ -30,7 +30,7 @@ jobs:
           JAVA_HOME: ./graalvm
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
           MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
-        run: ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests package
+        run: ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests --projects drasyl-cli --also-make package
       - name: Package Build
         env:
           VERSION: ${{ github.event.release.tag_name }}

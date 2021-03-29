@@ -21,6 +21,7 @@ Source: https://www.graalvm.org/reference-manual/native-image/
 1. [Install GraalVM](https://www.graalvm.org/docs/getting-started/)
 1. [Install Native Image and meet the prerequisites](https://www.graalvm.org/reference-manual/native-image/#install-native-image)
 1. Make sure that `JAVA_HOME` points to the GraalVM and `native-image` exists in `PATH`.
-1. Execute `./mvnw -Pnative package` from the drasyl root directory.
+1. Execute `./mvnw -DskipTests -Pnative --projects drasyl-cli --also-make package` from the drasyl
+   root directory.
 1. If everything went well, you should now find a `drasyl` or `drasyl.exe` executable in the root
    directory.
