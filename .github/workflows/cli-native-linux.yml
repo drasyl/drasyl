@@ -1,13 +1,13 @@
 name: drasyl-cli Native Image Linux
 
 on:
-  #push:
-  #  branches: [ master ]
-  #pull_request:
-  #  branches: [ master ]
-  workflow_dispatch:
-  #schedule:
-  #  - cron:  '0 6 * * 1' # every monday 6am
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+#  workflow_dispatch:
+#  schedule:
+#    - cron:  '0 6 * * 1' # every monday 6am
 
 jobs:
   build:
