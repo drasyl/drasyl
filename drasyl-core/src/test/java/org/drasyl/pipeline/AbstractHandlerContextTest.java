@@ -77,6 +77,8 @@ class AbstractHandlerContextTest {
     @Mock
     private CompletableFuture<Void> future;
     private String name;
+    @Mock
+    private Logger logger;
 
     @BeforeEach
     void setUp() {
@@ -88,7 +90,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -108,7 +110,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -128,7 +130,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -145,7 +147,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -162,7 +164,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -179,7 +181,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -196,7 +198,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -213,7 +215,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -230,7 +232,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -247,7 +249,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -268,7 +270,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -290,7 +292,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -314,7 +316,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -341,7 +343,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -365,7 +367,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -391,7 +393,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -417,7 +419,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -444,7 +446,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -468,7 +470,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -492,7 +494,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -518,7 +520,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -542,7 +544,7 @@ class AbstractHandlerContextTest {
         final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
-                return null;
+                return logger;
             }
 
             @Override
@@ -579,7 +581,7 @@ class AbstractHandlerContextTest {
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
                 @Override
                 protected Logger log() {
-                    return null;
+                    return logger;
                 }
 
                 @Override
@@ -614,7 +616,7 @@ class AbstractHandlerContextTest {
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
                 @Override
                 protected Logger log() {
-                    return null;
+                    return logger;
                 }
 
                 @Override
@@ -639,7 +641,7 @@ class AbstractHandlerContextTest {
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
                 @Override
                 protected Logger log() {
-                    return null;
+                    return logger;
                 }
 
                 @Override
@@ -662,7 +664,7 @@ class AbstractHandlerContextTest {
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
                 @Override
                 protected Logger log() {
-                    return null;
+                    return logger;
                 }
 
                 @Override
@@ -685,7 +687,7 @@ class AbstractHandlerContextTest {
             final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
                 @Override
                 protected Logger log() {
-                    return null;
+                    return logger;
                 }
 
                 @Override
