@@ -147,6 +147,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                     if (serviceType.startsWith("urn:schemas-upnp-org:service:WANCommonInterfaceConfig:")) {
                         try {
                             ssdpServices.add(new URI(location));
+                            //noinspection unchecked
                             LOG.debug("Got UPnP service of type `{}` with location `{}` reported from `{}`", () -> serviceType, () -> location, sender::getHostString);
                         }
                         catch (final URISyntaxException e) {
@@ -278,7 +279,8 @@ public class UpnpIgdPortMapping implements PortMapping {
         // check if there is already an existing port mapping. If so, reuse it...
         final MappingEntry mappingEntry = upnpIgdUtil.getSpecificPortMappingEntry(service.getControlUrl(), service.getServiceType(), port);
         if (mappingEntry != null && mappingEntry.getErrorCode() == 0 && description.equals(mappingEntry.getDescription())) {
-            LOG.info("Reuse existing port mapping with description `{}` for `{}:{}/UDP` to `{}:{}/UDP`.", mappingEntry::getDescription, externalIpAddress.getNewExternalIpAddress()::getHostAddress, () -> port, mappingEntry.getInternalClient()::getHostAddress, mappingEntry::getInternalPort);
+            //noinspection unchecked
+            LOG.debug("Reuse existing port mapping with description `{}` for `{}:{}/UDP` to `{}:{}/UDP`.", mappingEntry::getDescription, externalIpAddress.getNewExternalIpAddress()::getHostAddress, () -> port, mappingEntry.getInternalClient()::getHostAddress, mappingEntry::getInternalPort);
             this.upnpService = service;
             return true;
         }
@@ -287,6 +289,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         final UpnpIgdUtil.PortMapping mapping = upnpIgdUtil.addPortMapping(service.getControlUrl(), service.getServiceType(), port, service.getLocalAddress(), description);
         if (mapping != null && mapping.getErrorCode() == 0) {
             this.upnpService = service;
+            //noinspection unchecked
             LOG.info("Port mapping created with description `{}` for `{}:{}/UDP` to `{}/UDP`.", () -> description, externalIpAddress.getNewExternalIpAddress()::getHostAddress, () -> port, () -> port);
             return true;
         }
