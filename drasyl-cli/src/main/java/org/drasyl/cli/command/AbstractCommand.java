@@ -44,7 +44,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractCommand implements Command {
-    static final Path DEFAULT_CONF_PATH = Paths.get("drasyl.conf").toAbsolutePath();
     private static final String OPT_HELP = "help";
     private static final String OPT_VERBOSE = "verbose";
     private static final String OPT_CONFIG = "config";
@@ -143,7 +142,7 @@ abstract class AbstractCommand implements Command {
         final Option verbose = Option.builder("v").longOpt(OPT_VERBOSE).hasArg().argName("level").desc("Sets the log level (off, error, warn, info, debug, trace; default: warn)").build();
         options.addOption(verbose);
 
-        final Option config = Option.builder("c").longOpt(OPT_CONFIG).hasArg().argName("file").desc("Load configuration from specified file (default: " + DEFAULT_CONF_PATH + ").").build();
+        final Option config = Option.builder("c").longOpt(OPT_CONFIG).hasArg().argName("file").desc("Load configuration from specified file (default: " + getDefaultConfPath() + ").").build();
         options.addOption(config);
 
         return options;
@@ -174,15 +173,23 @@ abstract class AbstractCommand implements Command {
             log().info("Using config file from '{}'", file);
             config = DrasylConfig.parseFile(file);
         }
-        else if (DEFAULT_CONF_PATH.toFile().exists()) {
-            log().info("Using config file from '{}'", DEFAULT_CONF_PATH);
-            config = DrasylConfig.parseFile(DEFAULT_CONF_PATH.toFile());
-        }
         else {
-            log().info("Config file '{}' not found - using defaults", DEFAULT_CONF_PATH);
-            config = new DrasylConfig();
+            final Path defaultConfPath = getDefaultConfPath();
+            if (defaultConfPath.toFile().exists()) {
+                log().info("Using config file from '{}'", defaultConfPath);
+                config = DrasylConfig.parseFile(defaultConfPath.toFile());
+            }
+            else {
+                log().info("Config file '{}' not found - using defaults", defaultConfPath);
+                config = new DrasylConfig();
+            }
         }
 
         return config;
+    }
+
+    static Path getDefaultConfPath() {
+        // do not replace with constant. otherwise native image will always return build environment's path
+        return Paths.get("drasyl.conf").toAbsolutePath();
     }
 }
