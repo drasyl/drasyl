@@ -27,16 +27,19 @@
     <!-- Configure the Console appender -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX"} [%t] %-5level %logger{36} %X{sourceThread} - %msg%n</pattern>
+            <pattern>%d{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX"} %highlight(%-5level) --- [%12.12thread] %cyan(%-40.40logger{40}) : %msg%n</pattern>
         </encoder>
     </appender>
 
-    <logger name="io.netty" level="WARN">
+    <logger name="io.netty" level="warn">
+    </logger>
+
+    <logger name="io.netty.util.ResourceLeakDetector" level="debug">
     </logger>
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
-    <root level="WARN">
+    <root level="warn">
         <appender-ref ref="Console"/>
     </root>
 </configuration>

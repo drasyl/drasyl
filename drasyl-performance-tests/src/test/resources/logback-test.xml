@@ -21,7 +21,9 @@
   -->
 
 <configuration>
+    <!-- available levels: off, error, warn, info, debug, trace -->
+
     <root>
-        <level value="ERROR" />
+        <level value="ERROR"/>
     </root>
 </configuration>

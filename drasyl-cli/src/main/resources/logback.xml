@@ -31,12 +31,9 @@
         </encoder>
     </appender>
 
-    <logger name="io.netty" level="WARN">
-    </logger>
-
     <!-- available levels: off, error, warn, info, debug, trace -->
 
-    <root level="WARN">
+    <root level="warn">
         <appender-ref ref="Console"/>
     </root>
 </configuration>

@@ -15,16 +15,17 @@ COPY --from=build ./drasyl-* /usr/local/share/drasyl/
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\
     <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>\n\
+\n\
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">\n\
         <encoder>\n\
             <pattern>%-5level --- [%12.12thread] %-40.40logger{40} : %msg%n</pattern>\n\
         </encoder>\n\
     </appender>\n\
 \n\
-    <logger name="io.netty" level="WARN">\n\
+    <logger name="io.netty" level="warn">\n\
     </logger>\n\
 \n\
-    <root level="WARN">\n\
+    <root level="warn">\n\
         <appender-ref ref="Console"/>\n\
     </root>\n\
 </configuration>' >> /usr/local/share/drasyl/logback.xml
