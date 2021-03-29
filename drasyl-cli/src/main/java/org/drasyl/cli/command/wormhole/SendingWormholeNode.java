@@ -171,7 +171,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                 .onEvent(SetText.class, event -> text == null, event -> {
                     // text has been set
                     this.text = event.text;
-                    return same();
+                    return online();
                 })
                 .onMessage(PasswordMessage.class, (sender, payload) -> text != null && password.equals(payload.getPassword()), (sender, payload) -> {
                     // correct password -> send text
