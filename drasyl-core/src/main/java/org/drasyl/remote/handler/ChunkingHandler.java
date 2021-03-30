@@ -186,7 +186,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
             final UnsignedShort totalChunks = totalChunks(messageSize, mtu, partialChunkHeader);
             LOG.debug("The message `{}` has a size of {} bytes and must be split to {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> mtu);
 
-            final FutureCombiner futureCombiner = FutureCombiner.getInstance();
+            final FutureCombiner combiner = FutureCombiner.getInstance();
             final int chunkSize = getChunkSize(partialChunkHeader, mtu);
 
             while (messageByteBuf.readableBytes() > 0) {
@@ -207,9 +207,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                     // send chunk
                     final RemoteEnvelope<? extends MessageLite> chunk = RemoteEnvelope.of(chunkByteBuf);
 
-                    final CompletableFuture<Void> f = new CompletableFuture<>();
-                    futureCombiner.add(f);
-                    ctx.passOutbound(recipient, chunk, f);
+                    combiner.add(ctx.passOutbound(recipient, chunk, new CompletableFuture<>()));
                 }
                 finally {
                     ReferenceCountUtil.safeRelease(chunkBodyByteBuf);
@@ -218,7 +216,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                 chunkNo = chunkNo.increment();
             }
 
-            futureCombiner.combine(future);
+            combiner.combine(future);
         }
         finally {
             ReferenceCountUtil.safeRelease(messageByteBuf);

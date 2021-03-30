@@ -201,7 +201,12 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
     private void pingSuperPeers(final HandlerContext ctx) {
         if (ctx.config().isRemoteSuperPeerEnabled()) {
             for (final Endpoint endpoint : ctx.config().getRemoteSuperPeerEndpoints()) {
-                sendPing(ctx, endpoint.getPublicKey(), new InetSocketAddressWrapper(endpoint.getHost(), endpoint.getPort()), new CompletableFuture<>());
+                final InetSocketAddressWrapper address = new InetSocketAddressWrapper(endpoint.getHost(), endpoint.getPort());
+                sendPing(ctx, endpoint.getPublicKey(), address, new CompletableFuture<>()).exceptionally(e -> {
+                    //noinspection unchecked
+                    LOG.warn("Unable to send ping for super peer `{}` to `{}`", endpoint::getPublicKey, () -> address, () -> e);
+                    return null;
+                });
             }
         }
     }
@@ -217,7 +222,11 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
             final Peer peer = peers.get(publicKey);
             final InetSocketAddressWrapper address = peer.getAddress();
             if (address != null && peer.hasApplicationTraffic(ctx.config())) {
-                sendPing(ctx, publicKey, address, new CompletableFuture<>());
+                sendPing(ctx, publicKey, address, new CompletableFuture<>()).exceptionally(e -> {
+                    //noinspection unchecked
+                    LOG.warn("Unable to send ping for peer `{}` to `{}`", () -> publicKey, () -> address, () -> e);
+                    return null;
+                });
             }
             // remove trivial communications, that does not send any user generated messages
             else {
@@ -348,12 +357,20 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
         // send recipient's information to sender
         final RemoteEnvelope<Unite> senderRendezvousEnvelope = RemoteEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
-        ctx.passOutbound(sender, senderRendezvousEnvelope, new CompletableFuture<>());
+        ctx.passOutbound(sender, senderRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
+            //noinspection unchecked
+            LOG.warn("Unable to send unite message for peer `{}` to `{}`", () -> senderKey, () -> sender, () -> e);
+            return null;
+        });
 
         // send sender's information to recipient
         final RemoteEnvelope<Unite> recipientRendezvousEnvelope = RemoteEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
-        ctx.passOutbound(recipient, recipientRendezvousEnvelope, new CompletableFuture<>());
+        ctx.passOutbound(recipient, recipientRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
+            //noinspection unchecked
+            LOG.warn("Unable to send unite message for peer `{}` to `{}`", () -> recipientKey, () -> recipient, () -> e);
+            return null;
+        });
     }
 
     private synchronized boolean shouldTryUnite(final CompressedPublicKey sender,
@@ -539,10 +556,10 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
         ctx.passInbound(msg.getSender(), msg, future);
     }
 
-    private void sendPing(final HandlerContext ctx,
-                          final CompressedPublicKey recipient,
-                          final InetSocketAddressWrapper recipientAddress,
-                          final CompletableFuture<Void> future) {
+    private CompletableFuture<Void> sendPing(final HandlerContext ctx,
+                                             final CompressedPublicKey recipient,
+                                             final InetSocketAddressWrapper recipientAddress,
+                                             final CompletableFuture<Void> future) {
         final int networkId = ctx.config().getNetworkId();
         final CompressedPublicKey sender = ctx.identity().getPublicKey();
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
@@ -560,6 +577,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
             future.completeExceptionally(e);
             ReferenceCountUtil.safeRelease(messageEnvelope);
         }
+        return future;
     }
 
     @SuppressWarnings("java:S2972")

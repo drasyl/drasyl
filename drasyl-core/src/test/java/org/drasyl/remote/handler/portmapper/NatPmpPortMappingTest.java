@@ -90,7 +90,7 @@ class NatPmpPortMappingTest {
         @Nested
         class FromGateway {
             @Test
-            void shouldRequestMappingAfterReceivingExternalAddressMessage(@Mock final HandlerContext ctx,
+            void shouldRequestMappingAfterReceivingExternalAddressMessage(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                                                           @Mock final InetSocketAddressWrapper sender,
                                                                           @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
                 final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008000000004f79fc0a8b202"));

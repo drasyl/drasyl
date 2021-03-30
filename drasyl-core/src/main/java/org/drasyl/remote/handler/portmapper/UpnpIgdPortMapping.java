@@ -251,7 +251,10 @@ public class UpnpIgdPortMapping implements PortMapping {
                 }
             }
         }, SSDP_DISCOVERY_TIMEOUT.toMillis(), MILLISECONDS);
-        ctx.passOutbound(SSDP_MULTICAST_ADDRESS, msg, new CompletableFuture<>());
+        ctx.passOutbound(SSDP_MULTICAST_ADDRESS, msg, new CompletableFuture<>()).exceptionally(e -> {
+            LOG.warn("Unable to send ssdp discovery message to `{}`", () -> SSDP_MULTICAST_ADDRESS, () -> e);
+            return null;
+        });
     }
 
     @SuppressWarnings({ "java:S1142", "java:S1541" })

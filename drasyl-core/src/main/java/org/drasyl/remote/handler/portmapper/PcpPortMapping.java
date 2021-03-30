@@ -224,7 +224,10 @@ public class PcpPortMapping implements PortMapping {
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         mappingRequested.incrementAndGet();
 
-        ctx.passOutbound(defaultGateway, msg, new CompletableFuture<>());
+        ctx.passOutbound(defaultGateway, msg, new CompletableFuture<>()).exceptionally(e -> {
+            LOG.warn("Unable to send mapping request message to `{}`", () -> defaultGateway, () -> e);
+            return null;
+        });
     }
 
     private synchronized void handleMapping(final HandlerContext ctx,
