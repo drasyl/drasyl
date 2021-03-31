@@ -811,6 +811,20 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         );
     }
 
+    /**
+     * Creates a new {@link Unite} message (sent by {@link org.drasyl.remote.handler.LocalNetworkDiscoveryHandler};
+     * used for UDP hole punching}.
+     *
+     * @param networkId   the network of the super peer node
+     * @param sender      the public key of the super peer node
+     * @param proofOfWork the super peer's proof of work
+     * @param recipient   the recipient of this message
+     * @param publicKey   the public key of the node with which the receiver should unite
+     * @param address     the {@code InetSocketAddress} of the node with which the receiver should
+     *                    unite
+     * @throws NullPointerException if {@code sender}, {@code proofOfWork}, {@code recipient},
+     *                              {@code publicKey}, or {@code address} is {@code null}
+     */
     public static RemoteEnvelope<Unite> unite(final int networkId,
                                               final CompressedPublicKey sender,
                                               final ProofOfWork proofOfWork,
