@@ -141,6 +141,7 @@ public class ChatGui {
     }
 
     private void run() throws DrasylException {
+        frame.setTitle("Create Node...");
         node = new BehavioralDrasylNode(config) {
             @Override
             protected Behavior created() {
