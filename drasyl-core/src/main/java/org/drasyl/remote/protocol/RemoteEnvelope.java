@@ -55,6 +55,7 @@ import java.net.InetSocketAddress;
 import java.security.PublicKey;
 import java.util.Arrays;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.remote.protocol.MessageId.randomMessageId;
 import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
@@ -718,13 +719,15 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     }
 
     /**
-     * Creates new acknowledgement message.
+     * Creates new {@link Acknowledgement} message (reply to {@link Discovery} message).
      *
      * @param networkId       the network id of the node server
      * @param sender          the public key of the node server
      * @param proofOfWork     the proof of work of the node server
      * @param recipient       the public key of the recipient
      * @param correspondingId the corresponding id of the previous join message
+     * @throws NullPointerException if {@code sender}, {@code proofOfWork}, {@code recipient}, or
+     *                              {@code correspondingId} is {@code null}
      */
     public static RemoteEnvelope<Acknowledgement> acknowledgement(final int networkId,
                                                                   final CompressedPublicKey sender,
@@ -732,12 +735,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                                                                   final CompressedPublicKey recipient,
                                                                   final MessageId correspondingId) {
         return of(
-                buildPublicHeader(networkId, sender, proofOfWork, recipient),
-                PrivateHeader.newBuilder()
-                        .setType(ACKNOWLEDGEMENT)
-                        .build(), Acknowledgement.newBuilder()
-                        .setCorrespondingId(correspondingId.longValue())
-                        .build()
+                buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), requireNonNull(recipient)),
+                PrivateHeader.newBuilder().setType(ACKNOWLEDGEMENT).build(),
+                Acknowledgement.newBuilder().setCorrespondingId(correspondingId.longValue()).build()
         );
     }
 
@@ -756,7 +756,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     }
 
     /**
-     * Creates new application message.
+     * Creates new {@link Application} message.
      *
      * @param networkId   the network the sender belongs to
      * @param sender      the sender
@@ -764,6 +764,8 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @param recipient   the recipient
      * @param type        the payload type
      * @param payload     the data to be sent
+     * @throws NullPointerException if {@code sender}, {@code proofOfWork}, {@code recipient}, or
+     *                              {@code payload} is {@code null}
      */
     public static RemoteEnvelope<Application> application(final int networkId,
                                                           final CompressedPublicKey sender,
@@ -777,20 +779,22 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         }
 
         return of(
-                buildPublicHeader(networkId, sender, proofOfWork, recipient),
+                buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), requireNonNull(recipient)),
                 PrivateHeader.newBuilder().setType(APPLICATION).build(),
                 messageBuilder.build()
         );
     }
 
     /**
-     * Creates a new join message.
+     * Creates a new {@link Discovery} message (sent by {@link org.drasyl.remote.handler.InternetDiscoveryHandler}).
      *
      * @param networkId   the network of the joining node
      * @param sender      the public key of the joining node
      * @param proofOfWork the proof of work
      * @param recipient   the public key of the node to join
      * @param joinTime    if {@code 0} greater then 0, node will join a children.
+     * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
+     *                              {@code null}
      */
     public static RemoteEnvelope<Discovery> discovery(final int networkId,
                                                       final CompressedPublicKey sender,
@@ -798,7 +802,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                                                       final CompressedPublicKey recipient,
                                                       final long joinTime) {
         return of(
-                buildPublicHeader(networkId, sender, proofOfWork, recipient),
+                buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), requireNonNull(recipient)),
                 PrivateHeader.newBuilder()
                         .setType(DISCOVERY)
                         .build(), Discovery.newBuilder()
@@ -814,7 +818,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                                               final CompressedPublicKey publicKey,
                                               final InetSocketAddress address) {
         return of(
-                buildPublicHeader(networkId, sender, proofOfWork, recipient),
+                buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), requireNonNull(recipient)),
                 PrivateHeader.newBuilder()
                         .setType(UNITE)
                         .build(), Unite.newBuilder()
