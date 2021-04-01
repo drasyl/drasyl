@@ -95,39 +95,31 @@ public final class DrasylSchedulerUtil {
      * </p>
      */
     public static CompletableFuture<Void> shutdown() {
-        final CompletableFuture<Void> lightSchedulerFuture;
-        final CompletableFuture<Void> heavySchedulerFuture;
+        final FutureCombiner combiner = FutureCombiner.getInstance();
 
         if (lightSchedulerCreated) {
-            lightSchedulerFuture = LazyLightSchedulerHolder.INSTANCE.shutdown();
-        }
-        else {
-            lightSchedulerFuture = CompletableFuture.completedFuture(null);
+            combiner.add(LazyLightSchedulerHolder.INSTANCE.shutdown());
         }
 
         if (heavySchedulerCreated) {
-            heavySchedulerFuture = LazyHeavySchedulerHolder.INSTANCE.shutdown();
-        }
-        else {
-            heavySchedulerFuture = CompletableFuture.completedFuture(null);
+            combiner.add(LazyHeavySchedulerHolder.INSTANCE.shutdown());
         }
 
-        return FutureCombiner.getInstance()
-                .addAll(lightSchedulerFuture, heavySchedulerFuture)
-                .combine(new CompletableFuture<>());
+        return combiner.combine(new CompletableFuture<>());
     }
 
     private static final class LazyLightSchedulerHolder {
         static final String BASE_NAME = "drasyl-L-";
         static final int SIZE;
 
+        // pool should have at least all available processors minus two threads
         static {
             SIZE = SystemPropertyUtil.getInt("org.drasyl.scheduler.light", Math.max(2, Runtime.getRuntime().availableProcessors() - 2));
             LOG.debug("Light scheduler pool size: {}", SIZE);
         }
 
-        // pool should have at least all available processors minus two threads
         static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME, SIZE, SIZE);
+        @SuppressWarnings("unused")
         static final boolean LOCK = lightSchedulerCreated = true;
 
         private LazyLightSchedulerHolder() {
@@ -139,13 +131,14 @@ public final class DrasylSchedulerUtil {
         static final int CORE_SIZE = 1;
         static final int MAX_SIZE;
 
+        // pool should have at least 1 and max 10% of available processors
         static {
             MAX_SIZE = SystemPropertyUtil.getInt("org.drasyl.scheduler.heavy", Math.max(2, (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1)));
             LOG.debug("Heavy scheduler max pool size: {}", MAX_SIZE);
         }
 
-        // pool should have at least 1 and max 10% of available processors
         static final DrasylExecutor INSTANCE = new DrasylExecutor(BASE_NAME, CORE_SIZE, MAX_SIZE);
+        @SuppressWarnings("unused")
         static final boolean LOCK = heavySchedulerCreated = true;
 
         private LazyHeavySchedulerHolder() {
