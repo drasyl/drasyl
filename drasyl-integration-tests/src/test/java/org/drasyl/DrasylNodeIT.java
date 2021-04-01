@@ -305,15 +305,15 @@ class DrasylNodeIT {
         /**
          * Network Layout:
          * <pre>
-         * +---+----+   +----+---+
-         * |Client 1|   |Client 2|
+         * +--------+   +--------+
+         * | Node 1 |   | Node 2 |
          * +--------+   +--------+
          * </pre>
          */
         @Nested
-        class TwoClientWithStaticRoutesAndWithoutSuperPeerWhenOnlyRemoteIsEnabled {
-            private EmbeddedNode client1;
-            private EmbeddedNode client2;
+        class TwoNodesWithStaticRoutesAndWithoutSuperPeerWhenOnlyRemoteIsEnabled {
+            private EmbeddedNode node1;
+            private EmbeddedNode node2;
 
             @BeforeEach
             void setUp() throws DrasylException {
@@ -322,7 +322,7 @@ class DrasylNodeIT {
                 //
                 DrasylConfig config;
 
-                // client1
+                // node1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
                         .identityProofOfWork(ProofOfWork.of(12304070))
@@ -340,10 +340,10 @@ class DrasylNodeIT {
                         .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                client1 = new EmbeddedNode(config).started();
-                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client1"));
+                node1 = new EmbeddedNode(config).started();
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
 
-                // client2
+                // node2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
                         .identityProofOfWork(ProofOfWork.of(33957767))
@@ -361,17 +361,17 @@ class DrasylNodeIT {
                         .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                client2 = new EmbeddedNode(config).started();
-                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client2"));
+                node2 = new EmbeddedNode(config).started();
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
-                client1.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
-                client2.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+                node1.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+                node2.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
             }
 
             @AfterEach
             void tearDown() {
-                client1.close();
-                client2.close();
+                node1.close();
+                node2.close();
             }
 
             /**
@@ -380,45 +380,45 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
-                final TestObserver<MessageEvent> client1Messages = client1.messages().test();
-                final TestObserver<MessageEvent> client2Messages = client2.messages().test();
+                final TestObserver<MessageEvent> node1Messages = node1.messages().test();
+                final TestObserver<MessageEvent> node2Messages = node2.messages().test();
 
                 //
                 // send messages
                 //
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", true).get();
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (byte) 23).get();
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 'C').get();
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 3.141F).get();
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 1337).get();
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 9001L).get();
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (short) 42).get();
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", new byte[]{
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", true).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (byte) 23).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 'C').get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 3.141F).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 1337).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 9001L).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (short) 42).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", new byte[]{
                         (byte) 0,
                         (byte) 1
                 }).get();
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "String").get();
-                client1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", null).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "String").get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", null).get();
 
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", true).get();
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (byte) 23).get();
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 'C').get();
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 3.141F).get();
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 1337).get();
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 9001L).get();
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (short) 42).get();
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", new byte[]{
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", true).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (byte) 23).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 'C').get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 3.141F).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 1337).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 9001L).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (short) 42).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", new byte[]{
                         (byte) 0,
                         (byte) 1
                 }).get();
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "String").get();
-                client2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", null).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "String").get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", null).get();
 
                 //
                 // verify
                 //
-                client1Messages.awaitCount(10).assertValueCount(10);
-                client2Messages.awaitCount(10).assertValueCount(10);
+                node1Messages.awaitCount(10).assertValueCount(10);
+                node2Messages.awaitCount(10).assertValueCount(10);
             }
         }
 
