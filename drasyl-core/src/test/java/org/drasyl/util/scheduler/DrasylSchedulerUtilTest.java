@@ -22,25 +22,44 @@
 package org.drasyl.util.scheduler;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("common-java:SkippedUnitTests")
 @ExtendWith(MockitoExtension.class)
-@Disabled("This tests runs only when started in own JVM")
 class DrasylSchedulerUtilTest {
+    @Nested
+    class GetInstanceHeavy {
+        @Test
+        void shouldNeverThrowException() {
+            assertDoesNotThrow(DrasylSchedulerUtil::getInstanceHeavy);
+        }
+    }
+
+    @Nested
+    class GetInstanceLight {
+        @Test
+        void shouldNeverThrowException() {
+            assertDoesNotThrow(DrasylSchedulerUtil::getInstanceLight);
+        }
+    }
+
     @Test
+    @Disabled("This test succeeds only when started in own JVM")
     void shouldReturnImmediatelyWhenSchedulerIsNotInstantiated() {
         assertFalse(DrasylSchedulerUtil.lightSchedulerCreated);
         assertFalse(DrasylSchedulerUtil.heavySchedulerCreated);
     }
 
     @Test
+    @Disabled("This test succeeds only when started in own JVM")
     void shouldReturnImmediatelyWhenSchedulerIsNotInstantiatedAndShutdownIsCalled() {
         DrasylSchedulerUtil.shutdown().join();
 
@@ -49,6 +68,7 @@ class DrasylSchedulerUtilTest {
     }
 
     @Test
+    @Disabled("This test succeeds only when started in own JVM")
     void shouldNotReturnImmediatelyWhenLightSchedulerIsInstantiated() {
         assertNotNull(DrasylSchedulerUtil.getInstanceLight());
 
@@ -60,6 +80,7 @@ class DrasylSchedulerUtilTest {
     }
 
     @Test
+    @Disabled("This test succeeds only when started in own JVM")
     void shouldNotReturnImmediatelyWhenHeavySchedulerIsInstantiated() {
         assertNotNull(DrasylSchedulerUtil.getInstanceHeavy());
 
@@ -71,6 +92,7 @@ class DrasylSchedulerUtilTest {
     }
 
     @Test
+    @Disabled("This test succeeds only when started in own JVM")
     void shouldNotReturnImmediatelyWhenSchedulerIsInstantiated() {
         assertNotNull(DrasylSchedulerUtil.getInstanceLight());
         assertNotNull(DrasylSchedulerUtil.getInstanceHeavy());
