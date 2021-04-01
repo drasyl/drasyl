@@ -108,6 +108,7 @@ class FutureCombinerTest {
             assertFalse(futureToComplete.isCompletedExceptionally());
         }
 
+        @SuppressWarnings("ConfusingArgumentToVarargsMethod")
         @Test
         void shouldThrowExceptionIfParamIsNull() {
             final FutureCombiner combiner = FutureCombiner.getInstance();
@@ -221,8 +222,7 @@ class FutureCombinerTest {
 
             FutureCombiner.getInstance()
                     .addAll()
-                    .combine(futureToComplete)
-                    .complete(null);
+                    .combine(futureToComplete);
 
             assertTrue(futureToComplete.isDone());
             assertFalse(futureToComplete.isCompletedExceptionally());

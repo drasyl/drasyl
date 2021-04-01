@@ -40,7 +40,7 @@ import static java.util.Objects.requireNonNull;
  * combined have been added, callers must provide an aggregate future to be notified when all
  * combined futures have finished via the {@link #combine(CompletableFuture)} method.
  */
-public class FutureCombiner {
+public final class FutureCombiner {
     private final List<CompletableFuture<?>> futureList;
 
     private FutureCombiner() {
@@ -101,6 +101,7 @@ public class FutureCombiner {
         requireNonNull(future);
 
         if (futureList.isEmpty() || future.isDone()) {
+            future.complete(null);
             return future;
         }
 
