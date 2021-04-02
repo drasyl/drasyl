@@ -31,7 +31,10 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,12 +108,13 @@ class StaticRoutesHandlerTest {
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
-        final TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
+        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
         pipeline.processOutbound(publicKey, message).join();
 
         outboundMessages.awaitCount(1)
-                .assertValueCount(1);
+                .assertValueCount(1)
+                .assertValue(new DefaultAddressedEnvelope<>(null, address, message));
     }
 
     @SuppressWarnings("rawtypes")
@@ -120,10 +124,12 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(Map.of());
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
-        final TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
+        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
         pipeline.processOutbound(publicKey, message).join();
 
-        outboundMessages.awaitCount(1);
+        outboundMessages.awaitCount(1)
+                .assertValueCount(1)
+                .assertValue(new DefaultAddressedEnvelope<>(null, publicKey, message));
     }
 }
