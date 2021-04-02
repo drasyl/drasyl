@@ -41,6 +41,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.plugin.PluginManager;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -58,7 +59,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
-import static org.drasyl.util.NettyUtil.getBestEventLoopGroup;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
 import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 
@@ -91,8 +91,6 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
-    private static boolean bossGroupCreated;
-    private static boolean workerGroupCreated;
     private static String version;
 
     static {
@@ -165,7 +163,7 @@ public abstract class DrasylNode {
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent, identity);
-            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager, LazyBossGroupHolder.INSTANCE, LazyWorkerGroupHolder.INSTANCE);
+            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager);
             this.pluginManager = new PluginManager(config, identity, pipeline);
             this.startFuture = new AtomicReference<>();
             this.shutdownFuture = new AtomicReference<>(completedFuture(null));
@@ -226,15 +224,13 @@ public abstract class DrasylNode {
      * <b>This operation cannot be undone. After performing this operation, no new DrasylNodes can
      * be created!</b>
      * </p>
+     *
+     * @deprecated Use {@link EventLoopGroupUtil#shutdown()} instead.
      */
+    @Deprecated(since = "0.5.0", forRemoval = true)
     public static void irrevocablyTerminate() {
         if (INSTANCES.isEmpty()) {
-            if (bossGroupCreated) {
-                LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
-            }
-            if (workerGroupCreated) {
-                LazyWorkerGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
-            }
+            EventLoopGroupUtil.shutdown().join();
         }
     }
 
@@ -443,25 +439,5 @@ public abstract class DrasylNode {
     @NonNull
     public Identity identity() {
         return identity;
-    }
-
-    private static final class LazyBossGroupHolder {
-        // https://github.com/netty/netty/issues/639#issuecomment-9263566
-        static final EventLoopGroup INSTANCE = getBestEventLoopGroup(2);
-        @SuppressWarnings("unused")
-        static final boolean LOCK = bossGroupCreated = true;
-
-        private LazyBossGroupHolder() {
-        }
-    }
-
-    private static final class LazyWorkerGroupHolder {
-        // https://github.com/netty/netty/issues/639#issuecomment-9263566
-        static final EventLoopGroup INSTANCE = getBestEventLoopGroup(2);
-        @SuppressWarnings("unused")
-        static final boolean LOCK = workerGroupCreated = true;
-
-        private LazyWorkerGroupHolder() {
-        }
     }
 }

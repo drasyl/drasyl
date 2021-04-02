@@ -21,7 +21,6 @@
  */
 package org.drasyl.pipeline;
 
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -41,11 +40,9 @@ class VisualPipelineTest {
         @Test
         void shouldNotFail(@Mock final DrasylConfig config,
                            @Mock final Identity identity,
-                           @Mock final PeersManager peersManager,
-                           @Mock final EventLoopGroup bossGroup,
-                           @Mock final EventLoopGroup workerGroup) {
+                           @Mock final PeersManager peersManager) {
             final DrasylPipeline pipeline = new DrasylPipeline(event -> {
-            }, config, identity, peersManager, bossGroup, workerGroup);
+            }, config, identity, peersManager);
 
             assertDoesNotThrow(() -> VisualPipeline.printInboundOrder(pipeline, ALL));
         }
@@ -56,11 +53,9 @@ class VisualPipelineTest {
         @Test
         void shouldNotFail(@Mock final DrasylConfig config,
                            @Mock final Identity identity,
-                           @Mock final PeersManager peersManager,
-                           @Mock final EventLoopGroup bossGroup,
-                           @Mock final EventLoopGroup workerGroup) {
+                           @Mock final PeersManager peersManager) {
             final DrasylPipeline pipeline = new DrasylPipeline(event -> {
-            }, config, identity, peersManager, bossGroup, workerGroup);
+            }, config, identity, peersManager);
 
             assertDoesNotThrow(() -> VisualPipeline.printOutboundOrder(pipeline, ALL));
         }
@@ -71,11 +66,9 @@ class VisualPipelineTest {
         @Test
         void shouldNotFail(@Mock final DrasylConfig config,
                            @Mock final Identity identity,
-                           @Mock final PeersManager peersManager,
-                           @Mock final EventLoopGroup bossGroup,
-                           @Mock final EventLoopGroup workerGroup) {
+                           @Mock final PeersManager peersManager) {
             final DrasylPipeline pipeline = new DrasylPipeline(event -> {
-            }, config, identity, peersManager, bossGroup, workerGroup);
+            }, config, identity, peersManager);
 
             assertDoesNotThrow(() -> VisualPipeline.printOnlySimpleInboundHandler(pipeline, ALL));
         }
@@ -86,11 +79,9 @@ class VisualPipelineTest {
         @Test
         void shouldNotFail(@Mock final DrasylConfig config,
                            @Mock final Identity identity,
-                           @Mock final PeersManager peersManager,
-                           @Mock final EventLoopGroup bossGroup,
-                           @Mock final EventLoopGroup workerGroup) {
+                           @Mock final PeersManager peersManager) {
             final DrasylPipeline pipeline = new DrasylPipeline(event -> {
-            }, config, identity, peersManager, bossGroup, workerGroup);
+            }, config, identity, peersManager);
 
             assertDoesNotThrow(() -> VisualPipeline.printOnlySimpleOutboundHandler(pipeline, ALL));
         }
