@@ -32,7 +32,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.Protocol.Application;
@@ -41,7 +40,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -50,7 +48,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
-import static org.drasyl.util.NettyUtil.getBestEventLoopGroup;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -93,7 +90,7 @@ class DrasylPipelineIT {
                 .build();
 
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
-        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, getBestEventLoopGroup(2), getBestEventLoopGroup(2));
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager);
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<>() {
             @Override
             protected void matchedOutbound(final HandlerContext ctx,
@@ -142,8 +139,7 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void passEventThroughThePipeline(@Mock final InetSocketAddressWrapper senderAddress,
-                                     @Mock final InetSocketAddressWrapper recipientAddress) throws ExecutionException, InterruptedException, IOException {
+    void passEventThroughThePipeline() throws ExecutionException, InterruptedException, IOException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final Event testEvent = new Event() {

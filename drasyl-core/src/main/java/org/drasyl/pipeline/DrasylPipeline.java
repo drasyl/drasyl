@@ -21,7 +21,6 @@
  */
 package org.drasyl.pipeline;
 
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -44,6 +43,7 @@ import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
@@ -193,10 +193,8 @@ public class DrasylPipeline extends AbstractPipeline {
     public DrasylPipeline(final Consumer<Event> eventConsumer,
                           final DrasylConfig config,
                           final Identity identity,
-                          final PeersManager peersManager,
-                          final EventLoopGroup bossGroup,
-                          final EventLoopGroup workerGroup) {
-        this(eventConsumer, config, identity, peersManager, () -> new UdpServer(bossGroup), () -> new TcpServer(bossGroup, workerGroup), () -> new TcpClient(config, bossGroup));
+                          final PeersManager peersManager) {
+        this(eventConsumer, config, identity, peersManager, () -> new UdpServer(EventLoopGroupUtil.getInstanceBest()), () -> new TcpServer(EventLoopGroupUtil.getInstanceBest(), EventLoopGroupUtil.getInstanceBest()), () -> new TcpClient(config, EventLoopGroupUtil.getInstanceBest()));
     }
 
     @Override
