@@ -78,9 +78,9 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * </ul>
  */
 @SuppressWarnings({ "java:S110", "java:S1192" })
-public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope<? extends MessageLite>, RemoteEnvelope<Application>, Address> {
-    private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryHandler.class);
-    private static final Object path = InternetDiscoveryHandler.class;
+public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? extends MessageLite>, RemoteEnvelope<Application>, Address> {
+    private static final Logger LOG = LoggerFactory.getLogger(InternetDiscovery.class);
+    private static final Object path = InternetDiscovery.class;
     private final Map<MessageId, Ping> openPingsCache;
     private final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
     private final Map<CompressedPublicKey, Peer> peers;
@@ -89,7 +89,7 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
     private Disposable heartbeatDisposable;
     private CompressedPublicKey bestSuperPeer;
 
-    public InternetDiscoveryHandler(final DrasylConfig config) {
+    public InternetDiscovery(final DrasylConfig config) {
         openPingsCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getRemotePingMaxPeers())
                 .expireAfterWrite(config.getRemotePingTimeout())
@@ -111,12 +111,12 @@ public class InternetDiscoveryHandler extends SimpleDuplexHandler<RemoteEnvelope
     }
 
     @SuppressWarnings("java:S2384")
-    InternetDiscoveryHandler(final Map<MessageId, Ping> openPingsCache,
-                             final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache,
-                             final Map<CompressedPublicKey, Peer> peers,
-                             final Set<CompressedPublicKey> directConnectionPeers,
-                             final Set<CompressedPublicKey> superPeers,
-                             final CompressedPublicKey bestSuperPeer) {
+    InternetDiscovery(final Map<MessageId, Ping> openPingsCache,
+                      final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache,
+                      final Map<CompressedPublicKey, Peer> peers,
+                      final Set<CompressedPublicKey> directConnectionPeers,
+                      final Set<CompressedPublicKey> superPeers,
+                      final CompressedPublicKey bestSuperPeer) {
         this.openPingsCache = openPingsCache;
         this.uniteAttemptsCache = uniteAttemptsCache;
         this.directConnectionPeers = directConnectionPeers;

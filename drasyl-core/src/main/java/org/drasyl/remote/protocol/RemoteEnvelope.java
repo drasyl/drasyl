@@ -36,6 +36,7 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.handler.InternetDiscovery;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.Discovery;
@@ -786,7 +787,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     }
 
     /**
-     * Creates a new {@link Discovery} message (sent by {@link org.drasyl.remote.handler.InternetDiscoveryHandler}).
+     * Creates a new {@link Discovery} message (sent by {@link InternetDiscovery}).
      *
      * @param networkId   the network of the joining node
      * @param sender      the public key of the joining node
@@ -812,7 +813,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     }
 
     /**
-     * Creates a new {@link Unite} message (sent by {@link org.drasyl.remote.handler.LocalNetworkDiscoveryHandler};
+     * Creates a new {@link Unite} message (sent by {@link org.drasyl.remote.handler.InternetDiscovery};
      * used for UDP hole punching}.
      *
      * @param networkId   the network of the super peer node

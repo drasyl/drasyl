@@ -34,7 +34,7 @@ import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.ArmHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
-import org.drasyl.remote.handler.InternetDiscoveryHandler;
+import org.drasyl.remote.handler.InternetDiscovery;
 import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
 import org.drasyl.remote.handler.OtherNetworkFilter;
 import org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec;
@@ -67,7 +67,7 @@ public class DrasylPipeline extends AbstractPipeline {
     public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
     public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
     public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
-    public static final String INTERNET_DISCOVERY_HANDLER = "INTERNET_DISCOVERY_HANDLER";
+    public static final String INTERNET_DISCOVERY = "INTERNET_DISCOVERY";
     public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     public static final String ARM_HANDLER = "ARM_HANDLER";
@@ -126,7 +126,7 @@ public class DrasylPipeline extends AbstractPipeline {
             }
 
             // register at super peers/discover nodes in other networks
-            addFirst(INTERNET_DISCOVERY_HANDLER, new InternetDiscoveryHandler(config));
+            addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config));
 
             // outbound message guards
             addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);

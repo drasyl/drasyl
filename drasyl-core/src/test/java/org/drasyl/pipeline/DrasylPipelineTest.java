@@ -50,7 +50,7 @@ import java.util.function.Supplier;
 import static org.drasyl.pipeline.DrasylPipeline.ARM_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.CHUNKING_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.HOP_COUNT_GUARD;
-import static org.drasyl.pipeline.DrasylPipeline.INTERNET_DISCOVERY_HANDLER;
+import static org.drasyl.pipeline.DrasylPipeline.INTERNET_DISCOVERY;
 import static org.drasyl.pipeline.DrasylPipeline.INTRA_VM_DISCOVERY;
 import static org.drasyl.pipeline.DrasylPipeline.INVALID_PROOF_OF_WORK_FILTER;
 import static org.drasyl.pipeline.DrasylPipeline.LOCAL_HOST_DISCOVERY;
@@ -137,7 +137,7 @@ class DrasylPipelineTest {
             assertNotNull(pipeline.get(MESSAGE_SERIALIZER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(STATIC_ROUTES_HANDLER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(LOCAL_HOST_DISCOVERY), "This handler is required in the DrasylPipeline");
-            assertNotNull(pipeline.get(INTERNET_DISCOVERY_HANDLER), "This handler is required in the DrasylPipeline");
+            assertNotNull(pipeline.get(INTERNET_DISCOVERY), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(MONITORING_HANDLER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(ARM_HANDLER), "This handler is required in the DrasylPipeline");
