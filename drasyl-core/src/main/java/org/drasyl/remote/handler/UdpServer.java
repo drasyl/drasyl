@@ -58,8 +58,8 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
-import static org.drasyl.util.NetworkUtil.MAX_PORT_NUMBER;
-import static org.drasyl.util.NetworkUtil.getAddresses;
+import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
+import static org.drasyl.util.network.NetworkUtil.getAddresses;
 
 /**
  * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the

@@ -19,9 +19,11 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.util;
+package org.drasyl.util.network;
 
-import org.drasyl.util.NetworkUtil.NetworkUtilImpl;
+import org.drasyl.util.ThrowingFunction;
+import org.drasyl.util.ThrowingSupplier;
+import org.drasyl.util.network.NetworkUtil.NetworkUtilImpl;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,9 +43,9 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.function.Supplier;
 
-import static org.drasyl.util.NetworkUtil.createInetAddress;
-import static org.drasyl.util.NetworkUtil.getAddresses;
-import static org.drasyl.util.NetworkUtil.getNetworkPrefixLength;
+import static org.drasyl.util.network.NetworkUtil.createInetAddress;
+import static org.drasyl.util.network.NetworkUtil.getAddresses;
+import static org.drasyl.util.network.NetworkUtil.getNetworkPrefixLength;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

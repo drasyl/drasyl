@@ -23,9 +23,9 @@ package org.drasyl.util.protocol;
 
 import org.drasyl.DrasylNode;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.network.NetworkUtil;
 
 import java.io.IOException;
 import java.net.InetAddress;

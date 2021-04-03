@@ -19,9 +19,12 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.util;
+package org.drasyl.util.network;
 
 import com.google.common.net.InetAddresses;
+import org.drasyl.util.RandomUtil;
+import org.drasyl.util.ThrowingFunction;
+import org.drasyl.util.ThrowingSupplier;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 

@@ -52,7 +52,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.util.Ansi.ansi;
-import static org.drasyl.util.NetworkUtil.createInetAddress;
+import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;

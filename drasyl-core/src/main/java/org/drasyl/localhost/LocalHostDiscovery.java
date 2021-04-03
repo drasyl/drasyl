@@ -33,11 +33,11 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.RemoteEnvelope;
-import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.network.NetworkUtil;
 
 import java.io.File;
 import java.io.IOException;

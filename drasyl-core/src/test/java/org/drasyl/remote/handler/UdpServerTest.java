@@ -51,7 +51,7 @@ import java.net.InetSocketAddress;
 import java.util.Set;
 
 import static org.drasyl.remote.handler.UdpServer.determineActualEndpoints;
-import static org.drasyl.util.NetworkUtil.getAddresses;
+import static org.drasyl.util.network.NetworkUtil.getAddresses;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;

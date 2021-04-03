@@ -21,9 +21,9 @@
  */
 package org.drasyl.util.protocol;
 
-import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.network.NetworkUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;

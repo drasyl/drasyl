@@ -113,7 +113,7 @@ import static org.drasyl.DrasylConfig.getSerializationBindings;
 import static org.drasyl.DrasylConfig.getSerializationSerializers;
 import static org.drasyl.DrasylConfig.getStaticRoutes;
 import static org.drasyl.DrasylConfig.getURI;
-import static org.drasyl.util.NetworkUtil.createInetAddress;
+import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
