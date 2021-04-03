@@ -358,6 +358,15 @@ public final class NetworkUtil {
     }
 
     /**
+     * Returns the default network interface of this system.
+     *
+     * @return the default interface
+     */
+    public static NetworkInterface getDefaultInterface() {
+        return DefaultInterface.getDefault();
+    }
+
+    /**
      * Private implementation class pointed to some static methods.
      */
     @SuppressWarnings("java:S2972")

@@ -369,4 +369,12 @@ class NetworkUtilTest {
             assertNull(address);
         }
     }
+
+    @Nested
+    class GetDefaultInterface {
+        @Test
+        void shouldNeverThrowException() {
+            assertDoesNotThrow(NetworkUtil::getDefaultInterface);
+        }
+    }
 }
