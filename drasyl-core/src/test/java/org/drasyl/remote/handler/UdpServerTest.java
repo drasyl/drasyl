@@ -85,7 +85,6 @@ class UdpServerTest {
 
             final UdpServer handler = new UdpServer(bootstrap, null);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-
                 pipeline.processInbound(event).join();
 
                 verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());

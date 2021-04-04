@@ -86,6 +86,7 @@ class DrasylPipelineIT {
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
+                .remoteLocalNetworkDiscoveryEnabled(false)
                 .remoteTcpFallbackEnabled(false)
                 .build();
 
@@ -163,7 +164,7 @@ class DrasylPipelineIT {
         try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes()).armAndRelease(identity2.getPrivateKey())) {
             pipeline.processInbound(message.getSender(), message);
 
-            events.awaitCount(3);
+            events.awaitCount(3).assertValueCount(3);
             events.assertValueAt(1, MessageEvent.of(message.getSender(), "Hallo Welt".getBytes()));
             events.assertValueAt(2, testEvent);
         }

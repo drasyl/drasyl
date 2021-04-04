@@ -122,13 +122,13 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 superPeer = new EmbeddedNode(config).started();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
 
                 // client1
-                System.err.println(superPeer.getPort());
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
                         .identityProofOfWork(ProofOfWork.of(12304070))
@@ -143,6 +143,7 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 client1 = new EmbeddedNode(config).started().online();
@@ -163,6 +164,7 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 client2 = new EmbeddedNode(config).started().online();
@@ -425,6 +427,124 @@ class DrasylNodeIT {
         /**
          * Network Layout:
          * <pre>
+         * +-------------------------+
+         * |       Same Network      |
+         * | +--------+   +--------+ |
+         * | | Node 1 |   | Node 2 | |
+         * | +--------+   +--------+ |
+         * +-------------------------+
+         * </pre>
+         */
+        @Nested
+        class TwoNodesWithinTheSameNetworkWithoutSuperPeerWhenOnlyRemoteIsEnabled {
+            private EmbeddedNode node1;
+            private EmbeddedNode node2;
+
+            @BeforeEach
+            void setUp() throws DrasylException {
+                //
+                // create nodes
+                //
+                DrasylConfig config;
+
+                // node1
+                config = DrasylConfig.newBuilder()
+                        .networkId(0)
+                        .identityProofOfWork(ProofOfWork.of(12304070))
+                        .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
+                        .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("0.0.0.0"))
+                        .remoteBindPort(0)
+                        .remotePingInterval(ofSeconds(1))
+                        .remoteSuperPeerEnabled(false)
+                        .intraVmDiscoveryEnabled(false)
+                        .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteTcpFallbackEnabled(false)
+                        .build();
+                node1 = new EmbeddedNode(config).started();
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
+
+                // node2
+                config = DrasylConfig.newBuilder()
+                        .networkId(0)
+                        .identityProofOfWork(ProofOfWork.of(33957767))
+                        .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
+                        .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("0.0.0.0"))
+                        .remoteBindPort(0)
+                        .remotePingInterval(ofSeconds(1))
+                        .remoteSuperPeerEnabled(false)
+                        .intraVmDiscoveryEnabled(false)
+                        .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteMessageMtu(MESSAGE_MTU)
+                        .build();
+                node2 = new EmbeddedNode(config).started();
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
+
+                node1.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+                node2.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+            }
+
+            @AfterEach
+            void tearDown() {
+                node1.close();
+                node2.close();
+            }
+
+            /**
+             * This test ensures that sent application messages are delivered to the recipient.
+             */
+            @Test
+            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
+                final TestObserver<MessageEvent> node1Messages = node1.messages().test();
+                final TestObserver<MessageEvent> node2Messages = node2.messages().test();
+
+                //
+                // send messages
+                //
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", true).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (byte) 23).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 'C').get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 3.141F).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 1337).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", 9001L).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", (short) 42).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", new byte[]{
+                        (byte) 0,
+                        (byte) 1
+                }).get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "String").get();
+                node1.send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", null).get();
+
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", true).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (byte) 23).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 'C').get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 3.141F).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 1337).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", 9001L).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", (short) 42).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", new byte[]{
+                        (byte) 0,
+                        (byte) 1
+                }).get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "String").get();
+                node2.send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", null).get();
+
+                //
+                // verify
+                //
+                node1Messages.awaitCount(10).assertValueCount(10);
+                node2Messages.awaitCount(10).assertValueCount(10);
+            }
+        }
+
+        /**
+         * Network Layout:
+         * <pre>
          * +-------+
          * | Super |
          * | Peer  |
@@ -562,6 +682,7 @@ class DrasylNodeIT {
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).started();
@@ -577,6 +698,7 @@ class DrasylNodeIT {
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node2 = new EmbeddedNode(config).started();
@@ -592,6 +714,7 @@ class DrasylNodeIT {
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node3 = new EmbeddedNode(config).started();
@@ -607,6 +730,7 @@ class DrasylNodeIT {
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node4 = new EmbeddedNode(config).started();
@@ -732,6 +856,7 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(true)
                         .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
                         .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).started();
@@ -751,6 +876,7 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(true)
                         .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
                         .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node2 = new EmbeddedNode(config).started();

@@ -48,7 +48,7 @@ public final class ArmHandler extends MessageToMessageCodec<RemoteEnvelope<? ext
                           final Address sender,
                           final RemoteEnvelope<? extends MessageLite> msg,
                           final List<Object> out) throws Exception {
-        if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
+        if (ctx.identity().getPublicKey().equals(msg.getRecipient()) || msg.getRecipient() == null) {
             // disarm all messages addressed to us
             out.add(msg.disarm(ctx.identity().getPrivateKey()));
         }

@@ -21,6 +21,7 @@
  */
 package org.drasyl.util.network;
 
+import org.drasyl.util.network.NetworkUtil;
 import org.drasyl.util.ThrowingFunction;
 import org.drasyl.util.ThrowingSupplier;
 import org.drasyl.util.network.NetworkUtil.NetworkUtilImpl;

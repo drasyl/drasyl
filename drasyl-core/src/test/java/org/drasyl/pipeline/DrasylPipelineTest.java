@@ -27,6 +27,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.remote.handler.UdpMulticastServer;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
@@ -54,6 +55,7 @@ import static org.drasyl.pipeline.DrasylPipeline.INTERNET_DISCOVERY;
 import static org.drasyl.pipeline.DrasylPipeline.INTRA_VM_DISCOVERY;
 import static org.drasyl.pipeline.DrasylPipeline.INVALID_PROOF_OF_WORK_FILTER;
 import static org.drasyl.pipeline.DrasylPipeline.LOCAL_HOST_DISCOVERY;
+import static org.drasyl.pipeline.DrasylPipeline.LOCAL_NETWORK_DISCOVER;
 import static org.drasyl.pipeline.DrasylPipeline.LOOPBACK_MESSAGE_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.MESSAGE_SERIALIZER;
 import static org.drasyl.pipeline.DrasylPipeline.MONITORING_HANDLER;
@@ -62,6 +64,7 @@ import static org.drasyl.pipeline.DrasylPipeline.PORT_MAPPER;
 import static org.drasyl.pipeline.DrasylPipeline.REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC;
 import static org.drasyl.pipeline.DrasylPipeline.STATIC_ROUTES_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.TCP_CLIENT;
+import static org.drasyl.pipeline.DrasylPipeline.UDP_MULTICAST_SERVER;
 import static org.drasyl.pipeline.DrasylPipeline.UDP_SERVER;
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
@@ -100,6 +103,8 @@ class DrasylPipelineTest {
     @Mock
     private Supplier<UdpServer> udpServerSupplier;
     @Mock
+    private Supplier<UdpMulticastServer> udpMulticastServerSupplier;
+    @Mock
     private Semaphore outboundMessagesBuffer;
     @Mock
     private Supplier<TcpServer> tcpServerSupplier;
@@ -110,6 +115,7 @@ class DrasylPipelineTest {
     class Constructor {
         @Test
         void shouldCreateNewPipeline(@Mock final UdpServer udpServer,
+                                     @Mock final UdpMulticastServer udpMulticastServer,
                                      @Mock final TcpClient tcpClient) {
             when(config.isIntraVmDiscoveryEnabled()).thenReturn(true);
             when(config.isRemoteEnabled()).thenReturn(true);
@@ -118,12 +124,14 @@ class DrasylPipelineTest {
             when(config.isMonitoringEnabled()).thenReturn(true);
             when(config.isRemoteMessageArmEnabled()).thenReturn(true);
             when(config.isRemoteExposeEnabled()).thenReturn(true);
+            when(config.isRemoteLocalNetworkDiscoveryEnabled()).thenReturn(true);
             when(config.isRemoteTcpFallbackEnabled()).thenReturn(true);
             when(config.isRemoteSuperPeerEnabled()).thenReturn(true);
             when(udpServerSupplier.get()).thenReturn(udpServer);
+            when(udpMulticastServerSupplier.get()).thenReturn(udpMulticastServer);
             when(tcpClientSupplier.get()).thenReturn(tcpClient);
 
-            final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, udpServerSupplier, tcpServerSupplier, tcpClientSupplier);
+            final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, udpServerSupplier, udpMulticastServerSupplier, tcpServerSupplier, tcpClientSupplier);
 
             // Test if head and tail handlers are added
             assertNull(pipeline.get(DRASYL_HEAD_HANDLER));
@@ -137,6 +145,7 @@ class DrasylPipelineTest {
             assertNotNull(pipeline.get(MESSAGE_SERIALIZER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(STATIC_ROUTES_HANDLER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(LOCAL_HOST_DISCOVERY), "This handler is required in the DrasylPipeline");
+            assertNotNull(pipeline.get(LOCAL_NETWORK_DISCOVER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(INTERNET_DISCOVERY), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(MONITORING_HANDLER), "This handler is required in the DrasylPipeline");
@@ -145,6 +154,7 @@ class DrasylPipelineTest {
             assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(CHUNKING_HANDLER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC), "This handler is required in the DrasylPipeline");
+            assertNotNull(pipeline.get(UDP_MULTICAST_SERVER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(TCP_CLIENT), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(PORT_MAPPER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(UDP_SERVER), "This handler is required in the DrasylPipeline");
