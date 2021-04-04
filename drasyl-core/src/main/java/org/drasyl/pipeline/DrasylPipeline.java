@@ -36,9 +36,11 @@ import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
 import org.drasyl.remote.handler.InternetDiscovery;
 import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
+import org.drasyl.remote.handler.LocalNetworkDiscovery;
 import org.drasyl.remote.handler.OtherNetworkFilter;
 import org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec;
 import org.drasyl.remote.handler.StaticRoutesHandler;
+import org.drasyl.remote.handler.UdpMulticastServer;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
@@ -68,6 +70,7 @@ public class DrasylPipeline extends AbstractPipeline {
     public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
     public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
     public static final String INTERNET_DISCOVERY = "INTERNET_DISCOVERY";
+    public static final String LOCAL_NETWORK_DISCOVER = "LOCAL_NETWORK_DISCOVER";
     public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     public static final String ARM_HANDLER = "ARM_HANDLER";
@@ -75,6 +78,7 @@ public class DrasylPipeline extends AbstractPipeline {
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
     public static final String REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC = "REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC";
+    public static final String UDP_MULTICAST_SERVER = "UDP_MULTICAST_SERVER";
     public static final String TCP_SERVER = "TCP_SERVER";
     public static final String TCP_CLIENT = "TCP_CLIENT";
     public static final String PORT_MAPPER = "PORT_MAPPER";
@@ -86,6 +90,7 @@ public class DrasylPipeline extends AbstractPipeline {
                    final Identity identity,
                    final PeersManager peersManager,
                    final Supplier<UdpServer> udpServerProvider,
+                   final Supplier<UdpMulticastServer> udpMulticastServerProvider,
                    final Supplier<TcpServer> tcpServerProvider,
                    final Supplier<TcpClient> tcpClientProvider) {
         super(
@@ -125,7 +130,12 @@ public class DrasylPipeline extends AbstractPipeline {
                 addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery());
             }
 
-            // register at super peers/discover nodes in other networks
+            // discovery nodes on the local network
+            if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
+                addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery());
+            }
+
+            // discover nodes on the internet
             addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config));
 
             // outbound message guards
@@ -149,6 +159,10 @@ public class DrasylPipeline extends AbstractPipeline {
 
             // convert RemoteEnvelope <-> ByteBuf
             addFirst(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC, RemoteEnvelopeToByteBufCodec.INSTANCE);
+
+            if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
+                addFirst(UDP_MULTICAST_SERVER, udpMulticastServerProvider.get());
+            }
 
             // tcp fallback
             if (config.isRemoteTcpFallbackEnabled()) {
@@ -194,7 +208,7 @@ public class DrasylPipeline extends AbstractPipeline {
                           final DrasylConfig config,
                           final Identity identity,
                           final PeersManager peersManager) {
-        this(eventConsumer, config, identity, peersManager, () -> new UdpServer(EventLoopGroupUtil.getInstanceBest()), () -> new TcpServer(EventLoopGroupUtil.getInstanceBest(), EventLoopGroupUtil.getInstanceBest()), () -> new TcpClient(config, EventLoopGroupUtil.getInstanceBest()));
+        this(eventConsumer, config, identity, peersManager, () -> new UdpServer(EventLoopGroupUtil.getInstanceBest()), UdpMulticastServer::getInstance, () -> new TcpServer(EventLoopGroupUtil.getInstanceBest(), EventLoopGroupUtil.getInstanceBest()), () -> new TcpClient(config, EventLoopGroupUtil.getInstanceBest()));
     }
 
     @Override

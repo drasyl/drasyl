@@ -448,10 +448,19 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     }
 
     /**
+     * Returns the {@link CompressedPublicKey} of the message recipient. If the message has no
+     * recipient (e.g. because it is a multicast message) {@code null} is returned.
+     *
      * @throws InvalidMessageFormatException if the public header cannot be read
      */
     public CompressedPublicKey getRecipient() throws InvalidMessageFormatException {
-        return CompressedPublicKey.of(getPublicHeader().getRecipient().toByteArray());
+        final byte[] bytes = getPublicHeader().getRecipient().toByteArray();
+        if (bytes.length == 0) {
+            return null;
+        }
+        else {
+            return CompressedPublicKey.of(bytes);
+        }
     }
 
     /**
@@ -524,10 +533,13 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
 
             final byte[] bytes = outputStream.toByteArray();
 
-            // FIXME: encrypt payload (message's id is currently not covered by signature and can
-            //  therefore be forged. maybe we can prevent this by using the id as an initialisation
-            //  vector for our encryption?)
-            reverse(bytes);
+            // multicast messages will be signed only
+            if (getRecipient() != null) {
+                // FIXME: encrypt payload (message's id is currently not covered by signature and can
+                //  therefore be forged. maybe we can prevent this by using the id as an initialisation
+                //  vector for our encryption?)
+                reverse(bytes);
+            }
 
             // First encrypt and then sign. See: Krawczyk, Hugo. (2001). The Order of Encryption and Authentication for Protecting Communications (or: How Secure Is SSL?). 2139. 10.1007/3-540-44647-8_19.
             final byte[] signature = Crypto.signMessage(privateKey.toUncompressedKey(), bytes);
@@ -594,8 +606,11 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                     throw new InvalidMessageFormatException("No signature");
                 }
                 if (Crypto.verifySignature(sender, bytes, signature)) {
-                    // FIXME: decrypt payload
-                    reverse(bytes);
+                    // multicast messages will be signed only
+                    if (getRecipient() != null) {
+                        // FIXME: decrypt payload
+                        reverse(bytes);
+                    }
 
                     try (final ByteArrayInputStream decryptedIn = new ByteArrayInputStream(bytes)) {
                         final PrivateHeader decryptedPrivateHeader = PrivateHeader.parseDelimitedFrom(decryptedIn);
@@ -746,14 +761,18 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                                                    final CompressedPublicKey sender,
                                                    final ProofOfWork proofOfWork,
                                                    final CompressedPublicKey recipient) {
-        return PublicHeader.newBuilder()
+        final PublicHeader.Builder builder = PublicHeader.newBuilder()
                 .setId(randomMessageId().longValue())
                 .setNetworkId(networkId)
                 .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                 .setProofOfWork(proofOfWork.intValue())
-                .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
-                .setHopCount(1)
-                .build();
+                .setHopCount(1);
+
+        if (recipient != null) {
+            builder.setRecipient(ByteString.copyFrom(recipient.byteArrayValue()));
+        }
+
+        return builder.build();
     }
 
     /**
@@ -808,6 +827,27 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                         .setType(DISCOVERY)
                         .build(), Discovery.newBuilder()
                         .setChildrenTime(joinTime)
+                        .build()
+        );
+    }
+
+    /**
+     * Creates a new multicast {@link Discovery} message (sent by {@link
+     * org.drasyl.remote.handler.LocalNetworkDiscovery}}.
+     *
+     * @param networkId   the network of the joining node
+     * @param sender      the public key of the joining node
+     * @param proofOfWork the proof of work
+     * @throws NullPointerException if {@code sender}, or {@code proofOfWork} is {@code null}
+     */
+    public static RemoteEnvelope<Discovery> discovery(final int networkId,
+                                                      final CompressedPublicKey sender,
+                                                      final ProofOfWork proofOfWork) {
+        return of(
+                buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), null),
+                PrivateHeader.newBuilder()
+                        .setType(DISCOVERY)
+                        .build(), Discovery.newBuilder()
                         .build()
         );
     }

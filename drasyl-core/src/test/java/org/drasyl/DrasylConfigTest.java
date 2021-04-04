@@ -157,6 +157,7 @@ class DrasylConfigTest {
     private String remoteLocalHostDiscoveryPathAsString;
     private Duration remoteLocalHostDiscoveryLeaseTime;
     private Duration composedMessageTransferTimeout;
+    private boolean remoteLocalNetworkDiscoveryEnabled;
     private boolean remoteTcpFallbackEnabled;
     private InetAddress remoteTcpFallbackServerBindHost;
     private int remoteTcpFallbackServerBindPort;
@@ -209,6 +210,7 @@ class DrasylConfigTest {
         remoteLocalHostDiscoveryPathAsString = "foo/bar";
         remoteLocalHostDiscoveryLeaseTime = ofSeconds(40);
         composedMessageTransferTimeout = ofSeconds(60);
+        remoteLocalNetworkDiscoveryEnabled = true;
         monitoringEnabled = true;
         monitoringHostTag = "test.example.com";
         monitoringInfluxUri = URI.create("http://localhost:8086");
@@ -359,6 +361,7 @@ when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
                     remoteLocalHostDiscoveryEnabled,
                     Path.of(remoteLocalHostDiscoveryPathAsString),
                     remoteLocalHostDiscoveryLeaseTime,
+                    remoteLocalNetworkDiscoveryEnabled,
                     remoteTcpFallbackEnabled,
                     remoteTcpFallbackServerBindHost,
                     remoteTcpFallbackServerBindPort,
@@ -780,6 +783,7 @@ when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
                     .remoteLocalHostDiscoveryEnabled(DEFAULT.isRemoteLocalHostDiscoveryEnabled())
                     .remoteLocalHostDiscoveryPath(DEFAULT.getRemoteLocalHostDiscoveryPath())
                     .remoteLocalHostDiscoveryLeaseTime(DEFAULT.getRemoteLocalHostDiscoveryLeaseTime())
+                    .remoteLocalNetworkDiscoveryEnabled(DEFAULT.isRemoteLocalNetworkDiscoveryEnabled())
                     .remoteTcpFallbackEnabled(DEFAULT.isRemoteTcpFallbackEnabled())
                     .remoteTcpFallbackServerBindHost(DEFAULT.getRemoteTcpFallbackServerBindHost())
                     .remoteTcpFallbackServerBindPort(DEFAULT.getRemoteTcpFallbackServerBindPort())

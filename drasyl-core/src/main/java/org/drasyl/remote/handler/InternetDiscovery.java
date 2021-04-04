@@ -391,7 +391,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                                   final RemoteEnvelope<? extends MessageLite> msg,
                                   final CompletableFuture<Void> future) {
         try {
-            if (sender instanceof InetSocketAddressWrapper) {
+            if (sender instanceof InetSocketAddressWrapper && msg.getRecipient() != null) {
                 // This message is for us and we will fully decode it
                 if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
                     handleMessage(ctx, (InetSocketAddressWrapper) sender, msg, future);
