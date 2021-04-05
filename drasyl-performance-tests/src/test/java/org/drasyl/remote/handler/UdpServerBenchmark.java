@@ -52,8 +52,6 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.drasyl.util.NettyUtil.getBestEventLoopGroup;
-
 @State(Scope.Benchmark)
 public class UdpServerBenchmark extends AbstractBenchmark {
     private DatagramSocket socket;
@@ -75,7 +73,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     CompressedKeyPair.of("AgUAcj2PUQ8jqQpF4yANhFuPUlwSWpuzb9gIX6rzkc6g",
                             "DkEGET4hDK87hwVhGN8wl9SIL0cSKcY0MRsa3LrV0/U="));
 
-            final UdpServer handler = new UdpServer(getBestEventLoopGroup(2));
+            final UdpServer handler = new UdpServer();
 
             final DrasylConfig config2 = DrasylConfig.newBuilder()
                     .remoteBindPort(0)

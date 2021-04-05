@@ -24,7 +24,6 @@ package org.drasyl.remote.handler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
@@ -39,9 +38,9 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.network.NetworkUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -105,10 +104,10 @@ public class UdpMulticastServer extends HandlerAdapter {
         this.channel = channel;
     }
 
-    private UdpMulticastServer(final EventLoopGroup bossGroup) {
+    private UdpMulticastServer() {
         this(
                 new ConcurrentHashMap<>(),
-                new Bootstrap().group(bossGroup).channel(NioDatagramChannel.class),
+                new Bootstrap().group(EventLoopGroupUtil.getInstanceNio()).channel(NioDatagramChannel.class),
                 null
         );
     }
@@ -198,7 +197,7 @@ public class UdpMulticastServer extends HandlerAdapter {
 
     public static synchronized UdpMulticastServer getInstance() {
         if (instance == null) {
-            instance = new UdpMulticastServer(EventLoopGroupUtil.getInstanceNio());
+            instance = new UdpMulticastServer();
         }
         return instance;
     }

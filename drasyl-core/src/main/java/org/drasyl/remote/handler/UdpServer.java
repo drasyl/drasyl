@@ -28,7 +28,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
@@ -43,6 +42,7 @@ import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -77,10 +77,10 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         this.channel = channel;
     }
 
-    public UdpServer(final EventLoopGroup bossGroup) {
+    public UdpServer() {
         this(
                 new Bootstrap()
-                        .group(bossGroup)
+                        .group(EventLoopGroupUtil.getInstanceBest())
                         .channel(getBestDatagramChannel())
                         .option(ChannelOption.SO_BROADCAST, false),
                 null

@@ -27,7 +27,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -37,6 +36,7 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
@@ -83,10 +83,10 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
         this.superPeerChannel = superPeerChannel;
     }
 
-    public TcpClient(final DrasylConfig config, final EventLoopGroup bossGroup) {
+    public TcpClient(final DrasylConfig config) {
         this(
                 config.getRemoteSuperPeerEndpoints().stream().map(Endpoint::toInetSocketAddress).collect(Collectors.toSet()),
-                new Bootstrap().group(bossGroup).channel(getBestSocketChannel()),
+                new Bootstrap().group(EventLoopGroupUtil.getInstanceBest()).channel(getBestSocketChannel()),
                 new AtomicLong(),
                 null
         );

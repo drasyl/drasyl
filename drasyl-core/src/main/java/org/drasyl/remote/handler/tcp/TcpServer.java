@@ -27,7 +27,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -40,6 +39,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -68,10 +68,9 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     private final Map<SocketAddress, Channel> clientChannels;
     private Channel serverChannel;
 
-    public TcpServer(final EventLoopGroup bossGroup,
-                     final EventLoopGroup workerGroup) {
+    public TcpServer() {
         this(
-                new ServerBootstrap().group(bossGroup, workerGroup).channel(getBestServerSocketChannel()),
+                new ServerBootstrap().group(EventLoopGroupUtil.getInstanceBest(), EventLoopGroupUtil.getInstanceBest()).channel(getBestServerSocketChannel()),
                 new ConcurrentHashMap<>(),
                 null
         );
