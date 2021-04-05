@@ -192,16 +192,30 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                                          final Event event,
                                          final CompletableFuture<Void> future) {
         if (channel != null) {
-            final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-            LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
-            // shutdown server
-            channel.close().awaitUninterruptibly();
-            channel = null;
-            LOG.debug("Server stopped");
-        }
+            // the UDP server should be shut down last, so that the other handlers have a chance to
+            // send a "goodbye" message.
+            final CompletableFuture<Void> otherHandlersFuture = new CompletableFuture<>();
+            otherHandlersFuture.whenComplete((result, e) -> {
+                final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+                LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
+                // shutdown server
+                channel.close().awaitUninterruptibly();
+                channel = null;
+                LOG.debug("Server stopped");
 
-        // passthrough event
-        ctx.passEvent(event, future);
+                if (e == null) {
+                    future.complete(result);
+                }
+                else {
+                    future.completeExceptionally(e);
+                }
+            });
+            ctx.passEvent(event, otherHandlersFuture);
+        }
+        else {
+            // passthrough event
+            ctx.passEvent(event, future);
+        }
     }
 
     @Override
