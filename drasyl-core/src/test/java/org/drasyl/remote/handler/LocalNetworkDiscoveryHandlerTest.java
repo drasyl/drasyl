@@ -41,6 +41,7 @@ import org.drasyl.remote.handler.LocalNetworkDiscovery.Peer;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.Protocol;
 import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,6 +85,12 @@ class LocalNetworkDiscoveryTest {
 
     @Nested
     class EventHandling {
+        @BeforeEach
+        void setUp() {
+            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
+            when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(42));
+        }
+
         @Test
         void shouldStartHeartbeatingOnNodeUpEvent(@Mock final NodeUpEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, null));
