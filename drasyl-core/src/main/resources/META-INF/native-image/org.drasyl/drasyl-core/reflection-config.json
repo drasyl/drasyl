@@ -876,48 +876,6 @@
     ]
   },
   {
-    "name": "org.drasyl.cli.command.perf.message.SessionConfirmation",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.cli.command.perf.message.SessionRejection",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.cli.command.perf.message.SessionRequest",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.cli.command.perf.message.TestResults",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.cli.command.wormhole.PasswordMessage",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.cli.command.wormhole.TextMessage",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.cli.command.wormhole.WrongPasswordMessage",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
     "name": "org.drasyl.identity.AbstractCompressedKey",
     "allDeclaredFields": true,
     "allDeclaredMethods": true
@@ -982,6 +940,10 @@
     "allDeclaredMethods": true
   },
   {
+    "name": "org.drasyl.remote.handler.portmapper.PortMapper",
+    "allDeclaredMethods": true
+  },
+  {
     "name": "org.drasyl.remote.handler.tcp.TcpClient",
     "allDeclaredMethods": true
   },
@@ -990,7 +952,7 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec",
+    "name": "org.drasyl.remote.handler.ArmHandler",
     "allDeclaredMethods": true
   },
   {
@@ -998,7 +960,11 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.OtherNetworkFilter",
+    "name": "org.drasyl.remote.handler.HopCountGuard",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.drasyl.remote.handler.InternetDiscovery",
     "allDeclaredMethods": true
   },
   {
@@ -1006,23 +972,27 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.ArmHandler",
+    "name": "org.drasyl.remote.handler.LocalNetworkDiscovery",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.HopCountGuard",
+    "name": "org.drasyl.remote.handler.OtherNetworkFilter",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.InternetDiscoveryHandler",
+    "name": "org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.drasyl.remote.handler.StaticRoutesHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.drasyl.remote.handler.UdpMulticastServer",
     "allDeclaredMethods": true
   },
   {
     "name": "org.drasyl.remote.handler.UdpServer",
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.handler.portmapper.PortMapper",
     "allDeclaredMethods": true
   },
   {
