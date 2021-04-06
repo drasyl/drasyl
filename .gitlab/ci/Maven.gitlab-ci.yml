@@ -11,6 +11,8 @@ cache:
 
 .maven-base: &maven-base
   before_script:
+    - lscpu | grep -E '^Thread|^Core|^Socket|^CPU\('
+    - free -m
     - export GPG_TTY=$(tty)
     - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import --no-tty --batch --yes
     - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust --no-tty --batch --yes
