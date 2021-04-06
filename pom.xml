@@ -62,13 +62,23 @@
             <email>bornholdt@informatik.uni-hamburg.de</email>
             <organization>The drasyl Project</organization>
             <organizationUrl>https://drasyl.org/</organizationUrl>
+			<roles>
+				<role>co-founder</role>
+				<role>developer</role>
+			</roles>
+			<timezone>Europe/Berlin</timezone>
         </developer>
         <developer>
-            <id>6roebert</id>
+            <id>roebert</id>
             <name>Kevin Röbert</name>
             <email>6roebert@informatik.uni-hamburg.de</email>
             <organization>The drasyl Project</organization>
             <organizationUrl>https://drasyl.org/</organizationUrl>
+			<roles>
+				<role>co-founder</role>
+				<role>developer</role>
+			</roles>
+			<timezone>Europe/Berlin</timezone>
         </developer>
     </developers>
 
