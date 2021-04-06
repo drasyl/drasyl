@@ -41,6 +41,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -436,6 +437,7 @@ class DrasylNodeIT {
          * </pre>
          */
         @Nested
+        @Disabled("This test requires a multicast-capable environment")
         class TwoNodesWithinTheSameNetworkWithoutSuperPeerWhenOnlyRemoteIsEnabled {
             private EmbeddedNode node1;
             private EmbeddedNode node2;
