@@ -1,4 +1,4 @@
-name: drasyl-cli Native Image macOS
+name: macOS Native Image
 
 on:
   push:

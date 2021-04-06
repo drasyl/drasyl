@@ -1,4 +1,4 @@
-name: drasyl-cli Native Image Linux
+name: Linux Native Image
 
 on:
   push:

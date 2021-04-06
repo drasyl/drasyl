@@ -1,4 +1,4 @@
-name: drasyl-cli Native Image Windows
+name: Windows Native Image
 
 on:
   push:
