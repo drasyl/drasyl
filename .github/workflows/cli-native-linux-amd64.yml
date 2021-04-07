@@ -1,4 +1,4 @@
-name: Linux Native Image
+name: Linux AMD64 Native Image
 
 on:
   push:
