@@ -1,0 +1,5 @@
+# Maven
+**/target/
+
+# drasyl
+drasyl-*.zip

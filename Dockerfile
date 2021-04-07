@@ -1,16 +1,17 @@
-FROM kubeless/unzip AS build
+FROM openjdk:11-jdk-buster AS build
 
-ADD ./drasyl-*.zip ./
+ADD . /build
 
-RUN unzip -qq ./drasyl-*.zip && \
-    rm ./drasyl-*.zip
+RUN cd /build && \
+    ./mvnw --quiet --projects drasyl-cli --also-make -DskipTests package && \
+    unzip -qq ./drasyl-*.zip -d /
 
 FROM openjdk:11-jre-slim
 
 RUN mkdir /usr/local/share/drasyl && \
     ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
 
-COPY --from=build ./drasyl-* /usr/local/share/drasyl/
+COPY --from=build /drasyl-* /usr/local/share/drasyl/
 
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\

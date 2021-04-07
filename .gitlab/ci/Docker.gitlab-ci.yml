@@ -1,7 +1,7 @@
 # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Jobs/Build.gitlab-ci.yml
 docker-build:
-  stage: docker-build
-  image: "registry.gitlab.com/gitlab-org/cluster-integration/auto-build-image:v0.3.1"
+  stage: build
+  image: "registry.gitlab.com/gitlab-org/cluster-integration/auto-build-image:v0.4.0"
   variables:
     DOCKER_TLS_CERTDIR: ""
   services:

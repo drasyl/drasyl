@@ -3,8 +3,6 @@ stages:
   - test
   - visualize
   - deploy
-  - docker-build
-  - docker-test
   - review
   - dast
   - staging
@@ -52,7 +50,6 @@ gemnasium-python-dependency_scanning:
     - when: never
 
 container_scanning:
-  stage: docker-test
   rules:
     - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
       when: always
