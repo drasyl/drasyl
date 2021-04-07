@@ -83,11 +83,12 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
      * @param peersManager the peers manager
      * @param handlers     the handlers
      */
+    @SuppressWarnings("java:S109")
     public EmbeddedPipeline(final DrasylConfig config,
                             final Identity identity,
                             final PeersManager peersManager,
                             final Handler... handlers) {
-        this(config, identity, peersManager, DrasylSchedulerUtil.getInstanceLight(), DrasylSchedulerUtil.getInstanceHeavy(), handlers);
+        this(config, identity, peersManager, new DrasylSchedulerUtil.DrasylExecutor(EmbeddedPipeline.class.getSimpleName() + "-L-", 2, 2).getScheduler(), new DrasylSchedulerUtil.DrasylExecutor(EmbeddedPipeline.class.getSimpleName() + "-H-", 2, 2).getScheduler(), handlers);
     }
 
     private EmbeddedPipeline(final DrasylConfig config,
@@ -215,6 +216,10 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
         for (final String ctx : new HashMap<>(handlerNames).keySet()) {
             this.remove(ctx);
         }
+
+        dependentScheduler.shutdown();
+        independentScheduler.shutdown();
+
         outboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);
         inboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);
     }
