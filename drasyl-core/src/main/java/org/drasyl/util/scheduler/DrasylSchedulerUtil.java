@@ -157,7 +157,9 @@ public final class DrasylSchedulerUtil {
          * @param basename the basename for the created threads
          */
         @SuppressWarnings("java:S139")
-        DrasylExecutor(final String basename, final int corePoolSize, final int maxPoolSize) {
+        public DrasylExecutor(final String basename,
+                              final int corePoolSize,
+                              final int maxPoolSize) {
             final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                     .setNameFormat(basename + "%d")
                     .build();
@@ -195,6 +197,18 @@ public final class DrasylSchedulerUtil {
             }).start();
 
             return future;
+        }
+
+        public static int getQueueSize() {
+            return QUEUE_SIZE;
+        }
+
+        public DrasylScheduler getScheduler() {
+            return scheduler;
+        }
+
+        public ThreadPoolExecutor getExecutor() {
+            return executor;
         }
     }
 }
