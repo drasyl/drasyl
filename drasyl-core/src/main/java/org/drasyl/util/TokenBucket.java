@@ -40,7 +40,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * bucket capacity can be used to control whether capacities unused in the past may be used up
  * later, or whether they "overflow" from the bucket and are lost unused.
  * <p>
- * This implementation has been inspired by: <a href="https://github.com/bbeck/token-bucket/tree/master">token-bucket</>
+ * This implementation has been inspired by: <a href="https://github.com/bbeck/token-bucket/tree/master">token-bucket</a>
  */
 public class TokenBucket {
     private final long capacity;
