@@ -38,8 +38,7 @@ import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import org.drasyl.util.scheduler.DrasylScheduler;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
+import org.drasyl.util.scheduler.DrasylSchedulerUtil.DrasylExecutor;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -63,6 +62,8 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
     private final Subject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
     private final Subject<AddressedEnvelope<Address, Object>> outboundMessages;
+    private final DrasylExecutor dependentExecutor;
+    private final DrasylExecutor independentExecutor;
 
     /**
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
@@ -84,8 +85,8 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                 peersManager,
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()),
-                new DrasylSchedulerUtil.DrasylExecutor(EmbeddedPipeline.class.getSimpleName() + "-L-", 2, 2).getScheduler(),
-                new DrasylSchedulerUtil.DrasylExecutor(EmbeddedPipeline.class.getSimpleName() + "-H-", 2, 2).getScheduler()
+                new DrasylExecutor(EmbeddedPipeline.class.getSimpleName() + "-L-", 2, 2),
+                new DrasylExecutor(EmbeddedPipeline.class.getSimpleName() + "-H-", 2, 2)
         );
         List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + randomString(DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH), handler));
     }
@@ -95,14 +96,16 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                              final PeersManager peersManager,
                              final Serialization inboundSerialization,
                              final Serialization outboundSerialization,
-                             final DrasylScheduler dependentScheduler,
-                             final DrasylScheduler independentScheduler) {
-        super(new ConcurrentHashMap<>(), dependentScheduler, independentScheduler, config, identity, peersManager, inboundSerialization, outboundSerialization, null);
-        this.inboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
+                             final DrasylExecutor dependentExecutor,
+                             final DrasylExecutor independentExecutor) {
+        super(new ConcurrentHashMap<>(), dependentExecutor.getScheduler(), independentExecutor.getScheduler(), config, identity, peersManager, inboundSerialization, outboundSerialization, null);
+        this.dependentExecutor = dependentExecutor;
+        this.independentExecutor = independentExecutor;
+        inboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
         inboundEvents = ReplaySubject.<Event>create().toSerialized();
         outboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
 
-        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, dependentExecutor.getScheduler(), independentExecutor.getScheduler(), identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             protected Logger log() {
                 return LOG;
@@ -118,7 +121,7 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                 future.complete(null);
             }
         };
-        this.tail = new TailContext(inboundEvents::onNext, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+        this.tail = new TailContext(inboundEvents::onNext, config, this, dependentExecutor.getScheduler(), independentExecutor.getScheduler(), identity, peersManager, inboundSerialization, outboundSerialization) {
             @Override
             public void onInbound(final HandlerContext ctx,
                                   final Address sender,
@@ -216,8 +219,8 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
             this.remove(ctx);
         }
 
-        dependentScheduler.shutdown();
-        independentScheduler.shutdown();
+        dependentExecutor.shutdown().join();
+        independentExecutor.shutdown().join();
 
         outboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);
         inboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);

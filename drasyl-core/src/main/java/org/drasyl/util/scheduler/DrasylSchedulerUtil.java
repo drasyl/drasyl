@@ -176,7 +176,7 @@ public final class DrasylSchedulerUtil {
             this.scheduler = DrasylScheduler.wrap(Schedulers.from(executor), basename);
         }
 
-        private CompletableFuture<Void> shutdown() {
+        public CompletableFuture<Void> shutdown() {
             final CompletableFuture<Void> future = new CompletableFuture<>();
 
             new Thread(() -> {
