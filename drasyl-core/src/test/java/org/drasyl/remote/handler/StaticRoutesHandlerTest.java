@@ -64,11 +64,11 @@ class StaticRoutesHandlerTest {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
         when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+            pipeline.processInbound(event).join();
 
-        pipeline.processInbound(event).join();
-
-        verify(peersManager).addPath(eq(publicKey), any());
+            verify(peersManager).addPath(eq(publicKey), any());
+        }
     }
 
     @Test
@@ -77,11 +77,11 @@ class StaticRoutesHandlerTest {
                                           @Mock final InetSocketAddressWrapper address) {
         when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+            pipeline.processInbound(event).join();
 
-        pipeline.processInbound(event).join();
-
-        verify(peersManager).removePath(eq(publicKey), any());
+            verify(peersManager).removePath(eq(publicKey), any());
+        }
     }
 
     @Test
@@ -90,11 +90,11 @@ class StaticRoutesHandlerTest {
                                                         @Mock final InetSocketAddressWrapper address) {
         when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+            pipeline.processInbound(event).join();
 
-        pipeline.processInbound(event).join();
-
-        verify(peersManager).removePath(eq(publicKey), any());
+            verify(peersManager).removePath(eq(publicKey), any());
+        }
     }
 
     @SuppressWarnings("rawtypes")
@@ -106,14 +106,16 @@ class StaticRoutesHandlerTest {
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
-        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+            outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-        pipeline.processOutbound(publicKey, message).join();
+            pipeline.processOutbound(publicKey, message).join();
 
-        outboundMessages.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(null, address, message));
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(null, address, message));
+        }
     }
 
     @SuppressWarnings("rawtypes")
@@ -122,13 +124,15 @@ class StaticRoutesHandlerTest {
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
         when(config.getRemoteStaticRoutes()).thenReturn(Map.of());
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE);
-        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+            outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-        pipeline.processOutbound(publicKey, message).join();
+            pipeline.processOutbound(publicKey, message).join();
 
-        outboundMessages.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(null, publicKey, message));
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(null, publicKey, message));
+        }
     }
 }
