@@ -25,9 +25,12 @@ import com.google.protobuf.ByteString;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
+import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.UnsignedShort;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.net.InetSocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -76,6 +79,33 @@ public class ProtocolTest {
                     .build();
 
             assertEquals(95, header.getSerializedSize());
+        }
+    }
+
+    @Nested
+    class TestUnite {
+        @Test
+        void shouldSerializeIpv4ToCorrectSize() {
+            final InetSocketAddress address = new InetSocketAddress("37.61.174.58", 80);
+            final Unite unite = Unite.newBuilder()
+                    .setPublicKey(ByteString.copyFrom(CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").byteArrayValue()))
+                    .setAddress(address.getHostString())
+                    .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
+                    .build();
+
+            assertEquals(53, unite.getSerializedSize());
+        }
+
+        @Test
+        void shouldSerializeIpv6ToCorrectSize() {
+            final InetSocketAddress address = new InetSocketAddress("b719:5781:d127:d17c:1230:b24c:478c:7985", 443);
+            final Unite unite = Unite.newBuilder()
+                    .setPublicKey(ByteString.copyFrom(CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").byteArrayValue()))
+                    .setAddress(address.getHostString())
+                    .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
+                    .build();
+
+            assertEquals(80, unite.getSerializedSize());
         }
     }
 }
