@@ -82,6 +82,7 @@ import static org.drasyl.DrasylConfig.REMOTE_EXPOSE_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_PATH;
+import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_WATCH_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_ARM_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.REMOTE_MESSAGE_HOP_LIMIT;
@@ -156,6 +157,7 @@ class DrasylConfigTest {
     private boolean remoteLocalHostDiscoveryEnabled;
     private String remoteLocalHostDiscoveryPathAsString;
     private Duration remoteLocalHostDiscoveryLeaseTime;
+    private boolean remoteLocalHostDiscoveryWatchEnabled;
     private Duration composedMessageTransferTimeout;
     private boolean remoteLocalNetworkDiscoveryEnabled;
     private boolean remoteTcpFallbackEnabled;
@@ -209,6 +211,7 @@ class DrasylConfigTest {
         remoteLocalHostDiscoveryEnabled = true;
         remoteLocalHostDiscoveryPathAsString = "foo/bar";
         remoteLocalHostDiscoveryLeaseTime = ofSeconds(40);
+        remoteLocalHostDiscoveryWatchEnabled = true;
         composedMessageTransferTimeout = ofSeconds(60);
         remoteLocalNetworkDiscoveryEnabled = true;
         monitoringEnabled = true;
@@ -239,7 +242,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d");
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(123);
             when(typesafeConfig.getString(IDENTITY_PATH)).thenReturn(identityPathAsString);
-when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
+            when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
             when(typesafeConfig.getBoolean(REMOTE_ENABLED)).thenReturn(remoteEnabled);
             when(typesafeConfig.getString(REMOTE_BIND_HOST)).thenReturn(remoteBindHost.getHostAddress());
             when(typesafeConfig.getInt(REMOTE_BIND_PORT)).thenReturn(remoteBindPort);
@@ -257,6 +260,7 @@ when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
             when(typesafeConfig.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED)).thenReturn(remoteLocalHostDiscoveryEnabled);
             when(typesafeConfig.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH)).thenReturn(remoteLocalHostDiscoveryPathAsString);
             when(typesafeConfig.getDuration(REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME)).thenReturn(remoteLocalHostDiscoveryLeaseTime);
+            when(typesafeConfig.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_WATCH_ENABLED)).thenReturn(remoteLocalHostDiscoveryWatchEnabled);
             when(typesafeConfig.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
             when(typesafeConfig.getBoolean(REMOTE_TCP_FALLBACK_ENABLED)).thenReturn(remoteTcpFallbackEnabled);
             when(typesafeConfig.getString(REMOTE_TCP_FALLBACK_SERVER_BIND_HOST)).thenReturn(remoteTcpFallbackServerBindHost.getHostAddress());
@@ -299,6 +303,7 @@ when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
             assertEquals(remoteLocalHostDiscoveryEnabled, config.isRemoteLocalHostDiscoveryEnabled());
             assertEquals(Path.of(remoteLocalHostDiscoveryPathAsString), config.getRemoteLocalHostDiscoveryPath());
             assertEquals(remoteLocalHostDiscoveryLeaseTime, config.getRemoteLocalHostDiscoveryLeaseTime());
+            assertEquals(remoteLocalHostDiscoveryWatchEnabled, config.isRemoteLocalHostDiscoveryWatchEnabled());
             assertEquals(remoteTcpFallbackEnabled, config.isRemoteTcpFallbackEnabled());
             assertEquals(remoteTcpFallbackServerBindHost, config.getRemoteTcpFallbackServerBindHost());
             assertEquals(remoteTcpFallbackServerBindPort, config.getRemoteTcpFallbackServerBindPort());
@@ -361,6 +366,7 @@ when(typesafeConfig.getInt(MESSAGE_BUFFER_SIZE)).thenReturn(messageBufferSize);
                     remoteLocalHostDiscoveryEnabled,
                     Path.of(remoteLocalHostDiscoveryPathAsString),
                     remoteLocalHostDiscoveryLeaseTime,
+                    remoteLocalHostDiscoveryWatchEnabled,
                     remoteLocalNetworkDiscoveryEnabled,
                     remoteTcpFallbackEnabled,
                     remoteTcpFallbackServerBindHost,

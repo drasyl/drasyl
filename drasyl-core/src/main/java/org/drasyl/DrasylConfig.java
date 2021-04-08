@@ -96,6 +96,7 @@ public class DrasylConfig {
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.remote.local-host-discovery.enabled";
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_PATH = "drasyl.remote.local-host-discovery.path";
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME = "drasyl.remote.local-host-discovery.lease-time";
+    public static final String REMOTE_LOCAL_HOST_DISCOVERY_WATCH_ENABLED = "drasyl.remote.local-host-discovery.watch.enabled";
     public static final String REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED = "drasyl.remote.local-network-discovery.enabled";
     public static final String REMOTE_TCP_FALLBACK_ENABLED = "drasyl.remote.tcp-fallback.enabled";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_HOST = "drasyl.remote.tcp-fallback.server.bind-host";
@@ -142,6 +143,7 @@ public class DrasylConfig {
     private final boolean remoteLocalHostDiscoveryEnabled;
     private final Path remoteLocalHostDiscoveryPath;
     private final Duration remoteLocalHostDiscoveryLeaseTime;
+    private final boolean remoteLocalHostDiscoveryWatchEnabled;
     private final boolean remoteLocalNetworkDiscoveryEnabled;
     private final boolean remoteTcpFallbackEnabled;
     private final InetAddress remoteTcpFallbackServerBindHost;
@@ -252,6 +254,7 @@ public class DrasylConfig {
             if (this.remoteLocalHostDiscoveryLeaseTime.isNegative() || this.remoteLocalHostDiscoveryLeaseTime.isZero()) {
                 throw new DrasylConfigException(REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME, "Must be a positive value.");
             }
+            this.remoteLocalHostDiscoveryWatchEnabled = config.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_WATCH_ENABLED);
             this.remoteLocalNetworkDiscoveryEnabled = config.getBoolean(REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED);
             this.remoteMessageMtu = (int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MTU).toBytes(), Integer.MAX_VALUE);
             if (this.remoteMessageMtu < 1) {
@@ -324,6 +327,7 @@ public class DrasylConfig {
                  final boolean remoteLocalHostDiscoveryEnabled,
                  final Path remoteLocalHostDiscoveryPath,
                  final Duration remoteLocalHostDiscoveryLeaseTime,
+                 final boolean remoteLocalHostDiscoveryWatchEnabled,
                  final boolean remoteLocalNetworkDiscoveryEnabled,
                  final boolean remoteTcpFallbackEnabled,
                  final InetAddress remoteTcpFallbackServerBindHost,
@@ -369,6 +373,7 @@ public class DrasylConfig {
         this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
         this.remoteLocalHostDiscoveryPath = requireNonNull(remoteLocalHostDiscoveryPath);
         this.remoteLocalHostDiscoveryLeaseTime = requireNonNull(remoteLocalHostDiscoveryLeaseTime);
+        this.remoteLocalHostDiscoveryWatchEnabled = remoteLocalHostDiscoveryWatchEnabled;
         this.remoteLocalNetworkDiscoveryEnabled = remoteLocalNetworkDiscoveryEnabled;
         this.remoteTcpFallbackEnabled = remoteTcpFallbackEnabled;
         this.remoteTcpFallbackServerBindHost = requireNonNull(remoteTcpFallbackServerBindHost);
@@ -782,6 +787,7 @@ public class DrasylConfig {
                 config.remoteLocalHostDiscoveryEnabled,
                 config.remoteLocalHostDiscoveryPath,
                 config.remoteLocalHostDiscoveryLeaseTime,
+                config.remoteLocalHostDiscoveryWatchEnabled,
                 config.remoteLocalNetworkDiscoveryEnabled,
                 config.remoteTcpFallbackEnabled,
                 config.remoteTcpFallbackServerBindHost,
@@ -832,6 +838,7 @@ public class DrasylConfig {
                 remoteLocalHostDiscoveryEnabled,
                 remoteLocalHostDiscoveryPath,
                 remoteLocalHostDiscoveryLeaseTime,
+                remoteLocalHostDiscoveryWatchEnabled,
                 monitoringEnabled,
                 monitoringHostTag,
                 monitoringInfluxUri,
@@ -867,6 +874,7 @@ public class DrasylConfig {
                 remoteMessageHopLimit == that.remoteMessageHopLimit &&
                 remoteSuperPeerEnabled == that.remoteSuperPeerEnabled &&
                 remoteLocalHostDiscoveryEnabled == that.remoteLocalHostDiscoveryEnabled &&
+                remoteLocalHostDiscoveryWatchEnabled == that.remoteLocalHostDiscoveryWatchEnabled &&
                 remoteLocalNetworkDiscoveryEnabled == that.remoteLocalNetworkDiscoveryEnabled &&
                 remoteTcpFallbackEnabled == that.remoteTcpFallbackEnabled &&
                 remoteTcpFallbackServerBindPort == that.remoteTcpFallbackServerBindPort &&
@@ -931,6 +939,7 @@ public class DrasylConfig {
                 ", remoteLocalHostDiscoveryEnabled=" + remoteLocalHostDiscoveryEnabled +
                 ", remoteLocalHostDiscoveryPath=" + remoteLocalHostDiscoveryPath +
                 ", remoteLocalHostDiscoveryLeaseTime=" + remoteLocalHostDiscoveryLeaseTime +
+                ", remoteLocalHostDiscoveryWatchEnabled=" + remoteLocalHostDiscoveryWatchEnabled +
                 ", remoteLocalNetworkDiscoveryEnabled=" + remoteLocalNetworkDiscoveryEnabled +
                 ", remoteTcpFallbackEnabled=" + remoteTcpFallbackEnabled +
                 ", remoteTcpFallbackServerBindHost=" + remoteTcpFallbackServerBindHost +
@@ -1110,6 +1119,10 @@ public class DrasylConfig {
         return remoteLocalHostDiscoveryLeaseTime;
     }
 
+    public boolean isRemoteLocalHostDiscoveryWatchEnabled() {
+        return remoteLocalHostDiscoveryWatchEnabled;
+    }
+
     public boolean isRemoteLocalNetworkDiscoveryEnabled() {
         return remoteLocalNetworkDiscoveryEnabled;
     }
@@ -1166,6 +1179,7 @@ public class DrasylConfig {
         private boolean remoteLocalHostDiscoveryEnabled;
         private Path remoteLocalHostDiscoveryPath;
         private Duration remoteLocalHostDiscoveryLeaseTime;
+        private boolean remoteLocalHostDiscoveryWatchEnabled;
         private boolean remoteLocalNetworkDiscoveryEnabled;
         private boolean remoteTcpFallbackEnabled;
         private Duration remoteTcpFallbackClientTimeout;
@@ -1213,6 +1227,7 @@ public class DrasylConfig {
                        final boolean remoteLocalHostDiscoveryEnabled,
                        final Path remoteLocalHostDiscoveryPath,
                        final Duration remoteLocalHostDiscoveryLeaseTime,
+                       final boolean remoteLocalHostDiscoveryWatchEnabled,
                        final boolean remoteLocalNetworkDiscoveryEnabled,
                        final boolean remoteTcpFallbackEnabled,
                        final InetAddress remoteTcpFallbackServerBindHost,
@@ -1264,6 +1279,7 @@ public class DrasylConfig {
             this.remoteLocalHostDiscoveryEnabled = remoteLocalHostDiscoveryEnabled;
             this.remoteLocalHostDiscoveryPath = requireNonNull(remoteLocalHostDiscoveryPath);
             this.remoteLocalHostDiscoveryLeaseTime = requireNonNull(remoteLocalHostDiscoveryLeaseTime);
+            this.remoteLocalHostDiscoveryWatchEnabled = remoteLocalHostDiscoveryWatchEnabled;
             this.remoteLocalNetworkDiscoveryEnabled = remoteLocalNetworkDiscoveryEnabled;
             this.monitoringEnabled = monitoringEnabled;
             this.monitoringInfluxUri = requireNonNull(monitoringInfluxUri);
@@ -1417,6 +1433,11 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder remoteLocalHostDiscoveryWatchEnabled(final boolean remoteLocalHostDiscoveryWatchEnabled) {
+            this.remoteLocalHostDiscoveryWatchEnabled = remoteLocalHostDiscoveryWatchEnabled;
+            return this;
+        }
+
         public Builder remoteLocalNetworkDiscoveryEnabled(final boolean remoteLocalNetworkDiscoveryEnabled) {
             this.remoteLocalNetworkDiscoveryEnabled = remoteLocalNetworkDiscoveryEnabled;
             return this;
@@ -1544,6 +1565,7 @@ public class DrasylConfig {
                     remoteLocalHostDiscoveryEnabled,
                     remoteLocalHostDiscoveryPath,
                     remoteLocalHostDiscoveryLeaseTime,
+                    remoteLocalHostDiscoveryWatchEnabled,
                     remoteLocalNetworkDiscoveryEnabled,
                     remoteTcpFallbackEnabled,
                     remoteTcpFallbackServerBindHost,

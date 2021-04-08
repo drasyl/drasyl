@@ -121,6 +121,7 @@ class LocalHostDiscoveryTest {
             when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().isDirectory()).thenReturn(true);
             when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canRead()).thenReturn(true);
             when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canWrite()).thenReturn(true);
+            when(ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
@@ -138,6 +139,7 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
             when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
+            when(config.isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -171,6 +173,7 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
             when(ctx.config().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
             when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
+            when(ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
@@ -218,6 +221,7 @@ class LocalHostDiscoveryTest {
                 return future;
             });
             when(ctx.config().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
+            when(ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
             when(identity.getPublicKey()).thenReturn(ownPublicKey);
             when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
             when(discoveryPath.getFileSystem()).thenReturn(fileSystem);

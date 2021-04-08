@@ -158,7 +158,9 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
             LOG.warn("Discovery directory '{}' not accessible.", discoveryPath::toAbsolutePath);
         }
         else {
-            tryWatchDirectory(ctx, discoveryPath);
+            if (ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()) {
+                tryWatchDirectory(ctx, discoveryPath);
+            }
             ctx.dependentScheduler().scheduleDirect(() -> scan(ctx));
             keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.identity().getPublicKey().toString() + ".json"), port);
         }
