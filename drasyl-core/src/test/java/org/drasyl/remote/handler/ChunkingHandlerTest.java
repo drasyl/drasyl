@@ -321,7 +321,7 @@ class ChunkingHandlerTest {
 
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldDropMessageExceedingMaximumMessageSize(@Mock final InetSocketAddressWrapper address) throws InterruptedException {
+            void shouldDropMessageExceedingMaximumMessageSize(@Mock final InetSocketAddressWrapper address) {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
@@ -333,8 +333,7 @@ class ChunkingHandlerTest {
                     try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                         final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-                        assertThrows(ExecutionException.class, () -> pipeline.processOutbound(address, msg).get());
-                        outboundMessages.await(1, SECONDS);
+                        assertThrows(ExecutionException.class, pipeline.processOutbound(address, msg)::get);
                         outboundMessages.assertNoValues();
                     }
                 }

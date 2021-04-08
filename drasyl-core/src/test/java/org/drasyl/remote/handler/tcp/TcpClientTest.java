@@ -51,12 +51,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.net.InetSocketAddress.createUnresolved;
-import static java.time.Duration.ofSeconds;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -127,11 +124,9 @@ public class TcpClientTest {
         @SuppressWarnings("SuspiciousMethodCalls")
         @Test
         void shouldStopClientOnInboundMessageFromSuperPeer(@Mock final InetSocketAddressWrapper sender,
-                                                           @Mock final ByteBuf msg,
-                                                           @Mock final Channel channel) {
+                                                           @Mock final ByteBuf msg) {
             when(superPeerAddresses.contains(any())).thenReturn(true);
             when(superPeerChannel.isSuccess()).thenReturn(true);
-            when(superPeerChannel.channel()).thenReturn(channel);
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1337);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
@@ -144,9 +139,9 @@ public class TcpClientTest {
                         .assertValueCount(1)
                         .assertValue(msg);
 
-                verify(superPeerChannel, timeout(1_000L)).cancel(true);
-                verify(superPeerChannel.channel(), timeout(1_000L)).close();
-                await().atMost(ofSeconds(1)).untilAsserted(() -> assertEquals(0, noResponseFromSuperPeerSince.get()));
+                verify(superPeerChannel).cancel(true);
+                verify(superPeerChannel.channel()).close();
+                assertEquals(0, noResponseFromSuperPeerSince.get());
             }
         }
 
@@ -204,8 +199,8 @@ public class TcpClientTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processOutbound(recipient, msg).join();
 
-                verify(bootstrap.handler(any()), timeout(1_000L)).connect(any(InetSocketAddress.class));
-                verify(superPeerChannel, timeout(1_000L)).addListener(any());
+                verify(bootstrap.handler(any())).connect(any(InetSocketAddress.class));
+                verify(superPeerChannel).addListener(any());
             }
         }
     }

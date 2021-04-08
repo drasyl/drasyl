@@ -33,6 +33,7 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.logging.Logger;
@@ -60,6 +61,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.identity.CompressedPublicKey.PUBLIC_KEY_LENGTH;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
@@ -113,15 +115,18 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
     public void onEvent(final HandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
+        final FutureCombiner combiner = FutureCombiner.getInstance();
+
         if (event instanceof NodeUpEvent) {
-            startDiscovery(ctx, ((NodeUpEvent) event).getNode().getPort());
+            combiner.add(startDiscovery(ctx, ((NodeUpEvent) event).getNode().getPort()));
         }
         else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopDiscovery(ctx);
+            combiner.add(stopDiscovery(ctx));
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        combiner.add(ctx.passEvent(event, new CompletableFuture<>()))
+                .combine(future);
     }
 
     @Override
@@ -140,7 +145,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
         }
     }
 
-    private synchronized void startDiscovery(final HandlerContext ctx, final int port) {
+    private synchronized CompletableFuture<Void> startDiscovery(final HandlerContext ctx,
+                                                                final int port) {
         LOG.debug("Start Local Host Discovery...");
         final Path discoveryPath = discoveryPath(ctx);
         final File directory = discoveryPath.toFile();
@@ -157,9 +163,11 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
             keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.identity().getPublicKey().toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
+
+        return completedFuture(null);
     }
 
-    private synchronized void stopDiscovery(final HandlerContext ctx) {
+    private synchronized CompletableFuture<Void> stopDiscovery(final HandlerContext ctx) {
         LOG.debug("Stop Local Host Discovery...");
 
         if (watchDisposable != null) {
@@ -183,6 +191,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
         routes.clear();
 
         LOG.debug("Local Host Discovery stopped.");
+
+        return completedFuture(null);
     }
 
     /**

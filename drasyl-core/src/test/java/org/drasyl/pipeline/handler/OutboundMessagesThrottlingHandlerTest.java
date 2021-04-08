@@ -34,6 +34,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.concurrent.CompletableFuture;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
@@ -46,6 +48,7 @@ class OutboundMessagesThrottlingHandlerTest {
     @Mock
     private PeersManager peersManager;
 
+    @SuppressWarnings("unchecked")
     @Test
     void shouldThrottleOutboundMessages(@Mock final Address recipient,
                                         @Mock final ByteBuf msg) {
@@ -53,13 +56,14 @@ class OutboundMessagesThrottlingHandlerTest {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
             final TestObserver<Object> inboundMessages = pipeline.outboundMessages().test();
 
+            final CompletableFuture<Void>[] futures = new CompletableFuture[10];
             for (int i = 0; i < 10; i++) {
-                pipeline.processOutbound(recipient, msg);
+                futures[i] = pipeline.processOutbound(recipient, msg);
             }
 
             assertThat(inboundMessages.values().size(), lessThanOrEqualTo(10));
-            inboundMessages.awaitCount(10)
-                    .assertValueCount(10);
+            CompletableFuture.allOf(futures).join();
+            inboundMessages.assertValueCount(10);
         }
     }
 }

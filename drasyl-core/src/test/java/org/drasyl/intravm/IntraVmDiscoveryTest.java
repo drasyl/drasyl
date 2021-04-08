@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -71,7 +70,7 @@ class IntraVmDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
-                await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(1)));
+                assertThat(discoveries, aMapWithSize(1));
             }
         }
     }
@@ -86,7 +85,7 @@ class IntraVmDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
-                await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
+                assertThat(discoveries, aMapWithSize(0));
             }
         }
 
@@ -99,7 +98,7 @@ class IntraVmDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
-                await().untilAsserted(() -> assertThat(discoveries, aMapWithSize(0)));
+                assertThat(discoveries, aMapWithSize(0));
             }
         }
     }

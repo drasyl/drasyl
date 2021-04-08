@@ -46,7 +46,6 @@ import java.util.Map;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -69,7 +68,7 @@ class StaticRoutesHandlerTest {
 
         pipeline.processInbound(event).join();
 
-        verify(peersManager, timeout(1_000)).addPath(eq(publicKey), any());
+        verify(peersManager).addPath(eq(publicKey), any());
     }
 
     @Test
@@ -82,7 +81,7 @@ class StaticRoutesHandlerTest {
 
         pipeline.processInbound(event).join();
 
-        verify(peersManager, timeout(1_000)).removePath(eq(publicKey), any());
+        verify(peersManager).removePath(eq(publicKey), any());
     }
 
     @Test
@@ -95,7 +94,7 @@ class StaticRoutesHandlerTest {
 
         pipeline.processInbound(event).join();
 
-        verify(peersManager, timeout(1_000)).removePath(eq(publicKey), any());
+        verify(peersManager).removePath(eq(publicKey), any());
     }
 
     @SuppressWarnings("rawtypes")

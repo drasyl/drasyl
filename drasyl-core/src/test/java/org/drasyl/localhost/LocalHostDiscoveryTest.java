@@ -65,7 +65,6 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -73,7 +72,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -123,7 +121,7 @@ class LocalHostDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
                 pipeline.processInbound(event).join();
 
-                verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+                verify(dependentScheduler).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
             }
         }
 
@@ -139,7 +137,7 @@ class LocalHostDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
-                verify(discoveryPath, timeout(1_000)).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
+                verify(discoveryPath).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
             }
         }
 
@@ -166,8 +164,8 @@ class LocalHostDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
                 pipeline.processInbound(event).join();
 
-                verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
-                verify(dependentScheduler, timeout(1_000)).schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
+                verify(dependentScheduler).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+                verify(dependentScheduler).schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
             }
         }
 
@@ -210,8 +208,8 @@ class LocalHostDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, dependentScheduler, independentScheduler, handler)) {
                 pipeline.processInbound(event).join();
 
-                verify(watchService, timeout(1_000)).poll();
-                verify(jacksonWriter, timeout(10_000)).accept(eq(path.toFile()), any());
+                verify(watchService).poll();
+                verify(jacksonWriter).accept(eq(path.toFile()), any());
             }
         }
     }
@@ -228,9 +226,9 @@ class LocalHostDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
-                verify(watchDisposable, timeout(1_000)).dispose();
-                verify(postDisposable, timeout(1_000)).dispose();
-                await().untilAsserted(() -> assertTrue(routes.isEmpty()));
+                verify(watchDisposable).dispose();
+                verify(postDisposable).dispose();
+                assertTrue(routes.isEmpty());
             }
         }
 
@@ -244,9 +242,9 @@ class LocalHostDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
-                verify(watchDisposable, timeout(1_000)).dispose();
-                verify(postDisposable, timeout(1_000)).dispose();
-                await().untilAsserted(() -> assertTrue(routes.isEmpty()));
+                verify(watchDisposable).dispose();
+                verify(postDisposable).dispose();
+                assertTrue(routes.isEmpty());
             }
         }
     }

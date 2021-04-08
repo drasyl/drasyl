@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.drasyl.util.NettyUtil.getBestSocketChannel;
 
 /**
@@ -120,22 +121,25 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
                                   final InetSocketAddressWrapper sender,
                                   final ByteBuf msg,
                                   final CompletableFuture<Void> future) throws Exception {
-        ctx.passInbound(sender, msg, future);
-
-        checkForReachableSuperPeer(sender);
+        FutureCombiner.getInstance()
+                .add(ctx.passInbound(sender, msg, new CompletableFuture<>()))
+                .add(checkForReachableSuperPeer(sender))
+                .combine(future);
     }
 
     /**
      * This method is called whenever a message is received. It checks whether a message has been
      * received from a super peer and closes the fallback TCP connection if necessary.
      */
-    private void checkForReachableSuperPeer(final InetSocketAddressWrapper sender) {
+    private CompletableFuture<Void> checkForReachableSuperPeer(final InetSocketAddressWrapper sender) {
         // message from super peer?
         if (superPeerAddresses.contains(sender)) {
             // super peer(s) reachable via udp -> close fallback connection!
             noResponseFromSuperPeerSince.set(0);
             stopClient();
         }
+
+        return completedFuture(null);
     }
 
     @Override
@@ -153,9 +157,10 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
         }
         else {
             // passthrough message
-            ctx.passOutbound(recipient, msg, future);
-
-            checkForUnreachableSuperPeers(ctx, recipient);
+            FutureCombiner.getInstance()
+                    .add(ctx.passOutbound(recipient, msg, new CompletableFuture<>()))
+                    .add(checkForUnreachableSuperPeers(ctx, recipient))
+                    .combine(future);
         }
     }
 
@@ -164,8 +169,8 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
      * received from a super peer and then tries to establish a fallback TCP connection if
      * necessary.
      */
-    private void checkForUnreachableSuperPeers(final HandlerContext ctx,
-                                               final InetSocketAddressWrapper recipient) {
+    private CompletableFuture<Void> checkForUnreachableSuperPeers(final HandlerContext ctx,
+                                                                  final InetSocketAddressWrapper recipient) {
         // message to super peer?
         if (superPeerAddresses.contains(recipient)) {
             final long currentTimeMillis = System.currentTimeMillis();
@@ -175,6 +180,8 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
                 startClient(ctx);
             }
         }
+
+        return completedFuture(null);
     }
 
     @SuppressWarnings({ "java:S1905", "java:S3824" })

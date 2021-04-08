@@ -29,6 +29,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -38,6 +39,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
@@ -66,15 +69,18 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
     public void onEvent(final HandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
+        final FutureCombiner combiner = FutureCombiner.getInstance();
+
         if (event instanceof NodeUpEvent) {
-            startDiscovery(ctx);
+            combiner.add(startDiscovery(ctx));
         }
         else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopDiscovery(ctx);
+            combiner.add(stopDiscovery(ctx));
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        combiner.add(ctx.passEvent(event, new CompletableFuture<>()))
+                .combine(future);
     }
 
     @Override
@@ -93,7 +99,7 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
         }
     }
 
-    private synchronized void startDiscovery(final HandlerContext myCtx) {
+    private synchronized CompletableFuture<Void> startDiscovery(final HandlerContext myCtx) {
         try {
             lock.writeLock().lock();
             LOG.debug("Start Intra VM Discovery...");
@@ -113,13 +119,15 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
             );
 
             LOG.debug("Intra VM Discovery started.");
+
+            return completedFuture(null);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    private synchronized void stopDiscovery(final HandlerContext ctx) {
+    private synchronized CompletableFuture<Void> stopDiscovery(final HandlerContext ctx) {
         try {
             lock.writeLock().lock();
             LOG.debug("Stop Intra VM Discovery...");
@@ -136,6 +144,8 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
             });
 
             LOG.debug("Intra VM Discovery stopped.");
+
+            return completedFuture(null);
         }
         finally {
             lock.writeLock().unlock();
