@@ -856,7 +856,7 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(true)
-                        .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
+                        .remoteLocalHostDiscoveryLeaseTime(ofSeconds(5))
                         .remoteLocalHostDiscoveryWatchEnabled(false)
                         .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
                         .remoteLocalNetworkDiscoveryEnabled(false)
@@ -877,7 +877,7 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(true)
-                        .remoteLocalHostDiscoveryLeaseTime(ofSeconds(1))
+                        .remoteLocalHostDiscoveryLeaseTime(ofSeconds(5))
                         .remoteLocalHostDiscoveryWatchEnabled(false)
                         .remoteLocalHostDiscoveryPath(localHostDiscoveryPath)
                         .remoteLocalNetworkDiscoveryEnabled(false)
@@ -900,20 +900,9 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
-                // WatchService can be ridiculous slow in reporting changes...wait up to 12*5 seconds...
                 node1.events(PeerDirectEvent.class).test()
-                        .awaitCount(1).awaitCount(1)
-                        .awaitCount(1).awaitCount(1)
-                        .awaitCount(1).awaitCount(1)
-                        .awaitCount(1).awaitCount(1)
-                        .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1);
                 node2.events(PeerDirectEvent.class).test()
-                        .awaitCount(1).awaitCount(1)
-                        .awaitCount(1).awaitCount(1)
-                        .awaitCount(1).awaitCount(1)
-                        .awaitCount(1).awaitCount(1)
-                        .awaitCount(1).awaitCount(1)
                         .awaitCount(1).awaitCount(1);
 
                 final TestObserver<MessageEvent> node1Messages = node1.messages().test();
