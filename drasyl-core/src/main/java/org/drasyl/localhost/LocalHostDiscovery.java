@@ -304,6 +304,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
             final CompressedPublicKey publicKey = i.next();
 
             if (!newRoutes.containsKey(publicKey)) {
+                LOG.trace("Addresses for peer '{}' are outdated. Remove peer from routing table.", publicKey);
                 ctx.peersManager().removePath(publicKey, path);
                 i.remove();
             }
@@ -324,7 +325,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
     @SuppressWarnings("java:S2308")
     private void postInformation(final Path filePath,
                                  final Set<InetSocketAddress> addresses) {
-        LOG.trace("Post own Peer Information to {}", filePath);
+        LOG.trace("Post own addresses '{}' to file '{}'", addresses, filePath);
         final File file = filePath.toFile();
         try {
             if (!file.setLastModified(System.currentTimeMillis())) {
