@@ -42,7 +42,7 @@ jobs:
           Compress-Archive -Path "./drasyl-cli-windows-amd64-snapshot" -Update -DestinationPath ./drasyl-cli-windows-amd64-snapshot.zip
       - name: Publish artifact
         if: success()
-        uses: actions/upload-artifact@v2.2.2
+        uses: actions/upload-artifact@v2.2.3
         with:
           name: drasyl-cli-windows-amd64-snapshot
           path: ./drasyl-cli-windows-amd64-snapshot.zip
