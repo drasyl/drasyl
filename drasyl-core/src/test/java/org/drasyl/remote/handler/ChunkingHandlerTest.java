@@ -391,7 +391,6 @@ class ChunkingHandlerTest {
         @Nested
         class NotFromMe {
             @Test
-            @Timeout(value = 5_000, unit = MILLISECONDS)
             void shouldPassthroughMessage(@Mock final InetSocketAddressWrapper recipientAddress) {
                 final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
                 final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
