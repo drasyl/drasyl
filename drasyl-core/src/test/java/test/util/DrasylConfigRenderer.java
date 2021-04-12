@@ -50,7 +50,7 @@ public final class DrasylConfigRenderer {
             builder.append(IDENTITY_PUBLIC_KEY + " = ").append(config.getIdentityPublicKey().toString()).append("\n");
         }
         if (config.getIdentityPrivateKey() != null) {
-            builder.append(IDENTITY_PRIVATE_KEY + " = ").append(config.getIdentityPrivateKey().toString()).append("\n");
+            builder.append(IDENTITY_PRIVATE_KEY + " = ").append(config.getIdentityPrivateKey().toUnmaskedString()).append("\n");
         }
         builder.append(REMOTE_BIND_HOST + " = ").append(config.getRemoteBindHost().getHostAddress()).append("\n");
         builder.append(REMOTE_BIND_PORT + " = ").append(config.getRemoteBindPort()).append("\n");

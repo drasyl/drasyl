@@ -182,7 +182,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
 
         @Override
         public String password() {
-            return ctx.config().getMonitoringInfluxPassword();
+            return ctx.config().getMonitoringInfluxPassword().toUnmaskedString();
         }
 
         @Override

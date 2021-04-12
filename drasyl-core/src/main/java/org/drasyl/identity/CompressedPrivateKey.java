@@ -29,6 +29,8 @@ import org.drasyl.util.InternPool;
 
 import java.security.PrivateKey;
 
+import static org.drasyl.util.SecretUtil.maskSecret;
+
 /**
  * This interface models a compressed key that can be converted into a string and vice versa.
  * <p>
@@ -74,6 +76,15 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      */
     private CompressedPrivateKey(final byte[] compressedKey) {
         super(compressedKey);
+    }
+
+    @Override
+    public String toString() {
+        return maskSecret(super.toString());
+    }
+
+    public String toUnmaskedString() {
+        return super.toString();
     }
 
     /**

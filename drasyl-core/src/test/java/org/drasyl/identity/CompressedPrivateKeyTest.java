@@ -31,6 +31,9 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -40,6 +43,22 @@ class CompressedPrivateKeyTest {
     @BeforeEach
     void setUp() {
         privateKey = CompressedPrivateKey.of("03a3c01d41b6a7c31b081c9f1ee0f8cd5d11e7ceb784359b57388c752d38f581");
+    }
+
+    @Nested
+    class ToString {
+        @Test
+        void shouldReturnMaskedKey() {
+            assertThat(privateKey.toString(), not(containsString(privateKey.toUnmaskedString())));
+        }
+    }
+
+    @Nested
+    class ToUnmaskedString {
+        @Test
+        void shouldReturnUnmaskedKey() {
+            assertEquals("03a3c01d41b6a7c31b081c9f1ee0f8cd5d11e7ceb784359b57388c752d38f581", privateKey.toUnmaskedString());
+        }
     }
 
     @Nested

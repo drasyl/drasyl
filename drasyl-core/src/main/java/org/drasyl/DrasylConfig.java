@@ -32,6 +32,7 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.plugin.DrasylPlugin;
 import org.drasyl.serialization.Serializer;
+import org.drasyl.util.MaskedString;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -57,7 +58,6 @@ import java.util.Set;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
-import static org.drasyl.util.SecretUtil.maskSecret;
 
 /**
  * This class represents the configuration for a {@link DrasylNode}. For example, it defines the
@@ -154,7 +154,7 @@ public class DrasylConfig {
     private final String monitoringHostTag;
     private final URI monitoringInfluxUri;
     private final String monitoringInfluxUser;
-    private final String monitoringInfluxPassword;
+    private final MaskedString monitoringInfluxPassword;
     private final String monitoringInfluxDatabase;
     private final Duration monitoringInfluxReportingFrequency;
     private final Set<DrasylPlugin> pluginSet;
@@ -281,7 +281,7 @@ public class DrasylConfig {
             monitoringHostTag = config.getString(MONITORING_HOST_TAG);
             monitoringInfluxUri = getURI(config, MONITORING_INFLUX_URI);
             monitoringInfluxUser = config.getString(MONITORING_INFLUX_USER);
-            monitoringInfluxPassword = config.getString(MONITORING_INFLUX_PASSWORD);
+            monitoringInfluxPassword = MaskedString.of(config.getString(MONITORING_INFLUX_PASSWORD));
             monitoringInfluxDatabase = config.getString(MONITORING_INFLUX_DATABASE);
             monitoringInfluxReportingFrequency = config.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY);
 
@@ -338,7 +338,7 @@ public class DrasylConfig {
                  final String monitoringHostTag,
                  final URI monitoringInfluxUri,
                  final String monitoringInfluxUser,
-                 final String monitoringInfluxPassword,
+                 final MaskedString monitoringInfluxPassword,
                  final String monitoringInfluxDatabase,
                  final Duration monitoringInfluxReportingFrequency,
                  final Set<DrasylPlugin> pluginSet,
@@ -915,7 +915,7 @@ public class DrasylConfig {
                 "networkId=" + networkId +
                 ", identityProofOfWork=" + identityProofOfWork +
                 ", identityPublicKey=" + identityPublicKey +
-                ", identityPrivateKey=" + maskSecret(identityPrivateKey) +
+                ", identityPrivateKey=" + identityPrivateKey +
                 ", identityPath=" + identityPath +
                 ", messageBufferSize=" + messageBufferSize +
                 ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
@@ -950,7 +950,7 @@ public class DrasylConfig {
                 ", monitoringHostTag=" + monitoringHostTag +
                 ", monitoringInfluxUri=" + monitoringInfluxUri +
                 ", monitoringInfluxUser='" + monitoringInfluxUser + '\'' +
-                ", monitoringInfluxPassword='" + maskSecret(monitoringInfluxPassword) + '\'' +
+                ", monitoringInfluxPassword='" + monitoringInfluxPassword + '\'' +
                 ", monitoringInfluxDatabase='" + monitoringInfluxDatabase + '\'' +
                 ", monitoringInfluxReportingFrequency=" + monitoringInfluxReportingFrequency +
                 ", pluginSet=" + pluginSet +
@@ -996,7 +996,7 @@ public class DrasylConfig {
         return monitoringInfluxUser;
     }
 
-    public String getMonitoringInfluxPassword() {
+    public MaskedString getMonitoringInfluxPassword() {
         return monitoringInfluxPassword;
     }
 
@@ -1190,7 +1190,7 @@ public class DrasylConfig {
         private String monitoringHostTag;
         private URI monitoringInfluxUri;
         private String monitoringInfluxUser;
-        private String monitoringInfluxPassword;
+        private MaskedString monitoringInfluxPassword;
         private String monitoringInfluxDatabase;
         private Duration monitoringInfluxReportingFrequency;
         private Set<DrasylPlugin> pluginSet;
@@ -1238,7 +1238,7 @@ public class DrasylConfig {
                        final String monitoringHostTag,
                        final URI monitoringInfluxUri,
                        final String monitoringInfluxUser,
-                       final String monitoringInfluxPassword,
+                       final MaskedString monitoringInfluxPassword,
                        final String monitoringInfluxDatabase,
                        final Duration monitoringInfluxReportingFrequency,
                        final Set<DrasylPlugin> pluginSet,
@@ -1488,7 +1488,7 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder monitoringInfluxPassword(final String monitoringInfluxPassword) {
+        public Builder monitoringInfluxPassword(final MaskedString monitoringInfluxPassword) {
             this.monitoringInfluxPassword = requireNonNull(monitoringInfluxPassword);
             return this;
         }

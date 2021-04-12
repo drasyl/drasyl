@@ -27,8 +27,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.security.KeyPair;
 import java.util.Objects;
 
-import static org.drasyl.util.SecretUtil.maskSecret;
-
 /**
  * This class is a simple holder for a compressed key pair (a {@link CompressedPublicKey} and a
  * {@link CompressedPrivateKey}). It does not enforce any security, and, when initialized, should be
@@ -84,7 +82,7 @@ public class CompressedKeyPair {
     public String toString() {
         return "CompressedKeyPair{" +
                 "publicKey=" + publicKey +
-                ", privateKey=" + maskSecret(privateKey) +
+                ", privateKey=" + privateKey +
                 '}';
     }
 
