@@ -41,7 +41,7 @@ jobs:
           zip -r drasyl-cli-macos-amd64-snapshot.zip ./drasyl-cli-macos-amd64-snapshot -x '*.DS_Store*' -x '__MAC_OSX'
       - name: Publish artifact
         if: success()
-        uses: actions/upload-artifact@v2.2.2
+        uses: actions/upload-artifact@v2.2.3
         with:
           name: drasyl-cli-macos-amd64-snapshot
           path: drasyl-cli-macos-amd64-snapshot.zip

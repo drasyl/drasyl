@@ -41,7 +41,7 @@ jobs:
           zip -r drasyl-cli-linux-amd64-snapshot.zip ./drasyl-cli-linux-amd64-snapshot
       - name: Publish artifact
         if: success()
-        uses: actions/upload-artifact@v2.2.2
+        uses: actions/upload-artifact@v2.2.3
         with:
           name: drasyl-cli-linux-amd64-snapshot
           path: drasyl-cli-linux-amd64-snapshot.zip
