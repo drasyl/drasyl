@@ -75,7 +75,7 @@ class GroupsClientHandlerTest {
     private HashMap<Group, Disposable> renewTasks;
     @Mock
     private Map<Group, GroupUri> groups;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Identity identity;
@@ -237,6 +237,7 @@ class GroupsClientHandlerTest {
             }
         }
 
+        @SuppressWarnings("SuspiciousMethodCalls")
         @Test
         void shouldProcessWelcome() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);

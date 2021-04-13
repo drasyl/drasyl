@@ -21,6 +21,7 @@
  */
 package org.drasyl.plugin;
 
+import com.google.common.collect.ImmutableSet;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.Pipeline;
@@ -30,8 +31,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Set;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,7 +50,7 @@ class PluginManagerTest {
     class BeforeStart {
         @Test
         void shouldCallOnBeforeStartOfEveryPlugin(@Mock final DrasylPlugin plugin) {
-            when(config.getPlugins()).thenReturn(Set.of(plugin));
+            when(config.getPlugins()).thenReturn(ImmutableSet.of(plugin));
 
             underTest.beforeStart();
 
@@ -63,7 +62,7 @@ class PluginManagerTest {
     class AfterStart {
         @Test
         void shouldCallOnAfterStartOfEveryPlugin(@Mock final DrasylPlugin plugin) {
-            when(config.getPlugins()).thenReturn(Set.of(plugin));
+            when(config.getPlugins()).thenReturn(ImmutableSet.of(plugin));
 
             underTest.afterStart();
 
@@ -75,7 +74,7 @@ class PluginManagerTest {
     class BeforeShutdown {
         @Test
         void shouldCallOnBeforeShutdownOfEveryPlugin(@Mock final DrasylPlugin plugin) {
-            when(config.getPlugins()).thenReturn(Set.of(plugin));
+            when(config.getPlugins()).thenReturn(ImmutableSet.of(plugin));
 
             underTest.beforeShutdown();
 
@@ -87,7 +86,7 @@ class PluginManagerTest {
     class AfterShutdown {
         @Test
         void shouldCallOnAfterShutdownOfEveryPlugin(@Mock final DrasylPlugin plugin) {
-            when(config.getPlugins()).thenReturn(Set.of(plugin));
+            when(config.getPlugins()).thenReturn(ImmutableSet.of(plugin));
 
             underTest.afterShutdown();
 

@@ -44,11 +44,12 @@ import java.io.IOException;
 import java.util.concurrent.CompletionException;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OtherNetworkFilterTest {
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Identity identity;

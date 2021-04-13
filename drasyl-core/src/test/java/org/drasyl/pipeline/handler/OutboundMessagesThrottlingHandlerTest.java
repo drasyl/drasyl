@@ -38,10 +38,11 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class OutboundMessagesThrottlingHandlerTest {
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Identity identity;

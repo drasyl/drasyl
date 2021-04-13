@@ -70,6 +70,7 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -93,7 +94,7 @@ class GroupsManagerHandlerTest {
     private Pipeline pipeline;
     @Mock
     private Disposable staleTask;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Identity identity;

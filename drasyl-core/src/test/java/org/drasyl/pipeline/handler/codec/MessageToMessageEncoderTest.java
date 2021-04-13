@@ -39,10 +39,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class MessageToMessageEncoderTest {
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Identity identity;

@@ -142,6 +142,7 @@
         <json-unit-assertj.version>2.25.0</json-unit-assertj.version>
         <commons-cli.version>1.4</commons-cli.version>
         <protobuf.version>3.15.8</protobuf.version>
+        <auto-value.version>1.8</auto-value.version>
     </properties>
 
     <dependencyManagement>
@@ -276,6 +277,12 @@
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
                 <version>4.8.104</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.auto.value</groupId>
+                <artifactId>auto-value-annotations</artifactId>
+                <version>${auto-value.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

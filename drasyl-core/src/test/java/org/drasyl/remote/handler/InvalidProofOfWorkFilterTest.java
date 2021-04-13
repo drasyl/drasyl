@@ -54,7 +54,7 @@ class InvalidProofOfWorkFilterTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     private CompressedPublicKey senderPublicKey;
     private CompressedPublicKey recipientPublicKey;

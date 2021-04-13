@@ -140,7 +140,7 @@ public abstract class DrasylNode {
      * @throws DrasylConfigException if config is invalid
      */
     protected DrasylNode() throws DrasylException {
-        this(new DrasylConfig());
+        this(DrasylConfig.of());
     }
 
     /**

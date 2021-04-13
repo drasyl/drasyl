@@ -42,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -49,7 +50,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class HandlerAdapterTest {
     @Mock
     private HandlerContext ctx;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Identity identity;

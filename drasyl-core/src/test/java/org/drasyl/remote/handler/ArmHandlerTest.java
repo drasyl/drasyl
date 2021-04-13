@@ -52,7 +52,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ArmHandlerTest {
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
