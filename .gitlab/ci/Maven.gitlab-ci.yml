@@ -35,7 +35,7 @@ maven-verify:
   <<: *maven-base
   stage: test
   script:
-    - 'mvn $MAVEN_CLI_OPTS -Pci,release verify sonar:sonar'
+    - './mvnw $MAVEN_CLI_OPTS -Pci,release verify sonar:sonar'
   except:
     - master
     - /^v\d+\.\d+/
@@ -44,7 +44,7 @@ maven-deploy:
   <<: *maven-base
   stage: deploy
   script:
-    - 'mvn $MAVEN_CLI_OPTS -Pci,release deploy sonar:sonar'
+    - './mvnw $MAVEN_CLI_OPTS -Pci,release deploy sonar:sonar'
   only:
     - master
     - /^v\d+\.\d+/
