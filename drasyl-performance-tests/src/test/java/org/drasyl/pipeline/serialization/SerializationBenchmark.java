@@ -38,7 +38,7 @@ public class SerializationBenchmark extends AbstractBenchmark {
 
     @Setup
     public void setup() {
-        final DrasylConfig config = new DrasylConfig();
+        final DrasylConfig config = DrasylConfig.of();
         serializer = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound());
     }
 

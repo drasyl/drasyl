@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.common.collect.ImmutableSet;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -213,7 +214,7 @@ class InternetDiscoveryTest {
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
             when(peer.getAddress()).thenReturn(new InetSocketAddressWrapper(22527));
             when(identity.getPublicKey()).thenReturn(recipient);
-            when(config.getRemoteSuperPeerEndpoints()).thenReturn(Set.of(superPeerEndpoint));
+            when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
 
             try (final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId())) {
                 final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
@@ -245,7 +246,7 @@ class InternetDiscoveryTest {
                                         @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                         @Mock final Endpoint superPeerEndpoint) {
             when(peer.getAddress()).thenReturn(address);
-            when(config.getRemoteSuperPeerEndpoints()).thenReturn(Set.of(superPeerEndpoint));
+            when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
             when(superPeers.contains(publicKey)).thenReturn(true);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
@@ -274,7 +275,7 @@ class InternetDiscoveryTest {
             final CompressedPublicKey publicKey = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
 
             when(ctx.config().isRemoteSuperPeerEnabled()).thenReturn(true);
-            when(ctx.config().getRemoteSuperPeerEndpoints()).thenReturn(Set.of(superPeerEndpoint));
+            when(ctx.config().getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
             when(superPeerEndpoint.getHost()).thenReturn("127.0.0.1");
             when(ctx.identity().getPublicKey()).thenReturn(myPublicKey);
             when(superPeerEndpoint.getPublicKey()).thenReturn(publicKey);
@@ -324,7 +325,7 @@ class InternetDiscoveryTest {
                                                    @Mock final Endpoint superPeerEndpoint) throws IOException {
             final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            when(config.getRemoteSuperPeerEndpoints()).thenReturn(Set.of(superPeerEndpoint));
+            when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
             when(identity.getPublicKey()).thenReturn(recipient);
             when(superPeers.contains(sender)).thenReturn(true);
 

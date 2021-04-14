@@ -56,7 +56,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class RemoteEnvelopeToByteBufCodecTest {
     private final MessageId correspondingId = MessageId.of("412176952b5b81fd");
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Identity identity;

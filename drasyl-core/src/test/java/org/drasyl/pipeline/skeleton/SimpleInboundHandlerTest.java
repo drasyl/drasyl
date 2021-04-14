@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class SimpleInboundHandlerTest {
@@ -47,7 +48,7 @@ class SimpleInboundHandlerTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
 
     @Test

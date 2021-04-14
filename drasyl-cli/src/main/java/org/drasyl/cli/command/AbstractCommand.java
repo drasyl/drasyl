@@ -184,7 +184,7 @@ abstract class AbstractCommand implements Command {
             }
             else {
                 log().info("Config file '{}' not found - using defaults", defaultConfPath);
-                config = new DrasylConfig();
+                config = DrasylConfig.of();
             }
         }
 

@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.common.collect.ImmutableSet;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -48,7 +49,6 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_INTERFACE;
@@ -85,7 +85,7 @@ class UdpMulticastServerTest {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel()).thenReturn(datagramChannel);
             when(datagramChannel.localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
             when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).awaitUninterruptibly().isSuccess()).thenReturn(true);
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
@@ -103,7 +103,7 @@ class UdpMulticastServerTest {
     class StopServer {
         @Test
         void shouldStopServerOnNodeDownEvent(@Mock final NodeDownEvent event) {
-            when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, channel);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {

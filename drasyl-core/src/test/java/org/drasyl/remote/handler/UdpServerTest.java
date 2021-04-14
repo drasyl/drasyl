@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.common.collect.ImmutableSet;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -81,7 +82,7 @@ class UdpServerTest {
             when(bootstrap.handler(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
 
             final UdpServer handler = new UdpServer(bootstrap, null);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -95,7 +96,7 @@ class UdpServerTest {
         class DetermineActualEndpoints {
             @Test
             void shouldReturnConfigEndpointsIfSpecified() {
-                when(config.getRemoteEndpoints()).thenReturn(Set.of(Endpoint.of("udp://foo.bar:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+                when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://foo.bar:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
 
                 assertEquals(
                         Set.of(Endpoint.of("udp://foo.bar:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")),
@@ -178,7 +179,7 @@ class UdpServerTest {
             when(bootstrap.bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(config.getRemoteEndpoints()).thenReturn(Set.of());
+            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of());
             when(message.retain()).thenReturn(message);
 
             final UdpServer handler = new UdpServer(bootstrap, null);

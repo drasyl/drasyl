@@ -32,13 +32,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.pipeline.HandlerMask.ALL;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class VisualPipelineTest {
     @Nested
     class PrintInboundOrder {
         @Test
-        void shouldNotFail(@Mock final DrasylConfig config,
+        void shouldNotFail(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                            @Mock final Identity identity,
                            @Mock final PeersManager peersManager) {
             final DrasylPipeline pipeline = new DrasylPipeline(event -> {
@@ -51,7 +52,7 @@ class VisualPipelineTest {
     @Nested
     class PrintOutboundOrder {
         @Test
-        void shouldNotFail(@Mock final DrasylConfig config,
+        void shouldNotFail(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                            @Mock final Identity identity,
                            @Mock final PeersManager peersManager) {
             final DrasylPipeline pipeline = new DrasylPipeline(event -> {
@@ -64,7 +65,7 @@ class VisualPipelineTest {
     @Nested
     class PrintOnlySimpleInboundHandler {
         @Test
-        void shouldNotFail(@Mock final DrasylConfig config,
+        void shouldNotFail(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                            @Mock final Identity identity,
                            @Mock final PeersManager peersManager) {
             final DrasylPipeline pipeline = new DrasylPipeline(event -> {
@@ -77,7 +78,7 @@ class VisualPipelineTest {
     @Nested
     class PrintOnlySimpleOutboundHandler {
         @Test
-        void shouldNotFail(@Mock final DrasylConfig config,
+        void shouldNotFail(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                            @Mock final Identity identity,
                            @Mock final PeersManager peersManager) {
             final DrasylPipeline pipeline = new DrasylPipeline(event -> {

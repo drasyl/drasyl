@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.common.collect.ImmutableMap;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
@@ -41,8 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Map;
-
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,7 +61,7 @@ class StaticRoutesHandlerTest {
     void shouldPopulateRoutesOnNodeUpEvent(@Mock final NodeUpEvent event,
                                            @Mock final CompressedPublicKey publicKey) {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
-        when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
+        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
             pipeline.processInbound(event).join();
@@ -75,7 +74,7 @@ class StaticRoutesHandlerTest {
     void shouldClearRoutesOnNodeDownEvent(@Mock final NodeDownEvent event,
                                           @Mock final CompressedPublicKey publicKey,
                                           @Mock final InetSocketAddressWrapper address) {
-        when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
+        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
             pipeline.processInbound(event).join();
@@ -88,7 +87,7 @@ class StaticRoutesHandlerTest {
     void shouldClearRoutesOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
                                                         @Mock final CompressedPublicKey publicKey,
                                                         @Mock final InetSocketAddressWrapper address) {
-        when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
+        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
             pipeline.processInbound(event).join();
@@ -102,7 +101,7 @@ class StaticRoutesHandlerTest {
     void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
         final CompressedPublicKey publicKey = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
-        when(config.getRemoteStaticRoutes()).thenReturn(Map.of(publicKey, address));
+        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
@@ -122,7 +121,7 @@ class StaticRoutesHandlerTest {
     @Test
     void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey publicKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
-        when(config.getRemoteStaticRoutes()).thenReturn(Map.of());
+        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
 
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
