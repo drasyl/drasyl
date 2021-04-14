@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+      - github-action-release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: 'adopt'
+      - name: Build with Maven
+        run: ./mvnw --batch-mode --update-snapshots package
+      - name: Get actual version
+        if: success()
+        id: actual_version
+        run: echo ::set-output name=ACTUAL_VERSION::$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: v${{ steps.actual_version.outputs.ACTUAL_VERSION }}
+          body: |
+            [CHANGELOG.md](https://github.com/drasyl-overlay/drasyl/blob/${{ github.sha }}/CHANGELOG.md)
+          files: |
+            drasyl-${{ steps.actual_version.outputs.ACTUAL_VERSION }}.zip
+          draft: true
+          prerelease: true
