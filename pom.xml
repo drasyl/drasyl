@@ -569,13 +569,6 @@
     <profiles>
         <profile>
             <id>ci</id>
-            <properties>
-                <!--suppress UnresolvedMavenProperty -->
-                <gpg.keyname>${env.GPG_KEYNAME}</gpg.keyname>
-                <!--suppress UnresolvedMavenProperty -->
-                <gpg.executable>${env.GPG_EXECUTABLE}</gpg.executable>
-                <gpg.passphrase/>
-            </properties>
             <build>
                 <plugins>
                     <!-- To sign the artifacts -->
@@ -591,13 +584,8 @@
                                 </goals>
                                 <configuration>
                                     <gpgArguments>
-                                        <arg>--batch</arg>
                                         <arg>--pinentry-mode</arg>
                                         <arg>loopback</arg>
-                                        <arg>--passphrase-fd</arg>
-                                        <arg>0</arg>
-                                        <arg>--command-fd</arg>
-                                        <arg>0</arg>
                                     </gpgArguments>
                                 </configuration>
                             </execution>

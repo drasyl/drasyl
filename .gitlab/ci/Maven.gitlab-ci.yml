@@ -1,4 +1,4 @@
-image: drasyl/drasyl-build-images:jdk-11-maven-3.6.3-gpg-pinentry-tty
+image: openjdk:11-jdk
 
 variables:
   MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
@@ -13,9 +13,7 @@ cache:
   before_script:
     - lscpu | grep -E '^Thread|^Core|^Socket|^CPU\('
     - free -m
-    - export GPG_TTY=$(tty)
-    - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import --no-tty --batch --yes
-    - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust --no-tty --batch --yes
+    - echo $GPG_SECRET_KEYS | base64 --decode | gpg --batch --import
   after_script:
     - for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
     - awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print 100*covered/instructions, "% covered" }' drasyl-all/target/site/jacoco-aggregate/jacoco.csv
