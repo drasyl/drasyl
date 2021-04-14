@@ -27,6 +27,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tag_name: ${{ github.ref }}
           name: v${{ steps.actual_version.outputs.ACTUAL_VERSION }}
           body: |
             [CHANGELOG.md](https://github.com/drasyl-overlay/drasyl/blob/${{ github.sha }}/CHANGELOG.md)
