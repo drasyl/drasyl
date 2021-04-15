@@ -24,6 +24,7 @@ jobs:
           - job_name: linux_amd64
             os: ubuntu-latest
             java_version: 11
+            java_home: ./graalvm
             graal_os: linux-amd64
             graal_version: 21.0.0.2
             gu_path: ./graalvm/bin/gu
@@ -31,6 +32,7 @@ jobs:
           - job_name: linux_arm64
             os: [ self-hosted, linux, ARM64 ]
             java_version: 11
+            java_home: ./graalvm
             graal_os: linux-aarch64
             graal_version: 21.0.0.2
             gu_path: ./graalvm/bin/gu
@@ -38,6 +40,7 @@ jobs:
           - job_name: macos_amd64
             os: macOS-latest
             java_version: 11
+            java_home: ./graalvm/Contents/Home
             graal_os: darwin-amd64
             graal_version: 21.0.0.2
             gu_path: ./graalvm/Contents/Home/bin/gu
@@ -45,6 +48,7 @@ jobs:
           - job_name: windows_amd64
             os: windows-2016
             java_version: 11
+            java_home: ./graalvm-ce-java11-21.0.0.2
             graal_os: windows-amd64
             graal_version: 21.0.0.2
             gu_path: graalvm-ce-java11-21.0.0.2\bin\gu.cmd
@@ -82,7 +86,7 @@ jobs:
       # build native image
       - name: Build Native Image on *nix
         env:
-          JAVA_HOME: ./graalvm
+          JAVA_HOME: ${{ matrix.java_home }}
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
           MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
         run: ./mvnw $MAVEN_CLI_OPTS -Pnative -DskipTests --projects drasyl-cli --also-make package
@@ -91,7 +95,7 @@ jobs:
       - name: Build Native Image on Windows
         shell: cmd
         env:
-          JAVA_HOME: ./graalvm-ce-java${{ matrix.java_version }}-${{ matrix.graal_version }}
+          JAVA_HOME: ${{ matrix.java_home }}
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
           ./mvnw -Pnative -DskipTests --projects drasyl-cli --also-make package
