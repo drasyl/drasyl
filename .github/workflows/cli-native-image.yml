@@ -15,13 +15,13 @@ jobs:
       fail-fast: false
       matrix:
         job_name:
-          - linux_amd64
-          - linux_arm64
-          - macos_amd64
-          - windows_amd64
+          - linux-amd64
+          - linux-arm64
+          - macos-amd64
+          - windows-amd64
 
         include:
-          - job_name: linux_amd64
+          - job_name: linux-amd64
             os: ubuntu-latest
             java_version: 11
             java_home: ./graalvm
@@ -29,7 +29,7 @@ jobs:
             graal_version: 21.0.0.2
             gu_path: ./graalvm/bin/gu
 
-          - job_name: linux_arm64
+          - job_name: linux-arm64
             os: [ self-hosted, linux, ARM64 ]
             java_version: 11
             java_home: ./graalvm
@@ -37,7 +37,7 @@ jobs:
             graal_version: 21.0.0.2
             gu_path: ./graalvm/bin/gu
 
-          - job_name: macos_amd64
+          - job_name: macos-amd64
             os: macOS-latest
             java_version: 11
             java_home: ./graalvm/Contents/Home
@@ -45,13 +45,13 @@ jobs:
             graal_version: 21.0.0.2
             gu_path: ./graalvm/Contents/Home/bin/gu
 
-          - job_name: windows_amd64
+          - job_name: windows-amd64
             os: windows-2016
             java_version: 11
-            java_home: ./graalvm-ce-java11-21.0.0.2
+            java_home: ./graalvm
             graal_os: windows-amd64
             graal_version: 21.0.0.2
-            gu_path: graalvm-ce-java11-21.0.0.2\bin\gu.cmd
+            gu_path: graalvm\bin\gu.cmd
 
     name: ${{ matrix.job_name }}
     runs-on: ${{ matrix.os }}
@@ -63,17 +63,17 @@ jobs:
 
       # install build dependencies
       - name: Install GraalVM on *nix
-        env:
-          JAVA_VERSION: ${{ matrix.java_version }}
-          GRAAL_VERSION: ${{ matrix.graal_version }}
-          GRAAL_OS: ${{ matrix.graal_os }}
-        run: ./.github/install-graal.sh
+        run: |
+          curl -4 -L https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-${{ matrix.graal_version }}/graalvm-ce-java${{ matrix.java_version }}-${{ matrix.graal_os }}-${{ matrix.graal_version }}.tar.gz -o graal.tar.gz
+          tar -zxvf graal.tar.gz
+          mv graalvm-ce-java${{ matrix.java_version }}-${{ matrix.graal_version }} graalvm
         if: matrix.os != 'windows-2016'
 
       - name: Install GraalVM on Windows
         run: |
           Invoke-RestMethod -Uri https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-${{ matrix.graal_version }}/graalvm-ce-java${{ matrix.java_version }}-${{ matrix.graal_os }}-${{ matrix.graal_version }}.zip -OutFile 'graal.zip'
           Expand-Archive -path 'graal.zip' -destinationpath '.'
+          Rename-Item graalvm-ce-java${{ matrix.java_version }}-${{ matrix.graal_version }} graalvm
         if: matrix.os == 'windows-2016'
 
       - name: Install Native Image
@@ -103,8 +103,6 @@ jobs:
 
       # package native image
       - name: Build Package on *nix
-        env:
-          VERSION: ${{ github.event.release.tag_name }}
         run: |
           mkdir -p drasyl-cli-${{ matrix.job_name }}/bin
           mv ./drasyl drasyl-cli-${{ matrix.job_name }}/bin
