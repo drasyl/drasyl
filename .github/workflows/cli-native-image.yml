@@ -1,0 +1,127 @@
+name: Build CLI Native Image
+
+on:
+  push:
+    branches: [ master ]
+#  pull_request:
+#    branches: [ master ]
+  workflow_dispatch:
+#  schedule:
+#    - cron:  '0 6 * * 1' # every monday 6am
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        job_name:
+          - linux-amd64
+          - linux-arm64
+          - macos-amd64
+          - windows-amd64
+
+        include:
+          - job_name: linux-amd64
+            os: ubuntu-latest
+            java_version: 11
+            java_home: ./graalvm
+            graal_os: linux-amd64
+            graal_version: 21.0.0.2
+            gu_path: ./graalvm/bin/gu
+
+          - job_name: linux-arm64
+            os: [ self-hosted, linux, ARM64 ]
+            java_version: 11
+            java_home: ./graalvm
+            graal_os: linux-aarch64
+            graal_version: 21.0.0.2
+            gu_path: ./graalvm/bin/gu
+
+          - job_name: macos-amd64
+            os: macOS-latest
+            java_version: 11
+            java_home: ./graalvm/Contents/Home
+            graal_os: darwin-amd64
+            graal_version: 21.0.0.2
+            gu_path: ./graalvm/Contents/Home/bin/gu
+
+          - job_name: windows-amd64
+            os: windows-2016
+            java_version: 11
+            java_home: ./graalvm
+            graal_os: windows-amd64
+            graal_version: 21.0.0.2
+            gu_path: graalvm\bin\gu.cmd
+
+    name: ${{ matrix.job_name }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # git checkout
+      - name: Checkout the repository
+        uses: actions/checkout@v2.3.4
+
+      # install build dependencies
+      - name: Install GraalVM on *nix
+        run: |
+          curl -s -4 -L https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-${{ matrix.graal_version }}/graalvm-ce-java${{ matrix.java_version }}-${{ matrix.graal_os }}-${{ matrix.graal_version }}.tar.gz -o graal.tar.gz
+          tar -zxf graal.tar.gz
+          mv graalvm-ce-java${{ matrix.java_version }}-${{ matrix.graal_version }} graalvm
+        if: matrix.os != 'windows-2016'
+
+      - name: Install GraalVM on Windows
+        run: |
+          Invoke-RestMethod -Uri https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-${{ matrix.graal_version }}/graalvm-ce-java${{ matrix.java_version }}-${{ matrix.graal_os }}-${{ matrix.graal_version }}.zip -OutFile 'graal.zip'
+          Expand-Archive -path 'graal.zip' -destinationpath '.'
+          Rename-Item graalvm-ce-java${{ matrix.java_version }}-${{ matrix.graal_version }} graalvm
+        if: matrix.os == 'windows-2016'
+
+      - name: Install Native Image
+        run: ${{ matrix.gu_path }} install native-image
+
+      - name: Set up Visual C Build Tools Workload for Visual Studio 2017 Build Tools on Windows
+        run: choco install visualstudio2017-workload-vctools
+        if: matrix.os == 'windows-2016'
+
+      # build native image
+      - name: Build Native Image on *nix
+        env:
+          JAVA_HOME: ${{ matrix.java_home }}
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-cli --also-make package
+        if: matrix.os != 'windows-2016'
+
+      - name: Build Native Image on Windows
+        shell: cmd
+        env:
+          JAVA_HOME: ${{ matrix.java_home }}
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+          ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-cli --also-make package
+        if: matrix.os == 'windows-2016'
+
+      # package native image
+      - name: Build Package on *nix
+        run: |
+          mkdir -p drasyl-cli-${{ matrix.job_name }}/bin
+          mv ./drasyl drasyl-cli-${{ matrix.job_name }}/bin
+          cp ./LICENSE drasyl-cli-${{ matrix.job_name }}/
+          zip -r drasyl-cli-${{ matrix.job_name }}.zip ./drasyl-cli-${{ matrix.job_name }}
+        if: success() && matrix.os != 'windows-2016'
+
+      - name: Build Package on Windows
+        run: |
+          New-Item "./drasyl-cli-${{ matrix.job_name }}/bin" -ItemType Directory -ea 0
+          Move-Item -Path ./drasyl.exe -Destination "./drasyl-cli-${{ matrix.job_name }}/bin"
+          Copy-Item "./LICENSE" -Destination "./drasyl-cli-${{ matrix.job_name }}"
+          Compress-Archive -Path "./drasyl-cli-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-cli-${{ matrix.job_name }}.zip
+        if: success() && matrix.os == 'windows-2016'
+
+      # publish artifact
+      - name: Publish artifact
+        if: success()
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          name: drasyl-cli-${{ matrix.job_name }}
+          path: drasyl-cli-${{ matrix.job_name }}.zip
