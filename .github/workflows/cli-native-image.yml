@@ -20,28 +20,33 @@ jobs:
           - macos_amd64
           - windows_amd64
 
-        java_version: 11
-        graal_version: 21.0.0.2
-
         include:
           - job_name: linux_amd64
             os: ubuntu-latest
+            java_version: 11
             graal_os: linux-amd64
+            graal_version: 21.0.0.2
             gu_path: ./graalvm/bin/gu
 
           - job_name: linux_arm64
             os: [ self-hosted, linux, ARM64 ]
+            java_version: 11
             graal_os: linux-aarch64
+            graal_version: 21.0.0.2
             gu_path: ./graalvm/bin/gu
 
           - job_name: macos_amd64
             os: macOS-latest
+            java_version: 11
             graal_os: darwin-amd64
+            graal_version: 21.0.0.2
             gu_path: ./graalvm/Contents/Home/bin/gu
 
           - job_name: windows_amd64
             os: windows-2016
+            java_version: 11
             graal_os: windows-amd64
+            graal_version: 21.0.0.2
             gu_path: graalvm-ce-java11-21.0.0.2\bin\gu.cmd
 
     name: ${{ matrix.job_name }}
