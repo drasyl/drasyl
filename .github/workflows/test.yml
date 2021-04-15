@@ -1,13 +1,22 @@
-name: Java CI
+name: Test
 
-on: [push]
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '*'
+  pull_request:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         java: [ '11', '15' ]
+
+    name: Java ${{ matrix.java }}
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK
@@ -17,9 +26,3 @@ jobs:
           distribution: 'adopt'
       - name: Build with Maven
         run: ./mvnw --batch-mode --update-snapshots verify
-      - name: Publish artifact
-        if: success()
-        uses: actions/upload-artifact@v2.2.3
-        with:
-          name: drasyl-cli
-          path: drasyl-*.zip

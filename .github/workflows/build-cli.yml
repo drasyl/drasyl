@@ -1,16 +1,39 @@
-name: Build CLI Native Image
+name: Build CLI
 
 on:
   push:
-    branches: [ master ]
-#  pull_request:
-#    branches: [ master ]
+    branches:
+      - '*'
+    tags:
+      - 'v*'
   workflow_dispatch:
 #  schedule:
 #    - cron:  '0 6 * * 1' # every monday 6am
 
 jobs:
-  build:
+  java:
+    name: Java
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: 'adopt'
+      - name: Build with Maven
+        env:
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-cli --also-make package
+      - name: Publish artifact
+        if: success()
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          name: drasyl-cli
+          path: drasyl-*.zip
+
+  native-image:
     strategy:
       fail-fast: false
       matrix:
