@@ -30,7 +30,6 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2.2.3
         with:
-          name: drasyl-cli
           path: drasyl-*.zip
 
   native-image:
@@ -125,20 +124,25 @@ jobs:
         if: matrix.os == 'windows-2016'
 
       # package native image
+      - name: Get actual version
+        id: version
+        run: echo ::set-output name=VERSION::$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+        if: success()
+
       - name: Build Package on *nix
         run: |
-          mkdir -p drasyl-cli-${{ matrix.job_name }}/bin
-          mv ./drasyl drasyl-cli-${{ matrix.job_name }}/bin
-          cp ./LICENSE drasyl-cli-${{ matrix.job_name }}/
-          zip -r drasyl-cli-${{ matrix.job_name }}.zip ./drasyl-cli-${{ matrix.job_name }}
+          mkdir -p drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}/bin
+          mv ./drasyl drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}/bin
+          cp ./LICENSE drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}/
+          zip -r drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}.zip ./drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}
         if: success() && matrix.os != 'windows-2016'
 
       - name: Build Package on Windows
         run: |
-          New-Item "./drasyl-cli-${{ matrix.job_name }}/bin" -ItemType Directory -ea 0
-          Move-Item -Path ./drasyl.exe -Destination "./drasyl-cli-${{ matrix.job_name }}/bin"
-          Copy-Item "./LICENSE" -Destination "./drasyl-cli-${{ matrix.job_name }}"
-          Compress-Archive -Path "./drasyl-cli-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-cli-${{ matrix.job_name }}.zip
+          New-Item "./drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}/bin" -ItemType Directory -ea 0
+          Move-Item -Path ./drasyl.exe -Destination "./drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}/bin"
+          Copy-Item "./LICENSE" -Destination "./drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}"
+          Compress-Archive -Path "./drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}.zip
         if: success() && matrix.os == 'windows-2016'
 
       # publish artifact
@@ -146,8 +150,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2.2.3
         with:
-          name: drasyl-cli-${{ matrix.job_name }}
-          path: drasyl-cli-${{ matrix.job_name }}.zip
+          path: drasyl-${{ steps.version.outputs.VERSION }}-${{ matrix.job_name }}.zip
 
   docker:
     name: Docker
