@@ -148,3 +148,15 @@ jobs:
         with:
           name: drasyl-cli-${{ matrix.job_name }}
           path: drasyl-cli-${{ matrix.job_name }}.zip
+
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2.3.4
+      - name: Build Docker Image
+        run: docker build --tag drasyl/drasyl .
+      - name: Test Docker Image
+        run: docker run --rm drasyl/drasyl version
