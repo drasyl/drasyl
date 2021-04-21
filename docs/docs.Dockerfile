@@ -1,4 +1,4 @@
-FROM python:3.8.5
+FROM python:3
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/bin
 
