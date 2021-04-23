@@ -52,4 +52,4 @@ necessary for the project. However, drasyl is open to contributions made by the 
 
 # License
 
-This is free software under the terms of the [GNU Lesser General Public License v3.0](LICENSE)
+This is free software under the terms of the [MIT License](LICENSE)
