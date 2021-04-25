@@ -54,6 +54,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
+import static org.drasyl.remote.protocol.RemoteEnvelope.MAGIC_NUMBER_LENGTH;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -107,11 +108,11 @@ class RemoteEnvelopeTest {
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(message)) {
             outputStream.write(RemoteEnvelope.magicNumber());
             publicHeader.writeDelimitedTo(outputStream);
-            publicHeaderLength = outputStream.writtenBytes();
+            publicHeaderLength = outputStream.writtenBytes() - MAGIC_NUMBER_LENGTH;
             privateHeader.writeDelimitedTo(outputStream);
-            privateHeaderLength = outputStream.writtenBytes() - publicHeaderLength;
+            privateHeaderLength = outputStream.writtenBytes() - MAGIC_NUMBER_LENGTH - publicHeaderLength;
             body.writeDelimitedTo(outputStream);
-            bodyLength = outputStream.writtenBytes() - publicHeaderLength - privateHeaderLength;
+            bodyLength = outputStream.writtenBytes() - MAGIC_NUMBER_LENGTH - publicHeaderLength - privateHeaderLength;
         }
     }
 
@@ -132,8 +133,8 @@ class RemoteEnvelopeTest {
                 assertEquals(publicHeader, envelope.getPublicHeader());
                 assertEquals((privateHeaderLength + bodyLength), envelope.getInternalByteBuf().readableBytes());
                 assertEquals(backedByte, envelope.getInternalByteBuf().array());
-                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
-                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
+                assertEquals((MAGIC_NUMBER_LENGTH + publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
+                assertEquals((MAGIC_NUMBER_LENGTH + publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
             }
 
             @Test
@@ -142,8 +143,8 @@ class RemoteEnvelopeTest {
 
                 assertEquals(privateHeader, envelope.getPrivateHeader());
                 assertEquals(bodyLength, envelope.getInternalByteBuf().readableBytes());
-                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
-                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
+                assertEquals((MAGIC_NUMBER_LENGTH + publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
+                assertEquals((MAGIC_NUMBER_LENGTH + publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
             }
 
             @Test
@@ -152,8 +153,8 @@ class RemoteEnvelopeTest {
 
                 assertEquals(body, envelope.getBody());
                 assertEquals(0, envelope.getInternalByteBuf().readableBytes());
-                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
-                assertEquals((publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
+                assertEquals((MAGIC_NUMBER_LENGTH + publicHeaderLength + privateHeaderLength + bodyLength), envelope.copy().readableBytes());
+                assertEquals((MAGIC_NUMBER_LENGTH + publicHeaderLength + privateHeaderLength + bodyLength), message.readableBytes());
             }
 
             @Test
