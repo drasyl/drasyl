@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import org.drasyl.crypto.HexUtil;
@@ -196,6 +197,19 @@ class RemoteEnvelopeTest {
                 when(message.refCnt()).thenReturn(1);
 
                 assertThrows(IOException.class, () -> RemoteEnvelope.of(message));
+            }
+        }
+
+        @Nested
+        class WithPublicHeaderAndBytes {
+            @Test
+            void shouldBuildCorrectMessage() throws InvalidMessageFormatException {
+                final byte[] bytesAfterPublicHeader = ByteBufUtil.getBytes(message.slice(MAGIC_NUMBER_LENGTH + publicHeaderLength, message.readableBytes() - MAGIC_NUMBER_LENGTH - publicHeaderLength));
+                final RemoteEnvelope<MessageLite> msg = RemoteEnvelope.of(publicHeader, bytesAfterPublicHeader);
+
+                assertEquals(publicHeader, msg.getPublicHeader());
+                assertEquals(privateHeader, msg.getPrivateHeader());
+                assertEquals(body, msg.getBody());
             }
         }
     }
