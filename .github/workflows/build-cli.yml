@@ -49,7 +49,7 @@ jobs:
             java_version: 11
             java_home: ./graalvm
             graal_os: linux-amd64
-            graal_version: 21.0.0.2
+            graal_version: 21.1.0
             gu_path: ./graalvm/bin/gu
 
           - job_name: linux-arm64
@@ -57,7 +57,7 @@ jobs:
             java_version: 11
             java_home: ./graalvm
             graal_os: linux-aarch64
-            graal_version: 21.0.0.2
+            graal_version: 21.1.0
             gu_path: ./graalvm/bin/gu
 
           - job_name: macos-amd64
@@ -65,7 +65,7 @@ jobs:
             java_version: 11
             java_home: ./graalvm/Contents/Home
             graal_os: darwin-amd64
-            graal_version: 21.0.0.2
+            graal_version: 21.1.0
             gu_path: ./graalvm/Contents/Home/bin/gu
 
           - job_name: windows-amd64
@@ -73,7 +73,7 @@ jobs:
             java_version: 11
             java_home: ./graalvm
             graal_os: windows-amd64
-            graal_version: 21.0.0.2
+            graal_version: 21.1.0
             gu_path: graalvm\bin\gu.cmd
 
     name: ${{ matrix.job_name }}
