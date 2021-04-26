@@ -142,7 +142,7 @@
         <json-unit-assertj.version>2.25.0</json-unit-assertj.version>
         <commons-cli.version>1.4</commons-cli.version>
         <protobuf.version>3.15.8</protobuf.version>
-        <auto-value.version>1.8</auto-value.version>
+        <auto-value.version>1.8.1</auto-value.version>
     </properties>
 
     <dependencyManagement>
