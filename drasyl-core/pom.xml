@@ -152,9 +152,6 @@
                         </goals>
                         <configuration>
                             <protocVersion>3.14.0</protocVersion>
-                            <protocArtifact>
-                                com.google.protobuf:protoc:3.14.0:exe:${os.detected.classifier}
-                            </protocArtifact>
                             <inputDirectories>
                                 <include>src/main/protobuf</include>
                             </inputDirectories>
