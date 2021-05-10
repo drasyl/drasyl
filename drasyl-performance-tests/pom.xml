@@ -40,7 +40,7 @@
     <properties>
         <!-- Skip tests by default; run only if -DskipTests=false is specified -->
         <skipTests>true</skipTests>
-        <jmh.version>1.29</jmh.version>
+        <jmh.version>1.30</jmh.version>
     </properties>
 
     <dependencies>
