@@ -25,6 +25,7 @@ package org.drasyl.util;
  * {@link java.util.function.Consumer} that can throw checked {@link Exception}s.
  *
  * @param <T> the type of the input to the operation
+ * @param <E> the type of the thrown checked exception
  */
 @FunctionalInterface
 public interface ThrowingConsumer<T, E extends Exception> {

@@ -26,6 +26,7 @@ package org.drasyl.util;
  *
  * @param <T> the type of the first argument to the operation
  * @param <U> the type of the second argument to the operation
+ * @param <E> the type of the thrown checked exception
  */
 @FunctionalInterface
 public interface ThrowingBiConsumer<T, U, E extends Exception> {
