@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.protocol;
 
+import com.google.common.primitives.Ints;
 import com.google.protobuf.ByteString;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.crypto.AgreementId;
@@ -93,11 +94,11 @@ public class ProtocolTest {
             final InetSocketAddress address = new InetSocketAddress("37.61.174.58", 80);
             final Unite unite = Unite.newBuilder()
                     .setPublicKey(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
-                    .setAddress(address.getHostString())
-                    .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
+                    .setAddressV4(Ints.fromByteArray(address.getAddress().getAddress()))
+                    .setPort(address.getPort())
                     .build();
 
-            assertEquals(52, unite.getSerializedSize());
+            assertEquals(41, unite.getSerializedSize());
         }
 
         @Test
@@ -105,11 +106,11 @@ public class ProtocolTest {
             final InetSocketAddress address = new InetSocketAddress("b719:5781:d127:d17c:1230:b24c:478c:7985", 443);
             final Unite unite = Unite.newBuilder()
                     .setPublicKey(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
-                    .setAddress(address.getHostString())
-                    .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
+                    .setAddressV6(ByteString.copyFrom(address.getAddress().getAddress()))
+                    .setPort(address.getPort())
                     .build();
 
-            assertEquals(79, unite.getSerializedSize());
+            assertEquals(55, unite.getSerializedSize());
         }
     }
 }
