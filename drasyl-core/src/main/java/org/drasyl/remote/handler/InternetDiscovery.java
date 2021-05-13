@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.cache.CacheBuilder;
+import com.google.common.primitives.Ints;
 import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
@@ -44,11 +45,11 @@ import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
-import org.drasyl.util.UnsignedShort;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -535,14 +536,23 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                              final CompletableFuture<Void> future) throws IOException {
         final Unite body = msg.getBodyAndRelease();
         final IdentityPublicKey publicKey = requireNonNull(IdentityPublicKey.of(body.getPublicKey().toByteArray()));
-        final InetSocketAddressWrapper address = new InetSocketAddressWrapper(body.getAddress(), UnsignedShort.of(body.getPort().toByteArray()).getValue());
+
+        final InetAddress address;
+        if (body.getAddressV6().isEmpty()) {
+            address = InetAddress.getByAddress(Ints.toByteArray(body.getAddressV4()));
+        }
+        else {
+            address = InetAddress.getByAddress(body.getAddressV6().toByteArray());
+        }
+        final InetSocketAddressWrapper socketAddress = new InetSocketAddressWrapper(address, body.getPort());
         LOG.trace("Got {}", msg);
+
         final Peer peer = peers.computeIfAbsent(publicKey, key -> new Peer());
-        peer.setAddress(address);
+        peer.setAddress(socketAddress);
         peer.inboundControlTrafficOccurred();
         peer.applicationTrafficOccurred();
         directConnectionPeers.add(publicKey);
-        sendPing(ctx, publicKey, address, future);
+        sendPing(ctx, publicKey, socketAddress, future);
     }
 
     private void handleApplication(final HandlerContext ctx,

@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.protocol;
 
+import com.google.common.primitives.Ints;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.MessageOrBuilder;
@@ -57,6 +58,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 
@@ -855,16 +857,23 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                                               final IdentityPublicKey recipient,
                                               final IdentityPublicKey publicKey,
                                               final InetSocketAddress address) {
+        final Unite.Builder bodyBuilder = Unite.newBuilder()
+                .setPublicKey(ByteString.copyFrom(publicKey.getKey()))
+                .setPort(address.getPort());
+
+        if (address.getAddress() instanceof Inet4Address) {
+            bodyBuilder.setAddressV4(Ints.fromByteArray(address.getAddress().getAddress()));
+        }
+        else {
+            bodyBuilder.setAddressV6(ByteString.copyFrom(address.getAddress().getAddress()));
+        }
+
         return of(
                 buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), requireNonNull(recipient)),
                 PrivateHeader.newBuilder()
                         .setType(UNITE)
                         .build(),
-                Unite.newBuilder()
-                        .setPublicKey(ByteString.copyFrom(publicKey.getKey()))
-                        .setAddress(address.getHostString())
-                        .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
-                        .build()
+                bodyBuilder.build()
         );
     }
 

@@ -41,9 +41,12 @@ message Discovery {
 }
 
 message Unite {
-    bytes publicKey = 1; // 32 bytes fix
-    string address = 2; // hostname
-    bytes port = 3; // 2 bytes fix
+    bytes publicKey = 1; // 33 bytes fix
+    oneof address {
+        fixed32 addressV4 = 2; // 4 bytes fix
+        bytes addressV6 = 3; // 16 bytes fix
+    }
+    uint32 port = 4; // 2 bytes fix
 }
 
 message KeyExchange {
