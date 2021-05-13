@@ -22,7 +22,7 @@
 package org.drasyl.plugin.groups.manager;
 
 import io.reactivex.rxjava3.disposables.Disposable;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
@@ -53,7 +53,7 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
 
-public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, CompressedPublicKey> {
+public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, IdentityPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
     private Disposable staleTask;
@@ -133,7 +133,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
 
     @Override
     protected void matchedInbound(final HandlerContext ctx,
-                                  final CompressedPublicKey sender,
+                                  final IdentityPublicKey sender,
                                   final GroupsClientMessage msg,
                                   final CompletableFuture<Void> future) {
         if (msg instanceof GroupJoinMessage) {
@@ -153,7 +153,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      * @param future the message future
      */
     private void handleJoinRequest(final HandlerContext ctx,
-                                   final CompressedPublicKey sender,
+                                   final IdentityPublicKey sender,
                                    final GroupJoinMessage msg,
                                    final CompletableFuture<Void> future) {
         final String groupName = msg.getGroup().getName();
@@ -194,7 +194,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      * @param future the message future
      */
     private void handleLeaveRequest(final HandlerContext ctx,
-                                    final CompressedPublicKey sender,
+                                    final IdentityPublicKey sender,
                                     final GroupLeaveMessage msg,
                                     final CompletableFuture<Void> future) {
         try {
@@ -225,7 +225,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      * @param isRenew if this is a renew
      */
     private void doJoin(final HandlerContext ctx,
-                        final CompressedPublicKey sender,
+                        final IdentityPublicKey sender,
                         final Group group,
                         final CompletableFuture<Void> future,
                         final boolean isRenew) {
@@ -235,7 +235,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                             Member.of(sender),
                             group,
                             System.currentTimeMillis() + group.getTimeout().toMillis())) || !isRenew) {
-                final Set<CompressedPublicKey> memberships = database.getGroupMembers(group.getName()).stream()
+                final Set<IdentityPublicKey> memberships = database.getGroupMembers(group.getName()).stream()
                         .sequential()
                         .map(v -> v.getMember().getPublicKey())
                         .collect(Collectors.toSet());

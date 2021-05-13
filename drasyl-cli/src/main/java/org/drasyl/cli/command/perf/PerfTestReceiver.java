@@ -29,7 +29,7 @@ import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -64,20 +64,20 @@ public class PerfTestReceiver {
     private static final Logger LOG = LoggerFactory.getLogger(PerfTestReceiver.class);
     private final SessionRequest session;
     private final Scheduler scheduler;
-    private final CompressedPublicKey sender;
+    private final IdentityPublicKey sender;
     private final PrintStream printStream;
-    private final BiFunction<CompressedPublicKey, Object, CompletableFuture<Void>> sendMethod;
+    private final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod;
     private final Supplier<Behavior> successBehavior;
     private final Function<Exception, Behavior> failureBehavior;
     private final LongSupplier currentTimeSupplier;
     private TestResults intervalResults;
 
     @SuppressWarnings("java:S107")
-    PerfTestReceiver(final CompressedPublicKey sender,
+    PerfTestReceiver(final IdentityPublicKey sender,
                      final SessionRequest session,
                      final Scheduler scheduler,
                      final PrintStream printStream,
-                     final BiFunction<CompressedPublicKey, Object, CompletableFuture<Void>> sendMethod,
+                     final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod,
                      final Supplier<Behavior> successBehavior,
                      final Function<Exception, Behavior> failureBehavior,
                      final LongSupplier currentTimeSupplier) {
@@ -91,11 +91,11 @@ public class PerfTestReceiver {
         this.currentTimeSupplier = requireNonNull(currentTimeSupplier);
     }
 
-    public PerfTestReceiver(final CompressedPublicKey sender,
+    public PerfTestReceiver(final IdentityPublicKey sender,
                             final SessionRequest session,
                             final Scheduler scheduler,
                             final PrintStream printStream,
-                            final BiFunction<CompressedPublicKey, Object, CompletableFuture<Void>> sendMethod,
+                            final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod,
                             final Supplier<Behavior> successBehavior,
                             final Function<Exception, Behavior> failureBehavior) {
         this(sender, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);
@@ -205,7 +205,7 @@ public class PerfTestReceiver {
         }
     }
 
-    private Behavior replyResults(final CompressedPublicKey sender,
+    private Behavior replyResults(final IdentityPublicKey sender,
                                   final TestResults totalResults) {
         return Behaviors.withScheduler(eventScheduler -> {
             // reply our results

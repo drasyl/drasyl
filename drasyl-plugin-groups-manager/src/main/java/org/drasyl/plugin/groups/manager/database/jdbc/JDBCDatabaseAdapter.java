@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.manager.database.jdbc;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.data.Member;
 import org.drasyl.plugin.groups.manager.data.Membership;
@@ -265,7 +265,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
     }
 
     @Override
-    public boolean removeGroupMember(final CompressedPublicKey member,
+    public boolean removeGroupMember(final IdentityPublicKey member,
                                      final String groupName) throws DatabaseException {
         try (final Connection con = getConnection()) {
             final String sqlDeleteGroupMember = "DELETE FROM `GroupMembers` WHERE member=? AND groupName=?;";
@@ -367,7 +367,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
 
         while (rs.next()) {
             members.add(Membership.of(
-                    Member.of(CompressedPublicKey.of(rs.getString("member"))),
+                    Member.of(IdentityPublicKey.of(rs.getString("member"))),
                     Group.of(
                             rs.getString("name"),
                             rs.getString("secret"),

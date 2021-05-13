@@ -25,9 +25,7 @@ import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.PeerDirectEvent;
-import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -37,6 +35,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
+import test.util.IdentityTestUtil;
 
 import java.net.InetAddress;
 import java.util.Map;
@@ -57,35 +56,31 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
         try {
             futures = new CompletableFuture[Runtime.getRuntime().availableProcessors()];
 
-            final Identity identity1 = Identity.of(ProofOfWork.of(-2109504681),
-                    CompressedKeyPair.of("AhqX0pwBbAthIabf+05czWQjaxb5mmqWU4IdG3RHOuQh",
-                            "BRRzAewqH0MnNvidynNzpOwdfbXYzOjBHhWEO/ZcgsU="));
-            final Identity identity2 = Identity.of(ProofOfWork.of(-2145822673),
-                    CompressedKeyPair.of("AgUAcj2PUQ8jqQpF4yANhFuPUlwSWpuzb9gIX6rzkc6g",
-                            "DkEGET4hDK87hwVhGN8wl9SIL0cSKcY0MRsa3LrV0/U="));
+            final Identity identity1 = IdentityTestUtil.ID_1;
+            final Identity identity2 = IdentityTestUtil.ID_2;
 
             final DrasylConfig config1 = DrasylConfig.newBuilder()
                     .identityProofOfWork(identity1.getProofOfWork())
-                    .identityPublicKey(identity1.getPublicKey())
-                    .identityPrivateKey(identity1.getPrivateKey())
+                    .identityPublicKey(identity1.getIdentityPublicKey())
+                    .identitySecretKey(identity1.getIdentitySecretKey())
                     .intraVmDiscoveryEnabled(false)
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
                     .remoteBindHost(InetAddress.getByName("127.0.0.1"))
                     .remoteBindPort(22528)
                     .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(identity2.getPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22529)))
+                    .remoteStaticRoutes(Map.of(identity2.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22529)))
                     .monitoringEnabled(false)
                     .build();
             final DrasylConfig config2 = DrasylConfig.newBuilder()
                     .identityProofOfWork(identity2.getProofOfWork())
-                    .identityPublicKey(identity2.getPublicKey())
-                    .identityPrivateKey(identity2.getPrivateKey())
+                    .identityPublicKey(identity2.getIdentityPublicKey())
+                    .identitySecretKey(identity2.getIdentitySecretKey())
                     .intraVmDiscoveryEnabled(false)
                     .remoteBindHost(InetAddress.getByName("127.0.0.1"))
                     .remoteBindPort(22529)
                     .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(identity1.getPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22528)))
+                    .remoteStaticRoutes(Map.of(identity1.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22528)))
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
                     .monitoringEnabled(false)
@@ -95,7 +90,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
             node1 = new DrasylNode(config1) {
                 @Override
                 public void onEvent(final @NonNull Event event) {
-                    if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getPublicKey().equals(identity2.getPublicKey()) && !node1Ready.isDone()) {
+                    if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getIdentityPublicKey().equals(identity2.getIdentityPublicKey()) && !node1Ready.isDone()) {
                         node1Ready.complete(null);
                     }
                 }
@@ -105,11 +100,11 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
             node2 = new DrasylNode(config2) {
                 @Override
                 public void onEvent(final @NonNull Event event) {
-                    if (event instanceof MessageEvent && Objects.equals(((MessageEvent) event).getSender(), node1.identity().getPublicKey()) && ((MessageEvent) event).getPayload() instanceof Integer) {
+                    if (event instanceof MessageEvent && Objects.equals(((MessageEvent) event).getSender(), node1.identity().getIdentityPublicKey()) && ((MessageEvent) event).getPayload() instanceof Integer) {
                         final int index = (int) ((MessageEvent) event).getPayload();
                         futures[index].complete(null);
                     }
-                    else if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getPublicKey().equals(identity1.getPublicKey()) && !node2Ready.isDone()) {
+                    else if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getIdentityPublicKey().equals(identity1.getIdentityPublicKey()) && !node2Ready.isDone()) {
                         node2Ready.complete(null);
                     }
                 }
@@ -151,7 +146,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void benchmark(final ThreadState state) {
         futures[state.index] = new CompletableFuture<>();
-        node1.send(node2.identity().getPublicKey(), state.index);
+        node1.send(node2.identity().getIdentityPublicKey(), state.index);
         futures[state.index].join();
     }
 

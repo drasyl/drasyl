@@ -154,7 +154,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
      */
     private Behavior online() {
         if (this.text != null) {
-            final String code = identity().getPublicKey().toString() + password;
+            final String code = identity().getIdentityPublicKey().toString() + password;
             out.println("Wormhole code is: " + code);
             out.println("On the other computer, please run:");
             out.println();

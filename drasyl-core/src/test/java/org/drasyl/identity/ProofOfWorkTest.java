@@ -24,6 +24,7 @@ package org.drasyl.identity;
 import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 
@@ -53,7 +54,7 @@ class ProofOfWorkTest {
         @Test
         void shouldGenerateCorrectProof() {
             final byte difficulty = 1;
-            final CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
+            final IdentityPublicKey publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final ProofOfWork proof1 = ProofOfWork.generateProofOfWork(publicKey, difficulty);
             final ProofOfWork proof2 = ProofOfWork.generateProofOfWork(publicKey, difficulty);
 
@@ -104,7 +105,7 @@ class ProofOfWorkTest {
     class Invalid {
         @Test
         void shouldThrowExceptionOnInvalidValue() {
-            final CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
+            final IdentityPublicKey publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final ProofOfWork proof = ProofOfWork.generateProofOfWork(publicKey, (byte) 1);
 
             assertThrows(IllegalArgumentException.class, () -> proof.isValid(publicKey, (byte) 65));

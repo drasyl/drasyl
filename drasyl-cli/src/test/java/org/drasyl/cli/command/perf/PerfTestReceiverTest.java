@@ -31,7 +31,7 @@ import org.drasyl.cli.command.perf.PerfTestReceiver.ResultsReplied;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.ArrayUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -62,7 +62,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PerfTestReceiverTest {
     @Mock
-    private CompressedPublicKey sender;
+    private IdentityPublicKey sender;
     @Mock
     private SessionRequest session;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -70,7 +70,7 @@ class PerfTestReceiverTest {
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
     @Mock
-    BiFunction<CompressedPublicKey, Object, CompletableFuture<Void>> sendMethod;
+    BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod;
     @Mock
     Supplier<Behavior> successBehavior;
     @Mock

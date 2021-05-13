@@ -27,7 +27,7 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -127,8 +127,8 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                                   final Address sender,
                                   final Object msg,
                                   final CompletableFuture<Void> future) {
-                if (sender instanceof CompressedPublicKey) {
-                    final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
+                if (sender instanceof IdentityPublicKey) {
+                    final IdentityPublicKey senderAddress = (IdentityPublicKey) sender;
                     inboundEvents.onNext(MessageEvent.of(senderAddress, msg));
                 }
                 inboundMessages.onNext(new DefaultAddressedEnvelope<>(sender, null, msg));

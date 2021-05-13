@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.client.event;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.Group;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class GroupJoinedEventTest {
     @Mock
     private Group group;
     @Mock
-    private CompressedPublicKey member;
+    private IdentityPublicKey member;
     @Mock
     private Runnable runnable;
 

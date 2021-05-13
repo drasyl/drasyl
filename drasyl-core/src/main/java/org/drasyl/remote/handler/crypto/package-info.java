@@ -19,30 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.identity;
-
-import org.drasyl.AbstractBenchmark;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.infra.Blackhole;
-
-@State(Scope.Benchmark)
-public class CompressedPublicKeyBenchmark extends AbstractBenchmark {
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.Throughput)
-    public void ofString(final Blackhole blackhole) {
-        blackhole.consume(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.Throughput)
-    public void ofStringWithConversionToUncompressedKey(final Blackhole blackhole) {
-        blackhole.consume(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22").toUncompressedKey());
-    }
-}
+/**
+ * Contains classes necessary for encrypted communication.
+ */
+package org.drasyl.remote.handler.crypto;

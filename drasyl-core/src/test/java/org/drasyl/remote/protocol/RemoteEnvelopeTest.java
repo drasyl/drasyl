@@ -23,14 +23,16 @@ package org.drasyl.remote.protocol;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
+import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.identity.CompressedPrivateKey;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
@@ -46,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -67,10 +70,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RemoteEnvelopeTest {
-    private CompressedPublicKey senderPublicKey;
-    private CompressedPrivateKey senderPrivateKey;
-    private CompressedPublicKey recipientPublicKey;
-    private CompressedPrivateKey recipientPrivateKey;
+    private IdentityPublicKey senderPublicKey;
+    private IdentityPublicKey recipientPublicKey;
     private ByteBuf message;
     private PublicHeader publicHeader;
     private PrivateHeader privateHeader;
@@ -78,23 +79,21 @@ class RemoteEnvelopeTest {
     private int publicHeaderLength;
     private int privateHeaderLength;
     private int bodyLength;
-    private MessageId messageId;
+    private Nonce nonce;
     private ProofOfWork senderProofOfWork;
 
     @BeforeEach
     void setUp() throws IOException {
-        senderPublicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
-        senderPrivateKey = CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d");
-        recipientPublicKey = CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
-        recipientPrivateKey = CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34");
-        messageId = MessageId.of("412176952b5b81fd");
+        senderPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
+        recipientPublicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
+        nonce = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
         senderProofOfWork = ProofOfWork.of(6657650);
         publicHeader = PublicHeader.newBuilder()
-                .setId(messageId.longValue())
+                .setNonce(ByteString.copyFrom(nonce.byteArrayValue()))
                 .setNetworkId(1)
-                .setSender(ByteString.copyFrom(senderPublicKey.byteArrayValue()))
+                .setSender(ByteString.copyFrom(senderPublicKey.getKey()))
                 .setProofOfWork(senderProofOfWork.intValue())
-                .setRecipient(ByteString.copyFrom(recipientPublicKey.byteArrayValue()))
+                .setRecipient(ByteString.copyFrom(recipientPublicKey.getKey()))
                 .setHopCount(1)
                 .build();
 
@@ -292,7 +291,7 @@ class RemoteEnvelopeTest {
         @Test
         void shouldReturnId() throws InvalidMessageFormatException {
             try (final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message)) {
-                assertEquals(messageId, envelope.getId());
+                assertEquals(nonce, envelope.getNonce());
             }
         }
 
@@ -301,7 +300,7 @@ class RemoteEnvelopeTest {
             final RemoteEnvelope<MessageLite> envelope = spy(RemoteEnvelope.of(message));
             when(envelope.getPublicHeader()).thenThrow(InvalidMessageFormatException.class);
 
-            assertThrows(InvalidMessageFormatException.class, envelope::getId);
+            assertThrows(InvalidMessageFormatException.class, envelope::getNonce);
         }
     }
 
@@ -404,7 +403,7 @@ class RemoteEnvelopeTest {
         @Test
         void shouldIncrementIfMessageIsPresentInByteBufAndEnvelope() throws IOException {
             final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
-            final PublicHeader publicHeader = RemoteEnvelope.buildPublicHeader(0, CompressedPublicKey.of("1e3f50015609fc450176d19fd6192221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f2238021e3f50015c0a085672b26b94d530ef120200002221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22289cdc9b063221030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223a0100020801100a0a48616c6c6f2057656c7412025b42"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
+            final PublicHeader publicHeader = RemoteEnvelope.buildPublicHeader(0, IdentityTestUtil.ID_3.getIdentityPublicKey(), IdentityTestUtil.ID_3.getProofOfWork(), IdentityTestUtil.ID_4.getIdentityPublicKey());
             final PrivateHeader privateHeader = PrivateHeader.newBuilder()
                     .setType(APPLICATION)
                     .build();
@@ -422,7 +421,7 @@ class RemoteEnvelopeTest {
 
         @Test
         void shouldIncrementIfMessageIsPresentOnlyInEnvelope() throws IOException {
-            final PublicHeader publicHeader = RemoteEnvelope.buildPublicHeader(0, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
+            final PublicHeader publicHeader = RemoteEnvelope.buildPublicHeader(0, IdentityTestUtil.ID_3.getIdentityPublicKey(), IdentityTestUtil.ID_3.getProofOfWork(), IdentityTestUtil.ID_4.getIdentityPublicKey());
             final PrivateHeader privateHeader = PrivateHeader.newBuilder()
                     .setType(APPLICATION)
                     .build();
@@ -441,45 +440,21 @@ class RemoteEnvelopeTest {
     }
 
     @Nested
-    class GetSignature {
-        @Test
-        void shouldReturnSignature() throws IOException {
-            final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
-
-            assertArrayEquals(new byte[]{}, envelope.getSignature());
-        }
-
-        @Test
-        void shouldThrowExceptionOnError() throws InvalidMessageFormatException {
-            final RemoteEnvelope<MessageLite> envelope = spy(RemoteEnvelope.of(message));
-            when(envelope.getPublicHeader()).thenThrow(InvalidMessageFormatException.class);
-
-            assertThrows(InvalidMessageFormatException.class, envelope::getSignature);
-        }
-    }
-
-    @Nested
     class Arm {
         @Test
-        void shouldReturnSignedMessage() throws IOException {
+        void getPrivatHeaderShouldFailOnArmedMessage() throws IOException, CryptoException {
+            final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(IdentityTestUtil.ID_1.getKeyAgreementKeyPair(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
             final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
-            try (final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey)) {
-                assertNotNull(armedEnvelop.getPublicHeader().getSignature());
-            }
-        }
-
-        @Test
-        void getPrivatHeaderShouldFailOnArmedMessage() throws IOException {
-            final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
-            try (final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey)) {
+            try (final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(sessionPair)) {
                 assertThrows(IOException.class, armedEnvelop::getPrivateHeader);
             }
         }
 
         @Test
-        void getBodyShouldFailOnArmedMessage() throws IOException {
+        void getBodyShouldFailOnArmedMessage() throws IOException, CryptoException {
+            final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(IdentityTestUtil.ID_1.getKeyAgreementKeyPair(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
             final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
-            try (final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(senderPrivateKey)) {
+            try (final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(sessionPair)) {
                 assertThrows(IOException.class, armedEnvelop::getBody);
             }
         }
@@ -489,11 +464,13 @@ class RemoteEnvelopeTest {
     class Disarm {
         private RemoteEnvelope<MessageLite> envelope;
         private RemoteEnvelope<MessageLite> armedEnvelop;
+        private SessionPair sessionPair;
 
         @BeforeEach
-        void setUp() throws IOException {
+        void setUp() throws IOException, CryptoException {
             envelope = RemoteEnvelope.of(message);
-            armedEnvelop = envelope.armAndRelease(senderPrivateKey);
+            sessionPair = Crypto.INSTANCE.generateSessionKeyPair(IdentityTestUtil.ID_1.getKeyAgreementKeyPair(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
+            armedEnvelop = envelope.armAndRelease(new SessionPair(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
         }
 
         @AfterEach
@@ -502,30 +479,22 @@ class RemoteEnvelopeTest {
         }
 
         @Test
-        void shouldReturnDisarmedMessageIfSignatureIsValid() throws IOException {
-            final RemoteEnvelope<MessageLite> disarmedMessage = armedEnvelop.disarmAndRelease(senderPrivateKey);
+        void shouldReturnDisarmedMessage() throws IOException {
+            final RemoteEnvelope<MessageLite> disarmedMessage = armedEnvelop.disarmAndRelease(sessionPair);
 
             assertNotNull(disarmedMessage);
         }
 
         @Test
-        void shouldThrowExceptionIfSignatureIsNotValid() throws IOException {
-            final RemoteEnvelope<MessageLite> rearmed = envelope.armAndRelease(recipientPrivateKey);
-
-            // arm with wrong private key
-            assertThrows(IOException.class, () -> rearmed.disarmAndRelease(recipientPrivateKey));
-        }
-
-        @Test
         void getPrivatHeaderShouldNotFailOnDisarmedMessage() throws IOException {
-            final RemoteEnvelope<MessageLite> disarmedEnvelope = armedEnvelop.disarmAndRelease(recipientPrivateKey);
+            final RemoteEnvelope<MessageLite> disarmedEnvelope = armedEnvelop.disarmAndRelease(sessionPair);
 
             assertNotNull(disarmedEnvelope.getPrivateHeader());
         }
 
         @Test
         void getBodyShouldNotFailOnDisarmedMessage() throws IOException {
-            final RemoteEnvelope<MessageLite> disarmedEnvelope = armedEnvelop.disarmAndRelease(recipientPrivateKey);
+            final RemoteEnvelope<MessageLite> disarmedEnvelope = armedEnvelop.disarmAndRelease(sessionPair);
 
             assertNotNull(disarmedEnvelope.getBodyAndRelease());
         }
@@ -535,10 +504,10 @@ class RemoteEnvelopeTest {
     class TestAcknowledgement {
         @Test
         void shouldCreateEnvelopeWithAcknowledgementMessage() throws IOException {
-            try (final RemoteEnvelope<Acknowledgement> acknowledgement = RemoteEnvelope.acknowledgement(1, senderPublicKey, senderProofOfWork, recipientPublicKey, messageId)) {
+            try (final RemoteEnvelope<Acknowledgement> acknowledgement = RemoteEnvelope.acknowledgement(1, senderPublicKey, senderProofOfWork, recipientPublicKey, nonce)) {
                 assertEquals(1, acknowledgement.getPublicHeader().getNetworkId());
                 assertEquals(ACKNOWLEDGEMENT, acknowledgement.getPrivateHeader().getType());
-                assertEquals(messageId.longValue(), acknowledgement.getBodyAndRelease().getCorrespondingId());
+                assertArrayEquals(nonce.byteArrayValue(), acknowledgement.getBodyAndRelease().getCorrespondingId().toByteArray());
             }
         }
     }
@@ -574,7 +543,7 @@ class RemoteEnvelopeTest {
             try (final RemoteEnvelope<Unite> unite = RemoteEnvelope.unite(1, senderPublicKey, senderProofOfWork, recipientPublicKey, senderPublicKey, new InetSocketAddress(22527))) {
                 assertEquals(1, unite.getPublicHeader().getNetworkId());
                 assertEquals(UNITE, unite.getPrivateHeader().getType());
-                assertEquals(ByteString.copyFrom(senderPublicKey.byteArrayValue()), unite.getBodyAndRelease().getPublicKey());
+                assertEquals(ByteString.copyFrom(senderPublicKey.getKey()), unite.getBodyAndRelease().getPublicKey());
             }
         }
     }

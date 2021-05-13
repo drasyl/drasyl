@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.client.event;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.Group;
 
 /**
@@ -32,11 +32,11 @@ import org.drasyl.plugin.groups.client.Group;
 public class GroupMemberLeftEvent extends GroupMemberActionEvent {
     /**
      * @throws NullPointerException if {@code member} or {@code group} is {@code null}
-     * @deprecated Use {@link #of(CompressedPublicKey, Group)} instead.
+     * @deprecated Use {@link #of(IdentityPublicKey, Group)} instead.
      */
     // make method private on next release
     @Deprecated(since = "0.5.0", forRemoval = true)
-    public GroupMemberLeftEvent(final CompressedPublicKey member,
+    public GroupMemberLeftEvent(final IdentityPublicKey member,
                                 final Group group) {
         super(member, group);
     }
@@ -52,7 +52,7 @@ public class GroupMemberLeftEvent extends GroupMemberActionEvent {
     /**
      * @throws NullPointerException if {@code member} or {@code group} is {@code null}
      */
-    public static GroupMemberLeftEvent of(final CompressedPublicKey member,
+    public static GroupMemberLeftEvent of(final IdentityPublicKey member,
                                           final Group group) {
         return new GroupMemberLeftEvent(member, group);
     }

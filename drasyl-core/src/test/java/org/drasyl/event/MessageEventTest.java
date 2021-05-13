@@ -21,7 +21,7 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @ExtendWith(MockitoExtension.class)
 class MessageEventTest {
     @Mock
-    private CompressedPublicKey sender;
+    private IdentityPublicKey sender;
     @Mock
     private Object message;
 

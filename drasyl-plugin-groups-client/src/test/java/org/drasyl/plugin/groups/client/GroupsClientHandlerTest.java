@@ -27,7 +27,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
@@ -88,7 +88,7 @@ class GroupsClientHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private GroupUri uri;
     @Mock
-    private CompressedPublicKey publicKey;
+    private IdentityPublicKey publicKey;
     private final Duration firstStartDelay = Duration.ofMillis(1);
 
     @Nested
@@ -219,12 +219,12 @@ class GroupsClientHandlerTest {
 
         @Test
         void shouldProcessOwnLeft() {
-            when(identity.getPublicKey()).thenReturn(publicKey);
+            when(identity.getIdentityPublicKey()).thenReturn(publicKey);
 
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
-                final MemberLeftMessage msg = new MemberLeftMessage(identity.getPublicKey(), group);
+                final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
 
                 final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 

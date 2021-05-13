@@ -22,13 +22,14 @@
 package org.drasyl.remote.protocol;
 
 import com.google.protobuf.ByteString;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.UnsignedShort;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
 
@@ -40,45 +41,48 @@ public class ProtocolTest {
         @Test
         void shouldSerializeToCorrectSize() {
             final PublicHeader header = PublicHeader.newBuilder()
-                    .setId(MessageId.of("9a64cb2f5e214d2b").longValue())
+                    .setNonce(ByteString.copyFrom(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue()))
                     .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(ByteString.copyFrom(CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").byteArrayValue()))
-                    .setProofOfWork(ProofOfWork.of(Integer.MIN_VALUE).intValue())
-                    .setRecipient(ByteString.copyFrom(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458").byteArrayValue()))
+                    .setSender(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
+                    .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
+                    .setRecipient(ByteString.copyFrom(IdentityTestUtil.ID_2.getIdentityPublicKey().getKey()))
                     .setHopCount(1)
+                    .setAgreementId(ByteString.copyFrom(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toBytes()))
                     .build();
 
-            assertEquals(93, header.getSerializedSize());
+            assertEquals(142, header.getSerializedSize());
         }
 
         @Test
         void shouldSerializeHeadChunkToCorrectSize() {
             final PublicHeader header = PublicHeader.newBuilder()
-                    .setId(MessageId.of("9a64cb2f5e214d2b").longValue())
+                    .setNonce(ByteString.copyFrom(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue()))
                     .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(ByteString.copyFrom(CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").byteArrayValue()))
-                    .setProofOfWork(ProofOfWork.of(Integer.MIN_VALUE).intValue())
-                    .setRecipient(ByteString.copyFrom(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458").byteArrayValue()))
+                    .setSender(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
+                    .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
+                    .setRecipient(ByteString.copyFrom(IdentityTestUtil.ID_2.getIdentityPublicKey().getKey()))
                     .setHopCount(1)
+                    .setAgreementId(ByteString.copyFrom(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toBytes()))
                     .setTotalChunks(UnsignedShort.of(123).getValue())
                     .build();
 
-            assertEquals(95, header.getSerializedSize());
+            assertEquals(144, header.getSerializedSize());
         }
 
         @Test
         void shouldSerializeNonHeadChunkToCorrectSize() {
             final PublicHeader header = PublicHeader.newBuilder()
-                    .setId(MessageId.of("9a64cb2f5e214d2b").longValue())
+                    .setNonce(ByteString.copyFrom(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue()))
                     .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(ByteString.copyFrom(CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").byteArrayValue()))
-                    .setProofOfWork(ProofOfWork.of(Integer.MIN_VALUE).intValue())
-                    .setRecipient(ByteString.copyFrom(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458").byteArrayValue()))
+                    .setSender(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
+                    .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
+                    .setRecipient(ByteString.copyFrom(IdentityTestUtil.ID_2.getIdentityPublicKey().getKey()))
                     .setHopCount(1)
+                    .setAgreementId(ByteString.copyFrom(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toBytes()))
                     .setChunkNo(UnsignedShort.of(64).getValue())
                     .build();
 
-            assertEquals(95, header.getSerializedSize());
+            assertEquals(144, header.getSerializedSize());
         }
     }
 
@@ -88,24 +92,24 @@ public class ProtocolTest {
         void shouldSerializeIpv4ToCorrectSize() {
             final InetSocketAddress address = new InetSocketAddress("37.61.174.58", 80);
             final Unite unite = Unite.newBuilder()
-                    .setPublicKey(ByteString.copyFrom(CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").byteArrayValue()))
+                    .setPublicKey(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
                     .setAddress(address.getHostString())
                     .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
                     .build();
 
-            assertEquals(53, unite.getSerializedSize());
+            assertEquals(52, unite.getSerializedSize());
         }
 
         @Test
         void shouldSerializeIpv6ToCorrectSize() {
             final InetSocketAddress address = new InetSocketAddress("b719:5781:d127:d17c:1230:b24c:478c:7985", 443);
             final Unite unite = Unite.newBuilder()
-                    .setPublicKey(ByteString.copyFrom(CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").byteArrayValue()))
+                    .setPublicKey(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
                     .setAddress(address.getHostString())
                     .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
                     .build();
 
-            assertEquals(80, unite.getSerializedSize());
+            assertEquals(79, unite.getSerializedSize());
         }
     }
 }

@@ -23,7 +23,7 @@ package org.drasyl.plugin.groups.client.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.Group;
 
 /**
@@ -33,7 +33,7 @@ import org.drasyl.plugin.groups.client.Group;
  */
 public class MemberJoinedMessage extends MemberActionMessage implements GroupsServerMessage {
     @JsonCreator
-    public MemberJoinedMessage(@JsonProperty("member") final CompressedPublicKey member,
+    public MemberJoinedMessage(@JsonProperty("member") final IdentityPublicKey member,
                                @JsonProperty("group") final Group group) {
         super(member, group);
     }

@@ -23,7 +23,7 @@ package org.drasyl.behaviour;
 
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -199,8 +199,8 @@ public class Behavior {
          */
         @SuppressWarnings("unchecked")
         public <M> BehaviorBuilder onMessage(final Class<M> messageType,
-                                             final BiPredicate<CompressedPublicKey, M> test,
-                                             final BiFunction<CompressedPublicKey, M, Behavior> handler) {
+                                             final BiPredicate<IdentityPublicKey, M> test,
+                                             final BiFunction<IdentityPublicKey, M, Behavior> handler) {
             return onEvent(
                     MessageEvent.class,
                     event -> messageType.isAssignableFrom(event.getPayload().getClass()) && test.test(event.getSender(), (M) event.getPayload()),
@@ -217,7 +217,7 @@ public class Behavior {
          * @return a new {@link BehaviorBuilder} with the specified handling appended
          */
         public <M> BehaviorBuilder onMessage(final Class<M> messageType,
-                                             final BiFunction<CompressedPublicKey, M, Behavior> handler) {
+                                             final BiFunction<IdentityPublicKey, M, Behavior> handler) {
             return onMessage(messageType, (sender, message) -> true, handler);
         }
 
@@ -230,7 +230,7 @@ public class Behavior {
          * @param handler action to apply when the event matches
          * @return a new {@link BehaviorBuilder} with the specified handling appended
          */
-        public <M> BehaviorBuilder onMessageEquals(final CompressedPublicKey sender,
+        public <M> BehaviorBuilder onMessageEquals(final IdentityPublicKey sender,
                                                    final M payload,
                                                    final Supplier<Behavior> handler) {
             return onMessage(
@@ -248,7 +248,7 @@ public class Behavior {
          * @return a new {@link BehaviorBuilder} with the specified handling appended
          */
         @SuppressWarnings("unchecked")
-        public <M> BehaviorBuilder onAnyMessage(final BiFunction<CompressedPublicKey, M, Behavior> handler) {
+        public <M> BehaviorBuilder onAnyMessage(final BiFunction<IdentityPublicKey, M, Behavior> handler) {
             return onEvent(
                     MessageEvent.class,
                     event -> handler.apply(event.getSender(), (M) event.getPayload())

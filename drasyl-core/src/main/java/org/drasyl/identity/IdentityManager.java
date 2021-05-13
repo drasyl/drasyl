@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
-import java.security.KeyPair;
 import java.util.Collections;
 import java.util.Set;
 
@@ -92,10 +91,10 @@ public class IdentityManager {
      * @throws IOException if identity could not be loaded or created
      */
     public void loadOrCreateIdentity() throws IOException {
-        if (config.getIdentityProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
+        if (config.getIdentityProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentitySecretKey() != null) {
             LOG.debug("Load identity specified in config");
             try {
-                this.identity = Identity.of(config.getIdentityProofOfWork(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
+                this.identity = Identity.of(config.getIdentityProofOfWork(), config.getIdentityPublicKey(), config.getIdentitySecretKey());
             }
             catch (final IllegalArgumentException e) {
                 throw new IOException("Identity read from configuration seems invalid", e);
@@ -133,8 +132,8 @@ public class IdentityManager {
     }
 
     /**
-     * Reads the identity from {@code code}. Throws {@code IOException} if
-     * file cannot be read or file has unexpected content.
+     * Reads the identity from {@code code}. Throws {@code IOException} if file cannot be read or
+     * file has unexpected content.
      *
      * @param path path to identity file
      * @return The identity contained in the file
@@ -165,11 +164,10 @@ public class IdentityManager {
      */
     public static Identity generateIdentity() throws IOException {
         try {
-            final KeyPair newKeyPair = Crypto.generateKeys();
-            final CompressedPublicKey publicKey = CompressedPublicKey.of(Crypto.compressedKey(newKeyPair.getPublic()));
-            final CompressedPrivateKey privateKey = CompressedPrivateKey.of(Crypto.compressedKey(newKeyPair.getPrivate()));
-            final ProofOfWork proofOfWork = ProofOfWork.generateProofOfWork(publicKey, POW_DIFFICULTY);
-            return Identity.of(proofOfWork, publicKey, privateKey);
+            final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair = Crypto.INSTANCE.generateLongTimeKeyPair();
+            final ProofOfWork pow = ProofOfWork.generateProofOfWork(identityKeyPair.getPublicKey(), POW_DIFFICULTY);
+
+            return Identity.of(pow, identityKeyPair);
         }
         catch (final CryptoException e) {
             throw new IOException("Unable to generate new identity", e);
@@ -204,12 +202,12 @@ public class IdentityManager {
         }
     }
 
-    public CompressedPublicKey getPublicKey() {
-        return identity.getPublicKey();
+    public IdentityPublicKey getIdentityPublicKey() {
+        return identity.getIdentityPublicKey();
     }
 
-    public CompressedPrivateKey getPrivateKey() {
-        return identity.getPrivateKey();
+    public IdentitySecretKey getIdentityPrivateKey() {
+        return identity.getIdentitySecretKey();
     }
 
     public ProofOfWork getProofOfWork() {

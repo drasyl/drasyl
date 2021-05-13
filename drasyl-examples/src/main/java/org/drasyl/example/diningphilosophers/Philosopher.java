@@ -28,7 +28,7 @@ import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.event.Event;
 import org.drasyl.example.diningphilosophers.Fork.Take;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -39,15 +39,15 @@ import static java.util.Objects.requireNonNull;
 public class Philosopher extends BehavioralDrasylNode {
     private final String name;
     private final String leftName;
-    private final CompressedPublicKey leftAddress;
+    private final IdentityPublicKey leftAddress;
     private final String rightName;
-    private final CompressedPublicKey rightAddress;
+    private final IdentityPublicKey rightAddress;
 
     public Philosopher(final String name,
                        final String leftName,
-                       final CompressedPublicKey leftAddress,
+                       final IdentityPublicKey leftAddress,
                        final String rightName,
-                       final CompressedPublicKey rightAddress) throws DrasylException {
+                       final IdentityPublicKey rightAddress) throws DrasylException {
         super(DrasylConfig.newBuilder()
                 .identityPath(Path.of(name + ".identity.json"))
                 .build());
@@ -119,8 +119,8 @@ public class Philosopher extends BehavioralDrasylNode {
                 .build();
     }
 
-    private Behavior waitForOtherFork(final CompressedPublicKey forkToWaitFor,
-                                      final CompressedPublicKey takenFork) {
+    private Behavior waitForOtherFork(final IdentityPublicKey forkToWaitFor,
+                                      final IdentityPublicKey takenFork) {
         return Behaviors.receive()
                 .onMessage(Fork.Answer.class, (sender, message) -> message.isTaken() && sender.equals(forkToWaitFor), (sender, message) -> {
                     System.out.println(name + " has picked up " + leftName + " and " + rightName + " and starts to eat");

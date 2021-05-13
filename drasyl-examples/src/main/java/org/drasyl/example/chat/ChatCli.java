@@ -37,7 +37,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.nio.file.Path;
@@ -147,7 +147,7 @@ public class ChatCli {
             /**
              * Reaction to a {@link org.drasyl.event.MessageEvent}.
              */
-            private Behavior messageEvent(final CompressedPublicKey sender, final String payload) {
+            private Behavior messageEvent(final IdentityPublicKey sender, final String payload) {
                 addBeforePrompt("From " + sender + ": " + payload);
                 return Behaviors.same();
             }
@@ -157,10 +157,10 @@ public class ChatCli {
              */
             private Behavior peerEvent(final PeerEvent event) {
                 if (event instanceof PeerDirectEvent) {
-                    addBeforePrompt("Direct connection to " + event.getPeer().getPublicKey() + " available.");
+                    addBeforePrompt("Direct connection to " + event.getPeer().getIdentityPublicKey() + " available.");
                 }
                 else if (event instanceof PeerRelayEvent) {
-                    addBeforePrompt("Relayed connection to " + event.getPeer().getPublicKey() + " available.");
+                    addBeforePrompt("Relayed connection to " + event.getPeer().getIdentityPublicKey() + " available.");
                 }
                 return Behaviors.same();
             }
@@ -176,7 +176,7 @@ public class ChatCli {
         System.out.println("****************************************************************************************");
         System.out.println("This is an Example of a Chat Application running on the drasyl Overlay Network.");
         System.out.println("It allows you to send Text Messages to other drasyl Nodes running this Chat Application.");
-        System.out.println("Your address is " + node.identity().getPublicKey());
+        System.out.println("Your address is " + node.identity().getIdentityPublicKey());
         System.out.println("****************************************************************************************");
         System.out.println();
 

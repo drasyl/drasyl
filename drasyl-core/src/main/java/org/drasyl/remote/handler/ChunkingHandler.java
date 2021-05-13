@@ -34,7 +34,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.FutureCombiner;
@@ -58,7 +58,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 @SuppressWarnings({ "java:S110" })
 public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extends MessageLite>, RemoteEnvelope<? extends MessageLite>, InetSocketAddressWrapper> {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkingHandler.class);
-    private final Worm<Map<MessageId, ChunksCollector>> chunksCollectors;
+    private final Worm<Map<Nonce, ChunksCollector>> chunksCollectors;
 
     public ChunkingHandler() {
         this.chunksCollectors = Worm.of();
@@ -71,7 +71,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                                   final CompletableFuture<Void> future) {
         try {
             // message is addressed to me and chunked
-            if (ctx.identity().getPublicKey().equals(msg.getRecipient()) && msg.isChunk()) {
+            if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) && msg.isChunk()) {
                 handleInboundChunk(ctx, sender, msg, future);
             }
             else {
@@ -91,12 +91,12 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                                     final RemoteEnvelope<? extends MessageLite> chunk,
                                     final CompletableFuture<Void> future) throws IOException {
         try {
-            final ChunksCollector chunksCollector = getChunksCollectors(ctx.config()).computeIfAbsent(chunk.getId(), id -> new ChunksCollector(ctx.config().getRemoteMessageMaxContentLength(), id));
+            final ChunksCollector chunksCollector = getChunksCollectors(ctx.config()).computeIfAbsent(chunk.getNonce(), id -> new ChunksCollector(ctx.config().getRemoteMessageMaxContentLength(), id));
             final RemoteEnvelope<? extends MessageLite> message = chunksCollector.addChunk(chunk);
 
             if (message != null) {
                 // message complete, pass it inbound
-                getChunksCollectors(ctx.config()).remove(chunk.getId());
+                getChunksCollectors(ctx.config()).remove(chunk.getNonce());
                 ctx.passInbound(sender, message, future);
             }
             else {
@@ -105,16 +105,16 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
             }
         }
         catch (final IllegalStateException e) {
-            getChunksCollectors(ctx.config()).remove(chunk.getId());
+            getChunksCollectors(ctx.config()).remove(chunk.getNonce());
             throw e;
         }
     }
 
-    private Map<MessageId, ChunksCollector> getChunksCollectors(final DrasylConfig config) {
+    private Map<Nonce, ChunksCollector> getChunksCollectors(final DrasylConfig config) {
         return chunksCollectors.getOrCompute(() -> CacheBuilder.newBuilder()
                 .maximumSize(1_000)
                 .expireAfterWrite(config.getRemoteMessageComposedMessageTransferTimeout())
-                .removalListener((RemovalListener<MessageId, ChunksCollector>) entry -> {
+                .removalListener((RemovalListener<Nonce, ChunksCollector>) entry -> {
                     if (entry.getValue().hasChunks()) {
                         //noinspection unchecked
                         LOG.debug("Not all chunks of message `{}` were received within {}ms ({} of {} present). Message dropped.", entry::getKey, config.getRemoteMessageComposedMessageTransferTimeout()::toMillis, entry.getValue()::getPresentChunks, entry.getValue()::getTotalChunks);
@@ -131,7 +131,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                                    final RemoteEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) {
         try {
-            if (ctx.identity().getPublicKey().equals(msg.getSender())) {
+            if (ctx.identity().getIdentityPublicKey().equals(msg.getSender())) {
                 // message from us, check if we have to chunk it
                 final ByteBuf messageByteBuf = msg.getOrBuildByteBuf();
                 final int messageLength = messageByteBuf.readableBytes();
@@ -175,7 +175,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
             UnsignedShort chunkNo = UnsignedShort.of(0);
 
             final PublicHeader partialChunkHeader = PublicHeader.newBuilder()
-                    .setId(msgPublicHeader.getId())
+                    .setNonce(msgPublicHeader.getNonce())
                     .setSender(msgPublicHeader.getSender())
                     .setRecipient(msgPublicHeader.getRecipient())
                     .setHopCount(1)

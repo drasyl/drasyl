@@ -32,7 +32,7 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
@@ -100,7 +100,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
     /**
      * @throws NullPointerException if {@code sender} or {@code text} is {@code null}
      */
-    public void requestText(final CompressedPublicKey sender, final String password) {
+    public void requestText(final IdentityPublicKey sender, final String password) {
         onEvent(new RequestText(sender, password));
     }
 
@@ -206,18 +206,18 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
      * Signals that text has should be requested.
      */
     static class RequestText implements Event {
-        private final CompressedPublicKey sender;
+        private final IdentityPublicKey sender;
         private final String password;
 
         /**
          * @throws NullPointerException if {@code sender} or {@code text} is {@code null}
          */
-        public RequestText(final CompressedPublicKey sender, final String password) {
+        public RequestText(final IdentityPublicKey sender, final String password) {
             this.sender = requireNonNull(sender);
             this.password = requireNonNull(password);
         }
 
-        CompressedPublicKey getSender() {
+        IdentityPublicKey getSender() {
             return sender;
         }
 

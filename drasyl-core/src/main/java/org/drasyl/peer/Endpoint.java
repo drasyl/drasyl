@@ -23,7 +23,7 @@ package org.drasyl.peer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.UriUtil;
 
@@ -44,7 +44,7 @@ public class Endpoint {
     private static final int MAX_PORT = 65536;
     private final String host;
     private final int port;
-    private final CompressedPublicKey publicKey;
+    private final IdentityPublicKey publicKey;
     private final Integer networkId;
 
     /**
@@ -59,7 +59,7 @@ public class Endpoint {
      */
     private Endpoint(final String host,
                      final int port,
-                     final CompressedPublicKey publicKey,
+                     final IdentityPublicKey publicKey,
                      final Integer networkId) {
         this.host = requireNonNull(host);
         this.port = port;
@@ -79,7 +79,7 @@ public class Endpoint {
      * @throws NullPointerException     if {@code host} or {@code publicKey} is {@code null}
      * @throws IllegalArgumentException if {@code port} is out of range [0,65536]
      */
-    private Endpoint(final String host, final int port, final CompressedPublicKey publicKey) {
+    private Endpoint(final String host, final int port, final IdentityPublicKey publicKey) {
         this(host, port, publicKey, null);
     }
 
@@ -112,11 +112,11 @@ public class Endpoint {
     }
 
     /**
-     * Returns the {@link CompressedPublicKey} of this {@code Endpoint}.
+     * Returns the {@link IdentityPublicKey} of this {@code Endpoint}.
      *
      * @return The public key of this endpoint.
      */
-    public CompressedPublicKey getPublicKey() {
+    public IdentityPublicKey getIdentityPublicKey() {
         return publicKey;
     }
 
@@ -176,7 +176,7 @@ public class Endpoint {
      */
     public static Endpoint of(final String host,
                               final int port,
-                              final CompressedPublicKey publicKey,
+                              final IdentityPublicKey publicKey,
                               final Integer networkId) {
         return new Endpoint(host, port, publicKey, networkId);
     }
@@ -196,7 +196,7 @@ public class Endpoint {
      */
     public static Endpoint of(final String host,
                               final int port,
-                              final CompressedPublicKey publicKey) {
+                              final IdentityPublicKey publicKey) {
         return new Endpoint(host, port, publicKey);
     }
 
@@ -230,7 +230,7 @@ public class Endpoint {
             networkId = null;
         }
 
-        return of(endpoint.getHost(), endpoint.getPort(), CompressedPublicKey.of(publicKey), networkId);
+        return of(endpoint.getHost(), endpoint.getPort(), IdentityPublicKey.of(publicKey), networkId);
     }
 
     /**

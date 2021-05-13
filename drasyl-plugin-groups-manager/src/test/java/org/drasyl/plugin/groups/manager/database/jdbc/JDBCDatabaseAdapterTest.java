@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.manager.database.jdbc;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.data.Member;
 import org.drasyl.plugin.groups.manager.data.Membership;
@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.net.URI;
 import java.sql.Connection;
@@ -50,12 +51,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(MockitoExtension.class)
 class JDBCDatabaseAdapterTest {
     private JDBCDatabaseAdapter database;
-    private CompressedPublicKey publicKey;
+    private IdentityPublicKey publicKey;
 
     @BeforeEach
     void setUp() throws DatabaseException {
         database = new JDBCDatabaseAdapter(URI.create("jdbc:sqlite::memory:"));
-        publicKey = CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff");
+        publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
     }
 
     @AfterEach

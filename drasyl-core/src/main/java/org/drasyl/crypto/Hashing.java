@@ -23,6 +23,7 @@ package org.drasyl.crypto;
 
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
+import com.google.common.primitives.Bytes;
 
 import java.nio.charset.StandardCharsets;
 
@@ -35,6 +36,16 @@ public final class Hashing {
 
     private Hashing() {
         // util class
+    }
+
+    /**
+     * Generates a SHA-256 hash of the given input.
+     *
+     * @param input the input to hash
+     * @return SHA-256 hash of the input
+     */
+    public static byte[] sha256(final byte[]... input) {
+        return SHA256.hashBytes(Bytes.concat(input)).asBytes();
     }
 
     /**

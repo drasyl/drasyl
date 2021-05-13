@@ -25,7 +25,7 @@ import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -44,14 +44,14 @@ import static java.util.Objects.requireNonNull;
 class ChunksCollector {
     private static final Logger LOG = LoggerFactory.getLogger(ChunksCollector.class);
     private final int maxContentLength;
-    private final MessageId messageId;
+    private final Nonce nonce;
     private final Map<Integer, ByteBuf> chunks;
     private int messageSize;
     private int totalChunks;
 
-    public ChunksCollector(final int maxContentLength, final MessageId messageId) {
+    public ChunksCollector(final int maxContentLength, final Nonce nonce) {
         this.maxContentLength = maxContentLength;
-        this.messageId = requireNonNull(messageId);
+        this.nonce = requireNonNull(nonce);
         this.chunks = new HashMap<>();
     }
 
@@ -82,7 +82,7 @@ class ChunksCollector {
         }
 
         // belongs to our message?
-        if (!chunk.getId().equals(messageId)) {
+        if (!chunk.getNonce().equals(nonce)) {
             ReferenceCountUtil.safeRelease(chunk);
             throw new IllegalStateException("This chunk belongs to another message!");
         }
@@ -93,8 +93,8 @@ class ChunksCollector {
         // add chunk
         if (messageSize + chunkSize > maxContentLength) {
             ReferenceCountUtil.safeRelease(chunk);
-            LOG.debug("The chunked message with id `{}` has exhausted the max allowed size of {} bytes and was therefore dropped (tried to allocate additional {} bytes).", messageId, maxContentLength, chunkSize);
-            throw new IllegalStateException("The chunked message with id `" + messageId + "` has exhausted the max allowed size of " + maxContentLength + " bytes and was therefore dropped (tried to allocate additional " + chunkSize + " bytes).");
+            LOG.debug("The chunked message with id `{}` has exhausted the max allowed size of {} bytes and was therefore dropped (tried to allocate additional {} bytes).", nonce, maxContentLength, chunkSize);
+            throw new IllegalStateException("The chunked message with id `" + nonce + "` has exhausted the max allowed size of " + maxContentLength + " bytes and was therefore dropped (tried to allocate additional " + chunkSize + " bytes).");
         }
         messageSize += chunkSize;
         // does also release any previous chunk with same chunkNo
@@ -106,7 +106,7 @@ class ChunksCollector {
         }
 
         //noinspection unchecked
-        LOG.trace("[{}] {} of {} chunks collected ({} total bytes; last received chunk: {})", () -> messageId, chunks::size, () -> totalChunks, () -> messageSize, () -> chunkNo + 1);
+        LOG.trace("[{}] {} of {} chunks collected ({} total bytes; last received chunk: {})", () -> nonce, chunks::size, () -> totalChunks, () -> messageSize, () -> chunkNo + 1);
 
         // message complete?
         if (allChunksPresent()) {

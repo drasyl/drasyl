@@ -31,7 +31,7 @@ import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.pipeline.serialization.Serialization;
-import org.drasyl.remote.handler.ArmHandler;
+import org.drasyl.remote.handler.crypto.ArmHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
 import org.drasyl.remote.handler.InternetDiscovery;
@@ -144,9 +144,9 @@ public class DrasylPipeline extends AbstractPipeline {
                 addFirst(MONITORING_HANDLER, new Monitoring());
             }
 
-            // arm (sign/encrypt) outbound and disarm (verify/decrypt) inbound messages
+            // arm outbound and disarm inbound messages
             if (config.isRemoteMessageArmEnabled()) {
-                addFirst(ARM_HANDLER, ArmHandler.INSTANCE);
+                addFirst(ARM_HANDLER, new ArmHandler());
             }
 
             // filter out inbound messages with invalid proof of work or other network id

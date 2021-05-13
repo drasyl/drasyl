@@ -33,7 +33,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -65,7 +65,7 @@ public class UdpMulticastServer extends HandlerAdapter {
     public static final NetworkInterface MULTICAST_INTERFACE;
     private static final String MULTICAST_BIND_HOST;
     private static UdpMulticastServer instance;
-    private final Map<CompressedPublicKey, HandlerContext> nodes;
+    private final Map<IdentityPublicKey, HandlerContext> nodes;
     private final Bootstrap bootstrap;
     private DatagramChannel channel;
 
@@ -97,7 +97,7 @@ public class UdpMulticastServer extends HandlerAdapter {
         MULTICAST_INTERFACE = multicastInterface;
     }
 
-    UdpMulticastServer(final Map<CompressedPublicKey, HandlerContext> nodes,
+    UdpMulticastServer(final Map<IdentityPublicKey, HandlerContext> nodes,
                        final Bootstrap bootstrap, final DatagramChannel channel) {
         this.nodes = nodes;
         this.bootstrap = bootstrap;
@@ -133,7 +133,7 @@ public class UdpMulticastServer extends HandlerAdapter {
             return;
         }
 
-        nodes.put(ctx.identity().getPublicKey(), ctx);
+        nodes.put(ctx.identity().getIdentityPublicKey(), ctx);
 
         if (channel == null) {
             LOG.debug("Start Server...");
@@ -144,7 +144,7 @@ public class UdpMulticastServer extends HandlerAdapter {
                                                     final DatagramPacket packet) {
                             final InetSocketAddressWrapper sender = new InetSocketAddressWrapper(packet.sender());
                             nodes.values().forEach(nodeCtx -> {
-                                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.identity()::getPublicKey);
+                                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.identity()::getIdentityPublicKey);
                                 nodeCtx.passInbound(sender, packet.content().retain(), new CompletableFuture<>());
                             });
                         }
@@ -181,7 +181,7 @@ public class UdpMulticastServer extends HandlerAdapter {
     }
 
     private synchronized void stopServer(final HandlerContext ctx) {
-        nodes.remove(ctx.identity().getPublicKey());
+        nodes.remove(ctx.identity().getIdentityPublicKey());
 
         if (channel != null) {
             final InetSocketAddress socketAddress = channel.localAddress();

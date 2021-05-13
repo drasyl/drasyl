@@ -34,7 +34,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
@@ -46,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
+import test.util.IdentityTestUtil;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -82,7 +82,7 @@ class UdpServerTest {
             when(bootstrap.handler(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "")));
 
             final UdpServer handler = new UdpServer(bootstrap, null);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -96,24 +96,24 @@ class UdpServerTest {
         class DetermineActualEndpoints {
             @Test
             void shouldReturnConfigEndpointsIfSpecified() {
-                when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://foo.bar:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+                when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://foo.bar:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())));
 
                 assertEquals(
-                        Set.of(Endpoint.of("udp://foo.bar:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")),
+                        Set.of(Endpoint.of("udp://foo.bar:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())),
                         determineActualEndpoints(identity, config, new InetSocketAddress(22527))
                 );
             }
 
             @Test
             void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() {
-                when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
+                when(identity.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
 
                 final InetAddress firstAddress = getAddresses().iterator().next();
                 if (firstAddress != null) {
                     when(config.getRemoteEndpoints().isEmpty()).thenReturn(true);
 
                     assertEquals(
-                            Set.of(Endpoint.of(firstAddress.getHostAddress(), 22527, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))),
+                            Set.of(Endpoint.of(firstAddress.getHostAddress(), 22527, IdentityTestUtil.ID_1.getIdentityPublicKey())),
                             determineActualEndpoints(identity, config, new InetSocketAddress(firstAddress, 22527))
                     );
                 }

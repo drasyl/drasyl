@@ -21,6 +21,14 @@
  */
 package org.drasyl.serialization;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.drasyl.crypto.HexUtil;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,6 +53,49 @@ public class JacksonJsonSerializer implements Serializer {
     public <T> T fromByteArray(final byte[] bytes, final Class<T> type) throws IOException {
         try (final ByteArrayInputStream in = new ByteArrayInputStream(bytes)) {
             return JACKSON_READER.readValue(in, type);
+        }
+    }
+
+    /**
+     * Serializes a given byte array as hexadecimal string.
+     */
+    public static final class BytesToHexStringSerializer extends StdSerializer<byte[]> {
+        private static final long serialVersionUID = 4261135293288643562L;
+
+        public BytesToHexStringSerializer() {
+            super(byte[].class);
+        }
+
+        public BytesToHexStringSerializer(final Class<byte[]> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(final byte[] value,
+                              final JsonGenerator gen,
+                              final SerializerProvider provider) throws IOException {
+            gen.writeString(HexUtil.bytesToHex(value));
+        }
+    }
+
+    /**
+     * Deserializes a given hexadecimal string to byte array.
+     */
+    public static final class BytesToHexStringDeserializer extends StdDeserializer<byte[]> {
+        private static final long serialVersionUID = 3616936627408179992L;
+
+        public BytesToHexStringDeserializer() {
+            super(byte[].class);
+        }
+
+        public BytesToHexStringDeserializer(final Class<byte[]> t) {
+            super(t);
+        }
+
+        @Override
+        public byte[] deserialize(final JsonParser p,
+                                  final DeserializationContext ctxt) throws IOException {
+            return HexUtil.fromString(p.getText());
         }
     }
 }

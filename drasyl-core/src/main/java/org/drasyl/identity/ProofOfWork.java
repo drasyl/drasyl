@@ -90,7 +90,7 @@ public class ProofOfWork {
         return of(Integer.MIN_VALUE);
     }
 
-    public static ProofOfWork generateProofOfWork(final CompressedPublicKey publicKey,
+    public static ProofOfWork generateProofOfWork(final PublicKey publicKey,
                                                   final byte difficulty) {
         LOG.info("Generate proof of work. This may take a while ...");
         final ProofOfWork pow = ProofOfWork.of();
@@ -112,7 +112,7 @@ public class ProofOfWork {
      * @return if valid true, otherwise false
      * @throws IllegalArgumentException if the difficulty is not in between [0,64]
      */
-    public boolean isValid(final CompressedPublicKey publicKey, final byte difficulty) {
+    public boolean isValid(final PublicKey publicKey, final byte difficulty) {
         requireNonNull(publicKey);
         if (difficulty < MIN_DIFFICULTY || difficulty > MAX_DIFFICULTY) {
             throw new IllegalArgumentException("difficulty must in between the range of [0,64].");
@@ -123,12 +123,12 @@ public class ProofOfWork {
         return hash.startsWith("0".repeat(difficulty));
     }
 
-    private static String generateHash(final CompressedPublicKey publicKey, final int nonce) {
+    private static String generateHash(final PublicKey publicKey, final int nonce) {
         return Hashing.sha256Hex(publicKey.toString() + nonce);
     }
 
     public static byte getDifficulty(final ProofOfWork proofOfWork,
-                                     final CompressedPublicKey publicKey) {
+                                     final IdentityPublicKey publicKey) {
         final String hash = generateHash(publicKey, proofOfWork.getNonce());
         byte i;
 

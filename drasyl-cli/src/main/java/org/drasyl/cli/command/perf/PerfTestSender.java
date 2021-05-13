@@ -28,7 +28,7 @@ import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -64,21 +64,21 @@ public class PerfTestSender {
     private static final Logger LOG = LoggerFactory.getLogger(PerfTestSender.class);
     public static final short COMPLETE_TEST_TRIES = (short) 10;
     private final SessionRequest session;
-    private final CompressedPublicKey receiver;
+    private final IdentityPublicKey receiver;
     private final Scheduler scheduler;
     private final PrintStream printStream;
-    private final BiFunction<CompressedPublicKey, Object, CompletableFuture<Void>> sendMethod;
+    private final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod;
     private final Supplier<Behavior> successBehavior;
     private final Function<Exception, Behavior> failureBehavior;
     private final LongSupplier currentTimeSupplier;
     private TestResults intervalResults;
 
     @SuppressWarnings("java:S107")
-    PerfTestSender(final CompressedPublicKey receiver,
+    PerfTestSender(final IdentityPublicKey receiver,
                    final SessionRequest session,
                    final Scheduler scheduler,
                    final PrintStream printStream,
-                   final BiFunction<CompressedPublicKey, Object, CompletableFuture<Void>> sendMethod,
+                   final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod,
                    final Supplier<Behavior> successBehavior,
                    final Function<Exception, Behavior> failureBehavior,
                    final LongSupplier currentTimeSupplier) {
@@ -93,11 +93,11 @@ public class PerfTestSender {
     }
 
     @SuppressWarnings("java:S107")
-    public PerfTestSender(final CompressedPublicKey receiver,
+    public PerfTestSender(final IdentityPublicKey receiver,
                           final SessionRequest session,
                           final Scheduler scheduler,
                           final PrintStream printStream,
-                          final BiFunction<CompressedPublicKey, Object, CompletableFuture<Void>> sendMethod,
+                          final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod,
                           final Supplier<Behavior> successBehavior,
                           final Function<Exception, Behavior> failureBehavior) {
         this(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);

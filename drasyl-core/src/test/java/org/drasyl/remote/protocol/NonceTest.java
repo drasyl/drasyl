@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.remote.protocol.MessageId.isValidMessageId;
-import static org.drasyl.remote.protocol.MessageId.randomMessageId;
+import static org.drasyl.remote.protocol.Nonce.isValidNonce;
+import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,36 +37,47 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-class MessageIdTest {
+class NonceTest {
     @Nested
     class Of {
         @Test
-        void shouldThrowExceptionOnInvalidId() {
-            assertThrows(IllegalArgumentException.class, () -> MessageId.of("412176952b"));
+        void shouldThrowExceptionOnInvalidNonce() {
+            assertThrows(IllegalArgumentException.class, () -> Nonce.of("412176952b"));
         }
 
         @Test
-        void shouldCreateCorrectIdFromString() {
-            assertEquals("412176952b5b81fd", MessageId.of("412176952b5b81fd").toString());
+        void shouldCreateCorrectNonceFromString() {
+            assertEquals("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7", Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toString());
         }
 
         @Test
         void shouldCreateValidIdFromBytes() {
-            assertEquals(MessageId.of("412176952b5b81fd"), MessageId.of(new byte[]{
-                    65,
-                    33,
-                    118,
-                    -107,
-                    43,
-                    91,
+            assertEquals(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7"), Nonce.of(new byte[]{
+                    -22,
+                    15,
+                    40,
+                    78,
+                    -17,
+                    21,
+                    103,
+                    -59,
+                    5,
+                    -79,
+                    38,
+                    103,
+                    31,
+                    66,
+                    -109,
+                    -110,
+                    75,
                     -127,
-                    -3
+                    -76,
+                    -71,
+                    -46,
+                    10,
+                    43,
+                    -25
             }));
-        }
-
-        @Test
-        void shouldCreateValidIdFromLong() {
-            assertEquals(MessageId.of("412176952b5b81fd"), MessageId.of(4693162669746389501L));
         }
     }
 
@@ -75,9 +86,9 @@ class MessageIdTest {
         @SuppressWarnings("java:S2701")
         @Test
         void shouldRecognizeEqualPairs() {
-            final MessageId idA = MessageId.of("412176952b5b81fd");
-            final MessageId idB = MessageId.of("412176952b5b81fd");
-            final MessageId idC = MessageId.of("78c36c82b8d11c72");
+            final Nonce idA = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
+            final Nonce idB = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
+            final Nonce idC = Nonce.of("d3ea81d2ef6cd41c07db3b1857f6b66055bd571d6ab0b53a");
 
             assertEquals(idA, idA);
             assertEquals(idA, idB);
@@ -92,9 +103,9 @@ class MessageIdTest {
     class HashCode {
         @Test
         void shouldRecognizeEqualPairs() {
-            final MessageId idA = MessageId.of("412176952b5b81fd");
-            final MessageId idB = MessageId.of("412176952b5b81fd");
-            final MessageId idC = MessageId.of("78c36c82b8d11c72");
+            final Nonce idA = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
+            final Nonce idB = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
+            final Nonce idC = Nonce.of("d3ea81d2ef6cd41c07db3b1857f6b66055bd571d6ab0b53a");
 
             assertEquals(idA.hashCode(), idB.hashCode());
             assertNotEquals(idA.hashCode(), idC.hashCode());
@@ -106,35 +117,35 @@ class MessageIdTest {
     class ToString {
         @Test
         void shouldReturnCorrectString() {
-            final String string = MessageId.of("412176952b5b81fd").toString();
+            final String string = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toString();
 
-            assertEquals("412176952b5b81fd", string);
+            assertEquals("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7", string);
         }
     }
 
     @Nested
-    class RandomMessageId {
+    class RandomNonce {
         @Test
         void shouldReturnRandomMessageId() {
-            final MessageId idA = randomMessageId();
-            final MessageId idB = randomMessageId();
+            final Nonce nonceA = randomNonce();
+            final Nonce nonceB = randomNonce();
 
-            assertNotNull(idA);
-            assertNotNull(idB);
-            assertNotEquals(idA, idB);
+            assertNotNull(nonceA);
+            assertNotNull(nonceB);
+            assertNotEquals(nonceA, nonceB);
         }
     }
 
     @Nested
-    class IsValidMessageId {
+    class IsValidNonce {
         @Test
         void shouldReturnFalseForIdWithWrongLength() {
-            assertFalse(isValidMessageId(new byte[]{ 0, 0, 1 }));
+            assertFalse(isValidNonce(new byte[]{ 0, 0, 1 }));
         }
 
         @Test
         void shouldReturnTrueForValidString() {
-            assertTrue(isValidMessageId(MessageId.of("f3d0aee7962de47a").byteArrayValue()));
+            assertTrue(isValidNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue()));
         }
     }
 
@@ -143,23 +154,31 @@ class MessageIdTest {
         @Test
         void shouldReturnCorrectBytes() {
             assertArrayEquals(new byte[]{
-                    65,
-                    33,
-                    118,
-                    -107,
-                    43,
-                    91,
+                    -22,
+                    15,
+                    40,
+                    78,
+                    -17,
+                    21,
+                    103,
+                    -59,
+                    5,
+                    -79,
+                    38,
+                    103,
+                    31,
+                    66,
+                    -109,
+                    -110,
+                    75,
                     -127,
-                    -3
-            }, MessageId.of("412176952b5b81fd").byteArrayValue());
-        }
-    }
-
-    @Nested
-    class LongValue {
-        @Test
-        void shouldReturnCorrectBytes() {
-            assertEquals(4693162669746389501L, MessageId.of("412176952b5b81fd").longValue());
+                    -76,
+                    -71,
+                    -46,
+                    10,
+                    43,
+                    -25
+            }, Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue());
         }
     }
 }

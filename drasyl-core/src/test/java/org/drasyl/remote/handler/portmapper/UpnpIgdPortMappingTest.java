@@ -115,7 +115,7 @@ public class UpnpIgdPortMappingTest {
                 });
                 when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                 when(upnpIgdUtil.getSpecificPortMappingEntry(any(), any(), any()).getDescription()).thenReturn("drasyl1234567890");
-                when(event.getNode().getIdentity().getPublicKey().toString()).thenReturn("1234567890");
+                when(event.getNode().getIdentity().getIdentityPublicKey().toString()).thenReturn("1234567890");
 
                 new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
 

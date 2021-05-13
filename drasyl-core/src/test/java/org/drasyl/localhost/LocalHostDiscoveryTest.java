@@ -27,7 +27,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
@@ -88,10 +88,10 @@ class LocalHostDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Path discoveryPath;
     @Mock
-    private CompressedPublicKey ownPublicKey;
+    private IdentityPublicKey ownPublicKey;
     @Mock
     private ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
-    private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
+    private final Map<IdentityPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
     @Mock
     private Disposable watchDisposable;
     @Mock
@@ -193,7 +193,7 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws IOException {
-            final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
+            final Path path = Paths.get(dir.toString(), "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127.json");
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
@@ -222,7 +222,7 @@ class LocalHostDiscoveryTest {
             });
             when(ctx.config().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
             when(ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
-            when(identity.getPublicKey()).thenReturn(ownPublicKey);
+            when(identity.getIdentityPublicKey()).thenReturn(ownPublicKey);
             when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
             when(discoveryPath.getFileSystem()).thenReturn(fileSystem);
             when(fileSystem.newWatchService()).thenReturn(watchService);
@@ -242,7 +242,7 @@ class LocalHostDiscoveryTest {
     class StopDiscovery {
         @Test
         void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
-                                                              @Mock final CompressedPublicKey publicKey,
+                                                              @Mock final IdentityPublicKey publicKey,
                                                               @Mock final InetSocketAddressWrapper address) {
             routes.put(publicKey, address);
 
@@ -258,7 +258,7 @@ class LocalHostDiscoveryTest {
 
         @Test
         void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event,
-                                                @Mock final CompressedPublicKey publicKey,
+                                                @Mock final IdentityPublicKey publicKey,
                                                 @Mock final InetSocketAddressWrapper address) {
             routes.put(publicKey, address);
 
@@ -279,9 +279,9 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
             final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
-            final CompressedPublicKey recipient = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
+            final IdentityPublicKey recipient = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             routes.put(recipient, address);
-            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
+            when(identity.getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
@@ -297,7 +297,7 @@ class LocalHostDiscoveryTest {
 
         @SuppressWarnings("rawtypes")
         @Test
-        void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey recipient,
+        void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -318,12 +318,12 @@ class LocalHostDiscoveryTest {
         void shouldScanDirectory(@TempDir final Path dir,
                                  @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                  @Mock final InetSocketAddressWrapper address) throws IOException {
-            final CompressedPublicKey publicKey = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
+            final IdentityPublicKey publicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             routes.put(publicKey, address);
 
             when(ctx.config().getRemoteLocalHostDiscoveryPath()).thenReturn(dir);
             when(ctx.config().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(ofMinutes(5));
-            final Path path = Paths.get(dir.toString(), "0", "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
+            final Path path = Paths.get(dir.toString(), "0", "02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b.json");
             Files.createDirectory(path.getParent());
             Files.writeString(path, "[\"192.168.188.42:12345\",\"192.168.188.23:12345\"]", StandardOpenOption.CREATE);
 
@@ -331,11 +331,11 @@ class LocalHostDiscoveryTest {
             handler.scan(ctx);
 
             assertEquals(Map.of(
-                    CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"),
+                    IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"),
                     new InetSocketAddressWrapper("192.168.188.23", 12345)
             ), routes);
 
-            verify(ctx.peersManager()).addPath(eq(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a")), any());
+            verify(ctx.peersManager()).addPath(eq(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b")), any());
         }
     }
 }

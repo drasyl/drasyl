@@ -30,7 +30,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.SetUtil;
 
@@ -54,11 +54,11 @@ import static java.util.Objects.requireNonNull;
  */
 public class PeersManager {
     private final ReadWriteLock lock;
-    private final SetMultimap<CompressedPublicKey, Object> paths;
-    private final Set<CompressedPublicKey> children;
+    private final SetMultimap<IdentityPublicKey, Object> paths;
+    private final Set<IdentityPublicKey> children;
     private final Consumer<Event> eventConsumer;
     private final Identity identity;
-    private final Set<CompressedPublicKey> superPeers;
+    private final Set<IdentityPublicKey> superPeers;
 
     public PeersManager(final Consumer<Event> eventConsumer, final Identity identity) {
         this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashSet<>(), new HashSet<>(), eventConsumer, identity);
@@ -66,9 +66,9 @@ public class PeersManager {
 
     @SuppressWarnings("java:S2384")
     PeersManager(final ReadWriteLock lock,
-                 final SetMultimap<CompressedPublicKey, Object> paths,
-                 final Set<CompressedPublicKey> children,
-                 final Set<CompressedPublicKey> superPeers,
+                 final SetMultimap<IdentityPublicKey, Object> paths,
+                 final Set<IdentityPublicKey> children,
+                 final Set<IdentityPublicKey> superPeers,
                  final Consumer<Event> eventConsumer,
                  final Identity identity) {
         this.lock = lock;
@@ -96,7 +96,7 @@ public class PeersManager {
         }
     }
 
-    public Set<CompressedPublicKey> getPeers() {
+    public Set<IdentityPublicKey> getPeers() {
         try {
             lock.readLock().lock();
 
@@ -107,7 +107,7 @@ public class PeersManager {
         }
     }
 
-    public Set<CompressedPublicKey> getChildren() {
+    public Set<IdentityPublicKey> getChildren() {
         try {
             lock.readLock().lock();
 
@@ -121,7 +121,7 @@ public class PeersManager {
         }
     }
 
-    public Set<CompressedPublicKey> getSuperPeers() {
+    public Set<IdentityPublicKey> getSuperPeers() {
         try {
             lock.readLock().lock();
 
@@ -135,7 +135,7 @@ public class PeersManager {
         }
     }
 
-    public Set<Object> getPaths(final CompressedPublicKey publicKey) {
+    public Set<Object> getPaths(final IdentityPublicKey publicKey) {
         requireNonNull(publicKey);
 
         try {
@@ -148,7 +148,7 @@ public class PeersManager {
         }
     }
 
-    public void addPath(final CompressedPublicKey publicKey,
+    public void addPath(final IdentityPublicKey publicKey,
                         final Object path) {
         requireNonNull(publicKey);
 
@@ -166,7 +166,7 @@ public class PeersManager {
         }
     }
 
-    public void removePath(final CompressedPublicKey publicKey, final Object path) {
+    public void removePath(final IdentityPublicKey publicKey, final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
 
@@ -182,7 +182,7 @@ public class PeersManager {
         }
     }
 
-    public void addPathAndSuperPeer(final CompressedPublicKey publicKey,
+    public void addPathAndSuperPeer(final IdentityPublicKey publicKey,
                                     final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
@@ -207,7 +207,7 @@ public class PeersManager {
         }
     }
 
-    public void removeSuperPeerAndPath(final CompressedPublicKey publicKey,
+    public void removeSuperPeerAndPath(final IdentityPublicKey publicKey,
                                        final Object path) {
         requireNonNull(path);
 
@@ -229,7 +229,7 @@ public class PeersManager {
         }
     }
 
-    public void addPathAndChildren(final CompressedPublicKey publicKey,
+    public void addPathAndChildren(final IdentityPublicKey publicKey,
                                    final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
@@ -251,7 +251,7 @@ public class PeersManager {
         }
     }
 
-    public void removeChildrenAndPath(final CompressedPublicKey publicKey,
+    public void removeChildrenAndPath(final IdentityPublicKey publicKey,
                                       final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);

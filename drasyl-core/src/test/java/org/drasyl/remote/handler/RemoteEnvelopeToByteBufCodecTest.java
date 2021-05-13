@@ -24,7 +24,7 @@ package org.drasyl.remote.handler;
 import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
@@ -34,7 +34,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.Protocol;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.RemoteEnvelope;
@@ -55,21 +55,21 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RemoteEnvelopeToByteBufCodecTest {
-    private final MessageId correspondingId = MessageId.of("412176952b5b81fd");
+    private final Nonce correspondingId = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    private CompressedPublicKey senderPublicKey;
+    private IdentityPublicKey senderPublicKey;
     private ProofOfWork proofOfWork;
-    private CompressedPublicKey recipientPublicKey;
+    private IdentityPublicKey recipientPublicKey;
 
     @BeforeEach
     void setUp() {
-        senderPublicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
-        recipientPublicKey = CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
+        senderPublicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
+        recipientPublicKey = IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b");
         proofOfWork = ProofOfWork.of(1);
     }
 
@@ -95,7 +95,7 @@ class RemoteEnvelopeToByteBufCodecTest {
     class Encode {
         @Test
         void shouldConvertEnvelopeToByteBuf(@Mock final InetSocketAddressWrapper recipient) throws IOException {
-            try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), byte[].class.getName(), "Hello World".getBytes())) {
+            try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(1337, IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"), ProofOfWork.of(3556154), IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), byte[].class.getName(), "Hello World".getBytes())) {
                 final Handler handler = RemoteEnvelopeToByteBufCodec.INSTANCE;
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();

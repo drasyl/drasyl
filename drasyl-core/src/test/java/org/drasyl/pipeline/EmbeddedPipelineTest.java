@@ -25,7 +25,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -56,7 +56,7 @@ class EmbeddedPipelineTest {
 
     @SuppressWarnings("rawtypes")
     @Test
-    void shouldReturnInboundMessagesAndEvents(@Mock final CompressedPublicKey sender,
+    void shouldReturnInboundMessagesAndEvents(@Mock final IdentityPublicKey sender,
                                               @Mock final RemoteEnvelope msg) {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
@@ -76,8 +76,8 @@ class EmbeddedPipelineTest {
     }
 
     @Test
-    void shouldReturnOutboundMessages(@Mock final CompressedPublicKey sender,
-                                      @Mock final CompressedPublicKey recipient) {
+    void shouldReturnOutboundMessages(@Mock final IdentityPublicKey sender,
+                                      @Mock final IdentityPublicKey recipient) {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,

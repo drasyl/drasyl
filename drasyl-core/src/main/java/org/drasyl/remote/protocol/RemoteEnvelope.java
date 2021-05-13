@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.TextFormat;
+import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
@@ -33,13 +34,17 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.CompressedPrivateKey;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.InternetDiscovery;
+import org.drasyl.remote.handler.crypto.AgreementId;
+import org.drasyl.remote.handler.crypto.ArmHandler;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.Discovery;
+import org.drasyl.remote.protocol.Protocol.KeyExchange;
+import org.drasyl.remote.protocol.Protocol.KeyExchangeAcknowledgement;
 import org.drasyl.remote.protocol.Protocol.MessageType;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
@@ -53,14 +58,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.security.PublicKey;
 import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.remote.protocol.MessageId.randomMessageId;
+import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
+import static org.drasyl.remote.protocol.Protocol.MessageType.KEY_EXCHANGE;
+import static org.drasyl.remote.protocol.Protocol.MessageType.KEY_EXCHANGE_ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 
 /**
@@ -422,8 +428,8 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     /**
      * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public MessageId getId() throws InvalidMessageFormatException {
-        return MessageId.of(getPublicHeader().getId());
+    public Nonce getNonce() throws InvalidMessageFormatException {
+        return Nonce.of(getPublicHeader().getNonce().toByteArray());
     }
 
     /**
@@ -436,8 +442,8 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     /**
      * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public CompressedPublicKey getSender() throws InvalidMessageFormatException {
-        return CompressedPublicKey.of(getPublicHeader().getSender().toByteArray());
+    public IdentityPublicKey getSender() throws InvalidMessageFormatException {
+        return IdentityPublicKey.of(getPublicHeader().getSender().toByteArray());
     }
 
     /**
@@ -448,18 +454,18 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     }
 
     /**
-     * Returns the {@link CompressedPublicKey} of the message recipient. If the message has no
+     * Returns the {@link IdentityPublicKey} of the message recipient. If the message has no
      * recipient (e.g. because it is a multicast message) {@code null} is returned.
      *
      * @throws InvalidMessageFormatException if the public header cannot be read
      */
-    public CompressedPublicKey getRecipient() throws InvalidMessageFormatException {
+    public IdentityPublicKey getRecipient() throws InvalidMessageFormatException {
         final byte[] bytes = getPublicHeader().getRecipient().toByteArray();
         if (bytes.length == 0) {
             return null;
         }
         else {
-            return CompressedPublicKey.of(bytes);
+            return IdentityPublicKey.of(bytes);
         }
     }
 
@@ -468,6 +474,21 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      */
     public byte getHopCount() throws InvalidMessageFormatException {
         return (byte) (getPublicHeader().getHopCount() - 1);
+    }
+
+    /**
+     * @return {@link AgreementId} or {@code null} if no key was used
+     * @throws InvalidMessageFormatException if the public header cannot be read or be updated
+     */
+    public AgreementId getAgreementId() throws InvalidMessageFormatException {
+        synchronized (this) {
+            if (!getPublicHeader().getAgreementId().isEmpty()) {
+                return AgreementId.of(getPublicHeader().getAgreementId().toByteArray());
+            }
+            else {
+                return null;
+            }
+        }
     }
 
     /**
@@ -486,66 +507,80 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                     .setHopCount(newHopCount)
                     .build();
 
-            if (message != null) {
-                final ByteBuf publicHeaderByteBuf = PooledByteBufAllocator.DEFAULT.buffer();
+            writeNewPublicHeaderToMessage();
+        }
+    }
 
-                try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(publicHeaderByteBuf)) {
-                    publicHeader.writeDelimitedTo(outputStream);
+    private void writeNewPublicHeaderToMessage() throws InvalidMessageFormatException {
+        if (message != null) {
+            final ByteBuf publicHeaderByteBuf = PooledByteBufAllocator.DEFAULT.buffer();
 
-                    this.message = ByteBufUtil.prepend(message, Unpooled.copiedBuffer(MAGIC_NUMBER), publicHeaderByteBuf);
-                }
-                catch (final IOException e) {
-                    throw new InvalidMessageFormatException(e);
-                }
+            try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(publicHeaderByteBuf)) {
+                publicHeader.writeDelimitedTo(outputStream);
+
+                this.message = ByteBufUtil.prepend(message, Unpooled.copiedBuffer(MAGIC_NUMBER), publicHeaderByteBuf);
+            }
+            catch (final IOException e) {
+                throw new InvalidMessageFormatException(e);
             }
         }
     }
 
     /**
-     * @return signature as byte array
-     * @throws InvalidMessageFormatException if the public header cannot be read
+     * @throws InvalidMessageFormatException if the public header cannot be read or be updated
      */
-    public byte[] getSignature() throws InvalidMessageFormatException {
-        return getPublicHeader().getSignature().toByteArray();
+    public RemoteEnvelope<T> setAgreementId(final AgreementId agreementId) throws InvalidMessageFormatException {
+        synchronized (this) {
+            final PublicHeader existingPublicHeader = getPublicHeader();
+
+            this.publicHeader = PublicHeader.newBuilder(existingPublicHeader)
+                    .setAgreementId(ByteString.copyFrom(agreementId.toBytes()))
+                    .build();
+
+            writeNewPublicHeaderToMessage();
+
+            return this;
+        }
+    }
+
+    /**
+     * @throws InvalidMessageFormatException if the public header cannot be read or be updated
+     */
+    private byte[] getPublicHeaderAuthTag() throws InvalidMessageFormatException {
+        synchronized (this) {
+            final PublicHeader publicHeaderWithoutHopCount = PublicHeader.newBuilder(getPublicHeader())
+                    .setHopCount(0)
+                    .build();
+
+            return publicHeaderWithoutHopCount.toByteArray();
+        }
     }
 
     /**
      * Returns an armed version of this envelope for sending it through untrustworthy channels.
      * <p>
-     * {@code privateKey} must match message's sender.
-     * <p>
      * Arming includes the following steps:
      * <ul>
-     * <li>encrypted {@link #privateHeader} and encrypted {@link #body} will be signed with {@code privateKey}</li>
-     * <li>{@link #privateHeader} and {@link #body} will be encrypted with recipient's public key (not implemented!)</li>
+     * <li>{@link #getPublicHeader()} will be added as authentication tag</li>
+     * <li>{@link #privateHeader} and {@link #body} will be encrypted with {@code sessionPair}</li>
      * </ul>
      * <p>
      * <b>Note: Do not forget to release the original {@link #message}</b>
      *
-     * @param privateKey message is signed with this key
+     * @param sessionPair will be used for encryption
      * @return the armed version of this envelope
      * @throws InvalidMessageFormatException if arming was not possible
      */
-    public RemoteEnvelope<T> arm(final CompressedPrivateKey privateKey) throws InvalidMessageFormatException {
+    public RemoteEnvelope<T> arm(final SessionPair sessionPair) throws InvalidMessageFormatException {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            final Nonce nonce = getNonce();
+            final byte[] authTag = getPublicHeaderAuthTag();
             getPrivateHeader().writeDelimitedTo(outputStream);
             getBody().writeDelimitedTo(outputStream);
 
             final byte[] bytes = outputStream.toByteArray();
 
-            // multicast messages will be signed only
-            if (getRecipient() != null) {
-                // FIXME: encrypt payload (message's id is currently not covered by signature and can
-                //  therefore be forged. maybe we can prevent this by using the id as an initialisation
-                //  vector for our encryption?)
-                reverse(bytes);
-            }
-
-            // First encrypt and then sign. See: Krawczyk, Hugo. (2001). The Order of Encryption and Authentication for Protecting Communications (or: How Secure Is SSL?). 2139. 10.1007/3-540-44647-8_19.
-            final byte[] signature = Crypto.signMessage(privateKey.toUncompressedKey(), bytes);
-            final PublicHeader newPublicHeader = PublicHeader.newBuilder(getPublicHeader()).setSignature(ByteString.copyFrom(signature)).build();
-
-            return of(newPublicHeader, bytes);
+            return of(getPublicHeader(), Crypto.INSTANCE.encrypt(bytes, authTag, nonce, sessionPair));
         }
         catch (final IOException | CryptoException e) {
             throw new InvalidMessageFormatException("Unable to arm message", e);
@@ -555,22 +590,21 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     /**
      * Returns an armed version of this envelope for sending it through untrustworthy channels.
      * <p>
-     * {@code privateKey} must match message's sender.
-     * <p>
      * Arming includes the following steps:
      * <ul>
-     * <li>encrypted {@link #privateHeader} and encrypted {@link #body} will be signed with {@code privateKey}</li>
-     * <li>{@link #privateHeader} and {@link #body} will be encrypted with recipient's public key (not implemented!)</li>
+     * <li>{@link #getPublicHeader()} will be added as authentication tag</li>
+     * <li>{@link #privateHeader} and {@link #body} will be encrypted with {@code sessionPair}</li>
      * </ul>
+     * <p>
      * <p>This method will release all resources even in case of an exception.
      *
-     * @param privateKey message is signed with this key
+     * @param sessionPair will be used for encryption
      * @return the armed version of this envelope
      * @throws InvalidMessageFormatException if arming was not possible
      */
-    public RemoteEnvelope<T> armAndRelease(final CompressedPrivateKey privateKey) throws InvalidMessageFormatException {
+    public RemoteEnvelope<T> armAndRelease(final SessionPair sessionPair) throws InvalidMessageFormatException {
         try {
-            return arm(privateKey);
+            return arm(sessionPair);
         }
         finally {
             releaseAll();
@@ -580,11 +614,11 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     /**
      * Returns a disarmed version of this envelope.
      * <p>
-     * {@code privateKey} must match message's recipient (not implemented yet!).
+     * {@code secretKey} must match message's recipient (not implemented yet!).
      * <p>
      * Disarming includes the following steps:
      * <ul>
-     * <li>the encrypted {@link #privateHeader} and encrypted {@link #body} will be decrypted with {@code privateKey} (not implemented yet!)
+     * <li>the encrypted {@link #privateHeader} and encrypted {@link #body} will be decrypted with {@code secretKey} (not implemented yet!)
      * <li>the signed portions of the message ({@link #privateHeader} and {@link #body}) are verified against sender's public key.
      * </ul>
      * <p>
@@ -594,37 +628,22 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @throws InvalidMessageFormatException if disarming was not possible
      */
     @SuppressWarnings({ "java:S1172" })
-    public RemoteEnvelope<T> disarm(final CompressedPrivateKey privateKey) throws InvalidMessageFormatException {
+    public RemoteEnvelope<T> disarm(final SessionPair sessionPair) throws InvalidMessageFormatException {
         try {
-            final PublicKey sender = getSender().toUncompressedKey();
-            final byte[] signature = getPublicHeader().getSignature().toByteArray();
+            final byte[] authTag = getPublicHeaderAuthTag();
+            final Nonce nonce = getNonce();
             try (final ByteBufInputStream in = new ByteBufInputStream(getOrBuildInternalByteBuf())) {
                 final byte[] bytes = in.readAllBytes();
 
-                // verify signature
-                if (signature.length == 0) {
-                    throw new InvalidMessageFormatException("No signature");
-                }
-                if (Crypto.verifySignature(sender, bytes, signature)) {
-                    // multicast messages will be signed only
-                    if (getRecipient() != null) {
-                        // FIXME: decrypt payload
-                        reverse(bytes);
-                    }
+                try (final ByteArrayInputStream decryptedIn = new ByteArrayInputStream(Crypto.INSTANCE.decrypt(bytes, authTag, nonce, sessionPair))) {
+                    final PrivateHeader decryptedPrivateHeader = PrivateHeader.parseDelimitedFrom(decryptedIn);
+                    final T decryptedBody = bodyFromInputStream(decryptedPrivateHeader.getType(), decryptedIn);
 
-                    try (final ByteArrayInputStream decryptedIn = new ByteArrayInputStream(bytes)) {
-                        final PrivateHeader decryptedPrivateHeader = PrivateHeader.parseDelimitedFrom(decryptedIn);
-                        final T decryptedBody = bodyFromInputStream(decryptedPrivateHeader.getType(), decryptedIn);
-
-                        return of(getPublicHeader(), decryptedPrivateHeader, decryptedBody);
-                    }
-                }
-                else {
-                    throw new InvalidMessageFormatException("Invalid signature");
+                    return of(getPublicHeader(), decryptedPrivateHeader, decryptedBody);
                 }
             }
         }
-        catch (final IOException e) {
+        catch (final IOException | CryptoException e) {
             throw new InvalidMessageFormatException("Unable to disarm message", e);
         }
     }
@@ -632,11 +651,11 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     /**
      * Returns a disarmed version of this envelope.
      * <p>
-     * {@code privateKey} must match message's recipient (not implemented yet!).
+     * {@code secretKey} must match message's recipient (not implemented yet!).
      * <p>
      * Disarming includes the following steps:
      * <ul>
-     * <li>the encrypted {@link #privateHeader} and encrypted {@link #body} will be decrypted with {@code privateKey} (not implemented yet!)
+     * <li>the encrypted {@link #privateHeader} and encrypted {@link #body} will be decrypted with {@code secretKey} (not implemented yet!)
      * <li>the signed portions of the message ({@link #privateHeader} and {@link #body}) are verified against sender's public key.
      * </ul>
      * <p>This method will release all resources even in case of an exception.
@@ -644,33 +663,13 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @return the disarmed version of this envelope
      * @throws InvalidMessageFormatException if disarming was not possible
      */
-    public RemoteEnvelope<T> disarmAndRelease(final CompressedPrivateKey privateKey) throws InvalidMessageFormatException {
+    public RemoteEnvelope<T> disarmAndRelease(final SessionPair sessionPair) throws InvalidMessageFormatException {
         try {
-            return disarm(privateKey);
+            return disarm(sessionPair);
         }
         finally {
             releaseAll();
         }
-    }
-
-    /**
-     * Returns {@code true} if message is armed. Otherwise {@code false} is returned.
-     *
-     * @return {@code true} if message is armed. Otherwise {@code false} is returned.
-     * @throws InvalidMessageFormatException if the public header cannot be read
-     */
-    public boolean isArmed() throws InvalidMessageFormatException {
-        return getSignature().length != 0;
-    }
-
-    /**
-     * Returns {@code true} if message is not armed. Otherwise {@code false} is returned.
-     *
-     * @return {@code true} if message is not armed. Otherwise {@code false} is returned.
-     * @throws InvalidMessageFormatException if the public header cannot be read
-     */
-    public boolean isDisarmed() throws InvalidMessageFormatException {
-        return !isArmed();
     }
 
     @SuppressWarnings({ "unchecked", "java:S1142" })
@@ -686,34 +685,16 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                     return (T) Unite.parseDelimitedFrom(in);
                 case DISCOVERY:
                     return (T) Discovery.parseDelimitedFrom(in);
+                case KEY_EXCHANGE:
+                    return (T) KeyExchange.parseDelimitedFrom(in);
+                case KEY_EXCHANGE_ACKNOWLEDGEMENT:
+                    return (T) KeyExchangeAcknowledgement.parseDelimitedFrom(in);
                 default:
                     throw new InvalidMessageFormatException("Message is not of any known type.");
             }
         }
         catch (final IOException e) {
             throw new InvalidMessageFormatException("Unable to read message body.", e);
-        }
-    }
-
-    /**
-     * This method is just a placeholder and only mimics the behavior of a real encryption simulate
-     * (shift/replace bytes).
-     *
-     * @param bytes array of bytes what should be reversed
-     */
-    private static void reverse(final byte[] bytes) {
-        if (bytes == null) {
-            return;
-        }
-        int i = 0;
-        int j = bytes.length - 1;
-        byte tmp;
-        while (j > i) {
-            tmp = bytes[j];
-            bytes[j] = bytes[i];
-            bytes[i] = tmp;
-            j--;
-            i++;
         }
     }
 
@@ -746,30 +727,30 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      *                              {@code correspondingId} is {@code null}
      */
     public static RemoteEnvelope<Acknowledgement> acknowledgement(final int networkId,
-                                                                  final CompressedPublicKey sender,
+                                                                  final IdentityPublicKey sender,
                                                                   final ProofOfWork proofOfWork,
-                                                                  final CompressedPublicKey recipient,
-                                                                  final MessageId correspondingId) {
+                                                                  final IdentityPublicKey recipient,
+                                                                  final Nonce correspondingId) {
         return of(
                 buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), requireNonNull(recipient)),
                 PrivateHeader.newBuilder().setType(ACKNOWLEDGEMENT).build(),
-                Acknowledgement.newBuilder().setCorrespondingId(correspondingId.longValue()).build()
+                Acknowledgement.newBuilder().setCorrespondingId(ByteString.copyFrom(correspondingId.byteArrayValue())).build()
         );
     }
 
     static Protocol.PublicHeader buildPublicHeader(final int networkId,
-                                                   final CompressedPublicKey sender,
+                                                   final IdentityPublicKey sender,
                                                    final ProofOfWork proofOfWork,
-                                                   final CompressedPublicKey recipient) {
+                                                   final IdentityPublicKey recipient) {
         final PublicHeader.Builder builder = PublicHeader.newBuilder()
-                .setId(randomMessageId().longValue())
+                .setNonce(ByteString.copyFrom(randomNonce().byteArrayValue()))
                 .setNetworkId(networkId)
-                .setSender(ByteString.copyFrom(sender.byteArrayValue()))
+                .setSender(ByteString.copyFrom(sender.getKey()))
                 .setProofOfWork(proofOfWork.intValue())
                 .setHopCount(1);
 
         if (recipient != null) {
-            builder.setRecipient(ByteString.copyFrom(recipient.byteArrayValue()));
+            builder.setRecipient(ByteString.copyFrom(recipient.getKey()));
         }
 
         return builder.build();
@@ -788,9 +769,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      *                              {@code payload} is {@code null}
      */
     public static RemoteEnvelope<Application> application(final int networkId,
-                                                          final CompressedPublicKey sender,
+                                                          final IdentityPublicKey sender,
                                                           final ProofOfWork proofOfWork,
-                                                          final CompressedPublicKey recipient,
+                                                          final IdentityPublicKey recipient,
                                                           final String type,
                                                           final byte[] payload) {
         final Application.Builder messageBuilder = Application.newBuilder();
@@ -817,15 +798,16 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      *                              {@code null}
      */
     public static RemoteEnvelope<Discovery> discovery(final int networkId,
-                                                      final CompressedPublicKey sender,
+                                                      final IdentityPublicKey sender,
                                                       final ProofOfWork proofOfWork,
-                                                      final CompressedPublicKey recipient,
+                                                      final IdentityPublicKey recipient,
                                                       final long joinTime) {
         return of(
                 buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), requireNonNull(recipient)),
                 PrivateHeader.newBuilder()
                         .setType(DISCOVERY)
-                        .build(), Discovery.newBuilder()
+                        .build(),
+                Discovery.newBuilder()
                         .setChildrenTime(joinTime)
                         .build()
         );
@@ -841,13 +823,14 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @throws NullPointerException if {@code sender}, or {@code proofOfWork} is {@code null}
      */
     public static RemoteEnvelope<Discovery> discovery(final int networkId,
-                                                      final CompressedPublicKey sender,
+                                                      final IdentityPublicKey sender,
                                                       final ProofOfWork proofOfWork) {
         return of(
                 buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), null),
                 PrivateHeader.newBuilder()
                         .setType(DISCOVERY)
-                        .build(), Discovery.newBuilder()
+                        .build(),
+                Discovery.newBuilder()
                         .build()
         );
     }
@@ -867,21 +850,79 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      *                              {@code publicKey}, or {@code address} is {@code null}
      */
     public static RemoteEnvelope<Unite> unite(final int networkId,
-                                              final CompressedPublicKey sender,
+                                              final IdentityPublicKey sender,
                                               final ProofOfWork proofOfWork,
-                                              final CompressedPublicKey recipient,
-                                              final CompressedPublicKey publicKey,
+                                              final IdentityPublicKey recipient,
+                                              final IdentityPublicKey publicKey,
                                               final InetSocketAddress address) {
         return of(
                 buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), requireNonNull(recipient)),
                 PrivateHeader.newBuilder()
                         .setType(UNITE)
-                        .build(), Unite.newBuilder()
-                        .setPublicKey(ByteString.copyFrom(publicKey.byteArrayValue()))
+                        .build(),
+                Unite.newBuilder()
+                        .setPublicKey(ByteString.copyFrom(publicKey.getKey()))
                         .setAddress(address.getHostString())
                         .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
                         .build()
         );
+    }
+
+    /**
+     * Creates a new {@link KeyExchange} message (sent by {@link ArmHandler}; used for perfect
+     * forwarded secrecy).
+     *
+     * @param networkId           the network of the node
+     * @param sender              the public key of the node
+     * @param identityProofOfWork the node's proof of work
+     * @param recipient           the recipient of this message
+     * @param sessionKey          the ephemeral key agreement key
+     * @param sessionProofOfWork  a proof of work for {@code sessionKey}
+     * @param sessionKeySignature a signature for {@code sessionKey}
+     * @return {@link KeyExchange} message or exception
+     * @throws NullPointerException if {@code sender}, {@code identityProofOfWork}, {@code
+     *                              recipient}, {@code sessionKey}, or {@code sessionProofOfWork} is
+     *                              {@code null}
+     */
+    public static RemoteEnvelope<KeyExchange> keyExchange(final int networkId,
+                                                          final IdentityPublicKey sender,
+                                                          final ProofOfWork identityProofOfWork,
+                                                          final IdentityPublicKey recipient,
+                                                          final KeyAgreementPublicKey sessionKey) {
+        return of(buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(identityProofOfWork), requireNonNull(recipient)),
+                PrivateHeader.newBuilder()
+                        .setType(KEY_EXCHANGE)
+                        .build(),
+                KeyExchange.newBuilder()
+                        .setSessionKey(ByteString.copyFrom(sessionKey.getKey()))
+                        .build());
+    }
+
+    /**
+     * Creates a new {@link KeyExchangeAcknowledgement} message (sent by {@link ArmHandler}; used
+     * for perfect forwarded secrecy).
+     *
+     * @param networkId           the network of the node
+     * @param sender              the public key of the node
+     * @param identityProofOfWork the node's proof of work
+     * @param recipient           the recipient of this message
+     * @param agreementId         the id of the used session
+     * @return {@link KeyExchangeAcknowledgement} message or exception
+     * @throws NullPointerException if {@code sender}, {@code identityProofOfWork}, {@code
+     *                              recipient}, or {@code keyId} is {@code null}
+     */
+    public static RemoteEnvelope<KeyExchangeAcknowledgement> keyExchangeAcknowledgement(final int networkId,
+                                                                                        final IdentityPublicKey sender,
+                                                                                        final ProofOfWork identityProofOfWork,
+                                                                                        final IdentityPublicKey recipient,
+                                                                                        final AgreementId agreementId) {
+        return of(buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(identityProofOfWork), requireNonNull(recipient)),
+                PrivateHeader.newBuilder()
+                        .setType(KEY_EXCHANGE_ACKNOWLEDGEMENT)
+                        .build(),
+                KeyExchangeAcknowledgement.newBuilder()
+                        .setAgreementId(ByteString.copyFrom(agreementId.toBytes()))
+                        .build());
     }
 
     /**

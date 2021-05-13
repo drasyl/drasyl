@@ -21,7 +21,7 @@
  */
 package org.drasyl.crypto;
 
-import org.bouncycastle.util.encoders.Hex;
+import com.goterl.lazysodium.LazySodium;
 import org.drasyl.AbstractBenchmark;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
@@ -44,7 +44,7 @@ public class HexUtilBenchmark extends AbstractBenchmark {
     }
 
     @Benchmark
-    public void bouncycastleByteToString(final Blackhole blackhole) {
-        blackhole.consume(Hex.toHexString(byteArray));
+    public void sodiumByteToString(final Blackhole blackhole) {
+        blackhole.consume(LazySodium.toHex(byteArray));
     }
 }

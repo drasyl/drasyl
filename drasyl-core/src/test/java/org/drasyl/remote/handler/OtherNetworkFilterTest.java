@@ -23,7 +23,7 @@ package org.drasyl.remote.handler;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
@@ -31,7 +31,7 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.Protocol;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,15 +55,15 @@ class OtherNetworkFilterTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    private CompressedPublicKey senderPublicKey;
-    private CompressedPublicKey recipientPublicKey;
-    private MessageId correspondingId;
+    private IdentityPublicKey senderPublicKey;
+    private IdentityPublicKey recipientPublicKey;
+    private Nonce correspondingId;
 
     @BeforeEach
     void setUp() {
-        senderPublicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
-        recipientPublicKey = CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
-        correspondingId = MessageId.of("412176952b5b81fd");
+        senderPublicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
+        recipientPublicKey = IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b");
+        correspondingId = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
     }
 
     @Test

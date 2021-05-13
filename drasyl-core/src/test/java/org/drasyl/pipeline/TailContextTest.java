@@ -24,7 +24,7 @@ package org.drasyl.pipeline;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
@@ -102,7 +102,7 @@ class TailContextTest {
     @Nested
     class OnWrite {
         @Test
-        void shouldPassthroughsOnWrite(@Mock final CompressedPublicKey recipient,
+        void shouldPassthroughsOnWrite(@Mock final IdentityPublicKey recipient,
                                        @Mock final Object msg) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
@@ -155,7 +155,7 @@ class TailContextTest {
     @Nested
     class OnRead {
         @Test
-        void shouldPassMessageToApplication(@Mock final CompressedPublicKey sender,
+        void shouldPassMessageToApplication(@Mock final IdentityPublicKey sender,
                                             @Mock final Object msg) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
@@ -166,7 +166,7 @@ class TailContextTest {
         }
 
         @Test
-        void shouldCompleteFutureAndNothingElseOnAutoSwallow(@Mock final CompressedPublicKey recipient) {
+        void shouldCompleteFutureAndNothingElseOnAutoSwallow(@Mock final IdentityPublicKey recipient) {
             final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             final AutoSwallow msg = new AutoSwallow() {
             };

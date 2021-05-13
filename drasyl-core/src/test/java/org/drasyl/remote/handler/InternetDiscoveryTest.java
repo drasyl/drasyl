@@ -30,9 +30,8 @@ import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -43,7 +42,7 @@ import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.handler.InternetDiscovery.Peer;
 import org.drasyl.remote.handler.InternetDiscovery.Ping;
-import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.Discovery;
@@ -56,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -93,18 +93,18 @@ class InternetDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Map<MessageId, Ping> openPingsCache;
+    private Map<Nonce, Ping> openPingsCache;
     @Mock
     private PeersManager peersManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Set<CompressedPublicKey> rendezvousPeers;
+    private Set<IdentityPublicKey> rendezvousPeers;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Set<CompressedPublicKey> superPeers;
+    private Set<IdentityPublicKey> superPeers;
     @Mock
-    private Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
+    private Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Map<CompressedPublicKey, Peer> peers;
-    private CompressedPublicKey bestSuperPeer;
+    private Map<IdentityPublicKey, Peer> peers;
+    private IdentityPublicKey bestSuperPeer;
 
     @Test
     void shouldPassthroughAllOtherEvents(@Mock final NodeEvent event) {
@@ -135,10 +135,10 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldStopHeartbeatingOnNodeUnrecoverableErrorEvent(@Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey publicKey,
+        void shouldStopHeartbeatingOnNodeUnrecoverableErrorEvent(@Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                                  @Mock final NodeUnrecoverableErrorEvent event) {
-            final HashMap<CompressedPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
+            final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final InternetDiscovery handler = spy(new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
@@ -152,10 +152,10 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldStopHeartbeatingOnNodeDownEvent(@Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey publicKey,
+        void shouldStopHeartbeatingOnNodeDownEvent(@Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                    @Mock final NodeDownEvent event) {
-            final HashMap<CompressedPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
+            final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final InternetDiscovery handler = spy(new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
@@ -172,10 +172,10 @@ class InternetDiscoveryTest {
         @Test
         void shouldReplyWithAcknowledgmentMessageToDiscoveryMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address) {
-            final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            when(identity.getPublicKey()).thenReturn(recipient);
-            try (final RemoteEnvelope<Discovery> discoveryMessage = RemoteEnvelope.discovery(0, sender, ProofOfWork.of(6518542), recipient, System.currentTimeMillis())) {
+            final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+            final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+            when(identity.getIdentityPublicKey()).thenReturn(recipient);
+            try (final RemoteEnvelope<Discovery> discoveryMessage = RemoteEnvelope.discovery(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, System.currentTimeMillis())) {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     final TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
@@ -193,11 +193,11 @@ class InternetDiscoveryTest {
         @Test
         void shouldUpdatePeerInformationOnAcknowledgementMessageFromNormalPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) throws IOException {
-            final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-            when(identity.getPublicKey()).thenReturn(recipient);
-            try (final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId())) {
-                final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
+            final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+            final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+            when(identity.getIdentityPublicKey()).thenReturn(recipient);
+            try (final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Nonce.randomNonce())) {
+                final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(Nonce.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     pipeline.processInbound(address, acknowledgementMessage).join();
 
@@ -210,14 +210,14 @@ class InternetDiscoveryTest {
         void shouldUpdatePeerInformationOnAcknowledgementMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                                               @Mock final Endpoint superPeerEndpoint) throws IOException {
-            final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+            final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+            final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
             when(peer.getAddress()).thenReturn(new InetSocketAddressWrapper(22527));
-            when(identity.getPublicKey()).thenReturn(recipient);
+            when(identity.getIdentityPublicKey()).thenReturn(recipient);
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
 
-            try (final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, ProofOfWork.of(6518542), recipient, MessageId.randomMessageId())) {
-                final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(MessageId.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
+            try (final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Nonce.randomNonce())) {
+                final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(Nonce.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     pipeline.processInbound(address, acknowledgementMessage).join();
 
@@ -228,7 +228,7 @@ class InternetDiscoveryTest {
 
         @Test
         void shouldNotRemoveLivingSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                            @Mock final CompressedPublicKey publicKey,
+                                            @Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddressWrapper address,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(peer.getAddress()).thenReturn(address);
@@ -241,7 +241,7 @@ class InternetDiscoveryTest {
 
         @Test
         void shouldRemoveDeadSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                        @Mock final CompressedPublicKey publicKey,
+                                        @Mock final IdentityPublicKey publicKey,
                                         @Mock final InetSocketAddressWrapper address,
                                         @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                         @Mock final Endpoint superPeerEndpoint) {
@@ -257,7 +257,7 @@ class InternetDiscoveryTest {
 
         @Test
         void shouldRemoveDeadChildrenOrPeers(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                             @Mock final CompressedPublicKey publicKey,
+                                             @Mock final IdentityPublicKey publicKey,
                                              @Mock final InetSocketAddressWrapper address,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(peer.getAddress()).thenReturn(address);
@@ -271,14 +271,14 @@ class InternetDiscoveryTest {
         @Test
         void shouldPingSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                   @Mock final Endpoint superPeerEndpoint) {
-            final CompressedPublicKey myPublicKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            final CompressedPublicKey publicKey = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+            final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
+            final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
             when(ctx.config().isRemoteSuperPeerEnabled()).thenReturn(true);
             when(ctx.config().getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
             when(superPeerEndpoint.getHost()).thenReturn("127.0.0.1");
-            when(ctx.identity().getPublicKey()).thenReturn(myPublicKey);
-            when(superPeerEndpoint.getPublicKey()).thenReturn(publicKey);
+            when(ctx.identity().getIdentityPublicKey()).thenReturn(myPublicKey);
+            when(superPeerEndpoint.getIdentityPublicKey()).thenReturn(publicKey);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
@@ -289,12 +289,12 @@ class InternetDiscoveryTest {
         @Test
         void shouldPingPeersWithRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
-            final CompressedPublicKey myPublicKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            final CompressedPublicKey publicKey = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+            final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
+            final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
             when(peer.hasControlTraffic(any())).thenReturn(true);
             when(peer.hasApplicationTraffic(any())).thenReturn(true);
-            when(ctx.identity().getPublicKey()).thenReturn(myPublicKey);
+            when(ctx.identity().getIdentityPublicKey()).thenReturn(myPublicKey);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
@@ -305,7 +305,7 @@ class InternetDiscoveryTest {
         @Test
         void shouldNotPingPeersWithoutRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                                           @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
-            final CompressedPublicKey publicKey = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+            final IdentityPublicKey publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
 
             when(peer.hasControlTraffic(any())).thenReturn(true);
 
@@ -323,14 +323,14 @@ class InternetDiscoveryTest {
         void shouldHandleUniteMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
                                                    @Mock final Endpoint superPeerEndpoint) throws IOException {
-            final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+            final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+            final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
-            when(identity.getPublicKey()).thenReturn(recipient);
+            when(identity.getIdentityPublicKey()).thenReturn(recipient);
             when(superPeers.contains(sender)).thenReturn(true);
 
-            try (final RemoteEnvelope<Unite> uniteMessage = RemoteEnvelope.unite(0, sender, ProofOfWork.of(6518542), recipient, CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), new InetSocketAddress(22527))) {
-                final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(CompressedPublicKey.of(uniteMessage.getBody().getPublicKey().toByteArray()), peer)), rendezvousPeers, superPeers, bestSuperPeer);
+            try (final RemoteEnvelope<Unite> uniteMessage = RemoteEnvelope.unite(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(22527))) {
+                final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(IdentityPublicKey.of(uniteMessage.getBody().getPublicKey().toByteArray()), peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     pipeline.processInbound(address, uniteMessage).join();
 
@@ -347,14 +347,14 @@ class InternetDiscoveryTest {
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) throws IOException {
             final InetSocketAddressWrapper senderSocketAddress = new InetSocketAddressWrapper(80);
             final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(81);
-            final CompressedPublicKey myKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            final CompressedPublicKey senderKey = CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
-            final CompressedPublicKey recipientKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
+            final IdentityPublicKey myKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
+            final IdentityPublicKey senderKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
+            final IdentityPublicKey recipientKey = IdentityTestUtil.ID_3.getIdentityPublicKey();
 
             when(recipientPeer.isReachable(any())).thenReturn(true);
             when(senderPeer.getAddress()).thenReturn(senderSocketAddress);
             when(recipientPeer.getAddress()).thenReturn(recipientSocketAddress);
-            when(identity.getPublicKey()).thenReturn(myKey);
+            when(identity.getIdentityPublicKey()).thenReturn(myKey);
             when(message.getSender()).thenReturn(senderKey);
             when(message.getRecipient()).thenReturn(recipientKey);
 
@@ -401,7 +401,7 @@ class InternetDiscoveryTest {
             void shouldCompleteExceptionallyOnInvalidMessage(@Mock final InetSocketAddressWrapper sender,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final CompressedPublicKey recipient) throws InterruptedException, IOException {
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey recipient) throws InterruptedException, IOException {
                 when(message.getRecipient()).thenThrow(IllegalArgumentException.class);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
@@ -419,12 +419,12 @@ class InternetDiscoveryTest {
             void shouldUpdateLastCommunicationTimeAndConvertSenderOnMessage(
                     @Mock final Peer peer,
                     @Mock final InetSocketAddressWrapper address) {
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
                 when(rendezvousPeers.contains(any())).thenReturn(true);
-                when(identity.getPublicKey()).thenReturn(recipient);
+                when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
-                try (final RemoteEnvelope<Application> applicationMessage = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[]{})) {
+                try (final RemoteEnvelope<Application> applicationMessage = RemoteEnvelope.application(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, byte[].class.getName(), new byte[]{})) {
                     final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                     try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                         final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
@@ -447,11 +447,11 @@ class InternetDiscoveryTest {
             void shouldRelayMessageToKnowRecipient(@Mock final Peer recipientPeer,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
                 final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(22527);
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
 
                 when(recipientPeer.getAddress()).thenReturn(recipientSocketAddress);
                 when(recipientPeer.isReachable(any())).thenReturn(true);
-                when(identity.getPublicKey()).thenReturn(recipient);
+                when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -469,10 +469,10 @@ class InternetDiscoveryTest {
             void shouldRelayMessageToSuperPeerForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeerPeer,
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
                 final InetSocketAddressWrapper superPeerSocketAddress = new InetSocketAddressWrapper(22527);
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
 
                 when(superPeerPeer.getAddress()).thenReturn(superPeerSocketAddress);
-                when(identity.getPublicKey()).thenReturn(recipient);
+                when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers, superPeers, recipient);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -488,10 +488,10 @@ class InternetDiscoveryTest {
             @SuppressWarnings("rawtypes")
             @Test
             void shouldPassthroughForUnknownRecipientWhenNoSuperPeerIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
-                when(identity.getPublicKey()).thenReturn(sender);
+                when(identity.getIdentityPublicKey()).thenReturn(sender);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -509,10 +509,10 @@ class InternetDiscoveryTest {
             @Test
             void shouldUpdateLastCommunicationTimeForApplicationMessages(@Mock final Peer peer,
                                                                          @Mock final RemoteEnvelope message) {
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
 
                 when(rendezvousPeers.contains(any())).thenReturn(true);
-                when(identity.getPublicKey()).thenReturn(recipient);
+                when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(recipient, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {

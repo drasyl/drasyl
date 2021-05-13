@@ -68,6 +68,15 @@
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>drasyl-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

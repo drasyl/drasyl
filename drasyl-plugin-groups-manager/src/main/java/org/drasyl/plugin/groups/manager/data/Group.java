@@ -24,7 +24,7 @@ package org.drasyl.plugin.groups.manager.data;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.GroupUri;
 
 import java.time.Duration;
@@ -125,7 +125,7 @@ public class Group {
                 '}';
     }
 
-    public GroupUri getUri(final CompressedPublicKey manager) {
+    public GroupUri getUri(final IdentityPublicKey manager) {
         return GroupUri.of(manager, credentials, name, timeout);
     }
 

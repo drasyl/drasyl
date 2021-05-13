@@ -56,7 +56,7 @@ public class DiningPhilosophers {
             System.out.println("Create philosopher " + name);
             final Fork leftFork = forks.get(i);
             final Fork rightFork = forks.get((i + 1) % PHILOSOPHERS.length);
-            final Philosopher philosopher = new Philosopher(name, leftFork.name, leftFork.identity().getPublicKey(), rightFork.name, rightFork.identity().getPublicKey());
+            final Philosopher philosopher = new Philosopher(name, leftFork.name, leftFork.identity().getIdentityPublicKey(), rightFork.name, rightFork.identity().getIdentityPublicKey());
             philosopher.start();
             philosophers.add(philosopher);
         }

@@ -29,8 +29,10 @@ import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import org.drasyl.annotation.Nullable;
-import org.drasyl.identity.CompressedPrivateKey;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.IdentitySecretKey;
+import org.drasyl.identity.KeyAgreementPublicKey;
+import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -74,7 +76,9 @@ public abstract class DrasylConfig {
     public static final String NETWORK_ID = "drasyl.network.id";
     public static final String IDENTITY_PROOF_OF_WORK = "drasyl.identity.proof-of-work";
     public static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
-    public static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
+    public static final String IDENTITY_SECRET_KEY = "drasyl.identity.secret-key";
+    public static final String IDENTITY_KEY_AGREEMENT_PUBLIC_KEY = "drasyl.identity.key-agreement.public-key";
+    public static final String IDENTITY_KEY_AGREEMENT_SECRET_KEY = "drasyl.identity.key-agreement.secret-key";
     public static final String IDENTITY_PATH = "drasyl.identity.path";
     public static final String MESSAGE_BUFFER_SIZE = "drasyl.message.buffer-size";
     public static final String REMOTE_ENABLED = "drasyl.remote.enabled";
@@ -136,10 +140,16 @@ public abstract class DrasylConfig {
                 builder.identityProofOfWork(getProofOfWork(config, IDENTITY_PROOF_OF_WORK));
             }
             if (!config.getString(IDENTITY_PUBLIC_KEY).isEmpty()) {
-                builder.identityPublicKey(getPublicKey(config, IDENTITY_PUBLIC_KEY));
+                builder.identityPublicKey(getIdentityPublicKey(config, IDENTITY_PUBLIC_KEY));
             }
-            if (!config.getString(IDENTITY_PRIVATE_KEY).isEmpty()) {
-                builder.identityPrivateKey(getPrivateKey(config, IDENTITY_PRIVATE_KEY));
+            if (!config.getString(IDENTITY_SECRET_KEY).isEmpty()) {
+                builder.identitySecretKey(getIdentitySecretKey(config, IDENTITY_SECRET_KEY));
+            }
+            if (!config.getString(IDENTITY_KEY_AGREEMENT_PUBLIC_KEY).isEmpty()) {
+                builder.keyAgreementPublicKey(getKeyAgreementPublicKey(config, IDENTITY_KEY_AGREEMENT_PUBLIC_KEY));
+            }
+            if (!config.getString(IDENTITY_KEY_AGREEMENT_SECRET_KEY).isEmpty()) {
+                builder.keyAgreementSecretKey(getKeyAgreementSecretKey(config, IDENTITY_KEY_AGREEMENT_SECRET_KEY));
             }
             builder.identityPath(getPath(config, IDENTITY_PATH));
 
@@ -229,19 +239,19 @@ public abstract class DrasylConfig {
     }
 
     /**
-     * Gets the {@link CompressedPublicKey} at the given path. Similar to {@link Config}, an
-     * exception is thrown for an invalid value.
+     * Gets the {@link IdentityPublicKey} at the given path. Similar to {@link Config}, an exception
+     * is thrown for an invalid value.
      *
      * @param config the application's portion of the configuration
      * @param path   path expression
-     * @return the {@link CompressedPublicKey} value at the requested path
-     * @throws DrasylConfigException if value is not convertible to a {@link CompressedPublicKey}
+     * @return the {@link IdentityPublicKey} value at the requested path
+     * @throws DrasylConfigException if value is not convertible to a {@link IdentityPublicKey}
      */
     @SuppressWarnings({ "java:S1192" })
-    public static CompressedPublicKey getPublicKey(final Config config, final String path) {
+    public static IdentityPublicKey getIdentityPublicKey(final Config config, final String path) {
         try {
             final String stringValue = config.getString(path);
-            return CompressedPublicKey.of(stringValue);
+            return IdentityPublicKey.of(stringValue);
         }
         catch (final IllegalArgumentException | ConfigException e) {
             throw new DrasylConfigException(path, e);
@@ -249,19 +259,61 @@ public abstract class DrasylConfig {
     }
 
     /**
-     * Gets the {@link CompressedPrivateKey} at the given path. Similar to {@link Config}, an
+     * Gets the {@link IdentitySecretKey} at the given path. Similar to {@link Config}, an exception
+     * is thrown for an invalid value.
+     *
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the {@link IdentitySecretKey} value at the requested path
+     * @throws DrasylConfigException if value is not convertible to a {@link IdentitySecretKey}
+     */
+    @SuppressWarnings({ "java:S1192" })
+    public static IdentitySecretKey getIdentitySecretKey(final Config config, final String path) {
+        try {
+            final String stringValue = config.getString(path);
+            return IdentitySecretKey.of(stringValue);
+        }
+        catch (final ConfigException | IllegalArgumentException e) {
+            throw new DrasylConfigException(path, e);
+        }
+    }
+
+    /**
+     * Gets the {@link KeyAgreementPublicKey} at the given path. Similar to {@link Config}, an
      * exception is thrown for an invalid value.
      *
      * @param config the application's portion of the configuration
      * @param path   path expression
-     * @return the {@link CompressedPrivateKey} value at the requested path
-     * @throws DrasylConfigException if value is not convertible to a {@link CompressedPrivateKey}
+     * @return the {@link IdentityPublicKey} value at the requested path
+     * @throws DrasylConfigException if value is not convertible to a {@link IdentityPublicKey}
      */
     @SuppressWarnings({ "java:S1192" })
-    public static CompressedPrivateKey getPrivateKey(final Config config, final String path) {
+    public static KeyAgreementPublicKey getKeyAgreementPublicKey(final Config config,
+                                                                 final String path) {
         try {
             final String stringValue = config.getString(path);
-            return CompressedPrivateKey.of(stringValue);
+            return KeyAgreementPublicKey.of(stringValue);
+        }
+        catch (final IllegalArgumentException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
+        }
+    }
+
+    /**
+     * Gets the {@link KeyAgreementSecretKey} at the given path. Similar to {@link Config}, an
+     * exception is thrown for an invalid value.
+     *
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the {@link IdentitySecretKey} value at the requested path
+     * @throws DrasylConfigException if value is not convertible to a {@link IdentitySecretKey}
+     */
+    @SuppressWarnings({ "java:S1192" })
+    public static KeyAgreementSecretKey getKeyAgreementSecretKey(final Config config,
+                                                                 final String path) {
+        try {
+            final String stringValue = config.getString(path);
+            return KeyAgreementSecretKey.of(stringValue);
         }
         catch (final ConfigException | IllegalArgumentException e) {
             throw new DrasylConfigException(path, e);
@@ -512,12 +564,12 @@ public abstract class DrasylConfig {
     /**
      * @throws DrasylConfigException if value at path is invalid
      */
-    public static Map<CompressedPublicKey, InetSocketAddressWrapper> getStaticRoutes(final Config config,
-                                                                                     final String path) {
+    public static Map<IdentityPublicKey, InetSocketAddressWrapper> getStaticRoutes(final Config config,
+                                                                                   final String path) {
         try {
-            final Map<CompressedPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
+            final Map<IdentityPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
             for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
-                final CompressedPublicKey publicKey = CompressedPublicKey.of(entry.getKey());
+                final IdentityPublicKey publicKey = IdentityPublicKey.of(entry.getKey());
                 final InetSocketAddressWrapper address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
 
                 routes.put(publicKey, address);
@@ -584,10 +636,16 @@ public abstract class DrasylConfig {
     public abstract ProofOfWork getIdentityProofOfWork();
 
     @Nullable
-    public abstract CompressedPublicKey getIdentityPublicKey();
+    public abstract IdentityPublicKey getIdentityPublicKey();
 
     @Nullable
-    public abstract CompressedPrivateKey getIdentityPrivateKey();
+    public abstract IdentitySecretKey getIdentitySecretKey();
+
+    @Nullable
+    public abstract KeyAgreementPublicKey getKeyAgreementPublicKey();
+
+    @Nullable
+    public abstract KeyAgreementSecretKey getKeyAgreementSecretKey();
 
     public abstract Path getIdentityPath();
 
@@ -617,7 +675,7 @@ public abstract class DrasylConfig {
 
     public abstract ImmutableSet<Endpoint> getRemoteSuperPeerEndpoints();
 
-    public abstract ImmutableMap<CompressedPublicKey, InetSocketAddressWrapper> getRemoteStaticRoutes();
+    public abstract ImmutableMap<IdentityPublicKey, InetSocketAddressWrapper> getRemoteStaticRoutes();
 
     public abstract boolean isRemoteLocalHostDiscoveryEnabled();
 
@@ -680,9 +738,13 @@ public abstract class DrasylConfig {
 
         public abstract Builder identityProofOfWork(final ProofOfWork identityProofOfWork);
 
-        public abstract Builder identityPublicKey(final CompressedPublicKey identityPublicKey);
+        public abstract Builder identityPublicKey(final IdentityPublicKey identityPublicKey);
 
-        public abstract Builder identityPrivateKey(final CompressedPrivateKey identityPrivateKey);
+        public abstract Builder identitySecretKey(final IdentitySecretKey identitySecretKey);
+
+        public abstract Builder keyAgreementPublicKey(final KeyAgreementPublicKey keyAgreementPublicKey);
+
+        public abstract Builder keyAgreementSecretKey(final KeyAgreementSecretKey keyAgreementSecretKey);
 
         public abstract Builder identityPath(final Path identityPath);
 
@@ -708,7 +770,7 @@ public abstract class DrasylConfig {
 
         public abstract Builder remoteExposeEnabled(final boolean remoteExposeEnabled);
 
-        public abstract Builder remoteStaticRoutes(final Map<CompressedPublicKey, InetSocketAddressWrapper> remoteStaticRoutes);
+        public abstract Builder remoteStaticRoutes(final Map<IdentityPublicKey, InetSocketAddressWrapper> remoteStaticRoutes);
 
         public abstract Builder remoteMessageMtu(final int remoteMessageMtu);
 

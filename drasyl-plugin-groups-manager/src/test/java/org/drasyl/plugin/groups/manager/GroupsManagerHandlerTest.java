@@ -25,7 +25,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
@@ -89,7 +89,7 @@ class GroupsManagerHandlerTest {
     @Mock
     private DrasylScheduler scheduler;
     @Mock
-    private CompressedPublicKey publicKey;
+    private IdentityPublicKey publicKey;
     @Mock
     private Pipeline pipeline;
     @Mock

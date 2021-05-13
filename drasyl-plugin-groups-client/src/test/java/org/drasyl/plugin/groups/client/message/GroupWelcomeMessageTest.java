@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.client.message;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.Group;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class GroupWelcomeMessageTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() {
-            final Set<CompressedPublicKey> set = Set.of();
+            final Set<IdentityPublicKey> set = Set.of();
             final Group group = Group.of("my-squad");
             assertThrows(NullPointerException.class, () -> new GroupWelcomeMessage(group, null));
             assertThrows(NullPointerException.class, () -> new GroupWelcomeMessage(null, set));

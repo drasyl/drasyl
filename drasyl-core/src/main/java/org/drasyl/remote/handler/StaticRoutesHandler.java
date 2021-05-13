@@ -26,7 +26,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -43,7 +43,7 @@ import java.util.concurrent.CompletableFuture;
  * String)}) to deliver messages.
  */
 @Stateless
-public final class StaticRoutesHandler extends SimpleOutboundHandler<RemoteEnvelope<Application>, CompressedPublicKey> {
+public final class StaticRoutesHandler extends SimpleOutboundHandler<RemoteEnvelope<Application>, IdentityPublicKey> {
     public static final StaticRoutesHandler INSTANCE = new StaticRoutesHandler();
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
@@ -70,7 +70,7 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<RemoteEnvel
 
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
-                                   final CompressedPublicKey recipient,
+                                   final IdentityPublicKey recipient,
                                    final RemoteEnvelope<Application> envelope,
                                    final CompletableFuture<Void> future) {
         final InetSocketAddressWrapper staticAddress = ctx.config().getRemoteStaticRoutes().get(recipient);

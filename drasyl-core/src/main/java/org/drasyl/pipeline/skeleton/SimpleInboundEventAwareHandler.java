@@ -24,7 +24,7 @@ package org.drasyl.pipeline.skeleton;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
@@ -42,7 +42,7 @@ import java.util.concurrent.CompletableFuture;
  * <pre>
  *     public class MessageEventHandler extends
  *             {@link SimpleInboundEventAwareHandler}&lt;{@code MyMessage}, {@link MessageEvent},
- *             {@link CompressedPublicKey}&gt; {
+ *             {@link IdentityPublicKey}&gt; {
  *
  *        {@code @Override}
  *         protected void matchedEvent({@link HandlerContext} ctx,
@@ -52,7 +52,7 @@ import java.util.concurrent.CompletableFuture;
  *
  *        {@code @Override}
  *         protected void matchedInbound({@link HandlerContext} ctx,
- *             {@link CompressedPublicKey} sender, {@code MyMessage} msg,
+ *             {@link IdentityPublicKey} sender, {@code MyMessage} msg,
  *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
  *         }

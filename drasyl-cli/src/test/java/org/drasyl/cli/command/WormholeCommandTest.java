@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -126,7 +127,7 @@ class WormholeCommandTest {
         void shouldRequestCodeAndStartReceivingNode(@Mock(answer = RETURNS_DEEP_STUBS) final ReceivingWormholeNode node) throws DrasylException {
             when(cmd.getArgList().size()).thenReturn(2);
             when(cmd.getArgList().get(1)).thenReturn("receive");
-            when(scannerSupplier.get()).thenReturn(new Scanner("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a98281ff73f2346d55195d0cd274c101c4775"));
+            when(scannerSupplier.get()).thenReturn(new Scanner(IdentityTestUtil.ID_1.getIdentityPublicKey().toString()));
             when(receivingNodeSupplier.apply(any(), any())).thenReturn(node);
 
             underTest.execute(cmd);
@@ -138,7 +139,7 @@ class WormholeCommandTest {
         void shouldUseGivenCodeAndStartReceivingNode(@Mock(answer = RETURNS_DEEP_STUBS) final ReceivingWormholeNode node) throws DrasylException {
             when(cmd.getArgList().size()).thenReturn(3);
             when(cmd.getArgList().get(1)).thenReturn("receive");
-            when(cmd.getArgList().get(2)).thenReturn("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a98281ff73f2346d55195d0cd274c101c4775");
+            when(cmd.getArgList().get(2)).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey().toString());
             when(receivingNodeSupplier.apply(any(), any())).thenReturn(node);
 
             underTest.execute(cmd);
@@ -150,7 +151,7 @@ class WormholeCommandTest {
         void shouldAbortOnInvalidCode(@Mock(answer = RETURNS_DEEP_STUBS) final ReceivingWormholeNode node) throws DrasylException {
             when(cmd.getArgList().size()).thenReturn(3);
             when(cmd.getArgList().get(1)).thenReturn("receive");
-            when(cmd.getArgList().get(2)).thenReturn("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a9");
+            when(cmd.getArgList().get(2)).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey().toString().substring(0, 63));
             when(receivingNodeSupplier.apply(any(), any())).thenReturn(node);
 
             underTest.execute(cmd);
@@ -158,7 +159,7 @@ class WormholeCommandTest {
             verify(node, never()).requestText(any(), any());
 
             final String output = errStream.toString();
-            assertThat(output, containsString("ERR: Invalid wormhole code supplied: must be at least 66 characters long."));
+            assertThat(output, containsString("ERR: Invalid wormhole code supplied: must be at least 64 characters long."));
         }
 
         @Test

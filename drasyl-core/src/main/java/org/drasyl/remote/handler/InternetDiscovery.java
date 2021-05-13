@@ -29,14 +29,14 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.Discovery;
@@ -81,42 +81,42 @@ import static org.drasyl.util.RandomUtil.randomLong;
 public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? extends MessageLite>, RemoteEnvelope<Application>, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscovery.class);
     private static final Object path = InternetDiscovery.class;
-    private final Map<MessageId, Ping> openPingsCache;
-    private final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
-    private final Map<CompressedPublicKey, Peer> peers;
-    private final Set<CompressedPublicKey> directConnectionPeers;
-    private final Set<CompressedPublicKey> superPeers;
+    private final Map<Nonce, Ping> openPingsCache;
+    private final Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache;
+    private final Map<IdentityPublicKey, Peer> peers;
+    private final Set<IdentityPublicKey> directConnectionPeers;
+    private final Set<IdentityPublicKey> superPeers;
     private Disposable heartbeatDisposable;
-    private CompressedPublicKey bestSuperPeer;
+    private IdentityPublicKey bestSuperPeer;
 
     public InternetDiscovery(final DrasylConfig config) {
         openPingsCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getRemotePingMaxPeers())
                 .expireAfterWrite(config.getRemotePingTimeout())
-                .<MessageId, Ping>build()
+                .<Nonce, Ping>build()
                 .asMap();
         directConnectionPeers = new HashSet<>();
         if (config.getRemoteUniteMinInterval().toMillis() > 0) {
             uniteAttemptsCache = CacheBuilder.newBuilder()
                     .maximumSize(1_000)
                     .expireAfterWrite(config.getRemoteUniteMinInterval())
-                    .<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean>build()
+                    .<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean>build()
                     .asMap();
         }
         else {
             uniteAttemptsCache = null;
         }
         peers = new ConcurrentHashMap<>();
-        superPeers = config.getRemoteSuperPeerEndpoints().stream().map(Endpoint::getPublicKey).collect(Collectors.toSet());
+        superPeers = config.getRemoteSuperPeerEndpoints().stream().map(Endpoint::getIdentityPublicKey).collect(Collectors.toSet());
     }
 
     @SuppressWarnings("java:S2384")
-    InternetDiscovery(final Map<MessageId, Ping> openPingsCache,
-                      final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache,
-                      final Map<CompressedPublicKey, Peer> peers,
-                      final Set<CompressedPublicKey> directConnectionPeers,
-                      final Set<CompressedPublicKey> superPeers,
-                      final CompressedPublicKey bestSuperPeer) {
+    InternetDiscovery(final Map<Nonce, Ping> openPingsCache,
+                      final Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache,
+                      final Map<IdentityPublicKey, Peer> peers,
+                      final Set<IdentityPublicKey> directConnectionPeers,
+                      final Set<IdentityPublicKey> superPeers,
+                      final IdentityPublicKey bestSuperPeer) {
         this.openPingsCache = openPingsCache;
         this.uniteAttemptsCache = uniteAttemptsCache;
         this.directConnectionPeers = directConnectionPeers;
@@ -202,9 +202,9 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
         if (ctx.config().isRemoteSuperPeerEnabled()) {
             for (final Endpoint endpoint : ctx.config().getRemoteSuperPeerEndpoints()) {
                 final InetSocketAddressWrapper address = new InetSocketAddressWrapper(endpoint.getHost(), endpoint.getPort());
-                sendPing(ctx, endpoint.getPublicKey(), address, new CompletableFuture<>()).exceptionally(e -> {
+                sendPing(ctx, endpoint.getIdentityPublicKey(), address, new CompletableFuture<>()).exceptionally(e -> {
                     //noinspection unchecked
-                    LOG.warn("Unable to send ping for super peer `{}` to `{}`", endpoint::getPublicKey, () -> address, () -> e);
+                    LOG.warn("Unable to send ping for super peer `{}` to `{}`", endpoint::getIdentityPublicKey, () -> address, () -> e);
                     return null;
                 });
             }
@@ -218,7 +218,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
      * @param ctx handler's context
      */
     private void pingDirectConnectionPeers(final HandlerContext ctx) {
-        for (final CompressedPublicKey publicKey : new HashSet<>(directConnectionPeers)) {
+        for (final IdentityPublicKey publicKey : new HashSet<>(directConnectionPeers)) {
             final Peer peer = peers.get(publicKey);
             final InetSocketAddressWrapper address = peer.getAddress();
             if (address != null && peer.hasApplicationTraffic(ctx.config())) {
@@ -256,14 +256,14 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                                    final RemoteEnvelope<Application> msg,
                                    final CompletableFuture<Void> future) {
         try {
-            if (recipient instanceof CompressedPublicKey) {
+            if (recipient instanceof IdentityPublicKey) {
                 // record communication to keep active connections alive
                 if (directConnectionPeers.contains(recipient)) {
-                    final Peer peer = peers.computeIfAbsent((CompressedPublicKey) recipient, key -> new Peer());
+                    final Peer peer = peers.computeIfAbsent((IdentityPublicKey) recipient, key -> new Peer());
                     peer.applicationTrafficOccurred();
                 }
 
-                if (!processMessage(ctx, (CompressedPublicKey) recipient, msg, future)) {
+                if (!processMessage(ctx, (IdentityPublicKey) recipient, msg, future)) {
                     // passthrough message
                     ctx.passOutbound(recipient, msg, future);
                 }
@@ -293,7 +293,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean processMessage(final HandlerContext ctx,
-                                   final CompressedPublicKey recipient,
+                                   final IdentityPublicKey recipient,
                                    final RemoteEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) throws IOException {
         final Peer recipientPeer = peers.get(recipient);
@@ -313,8 +313,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
             // rendezvous? I'm a super peer?
             if (senderPeer != null && superPeerPeer == null && senderPeer.getAddress() != null) {
                 final InetSocketAddressWrapper senderSocketAddress = senderPeer.getAddress();
-                final CompressedPublicKey msgSender = msg.getSender();
-                final CompressedPublicKey msgRecipient = msg.getRecipient();
+                final IdentityPublicKey msgSender = msg.getSender();
+                final IdentityPublicKey msgRecipient = msg.getRecipient();
                 LOG.trace("Relay message from {} to {}.", msgSender, recipient);
 
                 if (shouldTryUnite(msgSender, msgRecipient)) {
@@ -350,12 +350,12 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
      * @param sender       the sender socket address
      */
     private static void sendUnites(final HandlerContext ctx,
-                                   final CompressedPublicKey senderKey,
-                                   final CompressedPublicKey recipientKey,
+                                   final IdentityPublicKey senderKey,
+                                   final IdentityPublicKey recipientKey,
                                    final InetSocketAddressWrapper recipient,
                                    final InetSocketAddressWrapper sender) {
         // send recipient's information to sender
-        final RemoteEnvelope<Unite> senderRendezvousEnvelope = RemoteEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
+        final RemoteEnvelope<Unite> senderRendezvousEnvelope = RemoteEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
         ctx.passOutbound(sender, senderRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             //noinspection unchecked
@@ -364,7 +364,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
         });
 
         // send sender's information to recipient
-        final RemoteEnvelope<Unite> recipientRendezvousEnvelope = RemoteEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender);
+        final RemoteEnvelope<Unite> recipientRendezvousEnvelope = RemoteEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
         ctx.passOutbound(recipient, recipientRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             //noinspection unchecked
@@ -373,9 +373,9 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
         });
     }
 
-    private synchronized boolean shouldTryUnite(final CompressedPublicKey sender,
-                                                final CompressedPublicKey recipient) {
-        final Pair<CompressedPublicKey, CompressedPublicKey> key;
+    private synchronized boolean shouldTryUnite(final IdentityPublicKey sender,
+                                                final IdentityPublicKey recipient) {
+        final Pair<IdentityPublicKey, IdentityPublicKey> key;
         if (sender.hashCode() > recipient.hashCode()) {
             key = Pair.of(sender, recipient);
         }
@@ -393,7 +393,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
         try {
             if (sender instanceof InetSocketAddressWrapper && msg.getRecipient() != null) {
                 // This message is for us and we will fully decode it
-                if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
+                if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient())) {
                     handleMessage(ctx, (InetSocketAddressWrapper) sender, msg, future);
                 }
                 else if (!ctx.config().isRemoteSuperPeerEnabled()) {
@@ -446,8 +446,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                             final InetSocketAddressWrapper sender,
                             final RemoteEnvelope<Discovery> msg,
                             final CompletableFuture<Void> future) throws IOException {
-        final CompressedPublicKey envelopeSender = requireNonNull(CompressedPublicKey.of(msg.getPublicHeader().getSender().toByteArray()));
-        final MessageId id = requireNonNull(MessageId.of(msg.getPublicHeader().getId()));
+        final IdentityPublicKey envelopeSender = requireNonNull(IdentityPublicKey.of(msg.getPublicHeader().getSender().toByteArray()));
+        final Nonce id = requireNonNull(Nonce.of(msg.getPublicHeader().getNonce().toByteArray()));
         final Discovery body = msg.getBodyAndRelease();
         final boolean childrenJoin = body.getChildrenTime() > 0;
         LOG.trace("Got {} from {}", msg, sender);
@@ -466,7 +466,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
 
         // reply with pong
         final int networkId = ctx.config().getNetworkId();
-        final CompressedPublicKey myPublicKey = ctx.identity().getPublicKey();
+        final IdentityPublicKey myPublicKey = ctx.identity().getIdentityPublicKey();
         final ProofOfWork myProofOfWork = ctx.identity().getProofOfWork();
         final RemoteEnvelope<Acknowledgement> responseEnvelope = RemoteEnvelope.acknowledgement(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
         LOG.trace("Send {} to {}", responseEnvelope, sender);
@@ -478,8 +478,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                             final RemoteEnvelope<Acknowledgement> msg,
                             final CompletableFuture<Void> future) throws IOException {
         final Acknowledgement body = msg.getBodyAndRelease();
-        final MessageId correspondingId = requireNonNull(MessageId.of(body.getCorrespondingId()));
-        final CompressedPublicKey envelopeSender = requireNonNull(CompressedPublicKey.of(msg.getPublicHeader().getSender().toByteArray()));
+        final Nonce correspondingId = requireNonNull(Nonce.of(body.getCorrespondingId().toByteArray()));
+        final IdentityPublicKey envelopeSender = requireNonNull(IdentityPublicKey.of(msg.getPublicHeader().getSender().toByteArray()));
         LOG.trace("Got {} from {}", msg, sender);
         final Ping ping = openPingsCache.remove(correspondingId);
         if (ping != null) {
@@ -511,8 +511,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
 
     private synchronized void determineBestSuperPeer() {
         long bestLatency = Long.MAX_VALUE;
-        CompressedPublicKey newBestSuperPeer = null;
-        for (final CompressedPublicKey superPeer : superPeers) {
+        IdentityPublicKey newBestSuperPeer = null;
+        for (final IdentityPublicKey superPeer : superPeers) {
             final Peer superPeerPeer = peers.get(superPeer);
             if (superPeerPeer != null) {
                 final long latency = superPeerPeer.getLatency();
@@ -534,7 +534,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                              final RemoteEnvelope<Unite> msg,
                              final CompletableFuture<Void> future) throws IOException {
         final Unite body = msg.getBodyAndRelease();
-        final CompressedPublicKey publicKey = requireNonNull(CompressedPublicKey.of(body.getPublicKey().toByteArray()));
+        final IdentityPublicKey publicKey = requireNonNull(IdentityPublicKey.of(body.getPublicKey().toByteArray()));
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(body.getAddress(), UnsignedShort.of(body.getPort().toByteArray()).getValue());
         LOG.trace("Got {}", msg);
         final Peer peer = peers.computeIfAbsent(publicKey, key -> new Peer());
@@ -557,18 +557,18 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
     }
 
     private CompletableFuture<Void> sendPing(final HandlerContext ctx,
-                                             final CompressedPublicKey recipient,
+                                             final IdentityPublicKey recipient,
                                              final InetSocketAddressWrapper recipientAddress,
                                              final CompletableFuture<Void> future) {
         final int networkId = ctx.config().getNetworkId();
-        final CompressedPublicKey sender = ctx.identity().getPublicKey();
+        final IdentityPublicKey sender = ctx.identity().getIdentityPublicKey();
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
 
         final boolean isChildrenJoin = superPeers.contains(recipient);
         RemoteEnvelope<Discovery> messageEnvelope = null;
         try {
             messageEnvelope = RemoteEnvelope.discovery(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
-            openPingsCache.put(messageEnvelope.getId(), new Ping(recipientAddress));
+            openPingsCache.put(messageEnvelope.getNonce(), new Ping(recipientAddress));
             LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
             ctx.passOutbound(recipientAddress, messageEnvelope, future);
         }

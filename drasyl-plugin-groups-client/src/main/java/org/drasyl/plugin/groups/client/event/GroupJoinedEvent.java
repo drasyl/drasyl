@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.client.event;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.Group;
 
 import java.util.Objects;
@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class GroupJoinedEvent implements GroupEvent {
     private final Group group;
-    private final Set<CompressedPublicKey> members;
+    private final Set<IdentityPublicKey> members;
     private final Runnable leaveRun;
 
     /**
@@ -47,7 +47,7 @@ public class GroupJoinedEvent implements GroupEvent {
     // make method private on next release
     @Deprecated(since = "0.5.0", forRemoval = true)
     public GroupJoinedEvent(final Group group,
-                            final Set<CompressedPublicKey> members,
+                            final Set<IdentityPublicKey> members,
                             final Runnable leaveRun) {
         this.group = requireNonNull(group);
         this.members = Set.copyOf(members);
@@ -59,7 +59,7 @@ public class GroupJoinedEvent implements GroupEvent {
         return group;
     }
 
-    public Set<CompressedPublicKey> getMembers() {
+    public Set<IdentityPublicKey> getMembers() {
         return members;
     }
 
@@ -102,7 +102,7 @@ public class GroupJoinedEvent implements GroupEvent {
      *                              null}
      */
     public static GroupJoinedEvent of(final Group group,
-                                      final Set<CompressedPublicKey> members,
+                                      final Set<IdentityPublicKey> members,
                                       final Runnable leaveRun) {
         return new GroupJoinedEvent(group, members, leaveRun);
     }

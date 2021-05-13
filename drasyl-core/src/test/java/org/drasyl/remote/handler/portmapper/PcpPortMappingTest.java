@@ -26,7 +26,7 @@ import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.junit.jupiter.api.Nested;
@@ -59,7 +59,7 @@ public class PcpPortMappingTest {
                                   @Mock(answer = RETURNS_DEEP_STUBS) final Runnable onFailure,
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                   @Mock final Supplier<Set<InetAddress>> interfaceSupplier) throws UnknownHostException {
-            when(ctx.identity().getPublicKey()).thenReturn(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"));
+            when(ctx.identity().getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"));
             when(defaultGatewaySupplier.get()).thenReturn(InetAddress.getByName("38.12.1.15"));
             when(interfaceSupplier.get()).thenReturn(Set.of(InetAddress.getByName("38.12.1.15")));
 

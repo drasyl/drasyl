@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -101,7 +101,7 @@ class HeadContextTest {
     class OnWrite {
         @Test
         void shouldWriteCompleteExceptionallyIfFutureIsNotCompleted(@Mock final Object msg,
-                                                                    @Mock final CompressedPublicKey recipient) {
+                                                                    @Mock final IdentityPublicKey recipient) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
             headContext.onOutbound(ctx, recipient, msg, future);
@@ -110,7 +110,7 @@ class HeadContextTest {
         }
 
         @Test
-        void shouldCompleteFutureAndNothingElseOnAutoSwallow(@Mock final CompressedPublicKey recipient) {
+        void shouldCompleteFutureAndNothingElseOnAutoSwallow(@Mock final IdentityPublicKey recipient) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
             final AutoSwallow msg = new AutoSwallow() {
             };
@@ -159,7 +159,7 @@ class HeadContextTest {
     @Nested
     class OnRead {
         @Test
-        void shouldPassthroughsOnRead(@Mock final CompressedPublicKey sender,
+        void shouldPassthroughsOnRead(@Mock final IdentityPublicKey sender,
                                       @Mock final Object msg) {
             final HeadContext headContext = new HeadContext(config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 

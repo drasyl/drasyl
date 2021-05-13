@@ -22,7 +22,7 @@
 package org.drasyl.plugin.groups.manager.data;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 
 import java.util.Objects;
 
@@ -33,14 +33,14 @@ import java.util.Objects;
  * </p>
  */
 public class Member {
-    private final CompressedPublicKey publicKey;
+    private final IdentityPublicKey publicKey;
 
-    private Member(final CompressedPublicKey publicKey) {
+    private Member(final IdentityPublicKey publicKey) {
         this.publicKey = publicKey;
     }
 
     @JsonValue
-    public CompressedPublicKey getPublicKey() {
+    public IdentityPublicKey getPublicKey() {
         return publicKey;
     }
 
@@ -68,7 +68,7 @@ public class Member {
                 '}';
     }
 
-    public static Member of(final CompressedPublicKey publicKey) {
+    public static Member of(final IdentityPublicKey publicKey) {
         return new Member(publicKey);
     }
 }

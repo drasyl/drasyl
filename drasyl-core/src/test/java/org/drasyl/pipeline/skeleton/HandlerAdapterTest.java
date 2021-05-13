@@ -24,7 +24,7 @@ package org.drasyl.pipeline.skeleton;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -82,7 +82,7 @@ class HandlerAdapterTest {
     @Nested
     class Outbound {
         @Test
-        void shouldPassthroughsOnWrite(@Mock final CompressedPublicKey recipient,
+        void shouldPassthroughsOnWrite(@Mock final IdentityPublicKey recipient,
                                        @Mock final Object msg) throws Exception {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
@@ -95,7 +95,7 @@ class HandlerAdapterTest {
     @Nested
     class Inbound {
         @Test
-        void shouldPassthroughsOnRead(@Mock final CompressedPublicKey sender,
+        void shouldPassthroughsOnRead(@Mock final IdentityPublicKey sender,
                                       @Mock final Object msg) throws Exception {
             final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
@@ -137,7 +137,7 @@ class HandlerAdapterTest {
 
         @SuppressWarnings("rawtypes")
         @Test
-        void shouldPassthroughsOnReadWithMultipleHandler(@Mock final CompressedPublicKey sender,
+        void shouldPassthroughsOnReadWithMultipleHandler(@Mock final IdentityPublicKey sender,
                                                          @Mock final RemoteEnvelope msg) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();

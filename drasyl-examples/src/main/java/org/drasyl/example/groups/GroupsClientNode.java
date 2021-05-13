@@ -26,7 +26,7 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.GroupUri;
 import org.drasyl.plugin.groups.client.GroupsClientConfig;
 import org.drasyl.plugin.groups.client.GroupsClientPlugin;
@@ -46,7 +46,7 @@ import java.util.Set;
 @SuppressWarnings({ "squid:S106", "squid:S126", "java:S1943", "java:S2096" })
 public class GroupsClientNode extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "groups-client.identity.json");
-    private final Set<CompressedPublicKey> members = new HashSet<>();
+    private final Set<IdentityPublicKey> members = new HashSet<>();
 
     protected GroupsClientNode(final GroupUri group) throws DrasylException {
         super(DrasylConfig.newBuilder()

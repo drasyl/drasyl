@@ -29,7 +29,7 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
@@ -118,7 +118,7 @@ class ReceivingWormholeNodeTest {
             class OnMessageEvent {
                 @Test
                 void shouldPrintTextOnTextMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
-                                                  @Mock final CompressedPublicKey publicKey) {
+                                                  @Mock final IdentityPublicKey publicKey) {
                     when(event.getPayload()).thenReturn(new TextMessage("Hi"));
                     when(event.getSender()).thenReturn(publicKey);
                     when(request.getSender()).thenReturn(publicKey);
@@ -132,7 +132,7 @@ class ReceivingWormholeNodeTest {
 
                 @Test
                 void shouldFailOnWrongPasswordMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
-                                                      @Mock final CompressedPublicKey publicKey) {
+                                                      @Mock final IdentityPublicKey publicKey) {
                     when(event.getPayload()).thenReturn(new WrongPasswordMessage());
                     when(event.getSender()).thenReturn(publicKey);
                     when(request.getSender()).thenReturn(publicKey);
@@ -192,7 +192,7 @@ class ReceivingWormholeNodeTest {
     @Nested
     class TestRequestText {
         @Test
-        void shouldNotFail(@Mock final CompressedPublicKey sender) {
+        void shouldNotFail(@Mock final IdentityPublicKey sender) {
             assertDoesNotThrow(() -> underTest.requestText(sender, "s3cr3t"));
         }
     }

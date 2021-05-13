@@ -26,7 +26,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -58,7 +58,7 @@ class IntraVmDiscoveryTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    private final Map<Pair<Integer, CompressedPublicKey>, HandlerContext> discoveries = new HashMap<>();
+    private final Map<Pair<Integer, IdentityPublicKey>, HandlerContext> discoveries = new HashMap<>();
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ReadWriteLock lock;
 
@@ -80,7 +80,7 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
                                                               @Mock final HandlerContext ctx) {
-            discoveries.put(Pair.of(0, identity.getPublicKey()), ctx);
+            discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
@@ -92,7 +92,7 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event,
                                                 @Mock final HandlerContext ctx) {
-            discoveries.put(Pair.of(0, identity.getPublicKey()), ctx);
+            discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -106,7 +106,7 @@ class IntraVmDiscoveryTest {
     @Nested
     class MessagePassing {
         @Test
-        void shouldSendOutgoingMessageToKnownRecipient(@Mock final CompressedPublicKey recipient,
+        void shouldSendOutgoingMessageToKnownRecipient(@Mock final IdentityPublicKey recipient,
                                                        @Mock(answer = RETURNS_DEEP_STUBS) final Object message,
                                                        @Mock final HandlerContext ctx) {
             discoveries.put(Pair.of(0, recipient), ctx);
@@ -125,7 +125,7 @@ class IntraVmDiscoveryTest {
         }
 
         @Test
-        void shouldPasstroughOutgoingMessageForUnknownRecipients(@Mock final CompressedPublicKey recipient,
+        void shouldPasstroughOutgoingMessageForUnknownRecipients(@Mock final IdentityPublicKey recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
