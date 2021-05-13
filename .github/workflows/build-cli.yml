@@ -75,7 +75,7 @@ jobs:
 
       # set up graalvm
       - name: Set up GraalVM environment
-        uses: heikobornholdt/setup-graalvm@v1.1
+        uses: heikobornholdt/setup-graalvm@v1.2
         with:
           java-version: 11
           graalvm-version: 21.1.0
