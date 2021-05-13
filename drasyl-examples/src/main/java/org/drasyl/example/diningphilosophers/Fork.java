@@ -26,7 +26,7 @@ import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 
 import java.nio.file.Path;
 
@@ -51,16 +51,16 @@ public class Fork extends BehavioralDrasylNode {
     private Behavior available() {
         return Behaviors.receive()
                 .onMessage(Take.class, (sender, message) -> {
-                    send(sender, new Taken(identity().getPublicKey()));
+                    send(sender, new Taken(identity().getIdentityPublicKey()));
                     return takenBy(sender);
                 })
                 .build();
     }
 
-    private Behavior takenBy(final CompressedPublicKey philosopher) {
+    private Behavior takenBy(final IdentityPublicKey philosopher) {
         return Behaviors.receive()
                 .onMessage(Take.class, (sender, message) -> {
-                    send(sender, new Busy(identity().getPublicKey()));
+                    send(sender, new Busy(identity().getIdentityPublicKey()));
                     return Behaviors.same();
                 })
                 .onMessage(Put.class, (sender, message) -> sender.equals(philosopher), (sender, message) -> available())
@@ -75,9 +75,9 @@ public class Fork extends BehavioralDrasylNode {
 
     @SuppressWarnings("java:S118")
     abstract static class Answer {
-        final CompressedPublicKey fork;
+        final IdentityPublicKey fork;
 
-        Answer(final CompressedPublicKey fork) {
+        Answer(final IdentityPublicKey fork) {
             this.fork = requireNonNull(fork);
         }
 
@@ -87,7 +87,7 @@ public class Fork extends BehavioralDrasylNode {
     }
 
     static class Taken extends Answer {
-        public Taken(final CompressedPublicKey fork) {
+        public Taken(final IdentityPublicKey fork) {
             super(fork);
         }
 
@@ -103,7 +103,7 @@ public class Fork extends BehavioralDrasylNode {
     }
 
     static class Busy extends Answer {
-        public Busy(final CompressedPublicKey fork) {
+        public Busy(final IdentityPublicKey fork) {
             super(fork);
         }
 

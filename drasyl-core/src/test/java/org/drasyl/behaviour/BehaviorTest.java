@@ -28,7 +28,7 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -119,7 +119,7 @@ class BehaviorTest {
         class OnMessage {
             @Test
             void shouldAddPredicatedCase(final @Mock Node node,
-                                         final @Mock CompressedPublicKey sender,
+                                         final @Mock IdentityPublicKey sender,
                                          final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onMessage(String.class, (mySender, myPayload) -> myPayload.equals("Hello World"), (mySender, myPayload) -> newBehavior).build();
 
@@ -131,7 +131,7 @@ class BehaviorTest {
 
             @Test
             void shouldAddNonPredicatedCase(final @Mock Node node,
-                                            final @Mock CompressedPublicKey sender,
+                                            final @Mock IdentityPublicKey sender,
                                             final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onMessage(String.class, (mySender, myPayload) -> newBehavior).build();
 
@@ -144,8 +144,8 @@ class BehaviorTest {
         @Nested
         class OnMessageEquals {
             @Test
-            void shouldAddCase(final @Mock CompressedPublicKey senderA,
-                               final @Mock CompressedPublicKey senderB,
+            void shouldAddCase(final @Mock IdentityPublicKey senderA,
+                               final @Mock IdentityPublicKey senderB,
                                final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onMessageEquals(senderA, "Hallo Welt", () -> newBehavior).build();
 
@@ -158,7 +158,7 @@ class BehaviorTest {
         @Nested
         class OnAnyMessage {
             @Test
-            void shouldAddCase(final @Mock CompressedPublicKey sender,
+            void shouldAddCase(final @Mock IdentityPublicKey sender,
                                final @Mock Node node,
                                final @Mock Behavior newBehavior) {
                 final Behavior behavior = BehaviorBuilder.create().onAnyMessage((mySender, myPayload) -> newBehavior).build();

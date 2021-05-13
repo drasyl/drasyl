@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.manager.database;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.data.Membership;
 
@@ -101,7 +101,7 @@ public interface DatabaseAdapter {
      * @return {@code true} if memberships was deleted. Otherwise {@code false}.
      * @throws DatabaseException if an exception occurs during removal
      */
-    boolean removeGroupMember(final CompressedPublicKey member,
+    boolean removeGroupMember(final IdentityPublicKey member,
                               final String groupName) throws DatabaseException;
 
     /**

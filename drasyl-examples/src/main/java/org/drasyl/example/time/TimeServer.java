@@ -64,6 +64,6 @@ public class TimeServer extends DrasylNode {
         final TimeServer node = new TimeServer(config);
 
         node.start().get();
-        System.out.println("TimeServer listening on address " + node.identity().getPublicKey());
+        System.out.println("TimeServer listening on address " + node.identity().getIdentityPublicKey());
     }
 }

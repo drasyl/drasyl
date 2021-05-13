@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -58,7 +59,7 @@ class PluginsIT {
     void setup() throws DrasylException {
         receivedEvents = PublishSubject.create();
 
-        final Identity identity = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
+        final Identity identity = IdentityTestUtil.ID_1;
 
         config = DrasylConfig.newBuilder()
                 .plugins(Set.of(new TestPlugin(ConfigFactory.empty())))
@@ -66,8 +67,8 @@ class PluginsIT {
 
         config = DrasylConfig.newBuilder(config)
                 .identityProofOfWork(identity.getProofOfWork())
-                .identityPublicKey(identity.getPublicKey())
-                .identityPrivateKey(identity.getPrivateKey())
+                .identityPublicKey(identity.getIdentityPublicKey())
+                .identitySecretKey(identity.getIdentitySecretKey())
                 .remoteExposeEnabled(false)
                 .remoteSuperPeerEnabled(false)
                 .remoteBindPort(0)

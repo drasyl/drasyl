@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.util.List;
 import java.util.Set;
@@ -42,17 +43,19 @@ class GroupsClientConfigTest {
     private Set<GroupUri> groups;
     @Mock
     private Config typesafeConfig;
+    private String id;
 
     @BeforeEach
     void setUp() {
-        groups = Set.of(GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group?timeout=60"));
+        id = IdentityTestUtil.ID_1.getIdentityPublicKey().toString();
+        groups = Set.of(GroupUri.of("groups://secret@" + id + "/group?timeout=60"));
     }
 
     @Nested
     class Constructor {
         @Test
         void shouldReadConfigProperly() {
-            when(typesafeConfig.getStringList(GROUPS)).thenReturn(List.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group?timeout=60"));
+            when(typesafeConfig.getStringList(GROUPS)).thenReturn(List.of("groups://secret@" + id + "/group?timeout=60"));
 
             final GroupsClientConfig config = new GroupsClientConfig(typesafeConfig);
 
@@ -80,9 +83,9 @@ class GroupsClientConfigTest {
         @Test
         void shouldNotBeEquals() {
             final GroupsClientConfig config1 = GroupsClientConfig.newBuilder().addGroup(
-                    GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
+                    GroupUri.of("groups://secret@" + id + "/group1?timeout=60")).build();
             final GroupsClientConfig config2 = GroupsClientConfig.newBuilder().addGroup(
-                    GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
+                    GroupUri.of("groups://secret@" + id + "/group2?timeout=60")).build();
 
             assertNotEquals(config1, config2);
         }
@@ -101,9 +104,9 @@ class GroupsClientConfigTest {
         @Test
         void shouldNotBeEquals() {
             final GroupsClientConfig config1 = GroupsClientConfig.newBuilder().addGroup(
-                    GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
+                    GroupUri.of("groups://secret@" + id + "/group1?timeout=60")).build();
             final GroupsClientConfig config2 = GroupsClientConfig.newBuilder().addGroup(
-                    GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
+                    GroupUri.of("groups://secret@" + id + "/group2?timeout=60")).build();
 
             assertNotEquals(config1.hashCode(), config2.hashCode());
         }

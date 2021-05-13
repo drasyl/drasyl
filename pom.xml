@@ -129,7 +129,6 @@
         <mockito.version>3.9.0</mockito.version>
         <jackson.version>2.12.3</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <bouncycastle.version>1.68</bouncycastle.version>
         <awaitility.version>4.1.0</awaitility.version>
         <netty.version>4.1.63.Final</netty.version>
         <guava.version>30.1.1-jre</guava.version>
@@ -143,6 +142,8 @@
         <commons-cli.version>1.4</commons-cli.version>
         <protobuf.version>3.16.0</protobuf.version>
         <auto-value.version>1.8.1</auto-value.version>
+        <lazysodium-java.version>5.0.1</lazysodium-java.version>
+        <jna.version>5.8.0</jna.version>
     </properties>
 
     <dependencyManagement>
@@ -237,13 +238,6 @@
                 <version>${guava.version}</version>
             </dependency>
 
-            <!-- BouncyCastle -->
-            <dependency>
-                <groupId>org.bouncycastle</groupId>
-                <artifactId>bcprov-jdk15on</artifactId>
-                <version>${bouncycastle.version}</version>
-            </dependency>
-
             <!-- Apache Commons -->
 
             <dependency>
@@ -279,6 +273,20 @@
                 <version>4.8.105</version>
             </dependency>
 
+            <!-- Crypto -->
+            <dependency>
+                <groupId>com.goterl</groupId>
+                <artifactId>lazysodium-java</artifactId>
+                <version>${lazysodium-java.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>${jna.version}</version>
+            </dependency>
+
+            <!-- Google Auto Value -->
             <dependency>
                 <groupId>com.google.auto.value</groupId>
                 <artifactId>auto-value-annotations</artifactId>

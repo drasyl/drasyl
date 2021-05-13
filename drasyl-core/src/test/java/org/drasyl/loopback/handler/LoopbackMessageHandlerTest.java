@@ -23,7 +23,7 @@ package org.drasyl.loopback.handler;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -45,7 +45,7 @@ class LoopbackMessageHandlerTest {
     private DrasylConfig config;
 
     @Test
-    void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final CompressedPublicKey recipient,
+    void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final IdentityPublicKey recipient,
                                                     @Mock final Object message) {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler())) {
             final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
@@ -58,9 +58,9 @@ class LoopbackMessageHandlerTest {
     }
 
     @Test
-    void shouldBounceMessageIfRecipientIsLocalNode(@Mock final CompressedPublicKey recipient,
+    void shouldBounceMessageIfRecipientIsLocalNode(@Mock final IdentityPublicKey recipient,
                                                    @Mock(answer = Answers.RETURNS_DEEP_STUBS) final Object message) {
-        when(identity.getPublicKey()).thenReturn(recipient);
+        when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler(true))) {
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();

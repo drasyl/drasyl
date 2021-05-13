@@ -24,9 +24,8 @@ package org.drasyl.remote.handler;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedKeyPair;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
@@ -36,7 +35,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.InternetDiscovery.Peer;
-import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.Pair;
@@ -49,6 +48,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
+import test.util.IdentityTestUtil;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,17 +60,17 @@ import static java.time.Duration.ofDays;
 
 @State(Scope.Benchmark)
 public class InternetDiscoveryBenchmark extends AbstractBenchmark {
-    private Map<MessageId, InternetDiscovery.Ping> openPingsCache;
-    private Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
-    private Map<CompressedPublicKey, Peer> peers;
-    private Set<CompressedPublicKey> directConnectionPeers;
+    private Map<Nonce, InternetDiscovery.Ping> openPingsCache;
+    private Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache;
+    private Map<IdentityPublicKey, Peer> peers;
+    private Set<IdentityPublicKey> directConnectionPeers;
     private InternetDiscovery handler;
     private HandlerContext ctx;
     private Address recipient;
     private RemoteEnvelope<Application> msg;
     private CompletableFuture<Void> future;
-    private Set<CompressedPublicKey> superPeers;
-    private CompressedPublicKey bestSuperPeer;
+    private Set<IdentityPublicKey> superPeers;
+    private IdentityPublicKey bestSuperPeer;
 
     @Setup
     public void setup() {
@@ -84,8 +84,8 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         ctx = new MyHandlerContext();
         recipient = new MyAddress();
         final byte[] payload = RandomUtil.randomBytes(1024);
-        final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-        msg = RemoteEnvelope.application(1, CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), ProofOfWork.of(16425882), CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), byte[].class.getName(), new byte[]{});
+        final IdentityPublicKey recipient = IdentityPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+        msg = RemoteEnvelope.application(1, IdentityPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), ProofOfWork.of(16425882), IdentityPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), byte[].class.getName(), new byte[]{});
 
         future = new CompletableFuture<>();
 
@@ -113,9 +113,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
                     .remotePingTimeout(ofDays(1))
                     .remotePingCommunicationTimeout(ofDays(1))
                     .build();
-            identity = Identity.of(ProofOfWork.of(-2109504681),
-                    CompressedKeyPair.of("AhqX0pwBbAthIabf+05czWQjaxb5mmqWU4IdG3RHOuQh",
-                            "BRRzAewqH0MnNvidynNzpOwdfbXYzOjBHhWEO/ZcgsU="));
+            identity = IdentityTestUtil.ID_1;
             peersManager = new PeersManager(event -> {
             }, identity);
         }

@@ -3,13 +3,13 @@ syntax = "proto3";
 package org.drasyl.remote.protocol;
 
 message PublicHeader {
-    sfixed64 id = 1; // 8 bytes fix
+    bytes nonce = 1; // 24 bytes fix
     sint32 networkId = 2; // up to 4 bytes
-    bytes sender = 3; // 33 bytes fix
+    bytes sender = 3; // 32 bytes fix
     sint32 proofOfWork = 4; // up to 4 bytes
-    bytes recipient = 5; // 33 bytes fix
+    bytes recipient = 5; // 32 bytes fix
     uint32 hopCount = 6; // 1 byte fix (by definition, only values between 1 and 127 are allowed)
-    bytes signature = 7; // 32 bytes fix
+    bytes agreementId = 7; // 32 bytes fix (SHA-256 hash of both public key agreement keys)
     uint32 chunkNo = 8; // up to 2 bytes (by definition, only values up to 65535 are allowed)
     uint32 totalChunks = 9; // up to 2 bytes (by definition, only values up to 65535 are allowed)
 }
@@ -23,10 +23,12 @@ enum MessageType {
     APPLICATION = 1;
     DISCOVERY = 2;
     UNITE = 3;
+    KEY_EXCHANGE = 4;
+    KEY_EXCHANGE_ACKNOWLEDGEMENT = 5;
 }
 
 message Acknowledgement {
-    sfixed64 correspondingId = 1; // 8 bytes fix
+    bytes correspondingId = 1; // 24 bytes fix from previous nonce
 }
 
 message Application {
@@ -39,7 +41,15 @@ message Discovery {
 }
 
 message Unite {
-    bytes publicKey = 1; // 33 bytes fix
+    bytes publicKey = 1; // 32 bytes fix
     string address = 2; // hostname
     bytes port = 3; // 2 bytes fix
+}
+
+message KeyExchange {
+    bytes sessionKey = 1; // 32 bytes fix
+}
+
+message KeyExchangeAcknowledgement {
+    bytes agreementId = 1; // 32 bytes fix (SHA-256 hash of both public key agreement keys)
 }

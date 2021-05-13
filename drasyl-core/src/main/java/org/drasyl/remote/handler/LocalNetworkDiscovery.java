@@ -27,7 +27,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -71,10 +71,10 @@ import static org.drasyl.util.RandomUtil.randomLong;
 public class LocalNetworkDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? extends MessageLite>, RemoteEnvelope<? extends MessageLite>, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
     private static final Object path = LocalNetworkDiscovery.class;
-    private final Map<CompressedPublicKey, Peer> peers;
+    private final Map<IdentityPublicKey, Peer> peers;
     private Disposable pingDisposable;
 
-    public LocalNetworkDiscovery(final Map<CompressedPublicKey, Peer> peers,
+    public LocalNetworkDiscovery(final Map<IdentityPublicKey, Peer> peers,
                                  final Disposable pingDisposable) {
         this.peers = requireNonNull(peers);
         this.pingDisposable = pingDisposable;
@@ -167,8 +167,8 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? 
                             final Address sender,
                             final RemoteEnvelope<? extends MessageLite> msg,
                             final CompletableFuture<Void> future) throws InvalidMessageFormatException {
-        final CompressedPublicKey msgSender = msg.getSender();
-        if (!ctx.identity().getPublicKey().equals(msgSender)) {
+        final IdentityPublicKey msgSender = msg.getSender();
+        if (!ctx.identity().getIdentityPublicKey().equals(msgSender)) {
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
             final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer((InetSocketAddressWrapper) sender));
             peer.inboundPingOccurred();
@@ -195,7 +195,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? 
     }
 
     private static void pingLocalNetworkNodes(final HandlerContext ctx) {
-        final RemoteEnvelope<Discovery> messageEnvelope = RemoteEnvelope.discovery(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork());
+        final RemoteEnvelope<Discovery> messageEnvelope = RemoteEnvelope.discovery(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork());
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
         ctx.passOutbound(MULTICAST_ADDRESS, messageEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             LOG.warn("Unable to send discovery message to multicast group `{}`", () -> MULTICAST_ADDRESS, () -> e);

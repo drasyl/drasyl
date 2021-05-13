@@ -32,11 +32,11 @@ import org.openjdk.jmh.infra.Blackhole;
 
 @State(Scope.Benchmark)
 public class ProofOfWorkBenchmark {
-    private CompressedPublicKey publicKey;
+    private IdentityPublicKey publicKey;
 
     @Setup
     public void setup() {
-        publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
+        publicKey = IdentityPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
     }
 
     @Benchmark

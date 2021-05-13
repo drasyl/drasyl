@@ -26,7 +26,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.Endpoint;
@@ -39,13 +39,13 @@ import static java.time.Duration.ofSeconds;
 
 @SuppressWarnings("InfiniteLoopStatement")
 public class SuperPeerStressTesting extends AbstractBenchmark {
-    private final Cache<CompressedPublicKey, DrasylNode> clients;
+    private final Cache<IdentityPublicKey, DrasylNode> clients;
 
     public SuperPeerStressTesting(final long maxClients, final Duration shutdownAfter) {
         clients = CacheBuilder.newBuilder()
                 .maximumSize(maxClients)
                 .expireAfterWrite(shutdownAfter)
-                .removalListener((RemovalListener<CompressedPublicKey, DrasylNode>) notification -> notification.getValue().shutdown())
+                .removalListener((RemovalListener<IdentityPublicKey, DrasylNode>) notification -> notification.getValue().shutdown())
                 .build();
     }
 
@@ -66,8 +66,8 @@ public class SuperPeerStressTesting extends AbstractBenchmark {
         final Identity identity = IdentityManager.generateIdentity();
 
         final DrasylConfig config = DrasylConfig.newBuilder(baseConfig)
-                .identityPublicKey(identity.getPublicKey())
-                .identityPrivateKey(identity.getPrivateKey())
+                .identityPublicKey(identity.getIdentityPublicKey())
+                .identitySecretKey(identity.getIdentitySecretKey())
                 .identityProofOfWork(identity.getProofOfWork())
                 .intraVmDiscoveryEnabled(false)
                 .build();
@@ -78,7 +78,7 @@ public class SuperPeerStressTesting extends AbstractBenchmark {
             }
         };
 
-        clients.put(identity.getPublicKey(), node);
+        clients.put(identity.getIdentityPublicKey(), node);
 
         return node;
     }

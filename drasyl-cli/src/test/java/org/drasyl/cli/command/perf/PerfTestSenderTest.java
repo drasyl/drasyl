@@ -29,7 +29,7 @@ import org.drasyl.cli.command.perf.PerfTestSender.TestCompleted;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PerfTestSenderTest {
     @Mock
-    private CompressedPublicKey receiver;
+    private IdentityPublicKey receiver;
     @Mock
     private SessionRequest session;
     @Mock
@@ -66,7 +66,7 @@ class PerfTestSenderTest {
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
     @Mock
-    BiFunction<CompressedPublicKey, Object, CompletableFuture<Void>> sendMethod;
+    BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod;
     @Mock
     Supplier<Behavior> successBehavior;
     @Mock
@@ -102,7 +102,7 @@ class PerfTestSenderTest {
             behavior.receive(testCompleted);
 
             // messages sent?
-            verify(sendMethod, times(3)).apply(any(CompressedPublicKey.class), any(byte[].class));
+            verify(sendMethod, times(3)).apply(any(IdentityPublicKey.class), any(byte[].class));
 
             // output?
             final String output = outputStream.toString();

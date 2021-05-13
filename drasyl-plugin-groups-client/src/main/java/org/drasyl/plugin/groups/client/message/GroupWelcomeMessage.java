@@ -23,7 +23,7 @@ package org.drasyl.plugin.groups.client.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.Group;
 
 import java.util.Objects;
@@ -35,16 +35,16 @@ import java.util.Set;
  * This is an immutable object.
  */
 public class GroupWelcomeMessage extends GroupActionMessage implements GroupsServerMessage {
-    private final Set<CompressedPublicKey> members;
+    private final Set<IdentityPublicKey> members;
 
     @JsonCreator
     public GroupWelcomeMessage(@JsonProperty("group") final Group group,
-                               @JsonProperty("members") final Set<CompressedPublicKey> members) {
+                               @JsonProperty("members") final Set<IdentityPublicKey> members) {
         super(group);
         this.members = Set.copyOf(members);
     }
 
-    public Set<CompressedPublicKey> getMembers() {
+    public Set<IdentityPublicKey> getMembers() {
         return members;
     }
 

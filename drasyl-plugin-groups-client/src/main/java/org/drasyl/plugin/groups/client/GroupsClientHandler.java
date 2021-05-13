@@ -23,7 +23,7 @@ package org.drasyl.plugin.groups.client;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
@@ -196,7 +196,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                               final CompletableFuture<Void> future) {
         final Group group = msg.getGroup();
 
-        if (msg.getMember().equals(ctx.identity().getPublicKey())) {
+        if (msg.getMember().equals(ctx.identity().getIdentityPublicKey())) {
             // cancel renew task
             final Disposable disposable = renewTasks.remove(group);
             if (disposable != null) {
@@ -260,7 +260,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                            final GroupUri group,
                            final boolean renew) {
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
-        final CompressedPublicKey groupManager = group.getManager();
+        final IdentityPublicKey groupManager = group.getManager();
 
         ctx.pipeline().processOutbound(groupManager, new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew));
 

@@ -31,7 +31,7 @@ import org.drasyl.DrasylNode;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.perf.PerfClientNode;
 import org.drasyl.cli.command.perf.PerfServerNode;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.ThrowingBiFunction;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -174,7 +174,7 @@ public class PerfCommand extends AbstractCommand {
 
             // obtain server address and test options
             final Object value = cmd.getParsedOptionValue("client");
-            final CompressedPublicKey server = CompressedPublicKey.of(value.toString());
+            final IdentityPublicKey server = IdentityPublicKey.of(value.toString());
 
             final int time;
             if (cmd.getParsedOptionValue("time") != null) {

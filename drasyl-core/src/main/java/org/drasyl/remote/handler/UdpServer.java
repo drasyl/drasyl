@@ -95,7 +95,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             // read endpoints from config
             return configEndpoints.stream().map(endpoint -> {
                 if (endpoint.getPort() == 0) {
-                    return Endpoint.of(endpoint.getHost(), listenAddress.getPort(), identity.getPublicKey());
+                    return Endpoint.of(endpoint.getHost(), listenAddress.getPort(), identity.getIdentityPublicKey());
                 }
                 return endpoint;
             }).collect(Collectors.toSet());
@@ -111,7 +111,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             addresses = Set.of(listenAddress.getAddress());
         }
         return addresses.stream()
-                .map(address -> Endpoint.of(address.getHostAddress(), listenAddress.getPort(), identity.getPublicKey()))
+                .map(address -> Endpoint.of(address.getHostAddress(), listenAddress.getPort(), identity.getIdentityPublicKey()))
                 .collect(Collectors.toSet());
     }
 
@@ -147,7 +147,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                  a completely random port would have the disadvantage that every time the node is
                  started it would use a new port and this would make discovery more difficult
                 */
-                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.identity().getPublicKey().byteArrayValue()).asBytes()).getValue();
+                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.identity().getIdentityPublicKey().getKey()).asBytes()).getValue();
                 bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
             }
             else {

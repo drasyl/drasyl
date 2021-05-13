@@ -24,7 +24,7 @@ package test.util;
 import org.drasyl.DrasylConfig;
 
 import static java.util.stream.Collectors.toSet;
-import static org.drasyl.DrasylConfig.IDENTITY_PRIVATE_KEY;
+import static org.drasyl.DrasylConfig.IDENTITY_SECRET_KEY;
 import static org.drasyl.DrasylConfig.IDENTITY_PROOF_OF_WORK;
 import static org.drasyl.DrasylConfig.IDENTITY_PUBLIC_KEY;
 import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
@@ -49,8 +49,8 @@ public final class DrasylConfigRenderer {
         if (config.getIdentityPublicKey() != null) {
             builder.append(IDENTITY_PUBLIC_KEY + " = ").append(config.getIdentityPublicKey().toString()).append("\n");
         }
-        if (config.getIdentityPrivateKey() != null) {
-            builder.append(IDENTITY_PRIVATE_KEY + " = ").append(config.getIdentityPrivateKey().toUnmaskedString()).append("\n");
+        if (config.getIdentitySecretKey() != null) {
+            builder.append(IDENTITY_SECRET_KEY + " = ").append(config.getIdentitySecretKey().toUnmaskedString()).append("\n");
         }
         builder.append(REMOTE_BIND_HOST + " = ").append(config.getRemoteBindHost().getHostAddress()).append("\n");
         builder.append(REMOTE_BIND_PORT + " = ").append(config.getRemoteBindPort()).append("\n");

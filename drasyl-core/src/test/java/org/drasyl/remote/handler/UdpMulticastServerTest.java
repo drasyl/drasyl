@@ -32,7 +32,7 @@ import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
@@ -73,7 +73,7 @@ class UdpMulticastServerTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    private Map<CompressedPublicKey, HandlerContext> nodes;
+    private Map<IdentityPublicKey, HandlerContext> nodes;
 
     @Nested
     class StartServer {
@@ -85,14 +85,14 @@ class UdpMulticastServerTest {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel()).thenReturn(datagramChannel);
             when(datagramChannel.localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127")));
             when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).awaitUninterruptibly().isSuccess()).thenReturn(true);
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
-                verify(nodes).put(eq(identity.getPublicKey()), any());
+                verify(nodes).put(eq(identity.getIdentityPublicKey()), any());
                 verify(bootstrap.handler(any())).bind(anyString(), anyInt());
                 verify(datagramChannel).joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
             }
@@ -103,13 +103,13 @@ class UdpMulticastServerTest {
     class StopServer {
         @Test
         void shouldStopServerOnNodeDownEvent(@Mock final NodeDownEvent event) {
-            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
+            when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127")));
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, channel);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
-                verify(nodes).remove(identity.getPublicKey());
+                verify(nodes).remove(identity.getIdentityPublicKey());
                 verify(channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE)).awaitUninterruptibly();
                 verify(channel.close()).awaitUninterruptibly();
             }
@@ -123,7 +123,7 @@ class UdpMulticastServerTest {
         void shouldPassIngoingMessagesToAllPipelines(@Mock final NodeUpEvent event,
                                                      @Mock final ChannelHandlerContext channelCtx,
                                                      @Mock final ByteBuf message,
-                                                     @Mock final CompressedPublicKey publicKey,
+                                                     @Mock final IdentityPublicKey publicKey,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
             when(bootstrap.handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
@@ -131,7 +131,7 @@ class UdpMulticastServerTest {
                 return bootstrap;
             });
 
-            final HashMap<CompressedPublicKey, HandlerContext> nodes = new HashMap<>(Map.of(publicKey, ctx));
+            final HashMap<IdentityPublicKey, HandlerContext> nodes = new HashMap<>(Map.of(publicKey, ctx));
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();

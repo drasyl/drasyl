@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.client;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.UriUtil;
 
 import java.net.URI;
@@ -41,12 +41,12 @@ import static org.drasyl.util.SecretUtil.maskSecret;
 public class GroupUri {
     public static final int MIN_TIMEOUT = 60;
     public static final String SCHEME = "groups";
-    private final CompressedPublicKey manager;
+    private final IdentityPublicKey manager;
     private final String credentials;
     private final String name;
     private final Duration timeout;
 
-    private GroupUri(final CompressedPublicKey manager,
+    private GroupUri(final IdentityPublicKey manager,
                      final String credentials,
                      final String name,
                      final Duration timeout) {
@@ -56,7 +56,7 @@ public class GroupUri {
         this.timeout = timeout;
     }
 
-    public CompressedPublicKey getManager() {
+    public IdentityPublicKey getManager() {
         return manager;
     }
 
@@ -105,7 +105,7 @@ public class GroupUri {
         return Group.of(name);
     }
 
-    public static GroupUri of(final CompressedPublicKey manager,
+    public static GroupUri of(final IdentityPublicKey manager,
                               final String credentials,
                               final String name,
                               final Duration timeout) {
@@ -146,7 +146,7 @@ public class GroupUri {
         }
 
         try {
-            final CompressedPublicKey manager = CompressedPublicKey.of(uri.getHost());
+            final IdentityPublicKey manager = IdentityPublicKey.of(uri.getHost());
             final String credentials = ofNullable(uri.getUserInfo()).orElse("");
             final Map<String, String> queryMap = UriUtil.getQueryMap(uri);
 

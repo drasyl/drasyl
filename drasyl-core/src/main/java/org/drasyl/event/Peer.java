@@ -22,7 +22,7 @@
 package org.drasyl.event;
 
 import org.drasyl.annotation.NonNull;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 
 import java.util.Objects;
 
@@ -35,9 +35,9 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class Peer {
-    private final CompressedPublicKey publicKey;
+    private final IdentityPublicKey publicKey;
 
-    private Peer(final CompressedPublicKey publicKey) {
+    private Peer(final IdentityPublicKey publicKey) {
         this.publicKey = requireNonNull(publicKey);
     }
 
@@ -47,7 +47,7 @@ public class Peer {
      * @return the peer's public key.
      */
     @NonNull
-    public CompressedPublicKey getPublicKey() {
+    public IdentityPublicKey getIdentityPublicKey() {
         return publicKey;
     }
 
@@ -71,14 +71,14 @@ public class Peer {
     @Override
     public String toString() {
         return "Peer{" +
-                "publicKey=" + publicKey +
+                "identityPublicKey=" + publicKey +
                 '}';
     }
 
     /**
      * @throws NullPointerException if {@code publicKey} is {@code null}
      */
-    public static Peer of(final CompressedPublicKey publicKey) {
+    public static Peer of(final IdentityPublicKey publicKey) {
         return new Peer(publicKey);
     }
 }

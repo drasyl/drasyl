@@ -30,7 +30,7 @@ import org.drasyl.DrasylException;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.ThrowingBiFunction;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -43,7 +43,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.identity.CompressedPublicKey.PUBLIC_KEY_LENGTH;
 
 /**
  * Inspired by <a href="https://github.com/warner/magic-wormhole">Magic Wormhole</a>.
@@ -192,13 +191,13 @@ public class WormholeCommand extends AbstractCommand {
             }
 
             // request text
-            if (code.length() < PUBLIC_KEY_LENGTH) {
-                err.println("ERR: Invalid wormhole code supplied: must be at least 66 characters long.");
+            if (code.length() < IdentityPublicKey.KEY_LENGTH_AS_STRING) {
+                err.println("ERR: Invalid wormhole code supplied: must be at least " + IdentityPublicKey.KEY_LENGTH_AS_STRING + " characters long.");
                 return;
             }
 
-            final CompressedPublicKey sender = CompressedPublicKey.of(code.substring(0, PUBLIC_KEY_LENGTH));
-            final String password = code.substring(PUBLIC_KEY_LENGTH);
+            final IdentityPublicKey sender = IdentityPublicKey.of(code.substring(0, IdentityPublicKey.KEY_LENGTH_AS_STRING));
+            final String password = code.substring(IdentityPublicKey.KEY_LENGTH_AS_STRING);
             node.requestText(sender, password);
 
             // wait for node to finish

@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,14 +61,14 @@ class IdentityManagerTest {
     class LoadOrCreateIdentity {
         @Test
         void shouldLoadValidIdentityFromConfig() throws IOException {
-            when(config.getIdentityPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
-            when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(15405649));
-            when(config.getIdentityPrivateKey()).thenReturn(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"));
+            when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
+            when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
+            when(config.getIdentitySecretKey()).thenReturn(IdentityTestUtil.ID_1.getIdentitySecretKey());
 
             final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             identityManager.loadOrCreateIdentity();
 
-            assertEquals(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), identityManager.getPublicKey());
+            assertEquals(IdentityTestUtil.ID_1.getIdentityPublicKey(), identityManager.getIdentityPublicKey());
         }
 
         @Test
@@ -77,9 +78,15 @@ class IdentityManagerTest {
 
             // create existing file with identity
             Files.writeString(path, "{\n" +
-                    "  \"proofOfWork\" : 15405649,\n" +
-                    "  \"publicKey\" : \"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\n" +
-                    "  \"privateKey\" : \"0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d\"\n" +
+                    "  \"proofOfWork\" : " + IdentityTestUtil.ID_1.getProofOfWork().intValue() + ",\n" +
+                    "  \"identityKeyPair\" : {" +
+                    "  \"publicKey\" : \"" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "\",\n" +
+                    "  \"secretKey\" : \"" + IdentityTestUtil.ID_1.getIdentitySecretKey().toUnmaskedString() + "\"\n" +
+                    "}," +
+                    "  \"keyAgreementKeyPair\" : {" +
+                    "  \"publicKey\" : \"" + IdentityTestUtil.ID_1.getKeyAgreementPublicKey() + "\",\n" +
+                    "  \"secretKey\" : \"" + IdentityTestUtil.ID_1.getKeyAgreementSecretKey().toUnmaskedString() + "\"\n" +
+                    "}" +
                     "}", StandardOpenOption.CREATE);
             if (hasPosixSupport(path)) {
                 Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
@@ -89,11 +96,7 @@ class IdentityManagerTest {
             identityManager.loadOrCreateIdentity();
 
             assertEquals(
-                    Identity.of(
-                            ProofOfWork.of(15405649),
-                            "0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9",
-                            "0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"
-                    ),
+                    IdentityTestUtil.ID_1,
                     identityManager.getIdentity()
             );
         }
@@ -102,11 +105,7 @@ class IdentityManagerTest {
         void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir final Path dir) throws IOException {
             final Path path = Paths.get(dir.toString(), "my-identity.json");
             when(config.getIdentityPath()).thenReturn(path);
-            when(identityGenerator.get()).thenReturn(Identity.of(
-                    ProofOfWork.of(15405649),
-                    "0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9",
-                    "0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"
-            ));
+            when(identityGenerator.get()).thenReturn(IdentityTestUtil.ID_1);
 
             final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             identityManager.loadOrCreateIdentity();
@@ -117,9 +116,9 @@ class IdentityManagerTest {
 
         @Test
         void shouldThrowExceptionIfIdentityFromConfigIsInvalid() {
-            when(config.getIdentityPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
+            when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
             when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(42));
-            when(config.getIdentityPrivateKey()).thenReturn(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"));
+            when(config.getIdentitySecretKey()).thenReturn(IdentityTestUtil.ID_1.getIdentitySecretKey());
 
             final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             assertThrows(IOException.class, identityManager::loadOrCreateIdentity);
@@ -133,8 +132,14 @@ class IdentityManagerTest {
             // create existing file with invalid identity
             Files.writeString(path, "{\n" +
                     "  \"proofOfWork\" : 42,\n" +
-                    "  \"publicKey\" : \"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\n" +
-                    "  \"privateKey\" : \"0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d\"\n" +
+                    "  \"identityKeyPair\" : {" +
+                    "  \"publicKey\" : \"" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "\",\n" +
+                    "  \"secretKey\" : \"" + IdentityTestUtil.ID_1.getIdentitySecretKey().toUnmaskedString() + "\"\n" +
+                    "}," +
+                    "  \"keyAgreementKeyPair\" : {" +
+                    "  \"publicKey\" : \"" + IdentityTestUtil.ID_1.getKeyAgreementPublicKey() + "\",\n" +
+                    "  \"secretKey\" : \"" + IdentityTestUtil.ID_1.getKeyAgreementSecretKey().toUnmaskedString() + "\"\n" +
+                    "}" +
                     "}", StandardOpenOption.CREATE);
 
             final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);

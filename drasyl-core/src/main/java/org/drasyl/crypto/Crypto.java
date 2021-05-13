@@ -21,53 +21,40 @@
  */
 package org.drasyl.crypto;
 
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.ec.CustomNamedCurves;
-import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util;
-import org.bouncycastle.jce.ECPointUtil;
-import org.bouncycastle.jce.interfaces.ECPrivateKey;
-import org.bouncycastle.jce.interfaces.ECPublicKey;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.jce.spec.ECNamedCurveSpec;
-import org.bouncycastle.jce.spec.ECParameterSpec;
-import org.bouncycastle.jce.spec.ECPrivateKeySpec;
-import org.bouncycastle.math.ec.ECCurve;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
+import com.google.common.primitives.UnsignedBytes;
+import com.goterl.lazysodium.LazySodiumJava;
+import com.goterl.lazysodium.SodiumJava;
+import com.goterl.lazysodium.exceptions.SodiumException;
+import com.goterl.lazysodium.interfaces.AEAD;
+import com.goterl.lazysodium.interfaces.Sign;
+import com.goterl.lazysodium.utils.SessionPair;
+import org.drasyl.identity.AbstractKey;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.IdentitySecretKey;
+import org.drasyl.identity.KeyAgreementPublicKey;
+import org.drasyl.identity.KeyAgreementSecretKey;
+import org.drasyl.identity.KeyPair;
+import org.drasyl.identity.PublicKey;
+import org.drasyl.identity.SecretKey;
+import org.drasyl.remote.protocol.Nonce;
 
-import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.Security;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.spec.ECPoint;
-import java.security.spec.ECPublicKeySpec;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Objects;
 
 /**
  * Util class that provides cryptography functions for drasyl.
  */
 public class Crypto {
+    public static final Crypto INSTANCE;
     public static final SecureRandom CSPRNG;
-    private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
-    private static final String PROVIDER = "BC";
-    private static final String ECDSA = "ECDSA";
-    private static final String SHA256_WITH_ECDSA = "SHA256withECDSA";
-    private static final String CURVE_NAME = "curve25519";
-    public static final int COMPRESSED_KEY_LENGTH = 33;
+    public static final short PK_LONG_TIME_KEY_LENGTH = Sign.PUBLICKEYBYTES;
+    public static final short SK_LONG_TIME_KEY_LENGTH = Sign.SECRETKEYBYTES;
+    public static final short PK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_PUBLICKEYBYTES;
+    public static final short SK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_SECRETKEYBYTES;
 
     static {
-        Security.addProvider(new BouncyCastleProvider());
+        INSTANCE = new Crypto(
+                new LazySodiumJava(new SodiumJava()));
 
         // check for the optimal cryptographically secure pseudorandom number generator for the current platform
         SecureRandom prng;
@@ -83,202 +70,24 @@ public class Crypto {
         CSPRNG = prng;
     }
 
-    Crypto() {
-        // util class
+    private final LazySodiumJava sodium;
+
+    Crypto(final LazySodiumJava sodium) {
+        this.sodium = sodium;
     }
 
     /**
-     * Generates an asymmetric curve key pair for signing.
+     * Compares to keys {@code k1} and {@code k2} to allow to form a total order on the keys. This
+     * is especially important in asynchronous environments to make deterministic decisions.
      *
-     * @return asymmetric key pair
+     * @param k1 first key
+     * @param k2 second key
+     * @return -1 if the first key is smaller than, 0 if equals to, 1 if greater than the second key
      */
-    public static KeyPair generateKeys() {
-        try {
-            final X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
-            final ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
-
-            final KeyPairGenerator keygen = KeyPairGenerator.getInstance(ECDSA, PROVIDER);
-            keygen.initialize(ecSpec, CSPRNG);
-            return keygen.generateKeyPair();
-        }
-        catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidAlgorithmParameterException e) {
-            throw new InternalError("Cannot Generate Keys", e);
-        }
-    }
-
-    /**
-     * Generates an asymmetric curve public key from the given bytes.
-     *
-     * @param pubKey public key as byte array
-     * @return asymmetric curve public key
-     * @throws CryptoException if public key could not be generated
-     */
-    public static PublicKey getPublicKeyFromBytes(final byte[] pubKey) throws CryptoException {
-        if (pubKey.length <= COMPRESSED_KEY_LENGTH) {
-            return parseCompressedPublicKey(pubKey);
-        }
-        else {
-            try {
-                final KeyFactory kf = KeyFactory.getInstance(ECDSA, PROVIDER);
-                return kf.generatePublic(getKeySpec(pubKey));
-            }
-            catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
-                throw new CryptoException("Could not parse Key: " + HexUtil.toString(pubKey), e);
-            }
-        }
-    }
-
-    /**
-     * Generates an asymmetric curve private key from the given bytes.
-     *
-     * @param privKey private key as byte array
-     * @return asymmetric curve private key
-     * @throws CryptoException if private key could not be generated
-     */
-    public static PrivateKey getPrivateKeyFromBytes(final byte[] privKey) throws CryptoException {
-        if (privKey.length <= COMPRESSED_KEY_LENGTH) {
-            return parseCompressedPrivateKey(privKey);
-        }
-        else {
-            try {
-                final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(privKey);
-                final KeyFactory factory = KeyFactory.getInstance(ECDSA, PROVIDER);
-                return factory.generatePrivate(spec);
-            }
-            catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
-                throw new CryptoException("Could not parse Key: " + HexUtil.toString(privKey), e);
-            }
-        }
-    }
-
-    /**
-     * Generates an asymmetric curve public key from the given compressed public key.
-     *
-     * @param compressedPubKey compressed public key
-     * @return asymmetric curve public key
-     * @throws CryptoException if public key could not be generated
-     */
-    public static ECPublicKey parseCompressedPublicKey(final byte[] compressedPubKey) throws CryptoException {
-        try {
-            final X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
-
-            final KeyFactory fact = KeyFactory.getInstance(ECDSA, PROVIDER);
-            final ECCurve curve = ecP.getCurve();
-            final java.security.spec.EllipticCurve ellipticCurve = EC5Util.convertCurve(curve, ecP.getSeed());
-
-            final java.security.spec.ECParameterSpec ecSpec = EC5Util.convertToSpec(ecP);
-            final ECPoint point = ECPointUtil.decodePoint(ellipticCurve, compressedPubKey);
-            final ECPublicKeySpec keySpec = new ECPublicKeySpec(point, ecSpec);
-            return (ECPublicKey) fact.generatePublic(keySpec);
-        }
-        catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
-            throw new CryptoException("Unable to parse compressed public key.", e);
-        }
-    }
-
-    /**
-     * Generates the curve key specs from the given public or private key byte array.
-     *
-     * @param pubOrPrivKey public or private key byte array
-     * @return curve key specs
-     */
-    private static ECPublicKeySpec getKeySpec(final byte[] pubOrPrivKey) {
-        final X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
-        final ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
-        final ECNamedCurveSpec params = new ECNamedCurveSpec(CURVE_NAME, ecSpec.getCurve(), ecSpec.getG(), ecSpec.getN(), ecSpec.getH(), ecSpec.getSeed());
-        final java.security.spec.ECParameterSpec actualParams = new java.security.spec.ECParameterSpec(params.getCurve(), params.getGenerator(), params.getOrder(), params.getCofactor());
-        final ECPoint point = ECPointUtil.decodePoint(actualParams.getCurve(), pubOrPrivKey);
-        return new ECPublicKeySpec(point, actualParams);
-    }
-
-    /**
-     * Generates an asymmetric curve private key from the given compressed private key.
-     *
-     * @param compressedPrivateKey compressed private key
-     * @return asymmetric curve private key
-     * @throws CryptoException if private key could not be generated
-     */
-    public static ECPrivateKey parseCompressedPrivateKey(final byte[] compressedPrivateKey) throws CryptoException {
-        final X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
-        final ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
-        final ECPrivateKeySpec privkeyspec = new ECPrivateKeySpec(new BigInteger(compressedPrivateKey), ecSpec);
-        try {
-            return (ECPrivateKey) KeyFactory.getInstance(ECDSA, PROVIDER).generatePrivate(privkeyspec);
-        }
-        catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
-            throw new CryptoException("Unable to parse compressed private key.", e);
-        }
-    }
-
-    /**
-     * Generates an asymmetric, compressed curve public key from the given public key.
-     *
-     * @param key the public key
-     * @return compressed public key
-     * @throws CryptoException if the public key was not in ECPublicKey format
-     */
-    public static byte[] compressedKey(final PublicKey key) throws CryptoException {
-        if (key instanceof ECPublicKey) {
-            return ((ECPublicKey) key).getQ().getEncoded(true);
-        }
-        throw new CryptoException(new IllegalArgumentException("Can only compress ECPublicKey"));
-    }
-
-    /**
-     * Generates an asymmetric, compressed curve private key from the given private key.
-     *
-     * @param privkey the private key
-     * @return compressed private key
-     * @throws CryptoException if the public key was not in ECPrivateKey format
-     */
-    public static byte[] compressedKey(final PrivateKey privkey) throws CryptoException {
-        if (privkey instanceof ECPrivateKey) {
-            return ((ECPrivateKey) privkey).getD().toByteArray();
-        }
-        throw new CryptoException(new IllegalArgumentException("Can only compress ECPrivateKey"));
-    }
-
-    /**
-     * Creates signature from the given message with the PrivateKey.
-     *
-     * @param key     Key to use
-     * @param message message to sign
-     * @throws CryptoException on failure
-     */
-    public static byte[] signMessage(final PrivateKey key,
-                                     final byte[] message) throws CryptoException {
-        try {
-            final Signature ecdsaSign = Signature.getInstance(SHA256_WITH_ECDSA, PROVIDER);
-            ecdsaSign.initSign(key);
-            ecdsaSign.update(message);
-            return ecdsaSign.sign();
-        }
-        catch (final NoSuchAlgorithmException | NoSuchProviderException | SignatureException | InvalidKeyException e) {
-            throw new CryptoException("Unable to sign message.", e);
-        }
-    }
-
-    /**
-     * Verify the signature of the given message with the signature and public key.
-     *
-     * @param pubkey    the public key
-     * @param message   the message to verify
-     * @param signature the signature of the message
-     * @return if the message is valid or not
-     */
-    public static boolean verifySignature(final PublicKey pubkey,
-                                          final byte[] message,
-                                          final byte[] signature) {
-        try {
-            final Signature ecdsaVerify = Signature.getInstance(SHA256_WITH_ECDSA, PROVIDER);
-            ecdsaVerify.initVerify(pubkey);
-            ecdsaVerify.update(message);
-            return ecdsaVerify.verify(signature);
-        }
-        catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException e) {
-            LOG.error("Unable to verify signature.", e);
-        }
-        return false;
+    public static int compare(final AbstractKey k1, final AbstractKey k2) {
+        return Integer.signum(UnsignedBytes.lexicographicalComparator().compare(
+                k1.getKey(),
+                k2.getKey()));
     }
 
     /**
@@ -290,6 +99,7 @@ public class Crypto {
      *         <li>4 byte for small sets</li>
      *         <li>8 bytes for unique internal strings, e.g. hash tables</li>
      *         <li>16 bytes for global uniqueness, e.g. auth token</li>
+     *         <li>24 bytes for cryptographic operations, e.g. nonce's</li>
      *     </ul>
      * <p>
      * You can also use the following probability table for the "Birthday problem", as a starting point for a suitable
@@ -313,6 +123,7 @@ public class Crypto {
      *         <li>4 byte for small sets</li>
      *         <li>8 bytes for unique internal strings, e.g. hash tables</li>
      *         <li>16 bytes for global uniqueness, e.g. auth token</li>
+     *         <li>24 bytes for cryptographic operations, e.g. nonce's</li>
      *     </ul>
      * <p>
      * You can also use the following probability table for the "Birthday problem", as a starting point for a suitable
@@ -340,5 +151,247 @@ public class Crypto {
      */
     public static int randomNumber(final int bound) {
         return CSPRNG.nextInt(bound);
+    }
+
+    /**
+     * <b>Is only for internal usage.</b>
+     *
+     * @return returns the {@link LazySodiumJava} instance.
+     */
+    public LazySodiumJava getSodium() {
+        return sodium;
+    }
+
+    /**
+     * Generates a new ed25519 key pair for signing and on-demand encryption. This key pair can be
+     * used as identity of a node.
+     *
+     * @return new ed25519 key pair
+     * @throws CryptoException if any error occurs during key generation
+     */
+    public KeyPair<IdentityPublicKey, IdentitySecretKey> generateLongTimeKeyPair() throws CryptoException {
+        final byte[] publicKey = randomBytes(PK_LONG_TIME_KEY_LENGTH);
+        final byte[] secretKey = randomBytes(SK_LONG_TIME_KEY_LENGTH);
+
+        if (!sodium.cryptoSignKeypair(publicKey, secretKey)) {
+            throw new CryptoException("Could not generate a signing keypair.");
+        }
+        return KeyPair.of(IdentityPublicKey.of(publicKey), IdentitySecretKey.of(secretKey));
+    }
+
+    /**
+     * Converts the given ed25519 long time {@code keyPair} into a curve25519 key pair for
+     * (on-demand) key agreement.
+     *
+     * @param keyPair the ed25519 long time key pair
+     * @return ed25519 key pair as curve25519
+     * @throws CryptoException if any error occurs during conversion
+     */
+    public KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> convertLongTimeKeyPairToKeyAgreementKeyPair(
+            final KeyPair<IdentityPublicKey, IdentitySecretKey> keyPair) throws CryptoException {
+        final byte[] curve25519Pk = new byte[PK_CURVE_25519_KEY_LENGTH];
+        final byte[] curve25519Sk = new byte[SK_CURVE_25519_KEY_LENGTH];
+
+        final boolean pkSuccess = sodium.convertPublicKeyEd25519ToCurve25519(curve25519Pk, keyPair.getPublicKey().getKey());
+        final boolean skSuccess = sodium.convertSecretKeyEd25519ToCurve25519(curve25519Sk, keyPair.getSecretKey().getKey());
+
+        if (!pkSuccess || !skSuccess) {
+            throw new CryptoException("Could not convert this key pair.");
+        }
+
+        return KeyPair.of(KeyAgreementPublicKey.of(curve25519Pk), KeyAgreementSecretKey.of(curve25519Sk));
+    }
+
+    /**
+     * Converts the given ed25519 long time {@code publicKey} into a curve25519 key for (on-demand)
+     * key agreement.
+     *
+     * @param publicKey the ed25519 public key
+     * @return ed25519 public key as curve25519
+     * @throws CryptoException if any error occurs during conversion
+     */
+    public KeyAgreementPublicKey convertIdentityKeyToKeyAgreementKey(final IdentityPublicKey publicKey) throws CryptoException {
+        final byte[] curve25519Pk = new byte[PK_CURVE_25519_KEY_LENGTH];
+
+        final boolean pkSuccess = sodium.convertPublicKeyEd25519ToCurve25519(curve25519Pk, publicKey.getKey());
+
+        if (!pkSuccess) {
+            throw new CryptoException("Could not convert this key.");
+        }
+
+        return KeyAgreementPublicKey.of(curve25519Pk);
+    }
+
+    /**
+     * Generates a new curve25519 key pair for key exchange. This key should only be used for one
+     * session and never be re-used.
+     *
+     * @return new curve25519 key pair
+     * @throws CryptoException if any error occurs during key generation
+     */
+    public KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> generateEphemeralKeyPair() throws CryptoException {
+        final byte[] publicKey = randomBytes(PK_CURVE_25519_KEY_LENGTH);
+        final byte[] secretKey = randomBytes(SK_CURVE_25519_KEY_LENGTH);
+
+        if (!sodium.successful(sodium.getSodium().crypto_kx_keypair(publicKey, secretKey))) {
+            throw new CryptoException("Unable to create a public and private key.");
+        }
+        return KeyPair.of(KeyAgreementPublicKey.of(publicKey), KeyAgreementSecretKey.of(secretKey));
+    }
+
+    /**
+     * Generates session key pair from the {@code myKeyPair} and {@code receiverKeyPair}.
+     *
+     * @param myKeyPair         my own curve25519 key pair (long time or ephemeral)
+     * @param receiverPublicKey the receiver public key (long time or ephemeral)
+     * @return a session key for sending and receiving messages
+     * @throws CryptoException if any error occurs during generation
+     */
+    public <P extends PublicKey, S extends SecretKey> SessionPair generateSessionKeyPair(final KeyPair<P, S> myKeyPair,
+                                                                                         final PublicKey receiverPublicKey) throws CryptoException {
+        // We must ensure some order on the keys to work properly in async environments
+        final int order = compare(myKeyPair.getPublicKey(), receiverPublicKey);
+
+        try {
+            switch (order) {
+                case -1:
+                    return sodium.cryptoKxClientSessionKeys(myKeyPair.getPublicKey().toSodiumKey(), myKeyPair.getSecretKey().toSodiumKey(), receiverPublicKey.toSodiumKey());
+                case 1:
+                    return sodium.cryptoKxServerSessionKeys(myKeyPair.getPublicKey().toSodiumKey(), myKeyPair.getSecretKey().toSodiumKey(), receiverPublicKey.toSodiumKey());
+                case 0:
+                    throw new CryptoException("Attention, there is probably an implementation error. " +
+                            "Sessions with yourself are not supported!");
+                default:
+                    throw new CryptoException("Unknown error during session generation.");
+            }
+        }
+        catch (final SodiumException e) {
+            throw new CryptoException(e);
+        }
+    }
+
+    /**
+     * Encrypts the given {@code message}, by adding {@code authTag} as an authentication tag, using
+     * the given (<b>hopefully fresh</b>) {@code nonce} and encrypting with the <i>tx</i> part of
+     * the {@code sessionPair}.
+     *
+     * @param message     the message to encrypt
+     * @param authTag     some authentication tag
+     * @param nonce       the fresh nonce
+     * @param sessionPair the session pair
+     * @return encrypted message
+     * @throws CryptoException      if any error occurs during encryption
+     * @throws NullPointerException if {@code message} or {@code authTag} is {@code null}
+     */
+    public byte[] encrypt(final byte[] message,
+                          final byte[] authTag,
+                          final Nonce nonce,
+                          final SessionPair sessionPair) throws CryptoException {
+        Objects.requireNonNull(message);
+        Objects.requireNonNull(authTag);
+
+        final long additionalDataLength = authTag.length;
+        final byte[] cipherBytes = new byte[message.length + AEAD.XCHACHA20POLY1305_IETF_ABYTES];
+
+        if (!sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
+                cipherBytes,
+                null,
+                message,
+                message.length,
+                authTag,
+                additionalDataLength,
+                null,
+                nonce.byteArrayValue(),
+                sessionPair.getTx()
+        )) {
+            throw new CryptoException("Could not encrypt the given message with the given parameters.");
+        }
+
+        return cipherBytes;
+    }
+
+    /**
+     * Decrypt the given {@code cipher}, by verify the {@code authTag} as an authentication tag,
+     * uses the given {@code nonce} and decrypting with the
+     * <i>rx</i> part of the {@code sessionPair}.
+     *
+     * @param cipher      the cipher text to decrypt
+     * @param authTag     some authentication tag
+     * @param nonce       the fresh nonce
+     * @param sessionPair the session pair
+     * @return decrypted message
+     * @throws CryptoException      if any error occurs during decryption
+     * @throws NullPointerException if {@code message} or {@code authTag} is {@code null}
+     */
+    public byte[] decrypt(final byte[] cipher,
+                          final byte[] authTag,
+                          final Nonce nonce,
+                          final SessionPair sessionPair) throws CryptoException {
+        Objects.requireNonNull(cipher);
+        Objects.requireNonNull(authTag);
+
+        if (cipher.length < AEAD.XCHACHA20POLY1305_IETF_ABYTES) {
+            throw new CryptoException("Could not decrypt the given cipher text. Cipher text is smaller than " + AEAD.XCHACHA20POLY1305_IETF_ABYTES + " bytes");
+        }
+
+        final long additionalDataLength = authTag.length;
+        final byte[] messageBytes = new byte[cipher.length - AEAD.XCHACHA20POLY1305_IETF_ABYTES];
+
+        if (!sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
+                messageBytes,
+                null,
+                null,
+                cipher,
+                cipher.length,
+                authTag,
+                additionalDataLength,
+                nonce.byteArrayValue(),
+                sessionPair.getRx()
+        )) {
+            throw new CryptoException("Could not decrypt the given cipher text.");
+        }
+
+        return messageBytes;
+    }
+
+    /**
+     * Creates a signature for the given {@code message} with the given {@code secretKey} in
+     * detached mode (signature is not appended to message, rather it is standalone).
+     *
+     * @param message   the message to sign
+     * @param secretKey the secret key to sign
+     * @return the signature of the message
+     * @throws CryptoException if any error occurs during signing
+     */
+    public byte[] sign(final byte[] message,
+                       final IdentitySecretKey secretKey) throws CryptoException {
+        final byte[] signatureBytes = new byte[Sign.BYTES];
+
+        if (!sodium.cryptoSignDetached(signatureBytes,
+                message,
+                message.length,
+                secretKey.getKey())) {
+            throw new CryptoException("Could not create a signature for your message in detached mode.");
+        }
+
+        return signatureBytes;
+    }
+
+    /**
+     * Verifies that {@code signature} is valid for the {@code message}.
+     *
+     * @param signature the signature of the message
+     * @param message   the message
+     * @param publicKey the public key that signed the message
+     * @return {@code true} if the signature is valid for the message
+     */
+    public boolean verifySignature(final byte[] signature,
+                                   final byte[] message,
+                                   final IdentityPublicKey publicKey) {
+
+        return sodium.cryptoSignVerifyDetached(signature,
+                message,
+                message.length,
+                publicKey.getKey());
     }
 }

@@ -22,7 +22,7 @@
 package org.drasyl.pipeline.skeleton;
 
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
@@ -36,11 +36,11 @@ import java.util.concurrent.CompletableFuture;
  *
  * <pre>
  *     public class MessageEventHandler extends
- *             {@link SimpleInboundHandler}&lt;{@code MyMessage}, {@link CompressedPublicKey}&gt; {
+ *             {@link SimpleInboundHandler}&lt;{@code MyMessage}, {@link IdentityPublicKey}&gt; {
  *
  *        {@code @Override}
  *         protected void matchedInbound({@link HandlerContext} ctx,
- *             {@link CompressedPublicKey} sender, {@code MyMessage} msg,
+ *             {@link IdentityPublicKey} sender, {@code MyMessage} msg,
  *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
  *         }

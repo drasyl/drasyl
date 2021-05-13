@@ -22,7 +22,7 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
@@ -38,11 +38,11 @@ import java.util.concurrent.CompletableFuture;
  *
  * <pre>
  *     public class ChunkedHandler extends
- *             {@link SimpleOutboundHandler}&lt;{@code MyMessage}, {@link CompressedPublicKey}&gt; {
+ *             {@link SimpleOutboundHandler}&lt;{@code MyMessage}, {@link IdentityPublicKey}&gt; {
  *
  *        {@code @Override}
  *         protected void matchedOutbound({@link HandlerContext} ctx,
- *             {@link CompressedPublicKey} recipient, {@code MyMessage} msg,
+ *             {@link IdentityPublicKey} recipient, {@code MyMessage} msg,
  *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
  *         }

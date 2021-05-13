@@ -21,7 +21,6 @@
  */
 package org.drasyl.crypto;
 
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +37,7 @@ class HexUtilTest {
     class ToString {
         @Test
         void shouldReturnCorrectString() {
-            assertEquals(Hex.toHexString(byteArray), byteString);
+            assertEquals(HexUtil.toString(byteArray), byteString);
         }
     }
 

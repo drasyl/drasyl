@@ -37,7 +37,7 @@ import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
@@ -139,7 +139,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
      */
     private Behavior waitForSession() {
         printStream.println("----------------------------------------------------------------------------------------------");
-        printStream.println("Server listening on address " + identity().getPublicKey());
+        printStream.println("Server listening on address " + identity().getIdentityPublicKey());
         printStream.println("----------------------------------------------------------------------------------------------");
 
         // new behavior
@@ -177,7 +177,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
     /**
      * Node performs session and wait for completion.
      */
-    private Behavior startTest(final CompressedPublicKey client,
+    private Behavior startTest(final IdentityPublicKey client,
                                final SessionRequest session) {
         if (!session.isReverse()) {
             LOG.debug("Start sender.");
@@ -194,7 +194,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
     /**
      * Node performs test after waiting for {@code duration}.
      */
-    private Behavior startTestDelayed(final CompressedPublicKey client,
+    private Behavior startTestDelayed(final IdentityPublicKey client,
                                       final SessionRequest session) {
         return Behaviors.withScheduler(scheduler -> {
             scheduler.scheduleEvent(new TestDelayed(), TEST_DELAY);

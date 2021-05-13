@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.client.message;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.Group;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(MockitoExtension.class)
 class MemberJoinedMessageTest {
     @Mock
-    private CompressedPublicKey publicKey;
+    private IdentityPublicKey publicKey;
 
     @Nested
     class Constructor {

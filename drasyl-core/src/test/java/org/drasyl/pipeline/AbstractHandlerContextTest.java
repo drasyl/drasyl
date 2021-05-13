@@ -23,7 +23,7 @@ package org.drasyl.pipeline;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -311,7 +311,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldInvokeRead(@Mock final Handler newHandler,
-                          @Mock final CompressedPublicKey sender,
+                          @Mock final IdentityPublicKey sender,
                           @Mock final Object msg) throws Exception {
         when(next.handler()).thenReturn(newHandler);
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
@@ -336,7 +336,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldRethrowIfExceptionOccursDuringInvokeRead(@Mock final Handler newHandler,
-                                                        @Mock final CompressedPublicKey sender,
+                                                        @Mock final IdentityPublicKey sender,
                                                         @Mock final Object msg) throws Exception {
         when(next.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).onInbound(any(), any(), any(), any());
@@ -414,7 +414,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldWrite(@Mock final Handler newHandler,
-                     @Mock final CompressedPublicKey recipient,
+                     @Mock final IdentityPublicKey recipient,
                      @Mock final Object msg) throws Exception {
         when(prev.handler()).thenReturn(newHandler);
         when(dependentScheduler.isCalledFromThisScheduler()).thenReturn(true);
@@ -439,7 +439,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldRethrowIfExceptionOccursDuringWrite(@Mock final Handler newHandler,
-                                                   @Mock final CompressedPublicKey recipient,
+                                                   @Mock final IdentityPublicKey recipient,
                                                    @Mock final Object msg) throws Exception {
         when(prev.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).onOutbound(any(), any(), any(), any());

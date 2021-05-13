@@ -23,7 +23,7 @@ package org.drasyl.pipeline.skeleton;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -73,7 +73,7 @@ class SimpleOutboundHandlerTest {
     }
 
     @Test
-    void shouldPassthroughsNotMatchingMessage(@Mock final CompressedPublicKey recipient) {
+    void shouldPassthroughsNotMatchingMessage(@Mock final IdentityPublicKey recipient) {
         final SimpleOutboundHandler<byte[], Address> handler = new SimpleOutboundHandler<>() {
             @Override
             protected void matchedOutbound(final HandlerContext ctx,

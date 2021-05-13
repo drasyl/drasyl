@@ -68,8 +68,8 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Addres
                                    final Address recipient,
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
-        if (started && ctx.identity().getPublicKey().equals(recipient)) {
-            ctx.passInbound(ctx.identity().getPublicKey(), msg, future);
+        if (started && ctx.identity().getIdentityPublicKey().equals(recipient)) {
+            ctx.passInbound(ctx.identity().getIdentityPublicKey(), msg, future);
         }
         else {
             ctx.passOutbound(recipient, msg, future);

@@ -82,7 +82,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
                     }
 
                     newRegistry.config().commonTags(
-                            "public_key", ctx.identity().getPublicKey().toString(),
+                            "public_key", ctx.identity().getIdentityPublicKey().toString(),
                             "host", hostTag
                     );
 

@@ -22,7 +22,7 @@
 package org.drasyl.event;
 
 import org.drasyl.annotation.Nullable;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 
 import java.util.Objects;
 
@@ -34,16 +34,16 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class MessageEvent implements Event {
-    private final CompressedPublicKey sender;
+    private final IdentityPublicKey sender;
     private final Object payload;
 
     /**
      * @throws NullPointerException if {@code sender} is {@code null}
-     * @deprecated Use {@link #of(CompressedPublicKey, Object)} instead.
+     * @deprecated Use {@link #of(IdentityPublicKey, Object)} instead.
      */
     // make method private on next release
     @Deprecated(since = "0.4.0", forRemoval = true)
-    public MessageEvent(final CompressedPublicKey sender, final Object payload) {
+    public MessageEvent(final IdentityPublicKey sender, final Object payload) {
         this.sender = requireNonNull(sender);
         this.payload = payload;
     }
@@ -54,7 +54,7 @@ public class MessageEvent implements Event {
      * @return the message's sender
      */
     @Nullable
-    public CompressedPublicKey getSender() {
+    public IdentityPublicKey getSender() {
         return sender;
     }
 
@@ -100,7 +100,7 @@ public class MessageEvent implements Event {
      * @param payload content of the message
      * @throws NullPointerException if {@code sender} is {@code null}
      */
-    public static MessageEvent of(final CompressedPublicKey sender, final Object payload) {
+    public static MessageEvent of(final IdentityPublicKey sender, final Object payload) {
         return new MessageEvent(sender, payload);
     }
 }

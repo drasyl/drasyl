@@ -25,62 +25,44 @@ import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class CompressedPrivateKeyTest {
-    private CompressedPrivateKey privateKey;
+class IdentityPublicKeyTest {
+    private IdentityPublicKey publicKey;
 
     @BeforeEach
     void setUp() {
-        privateKey = CompressedPrivateKey.of("03a3c01d41b6a7c31b081c9f1ee0f8cd5d11e7ceb784359b57388c752d38f581");
-    }
-
-    @Nested
-    class ToString {
-        @Test
-        void shouldReturnMaskedKey() {
-            assertThat(privateKey.toString(), not(containsString(privateKey.toUnmaskedString())));
-        }
-    }
-
-    @Nested
-    class ToUnmaskedString {
-        @Test
-        void shouldReturnUnmaskedKey() {
-            assertEquals("03a3c01d41b6a7c31b081c9f1ee0f8cd5d11e7ceb784359b57388c752d38f581", privateKey.toUnmaskedString());
-        }
+        publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
     }
 
     @Nested
     class Of {
         @Test
         void shouldReturnCorrectKeys() {
-            final CompressedPrivateKey compressedPrivateKey1 = privateKey;
-            final CompressedPrivateKey compressedPrivateKey2 = CompressedPrivateKey.of(compressedPrivateKey1.byteArrayValue());
-            final CompressedPrivateKey compressedPrivateKey3 = CompressedPrivateKey.of(compressedPrivateKey2.byteArrayValue());
+            final IdentityPublicKey publicKey1 = publicKey;
+            final IdentityPublicKey publicKey2 = IdentityPublicKey.of(publicKey1.getKey());
+            final IdentityPublicKey publicKey3 = IdentityPublicKey.of(publicKey2.getKey());
 
-            assertEquals(compressedPrivateKey1, compressedPrivateKey2);
-            assertEquals(compressedPrivateKey1, compressedPrivateKey3);
-            assertEquals(compressedPrivateKey2, compressedPrivateKey3);
-            assertEquals(compressedPrivateKey1.hashCode(), compressedPrivateKey2.hashCode());
-            assertEquals(compressedPrivateKey1.hashCode(), compressedPrivateKey3.hashCode());
-            assertEquals(compressedPrivateKey2.hashCode(), compressedPrivateKey3.hashCode());
+            assertEquals(publicKey1, publicKey2);
+            assertEquals(publicKey1, publicKey3);
+            assertEquals(publicKey2, publicKey3);
+            assertEquals(publicKey1.hashCode(), publicKey2.hashCode());
+            assertEquals(publicKey1.hashCode(), publicKey3.hashCode());
+            assertEquals(publicKey2.hashCode(), publicKey3.hashCode());
         }
 
         @Test
         void shouldRejectInvalidKeys() {
-            assertThrows(IllegalArgumentException.class, () -> CompressedPrivateKey.of(new byte[0]));
-            assertThrows(IllegalArgumentException.class, () -> CompressedPrivateKey.of(""));
+            assertThrows(IllegalArgumentException.class, () -> IdentityPublicKey.of(new byte[0]));
+            assertThrows(IllegalArgumentException.class, () -> IdentityPublicKey.of(""));
         }
     }
 
@@ -88,11 +70,11 @@ class CompressedPrivateKeyTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "\"A6PAHUG2p8MbCByfHuD4zV0R5863hDWbVziMdS049YE=\"";
+            final String json = "\"18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127\"";
 
             assertEquals(
-                    CompressedPrivateKey.of("03a3c01d41b6a7c31b081c9f1ee0f8cd5d11e7ceb784359b57388c752d38f581"),
-                    JACKSON_READER.readValue(json, CompressedPrivateKey.class)
+                    IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"),
+                    JACKSON_READER.readValue(json, IdentityPublicKey.class)
             );
         }
     }
@@ -101,9 +83,9 @@ class CompressedPrivateKeyTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            assertThatJson(JACKSON_WRITER.writeValueAsString(privateKey))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(publicKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo("A6PAHUG2p8MbCByfHuD4zV0R5863hDWbVziMdS049YE=");
+                    .isEqualTo("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
         }
     }
 }

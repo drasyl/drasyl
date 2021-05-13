@@ -60,6 +60,6 @@ public class DiscardServer extends DrasylNode {
         final DiscardServer node = new DiscardServer(config);
 
         node.start().get();
-        System.out.println("DiscardServer listening on address " + node.identity().getPublicKey());
+        System.out.println("DiscardServer listening on address " + node.identity().getIdentityPublicKey());
     }
 }

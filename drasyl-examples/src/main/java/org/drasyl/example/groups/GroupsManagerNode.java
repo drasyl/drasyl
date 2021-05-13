@@ -62,7 +62,7 @@ public class GroupsManagerNode extends DrasylNode {
         if (event instanceof NodeOnlineEvent) {
             System.out.println("Node is online! Other nodes can now join the group `" + group.getName() + "` by adding the following group url to the config:");
             System.out.println();
-            System.out.println("  " + group.getUri(identity().getPublicKey()).toUri());
+            System.out.println("  " + group.getUri(identity().getIdentityPublicKey()).toUri());
             System.out.println();
             System.out.println("More information: https://docs.drasyl.org/plugins/groups/#configuration");
         }

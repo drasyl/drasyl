@@ -62,6 +62,6 @@ public class EchoServer extends DrasylNode {
         final EchoServer node = new EchoServer(config);
 
         node.start().get();
-        System.out.println("EchoServer listening on address " + node.identity().getPublicKey());
+        System.out.println("EchoServer listening on address " + node.identity().getIdentityPublicKey());
     }
 }

@@ -24,9 +24,6 @@ package org.drasyl.cli.command;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.EmbeddedNode;
-import org.drasyl.identity.CompressedPrivateKey;
-import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -36,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
+import test.util.IdentityTestUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -60,7 +58,7 @@ import static test.util.DrasylConfigRenderer.renderConfig;
 
 class PerfCommandIT {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeCommandIT.class);
-    private static final Pattern ADDRESS_PATTERN = Pattern.compile("([0-9A-F]{66})", CASE_INSENSITIVE);
+    private static final Pattern ADDRESS_PATTERN = Pattern.compile("([0-9A-F]{64})", CASE_INSENSITIVE);
     private EmbeddedNode superPeer;
     private ByteArrayOutputStream serverOut;
     private ByteArrayOutputStream clientOut;
@@ -74,9 +72,9 @@ class PerfCommandIT {
         // create super peer
         final DrasylConfig superPeerConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(ProofOfWork.of(6518542))
-                .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
-                .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
+                .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
+                .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
+                .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
                 .remoteExposeEnabled(false)
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
@@ -114,10 +112,10 @@ class PerfCommandIT {
         // create server
         final DrasylConfig serverConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(ProofOfWork.of(12304070))
-                .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
-                .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
-                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
+                .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
+                .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
+                .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
+                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
@@ -148,10 +146,10 @@ class PerfCommandIT {
         // create client
         final DrasylConfig clientConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(ProofOfWork.of(33957767))
-                .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
-                .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
-                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
+                .identityProofOfWork(IdentityTestUtil.ID_3.getProofOfWork())
+                .identityPublicKey(IdentityTestUtil.ID_3.getIdentityPublicKey())
+                .identitySecretKey(IdentityTestUtil.ID_3.getIdentitySecretKey())
+                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)

@@ -27,9 +27,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
@@ -44,6 +42,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
+import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -69,17 +68,15 @@ public class UdpServerBenchmark extends AbstractBenchmark {
             futures = new CompletableFuture[Runtime.getRuntime().availableProcessors()];
             socket = new DatagramSocket();
 
-            identity2 = Identity.of(ProofOfWork.of(-2145822673),
-                    CompressedKeyPair.of("AgUAcj2PUQ8jqQpF4yANhFuPUlwSWpuzb9gIX6rzkc6g",
-                            "DkEGET4hDK87hwVhGN8wl9SIL0cSKcY0MRsa3LrV0/U="));
+            identity2 = IdentityTestUtil.ID_2;
 
             final UdpServer handler = new UdpServer();
 
             final DrasylConfig config2 = DrasylConfig.newBuilder()
                     .remoteBindPort(0)
                     .identityProofOfWork(identity2.getProofOfWork())
-                    .identityPublicKey(identity2.getPublicKey())
-                    .identityPrivateKey(identity2.getPrivateKey())
+                    .identityPublicKey(identity2.getIdentityPublicKey())
+                    .identitySecretKey(identity2.getIdentitySecretKey())
                     .build();
 
             pipeline = new EmbeddedPipeline(config2, identity2, new PeersManager((e) -> {

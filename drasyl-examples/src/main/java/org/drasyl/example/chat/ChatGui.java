@@ -29,6 +29,7 @@ import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.event.Event;
+import org.drasyl.event.LongTimeEncryptionEvent;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
@@ -38,7 +39,8 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
+import org.drasyl.identity.IdentityPublicKey;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -220,7 +222,7 @@ public class ChatGui {
             /**
              * Reaction to a {@link org.drasyl.event.MessageEvent}.
              */
-            private Behavior messageEvent(final CompressedPublicKey sender, final String payload) {
+            private Behavior messageEvent(final IdentityPublicKey sender, final String payload) {
                 appendTextToMessageArea(" From " + sender + ": " + payload + "\n");
                 Toolkit.getDefaultToolkit().beep();
                 return Behaviors.same();
@@ -231,10 +233,16 @@ public class ChatGui {
              */
             private Behavior peerEvent(final PeerEvent event) {
                 if (event instanceof PeerDirectEvent) {
-                    appendTextToMessageArea("Direct connection to " + event.getPeer().getPublicKey() + " available.\n");
+                    appendTextToMessageArea("Direct connection to " + event.getPeer().getIdentityPublicKey() + " available.\n");
                 }
                 else if (event instanceof PeerRelayEvent) {
-                    appendTextToMessageArea("Relayed connection to " + event.getPeer().getPublicKey() + " available.\n");
+                    appendTextToMessageArea("Relayed connection to " + event.getPeer().getIdentityPublicKey() + " available.\n");
+                }
+                else if (event instanceof PerfectForwardSecrecyEncryptionEvent) {
+                    appendTextToMessageArea("Using now perfect forwarded encryption with peer " + event.getPeer() + "\n");
+                }
+                else if (event instanceof LongTimeEncryptionEvent) {
+                    appendTextToMessageArea("Using now long time encryption with peer " + event.getPeer() + "\n");
                 }
                 return Behaviors.same();
             }
@@ -245,11 +253,11 @@ public class ChatGui {
             class OnlineTimeout implements Event {
             }
         };
-        frame.setTitle("Chat: " + node.identity().getPublicKey().toString());
+        frame.setTitle("Chat: " + node.identity().getIdentityPublicKey().toString());
         appendTextToMessageArea("*******************************************************************************************************\n");
         appendTextToMessageArea("This is an Example of a Chat Application running on the drasyl Overlay Network.\n");
         appendTextToMessageArea("It allows you to send Text Messages to other drasyl Nodes running this Chat Application.\n");
-        appendTextToMessageArea("Your address is " + node.identity().getPublicKey() + "\n");
+        appendTextToMessageArea("Your address is " + node.identity().getIdentityPublicKey() + "\n");
         appendTextToMessageArea("*******************************************************************************************************\n");
 
         startNode();

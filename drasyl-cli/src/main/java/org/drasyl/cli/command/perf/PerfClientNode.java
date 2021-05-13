@@ -39,7 +39,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
@@ -75,14 +75,14 @@ public class PerfClientNode extends BehavioralDrasylNode {
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream printStream;
     private final Scheduler perfScheduler;
-    private final Set<CompressedPublicKey> directConnections;
+    private final Set<IdentityPublicKey> directConnections;
     private TestOptions testOptions;
 
     @SuppressWarnings({ "java:S107", "java:S2384" })
     PerfClientNode(final CompletableFuture<Void> doneFuture,
                    final PrintStream printStream,
                    final Scheduler perfScheduler,
-                   final Set<CompressedPublicKey> directConnections,
+                   final Set<IdentityPublicKey> directConnections,
                    final DrasylConfig config,
                    final Identity identity,
                    final PeersManager peersManager,
@@ -122,7 +122,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
     /**
      * @throws NullPointerException if {@code server} is {@code null}
      */
-    public void setTestOptions(final CompressedPublicKey server,
+    public void setTestOptions(final IdentityPublicKey server,
                                final int testDuration,
                                final int messagesPerSecond,
                                final int messageSize,
@@ -282,10 +282,10 @@ public class PerfClientNode extends BehavioralDrasylNode {
      */
     Behavior handlePeerEvent(final PeerEvent event) {
         if (event instanceof PeerDirectEvent) {
-            directConnections.add(event.getPeer().getPublicKey());
+            directConnections.add(event.getPeer().getIdentityPublicKey());
         }
         else {
-            directConnections.remove(event.getPeer().getPublicKey());
+            directConnections.remove(event.getPeer().getIdentityPublicKey());
         }
         return same();
     }
@@ -295,7 +295,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
      */
     @SuppressWarnings("java:S2972")
     static class TestOptions implements Event {
-        private final CompressedPublicKey server;
+        private final IdentityPublicKey server;
         private final int messagesPerSecond;
         private final int testDuration;
         private final int messageSize;
@@ -305,7 +305,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
         /**
          * @throws NullPointerException if {@code server} is {@code null}
          */
-        public TestOptions(final CompressedPublicKey server,
+        public TestOptions(final IdentityPublicKey server,
                            final int testDuration,
                            final int messagesPerSecond,
                            final int messageSize,
@@ -318,7 +318,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
             this.reverse = reverse;
         }
 
-        public CompressedPublicKey getServer() {
+        public IdentityPublicKey getServer() {
             return server;
         }
 

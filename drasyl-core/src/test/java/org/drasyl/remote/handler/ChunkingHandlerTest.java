@@ -30,8 +30,8 @@ import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -40,7 +40,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.RemoteEnvelope;
@@ -53,6 +53,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -62,7 +63,7 @@ import java.util.concurrent.ExecutionException;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.remote.protocol.MessageId.randomMessageId;
+import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
@@ -85,11 +86,11 @@ class ChunkingHandlerTest {
         class WhenAddressedToMe {
             @Test
             void shouldPassthroughNonChunkedMessage() {
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
                 final Handler handler = new ChunkingHandler();
-                try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
+                try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
                     try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                         final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
@@ -107,10 +108,10 @@ class ChunkingHandlerTest {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final MessageId messageId = randomMessageId();
-                when(identity.getPublicKey()).thenReturn(recipient);
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+                final Nonce nonce = randomNonce();
+                when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -118,9 +119,9 @@ class ChunkingHandlerTest {
 
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
-                            .setId(messageId.longValue())
-                            .setSender(ByteString.copyFrom(sender.byteArrayValue()))
-                            .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
+                            .setNonce(ByteString.copyFrom(nonce.byteArrayValue()))
+                            .setSender(ByteString.copyFrom(sender.getKey()))
+                            .setRecipient(ByteString.copyFrom(recipient.getKey()))
                             .setHopCount(1)
                             .setTotalChunks(UnsignedShort.of(2).getValue())
                             .build();
@@ -140,10 +141,10 @@ class ChunkingHandlerTest {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final MessageId messageId = randomMessageId();
-                when(identity.getPublicKey()).thenReturn(recipient);
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+                final Nonce nonce = randomNonce();
+                when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -152,9 +153,9 @@ class ChunkingHandlerTest {
 
                     // normal chunk
                     final PublicHeader chunkHeader = PublicHeader.newBuilder()
-                            .setId(messageId.longValue())
-                            .setSender(ByteString.copyFrom(sender.byteArrayValue()))
-                            .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
+                            .setNonce(ByteString.copyFrom(nonce.byteArrayValue()))
+                            .setSender(ByteString.copyFrom(sender.getKey()))
+                            .setRecipient(ByteString.copyFrom(recipient.getKey()))
                             .setHopCount(1)
                             .setChunkNo(UnsignedShort.of(1).getValue())
                             .build();
@@ -166,9 +167,9 @@ class ChunkingHandlerTest {
 
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
-                            .setId(messageId.longValue())
-                            .setSender(ByteString.copyFrom(sender.byteArrayValue()))
-                            .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
+                            .setNonce(ByteString.copyFrom(nonce.byteArrayValue()))
+                            .setSender(ByteString.copyFrom(sender.getKey()))
+                            .setRecipient(ByteString.copyFrom(recipient.getKey()))
                             .setHopCount(1)
                             .setTotalChunks(UnsignedShort.of(2).getValue())
                             .build();
@@ -196,10 +197,10 @@ class ChunkingHandlerTest {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final MessageId messageId = randomMessageId();
-                when(identity.getPublicKey()).thenReturn(recipient);
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+                final Nonce nonce = randomNonce();
+                when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -207,9 +208,9 @@ class ChunkingHandlerTest {
 
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
-                            .setId(messageId.longValue())
-                            .setSender(ByteString.copyFrom(sender.byteArrayValue()))
-                            .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
+                            .setNonce(ByteString.copyFrom(nonce.byteArrayValue()))
+                            .setSender(ByteString.copyFrom(sender.getKey()))
+                            .setRecipient(ByteString.copyFrom(recipient.getKey()))
                             .setHopCount(1)
                             .setTotalChunks(UnsignedShort.of(2).getValue())
                             .build();
@@ -218,9 +219,9 @@ class ChunkingHandlerTest {
 
                     // normal chunk
                     final PublicHeader chunkHeader = PublicHeader.newBuilder()
-                            .setId(messageId.longValue())
-                            .setSender(ByteString.copyFrom(sender.byteArrayValue()))
-                            .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
+                            .setNonce(ByteString.copyFrom(nonce.byteArrayValue()))
+                            .setSender(ByteString.copyFrom(sender.getKey()))
+                            .setRecipient(ByteString.copyFrom(recipient.getKey()))
                             .setHopCount(1)
                             .setChunkNo(UnsignedShort.of(1).getValue())
                             .build();
@@ -242,8 +243,8 @@ class ChunkingHandlerTest {
         class WhenNotAddressedToMe {
             @Test
             void shouldPassthroughNonChunkedMessage() {
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
                 final Handler handler = new ChunkingHandler();
                 try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
@@ -261,9 +262,9 @@ class ChunkingHandlerTest {
 
             @Test
             void shouldPassthroughChunkedMessage() throws IOException {
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                final MessageId messageId = randomMessageId();
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+                final Nonce nonce = randomNonce();
 
                 final Handler handler = new ChunkingHandler();
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
@@ -271,9 +272,9 @@ class ChunkingHandlerTest {
                     }).test();
 
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
-                            .setId(messageId.longValue())
-                            .setSender(ByteString.copyFrom(sender.byteArrayValue()))
-                            .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
+                            .setNonce(ByteString.copyFrom(nonce.byteArrayValue()))
+                            .setSender(ByteString.copyFrom(sender.getKey()))
+                            .setRecipient(ByteString.copyFrom(recipient.getKey()))
                             .setHopCount(1)
                             .setTotalChunks(UnsignedShort.of(2).getValue())
                             .build();
@@ -301,9 +302,9 @@ class ChunkingHandlerTest {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                when(identity.getPublicKey()).thenReturn(sender);
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+                when(identity.getIdentityPublicKey()).thenReturn(sender);
 
                 final Handler handler = new ChunkingHandler();
                 try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {
@@ -324,9 +325,9 @@ class ChunkingHandlerTest {
             void shouldDropMessageExceedingMaximumMessageSize(@Mock final InetSocketAddressWrapper address) {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                when(identity.getPublicKey()).thenReturn(sender);
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+                when(identity.getIdentityPublicKey()).thenReturn(sender);
 
                 final Handler handler = new ChunkingHandler();
                 try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMaxContentLength])) {
@@ -345,9 +346,9 @@ class ChunkingHandlerTest {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-                when(identity.getPublicKey()).thenReturn(sender);
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+                when(identity.getIdentityPublicKey()).thenReturn(sender);
 
                 try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), RandomUtil.randomBytes(remoteMessageMtu * 2))) {
                     final Handler handler = new ChunkingHandler();
@@ -392,8 +393,8 @@ class ChunkingHandlerTest {
         class NotFromMe {
             @Test
             void shouldPassthroughMessage(@Mock final InetSocketAddressWrapper recipientAddress) {
-                final CompressedPublicKey sender = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-                final CompressedPublicKey recipient = CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
+                final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
+                final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
                 final Handler handler = new ChunkingHandler();
                 try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), new byte[remoteMessageMtu / 2])) {

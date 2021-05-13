@@ -27,8 +27,8 @@ import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -191,7 +192,7 @@ class DrasylNodeTest {
         }
 
         @Test
-        void shouldPassMessageToPipeline(@Mock final CompressedPublicKey myRecipient) {
+        void shouldPassMessageToPipeline(@Mock final IdentityPublicKey myRecipient) {
             underTest.send(myRecipient, new byte[]{ 0x4f });
 
             verify(pipeline).processOutbound(myRecipient, payload);
@@ -199,16 +200,16 @@ class DrasylNodeTest {
 
         @Test
         void recipientAsStringShouldPassMessageToPipeline() {
-            underTest.send("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", payload);
+            underTest.send(IdentityTestUtil.ID_1.getIdentityPublicKey().toString(), payload);
 
             verify(pipeline).processOutbound(
-                    CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"),
+                    IdentityTestUtil.ID_1.getIdentityPublicKey(),
                     payload
             );
         }
 
         @Test
-        void payloadAsStringShouldPassMessageToPipeline(@Mock final CompressedPublicKey myRecipient) {
+        void payloadAsStringShouldPassMessageToPipeline(@Mock final IdentityPublicKey myRecipient) {
             underTest.send(myRecipient, "Hallo Welt");
 
             verify(pipeline).processOutbound(
@@ -219,10 +220,10 @@ class DrasylNodeTest {
 
         @Test
         void recipientAndPayloadAsStringShouldPassMessageToPipeline() {
-            underTest.send("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "Hallo Welt");
+            underTest.send(IdentityTestUtil.ID_1.getIdentityPublicKey().toString(), "Hallo Welt");
 
             verify(pipeline).processOutbound(
-                    CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"),
+                    IdentityTestUtil.ID_1.getIdentityPublicKey(),
                     "Hallo Welt"
             );
         }

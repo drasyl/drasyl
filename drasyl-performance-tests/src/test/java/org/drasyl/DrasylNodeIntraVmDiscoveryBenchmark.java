@@ -23,9 +23,7 @@ package org.drasyl;
 
 import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -34,6 +32,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
+import test.util.IdentityTestUtil;
 
 @State(Scope.Benchmark)
 public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
@@ -44,17 +43,13 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
     @Setup
     public void setup() {
         try {
-            final Identity identity1 = Identity.of(ProofOfWork.of(-2109504681),
-                    CompressedKeyPair.of("AhqX0pwBbAthIabf+05czWQjaxb5mmqWU4IdG3RHOuQh",
-                            "BRRzAewqH0MnNvidynNzpOwdfbXYzOjBHhWEO/ZcgsU="));
-            final Identity identity2 = Identity.of(ProofOfWork.of(-2145822673),
-                    CompressedKeyPair.of("AgUAcj2PUQ8jqQpF4yANhFuPUlwSWpuzb9gIX6rzkc6g",
-                            "DkEGET4hDK87hwVhGN8wl9SIL0cSKcY0MRsa3LrV0/U="));
+            final Identity identity1 = IdentityTestUtil.ID_1;
+            final Identity identity2 = IdentityTestUtil.ID_2;
 
             final DrasylConfig config1 = DrasylConfig.newBuilder()
                     .identityProofOfWork(identity1.getProofOfWork())
-                    .identityPublicKey(identity1.getPublicKey())
-                    .identityPrivateKey(identity1.getPrivateKey())
+                    .identityPublicKey(identity1.getIdentityPublicKey())
+                    .identitySecretKey(identity1.getIdentitySecretKey())
                     .intraVmDiscoveryEnabled(true)
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(false)
@@ -62,8 +57,8 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
                     .build();
             final DrasylConfig config2 = DrasylConfig.newBuilder()
                     .identityProofOfWork(identity2.getProofOfWork())
-                    .identityPublicKey(identity2.getPublicKey())
-                    .identityPrivateKey(identity2.getPrivateKey())
+                    .identityPublicKey(identity2.getIdentityPublicKey())
+                    .identitySecretKey(identity2.getIdentitySecretKey())
                     .intraVmDiscoveryEnabled(true)
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(false)
@@ -103,6 +98,6 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
     @Threads(Threads.MAX)
     @BenchmarkMode(Mode.Throughput)
     public void benchmark() {
-        node1.send(node2.identity().getPublicKey(), testPayload).join();
+        node1.send(node2.identity().getIdentityPublicKey(), testPayload).join();
     }
 }

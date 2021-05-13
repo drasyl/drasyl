@@ -23,7 +23,7 @@ package org.drasyl.pipeline;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -319,7 +319,7 @@ class DrasylPipelineTest {
     class ProcessInboundMessage {
         @SuppressWarnings("rawtypes")
         @Test
-        void shouldProcessMessage(@Mock final CompressedPublicKey sender,
+        void shouldProcessMessage(@Mock final IdentityPublicKey sender,
                                   @Mock final RemoteEnvelope msg) {
             final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
             final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity, outboundMessagesBuffer);
@@ -350,7 +350,7 @@ class DrasylPipelineTest {
     @Nested
     class ProcessOutboundMessage {
         @Test
-        void shouldProcessMessage(@Mock final CompressedPublicKey recipient,
+        void shouldProcessMessage(@Mock final IdentityPublicKey recipient,
                                   @Mock final AddressedEnvelope<?, ?> msg) {
             when(outboundMessagesBuffer.tryAcquire()).thenReturn(true);
 
@@ -366,7 +366,7 @@ class DrasylPipelineTest {
         }
 
         @Test
-        void shouldNotProcessMessageIfBufferIsFull(@Mock final CompressedPublicKey recipient,
+        void shouldNotProcessMessageIfBufferIsFull(@Mock final IdentityPublicKey recipient,
                                                    @Mock final AddressedEnvelope<?, ?> msg) {
             when(outboundMessagesBuffer.tryAcquire()).thenReturn(false);
 

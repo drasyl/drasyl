@@ -22,7 +22,7 @@
 package org.drasyl.plugin.groups.client.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.Group;
 
 import java.util.Objects;
@@ -31,16 +31,16 @@ import static java.util.Objects.requireNonNull;
 
 @SuppressWarnings("java:S118")
 abstract class MemberActionMessage extends GroupActionMessage {
-    protected final CompressedPublicKey member;
+    protected final IdentityPublicKey member;
 
     protected MemberActionMessage(
-            @JsonProperty("member") final CompressedPublicKey member,
+            @JsonProperty("member") final IdentityPublicKey member,
             @JsonProperty("group") final Group group) {
         super(group);
         this.member = requireNonNull(member);
     }
 
-    public CompressedPublicKey getMember() {
+    public IdentityPublicKey getMember() {
         return member;
     }
 

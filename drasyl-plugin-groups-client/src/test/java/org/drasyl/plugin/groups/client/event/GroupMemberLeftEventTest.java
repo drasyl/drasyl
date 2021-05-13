@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.client.event;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.Group;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @ExtendWith(MockitoExtension.class)
 class GroupMemberLeftEventTest {
     @Mock
-    private CompressedPublicKey member;
+    private IdentityPublicKey member;
     @Mock
     private Group group;
 
@@ -67,7 +67,7 @@ class GroupMemberLeftEventTest {
         }
 
         @Test
-        void shouldNotBeEquals(@Mock final CompressedPublicKey member2) {
+        void shouldNotBeEquals(@Mock final IdentityPublicKey member2) {
             final GroupMemberLeftEvent event1 = GroupMemberLeftEvent.of(member, group);
             final GroupMemberLeftEvent event2 = GroupMemberLeftEvent.of(member2, group);
 
@@ -86,7 +86,7 @@ class GroupMemberLeftEventTest {
         }
 
         @Test
-        void shouldNotBeEquals(@Mock final CompressedPublicKey member2) {
+        void shouldNotBeEquals(@Mock final IdentityPublicKey member2) {
             final GroupMemberLeftEvent event1 = GroupMemberLeftEvent.of(member, group);
             final GroupMemberLeftEvent event2 = GroupMemberLeftEvent.of(member2, group);
 

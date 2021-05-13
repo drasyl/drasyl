@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
@@ -67,7 +67,7 @@ public class RemoteEnvelopeToByteBufCodecBenchmark extends AbstractBenchmark {
             sender = new InetSocketAddressWrapper("127.0.0.1", 25527);
             recipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
             final byte[] payload = RandomUtil.randomBytes(1024);
-            envelope = RemoteEnvelope.application(1337, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class.getName(), payload);
+            envelope = RemoteEnvelope.application(1337, IdentityPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), ProofOfWork.of(6518542), IdentityPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"), byte[].class.getName(), payload);
             byteBuf = envelope.getOrBuildByteBuf();
         }
         catch (final IOException e) {

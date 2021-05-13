@@ -27,9 +27,8 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
@@ -47,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -79,7 +79,7 @@ class LocalNetworkDiscoveryTest {
     @Mock
     private PeersManager peersManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Map<CompressedPublicKey, Peer> peers;
+    private Map<IdentityPublicKey, Peer> peers;
     @Mock
     private Disposable pingDisposable;
 
@@ -87,8 +87,8 @@ class LocalNetworkDiscoveryTest {
     class EventHandling {
         @BeforeEach
         void setUp() {
-            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
-            when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(42));
+            when(identity.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
+            when(identity.getProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
         }
 
         @Test
@@ -140,14 +140,14 @@ class LocalNetworkDiscoveryTest {
     class DoHeartbeat {
         @SuppressWarnings("unchecked")
         @Test
-        void shouldRemoveStalePeersAndPingLocalNetworkPeers(@Mock final CompressedPublicKey publicKey,
+        void shouldRemoveStalePeersAndPingLocalNetworkPeers(@Mock final IdentityPublicKey publicKey,
                                                             @Mock final Peer peer,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
-            when(ctx.identity().getPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
-            when(ctx.identity().getProofOfWork()).thenReturn(ProofOfWork.of(42));
+            when(ctx.identity().getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
+            when(ctx.identity().getProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
             when(peer.isStale(any())).thenReturn(true);
 
-            final HashMap<CompressedPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
+            final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             handler.doHeartbeat(ctx);
 
@@ -173,10 +173,10 @@ class LocalNetworkDiscoveryTest {
     @Nested
     class ClearRoutes {
         @Test
-        void shouldClearRoutes(@Mock final CompressedPublicKey publicKey,
+        void shouldClearRoutes(@Mock final IdentityPublicKey publicKey,
                                @Mock final Peer peer,
                                @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
-            final HashMap<CompressedPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
+            final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             handler.clearRoutes(ctx);
 
@@ -192,8 +192,8 @@ class LocalNetworkDiscoveryTest {
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddressWrapper sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                                    @Mock final Peer peer) {
-            final CompressedPublicKey publicKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            try (final RemoteEnvelope<Protocol.Discovery> msg = RemoteEnvelope.discovery(0, publicKey, ProofOfWork.of(6518542))) {
+            final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
+            try (final RemoteEnvelope<Protocol.Discovery> msg = RemoteEnvelope.discovery(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork())) {
                 when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
 
                 final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
@@ -206,9 +206,9 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldIgnoreInboundPingFromItself(@Mock final InetSocketAddressWrapper sender,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws InvalidMessageFormatException {
-            final CompressedPublicKey publicKey = CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            when(ctx.identity().getPublicKey()).thenReturn(publicKey);
-            try (final RemoteEnvelope<Protocol.Discovery> msg = RemoteEnvelope.discovery(0, publicKey, ProofOfWork.of(6518542))) {
+            final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
+            when(ctx.identity().getIdentityPublicKey()).thenReturn(publicKey);
+            try (final RemoteEnvelope<Protocol.Discovery> msg = RemoteEnvelope.discovery(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork())) {
 
                 final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
                 handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
@@ -236,7 +236,7 @@ class LocalNetworkDiscoveryTest {
 
     @SuppressWarnings({ "rawtypes", "SuspiciousMethodCalls" })
     @Test
-    void shouldRouteOutboundMessageWhenRouteIsPresent(@Mock final CompressedPublicKey recipient,
+    void shouldRouteOutboundMessageWhenRouteIsPresent(@Mock final IdentityPublicKey recipient,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
         when(peers.get(any())).thenReturn(peer);
@@ -254,7 +254,7 @@ class LocalNetworkDiscoveryTest {
 
     @SuppressWarnings("rawtypes")
     @Test
-    void shouldPassthroughMessageWhenRouteIsAbsent(@Mock final CompressedPublicKey recipient,
+    void shouldPassthroughMessageWhenRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);

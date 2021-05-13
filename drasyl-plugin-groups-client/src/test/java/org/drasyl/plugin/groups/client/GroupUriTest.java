@@ -21,12 +21,13 @@
  */
 package org.drasyl.plugin.groups.client;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
@@ -36,11 +37,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class GroupUriTest {
-    private CompressedPublicKey manager;
+    private IdentityPublicKey manager;
 
     @BeforeEach
     void setUp() {
-        manager = CompressedPublicKey.of("03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b");
+        manager = IdentityTestUtil.ID_1.getIdentityPublicKey();
     }
 
     @Nested
@@ -48,7 +49,7 @@ class GroupUriTest {
         @Test
         void shouldMaskCredentials() {
             assertEquals(
-                    "groups://***********@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/my-fancy-group?timeout=1",
+                    "groups://***********@" + manager + "/my-fancy-group?timeout=1",
                     GroupUri.of(manager, "credentials", "my-fancy-group", ofSeconds(1)).toString()
             );
         }
@@ -91,7 +92,7 @@ class GroupUriTest {
         void shouldCreateObjectOnCorrectURI() {
             assertEquals(
                     GroupUri.of(manager, "credentials", "my-fancy-group", ofMinutes(1)),
-                    GroupUri.of("groups://credentials@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/my-fancy-group?timeout=60")
+                    GroupUri.of("groups://credentials@" + manager + "/my-fancy-group?timeout=60")
             );
         }
 
@@ -99,18 +100,18 @@ class GroupUriTest {
         void shouldCreateObjectOnCorrectURIWithoutSecret() {
             assertEquals(
                     GroupUri.of(manager, "", "my-fancy-group", ofMinutes(1)),
-                    GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/my-fancy-group?timeout=60")
+                    GroupUri.of("groups://" + manager + "/my-fancy-group?timeout=60")
             );
         }
 
         @Test
         void shouldThrowExceptionOnInvalidURI() {
             assertThrows(IllegalArgumentException.class, () ->
-                    GroupUri.of("https://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group?timeout=60"));
+                    GroupUri.of("https://secret@" + manager + "/group?timeout=60"));
             assertThrows(IllegalArgumentException.class, () ->
                     GroupUri.of("groups://abcd/group?timeout=beer"));
             assertThrows(IllegalArgumentException.class, () ->
-                    GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b?timeout=60"));
+                    GroupUri.of("groups://" + manager + "?timeout=60"));
         }
     }
 
@@ -118,16 +119,16 @@ class GroupUriTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final GroupUri options1 = GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group?timeout=60");
-            final GroupUri options2 = GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group?timeout=60");
+            final GroupUri options1 = GroupUri.of("groups://" + manager + "/group?timeout=60");
+            final GroupUri options2 = GroupUri.of("groups://" + manager + "/group?timeout=60");
 
             assertEquals(options1, options2);
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupUri options1 = GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60");
-            final GroupUri options2 = GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60");
+            final GroupUri options1 = GroupUri.of("groups://" + manager + "/group1?timeout=60");
+            final GroupUri options2 = GroupUri.of("groups://" + manager + "/group2?timeout=60");
 
             assertNotEquals(options1, options2);
         }
@@ -137,16 +138,16 @@ class GroupUriTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final GroupUri options1 = GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group?timeout=60");
-            final GroupUri options2 = GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group?timeout=60");
+            final GroupUri options1 = GroupUri.of("groups://" + manager + "/group?timeout=60");
+            final GroupUri options2 = GroupUri.of("groups://" + manager + "/group?timeout=60");
 
             assertEquals(options1.hashCode(), options2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupUri options1 = GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60");
-            final GroupUri options2 = GroupUri.of("groups://03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60");
+            final GroupUri options1 = GroupUri.of("groups://" + manager + "/group1?timeout=60");
+            final GroupUri options2 = GroupUri.of("groups://" + manager + "/group2?timeout=60");
 
             assertNotEquals(options1.hashCode(), options2.hashCode());
         }

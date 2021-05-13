@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.manager.data;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @ExtendWith(MockitoExtension.class)
 class MemberTest {
     @Mock
-    private CompressedPublicKey publicKey;
+    private IdentityPublicKey publicKey;
 
     @Nested
     class Getters {
@@ -57,7 +57,7 @@ class MemberTest {
         }
 
         @Test
-        void shouldNotBeEquals(@Mock final CompressedPublicKey publicKey2) {
+        void shouldNotBeEquals(@Mock final IdentityPublicKey publicKey2) {
             final Member member1 = Member.of(publicKey);
             final Member member2 = Member.of(publicKey2);
 
@@ -76,7 +76,7 @@ class MemberTest {
         }
 
         @Test
-        void shouldNotBeEquals(@Mock final CompressedPublicKey publicKey2) {
+        void shouldNotBeEquals(@Mock final IdentityPublicKey publicKey2) {
             final Member member1 = Member.of(publicKey);
             final Member member2 = Member.of(publicKey2);
 

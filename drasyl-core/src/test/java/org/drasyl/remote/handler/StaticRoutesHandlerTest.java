@@ -27,9 +27,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
@@ -41,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,18 +51,16 @@ import static org.mockito.Mockito.when;
 class StaticRoutesHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
     @Mock
     private PeersManager peersManager;
 
     @Test
     void shouldPopulateRoutesOnNodeUpEvent(@Mock final NodeUpEvent event,
-                                           @Mock final CompressedPublicKey publicKey) {
+                                           @Mock final IdentityPublicKey publicKey) {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
             pipeline.processInbound(event).join();
 
             verify(peersManager).addPath(eq(publicKey), any());
@@ -72,11 +69,11 @@ class StaticRoutesHandlerTest {
 
     @Test
     void shouldClearRoutesOnNodeDownEvent(@Mock final NodeDownEvent event,
-                                          @Mock final CompressedPublicKey publicKey,
+                                          @Mock final IdentityPublicKey publicKey,
                                           @Mock final InetSocketAddressWrapper address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
             pipeline.processInbound(event).join();
 
             verify(peersManager).removePath(eq(publicKey), any());
@@ -85,11 +82,11 @@ class StaticRoutesHandlerTest {
 
     @Test
     void shouldClearRoutesOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
-                                                        @Mock final CompressedPublicKey publicKey,
+                                                        @Mock final IdentityPublicKey publicKey,
                                                         @Mock final InetSocketAddressWrapper address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
             pipeline.processInbound(event).join();
 
             verify(peersManager).removePath(eq(publicKey), any());
@@ -100,13 +97,11 @@ class StaticRoutesHandlerTest {
     @Test
     void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
-        final CompressedPublicKey publicKey = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
+        final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
-        when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
-        when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
             pipeline.processOutbound(publicKey, message).join();
@@ -119,12 +114,12 @@ class StaticRoutesHandlerTest {
 
     @SuppressWarnings("rawtypes")
     @Test
-    void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final CompressedPublicKey publicKey,
+    void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
 
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, StaticRoutesHandler.INSTANCE)) {
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
             pipeline.processOutbound(publicKey, message).join();

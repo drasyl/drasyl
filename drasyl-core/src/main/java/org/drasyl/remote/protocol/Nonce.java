@@ -21,34 +21,34 @@
  */
 package org.drasyl.remote.protocol;
 
+import com.goterl.lazysodium.interfaces.AEAD;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
- * A {@link AddressedEnvelope} is uniquely identified by its {@link #MESSAGE_ID_LENGTH} bytes
- * identifier.
+ * A {@link AddressedEnvelope} is uniquely identified by its {@link #NONCE_LENGTH} bytes long
+ * nonce.
  * <p>
  * This is an immutable object.
  */
-public final class MessageId {
-    public static final int MESSAGE_ID_LENGTH = 8;
-    private final byte[] id;
+public class Nonce {
+    public static final int NONCE_LENGTH = AEAD.XCHACHA20POLY1305_IETF_NPUBBYTES;
+    private final byte[] nonce; //NOSONAR
 
-    private MessageId(@NonNull final byte[] id) {
-        if (!isValidMessageId(id)) {
-            throw new IllegalArgumentException("ID must be a " + MESSAGE_ID_LENGTH + " bit byte array: " + HexUtil.bytesToHex(id));
+    private Nonce(@NonNull final byte[] nonce) {
+        if (!isValidNonce(nonce)) {
+            throw new IllegalArgumentException("NONCE must be a " + NONCE_LENGTH + " bit byte array: " + HexUtil.bytesToHex(nonce));
         }
-        this.id = id.clone();
+        this.nonce = nonce.clone();
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(id);
+        return Arrays.hashCode(nonce);
     }
 
     @Override
@@ -59,57 +59,49 @@ public final class MessageId {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final MessageId messageId = (MessageId) o;
-        return Arrays.equals(id, messageId.id);
+        final Nonce o2 = (Nonce) o;
+        return Arrays.equals(this.nonce, o2.nonce);
     }
 
     @Override
     public String toString() {
-        return HexUtil.bytesToHex(id);
+        return HexUtil.bytesToHex(nonce);
     }
 
     public byte[] byteArrayValue() {
-        return id.clone();
-    }
-
-    public long longValue() {
-        return ByteBuffer.wrap(id).getLong();
+        return nonce.clone();
     }
 
     /**
-     * Static factory to retrieve a randomly generated {@link MessageId}.
+     * Static factory to retrieve a randomly generated {@link Nonce}.
      *
-     * @return A randomly generated {@code MessageId}
+     * @return A randomly generated {@link Nonce}
      */
-    public static MessageId randomMessageId() {
-        return new MessageId(Crypto.randomBytes(MESSAGE_ID_LENGTH));
+    public static Nonce randomNonce() {
+        return new Nonce(Crypto.randomBytes(NONCE_LENGTH));
     }
 
     /**
-     * Checks if {@code id} is a valid identifier.
+     * Checks if {@code nonce} is a valid value.
      *
-     * @param id string to be validated
+     * @param nonce string to be validated
      * @return {@code true} if valid. Otherwise {@code false}
      */
-    public static boolean isValidMessageId(final byte[] id) {
-        return id != null && id.length == MESSAGE_ID_LENGTH;
+    public static boolean isValidNonce(final byte[] nonce) {
+        return nonce != null && nonce.length == NONCE_LENGTH;
     }
 
     /**
-     * @throws NullPointerException if {@code id} is {@code null}
+     * @throws NullPointerException if {@code nonce} is {@code null}
      */
-    public static MessageId of(@NonNull final byte[] id) {
-        return new MessageId(id);
+    public static Nonce of(@NonNull final byte[] nonce) {
+        return new Nonce(nonce);
     }
 
     /**
-     * @throws NullPointerException if {@code id} is {@code null}
+     * @throws NullPointerException if {@code nonce} is {@code null}
      */
-    public static MessageId of(@NonNull final String id) {
-        return new MessageId(HexUtil.parseHexBinary(id));
-    }
-
-    public static MessageId of(final long id) {
-        return of(ByteBuffer.allocate(Long.BYTES).putLong(id).array());
+    public static Nonce of(@NonNull final String nonce) {
+        return new Nonce(HexUtil.parseHexBinary(nonce));
     }
 }

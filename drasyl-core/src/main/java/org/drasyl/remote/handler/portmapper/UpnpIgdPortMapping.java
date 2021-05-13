@@ -117,7 +117,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         this.onFailure = onFailure;
         final Node node = event.getNode();
         port = node.getPort();
-        description = "drasyl" + node.getIdentity().getPublicKey().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
+        description = "drasyl" + node.getIdentity().getIdentityPublicKey().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
         mapPort(ctx);
     }
 

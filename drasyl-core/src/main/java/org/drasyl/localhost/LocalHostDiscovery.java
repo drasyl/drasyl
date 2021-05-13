@@ -27,7 +27,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -63,7 +63,6 @@ import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.identity.CompressedPublicKey.PUBLIC_KEY_LENGTH;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.RandomUtil.randomLong;
@@ -79,14 +78,14 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</a>
  */
 @SuppressWarnings("java:S1192")
-public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<Application>, CompressedPublicKey> {
+public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<Application>, IdentityPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
     private static final Object path = LocalHostDiscovery.class;
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     public static final String FILE_SUFFIX = ".json";
     private final ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
-    private final Map<CompressedPublicKey, InetSocketAddressWrapper> routes;
+    private final Map<IdentityPublicKey, InetSocketAddressWrapper> routes;
     private Disposable watchDisposable;
     private Disposable postDisposable;
     private WatchService watchService; // NOSONAR
@@ -102,7 +101,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
 
     @SuppressWarnings({ "java:S107" })
     LocalHostDiscovery(final ThrowingBiConsumer<File, Object, IOException> jacksonWriter,
-                       final Map<CompressedPublicKey, InetSocketAddressWrapper> routes,
+                       final Map<IdentityPublicKey, InetSocketAddressWrapper> routes,
                        final Disposable watchDisposable,
                        final Disposable postDisposable) {
         this.jacksonWriter = requireNonNull(jacksonWriter);
@@ -131,7 +130,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
 
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
-                                   final CompressedPublicKey recipient,
+                                   final IdentityPublicKey recipient,
                                    final RemoteEnvelope<Application> envelope,
                                    final CompletableFuture<Void> future) {
         final InetSocketAddressWrapper localAddress = routes.get(recipient);
@@ -162,7 +161,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
                 tryWatchDirectory(ctx, discoveryPath);
             }
             ctx.dependentScheduler().scheduleDirect(() -> scan(ctx));
-            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.identity().getPublicKey().toString() + ".json"), port);
+            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.identity().getIdentityPublicKey().toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
 
@@ -179,7 +178,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
             postDisposable.dispose();
         }
 
-        final Path filePath = discoveryPath(ctx).resolve(ctx.identity().getPublicKey().toString() + ".json");
+        final Path filePath = discoveryPath(ctx).resolve(ctx.identity().getIdentityPublicKey().toString() + ".json");
         if (filePath.toFile().exists()) {
             try {
                 Files.delete(filePath);
@@ -267,16 +266,16 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
     synchronized void scan(final HandlerContext ctx) {
         final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
-        final String ownPublicKeyString = ctx.identity().getPublicKey().toString();
+        final String ownPublicKeyString = ctx.identity().getIdentityPublicKey().toString();
         final long maxAge = System.currentTimeMillis() - ctx.config().getRemoteLocalHostDiscoveryLeaseTime().toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
         if (files != null) {
-            final Map<CompressedPublicKey, InetSocketAddress> newRoutes = new HashMap<>();
+            final Map<IdentityPublicKey, InetSocketAddress> newRoutes = new HashMap<>();
             for (final File file : files) {
                 try {
                     final String fileName = file.getName();
-                    if (file.lastModified() >= maxAge && fileName.length() == PUBLIC_KEY_LENGTH + FILE_SUFFIX.length() && fileName.endsWith(FILE_SUFFIX) && !fileName.startsWith(ownPublicKeyString)) {
-                        final CompressedPublicKey publicKey = CompressedPublicKey.of(fileName.replace(".json", ""));
+                    if (file.lastModified() >= maxAge && fileName.length() == IdentityPublicKey.KEY_LENGTH_AS_STRING + FILE_SUFFIX.length() && fileName.endsWith(FILE_SUFFIX) && !fileName.startsWith(ownPublicKeyString)) {
+                        final IdentityPublicKey publicKey = IdentityPublicKey.of(fileName.replace(".json", ""));
                         final TypeReference<Set<InetSocketAddress>> typeRef = new TypeReference<>() {
                         };
                         final Set<InetSocketAddress> addresses = JACKSON_READER.forType(typeRef).readValue(file);
@@ -297,11 +296,11 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
     }
 
     private void updateRoutes(final HandlerContext ctx,
-                              final Map<CompressedPublicKey, InetSocketAddress> newRoutes) {
+                              final Map<IdentityPublicKey, InetSocketAddress> newRoutes) {
         // remove outdated routes
-        for (final Iterator<CompressedPublicKey> i = routes.keySet().iterator();
+        for (final Iterator<IdentityPublicKey> i = routes.keySet().iterator();
              i.hasNext(); ) {
-            final CompressedPublicKey publicKey = i.next();
+            final IdentityPublicKey publicKey = i.next();
 
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer '{}' are outdated. Remove peer from routing table.", publicKey);

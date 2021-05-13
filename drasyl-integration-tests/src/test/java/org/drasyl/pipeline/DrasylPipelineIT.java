@@ -21,9 +21,12 @@
  */
 package org.drasyl.pipeline;
 
+import com.goterl.lazysodium.utils.SessionPair;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.DrasylConfig;
+import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.Node;
@@ -34,6 +37,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.AfterEach;
@@ -41,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -67,8 +72,8 @@ class DrasylPipelineIT {
         receivedEvents = PublishSubject.create();
         outboundMessages = PublishSubject.create();
 
-        identity1 = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
-        identity2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
+        identity1 = IdentityTestUtil.ID_1;
+        identity2 = IdentityTestUtil.ID_2;
 
         payload = new byte[]{
                 0x01,
@@ -79,8 +84,8 @@ class DrasylPipelineIT {
         final DrasylConfig config = DrasylConfig.newBuilder()
                 .networkId(0)
                 .identityProofOfWork(identity1.getProofOfWork())
-                .identityPublicKey(identity1.getPublicKey())
-                .identityPrivateKey(identity1.getPrivateKey())
+                .identityPublicKey(identity1.getIdentityPublicKey())
+                .identitySecretKey(identity1.getIdentitySecretKey())
                 .remoteExposeEnabled(false)
                 .remoteSuperPeerEnabled(false)
                 .remoteLocalHostDiscoveryEnabled(false)
@@ -112,7 +117,7 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void passMessageThroughThePipeline() throws IOException {
+    void passMessageThroughThePipeline() throws IOException, CryptoException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final byte[] newPayload = new byte[]{
@@ -127,20 +132,23 @@ class DrasylPipelineIT {
                                   final Address sender,
                                   final Object msg,
                                   final CompletableFuture<Void> future) throws Exception {
-                super.onInbound(ctx, identity2.getPublicKey(), newPayload, future);
+                super.onInbound(ctx, identity2.getIdentityPublicKey(), newPayload, future);
             }
         });
 
-        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey())) {
+        final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(identity2.getKeyAgreementKeyPair(), identity1.getKeyAgreementPublicKey());
+        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getIdentityPublicKey(), identity2.getProofOfWork(), identity1.getIdentityPublicKey(), byte[].class.getName(), new byte[]{})
+                .setAgreementId(AgreementId.of(identity1.getKeyAgreementPublicKey(), identity2.getKeyAgreementPublicKey()))
+                .armAndRelease(sessionPair)) {
             pipeline.processInbound(message.getSender(), message);
 
             events.awaitCount(1).assertValueCount(1);
-            events.assertValue(MessageEvent.of(identity2.getPublicKey(), newPayload));
+            events.assertValue(MessageEvent.of(identity2.getIdentityPublicKey(), newPayload));
         }
     }
 
     @Test
-    void passEventThroughThePipeline() throws ExecutionException, InterruptedException, IOException {
+    void passEventThroughThePipeline() throws ExecutionException, InterruptedException, IOException, CryptoException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final Event testEvent = new Event() {
@@ -161,7 +169,10 @@ class DrasylPipelineIT {
             }
         });
 
-        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes()).armAndRelease(identity2.getPrivateKey())) {
+        final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(identity2.getKeyAgreementKeyPair(), identity1.getKeyAgreementPublicKey());
+        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getIdentityPublicKey(), identity2.getProofOfWork(), identity1.getIdentityPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes())
+                .setAgreementId(AgreementId.of(identity1.getKeyAgreementPublicKey(), identity2.getKeyAgreementPublicKey()))
+                .armAndRelease(sessionPair)) {
             pipeline.processInbound(message.getSender(), message);
 
             events.awaitCount(3).assertValueCount(3);
@@ -171,7 +182,7 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void exceptionShouldPassThroughThePipeline() throws IOException {
+    void exceptionShouldPassThroughThePipeline() throws IOException, CryptoException {
         final PublishSubject<Throwable> receivedExceptions = PublishSubject.create();
         final TestObserver<Throwable> exceptions = receivedExceptions.test();
 
@@ -198,7 +209,8 @@ class DrasylPipelineIT {
             }
         });
 
-        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(identity2.getPrivateKey())) {
+        final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(identity1.getKeyAgreementKeyPair(), identity2.getKeyAgreementPublicKey());
+        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getIdentityPublicKey(), identity2.getProofOfWork(), identity1.getIdentityPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(sessionPair)) {
             pipeline.processInbound(message.getSender(), message);
 
             exceptions.awaitCount(1).assertValueCount(1);
@@ -222,14 +234,13 @@ class DrasylPipelineIT {
                                    final Address recipient,
                                    final Object msg,
                                    final CompletableFuture<Void> future) throws Exception {
-                super.onOutbound(ctx, identity2.getPublicKey(), newPayload, future);
+                super.onOutbound(ctx, identity2.getIdentityPublicKey(), newPayload, future);
             }
         });
 
-        final CompletableFuture<Void> future = pipeline.processOutbound(identity1.getPublicKey(), payload);
+        final CompletableFuture<Void> future = pipeline.processOutbound(identity1.getIdentityPublicKey(), payload);
 
-        outbounds.awaitCount(1).assertValueCount(1);
-        outbounds.assertValue(m -> m instanceof RemoteEnvelope);
+        outbounds.awaitCount(2).assertValueCount(2); // the second one comes from the key exchange
         future.join();
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
@@ -240,7 +251,7 @@ class DrasylPipelineIT {
     void shouldNotPassthroughsMessagesWithDoneFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
         final CompletableFuture<Void> future;
-        try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload)) {
+        try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getIdentityPublicKey(), identity1.getProofOfWork(), identity2.getIdentityPublicKey(), byte[].class.getName(), payload)) {
             IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
             pipeline.addLast("outbound", new HandlerAdapter() {
@@ -254,7 +265,7 @@ class DrasylPipelineIT {
                 }
             });
 
-            pipeline.processOutbound(identity2.getPublicKey(), msg).join();
+            pipeline.processOutbound(identity2.getIdentityPublicKey(), msg).join();
 
             outbounds.assertNoValues();
         }
@@ -263,7 +274,7 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload)) {
+        try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getIdentityPublicKey(), identity1.getProofOfWork(), identity2.getIdentityPublicKey(), byte[].class.getName(), payload)) {
             IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
             pipeline.addLast("outbound", new HandlerAdapter() {
@@ -277,7 +288,7 @@ class DrasylPipelineIT {
                 }
             });
 
-            assertThrows(CompletionException.class, pipeline.processOutbound(identity2.getPublicKey(), msg)::join);
+            assertThrows(CompletionException.class, pipeline.processOutbound(identity2.getIdentityPublicKey(), msg)::join);
             outbounds.assertNoValues();
         }
     }

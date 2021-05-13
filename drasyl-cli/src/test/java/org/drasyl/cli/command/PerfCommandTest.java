@@ -27,7 +27,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.cli.command.perf.PerfClientNode;
 import org.drasyl.cli.command.perf.PerfServerNode;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.ThrowingBiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -35,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -104,7 +104,7 @@ class PerfCommandTest {
         @Test
         void shouldStartClientNodeAndSetCorrectOptionsWhenClientOptionIsGiven(@Mock(answer = RETURNS_DEEP_STUBS) final PerfClientNode node) throws ParseException, DrasylException {
             when(cmd.hasOption("client")).thenReturn(true);
-            when(cmd.getParsedOptionValue("client")).thenReturn("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a98281ff73f2346d55195d0cd274c101c4775");
+            when(cmd.getParsedOptionValue("client")).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey().toString());
             when(clientNodeSupplier.apply(any(), any())).thenReturn(node);
             when(cmd.getParsedOptionValue("time")).thenReturn(20);
             when(cmd.getParsedOptionValue("mps")).thenReturn(200);
@@ -113,7 +113,7 @@ class PerfCommandTest {
             underTest.execute(cmd);
 
             verify(node).start();
-            verify(node).setTestOptions(CompressedPublicKey.of("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a98281ff73f2346d55195d0cd274c101c4775"), 20, 200, 500, false, false);
+            verify(node).setTestOptions(IdentityTestUtil.ID_1.getIdentityPublicKey(), 20, 200, 500, false, false);
         }
     }
 }

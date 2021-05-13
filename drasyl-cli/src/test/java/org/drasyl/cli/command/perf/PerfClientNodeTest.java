@@ -38,7 +38,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
@@ -79,7 +79,7 @@ class PerfClientNodeTest {
     private CompletableFuture<Void> doneFuture;
     @Mock
     private Scheduler perfScheduler;
-    private Set<CompressedPublicKey> directConnections;
+    private Set<IdentityPublicKey> directConnections;
     @Mock
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -144,7 +144,7 @@ class PerfClientNodeTest {
                 @Nested
                 class WhenDirectConnectionIsNotRequired {
                     @Mock
-                    private CompressedPublicKey server;
+                    private IdentityPublicKey server;
 
                     @BeforeEach
                     void setUp() {
@@ -162,7 +162,7 @@ class PerfClientNodeTest {
                 @Nested
                 class WhenDirectConnectionIsRequired {
                     @Mock
-                    private CompressedPublicKey server;
+                    private IdentityPublicKey server;
 
                     @BeforeEach
                     void setUp() {
@@ -214,7 +214,7 @@ class PerfClientNodeTest {
                 void shouldRequestSession(@Mock final TestOptions serverAndOptions,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                           @Mock final SessionConfirmation sessionConfirmation,
-                                          @Mock final CompressedPublicKey sender) {
+                                          @Mock final IdentityPublicKey sender) {
                     when(serverAndOptions.getMessagesPerSecond()).thenReturn(100);
                     when(serverAndOptions.getTestDuration()).thenReturn(10);
                     when(serverAndOptions.getMessageSize()).thenReturn(850);
@@ -236,7 +236,7 @@ class PerfClientNodeTest {
                 void shouldCompleteExceptionally(@Mock final TestOptions serverAndOptions,
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                                  @Mock final SessionRejection sessionRejection,
-                                                 @Mock final CompressedPublicKey sender) {
+                                                 @Mock final IdentityPublicKey sender) {
                     when(serverAndOptions.getMessagesPerSecond()).thenReturn(100);
                     when(serverAndOptions.getTestDuration()).thenReturn(10);
                     when(serverAndOptions.getMessageSize()).thenReturn(850);
@@ -258,7 +258,7 @@ class PerfClientNodeTest {
                 void shouldCompleteExceptionally(@Mock final TestOptions serverAndOptions,
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                                  @Mock final RequestSessionTimeout requestSessionTimeout,
-                                                 @Mock final CompressedPublicKey sender) {
+                                                 @Mock final IdentityPublicKey sender) {
                     when(serverAndOptions.getMessagesPerSecond()).thenReturn(100);
                     when(serverAndOptions.getTestDuration()).thenReturn(10);
                     when(serverAndOptions.getMessageSize()).thenReturn(850);
@@ -290,15 +290,15 @@ class PerfClientNodeTest {
         void shouldAddPeerOnDirectEvent(@Mock(answer = RETURNS_DEEP_STUBS) final PeerDirectEvent event) {
             assertEquals(Behaviors.same(), underTest.handlePeerEvent(event));
 
-            assertThat(directConnections, hasItem(event.getPeer().getPublicKey()));
+            assertThat(directConnections, hasItem(event.getPeer().getIdentityPublicKey()));
         }
 
         @Test
         void shouldRemovePeerOnRelayEvent(@Mock(answer = RETURNS_DEEP_STUBS) final PeerRelayEvent event) {
-            directConnections.add(event.getPeer().getPublicKey());
+            directConnections.add(event.getPeer().getIdentityPublicKey());
             assertEquals(Behaviors.same(), underTest.handlePeerEvent(event));
 
-            assertThat(directConnections, not(hasItem(event.getPeer().getPublicKey())));
+            assertThat(directConnections, not(hasItem(event.getPeer().getIdentityPublicKey())));
         }
     }
 
@@ -313,7 +313,7 @@ class PerfClientNodeTest {
     @Nested
     class TestTestOptions {
         @Test
-        void shouldNotFail(@Mock final CompressedPublicKey server) {
+        void shouldNotFail(@Mock final IdentityPublicKey server) {
             assertDoesNotThrow(() -> underTest.setTestOptions(server, 10, 100, 850, true, false));
         }
     }

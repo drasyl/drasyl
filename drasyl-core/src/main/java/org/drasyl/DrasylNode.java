@@ -32,7 +32,7 @@ import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.PeersManager;
@@ -281,7 +281,7 @@ public abstract class DrasylNode {
     public CompletableFuture<Void> send(@NonNull final String recipient,
                                         final Object payload) {
         try {
-            return send(CompressedPublicKey.of(recipient), payload);
+            return send(IdentityPublicKey.of(recipient), payload);
         }
         catch (final IllegalArgumentException e) {
             return failedFuture(new DrasylException("Recipient does not conform to a valid public key.", e));
@@ -311,7 +311,7 @@ public abstract class DrasylNode {
      * @since 0.1.3-SNAPSHOT
      */
     @NonNull
-    public CompletableFuture<Void> send(@Nullable final CompressedPublicKey recipient,
+    public CompletableFuture<Void> send(@Nullable final IdentityPublicKey recipient,
                                         final Object payload) {
         return pipeline.processOutbound(recipient, payload);
     }

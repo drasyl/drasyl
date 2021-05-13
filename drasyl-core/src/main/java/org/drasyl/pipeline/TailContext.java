@@ -24,7 +24,7 @@ package org.drasyl.pipeline;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -79,8 +79,8 @@ class TailContext extends AbstractEndHandler {
             return;
         }
 
-        if (sender instanceof CompressedPublicKey) {
-            final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
+        if (sender instanceof IdentityPublicKey) {
+            final IdentityPublicKey senderAddress = (IdentityPublicKey) sender;
             final MessageEvent event = MessageEvent.of(senderAddress, msg);
             future.complete(null);
             LOG.trace("Event has passed the pipeline: `{}` ", event);
@@ -88,9 +88,9 @@ class TailContext extends AbstractEndHandler {
             eventConsumer.accept(event);
         }
         else {
-            future.completeExceptionally(new IllegalStateException("Message was not written to the application, because the sender address was not of type `" + CompressedPublicKey.class.getSimpleName() + "` (was type `" + sender.getClass().getSimpleName() + "`)."));
+            future.completeExceptionally(new IllegalStateException("Message was not written to the application, because the sender address was not of type `" + IdentityPublicKey.class.getSimpleName() + "` (was type `" + sender.getClass().getSimpleName() + "`)."));
             //noinspection unchecked
-            LOG.debug("Message '{}' was not written to the application, because the sender address was not of type `{}` (was type `{}`).", () -> msg, CompressedPublicKey.class::getSimpleName, sender.getClass()::getSimpleName);
+            LOG.debug("Message '{}' was not written to the application, because the sender address was not of type `{}` (was type `{}`).", () -> msg, IdentityPublicKey.class::getSimpleName, sender.getClass()::getSimpleName);
         }
     }
 

@@ -25,7 +25,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -52,14 +52,14 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
     public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
-    private final Map<Pair<Integer, CompressedPublicKey>, HandlerContext> discoveries;
+    private final Map<Pair<Integer, IdentityPublicKey>, HandlerContext> discoveries;
     private final ReadWriteLock lock;
 
     IntraVmDiscovery() {
         this(new HashMap<>(), new ReentrantReadWriteLock(true));
     }
 
-    IntraVmDiscovery(final Map<Pair<Integer, CompressedPublicKey>, HandlerContext> discoveries,
+    IntraVmDiscovery(final Map<Pair<Integer, IdentityPublicKey>, HandlerContext> discoveries,
                      final ReadWriteLock lock) {
         this.discoveries = discoveries;
         this.lock = lock;
@@ -95,7 +95,7 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
             ctx.passOutbound(recipient, msg, future);
         }
         else {
-            discoveree.passInbound(ctx.identity().getPublicKey(), msg, future);
+            discoveree.passInbound(ctx.identity().getIdentityPublicKey(), msg, future);
         }
     }
 
@@ -107,14 +107,14 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
             // store peer information
             discoveries.forEach((key, otherCtx) -> {
                 final Integer networkId = key.first();
-                final CompressedPublicKey publicKey = key.second();
+                final IdentityPublicKey publicKey = key.second();
                 if (myCtx.config().getNetworkId() == networkId) {
-                    otherCtx.peersManager().addPath(myCtx.identity().getPublicKey(), path);
+                    otherCtx.peersManager().addPath(myCtx.identity().getIdentityPublicKey(), path);
                     myCtx.peersManager().addPath(publicKey, path);
                 }
             });
             discoveries.put(
-                    Pair.of(myCtx.config().getNetworkId(), myCtx.identity().getPublicKey()),
+                    Pair.of(myCtx.config().getNetworkId(), myCtx.identity().getIdentityPublicKey()),
                     myCtx
             );
 
@@ -133,10 +133,10 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
             LOG.debug("Stop Intra VM Discovery...");
 
             // remove peer information
-            discoveries.remove(Pair.of(ctx.config().getNetworkId(), ctx.identity().getPublicKey()));
+            discoveries.remove(Pair.of(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey()));
             discoveries.forEach((key, otherCtx) -> {
                 final Integer networkId = key.first();
-                final CompressedPublicKey publicKey = key.second();
+                final IdentityPublicKey publicKey = key.second();
                 if (ctx.config().getNetworkId() == networkId) {
                     otherCtx.peersManager().removePath(publicKey, path);
                     ctx.peersManager().removePath(publicKey, path);
