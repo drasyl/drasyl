@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  java:
+    name: Java
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: 'adopt'
+      - name: Build with Maven
+        env:
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -DskipTests --projects drasyl-cli --also-make package
+      - name: Upload Package
+        uses: softprops/action-gh-release@v1
+        with:
+          files: drasyl-*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  native-image:
+    strategy:
+      fail-fast: false
+      matrix:
+        job_name:
+          - linux-amd64
+          - linux-arm64
+          - macos-amd64
+          - windows-amd64
+
+        include:
+          - job_name: linux-amd64
+            os: ubuntu-latest
+
+          - job_name: linux-arm64
+            os: [ self-hosted, linux, ARM64 ]
+
+          - job_name: macos-amd64
+            os: macOS-latest
+
+          - job_name: windows-amd64
+            os: windows-latest
+
+    name: ${{ matrix.job_name }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # git checkout
+      - name: Checkout the repository
+        uses: actions/checkout@v2.3.4
+
+      # install build dependencies (windows only)
+      - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
+        uses: ilammy/msvc-dev-cmd@v1.5.0
+        if: matrix.os == 'windows-latest'
+
+      - name: Configure MSBuild on Windows
+        uses: microsoft/setup-msbuild@v1
+        if: matrix.os == 'windows-latest'
+
+      # set up graalvm
+      - name: Set up GraalVM environment
+        uses: heikobornholdt/setup-graalvm@v1.2
+        with:
+          java-version: 11
+          graalvm-version: 21.1.0
+          native-image: true
+
+      # build native image
+      - name: Build Native Image
+        env:
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-cli --also-make package
+
+      # package native image
+      - name: Build Package on *nix
+        run: |
+          VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin
+          mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
+          cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
+          zip -r ./drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
+          echo ./drasyl-${VERSION}-${{ matrix.job_name }}.zip > Release.txt
+        if: success() && matrix.os != 'windows-latest'
+
+      - name: Build Package on Windows
+        run: |
+          $VERSION = .\mvnw.cmd help:evaluate "-Dexpression=project.version" -q -DforceStdout
+          New-Item "./drasyl-${VERSION}-${{ matrix.job_name }}/bin" -ItemType Directory -ea 0
+          Move-Item -Path ./drasyl.exe -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}/bin"
+          Copy-Item "./LICENSE" -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}"
+          Compress-Archive -Path "./drasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-${VERSION}-${{ matrix.job_name }}.zip
+        if: success() && matrix.os == 'windows-latest'
+
+      # upload package
+      - name: Upload Package
+        uses: softprops/action-gh-release@v1
+        with:
+          files: drasyl-*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Release docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Get actual patch version
+        id: actual_patch_version
+        run: echo ::set-output name=ACTUAL_PATCH_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | cut -d "." -f 1,2,3)
+      - name: Get actual minor version
+        id: actual_minor_version
+        run: echo ::set-output name=ACTUAL_MINOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | cut -d "." -f 1,2)
+      - name: Get actual major version
+        id: actual_major_version
+        run: echo ::set-output name=ACTUAL_MAJOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | cut -d "." -f 1)
+      - name: Build and publish image
+        uses: ilteoood/docker_buildx@1.1.0
+        with:
+          tag: latest,${{ steps.actual_patch_version.outputs.ACTUAL_PATCH_VERSION }},${{ steps.actual_minor_version.outputs.ACTUAL_MINOR_VERSION }},${{ steps.actual_major_version.outputs.ACTUAL_MAJOR_VERSION }}
+          imageName: drasyl/drasyl
+          platform: linux/amd64
+          publish: true
+          dockerUser: ${{ secrets.DOCKER_HUB_USER }}
+          dockerPassword: ${{ secrets.DOCKER_HUB_PASSWORD }}
