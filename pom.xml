@@ -126,21 +126,21 @@
         <maven.compiler.target>11</maven.compiler.target>
         <logback.version>1.2.3</logback.version>
         <junit.version>5.7.1</junit.version>
-        <mockito.version>3.9.0</mockito.version>
+        <mockito.version>3.10.0</mockito.version>
         <jackson.version>2.12.3</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.1.0</awaitility.version>
         <netty.version>4.1.63.Final</netty.version>
         <guava.version>30.1.1-jre</guava.version>
         <rxjava.version>3.0.12</rxjava.version>
-        <micrometer.version>1.6.6</micrometer.version>
+        <micrometer.version>1.7.0</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>1.7.30</slf4j.version>
         <typesafe.config.version>1.4.1</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.25.0</json-unit-assertj.version>
         <commons-cli.version>1.4</commons-cli.version>
-        <protobuf.version>3.16.0</protobuf.version>
+        <protobuf.version>3.17.0</protobuf.version>
         <auto-value.version>1.8.1</auto-value.version>
         <lazysodium-java.version>5.0.1</lazysodium-java.version>
         <jna.version>5.8.0</jna.version>
