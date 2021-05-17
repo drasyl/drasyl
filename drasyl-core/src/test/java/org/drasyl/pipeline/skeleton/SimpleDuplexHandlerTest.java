@@ -26,8 +26,8 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
@@ -52,7 +52,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SimpleDuplexHandlerTest {
-    private final int networkId = 1;
     @Mock
     private Identity identity;
     @Mock
@@ -112,8 +111,7 @@ class SimpleDuplexHandlerTest {
         }
 
         @Test
-        void shouldPassthroughsNotMatchingMessage(@Mock final IdentityPublicKey sender,
-                                                  @Mock final IdentityPublicKey recipient) {
+        void shouldPassthroughsNotMatchingMessage(@Mock final IdentityPublicKey recipient) {
             final SimpleDuplexEventAwareHandler<Object, Event, MyMessage, IdentityPublicKey> handler = new SimpleDuplexEventAwareHandler<>(Object.class, Event.class, MyMessage.class, IdentityPublicKey.class) {
                 @Override
                 protected void matchedEvent(final HandlerContext ctx,
