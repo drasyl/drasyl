@@ -163,6 +163,10 @@
     "allDeclaredMethods": true
   },
   {
+    "name": "org.drasyl.remote.handler.crypto.ArmHandler",
+    "allDeclaredMethods": true
+  },
+  {
     "name": "org.drasyl.remote.handler.portmapper.PortMapper",
     "allDeclaredMethods": true
   },
@@ -172,10 +176,6 @@
   },
   {
     "name": "org.drasyl.remote.handler.tcp.TcpServer",
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.handler.ArmHandler",
     "allDeclaredMethods": true
   },
   {
