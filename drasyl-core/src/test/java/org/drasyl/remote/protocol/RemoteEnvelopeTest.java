@@ -40,6 +40,7 @@ import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
+import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -435,6 +436,22 @@ class RemoteEnvelopeTest {
 
                 assertEquals(1, envelope.getHopCount());
                 assertEquals(1, RemoteEnvelope.of(envelope.getOrBuildByteBuf()).getHopCount());
+            }
+        }
+    }
+
+    @Nested
+    class GetPublicHeaderAndRemainingBytes {
+        @Test
+        void shouldReturnCorrectResult() throws IOException {
+            final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
+            try (final RemoteEnvelope<Application> envelope = new RemoteEnvelope<>(message, null, null, null)) {
+                final Pair<PublicHeader, ByteBuf> pair = envelope.getPublicHeaderAndRemainingBytes();
+                try (final RemoteEnvelope<Application> testEnvelope = RemoteEnvelope.of(pair.first(), pair.second().retain())) {
+                    assertEquals(envelope.getPublicHeader(), pair.first());
+                    assertEquals(envelope.getPrivateHeader(), testEnvelope.getPrivateHeader());
+                    assertEquals(envelope.getBody(), testEnvelope.getBody());
+                }
             }
         }
     }

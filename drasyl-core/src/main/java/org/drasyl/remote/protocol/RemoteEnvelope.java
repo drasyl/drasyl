@@ -51,6 +51,7 @@ import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.ByteBufUtil;
+import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedShort;
 
@@ -525,6 +526,28 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
             catch (final IOException e) {
                 throw new InvalidMessageFormatException(e);
             }
+        }
+    }
+
+    /**
+     * Reads the public header of the given message and returns a {@link ByteBuf} with all remaining
+     * bytes.
+     * <p>
+     * <b>Note: The given {@link ByteBuf} is inherited from {@link
+     * #getInternalByteBuf()} and will therefore use the same reference counter. Meaning that
+     * releasing {@link #getInternalByteBuf()} will invalidate the returned {@link ByteBuf} and vice
+     * versa.</b>
+     *
+     * @return {@code Pair} with public header as first element and {@link ByteBuf} with all
+     * remaining bytes as second element
+     * @throws InvalidMessageFormatException if the public header cannot be read
+     */
+    public Pair<PublicHeader, ByteBuf> getPublicHeaderAndRemainingBytes() throws InvalidMessageFormatException {
+        synchronized (this) {
+            final ByteBuf internalByteBuf = getOrBuildInternalByteBuf();
+            final PublicHeader publicHeader = getPublicHeader();
+            final ByteBuf remainingBytes = internalByteBuf.slice(internalByteBuf.readerIndex(), internalByteBuf.readableBytes());
+            return Pair.of(publicHeader, remainingBytes);
         }
     }
 
