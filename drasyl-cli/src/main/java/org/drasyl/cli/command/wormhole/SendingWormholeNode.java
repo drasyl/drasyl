@@ -135,15 +135,6 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                         this.text = event.text;
                         return offline();
                     })
-                    .onEvent(OnlineTimeout.class, event -> {
-                        doneFuture.completeExceptionally(new Exception(
-                                "Code confirmation failed. Either you or your correspondent\n" +
-                                        "typed the code wrong, or a would-be man-in-the-middle attacker guessed\n" +
-                                        "incorrectly. You could try again, giving both your correspondent and\n" +
-                                        "the attacker another chance."
-                        ));
-                        return ignore();
-                    })
                     .onAnyEvent(event -> same())
                     .build();
         });
