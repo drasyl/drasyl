@@ -34,10 +34,11 @@ necessary for the project. However, drasyl is open to contributions made by the 
 * Provides Communication Channels between any two Nodes (on the Internet).
 * Automatic Discovery of Peers running within same Process, Computer, LAN, or the Internet.
 * Automatic Handover to most local Communication Channel.
-* Overcomes Network Barriers (Statefull Firewalls, NATs).
+* Overcomes Network Barriers (Stateful Firewalls, NATs).
 * UDP Hole Punching.
-* Port Mapping (UPnP-IGD, NAT-PMP, PCP).  
-* Reacts to Network Changes.
+* Port Mapping (UPnP-IGD, NAT-PMP, PCP).
+* Communication is (PFS) encrypted.
+* Reacts to Network Connection Changes.
 * Asynchronous and Event-Driven.
 * Lightweight.
 * Extensible.
