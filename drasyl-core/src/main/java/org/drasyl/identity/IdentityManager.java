@@ -53,9 +53,8 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.PathUtil.hasPosixSupport;
 
 /**
- * This class holds the identity of the node. Messages to the node are addressed to the identity. In
- * a future release, messages will be signed and encrypted with public-private key pairs contained
- * in the identity.
+ * This class holds the identity of the node. Messages to the node are addressed to the identity's
+ * public key. Messages will be encrypted with public-private key pair contained in the identity.
  */
 public class IdentityManager {
     public static final byte POW_DIFFICULTY = (byte) SystemPropertyUtil.getInt("org.drasyl.identity.pow-difficulty", 6);
