@@ -52,7 +52,7 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteE
     protected boolean accept(final HandlerContext ctx,
                              final Address sender,
                              final RemoteEnvelope<? extends MessageLite> msg) throws Exception {
-        return msg.isChunk() || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
+        return !ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
     }
 
     @Override

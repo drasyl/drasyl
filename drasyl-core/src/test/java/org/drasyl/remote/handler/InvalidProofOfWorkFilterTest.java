@@ -45,14 +45,16 @@ import test.util.IdentityTestUtil;
 
 import java.util.concurrent.CompletionException;
 
+import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InvalidProofOfWorkFilterTest {
-    @Mock
-    private Identity identity;
     @Mock
     private PeersManager peersManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -69,10 +71,10 @@ class InvalidProofOfWorkFilterTest {
     }
 
     @Test
-    void shouldDropMessagesWithInvalidProofOfWork() throws InvalidMessageFormatException {
+    void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() throws InvalidMessageFormatException {
         try (final RemoteEnvelope<Acknowledgement> message = RemoteEnvelope.acknowledgement(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId)) {
             final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
@@ -83,10 +85,10 @@ class InvalidProofOfWorkFilterTest {
     }
 
     @Test
-    void shouldPassMessagesWithValidProofOfWork() throws InvalidMessageFormatException {
+    void shouldPassMessagesWithValidProofOfWorkAddressedToMe() throws InvalidMessageFormatException {
         try (final RemoteEnvelope<Acknowledgement> message = RemoteEnvelope.acknowledgement(1337, senderPublicKey, IdentityTestUtil.ID_1.getProofOfWork(), recipientPublicKey, correspondingId)) {
             final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
                 pipeline.processInbound(message.getSender(), message).join();
@@ -99,16 +101,14 @@ class InvalidProofOfWorkFilterTest {
     }
 
     @Test
-    void shouldPassChunks(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<MessageLite> message) throws InvalidMessageFormatException {
-        when(message.isChunk()).thenThrow(InvalidMessageFormatException.class);
+    void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) throws InvalidMessageFormatException {
+        try (final RemoteEnvelope<Acknowledgement> message = RemoteEnvelope.acknowledgement(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId)) {
+            final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
+            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_3, peersManager, handler)) {
+                pipeline.processInbound(message.getSender(), message).join();
 
-        final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
-
-            assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
-
-            inboundMessages.assertNoValues();
+                verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
+            }
         }
     }
 }

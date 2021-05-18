@@ -287,6 +287,36 @@ class RemoteEnvelopeTest {
     }
 
     @Nested
+    class GetPublicHeader {
+        @Test
+        void shouldAcceptValidMagicNumber() throws InvalidMessageFormatException {
+            try (final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(Unpooled.copiedBuffer(new byte[]{
+                    0x1E,
+                    0x3F,
+                    0x50,
+                    0x01,
+                    0x02,
+                    0x10,
+                    0x02
+            }))) {
+                assertNotNull(envelope.getPublicHeader());
+            }
+        }
+
+        @Test
+        void shouldRejectInvalidMagicNumber() throws InvalidMessageFormatException {
+            try (final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(Unpooled.copiedBuffer(new byte[]{
+                    0x1E,
+                    0x3F,
+                    0x50,
+                    0x02
+            }))) {
+                assertThrows(InvalidMessageFormatException.class, envelope::getPublicHeader);
+            }
+        }
+    }
+
+    @Nested
     class GetId {
         @Test
         void shouldReturnId() throws InvalidMessageFormatException {
