@@ -119,7 +119,7 @@ public class DrasylPipeline extends AbstractPipeline {
             // convert Object <-> RemoteEnvelope<Application>
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
-            // route outbound messages to pre-configures ip addresses
+            // route outbound messages to pre-configured ip addresses
             if (!config.getRemoteStaticRoutes().isEmpty()) {
                 addFirst(STATIC_ROUTES_HANDLER, StaticRoutesHandler.INSTANCE);
             }

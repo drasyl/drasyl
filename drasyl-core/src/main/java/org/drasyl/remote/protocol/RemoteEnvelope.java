@@ -886,8 +886,6 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @param identityProofOfWork the node's proof of work
      * @param recipient           the recipient of this message
      * @param sessionKey          the ephemeral key agreement key
-     * @param sessionProofOfWork  a proof of work for {@code sessionKey}
-     * @param sessionKeySignature a signature for {@code sessionKey}
      * @return {@link KeyExchange} message or exception
      * @throws NullPointerException if {@code sender}, {@code identityProofOfWork}, {@code
      *                              recipient}, {@code sessionKey}, or {@code sessionProofOfWork} is
