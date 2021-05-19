@@ -31,17 +31,18 @@ import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.pipeline.serialization.Serialization;
-import org.drasyl.remote.handler.crypto.ArmHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
 import org.drasyl.remote.handler.InternetDiscovery;
 import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
 import org.drasyl.remote.handler.LocalNetworkDiscovery;
 import org.drasyl.remote.handler.OtherNetworkFilter;
+import org.drasyl.remote.handler.RateLimiter;
 import org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec;
 import org.drasyl.remote.handler.StaticRoutesHandler;
 import org.drasyl.remote.handler.UdpMulticastServer;
 import org.drasyl.remote.handler.UdpServer;
+import org.drasyl.remote.handler.crypto.ArmHandler;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
@@ -72,6 +73,7 @@ public class DrasylPipeline extends AbstractPipeline {
     public static final String LOCAL_NETWORK_DISCOVER = "LOCAL_NETWORK_DISCOVER";
     public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
+    public static final String RATE_LIMITER = "RATE_LIMITER";
     public static final String ARM_HANDLER = "ARM_HANDLER";
     public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
@@ -143,6 +145,8 @@ public class DrasylPipeline extends AbstractPipeline {
             if (config.isMonitoringEnabled()) {
                 addFirst(MONITORING_HANDLER, new Monitoring());
             }
+
+            addFirst(RATE_LIMITER, new RateLimiter());
 
             // arm outbound and disarm inbound messages
             if (config.isRemoteMessageArmEnabled()) {

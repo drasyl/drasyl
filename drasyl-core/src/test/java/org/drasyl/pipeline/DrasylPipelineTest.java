@@ -23,8 +23,8 @@ package org.drasyl.pipeline;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.remote.handler.UdpMulticastServer;
@@ -61,6 +61,7 @@ import static org.drasyl.pipeline.DrasylPipeline.MESSAGE_SERIALIZER;
 import static org.drasyl.pipeline.DrasylPipeline.MONITORING_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.OTHER_NETWORK_FILTER;
 import static org.drasyl.pipeline.DrasylPipeline.PORT_MAPPER;
+import static org.drasyl.pipeline.DrasylPipeline.RATE_LIMITER;
 import static org.drasyl.pipeline.DrasylPipeline.REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC;
 import static org.drasyl.pipeline.DrasylPipeline.STATIC_ROUTES_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.TCP_CLIENT;
@@ -149,6 +150,7 @@ class DrasylPipelineTest {
             assertNotNull(pipeline.get(INTERNET_DISCOVERY), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(MONITORING_HANDLER), "This handler is required in the DrasylPipeline");
+            assertNotNull(pipeline.get(RATE_LIMITER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(ARM_HANDLER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");
