@@ -27,8 +27,8 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -73,6 +73,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -194,11 +195,13 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws IOException {
             final Path path = Paths.get(dir.toString(), "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127.json");
-            when(discoveryPath.toFile().exists()).thenReturn(true);
-            when(discoveryPath.toFile().isDirectory()).thenReturn(true);
-            when(discoveryPath.toFile().canRead()).thenReturn(true);
-            when(discoveryPath.toFile().canWrite()).thenReturn(true);
-            when(discoveryPath.resolve(anyString())).thenReturn(path);
+            File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
+
+            doReturn(true).when(file).exists();
+            doReturn(true).when(file).isDirectory();
+            doReturn(true).when(file).canRead();
+            doReturn(true).when(file).canWrite();
+            doReturn(path).when(discoveryPath).resolve(anyString());
             when(ctx.dependentScheduler().scheduleDirect(any())).then(invocation -> {
                 invocation.getArgument(0, Runnable.class).run();
                 return null;
@@ -220,12 +223,15 @@ class LocalHostDiscoveryTest {
                 future.complete(null);
                 return future;
             });
-            when(ctx.config().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
-            when(ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
-            when(identity.getIdentityPublicKey()).thenReturn(ownPublicKey);
-            when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
-            when(discoveryPath.getFileSystem()).thenReturn(fileSystem);
-            when(fileSystem.newWatchService()).thenReturn(watchService);
+
+            DrasylConfig config = ctx.config(); // mockito work-around
+            Path path2 = config.getRemoteLocalHostDiscoveryPath();
+
+            doReturn(leaseTime).when(config).getRemoteLocalHostDiscoveryLeaseTime();
+            doReturn(true).when(config).isRemoteLocalHostDiscoveryWatchEnabled();
+            doReturn(discoveryPath).when(path2).resolve(anyString());
+            doReturn(fileSystem).when(discoveryPath).getFileSystem();
+            doReturn(watchService).when(fileSystem).newWatchService();
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
