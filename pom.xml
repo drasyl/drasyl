@@ -130,7 +130,7 @@
         <jackson.version>2.12.3</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.1.0</awaitility.version>
-        <netty.version>4.1.63.Final</netty.version>
+        <netty.version>4.1.65.Final</netty.version>
         <guava.version>30.1.1-jre</guava.version>
         <rxjava.version>3.0.12</rxjava.version>
         <micrometer.version>1.7.0</micrometer.version>
