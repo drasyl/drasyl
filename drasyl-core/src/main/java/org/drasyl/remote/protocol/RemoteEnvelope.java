@@ -60,6 +60,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 
@@ -871,8 +872,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @param publicKey   the public key of the node with which the receiver should unite
      * @param address     the {@code InetSocketAddress} of the node with which the receiver should
      *                    unite
-     * @throws NullPointerException if {@code sender}, {@code proofOfWork}, {@code recipient},
-     *                              {@code publicKey}, or {@code address} is {@code null}
+     * @throws NullPointerException     if {@code sender}, {@code proofOfWork}, {@code recipient},
+     *                                  {@code publicKey}, or {@code address} is {@code null}
+     * @throws IllegalArgumentException if {@code address} is unresolved
      */
     public static RemoteEnvelope<Unite> unite(final int networkId,
                                               final IdentityPublicKey sender,
@@ -887,8 +889,11 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         if (address.getAddress() instanceof Inet4Address) {
             bodyBuilder.setAddressV4(Ints.fromByteArray(address.getAddress().getAddress()));
         }
-        else {
+        else if (address.getAddress() instanceof Inet6Address) {
             bodyBuilder.setAddressV6(ByteString.copyFrom(address.getAddress().getAddress()));
+        }
+        else {
+            throw new IllegalArgumentException("address must be resolved");
         }
 
         return of(
