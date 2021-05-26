@@ -21,6 +21,8 @@
  */
 package org.drasyl.event;
 
+import com.google.auto.value.AutoValue;
+
 /**
  * This event signals, that currently all messages from and to the {@code #peer} are encrypted with
  * an ephemeral session key.
@@ -28,23 +30,13 @@ package org.drasyl.event;
  * The key can be get stale, this means that the connection can fall back to long time encryption in
  * the event of a failed key exchange. In this case a {@link LongTimeEncryptionEvent} is fired.
  */
-public class PerfectForwardSecrecyEncryptionEvent extends AbstractPeerEvent {
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class PerfectForwardSecrecyEncryptionEvent implements PeerEvent {
     /**
-     * @param peer the affected peer
      * @throws NullPointerException if {@code peer} is {@code null}
      */
-    private PerfectForwardSecrecyEncryptionEvent(final Peer peer) {
-        super(peer);
-    }
-
     public static PerfectForwardSecrecyEncryptionEvent of(final Peer peer) {
-        return new PerfectForwardSecrecyEncryptionEvent(peer);
-    }
-
-    @Override
-    public String toString() {
-        return "PerfectForwardSecrecyEncryptionEvent{" +
-                "peer=" + peer +
-                '}';
+        return new AutoValue_PerfectForwardSecrecyEncryptionEvent(peer);
     }
 }

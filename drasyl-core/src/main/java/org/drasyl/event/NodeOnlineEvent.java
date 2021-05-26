@@ -21,6 +21,8 @@
  */
 package org.drasyl.event;
 
+import com.google.auto.value.AutoValue;
+
 /**
  * This event signals that the node is currently connected to a super peer. This means that it can
  * be contacted by other peers connected to the same super peer. In addition, the super peer can
@@ -34,28 +36,13 @@ package org.drasyl.event;
  * @see PeerDirectEvent
  * @see PeerRelayEvent
  */
-public class NodeOnlineEvent extends AbstractNodeEvent {
-    /**
-     * @throws NullPointerException if {@code node} is {@code null}
-     * @deprecated Use {@link #of(Node)} instead.
-     */
-    // make method private on next release
-    @Deprecated(since = "0.4.0", forRemoval = true)
-    public NodeOnlineEvent(final Node node) {
-        super(node);
-    }
-
-    @Override
-    public String toString() {
-        return "NodeOnlineEvent{" +
-                "node=" + node +
-                '}';
-    }
-
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class NodeOnlineEvent implements NodeEvent {
     /**
      * @throws NullPointerException if {@code node} is {@code null}
      */
     public static NodeOnlineEvent of(final Node node) {
-        return new NodeOnlineEvent(node);
+        return new AutoValue_NodeOnlineEvent(node);
     }
 }

@@ -91,9 +91,9 @@ class RemoteEnvelopeTest {
         publicHeader = PublicHeader.newBuilder()
                 .setNonce(nonce.toByteString())
                 .setNetworkId(1)
-                .setSender(senderPublicKey.toByteString())
+                .setSender(senderPublicKey.getBytes())
                 .setProofOfWork(senderProofOfWork.intValue())
-                .setRecipient(recipientPublicKey.toByteString())
+                .setRecipient(recipientPublicKey.getBytes())
                 .setHopCount(1)
                 .build();
 
@@ -589,7 +589,7 @@ class RemoteEnvelopeTest {
             try (final RemoteEnvelope<Unite> unite = RemoteEnvelope.unite(1, senderPublicKey, senderProofOfWork, recipientPublicKey, senderPublicKey, new InetSocketAddress(22527))) {
                 assertEquals(1, unite.getPublicHeader().getNetworkId());
                 assertEquals(UNITE, unite.getPrivateHeader().getType());
-                assertEquals(senderPublicKey.toByteString(), unite.getBodyAndRelease().getPublicKey());
+                assertEquals(senderPublicKey.getBytes(), unite.getBodyAndRelease().getPublicKey());
             }
         }
     }
@@ -597,6 +597,7 @@ class RemoteEnvelopeTest {
     @Nested
     class TestMagicNumber {
         @Test
+        @SuppressWarnings("java:S3415")
         void shouldBeTheCorrectMagicNumber() {
             final int magicNumber = (int) Math.pow(22527, 2);
             final ByteString expectedMagicNumber = ByteString.copyFrom(Ints.toByteArray(magicNumber));

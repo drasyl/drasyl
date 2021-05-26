@@ -23,10 +23,8 @@ package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Objects;
-
-import static org.drasyl.util.SecretUtil.maskSecret;
+import com.google.auto.value.AutoValue;
+import org.drasyl.annotation.NonNull;
 
 /**
  * This class is a simple holder for a key pair (a {@link IdentityPublicKey} and a {@link
@@ -35,53 +33,18 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * <p>
  * This is an immutable object.
  */
-public class KeyPair<P extends PublicKey, S extends SecretKey> {
-    private final P publicKey;
-    private final S secretKey;
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class KeyPair<P extends PublicKey, S extends SecretKey> {
+    @NonNull
+    public abstract P getPublicKey();
+
+    @NonNull
+    public abstract S getSecretKey();
 
     @JsonCreator
-    KeyPair(@JsonProperty("publicKey") final P publicKey,
-            @JsonProperty("secretKey") final S secretKey) {
-        this.publicKey = publicKey;
-        this.secretKey = secretKey;
-    }
-
-    public static <P extends PublicKey, S extends SecretKey> KeyPair<P, S> of(final P publicKey,
-                                                                              final S secretKey) {
-        return new KeyPair<>(publicKey, secretKey);
-    }
-
-    public P getPublicKey() {
-        return publicKey;
-    }
-
-    public S getSecretKey() {
-        return secretKey;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(publicKey, secretKey);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final KeyPair<?, ?> that = (KeyPair<?, ?>) o;
-        return Objects.equals(publicKey, that.publicKey) &&
-                Objects.equals(secretKey, that.secretKey);
-    }
-
-    @Override
-    public String toString() {
-        return "KeyPair{" +
-                "publicKey=" + publicKey +
-                ", secretKey=" + maskSecret(secretKey) +
-                '}';
+    public static <P extends PublicKey, S extends SecretKey> KeyPair<P, S> of(@JsonProperty("publicKey") final P publicKey,
+                                                                              @JsonProperty("secretKey") final S secretKey) {
+        return new AutoValue_KeyPair<>(publicKey, secretKey);
     }
 }

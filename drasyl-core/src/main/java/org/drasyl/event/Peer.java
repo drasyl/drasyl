@@ -21,12 +21,8 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.annotation.NonNull;
+import com.google.auto.value.AutoValue;
 import org.drasyl.identity.IdentityPublicKey;
-
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Used by {@link Event} to describe an event related to a Peer (e.g. {@link PeerRelayEvent}, {@link
@@ -34,51 +30,20 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class Peer {
-    private final IdentityPublicKey publicKey;
-
-    private Peer(final IdentityPublicKey publicKey) {
-        this.publicKey = requireNonNull(publicKey);
-    }
-
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class Peer {
     /**
      * Returns the peer's public key.
      *
      * @return the peer's public key.
      */
-    @NonNull
-    public IdentityPublicKey getIdentityPublicKey() {
-        return publicKey;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(publicKey);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final Peer peer = (Peer) o;
-        return Objects.equals(publicKey, peer.publicKey);
-    }
-
-    @Override
-    public String toString() {
-        return "Peer{" +
-                "identityPublicKey=" + publicKey +
-                '}';
-    }
+    public abstract IdentityPublicKey getIdentityPublicKey();
 
     /**
      * @throws NullPointerException if {@code publicKey} is {@code null}
      */
     public static Peer of(final IdentityPublicKey publicKey) {
-        return new Peer(publicKey);
+        return new AutoValue_Peer(publicKey);
     }
 }

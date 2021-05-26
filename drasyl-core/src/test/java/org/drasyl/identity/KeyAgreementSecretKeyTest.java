@@ -19,44 +19,30 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.event;
+package org.drasyl.identity;
 
-import org.drasyl.annotation.NonNull;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import test.util.IdentityTestUtil;
 
-import java.util.Objects;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
-import static java.util.Objects.requireNonNull;
+class KeyAgreementSecretKeyTest {
+    private KeyAgreementSecretKey secretKey;
 
-abstract class AbstractNodeEvent implements NodeEvent {
-    protected final Node node;
-
-    /**
-     * @throws NullPointerException if {@code node} is {@code null}
-     */
-    protected AbstractNodeEvent(final Node node) {
-        this.node = requireNonNull(node);
+    @BeforeEach
+    void setUp() {
+        secretKey = IdentityTestUtil.ID_1.getKeyAgreementSecretKey();
     }
 
-    @NonNull
-    @Override
-    public Node getNode() {
-        return node;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(node);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
+    @Nested
+    class ToString {
+        @Test
+        void shouldReturnMaskedKey() {
+            assertThat(secretKey.toString(), not(containsString(secretKey.toUnmaskedString())));
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final AbstractNodeEvent that = (AbstractNodeEvent) o;
-        return Objects.equals(node, that.node);
     }
 }

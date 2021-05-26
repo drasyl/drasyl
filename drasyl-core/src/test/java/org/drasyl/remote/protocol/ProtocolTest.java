@@ -44,9 +44,9 @@ public class ProtocolTest {
             final PublicHeader header = PublicHeader.newBuilder()
                     .setNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteString())
                     .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
+                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().getBytes())
                     .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
-                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().toByteString())
+                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().getBytes())
                     .setHopCount(1)
                     .setAgreementId(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toByteString())
                     .build();
@@ -59,9 +59,9 @@ public class ProtocolTest {
             final PublicHeader header = PublicHeader.newBuilder()
                     .setNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteString())
                     .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
+                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().getBytes())
                     .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
-                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().toByteString())
+                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().getBytes())
                     .setHopCount(1)
                     .setAgreementId(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toByteString())
                     .setTotalChunks(UnsignedShort.of(123).getValue())
@@ -75,9 +75,9 @@ public class ProtocolTest {
             final PublicHeader header = PublicHeader.newBuilder()
                     .setNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteString())
                     .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
+                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().getBytes())
                     .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
-                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().toByteString())
+                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().getBytes())
                     .setHopCount(1)
                     .setAgreementId(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toByteString())
                     .setChunkNo(UnsignedShort.of(64).getValue())
@@ -93,7 +93,7 @@ public class ProtocolTest {
         void shouldSerializeIpv4ToCorrectSize() {
             final InetSocketAddress address = new InetSocketAddress("37.61.174.58", 80);
             final Unite unite = Unite.newBuilder()
-                    .setPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
+                    .setPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey().getBytes())
                     .setAddressV4(Ints.fromByteArray(address.getAddress().getAddress()))
                     .setPort(address.getPort())
                     .build();
@@ -105,7 +105,7 @@ public class ProtocolTest {
         void shouldSerializeIpv6ToCorrectSize() {
             final InetSocketAddress address = new InetSocketAddress("b719:5781:d127:d17c:1230:b24c:478c:7985", 443);
             final Unite unite = Unite.newBuilder()
-                    .setPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
+                    .setPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey().getBytes())
                     .setAddressV6(ByteString.copyFrom(address.getAddress().getAddress()))
                     .setPort(address.getPort())
                     .build();

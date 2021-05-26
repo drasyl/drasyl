@@ -21,29 +21,5 @@
  */
 package org.drasyl.identity;
 
-import com.google.protobuf.ByteString;
-
-public abstract class PublicKey extends AbstractKey {
-    /**
-     * Creates a new public keyAsHexString from the given string.
-     *
-     * @param keyAsHexString public keyAsHexString
-     * @throws NullPointerException     if {@code keyAsHexString} is {@code null}
-     * @throws IllegalArgumentException if {@code keyAsHexString} does not conform to a valid
-     *                                  string
-     */
-    PublicKey(final String keyAsHexString) {
-        super(keyAsHexString);
-    }
-
-    /**
-     * Creates a new public key from the given byte array.
-     *
-     * @param key public key
-     * @throws NullPointerException     if {@code key} is {@code null}
-     * @throws IllegalArgumentException if {@code key} is empty
-     */
-    PublicKey(final ByteString key) {
-        super(key);
-    }
+public interface PublicKey extends Key {
 }

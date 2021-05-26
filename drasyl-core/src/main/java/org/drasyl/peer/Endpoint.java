@@ -23,6 +23,9 @@ package org.drasyl.peer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.auto.value.AutoValue;
+import org.drasyl.annotation.NonNull;
+import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.UriUtil;
@@ -30,9 +33,6 @@ import org.drasyl.util.UriUtil;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Represents an endpoint of a drasyl node. This is a {@link URI} that must use the WebSocket
@@ -40,48 +40,10 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class Endpoint {
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class Endpoint {
     private static final int MAX_PORT = 65536;
-    private final String host;
-    private final int port;
-    private final IdentityPublicKey publicKey;
-    private final Integer networkId;
-
-    /**
-     * Creates a new {@code Endpoint}.
-     *
-     * @param host      the hostname part of the endpoint
-     * @param port      the port number of the endpoint
-     * @param publicKey the public key of the endpoint
-     * @param networkId the network id of the endpoint
-     * @throws NullPointerException     if {@code host} or {@code publicKey} is {@code null}
-     * @throws IllegalArgumentException if {@code port} is out of range [0,65536]
-     */
-    private Endpoint(final String host,
-                     final int port,
-                     final IdentityPublicKey publicKey,
-                     final Integer networkId) {
-        this.host = requireNonNull(host);
-        this.port = port;
-        if (port < -1 || port > MAX_PORT) {
-            throw new IllegalArgumentException("port out of range: " + port);
-        }
-        this.publicKey = requireNonNull(publicKey);
-        this.networkId = networkId;
-    }
-
-    /**
-     * Creates a new {@code Endpoint}.
-     *
-     * @param host      the hostname part of the endpoint
-     * @param port      the port number of the endpoint
-     * @param publicKey the public key of the endpoint
-     * @throws NullPointerException     if {@code host} or {@code publicKey} is {@code null}
-     * @throws IllegalArgumentException if {@code port} is out of range [0,65536]
-     */
-    private Endpoint(final String host, final int port, final IdentityPublicKey publicKey) {
-        this(host, port, publicKey, null);
-    }
 
     /**
      * Returns an {@link URI} representing this {@code Endpoint}.
@@ -90,7 +52,7 @@ public class Endpoint {
      * @throws IllegalArgumentException If the created {@link URI} violates RFC&nbsp;2396
      */
     public URI getURI() {
-        return URI.create("udp://" + host + ":" + port + "?publicKey=" + publicKey + (networkId != null ? ("&networkId=" + networkId) : ""));
+        return URI.create("udp://" + getHost() + ":" + getPort() + "?publicKey=" + getIdentityPublicKey() + (getNetworkId() != null ? ("&networkId=" + getNetworkId()) : ""));
     }
 
     /**
@@ -98,60 +60,39 @@ public class Endpoint {
      *
      * @return The hostname of this endpoint.
      */
-    public String getHost() {
-        return host;
-    }
+    @NonNull
+    public abstract String getHost();
 
     /**
      * Returns the port of this endpoint.
      *
      * @return The port of this endpoint
      */
-    public int getPort() {
-        return port;
-    }
+    @NonNull
+    public abstract int getPort();
 
     /**
      * Returns the {@link IdentityPublicKey} of this {@code Endpoint}.
      *
      * @return The public key of this endpoint.
      */
-    public IdentityPublicKey getIdentityPublicKey() {
-        return publicKey;
-    }
+    @NonNull
+    public abstract IdentityPublicKey getIdentityPublicKey();
 
     /**
      * Returns the network id of this endpoint.
      *
      * @return The network id of this endpoint
      */
-    public Integer getNetworkId() {
-        return networkId;
-    }
+    @Nullable
+    public abstract Integer getNetworkId();
 
     /**
      * @throws IllegalArgumentException if the port parameter is outside the range of valid port
      *                                  values, or if the hostname parameter is {@code null}.
      */
     public InetSocketAddressWrapper toInetSocketAddress() {
-        return new InetSocketAddressWrapper(host, port);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final Endpoint endpoint = (Endpoint) o;
-        return port == endpoint.port && Objects.equals(host, endpoint.host) && Objects.equals(publicKey, endpoint.publicKey) && Objects.equals(networkId, endpoint.networkId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(host, port, publicKey, networkId);
+        return new InetSocketAddressWrapper(getHost(), getPort());
     }
 
     @JsonValue
@@ -178,7 +119,10 @@ public class Endpoint {
                               final int port,
                               final IdentityPublicKey publicKey,
                               final Integer networkId) {
-        return new Endpoint(host, port, publicKey, networkId);
+        if (port < -1 || port > MAX_PORT) {
+            throw new IllegalArgumentException("port out of range: " + port);
+        }
+        return new AutoValue_Endpoint(host, port, publicKey, networkId);
     }
 
     /**
@@ -197,7 +141,7 @@ public class Endpoint {
     public static Endpoint of(final String host,
                               final int port,
                               final IdentityPublicKey publicKey) {
-        return new Endpoint(host, port, publicKey);
+        return of(host, port, publicKey, null);
     }
 
     /**

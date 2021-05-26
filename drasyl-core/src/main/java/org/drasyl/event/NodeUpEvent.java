@@ -21,32 +21,24 @@
  */
 package org.drasyl.event;
 
+import com.google.auto.value.AutoValue;
+
 /**
  * This event signals that the node has been started.
  * <p>
  * This is an immutable object.
+ *
+ * @see NodeDownEvent
+ * @see NodeNormalTerminationEvent
+ * @see NodeUnrecoverableErrorEvent
  */
-public class NodeUpEvent extends AbstractNodeEvent {
-    /**
-     * @deprecated Use {@link #of(Node)} instead.
-     */
-    // make method private on next release
-    @Deprecated(since = "0.4.0", forRemoval = true)
-    public NodeUpEvent(final Node node) {
-        super(node);
-    }
-
-    @Override
-    public String toString() {
-        return "NodeUpEvent{" +
-                "node=" + node +
-                '}';
-    }
-
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class NodeUpEvent implements NodeEvent {
     /**
      * @throws NullPointerException if {@code node} is {@code null}
      */
     public static NodeUpEvent of(final Node node) {
-        return new NodeUpEvent(node);
+        return new AutoValue_NodeUpEvent(node);
     }
 }

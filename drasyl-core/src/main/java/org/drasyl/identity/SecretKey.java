@@ -21,27 +21,6 @@
  */
 package org.drasyl.identity;
 
-import com.google.protobuf.ByteString;
-
-public abstract class SecretKey extends AbstractKey {
-    /**
-     * Creates a new secret key from the given string.
-     *
-     * @param keyAsHexString secret key
-     * @throws IllegalArgumentException if the string parameter does not conform to a valid key
-     */
-    SecretKey(final String keyAsHexString) {
-        super(keyAsHexString);
-    }
-
-    /**
-     * Creates a new secret key from the given byte array.
-     *
-     * @param key secret key
-     * @throws NullPointerException     if {@code key} is {@code null}
-     * @throws IllegalArgumentException if {@code key} is empty
-     */
-    SecretKey(final ByteString key) {
-        super(key);
-    }
+public interface SecretKey extends Key {
+    String toUnmaskedString();
 }

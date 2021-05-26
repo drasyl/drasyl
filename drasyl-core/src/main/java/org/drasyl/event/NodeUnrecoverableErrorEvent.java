@@ -21,73 +21,31 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.annotation.NonNull;
-
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
+import com.google.auto.value.AutoValue;
 
 /**
  * This events signals that the node encountered an unrecoverable error.
  * <p>
  * This is an immutable object.
+ *
+ * @see NodeUpEvent
+ * @see NodeDownEvent
+ * @see NodeNormalTerminationEvent
  */
-public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
-    private final Throwable error;
-
-    /**
-     * @throws NullPointerException if {@code node} or {@code error} is {@code null}
-     * @deprecated Use {@link #of(Node, Throwable)} instead.
-     */
-    // make method private on next release
-    @Deprecated(since = "0.4.0", forRemoval = true)
-    public NodeUnrecoverableErrorEvent(final Node node, final Throwable error) {
-        super(node);
-        this.error = requireNonNull(error);
-    }
-
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class NodeUnrecoverableErrorEvent implements NodeEvent {
     /**
      * Returns the exception that crashed the node.
      *
      * @return the exception that crashed the node
      */
-    @NonNull
-    public Throwable getError() {
-        return error;
-    }
-
-    @Override
-    public String toString() {
-        return "NodeUnrecoverableErrorEvent{" +
-                "error=" + error +
-                ", node=" + node +
-                '}';
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), error);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final NodeUnrecoverableErrorEvent that = (NodeUnrecoverableErrorEvent) o;
-        return Objects.equals(error, that.error);
-    }
+    public abstract Throwable getError();
 
     /**
      * @throws NullPointerException if {@code node} or {@code error} is {@code null}
      */
     public static NodeUnrecoverableErrorEvent of(final Node node, final Throwable error) {
-        return new NodeUnrecoverableErrorEvent(node, error);
+        return new AutoValue_NodeUnrecoverableErrorEvent(node, error);
     }
 }

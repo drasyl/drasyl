@@ -23,11 +23,10 @@ package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.auto.value.AutoValue;
 import org.drasyl.crypto.Hashing;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-
-import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,73 +34,21 @@ import static java.util.Objects.requireNonNull;
  * This class models the proof of work for a given public key. Hence, identity creation becomes an
  * expensive operation and sybil attacks should be made more difficult.
  */
-public class ProofOfWork {
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class ProofOfWork {
     private static final Logger LOG = LoggerFactory.getLogger(ProofOfWork.class);
     private static final short MIN_DIFFICULTY = 0;
     private static final short MAX_DIFFICULTY = 64;
-    private int nonce;
 
-    private ProofOfWork(final int nonce) {
-        this.nonce = nonce;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(nonce);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final ProofOfWork that = (ProofOfWork) o;
-        return nonce == that.nonce;
-    }
-
-    @Override
-    public String toString() {
-        return "ProofOfWork{" +
-                "nonce=" + nonce +
-                '}';
-    }
-
-    public int getNonce() {
-        return nonce;
-    }
+    public abstract int getNonce();
 
     /**
      * Returns the value of this {@code ProofOfWork} as an {@code int}.
      */
     @JsonValue
     public int intValue() {
-        return nonce;
-    }
-
-    @JsonCreator
-    public static ProofOfWork of(final int nonce) {
-        return new ProofOfWork(nonce);
-    }
-
-    private static ProofOfWork of() {
-        return of(Integer.MIN_VALUE);
-    }
-
-    public static ProofOfWork generateProofOfWork(final PublicKey publicKey,
-                                                  final byte difficulty) {
-        LOG.info("Generate proof of work. This may take a while ...");
-        final ProofOfWork pow = ProofOfWork.of();
-
-        while (!pow.isValid(publicKey, difficulty)) {
-            pow.incNonce();
-        }
-
-        LOG.info("Proof of work was performed.");
-
-        return pow;
+        return getNonce();
     }
 
     /**
@@ -109,21 +56,21 @@ public class ProofOfWork {
      *
      * @param publicKey  the public key
      * @param difficulty the difficulty
-     * @return if valid true, otherwise false
+     * @return if valid {@code true}, otherwise {@code false}
      * @throws IllegalArgumentException if the difficulty is not in between [0,64]
      */
-    public boolean isValid(final PublicKey publicKey, final byte difficulty) {
+    public boolean isValid(final Key publicKey, final byte difficulty) {
         requireNonNull(publicKey);
         if (difficulty < MIN_DIFFICULTY || difficulty > MAX_DIFFICULTY) {
             throw new IllegalArgumentException("difficulty must in between the range of [0,64].");
         }
 
-        final String hash = generateHash(publicKey, nonce);
+        final String hash = generateHash(publicKey, getNonce());
 
         return hash.startsWith("0".repeat(difficulty));
     }
 
-    private static String generateHash(final PublicKey publicKey, final int nonce) {
+    private static String generateHash(final Key publicKey, final int nonce) {
         return Hashing.sha256Hex(publicKey.toString() + nonce);
     }
 
@@ -141,7 +88,30 @@ public class ProofOfWork {
         return i;
     }
 
-    public void incNonce() {
-        this.nonce++;
+    public ProofOfWork incNonce() {
+        return of(getNonce() + 1);
+    }
+
+    @JsonCreator
+    public static ProofOfWork of(final int nonce) {
+        return new AutoValue_ProofOfWork(nonce);
+    }
+
+    private static ProofOfWork of() {
+        return of(Integer.MIN_VALUE);
+    }
+
+    public static ProofOfWork generateProofOfWork(final Key publicKey,
+                                                  final byte difficulty) {
+        LOG.info("Generate proof of work. This may take a while ...");
+        ProofOfWork pow = ProofOfWork.of();
+
+        while (!pow.isValid(publicKey, difficulty)) {
+            pow = pow.incNonce();
+        }
+
+        LOG.info("Proof of work was performed.");
+
+        return pow;
     }
 }

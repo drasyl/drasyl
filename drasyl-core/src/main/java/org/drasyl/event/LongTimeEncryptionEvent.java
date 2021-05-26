@@ -21,6 +21,8 @@
  */
 package org.drasyl.event;
 
+import com.google.auto.value.AutoValue;
+
 /**
  * This event signals, that currently all messages from and to the {@code #peer} are <b>only</b>
  * encrypted with a long time key. The default case is long time key encryption.
@@ -28,23 +30,14 @@ package org.drasyl.event;
  * For more secure communication, the application have to wait until the {@link
  * PerfectForwardSecrecyEncryptionEvent} is fired.
  */
-public class LongTimeEncryptionEvent extends AbstractPeerEvent {
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class LongTimeEncryptionEvent implements PeerEvent {
     /**
      * @param peer the affected peer
      * @throws NullPointerException if {@code peer} is {@code null}
      */
-    private LongTimeEncryptionEvent(final Peer peer) {
-        super(peer);
-    }
-
     public static LongTimeEncryptionEvent of(final Peer peer) {
-        return new LongTimeEncryptionEvent(peer);
-    }
-
-    @Override
-    public String toString() {
-        return "LongTimeEncryptionEvent{" +
-                "peer=" + peer +
-                '}';
+        return new AutoValue_LongTimeEncryptionEvent(peer);
     }
 }

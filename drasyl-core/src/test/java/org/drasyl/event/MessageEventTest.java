@@ -30,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(MockitoExtension.class)
 class MessageEventTest {
@@ -85,6 +86,14 @@ class MessageEventTest {
 
             assertEquals(event1.hashCode(), event2.hashCode());
             assertNotEquals(event1.hashCode(), event3.hashCode());
+        }
+    }
+
+    @Nested
+    class Of {
+        @Test
+        void acceptValidArguments() {
+            assertNotNull(MessageEvent.of(sender, null));
         }
     }
 }

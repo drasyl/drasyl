@@ -21,6 +21,8 @@
  */
 package org.drasyl.event;
 
+import com.google.auto.value.AutoValue;
+
 /**
  * This event signals that communication with this peer is only possible by relaying messages via a
  * super peer. If there is no connection to a super peer, no communication with this peer is
@@ -32,28 +34,13 @@ package org.drasyl.event;
  * @see NodeOnlineEvent
  * @see NodeOfflineEvent
  */
-public class PeerRelayEvent extends AbstractPeerEvent {
-    /**
-     * @throws NullPointerException if {@code peer} is {@code null}
-     * @deprecated Use {@link #of(Peer)} instead.
-     */
-    // make method private on next release
-    @Deprecated(since = "0.4.0", forRemoval = true)
-    public PeerRelayEvent(final Peer peer) {
-        super(peer);
-    }
-
-    @Override
-    public String toString() {
-        return "PeerRelayEvent{" +
-                "peer=" + peer +
-                '}';
-    }
-
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class PeerRelayEvent implements PeerEvent {
     /**
      * @throws NullPointerException if {@code peer} is {@code null}
      */
     public static PeerRelayEvent of(final Peer peer) {
-        return new PeerRelayEvent(peer);
+        return new AutoValue_PeerRelayEvent(peer);
     }
 }

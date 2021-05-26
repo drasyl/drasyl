@@ -21,56 +21,34 @@
  */
 package org.drasyl.event;
 
+import com.google.auto.value.AutoValue;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This event signals that the node has received a message addressed to it.
  * <p>
  * This is an immutable object.
  */
-public class MessageEvent implements Event {
-    private final IdentityPublicKey sender;
-    private final Object payload;
-
-    /**
-     * @throws NullPointerException if {@code sender} is {@code null}
-     * @deprecated Use {@link #of(IdentityPublicKey, Object)} instead.
-     */
-    // make method private on next release
-    @Deprecated(since = "0.4.0", forRemoval = true)
-    public MessageEvent(final IdentityPublicKey sender, final Object payload) {
-        this.sender = requireNonNull(sender);
-        this.payload = payload;
-    }
-
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class MessageEvent implements Event {
     /**
      * Returns the message's sender.
      *
      * @return the message's sender
      */
-    @Nullable
-    public IdentityPublicKey getSender() {
-        return sender;
-    }
+    public abstract IdentityPublicKey getSender();
 
     /**
      * Returns the message's payload.
      *
      * @return the message's payload
      */
-    public Object getPayload() {
-        return payload;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(sender, payload);
-    }
+    @Nullable
+    public abstract Object getPayload();
 
     @Override
     public boolean equals(final Object o) {
@@ -81,16 +59,8 @@ public class MessageEvent implements Event {
             return false;
         }
         final MessageEvent that = (MessageEvent) o;
-        return Objects.equals(sender, that.sender) &&
-                Objects.deepEquals(payload, that.payload);
-    }
-
-    @Override
-    public String toString() {
-        return "MessageEvent{" +
-                "sender=" + sender +
-                ", message=" + payload +
-                '}';
+        return Objects.equals(getSender(), that.getSender()) &&
+                Objects.deepEquals(getPayload(), that.getPayload());
     }
 
     /**
@@ -101,6 +71,6 @@ public class MessageEvent implements Event {
      * @throws NullPointerException if {@code sender} is {@code null}
      */
     public static MessageEvent of(final IdentityPublicKey sender, final Object payload) {
-        return new MessageEvent(sender, payload);
+        return new AutoValue_MessageEvent(sender, payload);
     }
 }
