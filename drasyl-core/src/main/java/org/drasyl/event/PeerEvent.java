@@ -21,8 +21,6 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.annotation.NonNull;
-
 /**
  * Events that refer to a {@link Peer}.
  */
@@ -32,6 +30,5 @@ public interface PeerEvent extends Event {
      *
      * @return the peer to which this event refers.
      */
-    @NonNull
     Peer getPeer();
 }

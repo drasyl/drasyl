@@ -119,8 +119,8 @@ class ChunkingHandlerTest {
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                             .setNonce(nonce.toByteString())
-                            .setSender(sender.toByteString())
-                            .setRecipient(recipient.toByteString())
+                            .setSender(sender.getBytes())
+                            .setRecipient(recipient.getBytes())
                             .setHopCount(1)
                             .setTotalChunks(UnsignedShort.of(2).getValue())
                             .build();
@@ -153,8 +153,8 @@ class ChunkingHandlerTest {
                     // normal chunk
                     final PublicHeader chunkHeader = PublicHeader.newBuilder()
                             .setNonce(nonce.toByteString())
-                            .setSender(sender.toByteString())
-                            .setRecipient(recipient.toByteString())
+                            .setSender(sender.getBytes())
+                            .setRecipient(recipient.getBytes())
                             .setHopCount(1)
                             .setChunkNo(UnsignedShort.of(1).getValue())
                             .build();
@@ -167,8 +167,8 @@ class ChunkingHandlerTest {
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                             .setNonce(nonce.toByteString())
-                            .setSender(sender.toByteString())
-                            .setRecipient(recipient.toByteString())
+                            .setSender(sender.getBytes())
+                            .setRecipient(recipient.getBytes())
                             .setHopCount(1)
                             .setTotalChunks(UnsignedShort.of(2).getValue())
                             .build();
@@ -208,8 +208,8 @@ class ChunkingHandlerTest {
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                             .setNonce(nonce.toByteString())
-                            .setSender(sender.toByteString())
-                            .setRecipient(recipient.toByteString())
+                            .setSender(sender.getBytes())
+                            .setRecipient(recipient.getBytes())
                             .setHopCount(1)
                             .setTotalChunks(UnsignedShort.of(2).getValue())
                             .build();
@@ -219,8 +219,8 @@ class ChunkingHandlerTest {
                     // normal chunk
                     final PublicHeader chunkHeader = PublicHeader.newBuilder()
                             .setNonce(nonce.toByteString())
-                            .setSender(sender.toByteString())
-                            .setRecipient(recipient.toByteString())
+                            .setSender(sender.getBytes())
+                            .setRecipient(recipient.getBytes())
                             .setHopCount(1)
                             .setChunkNo(UnsignedShort.of(1).getValue())
                             .build();
@@ -272,8 +272,8 @@ class ChunkingHandlerTest {
 
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                             .setNonce(nonce.toByteString())
-                            .setSender(sender.toByteString())
-                            .setRecipient(recipient.toByteString())
+                            .setSender(sender.getBytes())
+                            .setRecipient(recipient.getBytes())
                             .setHopCount(1)
                             .setTotalChunks(UnsignedShort.of(2).getValue())
                             .build();

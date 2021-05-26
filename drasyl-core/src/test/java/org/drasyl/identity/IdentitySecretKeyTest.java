@@ -67,8 +67,8 @@ class IdentitySecretKeyTest {
         @Test
         void shouldReturnCorrectKeys() {
             final IdentitySecretKey secretKey1 = secretKey;
-            final IdentitySecretKey secretKey2 = IdentitySecretKey.of(secretKey1.toByteString());
-            final IdentitySecretKey secretKey3 = IdentitySecretKey.of(secretKey2.toByteString());
+            final IdentitySecretKey secretKey2 = IdentitySecretKey.of(secretKey1.getBytes());
+            final IdentitySecretKey secretKey3 = IdentitySecretKey.of(secretKey2.getBytes());
 
             assertEquals(secretKey1, secretKey2);
             assertEquals(secretKey1, secretKey3);

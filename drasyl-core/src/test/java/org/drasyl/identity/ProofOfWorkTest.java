@@ -58,8 +58,6 @@ class ProofOfWorkTest {
             final ProofOfWork proof1 = ProofOfWork.generateProofOfWork(publicKey, difficulty);
             final ProofOfWork proof2 = ProofOfWork.generateProofOfWork(publicKey, difficulty);
 
-            System.out.println(proof1);
-
             assertTrue(proof1.isValid(publicKey, difficulty));
             assertTrue(proof2.isValid(publicKey, difficulty));
             assertEquals(proof1, proof2);
@@ -71,10 +69,8 @@ class ProofOfWorkTest {
         @Test
         void shouldIncNonce() {
             final ProofOfWork proof = ProofOfWork.of(1);
-            assertEquals(1, proof.getNonce());
 
-            proof.incNonce();
-            assertEquals(2, proof.getNonce());
+            assertEquals(ProofOfWork.of(2), proof.incNonce());
         }
     }
 

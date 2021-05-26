@@ -22,82 +22,90 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.auto.value.AutoValue;
 import com.google.protobuf.ByteString;
+import com.goterl.lazysodium.utils.Key;
+import org.drasyl.crypto.HexUtil;
+import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringDeserializer;
+import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringSerializer;
 import org.drasyl.util.InternPool;
 
 import static org.drasyl.crypto.Crypto.PK_CURVE_25519_KEY_LENGTH;
 
 /**
- * This class models a public key that can be converted into a string and vice versa.
+ * This class models a curve25519 public key that is used for x25519 key exchange.
  * <p>
  * This is an immutable object.
  */
-public class KeyAgreementPublicKey extends PublicKey {
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class KeyAgreementPublicKey implements PublicKey {
     public static final short KEY_LENGTH_AS_BYTES = PK_CURVE_25519_KEY_LENGTH;
+    @SuppressWarnings("unused")
     public static final short KEY_LENGTH_AS_STRING = KEY_LENGTH_AS_BYTES * 2;
     private static final InternPool<KeyAgreementPublicKey> POOL = new InternPool<>();
-
-    /**
-     * Creates a new public keyAsHexString from the given string.
-     *
-     * @param keyAsHexString public keyAsHexString
-     * @throws NullPointerException     if {@code keyAsHexString} is {@code null}
-     * @throws IllegalArgumentException if {@code keyAsHexString} does not conform to a valid
-     *                                  string
-     */
-    private KeyAgreementPublicKey(final String keyAsHexString) {
-        super(keyAsHexString);
-    }
-
-    /**
-     * Creates a new public key from the given byte array.
-     *
-     * @param key public key
-     * @throws NullPointerException     if {@code key} is {@code null}
-     * @throws IllegalArgumentException if {@code key} is empty
-     */
-    private KeyAgreementPublicKey(final ByteString key) {
-        super(key);
-    }
-
-    /**
-     * Converts a {@link String} into a {@link KeyAgreementPublicKey}.
-     *
-     * @param keyAsHexString keyAsHexString as String
-     * @return {@link KeyAgreementPublicKey}
-     * @throws NullPointerException     if {@code keyAsHexString} is {@code null}
-     * @throws IllegalArgumentException if {@code keyAsHexString} does not conform to a valid
-     *                                  keyAsHexString string
-     */
-    public static KeyAgreementPublicKey of(final String keyAsHexString) {
-        return new KeyAgreementPublicKey(keyAsHexString).intern();
-    }
-
-    /**
-     * Converts a byte[] into a {@link KeyAgreementPublicKey}.
-     *
-     * @param key public key
-     * @return {@link KeyAgreementPublicKey}
-     * @throws NullPointerException if {@code key} is {@code null}
-     */
-    @JsonCreator
-    public static KeyAgreementPublicKey of(final byte[] key) {
-        return of(ByteString.copyFrom(key));
-    }
-
-    public static KeyAgreementPublicKey of(final ByteString key) {
-        return new KeyAgreementPublicKey(key).intern();
-    }
-
-    @Override
-    public boolean validLength() {
-        return this.key.size() == KEY_LENGTH_AS_BYTES;
-    }
 
     /**
      * See {@link InternPool#intern(Object)}
      */
     public KeyAgreementPublicKey intern() {
         return POOL.intern(this);
+    }
+
+    @JsonValue
+    @JsonSerialize(using = BytesToHexStringSerializer.class)
+    @JsonDeserialize(using = BytesToHexStringDeserializer.class)
+    @Override
+    public byte[] toByteArray() {
+        return getBytes().toByteArray();
+    }
+
+    /**
+     * @return this key as {@link Key}
+     */
+    @Override
+    public Key toSodiumKey() {
+        return Key.fromBytes(toByteArray());
+    }
+
+    @Override
+    public String toString() {
+        return HexUtil.bytesToHex(toByteArray());
+    }
+
+    public static KeyAgreementPublicKey of(final ByteString bytes) {
+        if (bytes.size() != KEY_LENGTH_AS_BYTES) {
+            throw new IllegalArgumentException("key has wrong size.");
+        }
+        return new AutoValue_KeyAgreementPublicKey(bytes).intern();
+    }
+
+    /**
+     * Converts a byte[] into a {@link KeyAgreementPublicKey}.
+     *
+     * @param bytes public key
+     * @return {@link KeyAgreementPublicKey}
+     * @throws NullPointerException if {@code key} is {@code null}
+     */
+    @JsonCreator
+    public static KeyAgreementPublicKey of(final byte[] bytes) {
+        return of(ByteString.copyFrom(bytes));
+    }
+
+    /**
+     * Converts a {@link String} into a {@link KeyAgreementPublicKey}.
+     *
+     * @param bytes keyAsHexString as String
+     * @return {@link KeyAgreementPublicKey}
+     * @throws NullPointerException     if {@code keyAsHexString} is {@code null}
+     * @throws IllegalArgumentException if {@code keyAsHexString} does not conform to a valid
+     *                                  keyAsHexString string
+     */
+    @JsonCreator
+    public static KeyAgreementPublicKey of(final String bytes) {
+        return of(HexUtil.fromString(bytes));
     }
 }

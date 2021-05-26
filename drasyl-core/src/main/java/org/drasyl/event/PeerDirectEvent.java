@@ -21,6 +21,8 @@
  */
 package org.drasyl.event;
 
+import com.google.auto.value.AutoValue;
+
 /**
  * This event signals that the node has established a direct connection to a peer. This means that
  * messages do not have to be relayed through a super peer.
@@ -31,28 +33,13 @@ package org.drasyl.event;
  * @see NodeOnlineEvent
  * @see NodeOfflineEvent
  */
-public class PeerDirectEvent extends AbstractPeerEvent {
-    /**
-     * @throws NullPointerException if {@code peer} is {@code null}
-     * @deprecated Use {@link #of(Peer)} instead.
-     */
-    // make method private on next release
-    @Deprecated(since = "0.4.0", forRemoval = true)
-    public PeerDirectEvent(final Peer peer) {
-        super(peer);
-    }
-
-    @Override
-    public String toString() {
-        return "PeerDirectEvent{" +
-                "peer=" + peer +
-                '}';
-    }
-
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class PeerDirectEvent implements PeerEvent {
     /**
      * @throws NullPointerException if {@code peer} is {@code null}
      */
     public static PeerDirectEvent of(final Peer peer) {
-        return new PeerDirectEvent(peer);
+        return new AutoValue_PeerDirectEvent(peer);
     }
 }

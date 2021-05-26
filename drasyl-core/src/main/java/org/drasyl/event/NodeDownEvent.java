@@ -21,33 +21,24 @@
  */
 package org.drasyl.event;
 
+import com.google.auto.value.AutoValue;
+
 /**
  * This event signals that the node is shut down.
  * <p>
  * This is an immutable object.
+ *
+ * @see NodeUpEvent
+ * @see NodeNormalTerminationEvent
+ * @see NodeUnrecoverableErrorEvent
  */
-public class NodeDownEvent extends AbstractNodeEvent {
-    /**
-     * @throws NullPointerException if {@code node} is {@code null}
-     * @deprecated Use {@link #of(Node)} instead.
-     */
-    // make method private on next release
-    @Deprecated(since = "0.4.0", forRemoval = true)
-    public NodeDownEvent(final Node node) {
-        super(node);
-    }
-
-    @Override
-    public String toString() {
-        return "NodeDownEvent{" +
-                "node=" + node +
-                '}';
-    }
-
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class NodeDownEvent implements NodeEvent {
     /**
      * @throws NullPointerException if {@code node} is {@code null}
      */
     public static NodeDownEvent of(final Node node) {
-        return new NodeDownEvent(node);
+        return new AutoValue_NodeDownEvent(node);
     }
 }

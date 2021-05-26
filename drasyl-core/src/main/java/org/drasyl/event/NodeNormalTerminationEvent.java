@@ -21,33 +21,20 @@
  */
 package org.drasyl.event;
 
+import com.google.auto.value.AutoValue;
+
 /**
  * This events signals that the node has terminated normally.
  * <p>
  * This is an immutable object.
  */
-public class NodeNormalTerminationEvent extends AbstractNodeEvent {
-    /**
-     * @throws NullPointerException if {@code node} is {@code null}
-     * @deprecated Use {@link #of(Node)} instead.
-     */
-    // make method private on next release
-    @Deprecated(since = "0.4.0", forRemoval = true)
-    public NodeNormalTerminationEvent(final Node node) {
-        super(node);
-    }
-
-    @Override
-    public String toString() {
-        return "NodeNormalTerminationEvent{" +
-                "node=" + node +
-                '}';
-    }
-
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class NodeNormalTerminationEvent implements NodeEvent {
     /**
      * @throws NullPointerException if {@code node} is {@code null}
      */
     public static NodeNormalTerminationEvent of(final Node node) {
-        return new NodeNormalTerminationEvent(node);
+        return new AutoValue_NodeNormalTerminationEvent(node);
     }
 }

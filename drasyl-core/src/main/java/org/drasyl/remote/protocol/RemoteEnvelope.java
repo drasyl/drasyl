@@ -551,9 +551,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     public Pair<PublicHeader, ByteBuf> getPublicHeaderAndRemainingBytes() throws InvalidMessageFormatException {
         synchronized (this) {
             final ByteBuf internalByteBuf = getOrBuildInternalByteBuf();
-            final PublicHeader publicHeader = getPublicHeader();
+            final PublicHeader myPublicHeader = getPublicHeader();
             final ByteBuf remainingBytes = internalByteBuf.slice(internalByteBuf.readerIndex(), internalByteBuf.readableBytes());
-            return Pair.of(publicHeader, remainingBytes);
+            return Pair.of(myPublicHeader, remainingBytes);
         }
     }
 
@@ -776,12 +776,12 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         final PublicHeader.Builder builder = PublicHeader.newBuilder()
                 .setNonce(randomNonce().toByteString())
                 .setNetworkId(networkId)
-                .setSender(sender.toByteString())
+                .setSender(sender.getBytes())
                 .setProofOfWork(proofOfWork.intValue())
                 .setHopCount(1);
 
         if (recipient != null) {
-            builder.setRecipient(recipient.toByteString());
+            builder.setRecipient(recipient.getBytes());
         }
 
         return builder.build();
@@ -888,7 +888,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                                               final IdentityPublicKey publicKey,
                                               final InetSocketAddress address) {
         final Unite.Builder bodyBuilder = Unite.newBuilder()
-                .setPublicKey(publicKey.toByteString())
+                .setPublicKey(publicKey.getBytes())
                 .setPort(address.getPort());
 
         if (address.getAddress() instanceof Inet4Address) {
@@ -934,7 +934,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                         .setType(KEY_EXCHANGE)
                         .build(),
                 KeyExchange.newBuilder()
-                        .setSessionKey(sessionKey.toByteString())
+                        .setSessionKey(sessionKey.getBytes())
                         .build());
     }
 

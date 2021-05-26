@@ -24,10 +24,9 @@ package org.drasyl.identity;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.auto.value.AutoValue;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-
-import java.util.Objects;
 
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 
@@ -37,37 +36,49 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
  * <p>
  * This is an immutable object.
  */
-public class Identity {
-    private final ProofOfWork proofOfWork;
-    private final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair;
-    private final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair;
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class Identity {
+    public abstract ProofOfWork getProofOfWork();
 
-    @SuppressWarnings("unused")
-    @JsonCreator
-    private Identity(@JsonProperty("proofOfWork") final int proofOfWork,
-                     @JsonProperty("identityKeyPair") final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
-                     @JsonProperty("keyAgreementKeyPair") final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
-        this(ProofOfWork.of(proofOfWork), identityKeyPair, keyAgreementKeyPair);
+    public abstract KeyPair<IdentityPublicKey, IdentitySecretKey> getIdentityKeyPair();
+
+    public abstract KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> getKeyAgreementKeyPair();
+
+    @JsonIgnore
+    public IdentityPublicKey getIdentityPublicKey() {
+        return getIdentityKeyPair().getPublicKey();
     }
 
-    private Identity(final ProofOfWork proofOfWork,
-                     final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
-                     final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
-        this.proofOfWork = proofOfWork;
-        this.identityKeyPair = identityKeyPair;
-        this.keyAgreementKeyPair = keyAgreementKeyPair;
+    @JsonIgnore
+    public IdentitySecretKey getIdentitySecretKey() {
+        return getIdentityKeyPair().getSecretKey();
     }
 
-    private Identity(final ProofOfWork proofOfWork,
-                     final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair) {
-        this.proofOfWork = proofOfWork;
-        this.identityKeyPair = identityKeyPair;
-        try {
-            this.keyAgreementKeyPair = Crypto.INSTANCE.convertLongTimeKeyPairToKeyAgreementKeyPair(identityKeyPair);
-        }
-        catch (final CryptoException e) {
-            throw new IllegalArgumentException(e);
-        }
+    @JsonIgnore
+    public KeyAgreementPublicKey getKeyAgreementPublicKey() {
+        return getKeyAgreementKeyPair().getPublicKey();
+    }
+
+    @JsonIgnore
+    public KeyAgreementSecretKey getKeyAgreementSecretKey() {
+        return getKeyAgreementKeyPair().getSecretKey();
+    }
+
+    /**
+     * Validates the identity by checking whether the proof of work matches the public key.
+     *
+     * @return {@code true} if this identity is valid. Otherwise {@code false}
+     */
+    @JsonIgnore
+    public boolean isValid() {
+        return getProofOfWork().isValid(getIdentityKeyPair().getPublicKey(), POW_DIFFICULTY);
+    }
+
+    public static Identity of(final ProofOfWork proofOfWork,
+                              final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
+                              final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
+        return new AutoValue_Identity(proofOfWork, identityKeyPair, keyAgreementKeyPair);
     }
 
     public static Identity of(final ProofOfWork proofOfWork,
@@ -78,13 +89,12 @@ public class Identity {
 
     public static Identity of(final ProofOfWork proofOfWork,
                               final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair) {
-        return new Identity(proofOfWork, identityKeyPair);
-    }
-
-    public static Identity of(final ProofOfWork proofOfWork,
-                              final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
-                              final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
-        return new Identity(proofOfWork, identityKeyPair, keyAgreementKeyPair);
+        try {
+            return of(proofOfWork, identityKeyPair, Crypto.INSTANCE.convertLongTimeKeyPairToKeyAgreementKeyPair(identityKeyPair));
+        }
+        catch (final CryptoException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     public static Identity of(final ProofOfWork proofOfWork,
@@ -103,72 +113,10 @@ public class Identity {
                 IdentitySecretKey.of(identitySecretKey)));
     }
 
-    public KeyPair<IdentityPublicKey, IdentitySecretKey> getIdentityKeyPair() {
-        return identityKeyPair;
-    }
-
-    @SuppressWarnings("unused")
-    public KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> getKeyAgreementKeyPair() {
-        return keyAgreementKeyPair;
-    }
-
-    @JsonIgnore
-    public IdentityPublicKey getIdentityPublicKey() {
-        return identityKeyPair.getPublicKey();
-    }
-
-    @JsonIgnore
-    public IdentitySecretKey getIdentitySecretKey() {
-        return identityKeyPair.getSecretKey();
-    }
-
-    @JsonIgnore
-    public KeyAgreementPublicKey getKeyAgreementPublicKey() {
-        return keyAgreementKeyPair.getPublicKey();
-    }
-
-    @JsonIgnore
-    public KeyAgreementSecretKey getKeyAgreementSecretKey() {
-        return keyAgreementKeyPair.getSecretKey();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(identityKeyPair);
-    }
-
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
-    }
-
-    /**
-     * Validates the identity by checking whether the proof of work matches the public key.
-     *
-     * @return <code>true</code> if this identity is valid. Otherwise <code>false</code>
-     */
-    @JsonIgnore
-    public boolean isValid() {
-        return proofOfWork.isValid(identityKeyPair.getPublicKey(), POW_DIFFICULTY);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final Identity identity = (Identity) o;
-        return Objects.equals(proofOfWork, identity.proofOfWork) && Objects.equals(identityKeyPair, identity.identityKeyPair) && Objects.equals(keyAgreementKeyPair, identity.keyAgreementKeyPair);
-    }
-
-    @Override
-    public String toString() {
-        return "Identity{" +
-                "proofOfWork=" + proofOfWork +
-                ", identityKeyPair=" + identityKeyPair +
-                ", keyAgreementKeyPair=" + keyAgreementKeyPair +
-                '}';
+    @JsonCreator
+    public static Identity of(@JsonProperty("proofOfWork") final int proofOfWork,
+                              @JsonProperty("identityKeyPair") final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
+                              @JsonProperty("keyAgreementKeyPair") final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
+        return of(ProofOfWork.of(proofOfWork), identityKeyPair, keyAgreementKeyPair);
     }
 }

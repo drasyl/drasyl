@@ -28,14 +28,13 @@ import com.goterl.lazysodium.exceptions.SodiumException;
 import com.goterl.lazysodium.interfaces.AEAD;
 import com.goterl.lazysodium.interfaces.Sign;
 import com.goterl.lazysodium.utils.SessionPair;
-import org.drasyl.identity.AbstractKey;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
+import org.drasyl.identity.Key;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.identity.PublicKey;
-import org.drasyl.identity.SecretKey;
 import org.drasyl.remote.protocol.Nonce;
 
 import java.security.SecureRandom;
@@ -84,7 +83,7 @@ public class Crypto {
      * @param k2 second key
      * @return -1 if the first key is smaller than, 0 if equals to, 1 if greater than the second key
      */
-    public static int compare(final AbstractKey k1, final AbstractKey k2) {
+    public static int compare(final Key k1, final Key k2) {
         return Integer.signum(UnsignedBytes.lexicographicalComparator().compare(
                 k1.toByteArray(),
                 k2.toByteArray()));
@@ -210,6 +209,7 @@ public class Crypto {
      * @return ed25519 public key as curve25519
      * @throws CryptoException if any error occurs during conversion
      */
+    @SuppressWarnings("java:S3242")
     public KeyAgreementPublicKey convertIdentityKeyToKeyAgreementKey(final IdentityPublicKey publicKey) throws CryptoException {
         final byte[] curve25519Pk = new byte[PK_CURVE_25519_KEY_LENGTH];
 
@@ -247,8 +247,9 @@ public class Crypto {
      * @return a session key for sending and receiving messages
      * @throws CryptoException if any error occurs during generation
      */
-    public <P extends PublicKey, S extends SecretKey> SessionPair generateSessionKeyPair(final KeyPair<P, S> myKeyPair,
-                                                                                         final PublicKey receiverPublicKey) throws CryptoException {
+    public <P extends PublicKey, S extends org.drasyl.identity.SecretKey> SessionPair generateSessionKeyPair(
+            final KeyPair<P, S> myKeyPair,
+            final PublicKey receiverPublicKey) throws CryptoException {
         // We must ensure some order on the keys to work properly in async environments
         final int order = compare(myKeyPair.getPublicKey(), receiverPublicKey);
 

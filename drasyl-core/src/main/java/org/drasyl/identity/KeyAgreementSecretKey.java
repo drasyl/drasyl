@@ -22,74 +22,32 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.auto.value.AutoValue;
 import com.google.protobuf.ByteString;
+import com.goterl.lazysodium.utils.Key;
+import org.drasyl.crypto.HexUtil;
+import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringDeserializer;
+import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringSerializer;
 import org.drasyl.util.InternPool;
 
 import static org.drasyl.crypto.Crypto.SK_CURVE_25519_KEY_LENGTH;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
 /**
- * This class models a secret key that can be converted into a string and vice versa.
+ * This class models a curve25519 private key that is used for x25519 key exchange.
  * <p>
  * This is an immutable object.
  */
-public class KeyAgreementSecretKey extends SecretKey {
+@AutoValue
+@SuppressWarnings("java:S118")
+public abstract class KeyAgreementSecretKey implements SecretKey {
     public static final short KEY_LENGTH_AS_BYTES = SK_CURVE_25519_KEY_LENGTH;
+    @SuppressWarnings("unused")
     public static final short KEY_LENGTH_AS_STRING = KEY_LENGTH_AS_BYTES * 2;
     private static final InternPool<KeyAgreementSecretKey> POOL = new InternPool<>();
-
-    /**
-     * Creates a new secret key from the given string.
-     *
-     * @param keyAsHexString secret key
-     * @throws IllegalArgumentException if the string parameter does not conform to a valid key
-     */
-    private KeyAgreementSecretKey(final String keyAsHexString) {
-        super(keyAsHexString);
-    }
-
-    /**
-     * Creates a new secret key from the given byte array.
-     *
-     * @param key secret key
-     * @throws NullPointerException     if {@code key} is {@code null}
-     * @throws IllegalArgumentException if {@code key} is empty
-     */
-    private KeyAgreementSecretKey(final ByteString key) {
-        super(key);
-    }
-
-    /**
-     * Converts a {@link String} into a {@link KeyAgreementSecretKey}.
-     *
-     * @param keyAsHexString keyAsHexString as String
-     * @return {@link KeyAgreementSecretKey}
-     * @throws IllegalArgumentException if string parameter does not conform to a valid
-     *                                  keyAsHexString
-     */
-    public static KeyAgreementSecretKey of(final String keyAsHexString) {
-        return new KeyAgreementSecretKey(keyAsHexString).intern();
-    }
-
-    /**
-     * Converts a byte[] into a {@link KeyAgreementSecretKey}.
-     *
-     * @param key key as byte array
-     * @return {@link IdentityPublicKey}
-     */
-    @JsonCreator
-    public static KeyAgreementSecretKey of(final byte[] key) {
-        return of(ByteString.copyFrom(key));
-    }
-
-    public static KeyAgreementSecretKey of(final ByteString key) {
-        return new KeyAgreementSecretKey(key).intern();
-    }
-
-    @Override
-    public boolean validLength() {
-        return this.key.size() == KEY_LENGTH_AS_BYTES;
-    }
 
     /**
      * See {@link InternPool#intern(Object)}
@@ -100,10 +58,58 @@ public class KeyAgreementSecretKey extends SecretKey {
 
     @Override
     public String toString() {
-        return maskSecret(super.toString());
+        return maskSecret(HexUtil.bytesToHex(toByteArray()));
     }
 
+    @Override
     public String toUnmaskedString() {
-        return super.toString();
+        return HexUtil.bytesToHex(toByteArray());
+    }
+
+    @JsonValue
+    @JsonSerialize(using = BytesToHexStringSerializer.class)
+    @JsonDeserialize(using = BytesToHexStringDeserializer.class)
+    @Override
+    public byte[] toByteArray() {
+        return getBytes().toByteArray();
+    }
+
+    /**
+     * @return this key as {@link Key}
+     */
+    @Override
+    public Key toSodiumKey() {
+        return Key.fromBytes(getBytes().toByteArray());
+    }
+
+    public static KeyAgreementSecretKey of(final ByteString bytes) {
+        if (bytes.size() != KEY_LENGTH_AS_BYTES) {
+            throw new IllegalArgumentException("key has wrong size.");
+        }
+        return new AutoValue_KeyAgreementSecretKey(bytes).intern();
+    }
+
+    /**
+     * Converts a byte[] into a {@link KeyAgreementSecretKey}.
+     *
+     * @param bytes key as byte array
+     * @return {@link IdentityPublicKey}
+     */
+    @JsonCreator
+    public static KeyAgreementSecretKey of(final byte[] bytes) {
+        return of(ByteString.copyFrom(bytes));
+    }
+
+    /**
+     * Converts a {@link String} into a {@link KeyAgreementSecretKey}.
+     *
+     * @param bytes keyAsHexString as String
+     * @return {@link KeyAgreementSecretKey}
+     * @throws IllegalArgumentException if string parameter does not conform to a valid
+     *                                  keyAsHexString
+     */
+    @JsonCreator
+    public static KeyAgreementSecretKey of(final String bytes) {
+        return of(HexUtil.fromString(bytes));
     }
 }
