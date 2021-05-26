@@ -270,7 +270,7 @@ public class ArmHandler extends SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<Re
         else if (plaintextMsg.getPrivateHeader().getType() == Protocol.MessageType.KEY_EXCHANGE_ACKNOWLEDGEMENT) {
             final Protocol.KeyExchangeAcknowledgement agreementAckMsg = (Protocol.KeyExchangeAcknowledgement) plaintextMsg.getBodyAndRelease();
 
-            ArmHandler.receivedAcknowledgement(ctx, AgreementId.of(agreementAckMsg.getAgreementId().toByteArray()), session, recipientsKey);
+            ArmHandler.receivedAcknowledgement(ctx, AgreementId.of(agreementAckMsg.getAgreementId()), session, recipientsKey);
             future.complete(null);
         }
         else {

@@ -22,6 +22,7 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.google.protobuf.ByteString;
 import org.drasyl.util.InternPool;
 
 import static org.drasyl.crypto.Crypto.PK_CURVE_25519_KEY_LENGTH;
@@ -55,7 +56,7 @@ public class KeyAgreementPublicKey extends PublicKey {
      * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code key} is empty
      */
-    private KeyAgreementPublicKey(final byte[] key) {
+    private KeyAgreementPublicKey(final ByteString key) {
         super(key);
     }
 
@@ -81,12 +82,16 @@ public class KeyAgreementPublicKey extends PublicKey {
      */
     @JsonCreator
     public static KeyAgreementPublicKey of(final byte[] key) {
+        return of(ByteString.copyFrom(key));
+    }
+
+    public static KeyAgreementPublicKey of(final ByteString key) {
         return new KeyAgreementPublicKey(key).intern();
     }
 
     @Override
     public boolean validLength() {
-        return this.key.length == KEY_LENGTH_AS_BYTES;
+        return this.key.size() == KEY_LENGTH_AS_BYTES;
     }
 
     /**

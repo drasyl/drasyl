@@ -25,27 +25,25 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.Key;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.serialization.JacksonJsonSerializer;
+import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringDeserializer;
+import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringSerializer;
 
 import java.util.Arrays;
 
 public abstract class AbstractKey {
     @JsonValue
-    @JsonSerialize(using = JacksonJsonSerializer.BytesToHexStringSerializer.class)
-    @JsonDeserialize(using = JacksonJsonSerializer.BytesToHexStringDeserializer.class)
-    protected final byte[] key;
-
-    AbstractKey() {
-        key = null;
-    }
+    @JsonSerialize(using = BytesToHexStringSerializer.class)
+    @JsonDeserialize(using = BytesToHexStringDeserializer.class)
+    protected final ByteString key;
 
     /**
      * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code key} has wrong length
      */
-    protected AbstractKey(final byte[] key) {
+    protected AbstractKey(final ByteString key) {
         this.key = key;
         if (!validLength()) {
             throw new IllegalArgumentException("key has wrong size.");
@@ -59,7 +57,7 @@ public abstract class AbstractKey {
      */
     @JsonCreator
     protected AbstractKey(final String key) {
-        this(HexUtil.fromString(key));
+        this(ByteString.copyFrom(HexUtil.fromString(key)));
     }
 
     /**
@@ -67,20 +65,24 @@ public abstract class AbstractKey {
      */
     public abstract boolean validLength();
 
-    public byte[] getKey() {
+    public ByteString toByteString() {
         return this.key;
+    }
+
+    public byte[] toByteArray() {
+        return key.toByteArray();
     }
 
     /**
      * @return this key as {@link Key}
      */
     public Key toSodiumKey() {
-        return Key.fromBytes(key);
+        return Key.fromBytes(key.toByteArray());
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(key);
+        return Arrays.hashCode(key.toByteArray());
     }
 
     @Override
@@ -92,11 +94,11 @@ public abstract class AbstractKey {
             return false;
         }
         final AbstractKey that = (AbstractKey) o;
-        return Arrays.equals(key, that.key);
+        return Arrays.equals(key.toByteArray(), that.key.toByteArray());
     }
 
     @Override
     public String toString() {
-        return HexUtil.bytesToHex(this.key);
+        return HexUtil.bytesToHex(this.key.toByteArray());
     }
 }

@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.protocol;
 
+import com.google.common.primitives.Ints;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import com.goterl.lazysodium.utils.SessionPair;
@@ -53,14 +54,12 @@ import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
 import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.drasyl.remote.protocol.RemoteEnvelope.MAGIC_NUMBER_LENGTH;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -90,11 +89,11 @@ class RemoteEnvelopeTest {
         nonce = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
         senderProofOfWork = ProofOfWork.of(6657650);
         publicHeader = PublicHeader.newBuilder()
-                .setNonce(ByteString.copyFrom(nonce.byteArrayValue()))
+                .setNonce(nonce.toByteString())
                 .setNetworkId(1)
-                .setSender(ByteString.copyFrom(senderPublicKey.getKey()))
+                .setSender(senderPublicKey.toByteString())
                 .setProofOfWork(senderProofOfWork.intValue())
-                .setRecipient(ByteString.copyFrom(recipientPublicKey.getKey()))
+                .setRecipient(recipientPublicKey.toByteString())
                 .setHopCount(1)
                 .build();
 
@@ -103,11 +102,11 @@ class RemoteEnvelopeTest {
                 .build();
 
         body = Application.newBuilder()
-                .setPayload(ByteString.copyFrom("Lorem ipsum dolor sit amet".getBytes())).build();
+                .setPayload(ByteString.copyFromUtf8("Lorem ipsum dolor sit amet")).build();
 
         message = Unpooled.buffer();
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(message)) {
-            outputStream.write(RemoteEnvelope.magicNumber());
+            RemoteEnvelope.MAGIC_NUMBER.writeTo(outputStream);
             publicHeader.writeDelimitedTo(outputStream);
             publicHeaderLength = outputStream.writtenBytes() - MAGIC_NUMBER_LENGTH;
             privateHeader.writeDelimitedTo(outputStream);
@@ -440,7 +439,7 @@ class RemoteEnvelopeTest {
                     .build();
             final Application body = Application.newBuilder()
                     .setType(byte[].class.getName())
-                    .setPayload(ByteString.copyFrom("Hallo Welt".getBytes()))
+                    .setPayload(ByteString.copyFromUtf8("Hallo Welt"))
                     .build();
             try (final RemoteEnvelope<Application> envelope = new RemoteEnvelope<>(message, publicHeader, privateHeader, body)) {
                 envelope.incrementHopCount();
@@ -458,7 +457,7 @@ class RemoteEnvelopeTest {
                     .build();
             final Application body = Application.newBuilder()
                     .setType(byte[].class.getName())
-                    .setPayload(ByteString.copyFrom("Hallo Welt".getBytes()))
+                    .setPayload(ByteString.copyFromUtf8("Hallo Welt"))
                     .build();
 
             try (final RemoteEnvelope<Application> envelope = new RemoteEnvelope<>(null, publicHeader, privateHeader, body)) {
@@ -554,7 +553,7 @@ class RemoteEnvelopeTest {
             try (final RemoteEnvelope<Acknowledgement> acknowledgement = RemoteEnvelope.acknowledgement(1, senderPublicKey, senderProofOfWork, recipientPublicKey, nonce)) {
                 assertEquals(1, acknowledgement.getPublicHeader().getNetworkId());
                 assertEquals(ACKNOWLEDGEMENT, acknowledgement.getPrivateHeader().getType());
-                assertArrayEquals(nonce.byteArrayValue(), acknowledgement.getBodyAndRelease().getCorrespondingId().toByteArray());
+                assertEquals(nonce.toByteString(), acknowledgement.getBodyAndRelease().getCorrespondingId());
             }
         }
     }
@@ -590,7 +589,7 @@ class RemoteEnvelopeTest {
             try (final RemoteEnvelope<Unite> unite = RemoteEnvelope.unite(1, senderPublicKey, senderProofOfWork, recipientPublicKey, senderPublicKey, new InetSocketAddress(22527))) {
                 assertEquals(1, unite.getPublicHeader().getNetworkId());
                 assertEquals(UNITE, unite.getPrivateHeader().getType());
-                assertEquals(ByteString.copyFrom(senderPublicKey.getKey()), unite.getBodyAndRelease().getPublicKey());
+                assertEquals(senderPublicKey.toByteString(), unite.getBodyAndRelease().getPublicKey());
             }
         }
     }
@@ -600,10 +599,10 @@ class RemoteEnvelopeTest {
         @Test
         void shouldBeTheCorrectMagicNumber() {
             final int magicNumber = (int) Math.pow(22527, 2);
-            final byte[] expectedMagicNumber = ByteBuffer.allocate(4).putInt(magicNumber).array();
+            final ByteString expectedMagicNumber = ByteString.copyFrom(Ints.toByteArray(magicNumber));
 
-            assertArrayEquals(expectedMagicNumber, RemoteEnvelope.magicNumber());
-            assertEquals(magicNumber, ByteBuffer.wrap(RemoteEnvelope.magicNumber()).getInt());
+            assertEquals(expectedMagicNumber, RemoteEnvelope.MAGIC_NUMBER);
+            assertEquals(magicNumber, Ints.fromByteArray(RemoteEnvelope.MAGIC_NUMBER.toByteArray()));
         }
     }
 }

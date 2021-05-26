@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler.crypto;
 
+import com.google.protobuf.ByteString;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.Hashing;
 import org.drasyl.crypto.HexUtil;
@@ -47,12 +48,20 @@ public class AgreementId {
         this.id = id;
     }
 
+    public ByteString toByteString() {
+        return ByteString.copyFrom(toBytes());
+    }
+
     /**
      * @throws NullPointerException     if {@code id} is {@code null}
      * @throws IllegalArgumentException if {@code id} is not a valid SHA256 hash
      */
     public static AgreementId of(final byte[] id) {
         return of(HexUtil.bytesToHex(id));
+    }
+
+    public static AgreementId of(final ByteString id) {
+        return of(id.toByteArray());
     }
 
     /**
@@ -72,9 +81,9 @@ public class AgreementId {
 
         switch (compare) {
             case -1:
-                return new AgreementId(HexUtil.bytesToHex(Hashing.sha256(pk1.getKey(), pk2.getKey())));
+                return new AgreementId(HexUtil.bytesToHex(Hashing.sha256(pk1.toByteArray(), pk2.toByteArray())));
             case 1:
-                return new AgreementId(HexUtil.bytesToHex(Hashing.sha256(pk2.getKey(), pk1.getKey())));
+                return new AgreementId(HexUtil.bytesToHex(Hashing.sha256(pk2.toByteArray(), pk1.toByteArray())));
             case 0:
             default:
                 throw new IllegalArgumentException("pk1 and pk2 must be not equals.");

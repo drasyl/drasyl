@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.google.protobuf.ByteString;
 import org.drasyl.crypto.HexUtil;
 
 import java.io.ByteArrayInputStream;
@@ -59,43 +60,43 @@ public class JacksonJsonSerializer implements Serializer {
     /**
      * Serializes a given byte array as hexadecimal string.
      */
-    public static final class BytesToHexStringSerializer extends StdSerializer<byte[]> {
+    public static final class BytesToHexStringSerializer extends StdSerializer<ByteString> {
         private static final long serialVersionUID = 4261135293288643562L;
 
         public BytesToHexStringSerializer() {
-            super(byte[].class);
+            super(ByteString.class);
         }
 
-        public BytesToHexStringSerializer(final Class<byte[]> t) {
+        public BytesToHexStringSerializer(final Class<ByteString> t) {
             super(t);
         }
 
         @Override
-        public void serialize(final byte[] value,
+        public void serialize(final ByteString value,
                               final JsonGenerator gen,
                               final SerializerProvider provider) throws IOException {
-            gen.writeString(HexUtil.bytesToHex(value));
+            gen.writeString(HexUtil.bytesToHex(value.toByteArray()));
         }
     }
 
     /**
      * Deserializes a given hexadecimal string to byte array.
      */
-    public static final class BytesToHexStringDeserializer extends StdDeserializer<byte[]> {
+    public static final class BytesToHexStringDeserializer extends StdDeserializer<ByteString> {
         private static final long serialVersionUID = 3616936627408179992L;
 
         public BytesToHexStringDeserializer() {
             super(byte[].class);
         }
 
-        public BytesToHexStringDeserializer(final Class<byte[]> t) {
+        public BytesToHexStringDeserializer(final Class<ByteString> t) {
             super(t);
         }
 
         @Override
-        public byte[] deserialize(final JsonParser p,
-                                  final DeserializationContext ctxt) throws IOException {
-            return HexUtil.fromString(p.getText());
+        public ByteString deserialize(final JsonParser p,
+                                      final DeserializationContext ctxt) throws IOException {
+            return ByteString.copyFrom(HexUtil.fromString(p.getText()));
         }
     }
 }

@@ -447,8 +447,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                             final InetSocketAddressWrapper sender,
                             final RemoteEnvelope<Discovery> msg,
                             final CompletableFuture<Void> future) throws IOException {
-        final IdentityPublicKey envelopeSender = requireNonNull(IdentityPublicKey.of(msg.getPublicHeader().getSender().toByteArray()));
-        final Nonce id = requireNonNull(Nonce.of(msg.getPublicHeader().getNonce().toByteArray()));
+        final IdentityPublicKey envelopeSender = msg.getSender();
+        final Nonce id = msg.getNonce();
         final Discovery body = msg.getBodyAndRelease();
         final boolean childrenJoin = body.getChildrenTime() > 0;
         LOG.trace("Got {} from {}", msg, sender);
@@ -479,8 +479,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                             final RemoteEnvelope<Acknowledgement> msg,
                             final CompletableFuture<Void> future) throws IOException {
         final Acknowledgement body = msg.getBodyAndRelease();
-        final Nonce correspondingId = requireNonNull(Nonce.of(body.getCorrespondingId().toByteArray()));
-        final IdentityPublicKey envelopeSender = requireNonNull(IdentityPublicKey.of(msg.getPublicHeader().getSender().toByteArray()));
+        final Nonce correspondingId = requireNonNull(Nonce.of(body.getCorrespondingId()));
+        final IdentityPublicKey envelopeSender = msg.getSender();
         LOG.trace("Got {} from {}", msg, sender);
         final Ping ping = openPingsCache.remove(correspondingId);
         if (ping != null) {
@@ -535,7 +535,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                              final RemoteEnvelope<Unite> msg,
                              final CompletableFuture<Void> future) throws IOException {
         final Unite body = msg.getBodyAndRelease();
-        final IdentityPublicKey publicKey = requireNonNull(IdentityPublicKey.of(body.getPublicKey().toByteArray()));
+        final IdentityPublicKey publicKey = requireNonNull(IdentityPublicKey.of(body.getPublicKey()));
 
         final InetAddress address;
         if (body.getAddressV6().isEmpty()) {

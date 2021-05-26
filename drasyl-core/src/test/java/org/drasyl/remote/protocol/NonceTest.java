@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.protocol;
 
+import com.google.protobuf.ByteString;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -140,17 +141,17 @@ class NonceTest {
     class IsValidNonce {
         @Test
         void shouldReturnFalseForIdWithWrongLength() {
-            assertFalse(isValidNonce(new byte[]{ 0, 0, 1 }));
+            assertFalse(isValidNonce(ByteString.copyFrom(new byte[]{ 0, 0, 1 })));
         }
 
         @Test
         void shouldReturnTrueForValidString() {
-            assertTrue(isValidNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue()));
+            assertTrue(isValidNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteString()));
         }
     }
 
     @Nested
-    class ByteArrayValue {
+    class ToByteArray {
         @Test
         void shouldReturnCorrectBytes() {
             assertArrayEquals(new byte[]{
@@ -178,7 +179,7 @@ class NonceTest {
                     10,
                     43,
                     -25
-            }, Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue());
+            }, Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteArray());
         }
     }
 }

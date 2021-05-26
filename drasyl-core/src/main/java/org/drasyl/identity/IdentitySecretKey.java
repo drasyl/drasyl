@@ -22,6 +22,7 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.google.protobuf.ByteString;
 import org.drasyl.util.InternPool;
 
 import static org.drasyl.crypto.Crypto.SK_LONG_TIME_KEY_LENGTH;
@@ -54,7 +55,7 @@ public class IdentitySecretKey extends SecretKey {
      * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code key} is empty
      */
-    private IdentitySecretKey(final byte[] key) {
+    private IdentitySecretKey(final ByteString key) {
         super(key);
     }
 
@@ -78,12 +79,16 @@ public class IdentitySecretKey extends SecretKey {
      */
     @JsonCreator
     public static IdentitySecretKey of(final byte[] key) {
+        return of(ByteString.copyFrom(key));
+    }
+
+    public static IdentitySecretKey of(final ByteString key) {
         return new IdentitySecretKey(key).intern();
     }
 
     @Override
     public boolean validLength() {
-        return this.key.length == KEY_LENGTH_AS_BYTES;
+        return this.key.size() == KEY_LENGTH_AS_BYTES;
     }
 
     /**
