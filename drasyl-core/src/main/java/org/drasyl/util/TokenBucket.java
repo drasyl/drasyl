@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * This class implements the <a href="https://en.wikipedia.org/wiki/Token_bucket">token bucket
@@ -52,13 +53,10 @@ public class TokenBucket {
                 final TokenProvider tokenProvider,
                 final Runnable sleepStrategy,
                 final long tokens) {
-        if (capacity < 1) {
-            throw new IllegalArgumentException("capacity must be a positive number.");
-        }
+        this.capacity = requirePositive(capacity, "capacity must be a positive number");
         if (tokens > capacity) {
-            throw new IllegalArgumentException("tokens must not be greater than capacity.");
+            throw new IllegalArgumentException("tokens must not be greater than capacity");
         }
-        this.capacity = capacity;
         this.tokenProvider = requireNonNull(tokenProvider);
         this.sleepStrategy = requireNonNull(sleepStrategy);
         this.tokens = tokens;
@@ -141,11 +139,8 @@ public class TokenBucket {
 
         TokenProvider(final long refillInterval,
                       final Supplier<Long> elapsedTimeProvider) {
-            if (refillInterval < 1) {
-                throw new IllegalArgumentException("refillIntervalDuration must be positive duration.");
-            }
             this.elapsedTimeProvider = elapsedTimeProvider;
-            this.refillInterval = refillInterval;
+            this.refillInterval = requirePositive(refillInterval, "refillInterval must be positive");
             this.lastRefillTime = -refillInterval;
         }
 

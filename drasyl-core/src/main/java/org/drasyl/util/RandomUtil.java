@@ -23,6 +23,8 @@ package org.drasyl.util;
 
 import java.util.Random;
 
+import static org.drasyl.util.Preconditions.requireNonNegative;
+
 /**
  * Utility class for receiving pseudorandom values.
  */
@@ -103,11 +105,7 @@ public final class RandomUtil {
      * @return Array containing pseudorandom bytes
      */
     public static byte[] randomBytes(final int count) {
-        if (count < 0) {
-            throw new IllegalArgumentException("count must be greater than or equal to 0");
-        }
-
-        final byte[] bytes = new byte[count];
+        final byte[] bytes = new byte[requireNonNegative(count, "count must be greater than or equal to 0")];
         RANDOM.nextBytes(bytes);
         return bytes;
     }
@@ -120,11 +118,7 @@ public final class RandomUtil {
      * @return string containing pseudorandom alphanumeric characters
      */
     public static String randomString(final int length) {
-        if (length < 0) {
-            throw new IllegalArgumentException("length must be greater than or equal to 0");
-        }
-
-        final char[] buffer = new char[length];
+        final char[] buffer = new char[requireNonNegative(length, "length must be greater than or equal to 0")];
 
         for (int i = 0; i < buffer.length; i++) {
             buffer[i] = ALPHABET[RANDOM.nextInt(ALPHABET.length)];

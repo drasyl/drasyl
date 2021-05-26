@@ -31,6 +31,8 @@ import java.time.Duration;
 import java.util.Objects;
 
 import static java.time.Duration.ofSeconds;
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
 /**
@@ -52,16 +54,13 @@ public class Group {
                   final String credentials,
                   final byte minDifficulty,
                   final Duration timeout) {
-        if (minDifficulty < 0) {
-            throw new IllegalArgumentException("minDifficulty must be non-negative");
-        }
+        this.minDifficulty = requireNonNegative(minDifficulty, "minDifficulty must be non-negative");
         if (GROUP_MIN_TIMEOUT.compareTo(timeout) > 0) {
             throw new IllegalArgumentException("timeout must not be less than " + GROUP_MIN_TIMEOUT.toSeconds() + "s");
         }
-        this.name = Objects.requireNonNull(name);
-        this.credentials = Objects.requireNonNull(credentials);
-        this.minDifficulty = minDifficulty;
-        this.timeout = Objects.requireNonNull(timeout);
+        this.name = requireNonNull(name);
+        this.credentials = requireNonNull(credentials);
+        this.timeout = requireNonNull(timeout);
     }
 
     @SuppressWarnings("unused")

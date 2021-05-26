@@ -27,6 +27,7 @@ import org.drasyl.identity.Identity;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
  * Used by {@link Event} to describe an event related to the local Node (e.g. {@link NodeUpEvent},
@@ -41,14 +42,8 @@ public class Node {
 
     private Node(final Identity identity, final int port, final int tcpFallbackPort) {
         this.identity = requireNonNull(identity);
-        if (port < 0) {
-            throw new IllegalArgumentException("port must be non-negative.");
-        }
-        this.port = port;
-        if (tcpFallbackPort < 0) {
-            throw new IllegalArgumentException("tcpFallbackPort must be non-negative.");
-        }
-        this.tcpFallbackPort = tcpFallbackPort;
+        this.port = requireNonNegative(port, "port must be non-negative");
+        this.tcpFallbackPort = requireNonNegative(tcpFallbackPort, "tcpFallbackPort must be non-negative");
     }
 
     @Override

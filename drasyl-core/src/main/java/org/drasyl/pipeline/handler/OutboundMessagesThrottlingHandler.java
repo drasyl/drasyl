@@ -35,6 +35,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Traffic shaping handler that limits the number of outgoing messages per second. For this purpose,
@@ -68,11 +69,8 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
         private Disposable queueConsumer;
 
         public RateLimitedQueue(final long maxEventsPerSecond) {
-            if (maxEventsPerSecond < 1) {
-                throw new IllegalArgumentException("maxEventsPerSecond must be a positive number.");
-            }
             queue = new LinkedList<>();
-            final Duration refillInterval = Duration.ofSeconds(1).dividedBy(maxEventsPerSecond);
+            final Duration refillInterval = Duration.ofSeconds(1).dividedBy(requirePositive(maxEventsPerSecond, "maxEventsPerSecond must be a positive number"));
             final boolean doBusyWait = refillInterval.toMillis() < 20;
             tokenBucket = new TokenBucket(1, refillInterval, doBusyWait);
         }
