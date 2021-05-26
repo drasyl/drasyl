@@ -197,7 +197,7 @@ class InternetDiscoveryTest {
             final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
             when(identity.getIdentityPublicKey()).thenReturn(recipient);
             try (final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Nonce.randomNonce())) {
-                final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(Nonce.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(Nonce.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     pipeline.processInbound(address, acknowledgementMessage).join();
 
@@ -217,7 +217,7 @@ class InternetDiscoveryTest {
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
 
             try (final RemoteEnvelope<Acknowledgement> acknowledgementMessage = RemoteEnvelope.acknowledgement(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Nonce.randomNonce())) {
-                final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(Nonce.of(acknowledgementMessage.getBody().getCorrespondingId().toByteArray()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
+                final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(Nonce.of(acknowledgementMessage.getBody().getCorrespondingId()), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     pipeline.processInbound(address, acknowledgementMessage).join();
 
@@ -330,7 +330,7 @@ class InternetDiscoveryTest {
             when(superPeers.contains(sender)).thenReturn(true);
 
             try (final RemoteEnvelope<Unite> uniteMessage = RemoteEnvelope.unite(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(22527))) {
-                final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(IdentityPublicKey.of(uniteMessage.getBody().getPublicKey().toByteArray()), peer)), rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(IdentityPublicKey.of(uniteMessage.getBody().getPublicKey()), peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                     pipeline.processInbound(address, uniteMessage).join();
 

@@ -86,8 +86,8 @@ public class Crypto {
      */
     public static int compare(final AbstractKey k1, final AbstractKey k2) {
         return Integer.signum(UnsignedBytes.lexicographicalComparator().compare(
-                k1.getKey(),
-                k2.getKey()));
+                k1.toByteArray(),
+                k2.toByteArray()));
     }
 
     /**
@@ -192,8 +192,8 @@ public class Crypto {
         final byte[] curve25519Pk = new byte[PK_CURVE_25519_KEY_LENGTH];
         final byte[] curve25519Sk = new byte[SK_CURVE_25519_KEY_LENGTH];
 
-        final boolean pkSuccess = sodium.convertPublicKeyEd25519ToCurve25519(curve25519Pk, keyPair.getPublicKey().getKey());
-        final boolean skSuccess = sodium.convertSecretKeyEd25519ToCurve25519(curve25519Sk, keyPair.getSecretKey().getKey());
+        final boolean pkSuccess = sodium.convertPublicKeyEd25519ToCurve25519(curve25519Pk, keyPair.getPublicKey().toByteArray());
+        final boolean skSuccess = sodium.convertSecretKeyEd25519ToCurve25519(curve25519Sk, keyPair.getSecretKey().toByteArray());
 
         if (!pkSuccess || !skSuccess) {
             throw new CryptoException("Could not convert this key pair.");
@@ -213,7 +213,7 @@ public class Crypto {
     public KeyAgreementPublicKey convertIdentityKeyToKeyAgreementKey(final IdentityPublicKey publicKey) throws CryptoException {
         final byte[] curve25519Pk = new byte[PK_CURVE_25519_KEY_LENGTH];
 
-        final boolean pkSuccess = sodium.convertPublicKeyEd25519ToCurve25519(curve25519Pk, publicKey.getKey());
+        final boolean pkSuccess = sodium.convertPublicKeyEd25519ToCurve25519(curve25519Pk, publicKey.toByteArray());
 
         if (!pkSuccess) {
             throw new CryptoException("Could not convert this key.");
@@ -301,7 +301,7 @@ public class Crypto {
                 authTag,
                 additionalDataLength,
                 null,
-                nonce.byteArrayValue(),
+                nonce.toByteArray(),
                 sessionPair.getTx()
         )) {
             throw new CryptoException("Could not encrypt the given message with the given parameters.");
@@ -345,7 +345,7 @@ public class Crypto {
                 cipher.length,
                 authTag,
                 additionalDataLength,
-                nonce.byteArrayValue(),
+                nonce.toByteArray(),
                 sessionPair.getRx()
         )) {
             throw new CryptoException("Could not decrypt the given cipher text.");
@@ -370,7 +370,7 @@ public class Crypto {
         if (!sodium.cryptoSignDetached(signatureBytes,
                 message,
                 message.length,
-                secretKey.getKey())) {
+                secretKey.toByteArray())) {
             throw new CryptoException("Could not create a signature for your message in detached mode.");
         }
 
@@ -392,6 +392,6 @@ public class Crypto {
         return sodium.cryptoSignVerifyDetached(signature,
                 message,
                 message.length,
-                publicKey.getKey());
+                publicKey.toByteArray());
     }
 }

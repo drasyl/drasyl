@@ -42,13 +42,13 @@ public class ProtocolTest {
         @Test
         void shouldSerializeToCorrectSize() {
             final PublicHeader header = PublicHeader.newBuilder()
-                    .setNonce(ByteString.copyFrom(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue()))
+                    .setNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteString())
                     .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
+                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
                     .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
-                    .setRecipient(ByteString.copyFrom(IdentityTestUtil.ID_2.getIdentityPublicKey().getKey()))
+                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().toByteString())
                     .setHopCount(1)
-                    .setAgreementId(ByteString.copyFrom(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toBytes()))
+                    .setAgreementId(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toByteString())
                     .build();
 
             assertEquals(142, header.getSerializedSize());
@@ -57,13 +57,13 @@ public class ProtocolTest {
         @Test
         void shouldSerializeHeadChunkToCorrectSize() {
             final PublicHeader header = PublicHeader.newBuilder()
-                    .setNonce(ByteString.copyFrom(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue()))
+                    .setNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteString())
                     .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
+                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
                     .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
-                    .setRecipient(ByteString.copyFrom(IdentityTestUtil.ID_2.getIdentityPublicKey().getKey()))
+                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().toByteString())
                     .setHopCount(1)
-                    .setAgreementId(ByteString.copyFrom(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toBytes()))
+                    .setAgreementId(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toByteString())
                     .setTotalChunks(UnsignedShort.of(123).getValue())
                     .build();
 
@@ -73,13 +73,13 @@ public class ProtocolTest {
         @Test
         void shouldSerializeNonHeadChunkToCorrectSize() {
             final PublicHeader header = PublicHeader.newBuilder()
-                    .setNonce(ByteString.copyFrom(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").byteArrayValue()))
+                    .setNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteString())
                     .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
+                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
                     .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
-                    .setRecipient(ByteString.copyFrom(IdentityTestUtil.ID_2.getIdentityPublicKey().getKey()))
+                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().toByteString())
                     .setHopCount(1)
-                    .setAgreementId(ByteString.copyFrom(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toBytes()))
+                    .setAgreementId(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toByteString())
                     .setChunkNo(UnsignedShort.of(64).getValue())
                     .build();
 
@@ -93,7 +93,7 @@ public class ProtocolTest {
         void shouldSerializeIpv4ToCorrectSize() {
             final InetSocketAddress address = new InetSocketAddress("37.61.174.58", 80);
             final Unite unite = Unite.newBuilder()
-                    .setPublicKey(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
+                    .setPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
                     .setAddressV4(Ints.fromByteArray(address.getAddress().getAddress()))
                     .setPort(address.getPort())
                     .build();
@@ -105,7 +105,7 @@ public class ProtocolTest {
         void shouldSerializeIpv6ToCorrectSize() {
             final InetSocketAddress address = new InetSocketAddress("b719:5781:d127:d17c:1230:b24c:478c:7985", 443);
             final Unite unite = Unite.newBuilder()
-                    .setPublicKey(ByteString.copyFrom(IdentityTestUtil.ID_1.getIdentityPublicKey().getKey()))
+                    .setPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey().toByteString())
                     .setAddressV6(ByteString.copyFrom(address.getAddress().getAddress()))
                     .setPort(address.getPort())
                     .build();

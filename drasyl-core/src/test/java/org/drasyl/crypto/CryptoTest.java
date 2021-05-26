@@ -176,8 +176,8 @@ class CryptoTest {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
-            when(pk.getKey()).thenReturn(new byte[]{ 0x01 });
-            when(key.getKey()).thenReturn(new byte[]{ 0x02 });
+            when(pk.toByteArray()).thenReturn(new byte[]{ 0x01 });
+            when(key.toByteArray()).thenReturn(new byte[]{ 0x02 });
             doReturn(sp).when(sodium).cryptoKxClientSessionKeys(any(), any(), any());
 
             final SessionPair rtnKeyPair = crypto.generateSessionKeyPair(keyPair, key);
@@ -197,8 +197,8 @@ class CryptoTest {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
-            when(pk.getKey()).thenReturn(new byte[]{ 0x02 });
-            when(key.getKey()).thenReturn(new byte[]{ 0x01 });
+            when(pk.toByteArray()).thenReturn(new byte[]{ 0x02 });
+            when(key.toByteArray()).thenReturn(new byte[]{ 0x01 });
             doReturn(sp).when(sodium).cryptoKxServerSessionKeys(any(), any(), any());
 
             final SessionPair rtnKeyPair = crypto.generateSessionKeyPair(keyPair, key);
@@ -215,8 +215,8 @@ class CryptoTest {
                                               @Mock final IdentityPublicKey key) {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
-            when(pk.getKey()).thenReturn(new byte[]{ 0x01 });
-            when(key.getKey()).thenReturn(new byte[]{ 0x01 });
+            when(pk.toByteArray()).thenReturn(new byte[]{ 0x01 });
+            when(key.toByteArray()).thenReturn(new byte[]{ 0x01 });
 
             assertThrows(CryptoException.class, () -> crypto.generateSessionKeyPair(keyPair, key));
 
@@ -232,8 +232,8 @@ class CryptoTest {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
-            when(pk.getKey()).thenReturn(new byte[]{ 0x01 });
-            when(key.getKey()).thenReturn(new byte[]{ 0x02 });
+            when(pk.toByteArray()).thenReturn(new byte[]{ 0x01 });
+            when(key.toByteArray()).thenReturn(new byte[]{ 0x02 });
             when(sodium.cryptoKxClientSessionKeys(any(), any(), any())).thenThrow(SodiumException.class);
 
             assertThrows(CryptoException.class, () -> crypto.generateSessionKeyPair(keyPair, key));
@@ -256,7 +256,7 @@ class CryptoTest {
             verify(sodium).cryptoAeadXChaCha20Poly1305IetfEncrypt(
                     new byte[AEAD.XCHACHA20POLY1305_IETF_ABYTES], null, message,
                     message.length, new byte[0], 0,
-                    null, nonce.byteArrayValue(), sessionPair.getTx());
+                    null, nonce.toByteArray(), sessionPair.getTx());
         }
 
         @Test
@@ -288,7 +288,7 @@ class CryptoTest {
             verify(sodium).cryptoAeadXChaCha20Poly1305IetfDecrypt(
                     new byte[0], null, null, cipher,
                     cipher.length, new byte[0], 0,
-                    nonce.byteArrayValue(), sessionPair.getTx());
+                    nonce.toByteArray(), sessionPair.getTx());
         }
 
         @Test
@@ -317,7 +317,7 @@ class CryptoTest {
 
             verify(sodium).cryptoSignDetached(
                     new byte[com.goterl.lazysodium.interfaces.Sign.BYTES], message, message.length,
-                    key.getKey());
+                    key.toByteArray());
         }
 
         @Test
@@ -340,7 +340,7 @@ class CryptoTest {
             crypto.verifySignature(signature, message, key);
 
             verify(sodium).cryptoSignVerifyDetached(signature, message, message.length,
-                    key.getKey());
+                    key.toByteArray());
         }
     }
 

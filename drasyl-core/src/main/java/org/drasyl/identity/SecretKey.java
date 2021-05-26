@@ -21,6 +21,8 @@
  */
 package org.drasyl.identity;
 
+import com.google.protobuf.ByteString;
+
 public abstract class SecretKey extends AbstractKey {
     /**
      * Creates a new secret key from the given string.
@@ -39,7 +41,7 @@ public abstract class SecretKey extends AbstractKey {
      * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code key} is empty
      */
-    SecretKey(final byte[] key) {
+    SecretKey(final ByteString key) {
         super(key);
     }
 }

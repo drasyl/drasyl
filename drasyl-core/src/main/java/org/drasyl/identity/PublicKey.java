@@ -21,6 +21,8 @@
  */
 package org.drasyl.identity;
 
+import com.google.protobuf.ByteString;
+
 public abstract class PublicKey extends AbstractKey {
     /**
      * Creates a new public keyAsHexString from the given string.
@@ -41,7 +43,7 @@ public abstract class PublicKey extends AbstractKey {
      * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code key} is empty
      */
-    PublicKey(final byte[] key) {
+    PublicKey(final ByteString key) {
         super(key);
     }
 }

@@ -193,7 +193,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                 ByteBuf chunkBodyByteBuf = null;
                 final ByteBuf chunkByteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(chunkByteBuf)) {
-                    outputStream.write(RemoteEnvelope.magicNumber());
+                    RemoteEnvelope.MAGIC_NUMBER.writeTo(outputStream);
 
                     // chunk header
                     final PublicHeader chunkHeader = buildChunkHeader(totalChunks, partialChunkHeader, chunkNo);

@@ -22,6 +22,7 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.google.protobuf.ByteString;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.pipeline.address.Address;
@@ -60,7 +61,7 @@ public class IdentityPublicKey extends PublicKey implements Address {
      * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code key} is empty
      */
-    private IdentityPublicKey(final byte[] key) {
+    private IdentityPublicKey(final ByteString key) {
         super(key);
     }
 
@@ -100,12 +101,16 @@ public class IdentityPublicKey extends PublicKey implements Address {
      */
     @JsonCreator
     public static IdentityPublicKey of(final byte[] key) {
+        return of(ByteString.copyFrom(key));
+    }
+
+    public static IdentityPublicKey of(final ByteString key) {
         return new IdentityPublicKey(key).intern();
     }
 
     @Override
     public boolean validLength() {
-        return this.key.length == KEY_LENGTH_AS_BYTES;
+        return this.key.size() == KEY_LENGTH_AS_BYTES;
     }
 
     /**

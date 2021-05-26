@@ -48,8 +48,8 @@ class IdentityPublicKeyTest {
         @Test
         void shouldReturnCorrectKeys() {
             final IdentityPublicKey publicKey1 = publicKey;
-            final IdentityPublicKey publicKey2 = IdentityPublicKey.of(publicKey1.getKey());
-            final IdentityPublicKey publicKey3 = IdentityPublicKey.of(publicKey2.getKey());
+            final IdentityPublicKey publicKey2 = IdentityPublicKey.of(publicKey1.toByteString());
+            final IdentityPublicKey publicKey3 = IdentityPublicKey.of(publicKey2.toByteString());
 
             assertEquals(publicKey1, publicKey2);
             assertEquals(publicKey1, publicKey3);

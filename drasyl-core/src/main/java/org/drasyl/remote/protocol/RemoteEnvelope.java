@@ -79,8 +79,13 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
  * translated into a Java object.
  */
 public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, AutoCloseable {
-    private static final byte[] MAGIC_NUMBER = new byte[]{ 0x1E, 0x3F, 0x50, 0x01 };
-    public static final short MAGIC_NUMBER_LENGTH = 4;
+    public static final ByteString MAGIC_NUMBER = ByteString.copyFrom(new byte[]{
+            0x1E,
+            0x3F,
+            0x50,
+            0x01
+    });
+    public static final short MAGIC_NUMBER_LENGTH = (short) MAGIC_NUMBER.size();
     private ByteBuf message;
     private PublicHeader publicHeader;
     private PrivateHeader privateHeader;
@@ -201,7 +206,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                                                                final ByteBuf bytes) throws InvalidMessageFormatException {
         final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
-            outputStream.write(MAGIC_NUMBER);
+            MAGIC_NUMBER.writeTo(outputStream);
             publicHeader.writeDelimitedTo(outputStream);
             byteBuf.writeBytes(bytes);
 
@@ -229,7 +234,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                 try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
                     final byte[] magicNumber = in.readNBytes(MAGIC_NUMBER_LENGTH);
 
-                    if (!Arrays.equals(MAGIC_NUMBER, magicNumber)) {
+                    if (!Arrays.equals(MAGIC_NUMBER.toByteArray(), magicNumber)) {
                         throw new InvalidMessageFormatException("Magic Number mismatch!");
                     }
 
@@ -433,7 +438,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @throws InvalidMessageFormatException if the public header cannot be read
      */
     public Nonce getNonce() throws InvalidMessageFormatException {
-        return Nonce.of(getPublicHeader().getNonce().toByteArray());
+        return Nonce.of(getPublicHeader().getNonce());
     }
 
     /**
@@ -447,7 +452,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @throws InvalidMessageFormatException if the public header cannot be read
      */
     public IdentityPublicKey getSender() throws InvalidMessageFormatException {
-        return IdentityPublicKey.of(getPublicHeader().getSender().toByteArray());
+        return IdentityPublicKey.of(getPublicHeader().getSender());
     }
 
     /**
@@ -464,8 +469,8 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @throws InvalidMessageFormatException if the public header cannot be read
      */
     public IdentityPublicKey getRecipient() throws InvalidMessageFormatException {
-        final byte[] bytes = getPublicHeader().getRecipient().toByteArray();
-        if (bytes.length == 0) {
+        final ByteString bytes = getPublicHeader().getRecipient();
+        if (bytes.isEmpty()) {
             return null;
         }
         else {
@@ -487,7 +492,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     public AgreementId getAgreementId() throws InvalidMessageFormatException {
         synchronized (this) {
             if (!getPublicHeader().getAgreementId().isEmpty()) {
-                return AgreementId.of(getPublicHeader().getAgreementId().toByteArray());
+                return AgreementId.of(getPublicHeader().getAgreementId());
             }
             else {
                 return null;
@@ -522,7 +527,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
             try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(publicHeaderByteBuf)) {
                 publicHeader.writeDelimitedTo(outputStream);
 
-                this.message = ByteBufUtil.prepend(message, Unpooled.copiedBuffer(MAGIC_NUMBER), publicHeaderByteBuf);
+                this.message = ByteBufUtil.prepend(message, Unpooled.copiedBuffer(MAGIC_NUMBER.toByteArray()), publicHeaderByteBuf);
             }
             catch (final IOException e) {
                 throw new InvalidMessageFormatException(e);
@@ -560,7 +565,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
             final PublicHeader existingPublicHeader = getPublicHeader();
 
             this.publicHeader = PublicHeader.newBuilder(existingPublicHeader)
-                    .setAgreementId(ByteString.copyFrom(agreementId.toBytes()))
+                    .setAgreementId(agreementId.toByteString())
                     .build();
 
             writeNewPublicHeaderToMessage();
@@ -728,7 +733,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
 
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
-            outputStream.write(MAGIC_NUMBER);
+            MAGIC_NUMBER.writeTo(outputStream);
             publicHeader.writeDelimitedTo(outputStream);
             privateHeader.writeDelimitedTo(outputStream);
             body.writeDelimitedTo(outputStream);
@@ -760,7 +765,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         return of(
                 buildPublicHeader(networkId, requireNonNull(sender), requireNonNull(proofOfWork), requireNonNull(recipient)),
                 PrivateHeader.newBuilder().setType(ACKNOWLEDGEMENT).build(),
-                Acknowledgement.newBuilder().setCorrespondingId(ByteString.copyFrom(correspondingId.byteArrayValue())).build()
+                Acknowledgement.newBuilder().setCorrespondingId(correspondingId.toByteString()).build()
         );
     }
 
@@ -769,14 +774,14 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                                                    final ProofOfWork proofOfWork,
                                                    final IdentityPublicKey recipient) {
         final PublicHeader.Builder builder = PublicHeader.newBuilder()
-                .setNonce(ByteString.copyFrom(randomNonce().byteArrayValue()))
+                .setNonce(randomNonce().toByteString())
                 .setNetworkId(networkId)
-                .setSender(ByteString.copyFrom(sender.getKey()))
+                .setSender(sender.toByteString())
                 .setProofOfWork(proofOfWork.intValue())
                 .setHopCount(1);
 
         if (recipient != null) {
-            builder.setRecipient(ByteString.copyFrom(recipient.getKey()));
+            builder.setRecipient(recipient.toByteString());
         }
 
         return builder.build();
@@ -883,7 +888,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                                               final IdentityPublicKey publicKey,
                                               final InetSocketAddress address) {
         final Unite.Builder bodyBuilder = Unite.newBuilder()
-                .setPublicKey(ByteString.copyFrom(publicKey.getKey()))
+                .setPublicKey(publicKey.toByteString())
                 .setPort(address.getPort());
 
         if (address.getAddress() instanceof Inet4Address) {
@@ -929,7 +934,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                         .setType(KEY_EXCHANGE)
                         .build(),
                 KeyExchange.newBuilder()
-                        .setSessionKey(ByteString.copyFrom(sessionKey.getKey()))
+                        .setSessionKey(sessionKey.toByteString())
                         .build());
     }
 
@@ -956,7 +961,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
                         .setType(KEY_EXCHANGE_ACKNOWLEDGEMENT)
                         .build(),
                 KeyExchangeAcknowledgement.newBuilder()
-                        .setAgreementId(ByteString.copyFrom(agreementId.toBytes()))
+                        .setAgreementId(agreementId.toByteString())
                         .build());
     }
 
@@ -988,9 +993,5 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      */
     public UnsignedShort getTotalChunks() throws InvalidMessageFormatException {
         return UnsignedShort.of(getPublicHeader().getTotalChunks());
-    }
-
-    public static byte[] magicNumber() {
-        return MAGIC_NUMBER.clone();
     }
 }

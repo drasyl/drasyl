@@ -21,13 +21,16 @@
  */
 package org.drasyl.remote.protocol;
 
+import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.interfaces.AEAD;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 
-import java.util.Arrays;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link AddressedEnvelope} is uniquely identified by its {@link #NONCE_LENGTH} bytes long
@@ -37,18 +40,26 @@ import java.util.Arrays;
  */
 public class Nonce {
     public static final int NONCE_LENGTH = AEAD.XCHACHA20POLY1305_IETF_NPUBBYTES;
-    private final byte[] nonce; //NOSONAR
+    private final ByteString bytes;
 
-    private Nonce(@NonNull final byte[] nonce) {
-        if (!isValidNonce(nonce)) {
-            throw new IllegalArgumentException("NONCE must be a " + NONCE_LENGTH + " bit byte array: " + HexUtil.bytesToHex(nonce));
+    private Nonce(@NonNull final ByteString bytes) {
+        if (!isValidNonce(bytes)) {
+            throw new IllegalArgumentException("NONCE must be a " + NONCE_LENGTH + " bit byte array: " + HexUtil.bytesToHex(bytes.toByteArray()));
         }
-        this.nonce = nonce.clone();
+        this.bytes = requireNonNull(bytes);
     }
 
     @Override
-    public int hashCode() {
-        return Arrays.hashCode(nonce);
+    public String toString() {
+        return HexUtil.bytesToHex(bytes.toByteArray());
+    }
+
+    public byte[] toByteArray() {
+        return bytes.toByteArray();
+    }
+
+    public ByteString toByteString() {
+        return bytes;
     }
 
     @Override
@@ -59,17 +70,13 @@ public class Nonce {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final Nonce o2 = (Nonce) o;
-        return Arrays.equals(this.nonce, o2.nonce);
+        final Nonce nonce1 = (Nonce) o;
+        return Objects.equals(bytes, nonce1.bytes);
     }
 
     @Override
-    public String toString() {
-        return HexUtil.bytesToHex(nonce);
-    }
-
-    public byte[] byteArrayValue() {
-        return nonce.clone();
+    public int hashCode() {
+        return Objects.hash(bytes);
     }
 
     /**
@@ -78,30 +85,37 @@ public class Nonce {
      * @return A randomly generated {@link Nonce}
      */
     public static Nonce randomNonce() {
-        return new Nonce(Crypto.randomBytes(NONCE_LENGTH));
+        return Nonce.of(Crypto.randomBytes(NONCE_LENGTH));
     }
 
     /**
-     * Checks if {@code nonce} is a valid value.
+     * Checks if {@code bytes} is a valid value.
      *
-     * @param nonce string to be validated
+     * @param bytes string to be validated
      * @return {@code true} if valid. Otherwise {@code false}
      */
-    public static boolean isValidNonce(final byte[] nonce) {
-        return nonce != null && nonce.length == NONCE_LENGTH;
+    public static boolean isValidNonce(final ByteString bytes) {
+        return bytes != null && bytes.size() == NONCE_LENGTH;
     }
 
     /**
-     * @throws NullPointerException if {@code nonce} is {@code null}
+     * @throws NullPointerException if {@code bytes} is {@code null}
      */
-    public static Nonce of(@NonNull final byte[] nonce) {
-        return new Nonce(nonce);
+    public static Nonce of(@NonNull final ByteString bytes) {
+        return new Nonce(bytes);
     }
 
     /**
-     * @throws NullPointerException if {@code nonce} is {@code null}
+     * @throws NullPointerException if {@code bytes} is {@code null}
      */
-    public static Nonce of(@NonNull final String nonce) {
-        return new Nonce(HexUtil.parseHexBinary(nonce));
+    public static Nonce of(@NonNull final byte[] bytes) {
+        return new Nonce(ByteString.copyFrom(bytes));
+    }
+
+    /**
+     * @throws NullPointerException if {@code bytes} is {@code null}
+     */
+    public static Nonce of(@NonNull final String bytes) {
+        return Nonce.of(HexUtil.parseHexBinary(bytes));
     }
 }

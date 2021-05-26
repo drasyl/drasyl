@@ -115,7 +115,7 @@ public class PcpPortMapping implements PortMapping {
 
         if (!interfaces.isEmpty()) {
             nonce = new byte[MAPPING_NONCE_LENGTH];
-            final byte[] publicKeyBytes = ctx.identity().getIdentityPublicKey().getKey();
+            final byte[] publicKeyBytes = ctx.identity().getIdentityPublicKey().toByteArray();
             System.arraycopy(publicKeyBytes, 0, nonce, 0, nonce.length);
             mapPort(ctx);
         }
