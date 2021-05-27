@@ -134,12 +134,25 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                                          final Event event,
                                          final CompletableFuture<Void> future) {
         if (serverChannel != null) {
-            final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
-            LOG.debug("Stop Server listening at tcp:/{}...", socketAddress);
-            // shutdown server
-            serverChannel.close().awaitUninterruptibly();
-            serverChannel = null;
-            LOG.debug("Server stopped");
+            // the TCP server should be shut down last, so that the other handlers have a chance to
+            // send a "goodbye" message.
+            final CompletableFuture<Void> otherHandlersFuture = new CompletableFuture<>();
+            otherHandlersFuture.whenComplete((result, e) -> {
+                final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
+                LOG.debug("Stop Server listening at tcp:/{}...", socketAddress);
+                // shutdown server
+                serverChannel.close().awaitUninterruptibly();
+                serverChannel = null;
+                LOG.debug("Server stopped");
+
+                if (e == null) {
+                    future.complete(result);
+                }
+                else {
+                    future.completeExceptionally(e);
+                }
+            });
+            ctx.passEvent(event, otherHandlersFuture);
         }
 
         // passthrough event

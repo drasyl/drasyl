@@ -98,11 +98,26 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            // stop all clients
-            stopClient();
-        }
+            // the TCP client should be shut down last, so that the other handlers have a chance to
+            // send a "goodbye" message.
+            final CompletableFuture<Void> otherHandlersFuture = new CompletableFuture<>();
+            otherHandlersFuture.whenComplete((result, e) -> {
+                // stop client
+                stopClient();
 
-        ctx.passEvent(event, future);
+                if (e == null) {
+                    future.complete(result);
+                }
+                else {
+                    future.completeExceptionally(e);
+                }
+            });
+            ctx.passEvent(event, otherHandlersFuture);
+        }
+        else {
+            // passthrough event
+            ctx.passEvent(event, future);
+        }
     }
 
     private synchronized void stopClient() {
