@@ -317,6 +317,36 @@ class RemoteEnvelopeTest {
     }
 
     @Nested
+    class GetPrivateHeader {
+        @Test
+        void readingPrivateHeaderOfArmedMessageShouldNotCorruptMessage() throws IOException, CryptoException {
+            final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
+            final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(IdentityTestUtil.ID_1.getKeyAgreementKeyPair(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
+            final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(new SessionPair(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
+
+            // try to read private header of armed message
+            assertThrows(IOException.class, armedEnvelop::getPrivateHeader);
+
+            armedEnvelop.disarm(new SessionPair(sessionPair.getRx(), sessionPair.getTx()));
+        }
+    }
+
+    @Nested
+    class GetBody {
+        @Test
+        void readingBodyOfArmedMessageShouldNotCorruptMessage() throws IOException, CryptoException {
+            final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
+            final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(IdentityTestUtil.ID_1.getKeyAgreementKeyPair(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
+            final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(new SessionPair(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
+
+            // try to read private header of armed message
+            assertThrows(IOException.class, armedEnvelop::getBody);
+
+            armedEnvelop.disarm(new SessionPair(sessionPair.getRx(), sessionPair.getTx()));
+        }
+    }
+
+    @Nested
     class GetId {
         @Test
         void shouldReturnId() throws InvalidMessageFormatException {
@@ -543,6 +573,14 @@ class RemoteEnvelopeTest {
             final RemoteEnvelope<MessageLite> disarmedEnvelope = armedEnvelop.disarmAndRelease(sessionPair);
 
             assertNotNull(disarmedEnvelope.getBodyAndRelease());
+        }
+
+        @Test
+        void disarmWithWrongSessionPairShouldNotCorruptMessage() throws IOException {
+            // try to disarm with wrong session pair
+            assertThrows(IOException.class, () -> armedEnvelop.disarm(new SessionPair(sessionPair.getTx(), sessionPair.getRx())));
+
+            armedEnvelop.disarm(new SessionPair(sessionPair.getRx(), sessionPair.getTx()));
         }
     }
 
