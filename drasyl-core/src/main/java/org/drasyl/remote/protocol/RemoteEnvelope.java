@@ -260,10 +260,12 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         synchronized (this) {
             getPublicHeader();
             if (privateHeader == null) {
+                message.markReaderIndex();
                 try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
                     privateHeader = PrivateHeader.parseDelimitedFrom(in);
                 }
                 catch (final IOException e) {
+                    message.resetReaderIndex();
                     throw new InvalidMessageFormatException("Can't read private header of the given message do to the following exception: ", e);
                 }
             }
@@ -283,10 +285,12 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
         synchronized (this) {
             getPrivateHeader();
             if (body == null) {
+                message.markReaderIndex();
                 try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
                     body = bodyFromInputStream(privateHeader.getType(), in);
                 }
                 catch (final IOException e) {
+                    message.resetReaderIndex();
                     throw new InvalidMessageFormatException("Can't read the given message do to the following exception: ", e);
                 }
             }
@@ -664,6 +668,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
             final byte[] authTag = getPublicHeaderAuthTag();
             final Nonce nonce = getNonce();
             try (final ByteBufInputStream in = new ByteBufInputStream(getOrBuildInternalByteBuf())) {
+                message.markReaderIndex();
                 final byte[] bytes = in.readAllBytes();
 
                 try (final ByteArrayInputStream decryptedIn = new ByteArrayInputStream(Crypto.INSTANCE.decrypt(bytes, authTag, nonce, sessionPair))) {
@@ -675,6 +680,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
             }
         }
         catch (final IOException | CryptoException e) {
+            message.resetReaderIndex();
             throw new InvalidMessageFormatException("Unable to disarm message", e);
         }
     }
@@ -695,12 +701,9 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
      * @throws InvalidMessageFormatException if disarming was not possible
      */
     public RemoteEnvelope<T> disarmAndRelease(final SessionPair sessionPair) throws InvalidMessageFormatException {
-        try {
-            return disarm(sessionPair);
-        }
-        finally {
-            releaseAll();
-        }
+        final RemoteEnvelope<T> disarm = disarm(sessionPair);
+        releaseAll();
+        return disarm;
     }
 
     @SuppressWarnings({ "unchecked", "java:S1142" })
