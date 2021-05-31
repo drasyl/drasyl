@@ -867,7 +867,7 @@ public abstract class DrasylConfig {
             if (config.getRemoteUniteMinInterval().isNegative()) {
                 throw new DrasylConfigException(REMOTE_UNITE_MIN_INTERVAL, "Must be a non-negative value.");
             }
-            if (config.isRemoteSuperPeerEnabled()) {
+            if (config.isRemoteEnabled() && config.isRemoteSuperPeerEnabled()) {
                 for (final Endpoint endpoint : config.getRemoteSuperPeerEndpoints()) {
                     if (endpoint.getNetworkId() != null && !endpoint.getNetworkId().equals(config.getNetworkId())) {
                         throw new DrasylConfigException(REMOTE_SUPER_PEER_ENDPOINTS, "super peer's network id `" + endpoint.getNetworkId() + "` does not match your network id `" + config.getNetworkId() + "`: " + endpoint);
