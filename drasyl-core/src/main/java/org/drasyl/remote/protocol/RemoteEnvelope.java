@@ -555,6 +555,7 @@ public class RemoteEnvelope<T extends MessageLite> implements ReferenceCounted, 
     public Pair<PublicHeader, ByteBuf> getPublicHeaderAndRemainingBytes() throws InvalidMessageFormatException {
         synchronized (this) {
             final ByteBuf internalByteBuf = getOrBuildInternalByteBuf();
+            publicHeader = null; // force reading of private header from ByteBuf, so that ridx is in the correct position
             final PublicHeader myPublicHeader = getPublicHeader();
             final ByteBuf remainingBytes = internalByteBuf.slice(internalByteBuf.readerIndex(), internalByteBuf.readableBytes());
             return Pair.of(myPublicHeader, remainingBytes);

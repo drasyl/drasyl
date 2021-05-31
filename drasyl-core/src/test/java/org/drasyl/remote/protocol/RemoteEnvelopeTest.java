@@ -502,9 +502,50 @@ class RemoteEnvelopeTest {
     @Nested
     class GetPublicHeaderAndRemainingBytes {
         @Test
-        void shouldReturnCorrectResult() throws IOException {
-            final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
+        void shouldReturnCorrectResultIfMessageIsPresentOnlyInByteBuf() throws IOException {
+            final ByteBuf message = Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42"));
             try (final RemoteEnvelope<Application> envelope = new RemoteEnvelope<>(message, null, null, null)) {
+                final Pair<PublicHeader, ByteBuf> pair = envelope.getPublicHeaderAndRemainingBytes();
+                try (final RemoteEnvelope<Application> testEnvelope = RemoteEnvelope.of(pair.first(), pair.second().retain())) {
+                    assertEquals(envelope.getPublicHeader(), pair.first());
+                    assertEquals(envelope.getPrivateHeader(), testEnvelope.getPrivateHeader());
+                    assertEquals(envelope.getBody(), testEnvelope.getBody());
+                }
+            }
+        }
+
+        @Test
+        void shouldReturnCorrectResultsIfMessageIsPresentInByteBufAndEnvelope() throws IOException {
+            final CompositeByteBuf message = Unpooled.compositeBuffer().addComponent(true, Unpooled.wrappedBuffer(HexUtil.fromString("1e3f500156099c3495a5f68386571a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22209cdc9b062a21030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f223001020801100a0a48616c6c6f2057656c7412025b42")));
+            final PublicHeader publicHeader = RemoteEnvelope.buildPublicHeader(0, IdentityTestUtil.ID_3.getIdentityPublicKey(), IdentityTestUtil.ID_3.getProofOfWork(), IdentityTestUtil.ID_4.getIdentityPublicKey());
+            final PrivateHeader privateHeader = PrivateHeader.newBuilder()
+                    .setType(APPLICATION)
+                    .build();
+            final Application body = Application.newBuilder()
+                    .setType(byte[].class.getName())
+                    .setPayload(ByteString.copyFromUtf8("Hallo Welt"))
+                    .build();
+            try (final RemoteEnvelope<Application> envelope = new RemoteEnvelope<>(message, publicHeader, privateHeader, body)) {
+                final Pair<PublicHeader, ByteBuf> pair = envelope.getPublicHeaderAndRemainingBytes();
+                try (final RemoteEnvelope<Application> testEnvelope = RemoteEnvelope.of(pair.first(), pair.second().retain())) {
+                    assertEquals(envelope.getPublicHeader(), pair.first());
+                    assertEquals(envelope.getPrivateHeader(), testEnvelope.getPrivateHeader());
+                    assertEquals(envelope.getBody(), testEnvelope.getBody());
+                }
+            }
+        }
+
+        @Test
+        void shouldReturnCorrectResultsIfMessageIsPresentOnlyInEnvelope() throws IOException {
+            final PublicHeader publicHeader = RemoteEnvelope.buildPublicHeader(0, IdentityTestUtil.ID_3.getIdentityPublicKey(), IdentityTestUtil.ID_3.getProofOfWork(), IdentityTestUtil.ID_4.getIdentityPublicKey());
+            final PrivateHeader privateHeader = PrivateHeader.newBuilder()
+                    .setType(APPLICATION)
+                    .build();
+            final Application body = Application.newBuilder()
+                    .setType(byte[].class.getName())
+                    .setPayload(ByteString.copyFromUtf8("Hallo Welt"))
+                    .build();
+            try (final RemoteEnvelope<Application> envelope = new RemoteEnvelope<>(null, publicHeader, privateHeader, body)) {
                 final Pair<PublicHeader, ByteBuf> pair = envelope.getPublicHeaderAndRemainingBytes();
                 try (final RemoteEnvelope<Application> testEnvelope = RemoteEnvelope.of(pair.first(), pair.second().retain())) {
                     assertEquals(envelope.getPublicHeader(), pair.first());
