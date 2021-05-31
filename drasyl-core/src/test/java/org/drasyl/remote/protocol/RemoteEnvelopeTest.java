@@ -60,6 +60,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.drasyl.remote.protocol.RemoteEnvelope.MAGIC_NUMBER_LENGTH;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -510,6 +511,7 @@ class RemoteEnvelopeTest {
                     assertEquals(envelope.getPublicHeader(), pair.first());
                     assertEquals(envelope.getPrivateHeader(), testEnvelope.getPrivateHeader());
                     assertEquals(envelope.getBody(), testEnvelope.getBody());
+                    assertDoesNotThrow(testEnvelope::getPublicHeaderAndRemainingBytes);
                 }
             }
         }
@@ -530,7 +532,8 @@ class RemoteEnvelopeTest {
                 try (final RemoteEnvelope<Application> testEnvelope = RemoteEnvelope.of(pair.first(), pair.second().retain())) {
                     assertEquals(envelope.getPublicHeader(), pair.first());
                     assertEquals(envelope.getPrivateHeader(), testEnvelope.getPrivateHeader());
-                    assertEquals(envelope.getBody(), testEnvelope.getBody());
+                    testEnvelope.getPublicHeaderAndRemainingBytes();
+                    assertDoesNotThrow(testEnvelope::getPublicHeaderAndRemainingBytes);
                 }
             }
         }
@@ -551,6 +554,7 @@ class RemoteEnvelopeTest {
                     assertEquals(envelope.getPublicHeader(), pair.first());
                     assertEquals(envelope.getPrivateHeader(), testEnvelope.getPrivateHeader());
                     assertEquals(envelope.getBody(), testEnvelope.getBody());
+                    assertDoesNotThrow(testEnvelope::getPublicHeaderAndRemainingBytes);
                 }
             }
         }
