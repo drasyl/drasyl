@@ -184,7 +184,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
 
             final int mtu = ctx.config().getRemoteMessageMtu();
             final UnsignedShort totalChunks = totalChunks(messageSize, mtu, partialChunkHeader);
-            LOG.debug("The message `{}` has a size of {} bytes and must be split to {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> mtu);
+            LOG.debug("The message `{}` has a size of {} bytes and is therefore split into {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> mtu);
 
             final FutureCombiner combiner = FutureCombiner.getInstance();
             final int chunkSize = getChunkSize(partialChunkHeader, mtu);
