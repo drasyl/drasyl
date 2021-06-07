@@ -205,11 +205,11 @@ class RemoteEnvelopeTest {
             @Test
             void shouldBuildCorrectMessage() throws InvalidMessageFormatException {
                 final byte[] bytesAfterPublicHeader = ByteBufUtil.getBytes(message.slice(MAGIC_NUMBER_LENGTH + publicHeaderLength, message.readableBytes() - MAGIC_NUMBER_LENGTH - publicHeaderLength));
-                final RemoteEnvelope<MessageLite> msg = RemoteEnvelope.of(publicHeader, bytesAfterPublicHeader);
-
-                assertEquals(publicHeader, msg.getPublicHeader());
-                assertEquals(privateHeader, msg.getPrivateHeader());
-                assertEquals(body, msg.getBody());
+                try (final RemoteEnvelope<MessageLite> msg = RemoteEnvelope.of(publicHeader, bytesAfterPublicHeader)) {
+                    assertEquals(publicHeader, msg.getPublicHeader());
+                    assertEquals(privateHeader, msg.getPrivateHeader());
+                    assertEquals(body, msg.getBody());
+                }
             }
         }
     }
@@ -323,12 +323,13 @@ class RemoteEnvelopeTest {
         void readingPrivateHeaderOfArmedMessageShouldNotCorruptMessage() throws IOException, CryptoException {
             final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(IdentityTestUtil.ID_1.getKeyAgreementKeyPair(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
-            final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(new SessionPair(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
+            // we must invert the session pair for encryption
+            try (final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(new SessionPair(sessionPair.getTx(), sessionPair.getRx()))) {
+                // try to read private header of armed message
+                assertThrows(IOException.class, armedEnvelop::getPrivateHeader);
 
-            // try to read private header of armed message
-            assertThrows(IOException.class, armedEnvelop::getPrivateHeader);
-
-            armedEnvelop.disarm(new SessionPair(sessionPair.getRx(), sessionPair.getTx()));
+                armedEnvelop.disarm(new SessionPair(sessionPair.getRx(), sessionPair.getTx()));
+            }
         }
     }
 
@@ -338,12 +339,14 @@ class RemoteEnvelopeTest {
         void readingBodyOfArmedMessageShouldNotCorruptMessage() throws IOException, CryptoException {
             final RemoteEnvelope<MessageLite> envelope = RemoteEnvelope.of(message);
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(IdentityTestUtil.ID_1.getKeyAgreementKeyPair(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
-            final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(new SessionPair(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
+            // we must invert the session pair for encryption
+            try (final RemoteEnvelope<MessageLite> armedEnvelop = envelope.armAndRelease(new SessionPair(sessionPair.getTx(), sessionPair.getRx()))) {
 
-            // try to read private header of armed message
-            assertThrows(IOException.class, armedEnvelop::getBody);
+                // try to read private header of armed message
+                assertThrows(IOException.class, armedEnvelop::getBody);
 
-            armedEnvelop.disarm(new SessionPair(sessionPair.getRx(), sessionPair.getTx()));
+                armedEnvelop.disarm(new SessionPair(sessionPair.getRx(), sessionPair.getTx()));
+            }
         }
     }
 
