@@ -8,6 +8,7 @@ variables:
 cache:
   paths:
     - .m2/repository
+    - ~/.sonar/cache
 
 .maven-base: &maven-base
   before_script:
