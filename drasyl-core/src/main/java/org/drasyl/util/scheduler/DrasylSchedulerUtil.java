@@ -131,7 +131,7 @@ public final class DrasylSchedulerUtil {
         static final int CORE_SIZE = 1;
         static final int MAX_SIZE;
 
-        // pool should have at least 1 and max 10% of available processors
+        // pool should have at least 2 and max 10% of available processors
         static {
             MAX_SIZE = SystemPropertyUtil.getInt("org.drasyl.scheduler.heavy", Math.max(2, (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1)));
             LOG.debug("Heavy scheduler max pool size: {}", MAX_SIZE);
