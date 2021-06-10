@@ -24,6 +24,7 @@ package org.drasyl;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -90,7 +91,7 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
     public void tearDown() {
         node1.shutdown().join();
         node2.shutdown().join();
-        DrasylNode.irrevocablyTerminate();
+        EventLoopGroupUtil.shutdown();
         System.err.println("Benchmark stopped.");
     }
 
@@ -98,6 +99,6 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
     @Threads(Threads.MAX)
     @BenchmarkMode(Mode.Throughput)
     public void benchmark() {
-        node1.send(node2.identity().getIdentityPublicKey(), testPayload).join();
+        node1.send(node2.identity().getIdentityPublicKey(), testPayload).toCompletableFuture().join();
     }
 }

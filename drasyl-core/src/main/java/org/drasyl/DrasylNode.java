@@ -32,9 +32,9 @@ import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
@@ -54,6 +54,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
@@ -271,15 +272,15 @@ public abstract class DrasylNode {
      *
      * @param recipient the recipient of a message as compressed public key
      * @param payload   the payload of a message
-     * @return a completed future if the message was successfully processed, otherwise an
-     * exceptionally future
+     * @return a completion stage if the message was successfully processed, otherwise an
+     * exceptionally completion stage
      * @see org.drasyl.pipeline.Handler
      * @see MessageSerializer
      * @since 0.1.3-SNAPSHOT
      */
     @NonNull
-    public CompletableFuture<Void> send(@NonNull final String recipient,
-                                        final Object payload) {
+    public CompletionStage<Void> send(@NonNull final String recipient,
+                                      final Object payload) {
         try {
             return send(IdentityPublicKey.of(recipient), payload);
         }
@@ -304,16 +305,18 @@ public abstract class DrasylNode {
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
-     * @return a completed future if the message was successfully processed, otherwise an
-     * exceptionally future
+     * @return a completion stage if the message was successfully processed, otherwise an
+     * exceptionally completion stage
      * @see org.drasyl.pipeline.Handler
      * @see MessageSerializer
      * @since 0.1.3-SNAPSHOT
      */
     @NonNull
-    public CompletableFuture<Void> send(@Nullable final IdentityPublicKey recipient,
-                                        final Object payload) {
-        return pipeline.processOutbound(recipient, payload);
+    public CompletionStage<Void> send(@Nullable final IdentityPublicKey recipient,
+                                      final Object payload) {
+        return pipeline
+                .processOutbound(recipient, payload)
+                .minimalCompletionStage();
     }
 
     /**
@@ -324,7 +327,7 @@ public abstract class DrasylNode {
      * If the local server has been started, it will now be stopped.
      * <p>
      * This method does not stop the shared threads. To kill the shared threads, you have to call
-     * the {@link #irrevocablyTerminate()} method.
+     * the {@link EventLoopGroupUtil#shutdown()} method.
      * <p>
      *
      * @return this method returns a future, which complements if all shutdown steps have been

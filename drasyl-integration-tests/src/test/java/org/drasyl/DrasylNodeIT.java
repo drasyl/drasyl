@@ -387,33 +387,33 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), true).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (byte) 23).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 'C').get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 3.141F).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 1337).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 9001L).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (short) 42).get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
                 node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), new byte[]{
                         (byte) 0,
                         (byte) 1
-                }).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "String").get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), null).get();
+                }).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
 
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), true).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (byte) 23).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 'C').get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 3.141F).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 9001L).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (short) 42).get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
                 node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), new byte[]{
                         (byte) 0,
                         (byte) 1
-                }).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "String").get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), null).get();
+                }).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
 
                 //
                 // verify
@@ -506,33 +506,33 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), true).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (byte) 23).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 'C').get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 3.141F).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 1337).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 9001L).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (short) 42).get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
                 node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), new byte[]{
                         (byte) 0,
                         (byte) 1
-                }).get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "String").get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), null).get();
+                }).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
 
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), true).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (byte) 23).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 'C').get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 3.141F).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 9001L).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (short) 42).get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
                 node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), new byte[]{
                         (byte) 0,
                         (byte) 1
-                }).get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "String").get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), null).get();
+                }).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
 
                 //
                 // verify
@@ -909,8 +909,8 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "Hallo Welt").get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt").get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
 
                 //
                 // verify
@@ -1024,13 +1024,13 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void sendToSelfShouldThrowException() {
-                assertThrows(ExecutionException.class, () -> node.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt").get());
+                assertThrows(ExecutionException.class, () -> node.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get());
             }
 
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void sendToAnOtherPeerShouldThrowException() {
-                assertThrows(ExecutionException.class, () -> node.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "Hallo Welt").get());
+                assertThrows(ExecutionException.class, () -> node.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get());
             }
         }
     }

@@ -42,7 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -70,7 +70,7 @@ class PerfTestReceiverTest {
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
     @Mock
-    BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod;
+    BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod;
     @Mock
     Supplier<Behavior> successBehavior;
     @Mock
