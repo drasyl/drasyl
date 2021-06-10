@@ -40,7 +40,7 @@ import java.io.PrintStream;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -66,7 +66,7 @@ public class PerfTestReceiver {
     private final Scheduler scheduler;
     private final IdentityPublicKey sender;
     private final PrintStream printStream;
-    private final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod;
+    private final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod;
     private final Supplier<Behavior> successBehavior;
     private final Function<Exception, Behavior> failureBehavior;
     private final LongSupplier currentTimeSupplier;
@@ -77,7 +77,7 @@ public class PerfTestReceiver {
                      final SessionRequest session,
                      final Scheduler scheduler,
                      final PrintStream printStream,
-                     final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod,
+                     final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
                      final Supplier<Behavior> successBehavior,
                      final Function<Exception, Behavior> failureBehavior,
                      final LongSupplier currentTimeSupplier) {
@@ -95,7 +95,7 @@ public class PerfTestReceiver {
                             final SessionRequest session,
                             final Scheduler scheduler,
                             final PrintStream printStream,
-                            final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod,
+                            final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
                             final Supplier<Behavior> successBehavior,
                             final Function<Exception, Behavior> failureBehavior) {
         this(sender, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);

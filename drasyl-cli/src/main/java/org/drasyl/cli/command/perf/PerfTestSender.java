@@ -38,7 +38,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -67,7 +67,7 @@ public class PerfTestSender {
     private final IdentityPublicKey receiver;
     private final Scheduler scheduler;
     private final PrintStream printStream;
-    private final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod;
+    private final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod;
     private final Supplier<Behavior> successBehavior;
     private final Function<Exception, Behavior> failureBehavior;
     private final LongSupplier currentTimeSupplier;
@@ -78,7 +78,7 @@ public class PerfTestSender {
                    final SessionRequest session,
                    final Scheduler scheduler,
                    final PrintStream printStream,
-                   final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod,
+                   final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
                    final Supplier<Behavior> successBehavior,
                    final Function<Exception, Behavior> failureBehavior,
                    final LongSupplier currentTimeSupplier) {
@@ -97,7 +97,7 @@ public class PerfTestSender {
                           final SessionRequest session,
                           final Scheduler scheduler,
                           final PrintStream printStream,
-                          final BiFunction<IdentityPublicKey, Object, CompletableFuture<Void>> sendMethod,
+                          final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
                           final Supplier<Behavior> successBehavior,
                           final Function<Exception, Behavior> failureBehavior) {
         this(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);
