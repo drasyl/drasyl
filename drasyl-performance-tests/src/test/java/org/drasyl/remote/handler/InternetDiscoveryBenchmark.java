@@ -26,7 +26,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
@@ -39,7 +38,6 @@ import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.Pair;
-import org.drasyl.util.RandomUtil;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -83,9 +81,8 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
 
         ctx = new MyHandlerContext();
         recipient = new MyAddress();
-        final byte[] payload = RandomUtil.randomBytes(1024);
-        final IdentityPublicKey recipient = IdentityPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4");
-        msg = RemoteEnvelope.application(1, IdentityPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), ProofOfWork.of(16425882), IdentityPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), byte[].class.getName(), new byte[]{});
+        final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
+        msg = RemoteEnvelope.application(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), recipient, byte[].class.getName(), new byte[]{});
 
         future = new CompletableFuture<>();
 
