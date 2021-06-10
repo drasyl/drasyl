@@ -44,6 +44,12 @@ public final class Behaviors {
         // util class
     }
 
+    /**
+     * Creates a new {@link BehaviorBuilder} to build a new {@link Behavior} for inbound
+     * message/event handling.
+     * <p>
+     * Typically used from {@link BehavioralDrasylNode#newBehaviorBuilder()}.
+     */
     public static BehaviorBuilder receive() {
         return BehaviorBuilder.create();
     }

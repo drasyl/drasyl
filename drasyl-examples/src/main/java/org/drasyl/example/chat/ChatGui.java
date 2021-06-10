@@ -155,7 +155,7 @@ public class ChatGui {
              */
             private Behavior offline() {
                 messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
-                return Behaviors.receive()
+                return newBehaviorBuilder()
                         .onEvent(NodeUpEvent.class, event -> {
                             appendTextToMessageArea("drasyl Node started. Connecting to super peer...\n");
                             recipientField.setEditable(true);
@@ -193,7 +193,7 @@ public class ChatGui {
              */
             private Behavior online() {
                 messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
-                return Behaviors.receive()
+                return newBehaviorBuilder()
                         .onEvent(NodeDownEvent.class, this::downEvent)
                         .onEvent(NodeOfflineEvent.class, event -> {
                             appendTextToMessageArea("drasyl Node lost connection to super peer. Relayed communication and discovery not available.\n");

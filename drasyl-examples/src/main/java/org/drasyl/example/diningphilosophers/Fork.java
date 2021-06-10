@@ -49,7 +49,7 @@ public class Fork extends BehavioralDrasylNode {
     }
 
     private Behavior available() {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onMessage(Take.class, (sender, message) -> {
                     send(sender, new Taken(identity().getIdentityPublicKey()));
                     return takenBy(sender);
@@ -58,7 +58,7 @@ public class Fork extends BehavioralDrasylNode {
     }
 
     private Behavior takenBy(final IdentityPublicKey philosopher) {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onMessage(Take.class, (sender, message) -> {
                     send(sender, new Busy(identity().getIdentityPublicKey()));
                     return Behaviors.same();

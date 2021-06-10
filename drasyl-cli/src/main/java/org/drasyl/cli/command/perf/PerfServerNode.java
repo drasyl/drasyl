@@ -37,8 +37,8 @@ import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
@@ -112,7 +112,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
      * Node is not connected to super peer (node must be online to perform a performance test).
      */
     private Behavior offline() {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onEvent(NodeUpEvent.class, event -> Behaviors.withScheduler(eventScheduler -> {
                     eventScheduler.scheduleEvent(new OnlineTimeout(), ONLINE_TIMEOUT);
                     return offline();
@@ -143,7 +143,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
         printStream.println("----------------------------------------------------------------------------------------------");
 
         // new behavior
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onMessage(SessionRequest.class, (sender, payload) -> {
                     LOG.debug("Got session request from {}", sender);
 
@@ -199,7 +199,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
         return Behaviors.withScheduler(scheduler -> {
             scheduler.scheduleEvent(new TestDelayed(), TEST_DELAY);
 
-            return Behaviors.receive()
+            return newBehaviorBuilder()
                     .onEvent(TestDelayed.class, e -> startTest(client, session))
                     .onAnyEvent(event -> same())
                     .build();

@@ -83,7 +83,7 @@ public class ChatCli {
              * Node is not connected to super peer.
              */
             private Behavior offline() {
-                return Behaviors.receive()
+                return newBehaviorBuilder()
                         .onEvent(NodeUpEvent.class, event -> {
                             System.out.println("drasyl Node started. Connecting to super peer...");
                             return Behaviors.withScheduler(scheduler -> {
@@ -115,7 +115,7 @@ public class ChatCli {
              * Node is connected to super peer.
              */
             private Behavior online() {
-                return Behaviors.receive()
+                return newBehaviorBuilder()
                         .onEvent(NodeNormalTerminationEvent.class, this::terminationEvent)
                         .onEvent(NodeDownEvent.class, this::downEvent)
                         .onEvent(NodeOfflineEvent.class, event -> {

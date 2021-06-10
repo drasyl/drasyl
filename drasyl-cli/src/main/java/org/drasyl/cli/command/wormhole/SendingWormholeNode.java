@@ -116,7 +116,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                 scheduler.scheduleEvent(new OnlineTimeout(), ONLINE_TIMEOUT);
             }
 
-            return Behaviors.receive()
+            return newBehaviorBuilder()
                     .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
                         doneFuture.completeExceptionally(event.getError());
                         return ignore();
@@ -153,7 +153,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
             out.println();
         }
 
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onEvent(NodeNormalTerminationEvent.class, event -> {
                     doneFuture.complete(null);
                     return ignore();

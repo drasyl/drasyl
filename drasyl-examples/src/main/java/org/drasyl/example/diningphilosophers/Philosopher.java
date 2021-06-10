@@ -64,7 +64,7 @@ public class Philosopher extends BehavioralDrasylNode {
     }
 
     private Behavior waiting() {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onEvent(Think.class, event -> {
                     System.out.println(name + " starts to think");
                     return startThinking(Duration.ofSeconds(5));
@@ -73,7 +73,7 @@ public class Philosopher extends BehavioralDrasylNode {
     }
 
     private Behavior thinking() {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onEvent(Eat.class, event -> {
                     send(leftAddress, new Take());
                     send(rightAddress, new Take());
@@ -83,7 +83,7 @@ public class Philosopher extends BehavioralDrasylNode {
     }
 
     private Behavior hungry() {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onMessage(Fork.Answer.class, (sender, message) -> message.isBusy(), (sender, message) -> firstForkDenied())
                 .onMessage(Fork.Answer.class, (sender, message) -> sender.equals(leftAddress), (sender, message) -> waitForOtherFork(rightAddress, leftAddress))
                 .onMessage(Fork.Answer.class, (sender, message) -> sender.equals(rightAddress), (sender, message) -> waitForOtherFork(leftAddress, rightAddress))
@@ -91,7 +91,7 @@ public class Philosopher extends BehavioralDrasylNode {
     }
 
     private Behavior eating() {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onEvent(Think.class, event -> {
                     System.out.println(name + " puts down his forks and starts to think");
                     send(leftAddress, new Fork.Put());
@@ -108,7 +108,7 @@ public class Philosopher extends BehavioralDrasylNode {
     }
 
     private Behavior firstForkDenied() {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onMessage(Fork.Answer.class, (sender, message) -> message.isTaken(), (sender, message) -> {
                     send(sender, new Fork.Put());
                     return startThinking(Duration.ofMillis(10));
@@ -121,7 +121,7 @@ public class Philosopher extends BehavioralDrasylNode {
 
     private Behavior waitForOtherFork(final IdentityPublicKey forkToWaitFor,
                                       final IdentityPublicKey takenFork) {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onMessage(Fork.Answer.class, (sender, message) -> message.isTaken() && sender.equals(forkToWaitFor), (sender, message) -> {
                     System.out.println(name + " has picked up " + leftName + " and " + rightName + " and starts to eat");
                     return startEating(Duration.ofSeconds(5));

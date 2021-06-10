@@ -32,8 +32,8 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
@@ -113,7 +113,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
                 scheduler.scheduleEvent(new OnlineTimeout(), ONLINE_TIMEOUT);
             }
 
-            return Behaviors.receive()
+            return newBehaviorBuilder()
                     .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
                         doneFuture.completeExceptionally(event.getError());
                         return ignore();
@@ -144,7 +144,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
         }
         else {
             // sender and password are not known yet, wait for both
-            return Behaviors.receive()
+            return newBehaviorBuilder()
                     .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                     .onEvent(NodeOfflineEvent.class, event -> offline())
                     .onEvent(RequestText.class, event -> request == null, event -> {
@@ -169,7 +169,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
         return Behaviors.withScheduler(scheduler -> {
             scheduler.scheduleEvent(new RequestTextTimeout(), REQUEST_TEXT_TIMEOUT);
 
-            return Behaviors.receive()
+            return newBehaviorBuilder()
                     .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                     .onEvent(RequestTextTimeout.class, event -> fail())
                     .onMessage(TextMessage.class, (sender, payload) -> sender.equals(request.getSender()), (sender, payload) -> {

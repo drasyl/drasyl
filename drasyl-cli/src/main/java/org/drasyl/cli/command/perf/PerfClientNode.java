@@ -134,7 +134,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
      * Node is not connected to super peer (node must be online to perform a performance test).
      */
     private Behavior offline() {
-        return Behaviors.receive()
+        return newBehaviorBuilder()
                 .onEvent(TestOptions.class, event -> testOptions == null, event -> {
                     // we are not online (yet), remember server for later
                     this.testOptions = event;
@@ -172,7 +172,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
         }
         else {
             // server is not known yet, wait for it
-            return Behaviors.receive()
+            return newBehaviorBuilder()
                     .onEvent(TestOptions.class, event -> testOptions == null, event -> {
                         this.testOptions = event;
                         return requestSession();
@@ -203,7 +203,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
                 send(testOptions.getServer(), session);
 
                 // new behavior
-                return Behaviors.receive()
+                return newBehaviorBuilder()
                         .onMessage(SessionConfirmation.class, (sender, payload) -> sender.equals(testOptions.getServer()), (sender, payload) -> {
                             // session confirmed
                             LOG.debug("Session has been confirmed by {}", sender);
@@ -238,7 +238,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
             // timeout guard
             eventScheduler.scheduleEvent(new DirectConnectionTimeout(), REQUEST_SESSION_TIMEOUT);
 
-            return Behaviors.receive()
+            return newBehaviorBuilder()
                     .onEvent(PeerEvent.class, event -> {
                         handlePeerEvent(event);
                         return requestSession();

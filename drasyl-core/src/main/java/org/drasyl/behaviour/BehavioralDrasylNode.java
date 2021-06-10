@@ -26,6 +26,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
+import org.drasyl.behaviour.Behavior.BehaviorBuilder;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -136,4 +137,12 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
      * @return the initial {@code Behavior}
      */
     protected abstract Behavior created();
+
+    /**
+     * Creates a new {@link BehaviorBuilder} to build a new {@link Behavior} for inbound
+     * message/event handling.
+     */
+    protected BehaviorBuilder newBehaviorBuilder() {
+        return Behaviors.receive();
+    }
 }
