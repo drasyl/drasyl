@@ -60,7 +60,7 @@
             <id>bornholdt</id>
             <name>Heiko Bornholdt</name>
             <email>bornholdt@informatik.uni-hamburg.de</email>
-            <organization>The drasyl Project</organization>
+            <organization>Heiko Bornholdt and Kevin Röbert</organization>
             <organizationUrl>https://drasyl.org/</organizationUrl>
 			<roles>
 				<role>co-founder</role>
@@ -72,7 +72,7 @@
             <id>roebert</id>
             <name>Kevin Röbert</name>
             <email>6roebert@informatik.uni-hamburg.de</email>
-            <organization>The drasyl Project</organization>
+            <organization>Heiko Bornholdt and Kevin Röbert</organization>
             <organizationUrl>https://drasyl.org/</organizationUrl>
 			<roles>
 				<role>co-founder</role>
