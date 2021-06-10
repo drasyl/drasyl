@@ -24,8 +24,8 @@ package org.drasyl.pipeline;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.util.logging.Logger;
@@ -124,7 +124,8 @@ class TailContextTest {
                 }
 
                 @Override
-                void executeOnDependentScheduler(final Runnable task) {
+                void executeOnDependentScheduler(final Runnable task,
+                                                 final Runnable releaseOnRejectedExecutionException) {
                     task.run();
                 }
 

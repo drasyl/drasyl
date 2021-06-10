@@ -311,7 +311,7 @@ public abstract class AbstractPipeline implements Pipeline {
                                                   final Object msg) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.dependentScheduler.scheduleDirect(() -> this.head.passInbound(sender, msg, rtn));
+        this.head.passInbound(sender, msg, rtn);
 
         return rtn;
     }
@@ -320,7 +320,7 @@ public abstract class AbstractPipeline implements Pipeline {
     public CompletableFuture<Void> processInbound(final Event event) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.dependentScheduler.scheduleDirect(() -> this.head.passEvent(event, rtn));
+        this.head.passEvent(event, rtn);
 
         return rtn;
     }
@@ -330,13 +330,13 @@ public abstract class AbstractPipeline implements Pipeline {
                                                    final Object msg) {
         if (outboundMessagesBuffer == null) {
             final CompletableFuture<Void> rtn = new CompletableFuture<>();
-            this.dependentScheduler.scheduleDirect(() -> this.tail.passOutbound(recipient, msg, rtn));
+            this.tail.passOutbound(recipient, msg, rtn);
             return rtn;
         }
         else if (outboundMessagesBuffer.tryAcquire()) {
             final CompletableFuture<Void> rtn = new CompletableFuture<>();
             rtn.whenComplete((unused, e) -> outboundMessagesBuffer.release());
-            this.dependentScheduler.scheduleDirect(() -> this.tail.passOutbound(recipient, msg, rtn));
+            this.tail.passOutbound(recipient, msg, rtn);
             return rtn;
         }
         else {

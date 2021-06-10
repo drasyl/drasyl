@@ -30,8 +30,10 @@ import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.scheduler.DrasylScheduler;
+import org.drasyl.util.scheduler.EmptyDisposable;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
 
 import static org.drasyl.pipeline.HandlerMask.ON_EVENT_MASK;
 import static org.drasyl.pipeline.HandlerMask.ON_EXCEPTION_MASK;
@@ -118,7 +120,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
 
     @Override
     public HandlerContext passException(final Exception cause) {
-        executeOnDependentScheduler(() -> invokeOnException(cause));
+        executeOnDependentScheduler(() -> invokeOnException(cause), () -> {
+        });
 
         return this;
     }
@@ -177,7 +180,10 @@ abstract class AbstractHandlerContext implements HandlerContext {
             return future;
         }
 
-        executeOnDependentScheduler(() -> invokeOnInbound(sender, msg, future));
+        executeOnDependentScheduler(() -> invokeOnInbound(sender, msg, future), () -> {
+            future.completeExceptionally(new RejectedExecutionException("Could not schedule task."));
+            ReferenceCountUtil.safeRelease(msg);
+        });
 
         return future;
     }
@@ -208,7 +214,8 @@ abstract class AbstractHandlerContext implements HandlerContext {
             return future;
         }
 
-        executeOnDependentScheduler(() -> invokeOnEvent(event, future));
+        executeOnDependentScheduler(() -> invokeOnEvent(event, future), () -> {
+        });
 
         return future;
     }
@@ -238,7 +245,10 @@ abstract class AbstractHandlerContext implements HandlerContext {
             return future;
         }
 
-        executeOnDependentScheduler(() -> invokeOnOutbound(recipient, msg, future));
+        executeOnDependentScheduler(() -> invokeOnOutbound(recipient, msg, future), () -> {
+            future.completeExceptionally(new RejectedExecutionException("Could not schedule task."));
+            ReferenceCountUtil.safeRelease(msg);
+        });
 
         return future;
     }
@@ -261,12 +271,15 @@ abstract class AbstractHandlerContext implements HandlerContext {
         }
     }
 
-    void executeOnDependentScheduler(final Runnable task) {
+    void executeOnDependentScheduler(final Runnable task,
+                                     final Runnable releaseOnRejectedExecutionException) {
         if (this.dependentScheduler().isCalledFromThisScheduler()) {
             task.run();
         }
         else {
-            this.dependentScheduler().scheduleDirect(task);
+            if (this.dependentScheduler().scheduleDirect(task) == EmptyDisposable.INSTANCE) {
+                releaseOnRejectedExecutionException.run();
+            }
         }
     }
 

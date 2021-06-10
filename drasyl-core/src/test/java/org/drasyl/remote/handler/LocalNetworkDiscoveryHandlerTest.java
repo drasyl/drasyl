@@ -96,8 +96,8 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, null));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
-
                 verify(handler).startHeartbeat(any());
+                handler.stopHeartbeat(); // we must stop, otherwise this handler goes crazy cause to the PT0S ping interval
             }
         }
 

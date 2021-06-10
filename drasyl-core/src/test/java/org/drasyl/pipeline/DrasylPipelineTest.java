@@ -323,13 +323,9 @@ class DrasylPipelineTest {
         @Test
         void shouldProcessMessage(@Mock final IdentityPublicKey sender,
                                   @Mock final RemoteEnvelope msg) {
-            final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
             final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity, outboundMessagesBuffer);
-
             final CompletableFuture<Void> future = pipeline.processInbound(sender, msg);
 
-            verify(scheduler).scheduleDirect(captor.capture());
-            captor.getValue().run();
             verify(head).passInbound(sender, msg, future);
         }
     }
@@ -338,13 +334,9 @@ class DrasylPipelineTest {
     class ProcessInboundEvent {
         @Test
         void shouldProcessEvent(@Mock final Event event) {
-            final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
             final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity, outboundMessagesBuffer);
-
             final CompletableFuture<Void> future = pipeline.processInbound(event);
 
-            verify(scheduler).scheduleDirect(captor.capture());
-            captor.getValue().run();
             verify(head).passEvent(event, future);
         }
     }
@@ -356,13 +348,9 @@ class DrasylPipelineTest {
                                   @Mock final AddressedEnvelope<?, ?> msg) {
             when(outboundMessagesBuffer.tryAcquire()).thenReturn(true);
 
-            final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
             final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity, outboundMessagesBuffer);
-
             final CompletableFuture<Void> future = pipeline.processOutbound(recipient, msg);
 
-            verify(scheduler).scheduleDirect(captor.capture());
-            captor.getValue().run();
             verify(tail).passOutbound(recipient, msg, future);
             verify(outboundMessagesBuffer).tryAcquire();
         }
@@ -372,7 +360,6 @@ class DrasylPipelineTest {
                                                    @Mock final AddressedEnvelope<?, ?> msg) {
             when(outboundMessagesBuffer.tryAcquire()).thenReturn(false);
 
-            final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
             final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity, outboundMessagesBuffer);
 
             assertThrows(CompletionException.class, pipeline.processOutbound(recipient, msg)::join);
