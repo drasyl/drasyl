@@ -75,11 +75,6 @@
     ]
   },
   {
-    "name": "org.drasyl.identity.AbstractKey",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
     "name": "org.drasyl.identity.PublicKey",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
