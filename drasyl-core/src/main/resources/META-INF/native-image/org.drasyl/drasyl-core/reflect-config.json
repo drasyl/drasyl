@@ -39,6 +39,30 @@
     "name": "java.lang.String[]"
   },
   {
+    "name": "com.sun.jna.Structure$FFIType",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "com.sun.jna.Structure$FFIType$size_t",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "com.sun.jna.NativeLong",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "com.goterl.lazysodium.Sodium",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
     "name": "io.netty.channel.nio.NioEventLoopGroup",
     "methods": [
       {
