@@ -169,6 +169,8 @@ public abstract class DrasylNode {
             this.startFuture = new AtomicReference<>();
             this.shutdownFuture = new AtomicReference<>(completedFuture(null));
             this.scheduler = getInstanceHeavy();
+
+            LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
         }
         catch (final IOException e) {
             throw new DrasylException("Couldn't load or create identity", e);
@@ -191,6 +193,8 @@ public abstract class DrasylNode {
         this.startFuture = startFuture;
         this.shutdownFuture = shutdownFuture;
         this.scheduler = scheduler;
+
+        LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
     }
 
     /**
@@ -338,19 +342,19 @@ public abstract class DrasylNode {
         final CompletableFuture<Void> newShutdownFuture = new CompletableFuture<>();
         final CompletableFuture<Void> previousShutdownFuture = shutdownFuture.compareAndExchange(null, newShutdownFuture);
         if (previousShutdownFuture == null) {
-            LOG.info("Shutdown drasyl Node with Identity '{}'...", identity);
+            LOG.info("Shutdown drasyl node with identity '{}'...", identity);
             scheduler.scheduleDirect(() -> {
                 synchronized (startFuture) {
                     onInternalEvent(NodeDownEvent.of(Node.of(identity))).whenComplete((result, e) -> {
                         if (e != null) {
-                            LOG.error("Node faced error on shutdown (NodeDownEvent):", e);
+                            LOG.error("drasyl node faced error on shutdown (NodeDownEvent):", e);
                         }
                         pluginManager.beforeShutdown();
                         onInternalEvent(NodeNormalTerminationEvent.of(Node.of(identity))).whenComplete((result2, e2) -> {
                             if (e2 != null) {
-                                LOG.error("Node faced error on shutdown (NodeNormalTerminationEvent):", e2);
+                                LOG.error("drasyl node faced error on shutdown (NodeNormalTerminationEvent):", e2);
                             }
-                            LOG.info("drasyl Node with Identity '{}' has shut down", identity);
+                            LOG.info("drasyl node with identity '{}' has shut down", identity);
                             pluginManager.afterShutdown();
                             INSTANCES.remove(DrasylNode.this);
                             newShutdownFuture.complete(null);
@@ -386,30 +390,29 @@ public abstract class DrasylNode {
         final CompletableFuture<Void> newStartFuture = new CompletableFuture<>();
         final CompletableFuture<Void> previousStartFuture = startFuture.compareAndExchange(null, newStartFuture);
         if (previousStartFuture == null) {
-            LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
-            LOG.debug("The following configuration will be used: {}", config);
+            LOG.info("Start drasyl node with identity '{}'...", identity);
             scheduler.scheduleDirect(() -> {
                 synchronized (startFuture) {
                     INSTANCES.add(this);
                     pluginManager.beforeStart();
                     onInternalEvent(NodeUpEvent.of(Node.of(identity))).whenComplete((result, e) -> {
                         if (e == null) {
-                            LOG.info("drasyl Node with Identity '{}' has started", identity);
+                            LOG.info("drasyl node with identity '{}' has started", identity);
                             pluginManager.afterStart();
                             newStartFuture.complete(null);
                             shutdownFuture.set(null);
                         }
                         else {
-                            LOG.warn("Could not start drasyl Node:", e);
+                            LOG.warn("Could not start drasyl node:", e);
                             pluginManager.beforeShutdown();
                             onInternalEvent(NodeUnrecoverableErrorEvent.of(Node.of(identity), e)).whenComplete((result2, e2) -> {
                                 if (e2 != null) {
-                                    LOG.error("Node faced error '{}' on startup, which caused it to shut down all already started components. This again resulted in an error: {}", e.getMessage(), e2.getMessage());
+                                    LOG.error("drasyl node faced error '{}' on startup, which caused it to shut down all already started components. This again resulted in an error: {}", e.getMessage(), e2.getMessage());
                                 }
 
                                 pluginManager.afterShutdown();
                                 INSTANCES.remove(DrasylNode.this);
-                                newStartFuture.completeExceptionally(new Exception("Node start failed:", e));
+                                newStartFuture.completeExceptionally(new Exception("drasyl node start failed:", e));
                                 startFuture.set(null);
                             });
                         }
