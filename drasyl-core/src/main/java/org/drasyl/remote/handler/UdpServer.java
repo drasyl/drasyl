@@ -177,9 +177,9 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             else {
                 // server start failed
                 //noinspection unchecked
-                LOG.warn("Unable to bind server to address udp://{}:{}: {}", ctx.config()::getRemoteBindHost, () -> bindPort, channelFuture.cause()::getMessage);
+                LOG.warn("Unable to bind server to address udp://{}:{}", ctx.config()::getRemoteBindHost, () -> bindPort, channelFuture::cause);
 
-                future.completeExceptionally(new Exception("Unable to bind server to address udp://" + ctx.config().getRemoteBindHost() + ":" + bindPort + ": " + channelFuture.cause().getMessage()));
+                future.completeExceptionally(new Exception("Unable to bind server to address udp://" + ctx.config().getRemoteBindHost() + ":" + bindPort, channelFuture.cause()));
             }
         }
         else {

@@ -122,7 +122,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             else {
                 // server start failed
                 //noinspection unchecked
-                LOG.warn("Unable to bind server to address tcp://{}:{}: {}", ctx.config()::getRemoteBindHost, ctx.config()::getRemoteTcpFallbackServerBindPort, channelFuture.cause()::getMessage);
+                LOG.warn("Unable to bind server to address tcp://{}:{}", ctx.config()::getRemoteBindHost, ctx.config()::getRemoteTcpFallbackServerBindPort, channelFuture::cause);
             }
         }
 
