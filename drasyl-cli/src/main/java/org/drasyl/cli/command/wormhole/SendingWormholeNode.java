@@ -166,7 +166,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
                 })
                 .onMessage(PasswordMessage.class, (sender, payload) -> text != null && password.equals(payload.getPassword()), (sender, payload) -> {
                     // correct password -> send text
-                    LOG.debug("Got text request from '{}' with correct password '{}'. Reply with text.", () -> sender, () -> maskSecret(payload.getPassword()));
+                    LOG.debug("Got text request from `{}` with correct password `{}`. Reply with text.", () -> sender, () -> maskSecret(payload.getPassword()));
 
                     send(sender, new TextMessage(text)).whenComplete((result, e) -> {
                         if (e == null) {

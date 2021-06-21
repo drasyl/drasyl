@@ -406,13 +406,13 @@ public final class NetworkUtil {
                     connection.setConnectTimeout((int) EXTERNAL_IP_ADDRESS_TIMEOUT.toMillis());
                     connection.setReadTimeout((int) EXTERNAL_IP_ADDRESS_TIMEOUT.toMillis());
 
-                    LOG.debug("Request external ip address from service '{}'...", provider);
+                    LOG.debug("Request external ip address from service `{}`...", provider);
 
                     try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), UTF_8))) {
                         final String response = reader.readLine();
                         @SuppressWarnings("unchecked") final T address = (T) InetAddress.getByName(response);
                         if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && !address.isSiteLocalAddress()) {
-                            LOG.debug("Got external ip address '{}' from service '{}'", address, provider);
+                            LOG.debug("Got external ip address `{}` from service `{}`", address, provider);
                             return address;
                         }
                     }

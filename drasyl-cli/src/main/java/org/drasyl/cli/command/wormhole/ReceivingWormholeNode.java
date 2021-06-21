@@ -160,7 +160,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
      * Node is requesting text from {@link SendingWormholeNode} and waiting for the response.
      */
     private Behavior requestText(final RequestText request) {
-        LOG.debug("Requesting text from '{}' with password '{}'", request::getSender, () -> maskSecret(request.getPassword()));
+        LOG.debug("Requesting text from `{}` with password `{}`", request::getSender, () -> maskSecret(request.getPassword()));
         send(request.getSender(), new PasswordMessage(request.getPassword())).exceptionally(e -> {
             doneFuture.completeExceptionally(e);
             return null;
@@ -173,7 +173,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
                     .onEvent(NodeNormalTerminationEvent.class, event -> terminate())
                     .onEvent(RequestTextTimeout.class, event -> fail())
                     .onMessage(TextMessage.class, (sender, payload) -> sender.equals(request.getSender()), (sender, payload) -> {
-                        LOG.debug("Got text from '{}': {}", () -> sender, () -> payload.getText());
+                        LOG.debug("Got text from `{}`: {}", () -> sender, () -> payload.getText());
                         out.println(payload.getText());
                         return terminate();
                     })

@@ -60,7 +60,7 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteE
                                    final Address sender,
                                    final RemoteEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) {
-        LOG.trace("Message with invalid proof of work dropped: '{}'", () -> sanitizeLogArg(msg));
+        LOG.trace("Message with invalid proof of work dropped: `{}`", () -> sanitizeLogArg(msg));
         future.completeExceptionally(new Exception("Message with invalid proof of work dropped."));
     }
 }

@@ -70,7 +70,7 @@ abstract class AbstractCommand implements Command {
             final CommandLine cmd = parser.parse(flags, args);
 
             setLogLevel(cmd);
-            log().debug("drasyl: Version '{}' starting with parameters [{}]", DrasylNode::getVersion, () -> args.length > 0 ? ("'" + String.join("', '", args) + "'") : "");
+            log().debug("drasyl: Version `{}` starting with parameters [{}]", DrasylNode::getVersion, () -> args.length > 0 ? ("'" + String.join("', '", args) + "'") : "");
 
             if (cmd.hasOption(OPT_HELP)) {
                 help(cmd);
@@ -173,17 +173,17 @@ abstract class AbstractCommand implements Command {
         final DrasylConfig config;
         if (cmd.hasOption(OPT_CONFIG)) {
             final File file = new File(cmd.getOptionValue(OPT_CONFIG));
-            log().info("Using config file from '{}'", file);
+            log().info("Using config file from `{}`", file);
             config = DrasylConfig.parseFile(file);
         }
         else {
             final Path defaultConfPath = getDefaultConfPath();
             if (defaultConfPath.toFile().exists()) {
-                log().info("Using config file from '{}'", defaultConfPath);
+                log().info("Using config file from `{}`", defaultConfPath);
                 config = DrasylConfig.parseFile(defaultConfPath.toFile());
             }
             else {
-                log().info("Config file '{}' not found - using defaults", defaultConfPath);
+                log().info("Config file `{}` not found - using defaults", defaultConfPath);
                 config = DrasylConfig.of();
             }
         }

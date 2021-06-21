@@ -71,10 +71,10 @@ public class GroupsManagerPlugin implements DrasylPlugin {
                 final String name = entry.getKey();
                 final Group group = entry.getValue();
                 if (!database.addGroup(group)) {
-                    LOG.debug("Group '{}' already exists.", name);
+                    LOG.debug("Group `{}` already exists.", name);
                 }
                 else {
-                    LOG.debug("Group '{}' was added.", name);
+                    LOG.debug("Group `{}` was added.", name);
                 }
             }
 

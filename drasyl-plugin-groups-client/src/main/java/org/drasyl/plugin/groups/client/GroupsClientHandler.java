@@ -107,10 +107,10 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
             }
             catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
-                LOG.warn("Exception occurred during de-registration from group '{}': ", group.getName(), e);
+                LOG.warn("Exception occurred during de-registration from group `{}`: ", group.getName(), e);
             }
             catch (final ExecutionException e) {
-                LOG.warn("Exception occurred during de-registration from group '{}': ", group.getName(), e);
+                LOG.warn("Exception occurred during de-registration from group `{}`: ", group.getName(), e);
             }
         }
     }
@@ -272,6 +272,6 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                     RETRY_DELAY.toMillis(), MILLISECONDS));
         }
 
-        LOG.debug("Send join (renew={}) request for group '{}'", () -> renew, () -> group);
+        LOG.debug("Send join (renew={}) request for group `{}`", () -> renew, () -> group);
     }
 }

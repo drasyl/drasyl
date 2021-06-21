@@ -69,7 +69,7 @@ public final class HopCountGuard extends OutboundMessageFilter<RemoteEnvelope<? 
                                    final RemoteEnvelope<? extends MessageLite> msg,
                                    final CompletableFuture<Void> future) {
         // too many hops, discard message
-        LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message '{}'", () -> sanitizeLogArg(msg));
+        LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message `{}`", () -> sanitizeLogArg(msg));
         future.completeExceptionally(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
     }
 }

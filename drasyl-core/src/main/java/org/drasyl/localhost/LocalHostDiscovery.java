@@ -151,10 +151,10 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
         final File directory = discoveryPath.toFile();
 
         if (!directory.mkdirs() && !directory.exists()) {
-            LOG.warn("Discovery directory '{}' could not be created.", discoveryPath::toAbsolutePath);
+            LOG.warn("Discovery directory `{}` could not be created.", discoveryPath::toAbsolutePath);
         }
         else if (!(directory.isDirectory() && directory.canRead() && directory.canWrite())) {
-            LOG.warn("Discovery directory '{}' not accessible.", discoveryPath::toAbsolutePath);
+            LOG.warn("Discovery directory `{}` not accessible.", discoveryPath::toAbsolutePath);
         }
         else {
             if (ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()) {
@@ -206,7 +206,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
             final FileSystem fileSystem = discoveryPath.getFileSystem();
             watchService = fileSystem.newWatchService();
             discoveryPath.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
-            LOG.debug("Watch service for directory '{}' registered", directory);
+            LOG.debug("Watch service for directory `{}` registered", directory);
             final long pollInterval = WATCH_SERVICE_POLL_INTERVAL.toMillis();
             watchDisposable = ctx.dependentScheduler().schedulePeriodicallyDirect(() -> {
                 if (watchService.poll() != null) {
@@ -280,14 +280,14 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
                         };
                         final Set<InetSocketAddress> addresses = JACKSON_READER.forType(typeRef).readValue(file);
                         if (!addresses.isEmpty()) {
-                            LOG.trace("Addresses '{}' for peer '{}' discovered by file '{}'", addresses, publicKey, fileName);
+                            LOG.trace("Addresses `{}` for peer `{}` discovered by file `{}`", addresses, publicKey, fileName);
                             final InetSocketAddress firstAddress = SetUtil.firstElement(addresses);
                             newRoutes.put(publicKey, firstAddress);
                         }
                     }
                 }
                 catch (final IllegalArgumentException | IOException e) {
-                    LOG.warn("Unable to read peer information from '{}': ", file.getAbsolutePath(), e);
+                    LOG.warn("Unable to read peer information from `{}`: ", file.getAbsolutePath(), e);
                 }
             }
 
@@ -303,7 +303,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
             final IdentityPublicKey publicKey = i.next();
 
             if (!newRoutes.containsKey(publicKey)) {
-                LOG.trace("Addresses for peer '{}' are outdated. Remove peer from routing table.", publicKey);
+                LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
                 ctx.peersManager().removePath(publicKey, path);
                 i.remove();
             }
@@ -324,7 +324,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
     @SuppressWarnings("java:S2308")
     private void postInformation(final Path filePath,
                                  final Set<InetSocketAddress> addresses) {
-        LOG.trace("Post own addresses '{}' to file '{}'", addresses, filePath);
+        LOG.trace("Post own addresses `{}` to file `{}`", addresses, filePath);
         final File file = filePath.toFile();
         try {
             if (!file.setLastModified(System.currentTimeMillis())) {
@@ -333,7 +333,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
             }
         }
         catch (final IOException e) {
-            LOG.warn("Unable to write peer information to '{}': {}", filePath::toAbsolutePath, e::getMessage);
+            LOG.warn("Unable to write peer information to `{}`: {}", filePath::toAbsolutePath, e::getMessage);
         }
     }
 

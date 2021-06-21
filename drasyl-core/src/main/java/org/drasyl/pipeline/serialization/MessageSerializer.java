@@ -57,10 +57,10 @@ public final class MessageSerializer extends MessageToMessageCodec<RemoteEnvelop
         if (serializer != null) {
             final Object o = serializer.fromByteArray(body.getPayload().toByteArray(), body.getType());
             out.add(o);
-            LOG.trace("Message has been deserialized to '{}'", () -> o);
+            LOG.trace("Message has been deserialized to `{}`", () -> o);
         }
         else {
-            LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", body::getType);
+            LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", body::getType);
         }
     }
 
@@ -82,10 +82,10 @@ public final class MessageSerializer extends MessageToMessageCodec<RemoteEnvelop
         if (serializer != null) {
             final RemoteEnvelope<Application> envelope = RemoteEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), recipient, type, serializer.toByteArray(o));
             out.add(envelope);
-            LOG.trace("Message has been serialized to '{}'", () -> envelope);
+            LOG.trace("Message has been serialized to `{}`", () -> envelope);
         }
         else {
-            LOG.warn("No serializer was found for type '{}'. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
+            LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
         }
     }
 }

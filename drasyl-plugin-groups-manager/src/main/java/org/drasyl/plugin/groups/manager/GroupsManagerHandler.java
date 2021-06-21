@@ -91,7 +91,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
 
                 ctx.pipeline().processOutbound(member.getMember().getPublicKey(), leftMessage);
                 notifyMembers(ctx, member.getGroup().getName(), leftMessage, new CompletableFuture<>());
-                LOG.debug("Remove stale member '{}' from group '{}'", member.getMember()::getPublicKey, member.getGroup()::getName);
+                LOG.debug("Remove stale member `{}` from group `{}`", member.getMember()::getPublicKey, member.getGroup()::getName);
             }
         }
         catch (final DatabaseException e) {
@@ -127,7 +127,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
             combiner.combine(future);
         }
         catch (final DatabaseException e) {
-            LOG.debug("Error occurred on getting members of group '{}': ", group, e);
+            LOG.debug("Error occurred on getting members of group `{}`: ", group, e);
         }
     }
 
@@ -168,20 +168,20 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                     ctx.pipeline().processOutbound(sender, new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_PROOF_TO_WEAK));
                     future.completeExceptionally(new IllegalArgumentException("Member '" + sender + "' does not fulfill requirements of group '" + groupName + "'"));
 
-                    LOG.debug("Member '{}' does not fulfill requirements of group '{}'", sender, groupName);
+                    LOG.debug("Member `{}` does not fulfill requirements of group `{}`", sender, groupName);
                 }
             }
             else {
                 ctx.pipeline().processOutbound(sender, new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_GROUP_NOT_FOUND));
                 future.completeExceptionally(new IllegalArgumentException("There is no group '" + groupName + "'"));
 
-                LOG.debug("There is no group '{}'.", groupName);
+                LOG.debug("There is no group `{}`.", groupName);
             }
         }
         catch (final DatabaseException e) {
             future.completeExceptionally(e);
 
-            LOG.debug("Error occurred on getting group '{}': ", groupName, e);
+            LOG.debug("Error occurred on getting group `{}`: ", groupName, e);
         }
     }
 
@@ -206,12 +206,12 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
             notifyMembers(ctx, msg.getGroup().getName(), leftMessage, future2);
 
             FutureCombiner.getInstance().addAll(future1, future2).combine(future);
-            LOG.debug("Removed member '{}' from group '{}'", () -> sender, () -> msg.getGroup().getName());
+            LOG.debug("Removed member `{}` from group `{}`", () -> sender, () -> msg.getGroup().getName());
         }
         catch (final DatabaseException e) {
             future.completeExceptionally(e);
 
-            LOG.debug("Error occurred during removal of member '{}' from group '{}': ", () -> sender, () -> msg.getGroup().getName(), () -> e);
+            LOG.debug("Error occurred during removal of member `{}` from group `{}`: ", () -> sender, () -> msg.getGroup().getName(), () -> e);
         }
     }
 
@@ -246,10 +246,10 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
 
                 notifyMembers(ctx, group.getName(), new MemberJoinedMessage(sender, org.drasyl.plugin.groups.client.Group.of(group.getName())), future2);
 
-                LOG.debug("Added member '{}' to group '{}'", () -> sender, group::getName);
+                LOG.debug("Added member `{}` to group `{}`", () -> sender, group::getName);
             }
             else {
-                LOG.debug("Renewed membership of '{}' for group '{}'", () -> sender, group::getName);
+                LOG.debug("Renewed membership of `{}` for group `{}`", () -> sender, group::getName);
             }
         }
         catch (final DatabaseException e) {

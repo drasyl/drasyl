@@ -275,7 +275,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
             }
         }
         catch (final IOException e) {
-            LOG.warn("Unable to read '{}'.", () -> sanitizeLogArg(msg), () -> e);
+            LOG.warn("Unable to read `{}`.", () -> sanitizeLogArg(msg), () -> e);
             future.completeExceptionally(new Exception("Message could not be read.", e));
             ReferenceCountUtil.safeRelease(msg);
         }
@@ -413,7 +413,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
             }
         }
         catch (final IOException e) {
-            LOG.warn("Unable to read '{}'.", () -> sanitizeLogArg(msg), () -> e);
+            LOG.warn("Unable to read `{}`.", () -> sanitizeLogArg(msg), () -> e);
             future.completeExceptionally(new Exception("Message could not be read.", e));
             ReferenceCountUtil.safeRelease(msg);
         }

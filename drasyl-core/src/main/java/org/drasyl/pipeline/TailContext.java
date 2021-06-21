@@ -24,8 +24,8 @@ package org.drasyl.pipeline;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
@@ -90,7 +90,7 @@ class TailContext extends AbstractEndHandler {
         else {
             future.completeExceptionally(new IllegalStateException("Message was not written to the application, because the sender address was not of type `" + IdentityPublicKey.class.getSimpleName() + "` (was type `" + sender.getClass().getSimpleName() + "`)."));
             //noinspection unchecked
-            LOG.debug("Message '{}' was not written to the application, because the sender address was not of type `{}` (was type `{}`).", () -> msg, IdentityPublicKey.class::getSimpleName, sender.getClass()::getSimpleName);
+            LOG.debug("Message `{}` was not written to the application, because the sender address was not of type `{}` (was type `{}`).", () -> msg, IdentityPublicKey.class::getSimpleName, sender.getClass()::getSimpleName);
         }
     }
 
