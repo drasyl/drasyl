@@ -33,6 +33,9 @@
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
+    <logger name="io.netty" level="WARN">
+    </logger>
+
     <root level="warn">
         <appender-ref ref="Console"/>
     </root>
