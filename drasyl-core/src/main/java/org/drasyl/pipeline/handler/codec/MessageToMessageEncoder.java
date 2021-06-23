@@ -35,12 +35,10 @@ import java.util.concurrent.CompletableFuture;
 /**
  * {@link SimpleOutboundHandler} which encodes from one message to one ore more other message(s).
  * <p>
- * For example here is an implementation which decodes an {@link Integer} to an {@link String}.
+ * For example here is an implementation which decodes an {@link Integer} to a {@link String}.
  *
  * <pre>
- *     public class IntegerToStringEncoder extends
- *             {@link MessageToMessageEncoder}&lt;{@link Integer},{@link Address}&gt; {
- *
+ *     public class IntegerToStringEncoder extends {@link MessageToMessageEncoder}&lt;{@link Integer},{@link Address}&gt; {
  *         {@code @Override}
  *         public void encode({@link HandlerContext} ctx, {@link Address} recipient, {@link Integer} message, List&lt;Object&gt; out)
  *                 throws {@link Exception} {
