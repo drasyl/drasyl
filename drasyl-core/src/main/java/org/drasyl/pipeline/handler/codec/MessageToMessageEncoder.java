@@ -92,7 +92,7 @@ public abstract class MessageToMessageEncoder<O, A extends Address> extends Simp
             future.completeExceptionally(e);
         }
         catch (final Exception e) {
-            future.completeExceptionally(new DecoderException(e));
+            future.completeExceptionally(new EncoderException(e));
         }
     }
 
