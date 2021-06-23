@@ -71,7 +71,7 @@ public abstract class MessageToMessageDecoder<I, A extends Address> extends Simp
             }
 
             if (out.isEmpty()) {
-                throw new Exception(this.getClass().getSimpleName() + " must produce at least one message.");
+                throw new DecoderException(this.getClass().getSimpleName() + " must produce at least one message.");
             }
 
             final int size = out.size();
