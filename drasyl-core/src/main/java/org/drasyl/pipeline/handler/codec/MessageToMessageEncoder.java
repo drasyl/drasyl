@@ -88,8 +88,11 @@ public abstract class MessageToMessageEncoder<O, A extends Address> extends Simp
                 combiner.combine(future);
             }
         }
+        catch (final EncoderException e) {
+            future.completeExceptionally(e);
+        }
         catch (final Exception e) {
-            future.completeExceptionally(new Exception("Unable to encode message:", e));
+            future.completeExceptionally(new DecoderException(e));
         }
     }
 

@@ -25,7 +25,7 @@ import com.google.protobuf.MessageLite;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.handler.OutboundMessageFilter;
+import org.drasyl.pipeline.handler.filter.OutboundMessageFilter;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;

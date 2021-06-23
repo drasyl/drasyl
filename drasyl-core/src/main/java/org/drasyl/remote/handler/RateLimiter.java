@@ -26,7 +26,7 @@ import com.google.protobuf.MessageLite;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.handler.InboundMessageFilter;
+import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.Protocol.MessageType;
 import org.drasyl.remote.protocol.RemoteEnvelope;

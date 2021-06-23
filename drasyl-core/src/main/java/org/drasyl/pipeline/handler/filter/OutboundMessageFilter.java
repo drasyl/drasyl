@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.pipeline.handler;
+package org.drasyl.pipeline.handler.filter;
 
 import io.netty.util.ReferenceCounted;
 import org.drasyl.pipeline.HandlerContext;
@@ -58,9 +58,13 @@ public abstract class OutboundMessageFilter<O, A extends Address> extends Simple
                 future.complete(null);
             }
         }
+        catch (final OutboundFilterException e) {
+            ReferenceCountUtil.safeRelease(msg);
+            future.completeExceptionally(e);
+        }
         catch (final Exception e) {
             ReferenceCountUtil.safeRelease(msg);
-            future.completeExceptionally(new Exception("Unable to filter message:", e));
+            future.completeExceptionally(new OutboundFilterException(e));
         }
     }
 

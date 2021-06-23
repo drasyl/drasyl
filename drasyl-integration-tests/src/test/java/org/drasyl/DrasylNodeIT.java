@@ -32,7 +32,7 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.handler.OutboundMessageFilter;
+import org.drasyl.pipeline.handler.filter.OutboundMessageFilter;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
