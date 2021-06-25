@@ -27,7 +27,6 @@ import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 
-import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -37,10 +36,6 @@ import java.util.OptionalLong;
 @AutoValue
 public abstract class Agreement {
     public static final long RENEW_DIVISOR = 2;
-    /**
-     * Default time to safely not return be stale.
-     */
-    public static final Duration DEFAULT_ON_ELSE_TIME = Duration.ofMinutes(60);
 
     static Builder builder() {
         return new AutoValue_Agreement.Builder();
@@ -59,11 +54,11 @@ public abstract class Agreement {
     public abstract Builder toBuilder();
 
     public boolean isStale() {
-        return getStaleAt().orElse(System.currentTimeMillis() + DEFAULT_ON_ELSE_TIME.toMillis()) < System.currentTimeMillis();
+        return getStaleAt().orElse(Long.MAX_VALUE) < System.currentTimeMillis();
     }
 
     public boolean isRenewable() {
-        return getStaleAt().orElse(System.currentTimeMillis() + DEFAULT_ON_ELSE_TIME.toMillis()) < (System.currentTimeMillis() / RENEW_DIVISOR);
+        return getStaleAt().orElse(Long.MAX_VALUE) < (System.currentTimeMillis() / RENEW_DIVISOR);
     }
 
     public boolean isInitialized() {

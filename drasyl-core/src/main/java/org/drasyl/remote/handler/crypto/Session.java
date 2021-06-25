@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * Agreements} between two nodes.
  */
 public class Session {
-    public static final Duration SESSION_EXPIRE_TIME = Duration.ofMinutes(30);
     private final AgreementId longTimeAgreementId;
     private final AtomicLong lastKeyExchangeAt;
     private final AtomicLong lastRenewAttemptAt;
@@ -60,7 +59,9 @@ public class Session {
 
     public Session(final AgreementId longTimeAgreementId,
                    final SessionPair longTimeAgreementPair,
-                   final ConcurrentReference<Agreement> currentInactiveAgreement) {
+                   final ConcurrentReference<Agreement> currentInactiveAgreement,
+                   final int maxAgreements,
+                   final Duration sessionExpireTime) {
         this.longTimeAgreementId = Objects.requireNonNull(longTimeAgreementId);
         this.lastKeyExchangeAt = new AtomicLong();
         this.lastRenewAttemptAt = new AtomicLong();
@@ -68,14 +69,17 @@ public class Session {
         this.currentActiveAgreement = ConcurrentReference.of();
         this.currentInactiveAgreement = Objects.requireNonNull(currentInactiveAgreement);
         this.initializedAgreements = CacheBuilder.newBuilder()
-                .expireAfterWrite(SESSION_EXPIRE_TIME.toMillis(), TimeUnit.MILLISECONDS)
-                .maximumSize(ArmHandler.MAX_AGREEMENTS)
+                .expireAfterWrite(sessionExpireTime.toMillis(), TimeUnit.MILLISECONDS)
+                .maximumSize(maxAgreements)
                 .<AgreementId, Agreement>build()
                 .asMap();
     }
 
-    public Session(final AgreementId longTimeAgreementId, final SessionPair longTimeAgreementPair) {
-        this(longTimeAgreementId, longTimeAgreementPair, ConcurrentReference.of());
+    public Session(final AgreementId longTimeAgreementId,
+                   final SessionPair longTimeAgreementPair,
+                   final int maxAgreements,
+                   final Duration sessionExpireTime) {
+        this(longTimeAgreementId, longTimeAgreementPair, ConcurrentReference.of(), maxAgreements, sessionExpireTime);
     }
 
     public AgreementId getLongTimeAgreementId() {

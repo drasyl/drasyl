@@ -104,6 +104,10 @@ public abstract class DrasylConfig {
     public static final String REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT = "drasyl.remote.message.composed-message-transfer-timeout";
     public static final String REMOTE_MESSAGE_HOP_LIMIT = "drasyl.remote.message.hop-limit";
     public static final String REMOTE_MESSAGE_ARM_ENABLED = "drasyl.remote.message.arm.enabled";
+    public static final String REMOTE_MESSAGE_ARM_SESSION_EXPIRE_AFTER = "drasyl.remote.message.arm.session.expire-after";
+    public static final String REMOTE_MESSAGE_ARM_SESSION_RETRY_INTERVAL = "drasyl.remote.message.arm.session.retry-interval";
+    public static final String REMOTE_MESSAGE_ARM_SESSION_MAX_COUNT = "drasyl.remote.message.arm.session.max-count";
+    public static final String REMOTE_MESSAGE_ARM_SESSION_MAX_AGREEMENTS = "drasyl.remote.message.arm.session.max-agreements";
     public static final String REMOTE_TCP_FALLBACK_ENABLED = "drasyl.remote.tcp-fallback.enabled";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_HOST = "drasyl.remote.tcp-fallback.server.bind-host";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_PORT = "drasyl.remote.tcp-fallback.server.bind-port";
@@ -184,12 +188,18 @@ public abstract class DrasylConfig {
             builder.remoteMessageMaxContentLength((int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE));
             builder.remoteMessageComposedMessageTransferTimeout(config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT));
             builder.remoteMessageHopLimit(getByte(config, REMOTE_MESSAGE_HOP_LIMIT));
-            builder.remoteMessageArmEnabled(config.getBoolean(REMOTE_MESSAGE_ARM_ENABLED));
             builder.remoteTcpFallbackEnabled(config.getBoolean(REMOTE_TCP_FALLBACK_ENABLED));
             builder.remoteTcpFallbackServerBindHost(getInetAddress(config, REMOTE_TCP_FALLBACK_SERVER_BIND_HOST));
             builder.remoteTcpFallbackServerBindPort(config.getInt(REMOTE_TCP_FALLBACK_SERVER_BIND_PORT));
             builder.remoteTcpFallbackClientTimeout(config.getDuration(REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT));
             builder.remoteTcpFallbackClientAddress(getInetSocketAddress(config, REMOTE_TCP_FALLBACK_CLIENT_ADDRESS));
+
+            // arm
+            builder.remoteMessageArmEnabled(config.getBoolean(REMOTE_MESSAGE_ARM_ENABLED));
+            builder.remoteMessageArmSessionMaxCount(config.getInt(REMOTE_MESSAGE_ARM_SESSION_MAX_COUNT));
+            builder.remoteMessageArmSessionMaxAgreements(config.getInt(REMOTE_MESSAGE_ARM_SESSION_MAX_AGREEMENTS));
+            builder.remoteMessageArmSessionExpireAfter(config.getDuration(REMOTE_MESSAGE_ARM_SESSION_EXPIRE_AFTER));
+            builder.remoteMessageArmSessionRetryInterval(config.getDuration(REMOTE_MESSAGE_ARM_SESSION_RETRY_INTERVAL));
 
             // intra vm discovery
             builder.intraVmDiscoveryEnabled(config.getBoolean(INTRA_VM_DISCOVERY_ENABLED));
@@ -697,6 +707,14 @@ public abstract class DrasylConfig {
 
     public abstract boolean isRemoteMessageArmEnabled();
 
+    public abstract int getRemoteMessageArmSessionMaxCount();
+
+    public abstract int getRemoteMessageArmSessionMaxAgreements();
+
+    public abstract Duration getRemoteMessageArmSessionExpireAfter();
+
+    public abstract Duration getRemoteMessageArmSessionRetryInterval();
+
     public abstract boolean isRemoteTcpFallbackEnabled();
 
     public abstract InetAddress getRemoteTcpFallbackServerBindHost();
@@ -779,6 +797,14 @@ public abstract class DrasylConfig {
         public abstract Builder remoteMessageHopLimit(final byte remoteMessageHopLimit);
 
         public abstract Builder remoteMessageArmEnabled(final boolean remoteMessageArmEnabled);
+
+        public abstract Builder remoteMessageArmSessionMaxCount(final int remoteMessageArmSessionMaxCount);
+
+        public abstract Builder remoteMessageArmSessionMaxAgreements(final int remoteMessageArmSessionMaxAgreements);
+
+        public abstract Builder remoteMessageArmSessionExpireAfter(final Duration remoteMessageArmSessionExpireAfter);
+
+        public abstract Builder remoteMessageArmSessionRetryInterval(final Duration remoteMessageArmSessionRetryInterval);
 
         public abstract Builder remoteMessageComposedMessageTransferTimeout(final Duration messageComposedMessageTransferTimeout);
 
