@@ -150,7 +150,11 @@ public class DrasylPipeline extends AbstractPipeline {
 
             // arm outbound and disarm inbound messages
             if (config.isRemoteMessageArmEnabled()) {
-                addFirst(ARM_HANDLER, new ArmHandler());
+                addFirst(ARM_HANDLER, new ArmHandler(
+                        config.getRemoteMessageArmSessionMaxCount(),
+                        config.getRemoteMessageArmSessionMaxAgreements(),
+                        config.getRemoteMessageArmSessionExpireAfter(),
+                        config.getRemoteMessageArmSessionRetryInterval()));
             }
 
             // filter out inbound messages with invalid proof of work or other network id
