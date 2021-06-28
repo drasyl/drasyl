@@ -145,7 +145,6 @@
         <lazysodium-java.version>5.0.1</lazysodium-java.version>
         <jna.version>5.8.0</jna.version>
 
-        <sonar.projectKey>drasyl-overlay_drasyl</sonar.projectKey>
         <sonar.organization>drasyl</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.exclusions>**/org/drasyl/remote/protocol/Protocol.java</sonar.exclusions>
