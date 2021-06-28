@@ -144,6 +144,13 @@
         <auto-value.version>1.8.1</auto-value.version>
         <lazysodium-java.version>5.0.1</lazysodium-java.version>
         <jna.version>5.8.0</jna.version>
+
+        <sonar.projectKey>drasyl-overlay_drasyl</sonar.projectKey>
+        <sonar.organization>drasyl</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.exclusions>**/org/drasyl/remote/protocol/Protocol.java</sonar.exclusions>
+        <sonar.coverage.exclusions>**/org/drasyl/remote/protocol/Protocol.java,drasyl-examples/**/*,drasyl-performance-tests/**/*</sonar.coverage.exclusions>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.artifactId}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <dependencyManagement>
