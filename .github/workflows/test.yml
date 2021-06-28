@@ -38,8 +38,10 @@ jobs:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
+        if: success() && matrix.java == '11'
       - name: Analyze with SonarQube
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./mvnw --batch-mode org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        if: success() && matrix.java == '11'
