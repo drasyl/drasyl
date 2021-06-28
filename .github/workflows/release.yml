@@ -148,3 +148,33 @@ jobs:
           publish: true
           dockerUser: ${{ secrets.DOCKER_HUB_USER }}
           dockerPassword: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+  homebrew:
+    name: Update Homebrew cask
+    needs: [java]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout https://github.com/drasyl-overlay/homebrew-tap
+        uses: actions/checkout@v2.3.4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          repository: drasyl-overlay/homebrew-tap
+      - name: Download ZIP
+        run: wget https://github.com/drasyl-overlay/drasyl/releases/download/${{ github.event.release.tag_name }}/drasyl-$(echo ${{ github.event.release.tag_name }} | sed 's/v//').zip -O drasyl.zip
+      - name: Calculate SHA256
+        id: sha
+        run: |
+          s=$(sha256sum drasyl.zip | awk  '{ print $1 }')
+          echo "SHA256 is: $s"
+          echo ::set-output name=sha::${s}
+      - name: Update Formula
+        run: |
+          sed -i -e "s/  version.*/  version \"$(echo ${{ github.event.release.tag_name }} | sed 's/v//')\"/" Formula/drasyl.rb
+          sed -i -e "s/  sha256.*/  sha256 \"$(echo ${{ steps.sha.outputs.sha }} | sed 's/v//')\"/" Formula/drasyl.rb
+          cat Formula/drasyl.rb
+      - uses: stefanzweifel/git-auto-commit-action@v4.10.0
+        with:
+          commit_message: Update drasyl formula to ${{ github.event.release.tag_name }}
+          commit_user_name: drasyl-bot
+          commit_user_email: ${{ secrets.DRASYL_BOT_EMAIL }}
+          commit_author: drasyl-bot <${{ secrets.DRASYL_BOT_EMAIL }}>
