@@ -27,13 +27,10 @@ import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
 import org.drasyl.remote.protocol.RemoteEnvelope;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
-import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
  * This handler filters out all messages received with invalid proof of work.
@@ -42,7 +39,6 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 @Stateless
 public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteEnvelope<? extends MessageLite>, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
-    private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
 
     private InvalidProofOfWorkFilter() {
         // singleton
@@ -55,12 +51,12 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteE
         return !ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
     }
 
+    @SuppressWarnings("java:S112")
     @Override
     protected void messageRejected(final HandlerContext ctx,
                                    final Address sender,
                                    final RemoteEnvelope<? extends MessageLite> msg,
-                                   final CompletableFuture<Void> future) {
-        LOG.trace("Message with invalid proof of work dropped: `{}`", () -> sanitizeLogArg(msg));
-        future.completeExceptionally(new Exception("Message with invalid proof of work dropped."));
+                                   final CompletableFuture<Void> future) throws Exception {
+        throw new Exception("Message with invalid proof of work dropped.");
     }
 }

@@ -27,12 +27,8 @@ import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
 import org.drasyl.remote.protocol.RemoteEnvelope;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
-
-import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
  * This handler filters out all messages received from other networks.
@@ -41,7 +37,6 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 @Stateless
 public final class OtherNetworkFilter extends InboundMessageFilter<RemoteEnvelope<? extends MessageLite>, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
-    private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
 
     private OtherNetworkFilter() {
         // singleton
@@ -54,12 +49,12 @@ public final class OtherNetworkFilter extends InboundMessageFilter<RemoteEnvelop
         return msg.isChunk() || ctx.config().getNetworkId() == msg.getNetworkId();
     }
 
+    @SuppressWarnings("java:S112")
     @Override
     protected void messageRejected(final HandlerContext ctx,
                                    final Address sender,
                                    final RemoteEnvelope<? extends MessageLite> msg,
-                                   final CompletableFuture<Void> future) {
-        LOG.trace("Message from other network dropped: {}", () -> sanitizeLogArg(msg));
-        future.completeExceptionally(new Exception("Message from other network dropped"));
+                                   final CompletableFuture<Void> future) throws Exception {
+        throw new Exception("Message from other network dropped");
     }
 }

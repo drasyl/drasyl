@@ -48,6 +48,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import test.util.IdentityTestUtil;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -97,7 +98,12 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
     public void matchedWrite() {
-        handler.matchedOutbound(ctx, recipient, msg, future);
+        try {
+            handler.matchedOutbound(ctx, recipient, msg, future);
+        }
+        catch (final IOException e) {
+            handleUnexpectedException(e);
+        }
     }
 
     private static class MyHandlerContext implements HandlerContext {

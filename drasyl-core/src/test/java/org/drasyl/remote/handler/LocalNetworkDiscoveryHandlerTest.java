@@ -191,7 +191,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddressWrapper sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                                   @Mock final Peer peer) {
+                                                   @Mock final Peer peer) throws InvalidMessageFormatException {
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
             try (final RemoteEnvelope<Protocol.Discovery> msg = RemoteEnvelope.discovery(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork())) {
                 when(peers.computeIfAbsent(any(), any())).thenReturn(peer);

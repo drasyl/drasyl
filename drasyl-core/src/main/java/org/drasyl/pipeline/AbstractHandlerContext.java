@@ -199,7 +199,6 @@ abstract class AbstractHandlerContext implements HandlerContext {
             }
         }
         catch (final Exception e) {
-            log().warn("Failed to invoke onInbound() on next handler `{}` do to the following error: ", inboundCtx::name, () -> e);
             future.completeExceptionally(e);
             inboundCtx.passException(e);
             ReferenceCountUtil.safeRelease(msg);
@@ -264,7 +263,6 @@ abstract class AbstractHandlerContext implements HandlerContext {
             }
         }
         catch (final Exception e) {
-            log().warn("Failed to invoke onOutbound() on next handler `{}` do to the following error: ", outboundCtx::name, () -> e);
             future.completeExceptionally(e);
             outboundCtx.passException(e);
             ReferenceCountUtil.safeRelease(msg);

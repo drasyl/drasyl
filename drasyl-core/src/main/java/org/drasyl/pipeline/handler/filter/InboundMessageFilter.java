@@ -39,7 +39,8 @@ import java.util.concurrent.CompletableFuture;
  * Furthermore overriding {@link #messageRejected(HandlerContext, Address, Object,
  * CompletableFuture)} gives you the flexibility to respond to rejected messages.
  * <p>
- * This class will automatically call {@link ReferenceCounted#release()} on rejected messages.
+ * This class will automatically call {@link ReferenceCounted#release()} on rejected messages and
+ * complete the corresponding future.
  */
 @SuppressWarnings("java:S118")
 public abstract class InboundMessageFilter<I, A extends Address> extends SimpleInboundHandler<I, A> {
@@ -60,11 +61,11 @@ public abstract class InboundMessageFilter<I, A extends Address> extends SimpleI
         }
         catch (final InboundFilterException e) {
             ReferenceCountUtil.safeRelease(msg);
-            future.completeExceptionally(e);
+            throw e;
         }
         catch (final Exception e) {
             ReferenceCountUtil.safeRelease(msg);
-            future.completeExceptionally(new InboundFilterException(e));
+            throw new InboundFilterException(e);
         }
     }
 
@@ -84,11 +85,11 @@ public abstract class InboundMessageFilter<I, A extends Address> extends SimpleI
      * Object)}. You should override it if you would like to handle (e.g. respond to) rejected
      * messages.
      */
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "unused", "RedundantThrows", "java:S112" })
     protected void messageRejected(final HandlerContext ctx,
                                    final A sender,
                                    final I msg,
-                                   final CompletableFuture<Void> future) {
+                                   final CompletableFuture<Void> future) throws Exception {
         // do nothing
     }
 }

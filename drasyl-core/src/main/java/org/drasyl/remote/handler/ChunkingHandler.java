@@ -68,21 +68,14 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
     protected void matchedInbound(final HandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
                                   final RemoteEnvelope<? extends MessageLite> msg,
-                                  final CompletableFuture<Void> future) {
-        try {
-            // message is addressed to me and chunked
-            if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) && msg.isChunk()) {
-                handleInboundChunk(ctx, sender, msg, future);
-            }
-            else {
-                // passthrough all messages not addressed to us
-                ctx.passInbound(sender, msg, future);
-            }
+                                  final CompletableFuture<Void> future) throws IOException {
+        // message is addressed to me and chunked
+        if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) && msg.isChunk()) {
+            handleInboundChunk(ctx, sender, msg, future);
         }
-        catch (final IOException e) {
-            future.completeExceptionally(new Exception("Unable to read message.", e));
-            LOG.debug("Can't read message `{}` due to the following error: ", () -> sanitizeLogArg(msg), () -> e);
-            ReferenceCountUtil.safeRelease(msg);
+        else {
+            // passthrough all messages not addressed to us
+            ctx.passInbound(sender, msg, future);
         }
     }
 
@@ -125,40 +118,33 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                 .asMap());
     }
 
+    @SuppressWarnings("java:S112")
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final RemoteEnvelope<? extends MessageLite> msg,
-                                   final CompletableFuture<Void> future) {
-        try {
-            if (ctx.identity().getIdentityPublicKey().equals(msg.getSender())) {
-                // message from us, check if we have to chunk it
-                final ByteBuf messageByteBuf = msg.getOrBuildByteBuf();
-                final int messageLength = messageByteBuf.readableBytes();
-                final int messageMaxContentLength = ctx.config().getRemoteMessageMaxContentLength();
-                if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
-                    //noinspection unchecked
-                    LOG.debug("The message `{}` has a size of {} bytes and is too large. The max allowed size is {} bytes. Message dropped.", () -> sanitizeLogArg(msg), () -> messageLength, () -> messageMaxContentLength);
-                    future.completeExceptionally(new Exception("The message has a size of " + messageLength + " bytes and is too large. The max. allowed size is " + messageMaxContentLength + " bytes. Message dropped."));
-                    ReferenceCountUtil.safeRelease(messageByteBuf);
-                }
-                else if (messageLength > ctx.config().getRemoteMessageMtu()) {
-                    // message is too big, we have to chunk it
-                    chunkMessage(ctx, recipient, msg, future, messageByteBuf, messageLength);
-                }
-                else {
-                    // message is small enough. No chunking required
-                    ctx.passOutbound(recipient, msg, future);
-                }
+                                   final CompletableFuture<Void> future) throws Exception {
+        if (ctx.identity().getIdentityPublicKey().equals(msg.getSender())) {
+            // message from us, check if we have to chunk it
+            final ByteBuf messageByteBuf = msg.getOrBuildByteBuf();
+            final int messageLength = messageByteBuf.readableBytes();
+            final int messageMaxContentLength = ctx.config().getRemoteMessageMaxContentLength();
+            if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
+                ReferenceCountUtil.safeRelease(messageByteBuf);
+                throw new Exception("The message has a size of " + messageLength + " bytes and is too large. The max. allowed size is " + messageMaxContentLength + " bytes. Message dropped.");
+            }
+            else if (messageLength > ctx.config().getRemoteMessageMtu()) {
+                // message is too big, we have to chunk it
+                chunkMessage(ctx, recipient, msg, future, messageByteBuf, messageLength);
             }
             else {
+                // message is small enough. No chunking required
                 ctx.passOutbound(recipient, msg, future);
             }
         }
-        catch (final IllegalStateException | IOException e) {
-            future.completeExceptionally(new Exception("Unable to read message.", e));
-            LOG.debug("Can't read message `{}` due to the following error: ", () -> sanitizeLogArg(msg), () -> e);
-            ReferenceCountUtil.safeRelease(msg);
+        else {
+            // message not from us. Passthrough
+            ctx.passOutbound(recipient, msg, future);
         }
     }
 

@@ -31,8 +31,6 @@ import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.Protocol.MessageType;
 import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.Pair;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
@@ -44,7 +42,6 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.drasyl.util.DurationUtil.max;
-import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
  * This handler rate limits {@link org.drasyl.remote.protocol.Protocol.Acknowledgement}, {@link
@@ -54,7 +51,6 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  */
 @SuppressWarnings("java:S110")
 public class RateLimiter extends InboundMessageFilter<RemoteEnvelope<? extends MessageLite>, Address> {
-    private static final Logger LOG = LoggerFactory.getLogger(RateLimiter.class);
     private static final long CACHE_SIZE = 1_000;
     private static final long ACKNOWLEDGEMENT_RATE_LIMIT = 100; // 1 ack msg per 100ms
     private static final long DISCOVERY_RATE_LIMIT = 100; // 1 discovery msg per 100ms
@@ -86,13 +82,13 @@ public class RateLimiter extends InboundMessageFilter<RemoteEnvelope<? extends M
         return !ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) || rateLimitGate(msg);
     }
 
+    @SuppressWarnings("java:S112")
     @Override
     protected void messageRejected(final HandlerContext ctx,
                                    final Address sender,
                                    final RemoteEnvelope<? extends MessageLite> msg,
-                                   final CompletableFuture<Void> future) {
-        LOG.trace("Message exceeding rate limit dropped: {}", () -> sanitizeLogArg(msg));
-        future.completeExceptionally(new Exception("Message exceeding rate limit dropped"));
+                                   final CompletableFuture<Void> future) throws Exception {
+        throw new Exception("Message exceeding rate limit dropped");
     }
 
     @SuppressWarnings("java:S1142")
