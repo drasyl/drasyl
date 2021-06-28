@@ -66,7 +66,6 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
-import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
@@ -255,29 +254,22 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
     protected void matchedOutbound(final HandlerContext ctx,
                                    final Address recipient,
                                    final RemoteEnvelope<Application> msg,
-                                   final CompletableFuture<Void> future) {
-        try {
-            if (recipient instanceof IdentityPublicKey) {
-                // record communication to keep active connections alive
-                if (directConnectionPeers.contains(recipient)) {
-                    final Peer peer = peers.computeIfAbsent((IdentityPublicKey) recipient, key -> new Peer());
-                    peer.applicationTrafficOccurred();
-                }
-
-                if (!processMessage(ctx, (IdentityPublicKey) recipient, msg, future)) {
-                    // passthrough message
-                    ctx.passOutbound(recipient, msg, future);
-                }
+                                   final CompletableFuture<Void> future) throws IOException {
+        if (recipient instanceof IdentityPublicKey) {
+            // record communication to keep active connections alive
+            if (directConnectionPeers.contains(recipient)) {
+                final Peer peer = peers.computeIfAbsent((IdentityPublicKey) recipient, key -> new Peer());
+                peer.applicationTrafficOccurred();
             }
-            else {
+
+            if (!processMessage(ctx, (IdentityPublicKey) recipient, msg, future)) {
                 // passthrough message
                 ctx.passOutbound(recipient, msg, future);
             }
         }
-        catch (final IOException e) {
-            LOG.warn("Unable to read `{}`.", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Message could not be read.", e));
-            ReferenceCountUtil.safeRelease(msg);
+        else {
+            // passthrough message
+            ctx.passOutbound(recipient, msg, future);
         }
     }
 
@@ -390,32 +382,25 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
     protected void matchedInbound(final HandlerContext ctx,
                                   final Address sender,
                                   final RemoteEnvelope<? extends MessageLite> msg,
-                                  final CompletableFuture<Void> future) {
-        try {
-            if (sender instanceof InetSocketAddressWrapper && msg.getRecipient() != null) {
-                // This message is for us and we will fully decode it
-                if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient())) {
-                    handleMessage(ctx, (InetSocketAddressWrapper) sender, msg, future);
-                }
-                else if (!ctx.config().isRemoteSuperPeerEnabled()) {
-                    if (!processMessage(ctx, msg.getRecipient(), msg, future)) {
-                        // passthrough message
-                        ctx.passInbound(sender, msg, future);
-                    }
-                }
-                else if (LOG.isDebugEnabled()) {
-                    LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", msg, sender, msg.getRecipient());
+                                  final CompletableFuture<Void> future) throws IOException {
+        if (sender instanceof InetSocketAddressWrapper && msg.getRecipient() != null) {
+            // This message is for us and we will fully decode it
+            if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient())) {
+                handleMessage(ctx, (InetSocketAddressWrapper) sender, msg, future);
+            }
+            else if (!ctx.config().isRemoteSuperPeerEnabled()) {
+                if (!processMessage(ctx, msg.getRecipient(), msg, future)) {
+                    // passthrough message
+                    ctx.passInbound(sender, msg, future);
                 }
             }
-            else {
-                // passthrough message
-                ctx.passInbound(sender, msg, future);
+            else if (LOG.isDebugEnabled()) {
+                LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", msg, sender, msg.getRecipient());
             }
         }
-        catch (final IOException e) {
-            LOG.warn("Unable to read `{}`.", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Message could not be read.", e));
-            ReferenceCountUtil.safeRelease(msg);
+        else {
+            // passthrough message
+            ctx.passInbound(sender, msg, future);
         }
     }
 

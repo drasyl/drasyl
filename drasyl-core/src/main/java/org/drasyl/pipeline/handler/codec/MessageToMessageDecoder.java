@@ -89,10 +89,10 @@ public abstract class MessageToMessageDecoder<I, A extends Address> extends Simp
             }
         }
         catch (final DecoderException e) {
-            future.completeExceptionally(e);
+            throw e;
         }
         catch (final Exception e) {
-            future.completeExceptionally(new DecoderException(e));
+            throw new DecoderException(e);
         }
     }
 

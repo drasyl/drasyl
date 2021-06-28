@@ -23,6 +23,7 @@ package org.drasyl.pipeline;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
+import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -35,6 +36,8 @@ import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Special class that represents the tail of a {@link Pipeline}. This class can not be removed from
@@ -56,7 +59,7 @@ class TailContext extends AbstractEndHandler {
                        final Serialization inboundSerialization,
                        final Serialization outboundSerialization) {
         super(DRASYL_TAIL_HANDLER, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-        this.eventConsumer = eventConsumer;
+        this.eventConsumer = requireNonNull(eventConsumer);
     }
 
     @Override
@@ -102,6 +105,14 @@ class TailContext extends AbstractEndHandler {
         LOG.trace("Event has passed the pipeline: `{}` ", event);
 
         eventConsumer.accept(event);
+    }
+
+    @Override
+    public void onException(final HandlerContext ctx, final Exception cause) {
+        super.onException(ctx, cause);
+        LOG.trace("Exception has passed the pipeline:", cause);
+
+        eventConsumer.accept(InboundExceptionEvent.of(cause));
     }
 
     @Override

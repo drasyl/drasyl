@@ -35,11 +35,9 @@ import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.RemoteEnvelope;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -50,7 +48,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_INTERFACE;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
-import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
@@ -147,19 +144,12 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? 
     protected void matchedInbound(final HandlerContext ctx,
                                   final Address sender,
                                   final RemoteEnvelope<? extends MessageLite> msg,
-                                  final CompletableFuture<Void> future) {
-        try {
-            if (pingDisposable != null && sender instanceof InetSocketAddressWrapper && msg.getRecipient() == null && msg.getPrivateHeader().getType() == DISCOVERY) {
-                handlePing(ctx, sender, msg, future);
-            }
-            else {
-                ctx.passInbound(sender, msg, future);
-            }
+                                  final CompletableFuture<Void> future) throws InvalidMessageFormatException {
+        if (pingDisposable != null && sender instanceof InetSocketAddressWrapper && msg.getRecipient() == null && msg.getPrivateHeader().getType() == DISCOVERY) {
+            handlePing(ctx, sender, msg, future);
         }
-        catch (final IOException e) {
-            LOG.warn("Unable to deserialize `{}`.", () -> sanitizeLogArg(msg), () -> e);
-            future.completeExceptionally(new Exception("Message could not be deserialized.", e));
-            ReferenceCountUtil.safeRelease(msg);
+        else {
+            ctx.passInbound(sender, msg, future);
         }
     }
 

@@ -27,12 +27,8 @@ import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.filter.OutboundMessageFilter;
 import org.drasyl.remote.protocol.RemoteEnvelope;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
-
-import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
  * This handler ensures that {@link RemoteEnvelope}s do not infinitely circulate in the network. It
@@ -42,7 +38,6 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 @Stateless
 public final class HopCountGuard extends OutboundMessageFilter<RemoteEnvelope<? extends MessageLite>, Address> {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
-    private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
 
     private HopCountGuard() {
         // singleton
@@ -63,13 +58,12 @@ public final class HopCountGuard extends OutboundMessageFilter<RemoteEnvelope<? 
         }
     }
 
+    @SuppressWarnings("java:S112")
     @Override
     protected void messageRejected(final HandlerContext ctx,
                                    final Address sender,
                                    final RemoteEnvelope<? extends MessageLite> msg,
-                                   final CompletableFuture<Void> future) {
-        // too many hops, discard message
-        LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message `{}`", () -> sanitizeLogArg(msg));
-        future.completeExceptionally(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
+                                   final CompletableFuture<Void> future) throws Exception {
+        throw new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message.");
     }
 }
