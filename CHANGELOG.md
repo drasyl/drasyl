@@ -5,31 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - 2021-XX-XX
+## [0.5.0] - 2021-06-28
+
+### Upgrade Notes
+
+- The identities must be replaced by a new one. 
+  Just delete the old `drasyl.identity.json` and let drasyl generate a new one.
+- If you're using a custom configuration with super peer defined, make sure to use (our) super peers running 0.5.0.
 
 ### Added
 
--
--
--
--
--
+- Multicast is used to discovery other nodes running within the same network.
+- TCP is used as fallback if UDP traffic is blocked.
+- Experimental support for native image added.
+- All traffic is now end-to-end encrypted 🎉.
+- kqueue is used on macOS based systems for better performance.
+- epoll is used on linux based systems for better performance.
+- An `InboundExceptionEvent` is emitted every time an inbound message could not be processed.
+- Support for Apple Silicon added.
+- Backpressure mechanism for outbound messages added.
 
 ### Changed
 
--
--
--
--
--
-
-### Fixed
-
--
--
--
--
--
+- Switched to MIT License.
+- `DrasylNode#send()` will now return an `CompletationStage` instead of an `CompletableFuture`.
+- Dependencies have been updated.
+- Maven module `parent` has been renamed to `drasyl-parent`.
+- Class `CompressedPublicKey` has been renamed to `IdentityPublicKey`.
 
 ## [0.4.1] - 2021-03-11
 
