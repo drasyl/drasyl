@@ -33,7 +33,6 @@ jobs:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
         run: ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -DskipTests --projects drasyl-cli --also-make package
       - name: Publish artifact
-        if: success()
         uses: actions/upload-artifact@v2.2.4
         with:
           name: Java
@@ -121,7 +120,6 @@ jobs:
 
       # publish artifact
       - name: Publish artifact
-        if: success()
         uses: actions/upload-artifact@v2.2.4
         with:
           name: ${{ matrix.job_name }}
