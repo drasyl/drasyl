@@ -18,8 +18,8 @@ An additional call of `mvn release:perform` is not necessary! GitLab CI performs
 * Deploy to our public super peers (this is a manual process).
 * Release to Maven Central Repository by logging into the [Sonatype OSSRH Nexus Repository Manager](https://oss.sonatype.org), going to the "Staging Repositories" tab, and closing the corresponding release. Wait for the checks, then refresh and click "Release".
 * Create Release on GitHub:
-  * Go to https://github.com/drasyl-overlay/drasyl/releases.
-  * **Tag:** `v1.2.0`
+  * Go to https://github.com/drasyl-overlay/drasyl/tags.
+  * Click `Create release` for tag `v1.2.0`.
   * **Title:** `v1.2.0`
   * **Description:** `[CHANGELOG.md](CHANGELOG.md)`
 * Wait for GitHub Action to complete "Release" workflow.
