@@ -132,13 +132,13 @@ jobs:
           fetch-depth: 0
       - name: Get actual patch version
         id: actual_patch_version
-        run: echo ::set-output name=ACTUAL_PATCH_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | cut -d "." -f 1,2,3)
+        run: echo ::set-output name=ACTUAL_PATCH_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3)
       - name: Get actual minor version
         id: actual_minor_version
-        run: echo ::set-output name=ACTUAL_MINOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | cut -d "." -f 1,2)
+        run: echo ::set-output name=ACTUAL_MINOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2)
       - name: Get actual major version
         id: actual_major_version
-        run: echo ::set-output name=ACTUAL_MAJOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | cut -d "." -f 1)
+        run: echo ::set-output name=ACTUAL_MAJOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1)
       - name: Build and publish image
         uses: ilteoood/docker_buildx@1.1.0
         with:
