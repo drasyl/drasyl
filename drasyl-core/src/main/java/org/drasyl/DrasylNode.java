@@ -316,7 +316,7 @@ public abstract class DrasylNode {
      * @since 0.1.3-SNAPSHOT
      */
     @NonNull
-    public CompletionStage<Void> send(@Nullable final IdentityPublicKey recipient,
+    public CompletionStage<Void> send(@Nullable final DrasylAddress recipient,
                                       final Object payload) {
         return pipeline
                 .processOutbound(recipient, payload)

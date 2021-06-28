@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
+import org.drasyl.DrasylAddress;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 
@@ -53,6 +54,16 @@ public abstract class Identity {
     @JsonIgnore
     public IdentitySecretKey getIdentitySecretKey() {
         return getIdentityKeyPair().getSecretKey();
+    }
+
+    /**
+     * Returns the address for this identity.
+     *
+     * @return returns the address for this identity.
+     */
+    @JsonIgnore
+    public DrasylAddress getAddress() {
+        return getIdentityPublicKey();
     }
 
     @JsonIgnore

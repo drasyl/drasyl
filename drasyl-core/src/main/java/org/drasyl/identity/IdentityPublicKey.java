@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.auto.value.AutoValue;
 import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.Key;
+import org.drasyl.DrasylAddress;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
@@ -46,7 +47,7 @@ import static org.drasyl.crypto.Crypto.PK_LONG_TIME_KEY_LENGTH;
  */
 @AutoValue
 @SuppressWarnings("java:S118")
-public abstract class IdentityPublicKey implements PublicKey, Address {
+public abstract class IdentityPublicKey implements PublicKey, Address, DrasylAddress {
     public static final short KEY_LENGTH_AS_BYTES = PK_LONG_TIME_KEY_LENGTH;
     public static final short KEY_LENGTH_AS_STRING = KEY_LENGTH_AS_BYTES * 2;
     private static final InternPool<IdentityPublicKey> POOL = new InternPool<>();
