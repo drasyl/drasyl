@@ -19,12 +19,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
           java-version: ${{ matrix.java }}
           distribution: 'adopt'
-          fetch-depth: 0
       - name: Cache Maven packages
         uses: actions/cache@v2.1.6
         with:
