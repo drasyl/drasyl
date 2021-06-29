@@ -1,4 +1,4 @@
-name: Test
+name: Deploy
 
 on:
   push:
@@ -37,5 +37,5 @@ jobs:
       - name: Deploy to Maven Central
         run: ./mvnw --batch-mode --update-snapshots --activate-profiles ci,release deploy
         env:
-          OSSRH_REPO_USER: ${{ secrets.OSSRH_REPO_USER }}
-          OSSRH_REPO_PASS: ${{ secrets.OSSRH_REPO_PASS }}
+          MAVEN_USERNAME: ${{ secrets.OSSRH_REPO_USER }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_REPO_PASS }}
