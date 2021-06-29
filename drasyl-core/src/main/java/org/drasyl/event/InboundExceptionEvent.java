@@ -41,7 +41,7 @@ public abstract class InboundExceptionEvent implements Event {
      * @return the exception why the message could not be processed.
      */
     @NonNull
-    abstract Throwable getError();
+    public abstract Throwable getError();
 
     /**
      * @throws NullPointerException if {@code error} is {@code null}
