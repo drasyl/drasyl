@@ -131,7 +131,7 @@ jobs:
 
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v2.3
+        uses: actions/checkout@v2
       - name: Build Docker Image
         run: docker build --tag drasyl/drasyl .
       - name: Test Docker Image

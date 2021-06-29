@@ -64,7 +64,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v2.3
+        uses: actions/checkout@v2
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -155,7 +155,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout https://github.com/drasyl-overlay/homebrew-tap
-        uses: actions/checkout@v2.3
+        uses: actions/checkout@v2
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl-overlay/homebrew-tap
