@@ -67,7 +67,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.3
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -133,8 +133,6 @@ jobs:
     steps:
       - name: Checkout master
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
       - name: Get actual patch version
         id: actual_patch_version
         run: echo ::set-output name=ACTUAL_PATCH_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3)
@@ -160,7 +158,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout https://github.com/drasyl-overlay/homebrew-tap
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.3
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl-overlay/homebrew-tap
