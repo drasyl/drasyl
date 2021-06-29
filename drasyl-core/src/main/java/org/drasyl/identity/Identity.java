@@ -77,6 +77,15 @@ public abstract class Identity {
     }
 
     /**
+     * @deprecated Use {@link #getIdentityPublicKey()} instead.
+     */
+    @Deprecated(since = "0.5.0", forRemoval = true)
+    @JsonIgnore
+    public IdentityPublicKey getPublicKey() {
+        return getIdentityPublicKey();
+    }
+
+    /**
      * Validates the identity by checking whether the proof of work matches the public key.
      *
      * @return {@code true} if this identity is valid. Otherwise {@code false}
