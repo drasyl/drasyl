@@ -6,12 +6,15 @@ RUN cd /build && \
     ./mvnw --quiet --projects drasyl-cli --also-make -DskipTests package && \
     unzip -qq ./drasyl-*.zip -d /
 
-FROM openjdk:11-jre-slim
+FROM adoptopenjdk:11-jre-openj9
 
 RUN mkdir /usr/local/share/drasyl && \
     ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
 
 COPY --from=build /drasyl-* /usr/local/share/drasyl/
+
+# create share class folder for openj9
+RUN mkdir /opt/shareclasses
 
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\
@@ -33,6 +36,7 @@ RUN echo '<configuration>\n\
 
 EXPOSE 22527 443
 
-ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
+ENV JAVA_SCC_OPTS "-Xquickstart -XX:+IdleTuningGcOnIdle -Xtune:virtualized -Xshareclasses:name=drasyl_scc,cacheDir=/opt/shareclasses -Xscmx50M"
+ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml ${JAVA_SCC_OPTS}"
 
 ENTRYPOINT ["drasyl"]
