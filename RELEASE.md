@@ -14,9 +14,8 @@ mvn clean release:prepare
 ```
 An additional call of `mvn release:perform` is not necessary! GitLab CI performs this tasks automatically.**
 
-* Wait for the GitLab CI to complete then.
+* Wait for the GitLab Action to deploy new version to Maven Central ("Deploy" workflow).
 * Deploy to our public super peers (this is a manual process).
-* Release to Maven Central Repository by logging into the [Sonatype OSSRH Nexus Repository Manager](https://oss.sonatype.org), going to the "Staging Repositories" tab, and closing the corresponding release. Wait for the checks, then refresh and click "Release".
 * Create Release on GitHub:
   * Go to https://github.com/drasyl-overlay/drasyl/tags.
   * Click `Create release` for tag `v1.2.0`.
@@ -24,7 +23,6 @@ An additional call of `mvn release:perform` is not necessary! GitLab CI performs
   * **Description:** `[CHANGELOG.md](CHANGELOG.md)`
 * Wait for GitHub Action to complete "Release" workflow.
 * Re-add the nightly/snapshot information to the [getting-started.md](docs/content/getting-started.md) and the [index.md](docs/content/index.md).
-* Update the Homebrew Formula: https://github.com/drasyl-overlay/homebrew-drasyl/blob/main/Formula/drasyl.rb.
 * Push the new version to chocolatey. For instructions see this repo: [https://github.com/drasyl-overlay/drasyl-choco](https://github.com/drasyl-overlay/drasyl-choco/blob/master/RELEASE.md)
 
 ## Making a manual build of docker
