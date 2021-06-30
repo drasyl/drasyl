@@ -14,7 +14,6 @@ cache:
   before_script:
     - lscpu | grep -E '^Thread|^Core|^Socket|^CPU\('
     - free -m
-    - echo $GPG_SECRET_KEYS | base64 --decode | gpg --batch --import
   after_script:
     - for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
     - awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print 100*covered/instructions, "% covered" }' drasyl-all/target/site/jacoco-aggregate/jacoco.csv
