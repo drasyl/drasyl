@@ -12,7 +12,7 @@ This file describes how to make the various kinds of releases.
 rm -f release.properties
 mvn clean release:prepare
 ```
-An additional call of `mvn release:perform` is not necessary! GitLab CI performs this tasks automatically.**
+An additional call of `mvn release:perform` is not necessary! GitLab CI performs this tasks automatically.
 
 * Wait for the GitLab Action to deploy new version to Maven Central ("Deploy" workflow).
 * Deploy to our public super peers (this is a manual process).
