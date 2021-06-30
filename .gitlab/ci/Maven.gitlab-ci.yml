@@ -34,15 +34,3 @@ maven-verify:
   stage: test
   script:
     - './mvnw $MAVEN_CLI_OPTS verify'
-  except:
-    - master
-    - /^v\d+\.\d+/
-
-maven-deploy:
-  <<: *maven-base
-  stage: deploy
-  script:
-    - './mvnw $MAVEN_CLI_OPTS deploy'
-  only:
-    - master
-    - /^v\d+\.\d+/
