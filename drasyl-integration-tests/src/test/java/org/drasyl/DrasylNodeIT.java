@@ -338,6 +338,7 @@ class DrasylNodeIT {
                         .remoteStaticRoutes(Map.of(IdentityTestUtil.ID_2.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22529)))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
@@ -359,6 +360,7 @@ class DrasylNodeIT {
                         .remoteStaticRoutes(Map.of(IdentityTestUtil.ID_1.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22528)))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
