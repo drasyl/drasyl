@@ -92,6 +92,9 @@ public abstract class ProofOfWork {
         return of(getNonce() + 1);
     }
 
+    /**
+     * @throws NullPointerException if {@code nonce} is {@code null}
+     */
     @JsonCreator
     public static ProofOfWork of(final int nonce) {
         return new AutoValue_ProofOfWork(nonce);

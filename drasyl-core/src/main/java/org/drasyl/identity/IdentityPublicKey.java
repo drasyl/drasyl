@@ -95,6 +95,10 @@ public abstract class IdentityPublicKey implements PublicKey, Address, DrasylAdd
         return HexUtil.bytesToHex(getBytes().toByteArray());
     }
 
+    /**
+     * @throws NullPointerException     if {@code bytes} is {@code null}
+     * @throws IllegalArgumentException if {@code bytes} has wrong key size
+     */
     public static IdentityPublicKey of(final ByteString bytes) {
         if (bytes.size() != KEY_LENGTH_AS_BYTES) {
             throw new IllegalArgumentException("key has wrong size.");
