@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler;
 
 import com.google.protobuf.MessageLite;
+import io.netty.buffer.ByteBuf;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -95,6 +96,16 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
                     .remotePingCommunicationTimeout(ofDays(1))
                     .build();
             this.identity = requireNonNull(identity);
+        }
+
+        @Override
+        public ByteBuf alloc() {
+            return null;
+        }
+
+        @Override
+        public ByteBuf alloc(boolean preferDirect) {
+            return null;
         }
 
         @Override

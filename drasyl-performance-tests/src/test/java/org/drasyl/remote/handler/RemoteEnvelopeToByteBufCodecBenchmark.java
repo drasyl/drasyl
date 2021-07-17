@@ -104,6 +104,16 @@ public class RemoteEnvelopeToByteBufCodecBenchmark extends AbstractBenchmark {
 
     private static class MyHandlerContext implements HandlerContext {
         @Override
+        public ByteBuf alloc() {
+            return null;
+        }
+
+        @Override
+        public ByteBuf alloc(boolean preferDirect) {
+            return null;
+        }
+
+        @Override
         public String name() {
             return null;
         }

@@ -21,6 +21,8 @@
  */
 package org.drasyl.pipeline;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -111,6 +113,21 @@ abstract class AbstractHandlerContext implements HandlerContext {
 
     AbstractHandlerContext getPrev() {
         return this.prev;
+    }
+
+    @Override
+    public ByteBuf alloc() {
+        return alloc(true);
+    }
+
+    @Override
+    public ByteBuf alloc(boolean preferDirect) {
+        if (preferDirect) {
+            return PooledByteBufAllocator.DEFAULT.ioBuffer();
+        }
+        else {
+            return PooledByteBufAllocator.DEFAULT.heapBuffer();
+        }
     }
 
     @Override

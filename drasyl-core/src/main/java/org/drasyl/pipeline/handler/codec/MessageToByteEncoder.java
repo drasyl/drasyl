@@ -22,7 +22,6 @@
 package org.drasyl.pipeline.handler.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
@@ -70,7 +69,7 @@ public abstract class MessageToByteEncoder<O, A extends Address> extends SimpleO
                                    final O msg,
                                    final CompletableFuture<Void> future) throws Exception {
         try {
-            final ByteBuf buf = allocateBuffer(ctx, recipient, msg, preferDirect);
+            final ByteBuf buf = ctx.alloc(preferDirect);
             try {
                 encode(ctx, recipient, msg, buf);
             }
@@ -91,25 +90,6 @@ public abstract class MessageToByteEncoder<O, A extends Address> extends SimpleO
         }
         catch (final Exception e) {
             throw new EncoderException(e);
-        }
-    }
-
-    /**
-     * Allocate a {@link ByteBuf} which will be used as argument of {@link #encode(HandlerContext,
-     * Address, Object, ByteBuf)}. Sub-classes may override this method to return {@link ByteBuf}
-     * with a perfect matching {@code initialCapacity}.
-     */
-    @SuppressWarnings("unused")
-    protected ByteBuf allocateBuffer(final HandlerContext ctx,
-                                     final A recipient,
-                                     final O msg,
-                                     final boolean preferDirect) {
-        final PooledByteBufAllocator allocator = PooledByteBufAllocator.DEFAULT;
-        if (preferDirect) {
-            return allocator.ioBuffer();
-        }
-        else {
-            return allocator.heapBuffer();
         }
     }
 

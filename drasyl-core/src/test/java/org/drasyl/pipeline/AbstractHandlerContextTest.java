@@ -23,8 +23,8 @@ package org.drasyl.pipeline;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
@@ -44,6 +44,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
@@ -86,6 +87,23 @@ class AbstractHandlerContextTest {
     @BeforeEach
     void setUp() {
         name = "testCtx";
+    }
+
+    @Test
+    void shouldReturnByteBuf() {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization) {
+            @Override
+            protected Logger log() {
+                return logger;
+            }
+
+            @Override
+            public Handler handler() {
+                return handler;
+            }
+        };
+
+        assertNotNull(ctx.alloc());
     }
 
     @Test
