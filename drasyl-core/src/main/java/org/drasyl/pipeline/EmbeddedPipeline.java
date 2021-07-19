@@ -27,8 +27,8 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -222,8 +222,8 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
         dependentExecutor.shutdown().join();
         independentExecutor.shutdown().join();
 
-        outboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);
-        inboundMessages.toList().blockingGet().forEach(ReferenceCountUtil::safeRelease);
+        outboundMessages.toList().blockingGet().forEach(o -> ReferenceCountUtil.safeRelease(o.getContent()));
+        inboundMessages.toList().blockingGet().forEach(o -> ReferenceCountUtil.safeRelease(o.getContent()));
     }
 
     @Override
