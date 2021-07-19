@@ -31,8 +31,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
@@ -78,7 +77,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</a>
  */
 @SuppressWarnings("java:S1192")
-public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<Application>, IdentityPublicKey> {
+public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage, IdentityPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
     private static final Object path = LocalHostDiscovery.class;
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
@@ -131,16 +130,16 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<RemoteEnvelope<App
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final IdentityPublicKey recipient,
-                                   final RemoteEnvelope<Application> envelope,
+                                   final ApplicationMessage message,
                                    final CompletableFuture<Void> future) {
         final InetSocketAddressWrapper localAddress = routes.get(recipient);
         if (localAddress != null) {
-            LOG.trace("Send message `{}` via local route {}.", () -> envelope, () -> localAddress);
-            ctx.passOutbound(localAddress, envelope, future);
+            LOG.trace("Send message `{}` via local route {}.", () -> message, () -> localAddress);
+            ctx.passOutbound(localAddress, message, future);
         }
         else {
             // passthrough message
-            ctx.passOutbound(recipient, envelope, future);
+            ctx.passOutbound(recipient, message, future);
         }
     }
 

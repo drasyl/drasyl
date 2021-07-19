@@ -21,10 +21,8 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
@@ -32,10 +30,8 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.InvalidMessageFormatException;
+import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.Nonce;
-import org.drasyl.remote.protocol.Protocol.Acknowledgement;
-import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,10 +44,8 @@ import java.util.concurrent.CompletionException;
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InvalidProofOfWorkFilterTest {
@@ -71,44 +65,41 @@ class InvalidProofOfWorkFilterTest {
     }
 
     @Test
-    void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() throws InvalidMessageFormatException {
-        try (final RemoteEnvelope<Acknowledgement> message = RemoteEnvelope.acknowledgement(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId)) {
-            final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+    void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() {
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
+        final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
-                assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
+            assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
 
-                inboundMessages.assertNoValues();
-            }
+            inboundMessages.assertNoValues();
         }
     }
 
     @Test
-    void shouldPassMessagesWithValidProofOfWorkAddressedToMe() throws InvalidMessageFormatException {
-        try (final RemoteEnvelope<Acknowledgement> message = RemoteEnvelope.acknowledgement(1337, senderPublicKey, IdentityTestUtil.ID_1.getProofOfWork(), recipientPublicKey, correspondingId)) {
-            final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
-                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
+    void shouldPassMessagesWithValidProofOfWorkAddressedToMe() {
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, IdentityTestUtil.ID_1.getProofOfWork(), recipientPublicKey, correspondingId);
+        final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                pipeline.processInbound(message.getSender(), message).join();
+            pipeline.processInbound(message.getSender(), message).join();
 
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
-            }
+            inboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
         }
     }
 
     @Test
-    void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) throws InvalidMessageFormatException {
-        try (final RemoteEnvelope<Acknowledgement> message = RemoteEnvelope.acknowledgement(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId)) {
-            final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_3, peersManager, handler)) {
-                pipeline.processInbound(message.getSender(), message).join();
+    void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) {
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
+        final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_3, peersManager, handler)) {
+            pipeline.processInbound(message.getSender(), message).join();
 
-                verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
-            }
+            verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
         }
     }
 }

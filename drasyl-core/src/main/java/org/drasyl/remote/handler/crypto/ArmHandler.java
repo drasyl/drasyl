@@ -22,7 +22,6 @@
 package org.drasyl.remote.handler.crypto;
 
 import com.google.common.cache.CacheBuilder;
-import com.google.protobuf.MessageLite;
 import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -33,10 +32,11 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleDuplexRemoteEnvelopeSkipLoopbackHandler;
-import org.drasyl.remote.protocol.Protocol;
-import org.drasyl.remote.protocol.Protocol.KeyExchange;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.pipeline.skeleton.SimpleDuplexRemoteMessageSkipLoopbackHandler;
+import org.drasyl.remote.protocol.ArmedMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
+import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
+import org.drasyl.remote.protocol.KeyExchangeMessage;
 import org.drasyl.util.ConcurrentReference;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.logging.Logger;
@@ -56,7 +56,7 @@ import java.util.function.LongUnaryOperator;
  * addressed from or to us. Messages that could not be (dis-)armed are dropped.
  */
 @SuppressWarnings({ "java:S110" })
-public class ArmHandler extends SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<RemoteEnvelope<? extends MessageLite>, RemoteEnvelope<? extends MessageLite>, Address> {
+public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<ArmedMessage, FullReadMessage<?>, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(ArmHandler.class);
     private final Map<IdentityPublicKey, Session> sessions;
     private final Crypto crypto;
@@ -98,8 +98,8 @@ public class ArmHandler extends SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<Re
     @Override
     protected void filteredOutbound(final HandlerContext ctx,
                                     final Address recipient,
-                                    final RemoteEnvelope<? extends MessageLite> msg,
-                                    final CompletableFuture<Void> future) throws Exception {
+                                    final FullReadMessage<?> msg,
+                                    final CompletableFuture<Void> future) {
         final IdentityPublicKey recipientsKey = msg.getRecipient();
         final Session session = getSession(ctx, recipientsKey);
 
@@ -128,11 +128,11 @@ public class ArmHandler extends SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<Re
     @Override
     protected void filteredInbound(final HandlerContext ctx,
                                    final Address sender,
-                                   final RemoteEnvelope<? extends MessageLite> msg,
+                                   final ArmedMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
         final IdentityPublicKey recipientsKey = msg.getSender(); // on inbound our recipient is the sender of the message
         final Session session = getSession(ctx, recipientsKey);
-        final RemoteEnvelope<? extends MessageLite> plaintextMsg;
+        final FullReadMessage<?> plaintextMsg;
         final AgreementId agreementId = msg.getAgreementId();
         boolean longTimeEncryptionUsed = false;
 
@@ -140,65 +140,56 @@ public class ArmHandler extends SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<Re
             ctx.independentScheduler().scheduleDirect(() -> checkForRenewAgreement(ctx, session, sender, recipientsKey));
         }
 
-        if (agreementId != null) {
-            // long time encryption was used
-            if (session.getLongTimeAgreementId().equals(agreementId)) {
-                plaintextMsg = ArmHandlerUtil.decrypt(session.getLongTimeAgreementPair(), msg);
-                longTimeEncryptionUsed = true;
-            }
-            // pfs encryption was used
-            else {
-                final Agreement agreement = session.getInitializedAgreements().get(agreementId);
-                final Optional<Agreement> inactiveAgreement = session.getCurrentInactiveAgreement().getValue();
-
-                if (agreement != null && agreement.getSessionPair().isPresent()) {
-                    plaintextMsg = ArmHandlerUtil.decrypt(agreement.getSessionPair().get(), msg);
-
-                    if (agreement.isStale()) {
-                        // remove stale agreement
-                        session.getInitializedAgreements().remove(agreementId);
-
-                        session.getCurrentActiveAgreement().computeOnCondition(a -> agreementId.equals(a.getAgreementId().orElse(null)), a -> {
-                            ctx.passEvent(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)), new CompletableFuture<>());
-
-                            return null;
-                        });
-                    }
-                }
-                // Maybe the first encrypted message is arrived before the corresponding ACK. In this case this message acts also as ACK.
-                else if (inactiveAgreement.isPresent() && agreementId.equals(inactiveAgreement.get().getAgreementId().orElse(null))) {
-                    receivedAcknowledgement(ctx, agreementId, session, recipientsKey);
-
-                    // at this point, the session should be available
-                    plaintextMsg = ArmHandlerUtil.decrypt(session.getInitializedAgreements().get(agreementId).getSessionPair().orElse(null), msg);
-                }
-                else {
-                    future.completeExceptionally(new CryptoException("Decryption-Error: agreement id could not be found. Message was dropped."));
-                    LOG.debug("Agreement id `{}` could not be found. Dropped message: {}", () -> agreementId, () -> msg);
-
-                    // on unknown agreement id we want to send a new key exchange message, may be we're crashed and the recipient node sends us an old agreement
-                    if (this.maxAgreements > 0) {
-                        doKeyExchange(session, ctx, sender, recipientsKey);
-                    }
-                    return;
-                }
-            }
+        // long time encryption was used
+        if (session.getLongTimeAgreementId().equals(agreementId)) {
+            plaintextMsg = ArmHandlerUtil.decrypt(session.getLongTimeAgreementPair(), msg);
+            longTimeEncryptionUsed = true;
         }
+        // pfs encryption was used
         else {
-            // no encryption was used
-            ctx.passInbound(sender, msg, future);
-            return;
+            final Agreement agreement = session.getInitializedAgreements().get(agreementId);
+            final Optional<Agreement> inactiveAgreement = session.getCurrentInactiveAgreement().getValue();
+
+            if (agreement != null && agreement.getSessionPair().isPresent()) {
+                plaintextMsg = ArmHandlerUtil.decrypt(agreement.getSessionPair().get(), msg);
+
+                if (agreement.isStale()) {
+                    // remove stale agreement
+                    session.getInitializedAgreements().remove(agreementId);
+
+                    session.getCurrentActiveAgreement().computeOnCondition(a -> agreementId.equals(a.getAgreementId().orElse(null)), a -> {
+                        ctx.passEvent(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)), new CompletableFuture<>());
+
+                        return null;
+                    });
+                }
+            }
+            // Maybe the first encrypted message is arrived before the corresponding ACK. In this case this message acts also as ACK.
+            else if (inactiveAgreement.isPresent() && agreementId.equals(inactiveAgreement.get().getAgreementId().orElse(null))) {
+                receivedAcknowledgement(ctx, agreementId, session, recipientsKey);
+
+                // at this point, the session should be available
+                plaintextMsg = ArmHandlerUtil.decrypt(session.getInitializedAgreements().get(agreementId).getSessionPair().orElse(null), msg);
+            }
+            else {
+                future.completeExceptionally(new CryptoException("Decryption-Error: agreement id could not be found. Message was dropped."));
+                LOG.debug("Agreement id `{}` could not be found. Dropped message: {}", () -> agreementId, () -> msg);
+
+                // on unknown agreement id we want to send a new key exchange message, may be we're crashed and the recipient node sends us an old agreement
+                if (this.maxAgreements > 0) {
+                    doKeyExchange(session, ctx, sender, recipientsKey);
+                }
+                return;
+            }
         }
 
         // check for key exchange msg
-        if (this.maxAgreements > 0 && longTimeEncryptionUsed && plaintextMsg.getPrivateHeader().getType() == Protocol.MessageType.KEY_EXCHANGE) {
-            receivedKeyExchangeMessage(ctx, sender, plaintextMsg, session, future);
+        if (this.maxAgreements > 0 && longTimeEncryptionUsed && plaintextMsg instanceof KeyExchangeMessage) {
+            receivedKeyExchangeMessage(ctx, sender, (KeyExchangeMessage) plaintextMsg, session, future);
         }
         // check for key exchange acknowledgement msg
-        else if (this.maxAgreements > 0 && plaintextMsg.getPrivateHeader().getType() == Protocol.MessageType.KEY_EXCHANGE_ACKNOWLEDGEMENT) {
-            final Protocol.KeyExchangeAcknowledgement agreementAckMsg = (Protocol.KeyExchangeAcknowledgement) plaintextMsg.getBodyAndRelease();
-
-            receivedAcknowledgement(ctx, AgreementId.of(agreementAckMsg.getAgreementId().toByteArray()), session, recipientsKey);
+        else if (this.maxAgreements > 0 && plaintextMsg instanceof KeyExchangeAcknowledgementMessage) {
+            receivedAcknowledgement(ctx, ((KeyExchangeAcknowledgementMessage) plaintextMsg).getAcknowledgementAgreementId(), session, recipientsKey);
             future.complete(null);
         }
         else {
@@ -308,18 +299,18 @@ public class ArmHandler extends SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<Re
     }
 
     /**
-     * Handles a received {@link KeyExchange} message and creates/initializes the corresponding
-     * {@link Agreement} object.
+     * Handles a received {@link KeyExchangeMessage} message and creates/initializes the
+     * corresponding {@link Agreement} object.
      *
      * @param ctx          the handler context
-     * @param sender       the sender of the {@link KeyExchange} message
+     * @param sender       the sender of the {@link KeyExchangeMessage} message
      * @param plaintextMsg the message
      * @param session      the corresponding session
      * @param future       the future to fulfill
      */
     private void receivedKeyExchangeMessage(final HandlerContext ctx,
                                             final Address sender,
-                                            final RemoteEnvelope<? extends MessageLite> plaintextMsg,
+                                            final KeyExchangeMessage plaintextMsg,
                                             final Session session,
                                             final CompletableFuture<Void> future) {
         ctx.independentScheduler().scheduleDirect(() -> {
@@ -329,8 +320,7 @@ public class ArmHandler extends SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<Re
                 //TODO: Handlet es sich um einen neuen Key muss auch ein neuer "inactive" key erzeugt und bestätigt werden
 
                 final IdentityPublicKey recipientsKey = plaintextMsg.getSender(); // on inbound our recipient is the sender of the message
-                @SuppressWarnings("unchecked") final KeyExchange keyExchangeMsg = ((RemoteEnvelope<KeyExchange>) plaintextMsg).getBodyAndRelease();
-                final KeyAgreementPublicKey sessionKey = KeyAgreementPublicKey.of(keyExchangeMsg.getSessionKey().toByteArray());
+                final KeyAgreementPublicKey sessionKey = plaintextMsg.getSessionKey();
 
                 LOG.trace("[{} <= {}] Received key exchange message", () -> ctx.identity().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
 

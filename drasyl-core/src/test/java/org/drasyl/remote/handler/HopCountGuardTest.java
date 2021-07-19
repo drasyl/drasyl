@@ -31,9 +31,12 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.remote.handler.crypto.AgreementId;
+import org.drasyl.remote.protocol.AcknowledgementMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
+import org.drasyl.remote.protocol.HopCount;
 import org.drasyl.remote.protocol.Nonce;
-import org.drasyl.remote.protocol.Protocol;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,10 +44,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
-import java.io.IOException;
 import java.util.concurrent.CompletionException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.drasyl.remote.protocol.HopCount.MAX_HOP_COUNT;
+import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
@@ -59,6 +62,8 @@ class HopCountGuardTest {
     private PeersManager peersManager;
     private IdentityPublicKey senderPublicKey;
     private IdentityPublicKey recipientPublicKey;
+    @Mock
+    private AgreementId agreementId;
     private Nonce correspondingId;
 
     @BeforeEach
@@ -69,39 +74,36 @@ class HopCountGuardTest {
     }
 
     @Test
-    void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final IdentityPublicKey recipient) throws IOException {
+    void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final IdentityPublicKey recipient) {
         when(config.getRemoteMessageHopLimit()).thenReturn((byte) 2);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
-        try (final RemoteEnvelope<Protocol.Acknowledgement> message = RemoteEnvelope.acknowledgement(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId)) {
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+        final FullReadMessage<AcknowledgementMessage> message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
 
-                pipeline.processOutbound(recipient, message).join();
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message));
+            pipeline.processOutbound(recipient, message).join();
 
-                assertEquals((byte) 1, message.getHopCount());
-            }
+            outboundMessages.awaitCount(1)
+                    .assertValueCount(1)
+                    .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message.incrementHopCount()));
         }
     }
 
     @Test
-    void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit() throws IOException {
+    void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit() {
         when(config.getRemoteMessageHopLimit()).thenReturn((byte) 1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
-        try (final RemoteEnvelope<Protocol.Acknowledgement> message = RemoteEnvelope.acknowledgement(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId)) {
-            message.incrementHopCount();
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+        final RemoteMessage message = AcknowledgementMessage.of(randomNonce(), 0, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, HopCount.of(MAX_HOP_COUNT), agreementId, correspondingId);
 
-                assertThrows(CompletionException.class, pipeline.processOutbound(message.getSender(), message)::join);
+        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
-                outboundMessages.assertNoValues();
-            }
+            assertThrows(CompletionException.class, pipeline.processOutbound(message.getSender(), message)::join);
+
+            outboundMessages.assertNoValues();
         }
     }
 }

@@ -21,12 +21,12 @@
  */
 package org.drasyl.pipeline.serialization;
 
+import com.google.protobuf.ByteString;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
-import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -34,11 +34,11 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.List;
 
 /**
- * This handler serializes messages to {@link RemoteEnvelope <Application>} an vice vera.
+ * This handler serializes messages to {@link ApplicationMessage} an vice vera.
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class MessageSerializer extends MessageToMessageCodec<RemoteEnvelope<Application>, Object, IdentityPublicKey> {
+public final class MessageSerializer extends MessageToMessageCodec<ApplicationMessage, Object, IdentityPublicKey> {
     public static final MessageSerializer INSTANCE = new MessageSerializer();
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
 
@@ -49,18 +49,17 @@ public final class MessageSerializer extends MessageToMessageCodec<RemoteEnvelop
     @Override
     protected void decode(final HandlerContext ctx,
                           final IdentityPublicKey sender,
-                          final RemoteEnvelope<Application> envelope,
+                          final ApplicationMessage message,
                           final List<Object> out) throws Exception {
-        final Application body = envelope.getBodyAndRelease();
-        final Serializer serializer = ctx.inboundSerialization().findSerializerFor(body.getType());
+        final Serializer serializer = ctx.inboundSerialization().findSerializerFor(message.getType());
 
         if (serializer != null) {
-            final Object o = serializer.fromByteArray(body.getPayload().toByteArray(), body.getType());
+            final Object o = serializer.fromByteArray(message.getPayloadAsByteArray(), message.getType());
             out.add(o);
             LOG.trace("Message has been deserialized to `{}`", () -> o);
         }
         else {
-            LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", body::getType);
+            LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", message::getType);
         }
     }
 
@@ -80,9 +79,9 @@ public final class MessageSerializer extends MessageToMessageCodec<RemoteEnvelop
         final Serializer serializer = ctx.outboundSerialization().findSerializerFor(type);
 
         if (serializer != null) {
-            final RemoteEnvelope<Application> envelope = RemoteEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), recipient, type, serializer.toByteArray(o));
-            out.add(envelope);
-            LOG.trace("Message has been serialized to `{}`", () -> envelope);
+            final ApplicationMessage message = ApplicationMessage.of(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), recipient, type, ByteString.copyFrom(serializer.toByteArray(o)));
+            out.add(message);
+            LOG.trace("Message has been serialized to `{}`", () -> message);
         }
         else {
             LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);

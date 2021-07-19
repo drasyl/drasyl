@@ -21,7 +21,9 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -33,8 +35,8 @@ import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.Serialization;
-import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.ApplicationMessage;
+import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -52,12 +54,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @State(Scope.Benchmark)
-public class RemoteEnvelopeToByteBufCodecBenchmark extends AbstractBenchmark {
+public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
     private HandlerContext ctx;
     private InetSocketAddressWrapper sender;
     private InetSocketAddressWrapper recipient;
     private ByteBuf byteBuf;
-    private RemoteEnvelope<Application> envelope;
+    private PartialReadMessage message;
 
     @Setup
     public void setup() {
@@ -66,8 +68,9 @@ public class RemoteEnvelopeToByteBufCodecBenchmark extends AbstractBenchmark {
             sender = new InetSocketAddressWrapper("127.0.0.1", 25527);
             recipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
             final byte[] payload = RandomUtil.randomBytes(1024);
-            envelope = RemoteEnvelope.application(1337, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), byte[].class.getName(), payload);
-            byteBuf = envelope.getOrBuildByteBuf();
+            message = ApplicationMessage.of(1337, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), byte[].class.getName(), ByteString.copyFrom(payload)).arm(null);
+            byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
+            message.writeTo(byteBuf);
         }
         catch (final IOException e) {
             handleUnexpectedException(e);
@@ -79,7 +82,7 @@ public class RemoteEnvelopeToByteBufCodecBenchmark extends AbstractBenchmark {
     public void decode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            RemoteEnvelopeToByteBufCodec.INSTANCE.decode(ctx, sender, byteBuf, out);
+            RemoteMessageToByteBufCodec.INSTANCE.decode(ctx, sender, byteBuf, out);
             byteBuf.release();
             blackhole.consume(out);
         }
@@ -93,7 +96,7 @@ public class RemoteEnvelopeToByteBufCodecBenchmark extends AbstractBenchmark {
     public void encode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            RemoteEnvelopeToByteBufCodec.INSTANCE.encode(ctx, recipient, envelope, out);
+            RemoteMessageToByteBufCodec.INSTANCE.encode(ctx, recipient, message, out);
             byteBuf.release();
             blackhole.consume(out);
         }

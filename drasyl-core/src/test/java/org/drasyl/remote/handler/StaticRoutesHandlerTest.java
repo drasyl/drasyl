@@ -34,7 +34,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -93,9 +93,8 @@ class StaticRoutesHandlerTest {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     @Test
-    void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
+    void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
@@ -112,10 +111,9 @@ class StaticRoutesHandlerTest {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     @Test
     void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
-                                                         @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
+                                                         @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
 
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;

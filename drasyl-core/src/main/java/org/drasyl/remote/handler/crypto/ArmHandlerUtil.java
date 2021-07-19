@@ -21,7 +21,6 @@
  */
 package org.drasyl.remote.handler.crypto;
 
-import com.google.protobuf.MessageLite;
 import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -31,12 +30,14 @@ import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.remote.protocol.InvalidMessageFormatException;
-import org.drasyl.remote.protocol.Protocol;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.ArmedMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
+import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
+import org.drasyl.remote.protocol.KeyExchangeMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -65,17 +66,13 @@ public final class ArmHandlerUtil {
                                                         final AgreementId agreementId,
                                                         final HandlerContext ctx,
                                                         final Address recipient,
-                                                        final RemoteEnvelope<? extends MessageLite> msg,
+                                                        final FullReadMessage<?> msg,
                                                         final CompletableFuture<Void> future) {
         try {
-            msg.setAgreementId(agreementId);
-
-            ctx.passOutbound(recipient,
-                    msg.armAndRelease(agreementPair),
-                    future); // send encrypted message
-            assert msg.refCnt() == 0 : "Assertion error, the message was not correctly released!"; // NOSONAR
+            final ArmedMessage armedMessage = msg.setAgreementId(agreementId).arm(agreementPair);
+            ctx.passOutbound(recipient, armedMessage, future); // send encrypted message
         }
-        catch (final InvalidMessageFormatException e) {
+        catch (final IOException e) {
             future.completeExceptionally(new CryptoException(e));
         }
 
@@ -88,10 +85,11 @@ public final class ArmHandlerUtil {
      * @param agreementPair the encryption key pair
      * @param msg           the message to decrypt
      * @return the decrypted message or an exception on error
-     * @throws InvalidMessageFormatException if the message could not be decrypted
+     * @throws IOException if the message could not be decrypted
      */
-    public static RemoteEnvelope<? extends MessageLite> decrypt(final SessionPair agreementPair,
-                                                                final RemoteEnvelope<? extends MessageLite> msg) throws InvalidMessageFormatException {
+    @SuppressWarnings("java:S1452")
+    public static FullReadMessage<?> decrypt(final SessionPair agreementPair,
+                                             final ArmedMessage msg) throws IOException {
         try {
             return msg.disarmAndRelease(agreementPair);
         }
@@ -119,7 +117,7 @@ public final class ArmHandlerUtil {
             final AgreementId agreementId = agreement.get().getAgreementId().get(); // NOSONAR
 
             // encrypt message with long time key
-            return ArmHandlerUtil.sendEncrypted(session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipientsAddress, RemoteEnvelope.keyExchangeAcknowledgement(
+            return ArmHandlerUtil.sendEncrypted(session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipientsAddress, KeyExchangeAcknowledgementMessage.of(
                     ctx.config().getNetworkId(),
                     ctx.identity().getIdentityPublicKey(),
                     ctx.identity().getProofOfWork(),
@@ -153,7 +151,7 @@ public final class ArmHandlerUtil {
                                           final Agreement agreement,
                                           final Address recipient,
                                           final IdentityPublicKey recipientsKey) {
-        final RemoteEnvelope<Protocol.KeyExchange> msg = RemoteEnvelope.keyExchange(
+        final FullReadMessage<?> msg = KeyExchangeMessage.of(
                 ctx.config().getNetworkId(),
                 ctx.identity().getIdentityPublicKey(),
                 ctx.identity().getProofOfWork(),

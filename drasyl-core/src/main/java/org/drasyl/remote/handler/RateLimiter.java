@@ -22,14 +22,14 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.cache.CacheBuilder;
-import com.google.protobuf.MessageLite;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
-import org.drasyl.remote.protocol.InvalidMessageFormatException;
-import org.drasyl.remote.protocol.Protocol.MessageType;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.AcknowledgementMessage;
+import org.drasyl.remote.protocol.DiscoveryMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
+import org.drasyl.remote.protocol.UniteMessage;
 import org.drasyl.util.Pair;
 
 import java.util.concurrent.CompletableFuture;
@@ -38,28 +38,24 @@ import java.util.function.Supplier;
 
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
-import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
-import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.drasyl.util.DurationUtil.max;
 
 /**
- * This handler rate limits {@link org.drasyl.remote.protocol.Protocol.Acknowledgement}, {@link
- * org.drasyl.remote.protocol.Protocol.Discovery}, and {@link org.drasyl.remote.protocol.Protocol.Unite}
- * messages addressed to us. 1 message per type per sender per 100ms is allowed. Messages exceeding
- * the rate limit are dropped.
+ * This handler rate limits {@link AcknowledgementMessage}, {@link DiscoveryMessage}, and {@link
+ * UniteMessage} messages addressed to us. 1 message per type per sender per 100ms is allowed.
+ * Messages exceeding the rate limit are dropped.
  */
 @SuppressWarnings("java:S110")
-public class RateLimiter extends InboundMessageFilter<RemoteEnvelope<? extends MessageLite>, Address> {
+public class RateLimiter extends InboundMessageFilter<FullReadMessage<?>, Address> {
     private static final long CACHE_SIZE = 1_000;
     private static final long ACKNOWLEDGEMENT_RATE_LIMIT = 100; // 1 ack msg per 100ms
     private static final long DISCOVERY_RATE_LIMIT = 100; // 1 discovery msg per 100ms
     private static final long UNITE_RATE_LIMIT = 100; // 1 unit msg per 100ms
     private final Supplier<Long> timeProvider;
-    private final ConcurrentMap<Pair<MessageType, IdentityPublicKey>, Long> cache;
+    private final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache;
 
     RateLimiter(final Supplier<Long> timeProvider,
-                final ConcurrentMap<Pair<MessageType, IdentityPublicKey>, Long> cache) {
+                final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache) {
         this.timeProvider = requireNonNull(timeProvider);
         this.cache = requireNonNull(cache);
     }
@@ -70,7 +66,7 @@ public class RateLimiter extends InboundMessageFilter<RemoteEnvelope<? extends M
                 CacheBuilder.newBuilder()
                         .maximumSize(CACHE_SIZE)
                         .expireAfterAccess(max(max(ofMillis(ACKNOWLEDGEMENT_RATE_LIMIT), ofMillis(DISCOVERY_RATE_LIMIT)), ofMillis(UNITE_RATE_LIMIT)))
-                        .<Pair<MessageType, IdentityPublicKey>, Long>build()
+                        .<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long>build()
                         .asMap()
         );
     }
@@ -78,7 +74,7 @@ public class RateLimiter extends InboundMessageFilter<RemoteEnvelope<? extends M
     @Override
     protected boolean accept(final HandlerContext ctx,
                              final Address sender,
-                             final RemoteEnvelope<? extends MessageLite> msg) throws Exception {
+                             final FullReadMessage<?> msg) throws Exception {
         return !ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) || rateLimitGate(msg);
     }
 
@@ -86,29 +82,31 @@ public class RateLimiter extends InboundMessageFilter<RemoteEnvelope<? extends M
     @Override
     protected void messageRejected(final HandlerContext ctx,
                                    final Address sender,
-                                   final RemoteEnvelope<? extends MessageLite> msg,
+                                   final FullReadMessage<?> msg,
                                    final CompletableFuture<Void> future) throws Exception {
         throw new Exception("Message exceeding rate limit dropped");
     }
 
-    @SuppressWarnings("java:S1142")
-    private boolean rateLimitGate(final RemoteEnvelope<? extends MessageLite> msg) throws InvalidMessageFormatException {
-        switch (msg.getPrivateHeader().getType()) {
-            case ACKNOWLEDGEMENT:
-                return rateLimitMessage(msg.getSender(), ACKNOWLEDGEMENT, ACKNOWLEDGEMENT_RATE_LIMIT);
-            case DISCOVERY:
-                return rateLimitMessage(msg.getSender(), DISCOVERY, DISCOVERY_RATE_LIMIT);
-            case UNITE:
-                return rateLimitMessage(msg.getSender(), UNITE, UNITE_RATE_LIMIT);
-            default:
-                return true;
+    @SuppressWarnings({ "java:S1142", "unchecked" })
+    private boolean rateLimitGate(final FullReadMessage<?> msg) {
+        if (msg instanceof AcknowledgementMessage) {
+            return rateLimitMessage(msg.getSender(), (Class<? extends FullReadMessage<?>>) msg.getClass(), ACKNOWLEDGEMENT_RATE_LIMIT);
+        }
+        else if (msg instanceof DiscoveryMessage) {
+            return rateLimitMessage(msg.getSender(), (Class<? extends FullReadMessage<?>>) msg.getClass(), DISCOVERY_RATE_LIMIT);
+        }
+        else if (msg instanceof UniteMessage) {
+            return rateLimitMessage(msg.getSender(), (Class<? extends FullReadMessage<?>>) msg.getClass(), UNITE_RATE_LIMIT);
+        }
+        else {
+            return true;
         }
     }
 
     private boolean rateLimitMessage(final IdentityPublicKey sender,
-                                     final MessageType type,
+                                     final Class<? extends FullReadMessage<?>> type,
                                      final long rateLimit) {
-        final Pair<MessageType, IdentityPublicKey> key = Pair.of(type, sender);
+        final Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey> key = Pair.of(type, sender);
         final Long lastReceived = cache.get(key);
         final long now = timeProvider.get();
         if (lastReceived == null || (now - lastReceived) >= rateLimit) {

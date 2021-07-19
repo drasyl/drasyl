@@ -38,7 +38,7 @@ import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
 import org.drasyl.remote.handler.LocalNetworkDiscovery;
 import org.drasyl.remote.handler.OtherNetworkFilter;
 import org.drasyl.remote.handler.RateLimiter;
-import org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec;
+import org.drasyl.remote.handler.RemoteMessageToByteBufCodec;
 import org.drasyl.remote.handler.StaticRoutesHandler;
 import org.drasyl.remote.handler.UdpMulticastServer;
 import org.drasyl.remote.handler.UdpServer;
@@ -118,7 +118,7 @@ public class DrasylPipeline extends AbstractPipeline {
         }
 
         if (config.isRemoteEnabled()) {
-            // convert Object <-> RemoteEnvelope<Application>
+            // convert Object <-> ApplicationMessage
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
             // route outbound messages to pre-configured ip addresses
@@ -165,7 +165,7 @@ public class DrasylPipeline extends AbstractPipeline {
             addFirst(CHUNKING_HANDLER, new ChunkingHandler());
 
             // convert RemoteEnvelope <-> ByteBuf
-            addFirst(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC, RemoteEnvelopeToByteBufCodec.INSTANCE);
+            addFirst(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
                 addFirst(UDP_MULTICAST_SERVER, udpMulticastServerProvider.get());

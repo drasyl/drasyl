@@ -21,12 +21,11 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.MessageLite;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -37,7 +36,7 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
  */
 @SuppressWarnings("java:S110")
 @Stateless
-public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteEnvelope<? extends MessageLite>, Address> {
+public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteMessage, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
 
     private InvalidProofOfWorkFilter() {
@@ -47,7 +46,7 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteE
     @Override
     protected boolean accept(final HandlerContext ctx,
                              final Address sender,
-                             final RemoteEnvelope<? extends MessageLite> msg) throws Exception {
+                             final RemoteMessage msg) throws Exception {
         return !ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
     }
 
@@ -55,8 +54,8 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteE
     @Override
     protected void messageRejected(final HandlerContext ctx,
                                    final Address sender,
-                                   final RemoteEnvelope<? extends MessageLite> msg,
+                                   final RemoteMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
-        throw new Exception("Message with invalid proof of work dropped.");
+        throw new Exception("Message `" + msg.getNonce() + "` with invalid proof of work dropped.");
     }
 }

@@ -21,17 +21,17 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.ByteString;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.remote.protocol.AcknowledgementMessage;
+import org.drasyl.remote.protocol.ApplicationMessage;
+import org.drasyl.remote.protocol.DiscoveryMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.Nonce;
-import org.drasyl.remote.protocol.Protocol.Acknowledgement;
-import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.remote.protocol.Protocol.Discovery;
-import org.drasyl.remote.protocol.Protocol.MessageType;
-import org.drasyl.remote.protocol.Protocol.Unite;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.UniteMessage;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,15 +70,14 @@ class RateLimiterTest {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
-        final ConcurrentMap<Pair<MessageType, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
-        try (final RemoteEnvelope<Acknowledgement> msg = RemoteEnvelope.acknowledgement(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), Nonce.randomNonce())) {
-            final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final AcknowledgementMessage msg = AcknowledgementMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), Nonce.randomNonce());
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertFalse(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        }
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertFalse(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
     }
 
     @Test
@@ -88,15 +87,14 @@ class RateLimiterTest {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
-        final ConcurrentMap<Pair<MessageType, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
-        try (final RemoteEnvelope<Discovery> msg = RemoteEnvelope.discovery(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), 0)) {
-            final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final DiscoveryMessage msg = DiscoveryMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), 0);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertFalse(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        }
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertFalse(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
     }
 
     @Test
@@ -106,15 +104,14 @@ class RateLimiterTest {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
-        final ConcurrentMap<Pair<MessageType, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
-        try (final RemoteEnvelope<Unite> msg = RemoteEnvelope.unite(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(1337))) {
-            final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final UniteMessage msg = UniteMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(1337));
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertFalse(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        }
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertFalse(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
     }
 
     @Test
@@ -123,15 +120,14 @@ class RateLimiterTest {
                                                     @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
 
-        final ConcurrentMap<Pair<MessageType, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
-        try (final RemoteEnvelope<Unite> msg = RemoteEnvelope.unite(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), recipient.getIdentityPublicKey(), new InetSocketAddress(1337))) {
-            final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final UniteMessage msg = UniteMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), recipient.getIdentityPublicKey(), new InetSocketAddress(1337));
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        }
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
     }
 
     @Test
@@ -140,14 +136,13 @@ class RateLimiterTest {
                                                @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
 
-        final ConcurrentMap<Pair<MessageType, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
-        try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), byte[].class.getName(), new byte[0])) {
-            final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final ApplicationMessage msg = ApplicationMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-            assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        }
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
     }
 }

@@ -21,8 +21,8 @@
  */
 package org.drasyl.remote.handler.crypto;
 
+import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.SessionPair;
-import io.reactivex.rxjava3.functions.Predicate;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
@@ -36,11 +36,16 @@ import org.drasyl.identity.KeyPair;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.remote.protocol.ApplicationMessage;
+import org.drasyl.remote.protocol.ArmedMessage;
+import org.drasyl.remote.protocol.DiscoveryMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
-import org.drasyl.remote.protocol.Protocol;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
+import org.drasyl.remote.protocol.KeyExchangeMessage;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.ConcurrentReference;
-import org.drasyl.util.RandomUtil;
+import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,8 +54,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
+import java.io.IOException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +64,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -103,17 +109,17 @@ class ArmHandlerTest {
     @Nested
     class Encryption {
         @Test
-        void shouldEncryptOutgoingMessageWithRecipientAndFromMe() throws InvalidMessageFormatException {
+        void shouldEncryptOutgoingMessageWithRecipientAndFromMe() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<ArmedMessage> outboundMessages = pipeline.outboundMessages(ArmedMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final FullReadMessage<?> applicationMessage = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
@@ -122,51 +128,28 @@ class ArmHandlerTest {
                         body).
                         setAgreementId(agreementId);
 
-                final RemoteEnvelope<?> encryptedMsg = RemoteEnvelope.of(msg.getOrBuildByteBuf().copy())
-                        .armAndRelease(sessionPairSender);
+                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, applicationMessage);
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
-
-                final Predicate<RemoteEnvelope> correctEncryptedMessage = v -> {
-                    try {
-                        final RemoteEnvelope<?> copy = RemoteEnvelope.of(v.copy());
-                        final RemoteEnvelope<?> disarmed = v.disarm(sessionPairReceiver);
-
-                        if (disarmed.getPrivateHeader().getType().equals(Protocol.MessageType.APPLICATION)) {
-                            final Protocol.Application app = (Protocol.Application) disarmed.getBody();
-                            return Arrays.equals(body, app.getPayload().toByteArray()) && encryptedMsg.copy().equals(copy.copy());
-                        }
-                        else {
-                            return true;
-                        }
-                    }
-                    catch (final Exception e) {
-                        return false;
-                    }
-                    finally {
-                        v.releaseAll();
-                    }
-                };
-
-                observer.awaitCount(2).assertValueCount(2);
-                observer.assertValueAt(0, correctEncryptedMessage);
-                observer.assertValueAt(1, correctEncryptedMessage);
+                outboundMessages.awaitCount(2)
+                        .assertValueCount(2)
+                        .assertValueAt(0, m -> m.disarm(sessionPairReceiver).equals(applicationMessage))
+                        .assertValueAt(1, m -> m.disarm(sessionPairReceiver) instanceof KeyExchangeMessage);
                 assertTrue(future.isDone());
             }
         }
 
         @Test
-        void shouldNotEncryptOutgoingMessageWithSenderThatIsNotMe() throws InvalidMessageFormatException {
+        void shouldNotEncryptOutgoingMessageWithSenderThatIsNotMe() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_3.getIdentityPublicKey(),
                         IdentityTestUtil.ID_3.getProofOfWork(),
@@ -188,12 +171,12 @@ class ArmHandlerTest {
         void shouldNotEncryptOutgoingMessageWithNoRecipient() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
-                final RemoteEnvelope<?> msg = RemoteEnvelope.discovery(
+                final FullReadMessage<?> msg = DiscoveryMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork());
@@ -211,13 +194,13 @@ class ArmHandlerTest {
         void shouldNotEncryptOutgoingMessageWithLoopback() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
@@ -235,7 +218,7 @@ class ArmHandlerTest {
         }
 
         @Test
-        void shouldEncryptOutgoingMessageWithPFSIfAvailable() throws InvalidMessageFormatException {
+        void shouldEncryptOutgoingMessageWithPFSIfAvailable() {
             final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
             final Session session = new Session(agreementId, sessionPairSender, maxAgreements, sessionExpireTime);
             final Map<IdentityPublicKey, Session> sessions = new HashMap<>();
@@ -252,13 +235,13 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
@@ -267,32 +250,11 @@ class ArmHandlerTest {
                         body).
                         setAgreementId(agreementId);
 
-                final RemoteEnvelope<?> encryptedMsg = RemoteEnvelope.of(msg.getOrBuildByteBuf().copy())
-                        .armAndRelease(sessionPairSender);
-
                 final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
-
-                final Predicate<RemoteEnvelope> correctEncryptedMessage = v -> {
-                    try {
-                        final RemoteEnvelope<?> copy = RemoteEnvelope.of(v.copy());
-                        final RemoteEnvelope<?> disarmed = v.disarm(sessionPairReceiver);
-
-                        if (disarmed.getPrivateHeader().getType().equals(Protocol.MessageType.APPLICATION)) {
-                            final Protocol.Application app = (Protocol.Application) disarmed.getBody();
-                            return Arrays.equals(body, app.getPayload().toByteArray()) && encryptedMsg.copy().equals(copy.copy());
-                        }
-                        else {
-                            return true;
-                        }
-                    }
-                    catch (final Exception e) {
-                        return false;
-                    }
-                };
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(correctEncryptedMessage);
+                        .assertValue(v -> msg.equals(v.disarm(sessionPairReceiver)));
                 assertTrue(future.isDone());
             }
         }
@@ -304,13 +266,13 @@ class ArmHandlerTest {
         void shouldSendKeyExchangeMessageOnOutbound() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
@@ -320,25 +282,10 @@ class ArmHandlerTest {
 
                 final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
 
-                final Predicate<RemoteEnvelope> correctEncryptedMessage = v -> {
-                    try {
-                        final RemoteEnvelope<?> disarmed = v.disarm(sessionPairReceiver);
-
-                        if (!disarmed.getPrivateHeader().getType().equals(Protocol.MessageType.APPLICATION)) {
-                            return disarmed.getPrivateHeader().getType().equals(Protocol.MessageType.KEY_EXCHANGE);
-                        }
-                        else {
-                            return true;
-                        }
-                    }
-                    catch (final Exception e) {
-                        return false;
-                    }
-                };
-
-                observer.awaitCount(2).assertValueCount(2);
-                observer.assertValueAt(0, correctEncryptedMessage);
-                observer.assertValueAt(1, correctEncryptedMessage);
+                observer.awaitCount(2)
+                        .assertValueCount(2)
+                        .assertValueAt(0, m -> m.disarm(sessionPairReceiver) instanceof ApplicationMessage)
+                        .assertValueAt(1, m -> m.disarm(sessionPairReceiver) instanceof KeyExchangeMessage);
                 assertTrue(future.isDone());
             }
         }
@@ -347,13 +294,13 @@ class ArmHandlerTest {
         void shouldNotSendKeyExchangeMessageOnOutboundIfMaxAgreementOptionIsZero() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
@@ -374,14 +321,14 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
@@ -403,15 +350,15 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
                 // construct wrong agreement id
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_3.getKeyAgreementPublicKey());
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_2.getIdentityPublicKey(),
                         IdentityTestUtil.ID_2.getProofOfWork(),
@@ -422,18 +369,9 @@ class ArmHandlerTest {
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg.arm(sessionPairSender));
 
-                final Predicate<RemoteEnvelope> correctEncryptedMessage = v -> {
-                    try {
-                        return v.disarmAndRelease(sessionPairReceiver).getPrivateHeader().getType().equals(Protocol.MessageType.KEY_EXCHANGE);
-                    }
-                    catch (final Exception e) {
-                        return false;
-                    }
-                };
-
                 observer.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(correctEncryptedMessage);
+                        .assertValue(m -> m.disarmAndRelease(sessionPairReceiver) instanceof KeyExchangeMessage);
                 assertTrue(future.isCompletedExceptionally());
             }
         }
@@ -461,13 +399,13 @@ class ArmHandlerTest {
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
-                final RemoteEnvelope<?> msg = RemoteEnvelope.keyExchangeAcknowledgement(networkId,
+                final ArmedMessage msg = KeyExchangeAcknowledgementMessage.of(networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
                         IdentityTestUtil.ID_2.getIdentityPublicKey(),
                         agreementId2)
                         .setAgreementId(agreementId)
-                        .armAndRelease(sessionPairSender);
+                        .arm(sessionPairSender);
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
@@ -504,8 +442,8 @@ class ArmHandlerTest {
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final RemoteMessage msg = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
@@ -513,7 +451,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body)
                         .setAgreementId(agreementId2)
-                        .armAndRelease(sessionPairSender);
+                        .arm(sessionPairSender);
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
@@ -535,14 +473,14 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
                 final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
-                final byte[] body = RandomUtil.randomBytes(10);
-                final RemoteEnvelope<?> msg = RemoteEnvelope.application(
+                final ByteString body = ByteString.copyFrom(randomBytes(10));
+                final RemoteMessage msg = ApplicationMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
@@ -550,23 +488,14 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body)
                         .setAgreementId(agreementId)
-                        .armAndRelease(sessionPairSender);
+                        .arm(sessionPairSender);
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
-
-                final Predicate<RemoteEnvelope> correctEncryptedMessage = v -> {
-                    try {
-                        return v.disarm(sessionPairSender).getPrivateHeader().getType().equals(Protocol.MessageType.KEY_EXCHANGE);
-                    }
-                    catch (final Exception e) {
-                        return false;
-                    }
-                };
 
                 assertThrows(CompletionException.class, future::join);
                 observer.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(correctEncryptedMessage);
+                        .assertValue(v -> v.disarm(sessionPairSender) instanceof KeyExchangeMessage);
                 observerEvents.assertNoValues();
             }
         }
@@ -588,13 +517,13 @@ class ArmHandlerTest {
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
-                final RemoteEnvelope<?> msg = RemoteEnvelope.keyExchange(networkId,
+                final RemoteMessage msg = KeyExchangeMessage.of(networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
                         IdentityTestUtil.ID_2.getIdentityPublicKey(),
                         keyPair.getPublicKey())
                         .setAgreementId(agreementId)
-                        .armAndRelease(sessionPairSender);
+                        .arm(sessionPairSender);
 
                 assertFalse(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(0, session.getInitializedAgreements().size());
@@ -634,13 +563,13 @@ class ArmHandlerTest {
 
                 final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyPair = Crypto.INSTANCE.generateEphemeralKeyPair();
 
-                final RemoteEnvelope<?> msg = RemoteEnvelope.keyExchange(networkId,
+                final RemoteMessage msg = KeyExchangeMessage.of(networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
                         IdentityTestUtil.ID_2.getIdentityPublicKey(),
                         keyPair.getPublicKey())
                         .setAgreementId(agreementId)
-                        .armAndRelease(sessionPairSender);
+                        .arm(sessionPairSender);
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
@@ -656,17 +585,18 @@ class ArmHandlerTest {
     @Nested
     class Renew {
         @Test
-        void shouldInitiateKeyExchangeIfCurrentAgreementIsRenewableOnOutbound(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldInitiateKeyExchangeIfCurrentAgreementIsRenewableOnOutbound(@Mock(answer = RETURNS_DEEP_STUBS) final FullReadMessage<?> msg,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                                                               @Mock final
                                                                               ConcurrentReference<Agreement> concurrentAgreement,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Agreement agreement,
                                                                               @Mock final Map<IdentityPublicKey, Session> sessions,
-                                                                              @Mock final Crypto crypto) throws InvalidMessageFormatException, CryptoException {
+                                                                              @Mock final Crypto crypto,
+                                                                              @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException, CryptoException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
@@ -681,7 +611,8 @@ class ArmHandlerTest {
                 doReturn(Optional.of(mock(SessionPair.class))).when(agreement).getSessionPair();
                 doReturn(Optional.of(mock(AgreementId.class))).when(agreement).getAgreementId();
 
-                doReturn(msg).when(msg).armAndRelease(any(SessionPair.class));
+                doReturn(msg).when(msg).setAgreementId(any());
+                doReturn(armedMsg).when(msg).arm(any(SessionPair.class));
 
                 doReturn(new AtomicLong(System.currentTimeMillis() - (sessionExpireTime.toMillis() / Agreement.RENEW_DIVISOR) * 2)).when(session).getLastRenewAttemptAt();
                 doReturn(true).when(agreement).isInitialized();
@@ -694,22 +625,22 @@ class ArmHandlerTest {
                 final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
 
                 future.join();
-                observer.assertValue(msg);
+                observer.assertValue(armedMsg);
             }
         }
 
         @Test
-        void shouldInitiateKeyExchangeIfCurrentAgreementIsRenewableOnInbound(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldInitiateKeyExchangeIfCurrentAgreementIsRenewableOnInbound(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                                                              @Mock final
                                                                              ConcurrentReference<Agreement> concurrentAgreement,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Agreement agreement,
                                                                              @Mock final Map<IdentityPublicKey, Session> sessions,
-                                                                             @Mock final Crypto crypto) throws CryptoException, InvalidMessageFormatException {
+                                                                             @Mock final Crypto crypto) throws CryptoException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -738,17 +669,18 @@ class ArmHandlerTest {
         }
 
         @Test
-        void shouldDoNothingIfCurrentAgreementIsNotRenewableOnOutbound(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldDoNothingIfCurrentAgreementIsNotRenewableOnOutbound(@Mock(answer = RETURNS_DEEP_STUBS) final FullReadMessage<?> msg,
                                                                        @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                                                        @Mock final
                                                                        ConcurrentReference<Agreement> concurrentAgreement,
                                                                        @Mock(answer = RETURNS_DEEP_STUBS) final Agreement agreement,
                                                                        @Mock final Map<IdentityPublicKey, Session> sessions,
-                                                                       @Mock final Crypto crypto) throws InvalidMessageFormatException {
+                                                                       @Mock final Crypto crypto,
+                                                                       @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
@@ -760,7 +692,8 @@ class ArmHandlerTest {
                 doReturn(Optional.of(mock(SessionPair.class))).when(agreement).getSessionPair();
                 doReturn(Optional.of(mock(AgreementId.class))).when(agreement).getAgreementId();
 
-                doReturn(msg).when(msg).armAndRelease(any(SessionPair.class));
+                doReturn(msg).when(msg).setAgreementId(any());
+                doReturn(armedMsg).when(msg).arm(any(SessionPair.class));
 
                 doReturn(true).when(agreement).isInitialized();
                 doReturn(false).when(agreement).isRenewable();
@@ -768,22 +701,22 @@ class ArmHandlerTest {
                 final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
 
                 future.join();
-                observer.assertValue(msg);
+                observer.assertValue(armedMsg);
             }
         }
 
         @Test
-        void shouldDoNothingIfCurrentAgreementIsNotRenewableOnInbound(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldDoNothingIfCurrentAgreementIsNotRenewableOnInbound(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg,
                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                                                       @Mock final
                                                                       ConcurrentReference<Agreement> concurrentAgreement,
                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Agreement agreement,
                                                                       @Mock final Map<IdentityPublicKey, Session> sessions,
-                                                                      @Mock final Crypto crypto) throws InvalidMessageFormatException {
+                                                                      @Mock final Crypto crypto) {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -807,11 +740,11 @@ class ArmHandlerTest {
     @Nested
     class Decryption {
         @Test
-        void shouldSkipMessagesNotForMe(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg) throws InvalidMessageFormatException {
+        void shouldSkipMessagesNotForMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.inboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
 
@@ -825,11 +758,11 @@ class ArmHandlerTest {
         }
 
         @Test
-        void shouldSkipMessagesFormMe(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg) throws InvalidMessageFormatException {
+        void shouldSkipMessagesFromMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.inboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
@@ -844,14 +777,14 @@ class ArmHandlerTest {
         }
 
         @Test
-        void shouldSkipNotEncryptedMessages(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldSkipNotEncryptedMessages(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                             @Mock final Map<IdentityPublicKey, Session> sessions,
-                                            @Mock final Crypto crypto) throws InvalidMessageFormatException {
+                                            @Mock final Crypto crypto) {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.inboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -869,14 +802,15 @@ class ArmHandlerTest {
         }
 
         @Test
-        void shouldDecryptMessageWithLongTimeKey(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldDecryptMessageWithLongTimeKey(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg,
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                                  @Mock final Map<IdentityPublicKey, Session> sessions,
-                                                 @Mock final Crypto crypto) throws InvalidMessageFormatException {
+                                                 @Mock final Crypto crypto,
+                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.inboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -884,27 +818,27 @@ class ArmHandlerTest {
                 doReturn(session).when(sessions).computeIfAbsent(any(), any());
                 doReturn(msg.getAgreementId()).when(session).getLongTimeAgreementId();
 
-                doReturn(msg).when(msg).disarmAndRelease(any());
-                doReturn(Protocol.PrivateHeader.newBuilder().setType(Protocol.MessageType.APPLICATION).build()).when(msg).getPrivateHeader();
+                doReturn(disarmedMessage).when(msg).disarmAndRelease(any());
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
                 assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(msg);
+                        .assertValue(disarmedMessage);
             }
         }
 
         @Test
-        void shouldDecryptMessageWithLongTimeKeyIfMaxAgreementOptionIsZero(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldDecryptMessageWithLongTimeKeyIfMaxAgreementOptionIsZero(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg,
                                                                            @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                                                            @Mock final Map<IdentityPublicKey, Session> sessions,
-                                                                           @Mock final Crypto crypto) throws InvalidMessageFormatException {
+                                                                           @Mock final Crypto crypto,
+                                                                           @Mock final FullReadMessage<?> disarmedMsg) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, 0, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.inboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -912,26 +846,27 @@ class ArmHandlerTest {
                 doReturn(session).when(sessions).computeIfAbsent(any(), any());
                 when(session.getInitializedAgreements().get(any(AgreementId.class)).getSessionPair()).thenReturn(Optional.of(mock(SessionPair.class)));
 
-                doReturn(msg).when(msg).disarmAndRelease(any());
+                doReturn(disarmedMsg).when(msg).disarmAndRelease(any());
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
                 assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(msg);
+                        .assertValue(disarmedMsg);
             }
         }
 
         @Test
-        void shouldDecryptMessageWithPFSKey(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldDecryptMessageWithPFSKey(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                             @Mock final Map<IdentityPublicKey, Session> sessions,
-                                            @Mock final Crypto crypto) throws InvalidMessageFormatException {
+                                            @Mock final Crypto crypto,
+                                            @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.inboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -939,28 +874,29 @@ class ArmHandlerTest {
                 doReturn(session).when(sessions).computeIfAbsent(any(), any());
                 when(session.getInitializedAgreements().get(any(AgreementId.class)).getSessionPair()).thenReturn(Optional.of(mock(SessionPair.class)));
 
-                doReturn(msg).when(msg).disarmAndRelease(any());
-                doReturn(Protocol.PrivateHeader.newBuilder().setType(Protocol.MessageType.APPLICATION).build()).when(msg).getPrivateHeader();
+                doReturn(disarmedMessage).when(msg).disarmAndRelease(any());
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
                 assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(msg);
+                        .assertValue(disarmedMessage);
             }
         }
 
         @Test
-        void shouldDecryptMessageWithPFSKeyAndRemoveStaleAgreementAfterwards(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldDecryptMessageWithPFSKeyAndRemoveStaleAgreementAfterwards(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                                                              @Mock final Map<IdentityPublicKey, Session> sessions,
                                                                              @Mock final Agreement agreement,
-                                                                             @Mock final Crypto crypto) throws InvalidMessageFormatException {
+                                                                             @Mock final Crypto crypto,
+                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.inboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<FullReadMessage<?>> observer = pipeline.inboundMessages(new TypeReference<FullReadMessage<?>>() {
+                }).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -973,29 +909,29 @@ class ArmHandlerTest {
                 doReturn(Optional.of(mock(SessionPair.class))).when(agreement).getSessionPair();
                 doReturn(true).when(agreement).isStale();
 
-                doReturn(msg).when(msg).disarmAndRelease(any());
-                doReturn(Protocol.PrivateHeader.newBuilder().setType(Protocol.MessageType.APPLICATION).build()).when(msg).getPrivateHeader();
+                doReturn(disarmedMessage).when(msg).disarmAndRelease(any());
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
                 assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(msg);
+                        .assertValue(disarmedMessage);
                 assertTrue(agreements.isEmpty());
             }
         }
 
         @Test
-        void shouldDecryptMessageIfMessageArrivesBeforeAck(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope<?> msg,
+        void shouldDecryptMessageIfMessageArrivesBeforeAck(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg,
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final Session session,
                                                            @Mock final Map<IdentityPublicKey, Session> sessions,
                                                            @Mock final Agreement agreement,
-                                                           @Mock final Crypto crypto) throws InvalidMessageFormatException {
+                                                           @Mock final Crypto crypto,
+                                                           @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> observer = pipeline.inboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -1011,15 +947,14 @@ class ArmHandlerTest {
                 when(session.getInitializedAgreements()).thenReturn(new HashMap<>()).thenReturn(agreements);
                 doReturn(Optional.of(mock(SessionPair.class))).when(agreement).getSessionPair();
 
-                doReturn(msg).when(msg).disarmAndRelease(any());
-                doReturn(Protocol.PrivateHeader.newBuilder().setType(Protocol.MessageType.APPLICATION).build()).when(msg).getPrivateHeader();
+                doReturn(disarmedMessage).when(msg).disarmAndRelease(any());
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
                 assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
-                        .assertValue(msg);
+                        .assertValue(disarmedMessage);
             }
         }
     }

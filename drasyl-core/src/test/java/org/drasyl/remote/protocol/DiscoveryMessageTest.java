@@ -21,24 +21,39 @@
  */
 package org.drasyl.remote.protocol;
 
-import java.io.IOException;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.ProofOfWork;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
-/**
- * This exception is thrown when reading a {@link RemoteMessage} fails due to an invalid format.
- */
-public class InvalidMessageFormatException extends IOException {
-    public InvalidMessageFormatException() {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static test.util.IdentityTestUtil.ID_1;
+
+@ExtendWith(MockitoExtension.class)
+public class DiscoveryMessageTest {
+    private IdentityPublicKey sender;
+    private ProofOfWork proofOfWork;
+    private IdentityPublicKey recipient;
+
+    @BeforeEach
+    void setUp() {
+        sender = ID_1.getIdentityPublicKey();
+        proofOfWork = ID_1.getProofOfWork();
+        recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
     }
 
-    public InvalidMessageFormatException(final String message) {
-        super(message);
-    }
+    @Nested
+    class Of {
+        @Test
+        void shouldCreateDiscoveryMessage() {
+            final DiscoveryMessage discovery = DiscoveryMessage.of(1, sender, proofOfWork, recipient, 1337L);
 
-    public InvalidMessageFormatException(final String message, final Throwable cause) {
-        super(message, cause);
-    }
-
-    public InvalidMessageFormatException(final Throwable cause) {
-        super(cause);
+            assertEquals(1, discovery.getNetworkId());
+            assertEquals(1337L, discovery.getChildrenTime());
+        }
     }
 }

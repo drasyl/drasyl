@@ -21,24 +21,10 @@
  */
 package org.drasyl.remote.protocol;
 
-import java.io.IOException;
-
 /**
- * This exception is thrown when reading a {@link RemoteMessage} fails due to an invalid format.
+ * Messages that do not fit into a single UDP datagram are divided into a single {@link
+ * HeadChunkMessage} and a discrete number of {@link BodyChunkMessage}s. The receiver must then
+ * reconstruct the message from these chunks.
  */
-public class InvalidMessageFormatException extends IOException {
-    public InvalidMessageFormatException() {
-    }
-
-    public InvalidMessageFormatException(final String message) {
-        super(message);
-    }
-
-    public InvalidMessageFormatException(final String message, final Throwable cause) {
-        super(message, cause);
-    }
-
-    public InvalidMessageFormatException(final Throwable cause) {
-        super(cause);
-    }
+public interface ChunkMessage extends PartialReadMessage {
 }

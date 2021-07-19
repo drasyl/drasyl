@@ -21,7 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.MessageLite;
+import com.google.protobuf.ByteString;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -32,7 +32,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -51,16 +51,16 @@ import static java.util.Objects.requireNonNull;
 public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     private MyHandlerContext ctx;
     private MyAddress msgSender;
-    private RemoteEnvelope<? extends MessageLite> msgAddressedToMe;
-    private RemoteEnvelope<? extends MessageLite> msgNotAddressedToMe;
+    private ApplicationMessage msgAddressedToMe;
+    private ApplicationMessage msgNotAddressedToMe;
 
     @Setup
     public void setup() {
         final Identity sender = IdentityTestUtil.ID_1;
         ctx = new MyHandlerContext(IdentityTestUtil.ID_2);
         msgSender = new MyAddress();
-        msgAddressedToMe = RemoteEnvelope.application(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), ctx.identity().getIdentityPublicKey(), byte[].class.getName(), new byte[0]);
-        msgNotAddressedToMe = RemoteEnvelope.application(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), byte[].class.getName(), new byte[0]);
+        msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), ctx.identity().getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
+        msgNotAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
     }
 
     @Benchmark

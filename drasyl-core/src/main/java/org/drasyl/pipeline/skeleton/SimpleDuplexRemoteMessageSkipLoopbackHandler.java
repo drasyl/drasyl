@@ -23,12 +23,12 @@ package org.drasyl.pipeline.skeleton;
 
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * This handler skips {@link RemoteEnvelope}s that has no recipient or sender or is addresses to a
+ * This handler skips {@link RemoteMessage}s that has no recipient or sender or is addresses to a
  * loopback (to us from us).
  *
  * @param <I> type of inbound messages
@@ -36,13 +36,13 @@ import java.util.concurrent.CompletableFuture;
  * @param <A> type of address
  */
 @SuppressWarnings({ "java:S110" })
-public abstract class SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<I extends RemoteEnvelope<?>, O extends RemoteEnvelope<?>, A extends Address> extends SimpleDuplexHandler<I, O, A> {
+public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends RemoteMessage, O extends RemoteMessage, A extends Address> extends SimpleDuplexHandler<I, O, A> {
     private final boolean skipNullAddresses;
 
     /**
      * By default also messages that has no sender or recipient are skipped.
      */
-    protected SimpleDuplexRemoteEnvelopeSkipLoopbackHandler() {
+    protected SimpleDuplexRemoteMessageSkipLoopbackHandler() {
         this(true);
     }
 
@@ -50,7 +50,7 @@ public abstract class SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<I extends Re
      * @param skipNullAddresses if the message should be skipped if the recipient or sender is
      *                          {@code null}
      */
-    protected SimpleDuplexRemoteEnvelopeSkipLoopbackHandler(final boolean skipNullAddresses) {
+    protected SimpleDuplexRemoteMessageSkipLoopbackHandler(final boolean skipNullAddresses) {
         this.skipNullAddresses = skipNullAddresses;
     }
 

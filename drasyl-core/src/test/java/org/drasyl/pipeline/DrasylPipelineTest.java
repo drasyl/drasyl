@@ -31,7 +31,7 @@ import org.drasyl.remote.handler.UdpMulticastServer;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -319,10 +319,9 @@ class DrasylPipelineTest {
 
     @Nested
     class ProcessInboundMessage {
-        @SuppressWarnings("rawtypes")
         @Test
         void shouldProcessMessage(@Mock final IdentityPublicKey sender,
-                                  @Mock final RemoteEnvelope msg) {
+                                  @Mock final RemoteMessage msg) {
             final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity, outboundMessagesBuffer);
             final CompletableFuture<Void> future = pipeline.processInbound(sender, msg);
 
