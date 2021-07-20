@@ -33,4 +33,4 @@ maven-verify:
   <<: *maven-base
   stage: test
   script:
-    - './mvnw $MAVEN_CLI_OPTS verify'
+    - './mvnw $MAVEN_CLI_OPTS verify sonar:sonar'
