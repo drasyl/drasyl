@@ -21,6 +21,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.netty.buffer.ByteBuf;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -38,6 +39,25 @@ import java.util.concurrent.CompletableFuture;
  * the {@link Pipeline} it belongs to dynamically.
  */
 public interface HandlerContext {
+    /**
+     * Allocates a new {@link ByteBuf}. This method does not guarantee to return any specific type
+     * of {@link ByteBuf}.
+     * <p> This method is similar to the call {@link #alloc(boolean)} with {@code true} as
+     * argument.
+     *
+     * @return allocates a new {@link ByteBuf}
+     */
+    ByteBuf alloc();
+
+    /**
+     * Allocates a new {@link ByteBuf}. This method does not guarantee to return any specific type
+     * of {@link ByteBuf}.
+     *
+     * @param preferDirect if this method should preferable return a direct {@link ByteBuf}
+     * @return allocates a new {@link ByteBuf}
+     */
+    ByteBuf alloc(boolean preferDirect);
+
     /**
      * Returns the name of the {@link Handler}.
      *

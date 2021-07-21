@@ -177,7 +177,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
 
             while (messageByteBuf.readableBytes() > 0) {
                 ByteBuf chunkBodyByteBuf = null;
-                final ByteBuf chunkByteBuf = PooledByteBufAllocator.DEFAULT.buffer();
+                final ByteBuf chunkByteBuf = ctx.alloc();
                 try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(chunkByteBuf)) {
                     RemoteEnvelope.MAGIC_NUMBER.writeTo(outputStream);
 

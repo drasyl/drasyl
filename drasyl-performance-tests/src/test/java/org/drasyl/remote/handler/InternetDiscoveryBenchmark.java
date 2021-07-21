@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import io.netty.buffer.ByteBuf;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -119,6 +120,16 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
             identity = IdentityTestUtil.ID_1;
             peersManager = new PeersManager(event -> {
             }, identity);
+        }
+
+        @Override
+        public ByteBuf alloc() {
+            return null;
+        }
+
+        @Override
+        public ByteBuf alloc(boolean preferDirect) {
+            return null;
         }
 
         @Override
