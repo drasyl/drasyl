@@ -38,7 +38,7 @@ import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
 import org.drasyl.remote.handler.LocalNetworkDiscovery;
 import org.drasyl.remote.handler.OtherNetworkFilter;
 import org.drasyl.remote.handler.RateLimiter;
-import org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec;
+import org.drasyl.remote.handler.RemoteMessageToByteBufCodec;
 import org.drasyl.remote.handler.StaticRoutesHandler;
 import org.drasyl.remote.handler.UdpMulticastServer;
 import org.drasyl.remote.handler.UdpServer;
@@ -78,7 +78,7 @@ public class DrasylPipeline extends AbstractPipeline {
     public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
-    public static final String REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC = "REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC";
+    public static final String REMOTE_MESSAGE_TO_BYTE_BUF_CODEC = "REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC";
     public static final String UDP_MULTICAST_SERVER = "UDP_MULTICAST_SERVER";
     public static final String TCP_SERVER = "TCP_SERVER";
     public static final String TCP_CLIENT = "TCP_CLIENT";
@@ -118,7 +118,7 @@ public class DrasylPipeline extends AbstractPipeline {
         }
 
         if (config.isRemoteEnabled()) {
-            // convert Object <-> RemoteEnvelope<Application>
+            // convert Object <-> ApplicationMessage
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
             // route outbound messages to pre-configured ip addresses
@@ -164,8 +164,8 @@ public class DrasylPipeline extends AbstractPipeline {
             // split messages too big for udp
             addFirst(CHUNKING_HANDLER, new ChunkingHandler());
 
-            // convert RemoteEnvelope <-> ByteBuf
-            addFirst(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC, RemoteEnvelopeToByteBufCodec.INSTANCE);
+            // convert RemoteMessage <-> ByteBuf
+            addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
                 addFirst(UDP_MULTICAST_SERVER, udpMulticastServerProvider.get());

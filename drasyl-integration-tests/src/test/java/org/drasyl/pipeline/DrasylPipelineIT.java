@@ -21,6 +21,7 @@
  */
 package org.drasyl.pipeline;
 
+import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -38,8 +39,8 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.handler.crypto.AgreementId;
-import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.ApplicationMessage;
+import org.drasyl.remote.protocol.ArmedMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -137,14 +138,13 @@ class DrasylPipelineIT {
         });
 
         final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(identity2.getKeyAgreementKeyPair(), identity1.getKeyAgreementPublicKey());
-        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getIdentityPublicKey(), identity2.getProofOfWork(), identity1.getIdentityPublicKey(), byte[].class.getName(), new byte[]{})
+        final ArmedMessage message = ApplicationMessage.of(0, identity2.getIdentityPublicKey(), identity2.getProofOfWork(), identity1.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY)
                 .setAgreementId(AgreementId.of(identity1.getKeyAgreementPublicKey(), identity2.getKeyAgreementPublicKey()))
-                .armAndRelease(sessionPair)) {
-            pipeline.processInbound(message.getSender(), message);
+                .arm(Crypto.INSTANCE, sessionPair);
+        pipeline.processInbound(message.getSender(), message);
 
-            events.awaitCount(1).assertValueCount(1);
-            events.assertValue(MessageEvent.of(identity2.getIdentityPublicKey(), newPayload));
-        }
+        events.awaitCount(1).assertValueCount(1);
+        events.assertValue(MessageEvent.of(identity2.getIdentityPublicKey(), newPayload));
     }
 
     @Test
@@ -170,15 +170,14 @@ class DrasylPipelineIT {
         });
 
         final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(identity2.getKeyAgreementKeyPair(), identity1.getKeyAgreementPublicKey());
-        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getIdentityPublicKey(), identity2.getProofOfWork(), identity1.getIdentityPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes())
+        final ArmedMessage message = ApplicationMessage.of(0, identity2.getIdentityPublicKey(), identity2.getProofOfWork(), identity1.getIdentityPublicKey(), byte[].class.getName(), ByteString.copyFromUtf8("Hallo Welt"))
                 .setAgreementId(AgreementId.of(identity1.getKeyAgreementPublicKey(), identity2.getKeyAgreementPublicKey()))
-                .armAndRelease(sessionPair)) {
-            pipeline.processInbound(message.getSender(), message);
+                .arm(Crypto.INSTANCE, sessionPair);
+        pipeline.processInbound(message.getSender(), message);
 
-            events.awaitCount(3).assertValueCount(3);
-            events.assertValueAt(1, MessageEvent.of(message.getSender(), "Hallo Welt".getBytes()));
-            events.assertValueAt(2, testEvent);
-        }
+        events.awaitCount(3).assertValueCount(3);
+        events.assertValueAt(1, MessageEvent.of(message.getSender(), "Hallo Welt".getBytes()));
+        events.assertValueAt(2, testEvent);
     }
 
     @Test
@@ -210,12 +209,13 @@ class DrasylPipelineIT {
         });
 
         final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(identity1.getKeyAgreementKeyPair(), identity2.getKeyAgreementPublicKey());
-        try (final RemoteEnvelope<Application> message = RemoteEnvelope.application(0, identity2.getIdentityPublicKey(), identity2.getProofOfWork(), identity1.getIdentityPublicKey(), byte[].class.getName(), new byte[]{}).armAndRelease(sessionPair)) {
-            pipeline.processInbound(message.getSender(), message);
+        final ArmedMessage message = ApplicationMessage.of(0, identity2.getIdentityPublicKey(), identity2.getProofOfWork(), identity1.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY)
+                .setAgreementId(AgreementId.of(identity1.getKeyAgreementPublicKey(), identity2.getKeyAgreementPublicKey()))
+                .arm(Crypto.INSTANCE, sessionPair);
+        pipeline.processInbound(message.getSender(), message);
 
-            exceptions.awaitCount(1).assertValueCount(1);
-            exceptions.assertValue(exception);
-        }
+        exceptions.awaitCount(1).assertValueCount(1);
+        exceptions.assertValue(exception);
     }
 
     @Test
@@ -251,45 +251,43 @@ class DrasylPipelineIT {
     void shouldNotPassthroughsMessagesWithDoneFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
         final CompletableFuture<Void> future;
-        try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getIdentityPublicKey(), identity1.getProofOfWork(), identity2.getIdentityPublicKey(), byte[].class.getName(), payload)) {
-            IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
+        final ApplicationMessage msg = ApplicationMessage.of(0, identity1.getIdentityPublicKey(), identity1.getProofOfWork(), identity2.getIdentityPublicKey(), byte[].class.getName(), ByteString.copyFrom(payload));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-            pipeline.addLast("outbound", new HandlerAdapter() {
-                @Override
-                public void onOutbound(final HandlerContext ctx,
-                                       final Address recipient,
-                                       final Object msg,
-                                       final CompletableFuture<Void> future) throws Exception {
-                    future.complete(null);
-                    super.onOutbound(ctx, recipient, msg, future);
-                }
-            });
+        pipeline.addLast("outbound", new HandlerAdapter() {
+            @Override
+            public void onOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final Object msg,
+                                   final CompletableFuture<Void> future) throws Exception {
+                future.complete(null);
+                super.onOutbound(ctx, recipient, msg, future);
+            }
+        });
 
-            pipeline.processOutbound(identity2.getIdentityPublicKey(), msg).join();
+        pipeline.processOutbound(identity2.getIdentityPublicKey(), msg).join();
 
-            outbounds.assertNoValues();
-        }
+        outbounds.assertNoValues();
     }
 
     @Test
     void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        try (final RemoteEnvelope<Application> msg = RemoteEnvelope.application(0, identity1.getIdentityPublicKey(), identity1.getProofOfWork(), identity2.getIdentityPublicKey(), byte[].class.getName(), payload)) {
-            IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
+        final ApplicationMessage msg = ApplicationMessage.of(0, identity1.getIdentityPublicKey(), identity1.getProofOfWork(), identity2.getIdentityPublicKey(), byte[].class.getName(), ByteString.copyFrom(payload));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-            pipeline.addLast("outbound", new HandlerAdapter() {
-                @Override
-                public void onOutbound(final HandlerContext ctx,
-                                       final Address recipient,
-                                       final Object msg,
-                                       final CompletableFuture<Void> future) throws Exception {
-                    future.completeExceptionally(new Exception("Error!"));
-                    super.onOutbound(ctx, recipient, msg, future);
-                }
-            });
+        pipeline.addLast("outbound", new HandlerAdapter() {
+            @Override
+            public void onOutbound(final HandlerContext ctx,
+                                   final Address recipient,
+                                   final Object msg,
+                                   final CompletableFuture<Void> future) throws Exception {
+                future.completeExceptionally(new Exception("Error!"));
+                super.onOutbound(ctx, recipient, msg, future);
+            }
+        });
 
-            assertThrows(CompletionException.class, pipeline.processOutbound(identity2.getIdentityPublicKey(), msg)::join);
-            outbounds.assertNoValues();
-        }
+        assertThrows(CompletionException.class, pipeline.processOutbound(identity2.getIdentityPublicKey(), msg)::join);
+        outbounds.assertNoValues();
     }
 }

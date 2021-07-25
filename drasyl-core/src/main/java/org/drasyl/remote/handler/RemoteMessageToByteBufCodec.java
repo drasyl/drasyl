@@ -21,25 +21,25 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.PartialReadMessage;
+import org.drasyl.remote.protocol.RemoteMessage;
 
 import java.util.List;
 
 /**
- * This codec converts {@link RemoteEnvelope} to {@link ByteBuf} an vice vera.
+ * This codec converts {@link RemoteMessage}s to {@link ByteBuf}s an vice vera.
  */
 @SuppressWarnings("java:S110")
 @Stateless
-public final class RemoteEnvelopeToByteBufCodec extends MessageToMessageCodec<ByteBuf, RemoteEnvelope<? extends MessageLite>, InetSocketAddressWrapper> {
-    public static final RemoteEnvelopeToByteBufCodec INSTANCE = new RemoteEnvelopeToByteBufCodec();
+public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<ByteBuf, RemoteMessage, InetSocketAddressWrapper> {
+    public static final RemoteMessageToByteBufCodec INSTANCE = new RemoteMessageToByteBufCodec();
 
-    private RemoteEnvelopeToByteBufCodec() {
+    private RemoteMessageToByteBufCodec() {
         // singleton
     }
 
@@ -48,14 +48,16 @@ public final class RemoteEnvelopeToByteBufCodec extends MessageToMessageCodec<By
                           final InetSocketAddressWrapper sender,
                           final ByteBuf msg,
                           final List<Object> out) throws Exception {
-        out.add(RemoteEnvelope.of(msg.retain()));
+        out.add(PartialReadMessage.of(msg.retain()));
     }
 
     @Override
     protected void encode(final HandlerContext ctx,
                           final InetSocketAddressWrapper recipient,
-                          final RemoteEnvelope<? extends MessageLite> msg,
+                          final RemoteMessage msg,
                           final List<Object> out) throws Exception {
-        out.add(msg.getOrBuildByteBuf().retain());
+        final ByteBuf buffer = ctx.alloc();
+        msg.writeTo(buffer);
+        out.add(buffer);
     }
 }

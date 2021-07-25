@@ -25,14 +25,14 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,10 +54,9 @@ class EmbeddedPipelineTest {
                 .build();
     }
 
-    @SuppressWarnings("rawtypes")
     @Test
     void shouldReturnInboundMessagesAndEvents(@Mock final IdentityPublicKey sender,
-                                              @Mock final RemoteEnvelope msg) {
+                                              @Mock final RemoteMessage msg) {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
             final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();

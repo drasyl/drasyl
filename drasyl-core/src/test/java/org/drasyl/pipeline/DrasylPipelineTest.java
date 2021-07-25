@@ -31,7 +31,7 @@ import org.drasyl.remote.handler.UdpMulticastServer;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ import static org.drasyl.pipeline.DrasylPipeline.MONITORING_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.OTHER_NETWORK_FILTER;
 import static org.drasyl.pipeline.DrasylPipeline.PORT_MAPPER;
 import static org.drasyl.pipeline.DrasylPipeline.RATE_LIMITER;
-import static org.drasyl.pipeline.DrasylPipeline.REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC;
+import static org.drasyl.pipeline.DrasylPipeline.REMOTE_MESSAGE_TO_BYTE_BUF_CODEC;
 import static org.drasyl.pipeline.DrasylPipeline.STATIC_ROUTES_HANDLER;
 import static org.drasyl.pipeline.DrasylPipeline.TCP_CLIENT;
 import static org.drasyl.pipeline.DrasylPipeline.UDP_MULTICAST_SERVER;
@@ -155,7 +155,7 @@ class DrasylPipelineTest {
             assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(CHUNKING_HANDLER), "This handler is required in the DrasylPipeline");
-            assertNotNull(pipeline.get(REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC), "This handler is required in the DrasylPipeline");
+            assertNotNull(pipeline.get(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(UDP_MULTICAST_SERVER), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(TCP_CLIENT), "This handler is required in the DrasylPipeline");
             assertNotNull(pipeline.get(PORT_MAPPER), "This handler is required in the DrasylPipeline");
@@ -319,10 +319,9 @@ class DrasylPipelineTest {
 
     @Nested
     class ProcessInboundMessage {
-        @SuppressWarnings("rawtypes")
         @Test
         void shouldProcessMessage(@Mock final IdentityPublicKey sender,
-                                  @Mock final RemoteEnvelope msg) {
+                                  @Mock final RemoteMessage msg) {
             final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity, outboundMessagesBuffer);
             final CompletableFuture<Void> future = pipeline.processInbound(sender, msg);
 

@@ -21,7 +21,6 @@
  */
 package org.drasyl.monitoring;
 
-import com.google.protobuf.MessageLite;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -35,7 +34,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -122,7 +121,7 @@ class MonitoringTest {
 
         @Test
         void shouldPassthroughInboundMessages(@Mock final Address sender,
-                                              @Mock final RemoteEnvelope<MessageLite> message) {
+                                              @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
@@ -136,7 +135,7 @@ class MonitoringTest {
 
         @Test
         void shouldPassthroughOutboundMessages(@Mock final Address recipient,
-                                               @Mock final RemoteEnvelope<MessageLite> message) {
+                                               @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();

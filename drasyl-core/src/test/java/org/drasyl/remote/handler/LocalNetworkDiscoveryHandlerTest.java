@@ -37,9 +37,8 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.handler.LocalNetworkDiscovery.Peer;
-import org.drasyl.remote.protocol.InvalidMessageFormatException;
-import org.drasyl.remote.protocol.Protocol;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.DiscoveryMessage;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -154,7 +153,7 @@ class LocalNetworkDiscoveryTest {
             verify(peer).isStale(any());
             verify(ctx.peersManager()).removePath(eq(publicKey), any());
             assertTrue(peers.isEmpty());
-            verify(ctx).passOutbound(eq(MULTICAST_ADDRESS), any(RemoteEnvelope.class), any(CompletableFuture.class));
+            verify(ctx).passOutbound(eq(MULTICAST_ADDRESS), any(DiscoveryMessage.class), any(CompletableFuture.class));
         }
     }
 
@@ -185,42 +184,37 @@ class LocalNetworkDiscoveryTest {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     @Nested
     class InboundMessageHandling {
         @Test
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddressWrapper sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                                   @Mock final Peer peer) throws InvalidMessageFormatException {
+                                                   @Mock final Peer peer) {
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
-            try (final RemoteEnvelope<Protocol.Discovery> msg = RemoteEnvelope.discovery(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork())) {
-                when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
+            final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
+            when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
 
-                final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-                handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
+            handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
 
-                verify(ctx.peersManager()).addPath(eq(publicKey), any());
-            }
+            verify(ctx.peersManager()).addPath(eq(publicKey), any());
         }
 
         @Test
         void shouldIgnoreInboundPingFromItself(@Mock final InetSocketAddressWrapper sender,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws InvalidMessageFormatException {
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
             when(ctx.identity().getIdentityPublicKey()).thenReturn(publicKey);
-            try (final RemoteEnvelope<Protocol.Discovery> msg = RemoteEnvelope.discovery(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork())) {
+            final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
+            handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
 
-                final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-                handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
-
-                verify(ctx.peersManager(), never()).addPath(eq(msg.getSender()), any());
-            }
+            verify(ctx.peersManager(), never()).addPath(eq(msg.getSender()), any());
         }
 
-        @SuppressWarnings("rawtypes")
         @Test
         void shouldPassthroughUnicastMessages(@Mock final InetSocketAddressWrapper sender,
-                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope msg) {
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
@@ -234,10 +228,10 @@ class LocalNetworkDiscoveryTest {
         }
     }
 
-    @SuppressWarnings({ "rawtypes", "SuspiciousMethodCalls" })
+    @SuppressWarnings({ "SuspiciousMethodCalls" })
     @Test
     void shouldRouteOutboundMessageWhenRouteIsPresent(@Mock final IdentityPublicKey recipient,
-                                                      @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message,
+                                                      @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
         when(peers.get(any())).thenReturn(peer);
 
@@ -252,10 +246,9 @@ class LocalNetworkDiscoveryTest {
                 .assertValue(new DefaultAddressedEnvelope<>(null, peer.getAddress(), message));
     }
 
-    @SuppressWarnings("rawtypes")
     @Test
     void shouldPassthroughMessageWhenRouteIsAbsent(@Mock final IdentityPublicKey recipient,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);

@@ -37,7 +37,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -195,7 +195,7 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws IOException {
             final Path path = Paths.get(dir.toString(), "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127.json");
-            File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
+            final File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
 
             doReturn(true).when(file).exists();
             doReturn(true).when(file).isDirectory();
@@ -224,8 +224,8 @@ class LocalHostDiscoveryTest {
                 return future;
             });
 
-            DrasylConfig config = ctx.config(); // mockito work-around
-            Path path2 = config.getRemoteLocalHostDiscoveryPath();
+            final DrasylConfig config = ctx.config(); // mockito work-around
+            final Path path2 = config.getRemoteLocalHostDiscoveryPath();
 
             doReturn(leaseTime).when(config).getRemoteLocalHostDiscoveryLeaseTime();
             doReturn(true).when(config).isRemoteLocalHostDiscoveryWatchEnabled();
@@ -281,9 +281,8 @@ class LocalHostDiscoveryTest {
 
     @Nested
     class MessagePassing {
-        @SuppressWarnings("rawtypes")
         @Test
-        void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
+        void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
             final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
             final IdentityPublicKey recipient = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             routes.put(recipient, address);
@@ -292,7 +291,7 @@ class LocalHostDiscoveryTest {
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
-                final TestObserver<RemoteEnvelope> outboundMessages = pipeline.outboundMessages(RemoteEnvelope.class).test();
+                final TestObserver<RemoteMessage> outboundMessages = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 pipeline.processOutbound(recipient, message).join();
 
@@ -301,10 +300,9 @@ class LocalHostDiscoveryTest {
             }
         }
 
-        @SuppressWarnings("rawtypes")
         @Test
         void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final RemoteEnvelope message) {
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
