@@ -190,6 +190,10 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
+                superPeer.events().subscribe(System.out::println);
+                client1.events().subscribe(System.out::println);
+                client2.events().subscribe(System.out::println);
+
                 final TestObserver<MessageEvent> superPeerMessages = superPeer.messages().test();
                 final TestObserver<MessageEvent> client1Messages = client1.messages().test();
                 final TestObserver<MessageEvent> client2Messages = client2.messages().test();

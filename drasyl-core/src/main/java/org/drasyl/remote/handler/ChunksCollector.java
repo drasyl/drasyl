@@ -21,12 +21,14 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import org.drasyl.remote.protocol.BodyChunkMessage;
+import org.drasyl.remote.protocol.ChunkMessage;
+import org.drasyl.remote.protocol.HeadChunkMessage;
 import org.drasyl.remote.protocol.Nonce;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -68,17 +70,11 @@ class ChunksCollector {
      * @throws IllegalStateException if an attempt is made to add a chunk from another message or to
      *                               an already composed message
      */
-    public synchronized <T extends MessageLite> RemoteEnvelope<T> addChunk(final RemoteEnvelope<? extends MessageLite> chunk) throws IOException {
+    public synchronized PartialReadMessage addChunk(final ChunkMessage chunk) throws IOException {
         // already composed?
         if (allChunksPresent()) {
             ReferenceCountUtil.safeRelease(chunk);
             throw new IllegalStateException("All chunks have already been collected and message has already been returned");
-        }
-
-        // is chunk?
-        if (!chunk.isChunk()) {
-            ReferenceCountUtil.safeRelease(chunk);
-            throw new IllegalStateException("This is not a chunk!");
         }
 
         // belongs to our message?
@@ -87,8 +83,8 @@ class ChunksCollector {
             throw new IllegalStateException("This chunk belongs to another message!");
         }
 
-        final int chunkSize = chunk.getInternalByteBuf().readableBytes();
-        final int chunkNo = chunk.getChunkNo().getValue();
+        final int chunkSize = chunk.getBytes().readableBytes();
+        final int chunkNo = chunk instanceof HeadChunkMessage ? 0 : ((BodyChunkMessage) chunk).getChunkNo().getValue();
 
         // add chunk
         if (messageSize + chunkSize > maxContentLength) {
@@ -98,11 +94,11 @@ class ChunksCollector {
         }
         messageSize += chunkSize;
         // does also release any previous chunk with same chunkNo
-        ReferenceCountUtil.safeRelease(chunks.putIfAbsent(chunkNo, chunk.getInternalByteBuf()));
+        ReferenceCountUtil.safeRelease(chunks.putIfAbsent(chunkNo, chunk.getBytes()));
 
         // head chunk? set totalChunks
-        if (totalChunks == 0 && chunk.getTotalChunks().getValue() > 0) {
-            totalChunks = chunk.getTotalChunks().getValue();
+        if (totalChunks == 0 && chunk instanceof HeadChunkMessage) {
+            totalChunks = ((HeadChunkMessage) chunk).getTotalChunks().getValue();
         }
 
         //noinspection unchecked
@@ -116,7 +112,7 @@ class ChunksCollector {
                 final ByteBuf chunkByteBuf = chunks.remove(i);
                 messageByteBuf.addComponent(true, chunkByteBuf);
             }
-            return RemoteEnvelope.of(messageByteBuf);
+            return PartialReadMessage.of(messageByteBuf);
         }
         else {
             // message not complete, return null!

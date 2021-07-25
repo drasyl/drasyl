@@ -24,7 +24,7 @@ package org.drasyl.remote.protocol;
 import java.io.IOException;
 
 /**
- * This exception is thrown when reading a {@link RemoteEnvelope} fails due to an invalid format.
+ * This exception is thrown when reading a {@link RemoteMessage} fails due to an invalid format.
  */
 public class InvalidMessageFormatException extends IOException {
     public InvalidMessageFormatException() {

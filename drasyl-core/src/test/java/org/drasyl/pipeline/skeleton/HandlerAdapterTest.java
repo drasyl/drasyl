@@ -24,15 +24,15 @@ package org.drasyl.pipeline.skeleton;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -135,10 +135,9 @@ class HandlerAdapterTest {
             }
         }
 
-        @SuppressWarnings("rawtypes")
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler(@Mock final IdentityPublicKey sender,
-                                                         @Mock final RemoteEnvelope msg) {
+                                                         @Mock final RemoteMessage msg) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 

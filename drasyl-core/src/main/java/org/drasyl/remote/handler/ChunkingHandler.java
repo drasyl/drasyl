@@ -24,19 +24,19 @@ package org.drasyl.remote.handler;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import com.google.protobuf.CodedOutputStream;
-import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.PooledByteBufAllocator;
 import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
+import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.Nonce;
+import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedShort;
@@ -48,7 +48,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.remote.protocol.RemoteEnvelope.MAGIC_NUMBER_LENGTH;
+import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER_LENGTH;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
@@ -56,7 +56,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * splitting outgoing too large messages into chunks.
  */
 @SuppressWarnings({ "java:S110" })
-public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extends MessageLite>, RemoteEnvelope<? extends MessageLite>, InetSocketAddressWrapper> {
+public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMessage, InetSocketAddressWrapper> {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkingHandler.class);
     private final Worm<Map<Nonce, ChunksCollector>> chunksCollectors;
 
@@ -67,10 +67,10 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
     @Override
     protected void matchedInbound(final HandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
-                                  final RemoteEnvelope<? extends MessageLite> msg,
+                                  final ChunkMessage msg,
                                   final CompletableFuture<Void> future) throws IOException {
-        // message is addressed to me and chunked
-        if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) && msg.isChunk()) {
+        // message is addressed to me
+        if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient())) {
             handleInboundChunk(ctx, sender, msg, future);
         }
         else {
@@ -81,11 +81,11 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
 
     private void handleInboundChunk(final HandlerContext ctx,
                                     final InetSocketAddressWrapper sender,
-                                    final RemoteEnvelope<? extends MessageLite> chunk,
+                                    final ChunkMessage chunk,
                                     final CompletableFuture<Void> future) throws IOException {
         try {
             final ChunksCollector chunksCollector = getChunksCollectors(ctx.config()).computeIfAbsent(chunk.getNonce(), id -> new ChunksCollector(ctx.config().getRemoteMessageMaxContentLength(), id));
-            final RemoteEnvelope<? extends MessageLite> message = chunksCollector.addChunk(chunk);
+            final RemoteMessage message = chunksCollector.addChunk(chunk);
 
             if (message != null) {
                 // message complete, pass it inbound
@@ -122,11 +122,12 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
-                                   final RemoteEnvelope<? extends MessageLite> msg,
+                                   final RemoteMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
         if (ctx.identity().getIdentityPublicKey().equals(msg.getSender())) {
             // message from us, check if we have to chunk it
-            final ByteBuf messageByteBuf = msg.getOrBuildByteBuf();
+            final ByteBuf messageByteBuf = ctx.alloc();
+            msg.writeTo(messageByteBuf);
             final int messageLength = messageByteBuf.readableBytes();
             final int messageMaxContentLength = ctx.config().getRemoteMessageMaxContentLength();
             if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
@@ -138,6 +139,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                 chunkMessage(ctx, recipient, msg, future, messageByteBuf, messageLength);
             }
             else {
+                ReferenceCountUtil.safeRelease(messageByteBuf);
                 // message is small enough. No chunking required
                 ctx.passOutbound(recipient, msg, future);
             }
@@ -151,19 +153,18 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
     @SuppressWarnings("unchecked")
     private static void chunkMessage(final HandlerContext ctx,
                                      final Address recipient,
-                                     final RemoteEnvelope<? extends MessageLite> msg,
+                                     final RemoteMessage msg,
                                      final CompletableFuture<Void> future,
                                      final ByteBuf messageByteBuf,
                                      final int messageSize) throws IOException {
         try {
             // create & send chunks
-            final PublicHeader msgPublicHeader = msg.getPublicHeader();
             UnsignedShort chunkNo = UnsignedShort.of(0);
 
             final PublicHeader partialChunkHeader = PublicHeader.newBuilder()
-                    .setNonce(msgPublicHeader.getNonce())
-                    .setSender(msgPublicHeader.getSender())
-                    .setRecipient(msgPublicHeader.getRecipient())
+                    .setNonce(msg.getNonce().toByteString())
+                    .setSender(msg.getSender().getBytes())
+                    .setRecipient(msg.getRecipient().getBytes())
                     .setHopCount(1)
                     .setTotalChunks(UnsignedShort.MAX_VALUE.getValue())
                     .buildPartial();
@@ -179,7 +180,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                 ByteBuf chunkBodyByteBuf = null;
                 final ByteBuf chunkByteBuf = ctx.alloc();
                 try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(chunkByteBuf)) {
-                    RemoteEnvelope.MAGIC_NUMBER.writeTo(outputStream);
+                    RemoteMessage.MAGIC_NUMBER.writeTo(outputStream);
 
                     // chunk header
                     final PublicHeader chunkHeader = buildChunkHeader(totalChunks, partialChunkHeader, chunkNo);
@@ -191,7 +192,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<RemoteEnvelope<? extend
                     chunkByteBuf.writeBytes(chunkBodyByteBuf);
 
                     // send chunk
-                    final RemoteEnvelope<? extends MessageLite> chunk = RemoteEnvelope.of(chunkByteBuf);
+                    final RemoteMessage chunk = PartialReadMessage.of(chunkByteBuf);
 
                     combiner.add(ctx.passOutbound(recipient, chunk, new CompletableFuture<>()));
                 }

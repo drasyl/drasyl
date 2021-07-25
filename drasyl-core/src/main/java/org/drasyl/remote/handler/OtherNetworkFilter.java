@@ -21,12 +21,12 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.MessageLite;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.ChunkMessage;
+import org.drasyl.remote.protocol.RemoteMessage;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -35,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @SuppressWarnings("java:S110")
 @Stateless
-public final class OtherNetworkFilter extends InboundMessageFilter<RemoteEnvelope<? extends MessageLite>, Address> {
+public final class OtherNetworkFilter extends InboundMessageFilter<RemoteMessage, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
 
     private OtherNetworkFilter() {
@@ -45,15 +45,15 @@ public final class OtherNetworkFilter extends InboundMessageFilter<RemoteEnvelop
     @Override
     protected boolean accept(final HandlerContext ctx,
                              final Address sender,
-                             final RemoteEnvelope<? extends MessageLite> msg) throws Exception {
-        return msg.isChunk() || ctx.config().getNetworkId() == msg.getNetworkId();
+                             final RemoteMessage msg) throws Exception {
+        return msg instanceof ChunkMessage || ctx.config().getNetworkId() == msg.getNetworkId();
     }
 
     @SuppressWarnings("java:S112")
     @Override
     protected void messageRejected(final HandlerContext ctx,
                                    final Address sender,
-                                   final RemoteEnvelope<? extends MessageLite> msg,
+                                   final RemoteMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
         throw new Exception("Message from other network dropped");
     }

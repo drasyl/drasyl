@@ -22,8 +22,6 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.cache.CacheBuilder;
-import com.google.common.primitives.Ints;
-import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -37,14 +35,15 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
+import org.drasyl.remote.protocol.AcknowledgementMessage;
+import org.drasyl.remote.protocol.ApplicationMessage;
+import org.drasyl.remote.protocol.DiscoveryMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.Nonce;
-import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.remote.protocol.Protocol.Discovery;
-import org.drasyl.remote.protocol.Protocol.Unite;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.remote.protocol.UniteMessage;
 import org.drasyl.util.Pair;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -62,10 +61,6 @@ import java.util.stream.Collectors;
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
-import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
-import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
-import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
@@ -78,7 +73,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * </ul>
  */
 @SuppressWarnings({ "java:S110", "java:S1192" })
-public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? extends MessageLite>, RemoteEnvelope<Application>, Address> {
+public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, ApplicationMessage, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscovery.class);
     private static final Object path = InternetDiscovery.class;
     private final Map<Nonce, Ping> openPingsCache;
@@ -253,7 +248,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
     @Override
     protected void matchedOutbound(final HandlerContext ctx,
                                    final Address recipient,
-                                   final RemoteEnvelope<Application> msg,
+                                   final ApplicationMessage msg,
                                    final CompletableFuture<Void> future) throws IOException {
         if (recipient instanceof IdentityPublicKey) {
             // record communication to keep active connections alive
@@ -282,13 +277,12 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
      * @param msg       the message
      * @param future    the future
      * @return {@code true} if message could be processed. Otherwise {@code false}
-     * @throws IOException if public header of {@code msg} cannot be read
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean processMessage(final HandlerContext ctx,
                                    final IdentityPublicKey recipient,
-                                   final RemoteEnvelope<? extends MessageLite> msg,
-                                   final CompletableFuture<Void> future) throws IOException {
+                                   final RemoteMessage msg,
+                                   final CompletableFuture<Void> future) {
         final Peer recipientPeer = peers.get(recipient);
 
         final Peer superPeerPeer;
@@ -348,7 +342,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
                                    final InetSocketAddressWrapper recipient,
                                    final InetSocketAddressWrapper sender) {
         // send recipient's information to sender
-        final RemoteEnvelope<Unite> senderRendezvousEnvelope = RemoteEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
+        final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
         ctx.passOutbound(sender, senderRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             //noinspection unchecked
@@ -357,7 +351,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
         });
 
         // send sender's information to recipient
-        final RemoteEnvelope<Unite> recipientRendezvousEnvelope = RemoteEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender);
+        final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
         ctx.passOutbound(recipient, recipientRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             //noinspection unchecked
@@ -381,12 +375,12 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
     @Override
     protected void matchedInbound(final HandlerContext ctx,
                                   final Address sender,
-                                  final RemoteEnvelope<? extends MessageLite> msg,
+                                  final RemoteMessage msg,
                                   final CompletableFuture<Void> future) throws IOException {
         if (sender instanceof InetSocketAddressWrapper && msg.getRecipient() != null) {
             // This message is for us and we will fully decode it
-            if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient())) {
-                handleMessage(ctx, (InetSocketAddressWrapper) sender, msg, future);
+            if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) && msg instanceof FullReadMessage) {
+                handleMessage(ctx, (InetSocketAddressWrapper) sender, (FullReadMessage<?>) msg, future);
             }
             else if (!ctx.config().isRemoteSuperPeerEnabled()) {
                 if (!processMessage(ctx, msg.getRecipient(), msg, future)) {
@@ -404,25 +398,23 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void handleMessage(final HandlerContext ctx,
                                final InetSocketAddressWrapper sender,
-                               final RemoteEnvelope<? extends MessageLite> msg,
-                               final CompletableFuture<Void> future) throws IOException {
-        if (msg.getPrivateHeader().getType() == DISCOVERY) {
-            handlePing(ctx, sender, (RemoteEnvelope<Discovery>) msg, future);
+                               final FullReadMessage<?> msg,
+                               final CompletableFuture<Void> future) {
+        if (msg instanceof DiscoveryMessage) {
+            handlePing(ctx, sender, (DiscoveryMessage) msg, future);
         }
-        else if (msg.getPrivateHeader().getType() == ACKNOWLEDGEMENT) {
-            handlePong(ctx, sender, (RemoteEnvelope<Acknowledgement>) msg, future);
+        else if (msg instanceof AcknowledgementMessage) {
+            handlePong(ctx, sender, (AcknowledgementMessage) msg, future);
         }
-        else if (msg.getPrivateHeader().getType() == UNITE && superPeers.contains(msg.getSender())) {
-            handleUnite(ctx, (RemoteEnvelope<Unite>) msg, future);
+        else if (msg instanceof UniteMessage && superPeers.contains(msg.getSender())) {
+            handleUnite(ctx, (UniteMessage) msg, future);
         }
-        else if (msg.getPrivateHeader().getType() == APPLICATION) {
-            handleApplication(ctx, (RemoteEnvelope<Application>) msg, future);
+        else if (msg instanceof ApplicationMessage) {
+            handleApplication(ctx, (ApplicationMessage) msg, future);
         }
         else {
-            msg.retain();
             // passthrough message
             ctx.passInbound(sender, msg, future);
         }
@@ -430,12 +422,11 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
 
     private void handlePing(final HandlerContext ctx,
                             final InetSocketAddressWrapper sender,
-                            final RemoteEnvelope<Discovery> msg,
-                            final CompletableFuture<Void> future) throws IOException {
+                            final DiscoveryMessage msg,
+                            final CompletableFuture<Void> future) {
         final IdentityPublicKey envelopeSender = msg.getSender();
         final Nonce id = msg.getNonce();
-        final Discovery body = msg.getBodyAndRelease();
-        final boolean childrenJoin = body.getChildrenTime() > 0;
+        final boolean childrenJoin = msg.getChildrenTime() > 0;
         LOG.trace("Got {} from {}", msg, sender);
         final Peer peer = peers.computeIfAbsent(envelopeSender, key -> new Peer());
         peer.setAddress(sender);
@@ -454,20 +445,18 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
         final int networkId = ctx.config().getNetworkId();
         final IdentityPublicKey myPublicKey = ctx.identity().getIdentityPublicKey();
         final ProofOfWork myProofOfWork = ctx.identity().getProofOfWork();
-        final RemoteEnvelope<Acknowledgement> responseEnvelope = RemoteEnvelope.acknowledgement(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
+        final AcknowledgementMessage responseEnvelope = AcknowledgementMessage.of(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
         LOG.trace("Send {} to {}", responseEnvelope, sender);
         ctx.passOutbound(sender, responseEnvelope, future);
     }
 
     private void handlePong(final HandlerContext ctx,
                             final InetSocketAddressWrapper sender,
-                            final RemoteEnvelope<Acknowledgement> msg,
-                            final CompletableFuture<Void> future) throws IOException {
-        final Acknowledgement body = msg.getBodyAndRelease();
-        final Nonce correspondingId = requireNonNull(Nonce.of(body.getCorrespondingId()));
+                            final AcknowledgementMessage msg,
+                            final CompletableFuture<Void> future) {
         final IdentityPublicKey envelopeSender = msg.getSender();
         LOG.trace("Got {} from {}", msg, sender);
-        final Ping ping = openPingsCache.remove(correspondingId);
+        final Ping ping = openPingsCache.remove(msg.getCorrespondingId());
         if (ping != null) {
             final Peer peer = peers.computeIfAbsent(envelopeSender, key -> new Peer());
             peer.setAddress(sender);
@@ -517,32 +506,23 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
     }
 
     private void handleUnite(final HandlerContext ctx,
-                             final RemoteEnvelope<Unite> msg,
-                             final CompletableFuture<Void> future) throws IOException {
-        final Unite body = msg.getBodyAndRelease();
-        final IdentityPublicKey publicKey = requireNonNull(IdentityPublicKey.of(body.getPublicKey()));
-
-        final InetAddress address;
-        if (body.getAddressV6().isEmpty()) {
-            address = InetAddress.getByAddress(Ints.toByteArray(body.getAddressV4()));
-        }
-        else {
-            address = InetAddress.getByAddress(body.getAddressV6().toByteArray());
-        }
-        final InetSocketAddressWrapper socketAddress = new InetSocketAddressWrapper(address, body.getPort());
+                             final UniteMessage msg,
+                             final CompletableFuture<Void> future) {
+        final InetAddress address = msg.getAddress();
+        final InetSocketAddressWrapper socketAddress = new InetSocketAddressWrapper(address, msg.getPort());
         LOG.trace("Got {}", msg);
 
-        final Peer peer = peers.computeIfAbsent(publicKey, key -> new Peer());
+        final Peer peer = peers.computeIfAbsent(msg.getPublicKey(), key -> new Peer());
         peer.setAddress(socketAddress);
         peer.inboundControlTrafficOccurred();
         peer.applicationTrafficOccurred();
-        directConnectionPeers.add(publicKey);
-        sendPing(ctx, publicKey, socketAddress, future);
+        directConnectionPeers.add(msg.getPublicKey());
+        sendPing(ctx, msg.getPublicKey(), socketAddress, future);
     }
 
     private void handleApplication(final HandlerContext ctx,
-                                   final RemoteEnvelope<Application> msg,
-                                   final CompletableFuture<Void> future) throws IOException {
+                                   final ApplicationMessage msg,
+                                   final CompletableFuture<Void> future) {
         if (directConnectionPeers.contains(msg.getSender())) {
             final Peer peer = peers.computeIfAbsent(msg.getSender(), key -> new Peer());
             peer.applicationTrafficOccurred();
@@ -560,18 +540,11 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
 
         final boolean isChildrenJoin = superPeers.contains(recipient);
-        RemoteEnvelope<Discovery> messageEnvelope = null;
-        try {
-            messageEnvelope = RemoteEnvelope.discovery(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
-            openPingsCache.put(messageEnvelope.getNonce(), new Ping(recipientAddress));
-            LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
-            ctx.passOutbound(recipientAddress, messageEnvelope, future);
-        }
-        catch (final IOException e) {
-            // should never occur as we build the message ourselves
-            future.completeExceptionally(e);
-            ReferenceCountUtil.safeRelease(messageEnvelope);
-        }
+        final DiscoveryMessage messageEnvelope;
+        messageEnvelope = DiscoveryMessage.of(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
+        openPingsCache.put(messageEnvelope.getNonce(), new Ping(recipientAddress));
+        LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
+        ctx.passOutbound(recipientAddress, messageEnvelope, future);
         return future;
     }
 
@@ -606,8 +579,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
 
         /**
          * Returns the time when we last received a message from this peer. This includes all
-         * message types ({@link Discovery}, {@link Acknowledgement}, {@link Application}, {@link
-         * Unite}, etc.)
+         * message types ({@link DiscoveryMessage}, {@link AcknowledgementMessage}, {@link
+         * Application}, {@link UniteMessage}, etc.)
          */
         public long getLastInboundControlTrafficTime() {
             return lastInboundControlTrafficTime;
@@ -628,7 +601,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteEnvelope<? exte
 
         /**
          * Returns the time when we last sent or received a application-level message to or from
-         * this peer. This includes only message type {@link Application}
+         * this peer. This includes only message type {@link ApplicationMessage}
          */
         public long getLastApplicationTrafficTime() {
             return lastApplicationTrafficTime;

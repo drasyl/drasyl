@@ -28,8 +28,10 @@ import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.remote.protocol.AcknowledgementMessage;
+import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.Nonce;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,7 +43,7 @@ import test.util.IdentityTestUtil;
 import java.util.concurrent.CompletableFuture;
 
 @ExtendWith(MockitoExtension.class)
-class SimpleDuplexRemoteEnvelopeSkipLoopbackHandlerTest {
+class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
     @Mock
     private PeersManager peersManager;
     private DrasylConfig config;
@@ -53,18 +55,18 @@ class SimpleDuplexRemoteEnvelopeSkipLoopbackHandlerTest {
         config = DrasylConfig.newBuilder()
                 .networkId(1)
                 .build();
-        handler = new SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<>() {
+        handler = new SimpleDuplexRemoteMessageSkipLoopbackHandler<>() {
             @Override
             protected void filteredOutbound(final HandlerContext ctx,
                                             final Address recipient,
-                                            final RemoteEnvelope<?> msg,
+                                            final RemoteMessage msg,
                                             final CompletableFuture<Void> future) {
             }
 
             @Override
             protected void filteredInbound(final HandlerContext ctx,
                                            final Address sender,
-                                           final RemoteEnvelope<?> msg,
+                                           final RemoteMessage msg,
                                            final CompletableFuture<Void> future) {
             }
         };
@@ -76,7 +78,7 @@ class SimpleDuplexRemoteEnvelopeSkipLoopbackHandlerTest {
         @Test
         void shouldSkipOnNullReceiver(@Mock final Address recipient) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final RemoteEnvelope<?> msg = RemoteEnvelope.discovery(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
+                final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
                 final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
 
@@ -89,24 +91,24 @@ class SimpleDuplexRemoteEnvelopeSkipLoopbackHandlerTest {
 
         @Test
         void shouldNotSkipIfNotActive(@Mock final Address recipient) {
-            handler = new SimpleDuplexRemoteEnvelopeSkipLoopbackHandler<>(false) {
+            handler = new SimpleDuplexRemoteMessageSkipLoopbackHandler<>(false) {
                 @Override
                 protected void filteredOutbound(final HandlerContext ctx,
                                                 final Address recipient,
-                                                final RemoteEnvelope<?> msg,
+                                                final RemoteMessage msg,
                                                 final CompletableFuture<Void> future) {
                 }
 
                 @Override
                 protected void filteredInbound(final HandlerContext ctx,
                                                final Address sender,
-                                               final RemoteEnvelope<?> msg,
+                                               final RemoteMessage msg,
                                                final CompletableFuture<Void> future) {
                 }
             };
 
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final RemoteEnvelope<?> msg = RemoteEnvelope.discovery(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
+                final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
                 final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
 
@@ -120,7 +122,7 @@ class SimpleDuplexRemoteEnvelopeSkipLoopbackHandlerTest {
         @Test
         void shouldSkipIfMessageComesNotFromMe(@Mock final Address recipient) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final RemoteEnvelope<?> msg = RemoteEnvelope.acknowledgement(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
+                final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
 
                 final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
 
@@ -134,7 +136,7 @@ class SimpleDuplexRemoteEnvelopeSkipLoopbackHandlerTest {
         @Test
         void shouldSkipIfMessageIsForMe(@Mock final Address recipient) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final RemoteEnvelope<?> msg = RemoteEnvelope.acknowledgement(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
+                final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
 
                 final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
 
@@ -151,7 +153,7 @@ class SimpleDuplexRemoteEnvelopeSkipLoopbackHandlerTest {
         @Test
         void shouldSkipOnNullReceiver(@Mock final Address sender) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final RemoteEnvelope<?> msg = RemoteEnvelope.discovery(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
+                final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
                 final TestObserver<Object> testObserver = pipeline.inboundMessages().test();
 
@@ -165,7 +167,7 @@ class SimpleDuplexRemoteEnvelopeSkipLoopbackHandlerTest {
         @Test
         void shouldSkipIfMessageComesFromMe(@Mock final Address sender) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final RemoteEnvelope<?> msg = RemoteEnvelope.acknowledgement(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
+                final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
 
                 final TestObserver<Object> testObserver = pipeline.inboundMessages().test();
 
@@ -179,7 +181,7 @@ class SimpleDuplexRemoteEnvelopeSkipLoopbackHandlerTest {
         @Test
         void shouldSkipIfMessageIsNotForMe(@Mock final Address sender) {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
-                final RemoteEnvelope<?> msg = RemoteEnvelope.acknowledgement(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
+                final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
 
                 final TestObserver<Object> testObserver = pipeline.inboundMessages().test();
 

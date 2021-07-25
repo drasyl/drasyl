@@ -26,18 +26,17 @@ import com.goterl.lazysodium.interfaces.AEAD;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.pipeline.message.AddressedEnvelope;
 
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link AddressedEnvelope} is uniquely identified by its {@link #NONCE_LENGTH} bytes long
- * nonce.
+ * A {@link RemoteMessage} is uniquely identified by its {@link #NONCE_LENGTH} bytes long nonce.
  * <p>
  * This is an immutable object.
  */
+@SuppressWarnings("java:S2974")
 public class Nonce {
     public static final int NONCE_LENGTH = AEAD.XCHACHA20POLY1305_IETF_NPUBBYTES;
     private final ByteString bytes;

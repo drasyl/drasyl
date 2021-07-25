@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
@@ -35,9 +36,8 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.InternetDiscovery.Peer;
+import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.Nonce;
-import org.drasyl.remote.protocol.Protocol.Application;
-import org.drasyl.remote.protocol.RemoteEnvelope;
 import org.drasyl.util.Pair;
 import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -67,7 +67,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     private InternetDiscovery handler;
     private HandlerContext ctx;
     private Address recipient;
-    private RemoteEnvelope<Application> msg;
+    private ApplicationMessage msg;
     private CompletableFuture<Void> future;
     private Set<IdentityPublicKey> superPeers;
     private IdentityPublicKey bestSuperPeer;
@@ -84,7 +84,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         ctx = new MyHandlerContext();
         recipient = new MyAddress();
         final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
-        msg = RemoteEnvelope.application(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), recipient, byte[].class.getName(), new byte[]{});
+        msg = ApplicationMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), recipient, byte[].class.getName(), ByteString.EMPTY);
 
         future = new CompletableFuture<>();
 
@@ -128,7 +128,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public ByteBuf alloc(boolean preferDirect) {
+        public ByteBuf alloc(final boolean preferDirect) {
             return null;
         }
 

@@ -21,7 +21,6 @@
  */
 package org.drasyl.remote.handler.crypto;
 
-import com.google.protobuf.MessageLite;
 import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -31,12 +30,14 @@ import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.remote.protocol.InvalidMessageFormatException;
-import org.drasyl.remote.protocol.Protocol;
-import org.drasyl.remote.protocol.RemoteEnvelope;
+import org.drasyl.remote.protocol.ArmedMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
+import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
+import org.drasyl.remote.protocol.KeyExchangeMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -53,29 +54,27 @@ public final class ArmHandlerUtil {
     /**
      * Encrypts the given {@code msg} with the given {@code agreementPair}.
      *
-     * @param agreementPair the agreementPair for encryption
-     * @param agreementId   the corresponding agreementId
-     * @param ctx           the handler the handler context
-     * @param recipient     the recipient of the encrypted message
-     * @param msg           the message to encrypt
-     * @param future        the future to fulfill
+     * @param cryptoInstance the crypto instance that should be used
+     * @param agreementPair  the agreementPair for encryption
+     * @param agreementId    the corresponding agreementId
+     * @param ctx            the handler the handler context
+     * @param recipient      the recipient of the encrypted message
+     * @param msg            the message to encrypt
+     * @param future         the future to fulfill
      * @return the corresponding {@code future}
      */
-    public static CompletableFuture<Void> sendEncrypted(final SessionPair agreementPair,
+    public static CompletableFuture<Void> sendEncrypted(final Crypto cryptoInstance,
+                                                        final SessionPair agreementPair,
                                                         final AgreementId agreementId,
                                                         final HandlerContext ctx,
                                                         final Address recipient,
-                                                        final RemoteEnvelope<? extends MessageLite> msg,
+                                                        final FullReadMessage<?> msg,
                                                         final CompletableFuture<Void> future) {
         try {
-            msg.setAgreementId(agreementId);
-
-            ctx.passOutbound(recipient,
-                    msg.armAndRelease(agreementPair),
-                    future); // send encrypted message
-            assert msg.refCnt() == 0 : "Assertion error, the message was not correctly released!"; // NOSONAR
+            final ArmedMessage armedMessage = msg.setAgreementId(agreementId).arm(cryptoInstance, agreementPair);
+            ctx.passOutbound(recipient, armedMessage, future); // send encrypted message
         }
-        catch (final InvalidMessageFormatException e) {
+        catch (final IOException e) {
             future.completeExceptionally(new CryptoException(e));
         }
 
@@ -85,19 +84,17 @@ public final class ArmHandlerUtil {
     /**
      * Decrypts the given {@code msg} with the given {@code agreementPair}.
      *
-     * @param agreementPair the encryption key pair
-     * @param msg           the message to decrypt
+     * @param cryptoInstance the crypto instance that should be used
+     * @param agreementPair  the encryption key pair
+     * @param msg            the message to decrypt
      * @return the decrypted message or an exception on error
-     * @throws InvalidMessageFormatException if the message could not be decrypted
+     * @throws IOException if the message could not be decrypted
      */
-    public static RemoteEnvelope<? extends MessageLite> decrypt(final SessionPair agreementPair,
-                                                                final RemoteEnvelope<? extends MessageLite> msg) throws InvalidMessageFormatException {
-        try {
-            return msg.disarmAndRelease(agreementPair);
-        }
-        finally {
-            assert msg.refCnt() == 0 : "Assertion error, the message was not correctly released!"; // NOSONAR
-        }
+    @SuppressWarnings("java:S1452")
+    public static FullReadMessage<?> decrypt(final Crypto cryptoInstance,
+                                             final SessionPair agreementPair,
+                                             final ArmedMessage msg) throws IOException {
+        return msg.disarmAndRelease(cryptoInstance, agreementPair);
     }
 
     /**
@@ -109,7 +106,8 @@ public final class ArmHandlerUtil {
      * @param session           the corresponding session
      * @return the future for the acknowledgement message
      */
-    public static CompletableFuture<Void> sendAck(final HandlerContext ctx,
+    public static CompletableFuture<Void> sendAck(final Crypto cryptoInstance,
+                                                  final HandlerContext ctx,
                                                   final Address recipientsAddress,
                                                   final IdentityPublicKey recipientsKey,
                                                   final Session session) {
@@ -119,13 +117,14 @@ public final class ArmHandlerUtil {
             final AgreementId agreementId = agreement.get().getAgreementId().get(); // NOSONAR
 
             // encrypt message with long time key
-            return ArmHandlerUtil.sendEncrypted(session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipientsAddress, RemoteEnvelope.keyExchangeAcknowledgement(
-                    ctx.config().getNetworkId(),
-                    ctx.identity().getIdentityPublicKey(),
-                    ctx.identity().getProofOfWork(),
-                    recipientsKey,
-                    agreementId
-            ), new CompletableFuture<>()).whenComplete((x, e) -> {
+            return ArmHandlerUtil.sendEncrypted(cryptoInstance, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipientsAddress,
+                    KeyExchangeAcknowledgementMessage.of(
+                            ctx.config().getNetworkId(),
+                            ctx.identity().getIdentityPublicKey(),
+                            ctx.identity().getProofOfWork(),
+                            recipientsKey,
+                            agreementId
+                    ), new CompletableFuture<>()).whenComplete((x, e) -> {
                 if (e == null) {
                     LOG.trace("[{} => {}] Send ack message for session {}", () -> ctx.identity().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId);
                 }
@@ -142,18 +141,20 @@ public final class ArmHandlerUtil {
     /**
      * Sends the given {@code agreement} as key exchange message to the {@code recipient}.
      *
-     * @param ctx           the handler context
-     * @param session       the respective session
-     * @param agreement     the respective agreement
-     * @param recipient     the recipient of the agreement
-     * @param recipientsKey the public key of the recipient
+     * @param cryptoInstance the crypto instance that should be used
+     * @param ctx            the handler context
+     * @param session        the respective session
+     * @param agreement      the respective agreement
+     * @param recipient      the recipient of the agreement
+     * @param recipientsKey  the public key of the recipient
      */
-    public static void sendKeyExchangeMsg(final HandlerContext ctx,
+    public static void sendKeyExchangeMsg(final Crypto cryptoInstance,
+                                          final HandlerContext ctx,
                                           final Session session,
                                           final Agreement agreement,
                                           final Address recipient,
                                           final IdentityPublicKey recipientsKey) {
-        final RemoteEnvelope<Protocol.KeyExchange> msg = RemoteEnvelope.keyExchange(
+        final FullReadMessage<?> msg = KeyExchangeMessage.of(
                 ctx.config().getNetworkId(),
                 ctx.identity().getIdentityPublicKey(),
                 ctx.identity().getProofOfWork(),
@@ -161,7 +162,7 @@ public final class ArmHandlerUtil {
                 agreement.getKeyPair().getPublicKey());
 
         // encrypt message with long time key
-        ArmHandlerUtil.sendEncrypted(session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipient, msg, new CompletableFuture<>());
+        ArmHandlerUtil.sendEncrypted(cryptoInstance, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipient, msg, new CompletableFuture<>());
     }
 
     /**
