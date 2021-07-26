@@ -135,7 +135,7 @@
         <rxjava.version>3.0.13</rxjava.version>
         <micrometer.version>1.7.2</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
-        <slf4j.version>1.7.31</slf4j.version>
+        <slf4j.version>1.7.32</slf4j.version>
         <typesafe.config.version>1.4.1</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.27.0</json-unit-assertj.version>
