@@ -129,12 +129,19 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
                 agreementId = AgreementId.of(publicHeader.getAgreementId());
             }
 
+            final IdentityPublicKey recipient;
+            if (publicHeader.getRecipient().isEmpty()) {
+                recipient = null;
+            }
+            else {
+                recipient = IdentityPublicKey.of(publicHeader.getRecipient());
+            }
             return UnarmedMessage.of(
                     Nonce.of(publicHeader.getNonce()),
                     publicHeader.getNetworkId(),
                     IdentityPublicKey.of(publicHeader.getSender()),
                     ProofOfWork.of(publicHeader.getProofOfWork()),
-                    IdentityPublicKey.of(publicHeader.getRecipient()),
+                    recipient,
                     HopCount.of((byte) publicHeader.getHopCount()),
                     agreementId,
                     bytes
