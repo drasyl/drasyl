@@ -108,6 +108,12 @@ public class DrasylPipeline extends AbstractPipeline {
         this.tail = new TailContext(eventConsumer, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
 
         initPointer();
+//
+//        channelSpawner
+//
+//                nachricht von heiko
+//
+//                new Channel(heiko)
 
         // convert outbound messages addresses to us to inbound messages
         addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
