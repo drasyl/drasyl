@@ -227,6 +227,27 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
             if (evt instanceof Event) {
                 eventConsumer.accept((Event) evt);
             }
+            else if (evt instanceof DrasylNode.OutboundMessage) {
+                final DrasylAddress recipient = ((DrasylNode.OutboundMessage) evt).getRecipient();
+                final Object payload = ((DrasylNode.OutboundMessage) evt).getPayload();
+                final CompletableFuture<Void> future = ((DrasylNode.OutboundMessage) evt).getFuture();
+
+                final Channel channel = channels.computeIfAbsent(recipient, key -> {
+                    final DrasylChannel channel1 = new DrasylChannel(ctx.channel(), (IdentityPublicKey) recipient);
+                    channel1.closeFuture().addListener(f -> channels.remove(key));
+                    ctx.fireChannelRead(channel1);
+                    return channel1;
+                });
+
+                channel.writeAndFlush(payload).addListener(f -> {
+                    if (f.isSuccess()) {
+                        future.complete(null);
+                    }
+                    else {
+                        future.completeExceptionally(f.cause());
+                    }
+                });
+            }
             else {
                 super.userEventTriggered(ctx, evt);
             }
@@ -234,7 +255,7 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
 
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final MigrationMessage addressedMsg) throws Exception {
+                                    final MigrationMessage addressedMsg) {
             final Object msg = addressedMsg.message();
             final IdentityPublicKey sender = (IdentityPublicKey) addressedMsg.address();
 

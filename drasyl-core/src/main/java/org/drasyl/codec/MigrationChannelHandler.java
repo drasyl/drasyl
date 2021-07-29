@@ -148,6 +148,9 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
             final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
             handler.onEvent(handlerCtx, (Event) evt, new CompletableFuture<>());
         }
+        else {
+            ctx.fireUserEventTriggered(evt);
+        }
     }
 
     @Override

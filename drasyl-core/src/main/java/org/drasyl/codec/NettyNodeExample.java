@@ -24,8 +24,10 @@ package org.drasyl.codec;
 import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 
+import java.util.concurrent.ExecutionException;
+
 public class NettyNodeExample {
-    public static void main(final String[] args) throws DrasylException, InterruptedException {
+    public static void main(final String[] args) throws DrasylException, InterruptedException, ExecutionException {
         final DrasylNode node = new DrasylNode() {
             @Override
             public void onEvent(final Event event) {
@@ -36,7 +38,11 @@ public class NettyNodeExample {
 
         node.start().join();
 
-        Thread.sleep(10000);
-        node.shutdown().join();
+        Thread.sleep(5_000);
+
+        System.out.println("send!");
+        node.send("7b6f15b4c058c74708e8830ba0526156f3fa5d3f73cbae8331879644df83a0de", "Hallo").toCompletableFuture().get();
+
+        //        node.shutdown().join();
     }
 }
