@@ -21,21 +21,30 @@
  */
 package org.drasyl.codec;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.remote.protocol.ApplicationMessage;
 
-class DrasylChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    @Override
-    protected void initChannel(final DrasylChannel ch) throws Exception {
-        // add for example ARQ?
-        System.out.println("DrasylChannelInitializer.initChannel: " + ch.remoteAddress0());
+public class AddressedApplicationMessage implements AddressedRemoteMessage {
+    private final ApplicationMessage message;
+    private final Object recipient;
+    private final Object sender;
 
-        ch.pipeline().addFirst(new SimpleChannelInboundHandler<>() {
-            @Override
-            protected void channelRead0(final ChannelHandlerContext ctx, final Object msg) {
-                System.out.println("from " + ctx.channel().remoteAddress() + ": " + msg);
-            }
-        });
+    public ApplicationMessage content() {
+        return message;
+    }
+
+    public Object recipient() {
+        return recipient;
+    }
+
+    public Object sender() {
+        return sender;
+    }
+
+    public AddressedApplicationMessage(final ApplicationMessage message,
+                                       final Object recipient,
+                                       final Object sender) {
+        this.message = message;
+        this.recipient = recipient;
+        this.sender = sender;
     }
 }

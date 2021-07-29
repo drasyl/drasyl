@@ -26,15 +26,25 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
+import org.drasyl.DrasylConfig;
+import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 
 import java.net.SocketAddress;
 
+import static java.util.Objects.requireNonNull;
+
 public class DrasylServerChannel extends AbstractServerChannel {
+    private final DrasylConfig drasylConfig;
     private volatile int state; // 0 - open (node created), 1 - active (node started), 2 - closed (node shut down)
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private volatile DrasylAddress localAddress;
+    private final PeersManager peersManager;
+    private volatile Identity localAddress;
 
-    public DrasylServerChannel() {
+    public DrasylServerChannel(final DrasylConfig drasylConfig,
+                               final PeersManager peersManager) {
+        this.drasylConfig = requireNonNull(drasylConfig);
+        this.peersManager = requireNonNull(peersManager);
     }
 
     @Override
@@ -43,22 +53,20 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     @Override
-    protected SocketAddress localAddress0() {
-        return null;
+    protected Identity localAddress0() {
+        return localAddress;
     }
 
     @Override
     protected void doBind(final SocketAddress localAddress) {
         System.out.println("MyServerChannel.doBind");
-        // node start shit
-        this.localAddress = (DrasylAddress) localAddress;
+        this.localAddress = (Identity) localAddress;
         state = 1;
     }
 
     @Override
     protected void doClose() throws Exception {
         System.out.println("MyServerChannel.doClose");
-        // node shutdown shit
 
         if (state <= 1) {
             // Update all internal state before the closeFuture is notified.
@@ -74,8 +82,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
         System.out.println("MyServerChannel.doBeginRead");
 
         // do nothing.
-        // UdpServer, UdpMulticastServer, TcpServer will push their readings to us
-        // TODO: let us pull readings from them
+        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings to us
     }
 
     @Override
@@ -91,5 +98,13 @@ public class DrasylServerChannel extends AbstractServerChannel {
     @Override
     public boolean isActive() {
         return state == 1;
+    }
+
+    public DrasylConfig drasylConfig() {
+        return drasylConfig;
+    }
+
+    public PeersManager peersManager() {
+        return peersManager;
     }
 }

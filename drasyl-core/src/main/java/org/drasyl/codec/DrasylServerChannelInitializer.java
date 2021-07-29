@@ -21,94 +21,28 @@
  */
 package org.drasyl.codec;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.socket.DatagramPacket;
-import org.drasyl.util.EventLoopGroupUtil;
-
-import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
+import org.drasyl.DrasylAddress;
 
 class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
     @Override
-    protected void initChannel(final Channel ch) throws Exception {
-        ch.pipeline().addFirst(new SimpleChannelInboundHandler<DatagramPacket>() {
+    protected void initChannel(final Channel ch) {
+        ch.pipeline().addFirst(new SimpleChannelInboundHandler<AddressedFullReadMessage>() {
             @Override
-            protected void channelRead0(final ChannelHandlerContext ctx,
-                                        final DatagramPacket msg) throws Exception {
-                System.out.println("NettyCodecExample.channelRead0");
-                final Channel channel = new DrasylChannel(ctx.channel());
-
-                ctx.fireChannelRead(channel);
+            protected void channelRead0(ChannelHandlerContext ctx, AddressedFullReadMessage msg) throws Exception {
+                 ctx.fireChannelRead(new DrasylChannel(ctx.channel(), (DrasylAddress) msg.sender()));
             }
         });
-        ch.pipeline().addFirst(new ChannelOutboundHandlerAdapter() {
-            @Override
-            public void write(final ChannelHandlerContext ctx,
-                              final Object msg,
-                              final ChannelPromise promise) throws Exception {
-                super.write(ctx, msg, promise);
-            }
-        });
-        ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
-            private Channel channel;
-
-            @Override
-            public void channelRead(final ChannelHandlerContext ctx,
-                                    final Object msg) throws Exception {
-                if (channel != null) {
-                    System.out.println("NettyCodecExample.channelRead");
-                    channel.read();
-                }
-
-                super.channelRead(ctx, msg);
-            }
-
-            @Override
-            public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-                super.channelInactive(ctx);
-
-                channel.close().awaitUninterruptibly();
-            }
-
-            @Override
-            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-                System.out.println("NettyCodecExample.channelActive");
-
-                final Bootstrap bootstrap = new Bootstrap()
-                        .group(EventLoopGroupUtil.getInstanceBest())
-                        .channel(getBestDatagramChannel())
-                        .option(ChannelOption.SO_BROADCAST, false)
-//                                        .option(ChannelOption.AUTO_READ, false)
-                        .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
-                            @Override
-                            public void channelReadComplete(final ChannelHandlerContext ctx) throws Exception {
-                                ctx.fireChannelReadComplete();
-                            }
-
-                            @Override
-                            protected void channelRead0(final ChannelHandlerContext channelCtx,
-                                                        final DatagramPacket packet) {
-                                System.out.println("Datagram received :" + packet);
-                                ctx.fireChannelRead(packet);
-                            }
-                        });
-                final ChannelFuture future1 = bootstrap.bind(9888);
-                future1.awaitUninterruptibly();
-
-                System.out.println("future1.isSuccess() = " + future1.isSuccess());
-
-                channel = future1.channel();
-
-                super.channelActive(ctx);
-            }
-        });
+        ch.pipeline().addFirst(new InternetDiscovery(((DrasylServerChannel) ch).drasylConfig()));
+        ch.pipeline().addFirst(new ArmHandler(
+                ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionMaxCount(),
+                ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionMaxAgreements(),
+                ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionExpireAfter(),
+                ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionRetryInterval()));
+        ch.pipeline().addFirst(RemoteMessageToByteBufCodec.INSTANCE);
+        ch.pipeline().addFirst(new UdpServer());
     }
 }

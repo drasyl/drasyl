@@ -37,7 +37,7 @@ import java.util.OptionalLong;
 public abstract class Agreement {
     public static final long RENEW_DIVISOR = 2;
 
-    static Builder builder() {
+    public static Builder builder() {
         return new AutoValue_Agreement.Builder();
     }
 
@@ -66,17 +66,17 @@ public abstract class Agreement {
     }
 
     @AutoValue.Builder
-    abstract static class Builder {
-        abstract Builder setKeyPair(KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyPair);
+    public abstract static class Builder {
+        public abstract Builder setKeyPair(KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyPair);
 
-        abstract Builder setRecipientsKeyAgreementKey(Optional<KeyAgreementPublicKey> publicKey);
+        public abstract Builder setRecipientsKeyAgreementKey(Optional<KeyAgreementPublicKey> publicKey);
 
-        abstract Builder setSessionPair(Optional<SessionPair> sessionPair);
+        public abstract Builder setSessionPair(Optional<SessionPair> sessionPair);
 
-        abstract Builder setAgreementId(Optional<AgreementId> agreementId);
+        public abstract Builder setAgreementId(Optional<AgreementId> agreementId);
 
-        abstract Builder setStaleAt(OptionalLong staleAt);
+        public abstract Builder setStaleAt(OptionalLong staleAt);
 
-        abstract Agreement build();
+        public abstract Agreement build();
     }
 }

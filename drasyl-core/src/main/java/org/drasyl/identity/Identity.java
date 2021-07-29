@@ -29,6 +29,8 @@ import org.drasyl.DrasylAddress;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 
+import java.net.SocketAddress;
+
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 
 /**
@@ -39,7 +41,7 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
  */
 @AutoValue
 @SuppressWarnings("java:S118")
-public abstract class Identity {
+public abstract class Identity extends SocketAddress {
     public abstract ProofOfWork getProofOfWork();
 
     public abstract KeyPair<IdentityPublicKey, IdentitySecretKey> getIdentityKeyPair();

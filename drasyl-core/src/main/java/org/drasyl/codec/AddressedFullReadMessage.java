@@ -21,10 +21,31 @@
  */
 package org.drasyl.codec;
 
-import java.net.SocketAddress;
+import org.drasyl.remote.protocol.ApplicationMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
 
-public class DrasylAddress extends SocketAddress {
-    public DrasylAddress(final String address) {
+public class AddressedFullReadMessage implements AddressedRemoteMessage {
+    private final FullReadMessage<?> message;
+    private final Object recipient;
+    private final Object sender;
 
+    public FullReadMessage content() {
+        return message;
+    }
+
+    public Object recipient() {
+        return recipient;
+    }
+
+    public Object sender() {
+        return sender;
+    }
+
+    public AddressedFullReadMessage(final FullReadMessage message,
+                                    final Object recipient,
+                                    final Object sender) {
+        this.message = message;
+        this.recipient = recipient;
+        this.sender = sender;
     }
 }

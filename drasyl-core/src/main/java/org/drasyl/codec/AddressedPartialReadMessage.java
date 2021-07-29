@@ -21,21 +21,15 @@
  */
 package org.drasyl.codec;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.DefaultAddressedEnvelope;
+import org.drasyl.remote.protocol.RemoteMessage;
 
-class DrasylChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    @Override
-    protected void initChannel(final DrasylChannel ch) throws Exception {
-        // add for example ARQ?
-        System.out.println("DrasylChannelInitializer.initChannel: " + ch.remoteAddress0());
+import java.net.InetSocketAddress;
 
-        ch.pipeline().addFirst(new SimpleChannelInboundHandler<>() {
-            @Override
-            protected void channelRead0(final ChannelHandlerContext ctx, final Object msg) {
-                System.out.println("from " + ctx.channel().remoteAddress() + ": " + msg);
-            }
-        });
+public class AddressedPartialReadMessage extends DefaultAddressedEnvelope<RemoteMessage, InetSocketAddress> implements AddressedRemoteMessage {
+    public AddressedPartialReadMessage(final RemoteMessage message,
+                                       final InetSocketAddress recipient,
+                                       final InetSocketAddress sender) {
+        super(message, recipient, sender);
     }
 }

@@ -38,6 +38,8 @@ import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringSerializer
 import org.drasyl.util.InternPool;
 import org.drasyl.util.Worm;
 
+import java.net.SocketAddress;
+
 import static org.drasyl.crypto.Crypto.PK_LONG_TIME_KEY_LENGTH;
 
 /**

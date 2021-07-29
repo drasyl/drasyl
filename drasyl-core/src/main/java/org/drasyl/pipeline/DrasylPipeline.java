@@ -115,44 +115,44 @@ public class DrasylPipeline extends AbstractPipeline {
 //
 //                new Channel(heiko)
 
-        // convert outbound messages addresses to us to inbound messages
-        addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
-
-        // discover nodes running within the same jvm.
-        if (config.isIntraVmDiscoveryEnabled()) {
-            addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
-        }
+//        // convert outbound messages addresses to us to inbound messages
+//        addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
+//
+//        // discover nodes running within the same jvm.
+//        if (config.isIntraVmDiscoveryEnabled()) {
+//            addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
+//        }
 
         if (config.isRemoteEnabled()) {
             // convert Object <-> ApplicationMessage
             addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
-            // route outbound messages to pre-configured ip addresses
-            if (!config.getRemoteStaticRoutes().isEmpty()) {
-                addFirst(STATIC_ROUTES_HANDLER, StaticRoutesHandler.INSTANCE);
-            }
-
-            if (config.isRemoteLocalHostDiscoveryEnabled()) {
-                // discover nodes running on the same local computer
-                addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery());
-            }
-
-            // discovery nodes on the local network
-            if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery());
-            }
+//            // route outbound messages to pre-configured ip addresses
+//            if (!config.getRemoteStaticRoutes().isEmpty()) {
+//                addFirst(STATIC_ROUTES_HANDLER, StaticRoutesHandler.INSTANCE);
+//            }
+//
+//            if (config.isRemoteLocalHostDiscoveryEnabled()) {
+//                // discover nodes running on the same local computer
+//                addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery());
+//            }
+//
+//            // discovery nodes on the local network
+//            if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
+//                addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery());
+//            }
 
             // discover nodes on the internet
             addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config));
 
-            // outbound message guards
-            addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
+//            // outbound message guards
+//            addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
 
-            if (config.isMonitoringEnabled()) {
-                addFirst(MONITORING_HANDLER, new Monitoring());
-            }
+//            if (config.isMonitoringEnabled()) {
+//                addFirst(MONITORING_HANDLER, new Monitoring());
+//            }
 
-            addFirst(RATE_LIMITER, new RateLimiter());
+//            addFirst(RATE_LIMITER, new RateLimiter());
 
             // arm outbound and disarm inbound messages
             if (config.isRemoteMessageArmEnabled()) {
@@ -164,33 +164,33 @@ public class DrasylPipeline extends AbstractPipeline {
             }
 
             // filter out inbound messages with invalid proof of work or other network id
-            addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);
-            addFirst(OTHER_NETWORK_FILTER, OtherNetworkFilter.INSTANCE);
+//            addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);
+//            addFirst(OTHER_NETWORK_FILTER, OtherNetworkFilter.INSTANCE);
 
             // split messages too big for udp
-            addFirst(CHUNKING_HANDLER, new ChunkingHandler());
+//            addFirst(CHUNKING_HANDLER, new ChunkingHandler());
 
             // convert RemoteMessage <-> ByteBuf
             addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 
-            if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                addFirst(UDP_MULTICAST_SERVER, udpMulticastServerProvider.get());
-            }
+//            if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
+//                addFirst(UDP_MULTICAST_SERVER, udpMulticastServerProvider.get());
+//            }
 
-            // tcp fallback
-            if (config.isRemoteTcpFallbackEnabled()) {
-                if (!config.isRemoteSuperPeerEnabled()) {
-                    addFirst(TCP_SERVER, tcpServerProvider.get());
-                }
-                else {
-                    addFirst(TCP_CLIENT, tcpClientProvider.get());
-                }
-            }
+//            // tcp fallback
+//            if (config.isRemoteTcpFallbackEnabled()) {
+//                if (!config.isRemoteSuperPeerEnabled()) {
+//                    addFirst(TCP_SERVER, tcpServerProvider.get());
+//                }
+//                else {
+//                    addFirst(TCP_CLIENT, tcpClientProvider.get());
+//                }
+//            }
 
             // udp server
-            if (config.isRemoteExposeEnabled()) {
-                addFirst(PORT_MAPPER, new PortMapper());
-            }
+//            if (config.isRemoteExposeEnabled()) {
+//                addFirst(PORT_MAPPER, new PortMapper());
+//            }
             addFirst(UDP_SERVER, udpServerProvider.get());
         }
     }

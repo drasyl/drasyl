@@ -24,21 +24,34 @@ package org.drasyl.codec;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.drasyl.DrasylConfig;
+import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
+
+import static java.util.Objects.requireNonNull;
 
 public class DrasylBootstrap {
     private final ServerBootstrap bootstrap;
+    private DrasylConfig config = DrasylConfig.of();
 
-    public DrasylBootstrap() {
+    public DrasylBootstrap(final Identity identity) {
         final NioEventLoopGroup parentGroup = new NioEventLoopGroup(1);
         final NioEventLoopGroup childGroup = new NioEventLoopGroup(5);
         bootstrap = new ServerBootstrap()
                 .group(parentGroup, childGroup)
-                .channelFactory(DrasylServerChannel::new)
+                .channelFactory(() -> new DrasylServerChannel(config, new PeersManager(event -> {
+                    System.err.println("NOT IMPLEMENTED YET " + event);
+                }, identity)))
                 .handler(new DrasylServerChannelInitializer())
                 .childHandler(new DrasylChannelInitializer());
     }
 
-    public ChannelFuture bind(final DrasylAddress address) {
-        return bootstrap.bind(address);
+    public ChannelFuture bind(final Identity identity) {
+        return bootstrap.bind(identity);
+    }
+
+    public DrasylBootstrap config(final DrasylConfig config) {
+        this.config = requireNonNull(config);
+        return this;
     }
 }

@@ -30,6 +30,8 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
+import org.drasyl.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 
 import java.net.SocketAddress;
 
@@ -39,9 +41,11 @@ public class DrasylChannel extends AbstractChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private volatile State state;
+    private final DrasylAddress remoteAddress;
 
-    protected DrasylChannel(final Channel parent) {
+    public DrasylChannel(final Channel parent, final DrasylAddress remoteAddress) {
         super(parent);
+        this.remoteAddress = remoteAddress;
     }
 
     @Override
@@ -56,12 +60,17 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected SocketAddress localAddress0() {
-        return null;
+        return parent().localAddress();
     }
 
     @Override
     protected SocketAddress remoteAddress0() {
-        return null;
+        return new SocketAddress() {
+            @Override
+            public String toString() {
+                return remoteAddress.toString();
+            }
+        };
     }
 
     @Override
