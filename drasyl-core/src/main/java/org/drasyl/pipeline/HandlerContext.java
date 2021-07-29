@@ -22,6 +22,7 @@
 package org.drasyl.pipeline;
 
 import io.netty.buffer.ByteBuf;
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -166,7 +167,7 @@ public interface HandlerContext {
      *
      * @return independent scheduler {@link DrasylScheduler}
      */
-    DrasylScheduler independentScheduler();
+    Scheduler independentScheduler();
 
     /**
      * This method returns the same thread pool that is used by the normal pipeline processing.
@@ -174,7 +175,7 @@ public interface HandlerContext {
      *
      * @return normal pipeline processing thread pool
      */
-    DrasylScheduler dependentScheduler();
+    Scheduler dependentScheduler();
 
     /**
      * Returns the identity of this node.
