@@ -24,6 +24,7 @@ package org.drasyl.codec;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
@@ -34,6 +35,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -168,9 +170,14 @@ public abstract class DrasylNode {
     @NonNull
     public CompletionStage<Void> send(@Nullable final DrasylAddress recipient,
                                       final Object payload) {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        channel.pipeline().fireUserEventTriggered(new OutboundMessage(payload, recipient, future));
-        return future;
+        if (channel != null) {
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            channel.pipeline().fireUserEventTriggered(new OutboundMessage(payload, recipient, future));
+            return future;
+        }
+        else {
+            return failedFuture(new Exception("You have to call DrasylNode#start() first!"));
+        }
     }
 
     @NonNull
@@ -237,6 +244,16 @@ public abstract class DrasylNode {
         public CompletableFuture<Void> getFuture() {
             return future;
         }
+    }
+
+    /**
+     * Returns the {@link Pipeline} to allow users to add own handlers.
+     *
+     * @return the pipeline
+     */
+    @NonNull
+    public ChannelPipeline pipeline() {
+        return channel.pipeline();
     }
 
     /**
