@@ -999,7 +999,7 @@ class DrasylNodeIT {
          * Non-started
          */
         @Nested
-        class SingleNonUdpServerPortEventNode {
+        class SingleNonStartedNode {
             private EmbeddedNode node;
 
             @BeforeEach
