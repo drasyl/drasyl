@@ -118,6 +118,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
                 ctx.passEvent(NodeUpEvent.of(Node.of(ctx.identity(), event.getNode().getPort(), socketAddress.getPort())), future);
+                return;
             }
             else {
                 // server start failed
