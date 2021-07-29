@@ -23,11 +23,13 @@ package org.drasyl.codec;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPromise;
 
 public class NettyCodecExample {
     public static void main(final String[] args) throws InterruptedException {
         // new DrasylNode()
         final DrasylBootstrap bootstrap = new DrasylBootstrap()
+                // TODO: idleTimeout(60 seconds)
 //                .handler(new SimpleChannelInboundHandler<Object>() {
 //                    @Override
 //                    protected void channelRead0(final ChannelHandlerContext ctx,
@@ -43,10 +45,17 @@ public class NettyCodecExample {
 
         final Channel channel = future.channel();
 
+        Thread.sleep(5_000);
+
         // DrasylNode#send()
-        channel.writeAndFlush("Hallo welt");
+        // wirft UnsupportedOperationException, müssen an ein child channel ran
+        final ChannelPromise promise = channel.newPromise();
+        channel.writeAndFlush("Hallo welt", promise); // empfänger fehlt
+
+        Thread.sleep(5_000);
 
         // DrasylNode#shutdown
+        System.out.println("DrasylNode#shutdown");
         channel.close();
     }
 }

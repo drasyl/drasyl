@@ -72,6 +72,13 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
             }
 
             @Override
+            public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+                super.channelInactive(ctx);
+
+                channel.close().awaitUninterruptibly();
+            }
+
+            @Override
             public void channelActive(final ChannelHandlerContext ctx) throws Exception {
                 System.out.println("NettyCodecExample.channelActive");
 

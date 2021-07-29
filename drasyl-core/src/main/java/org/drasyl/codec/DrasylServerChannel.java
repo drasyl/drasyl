@@ -59,6 +59,14 @@ public class DrasylServerChannel extends AbstractServerChannel {
     protected void doClose() throws Exception {
         System.out.println("MyServerChannel.doClose");
         // node shutdown shit
+
+        if (state <= 1) {
+            // Update all internal state before the closeFuture is notified.
+            if (localAddress != null) {
+                localAddress = null;
+            }
+            state = 2;
+        }
     }
 
     @Override
