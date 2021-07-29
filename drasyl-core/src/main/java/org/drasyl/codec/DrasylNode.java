@@ -57,11 +57,11 @@ public abstract class DrasylNode {
     private Channel channel;
     private ChannelFuture channelFuture;
 
-    public DrasylNode() throws DrasylException {
+    protected DrasylNode() throws DrasylException {
         this(DrasylConfig.of());
     }
 
-    public DrasylNode(final DrasylConfig config) throws DrasylException {
+    protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
             this.config = requireNonNull(config);
             final IdentityManager identityManager = new IdentityManager(this.config);
@@ -237,5 +237,15 @@ public abstract class DrasylNode {
         public CompletableFuture<Void> getFuture() {
             return future;
         }
+    }
+
+    /**
+     * Returns the {@link Identity} of this node.
+     *
+     * @return the {@link Identity} of this node
+     */
+    @NonNull
+    public Identity identity() {
+        return identity;
     }
 }
