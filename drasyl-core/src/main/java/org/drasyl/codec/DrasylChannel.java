@@ -69,12 +69,7 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected SocketAddress remoteAddress0() {
-        return new SocketAddress() {
-            @Override
-            public String toString() {
-                return remoteAddress.toString();
-            }
-        };
+        return remoteAddress;
     }
 
     @Override

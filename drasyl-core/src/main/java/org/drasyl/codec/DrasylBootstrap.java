@@ -23,7 +23,6 @@ package org.drasyl.codec;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -39,18 +38,17 @@ public class DrasylBootstrap {
     private DrasylConfig config = DrasylConfig.of();
 
     public DrasylBootstrap(final Consumer<Event> eventConsumer, final Identity identity) {
-        final NioEventLoopGroup parentGroup = new NioEventLoopGroup(5);
-        final NioEventLoopGroup childGroup = new NioEventLoopGroup(5);
         bootstrap = new ServerBootstrap()
-                .group(parentGroup, childGroup)
+                .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
+                .localAddress(identity)
                 .channelFactory(() -> new DrasylServerChannel(config, identity, new PeersManager(eventConsumer, identity), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                         new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())))
                 .handler(new DrasylServerChannelInitializer(eventConsumer))
                 .childHandler(new DrasylChannelInitializer(eventConsumer));
     }
 
-    public ChannelFuture bind(final Identity identity) {
-        return bootstrap.bind(identity);
+    public ChannelFuture bind() {
+        return bootstrap.bind();
     }
 
     public DrasylBootstrap config(final DrasylConfig config) {

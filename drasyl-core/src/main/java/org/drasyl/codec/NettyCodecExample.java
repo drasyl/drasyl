@@ -56,7 +56,7 @@ public class NettyCodecExample {
 
         // DrasylNode#start
 
-        final ChannelFuture future = bootstrap.bind(identityManager.getIdentity());
+        final ChannelFuture future = bootstrap.bind();
         future.awaitUninterruptibly();
 
         final Channel channel = future.channel();

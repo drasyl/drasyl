@@ -129,7 +129,7 @@ public abstract class DrasylNode {
     @NonNull
     public synchronized CompletableFuture<Void> start() {
         if (channelFuture == null) {
-            channelFuture = bootstrap.bind(identity);
+            channelFuture = bootstrap.bind();
         }
         final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
         channelFuture.addListener((ChannelFutureListener) future -> {

@@ -22,8 +22,8 @@
 package org.drasyl.codec;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.IdentityPublicKey;
@@ -39,11 +39,10 @@ class DrasylChannelInitializer extends ChannelInitializer<DrasylChannel> {
 
     @Override
     protected void initChannel(final DrasylChannel ch) {
-        ch.pipeline().addFirst(new SimpleChannelInboundHandler<>() {
+        ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
             @Override
-            protected void channelRead0(final ChannelHandlerContext ctx, final Object msg) {
-                final IdentityPublicKey sender = IdentityPublicKey.of(ctx.channel().remoteAddress().toString());
-                final MessageEvent event = MessageEvent.of(sender, msg);
+            public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+                final MessageEvent event = MessageEvent.of((IdentityPublicKey) ctx.channel().remoteAddress(), msg);
                 eventConsumer.accept(event);
             }
         });
