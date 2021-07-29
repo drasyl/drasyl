@@ -41,7 +41,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private final Identity identity;
     private final PeersManager peersManager;
-    private volatile Identity localAddress;
+    private volatile Identity localAddress; // NOSONAR
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
 
@@ -69,6 +69,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     @Override
     protected void doBind(final SocketAddress localAddress) {
+        if (!(localAddress instanceof Identity)) {
+            throw new IllegalArgumentException("Unsupported address type!");
+        }
+
         this.localAddress = (Identity) localAddress;
         state = 1;
     }
@@ -80,7 +84,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             if (localAddress != null) {
                 localAddress = null;
             }
-            state = 2;
+            state = 2; // NOSONAR
         }
     }
 
@@ -97,7 +101,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     @Override
     public boolean isOpen() {
-        return state < 2;
+        return state < 2; // NOSONAR
     }
 
     @Override
