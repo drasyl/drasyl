@@ -67,6 +67,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+import static org.drasyl.codec.Null.NULL;
+
 class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylPipeline.class);
     public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
@@ -189,33 +191,33 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
                 ch.pipeline().addFirst(PORT_MAPPER, new MigrationChannelHandler(new PortMapper()));
             }
             ch.pipeline().addFirst(UDP_SERVER, new MigrationChannelHandler(new UdpServer()));
-
-            ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
-                @Override
-                public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelActive(ctx);
-
-                    final Event event = NodeUpEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
-                    ctx.fireUserEventTriggered(event);
-                }
-
-                @Override
-                public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelInactive(ctx);
-
-                    final Event event = NodeDownEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
-                    ctx.fireUserEventTriggered(event);
-                }
-
-                @Override
-                public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelUnregistered(ctx);
-
-                    final Event event = NodeNormalTerminationEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
-                    ctx.fireUserEventTriggered(event);
-                }
-            });
         }
+
+        ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+                super.channelActive(ctx);
+
+                final Event event = NodeUpEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
+                ctx.fireUserEventTriggered(event);
+            }
+
+            @Override
+            public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+                super.channelInactive(ctx);
+
+                final Event event = NodeDownEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
+                ctx.fireUserEventTriggered(event);
+            }
+
+            @Override
+            public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
+                super.channelUnregistered(ctx);
+
+                final Event event = NodeNormalTerminationEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
+                ctx.fireUserEventTriggered(event);
+            }
+        });
     }
 
     private class ChannelSpawner extends SimpleChannelInboundHandler<MigrationMessage> {
@@ -229,7 +231,7 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
             }
             else if (evt instanceof DrasylNode.OutboundMessage) {
                 final DrasylAddress recipient = ((DrasylNode.OutboundMessage) evt).getRecipient();
-                final Object payload = ((DrasylNode.OutboundMessage) evt).getPayload();
+                Object payload = ((DrasylNode.OutboundMessage) evt).getPayload();
                 final CompletableFuture<Void> future = ((DrasylNode.OutboundMessage) evt).getFuture();
 
                 final Channel channel = channels.computeIfAbsent(recipient, key -> {
@@ -238,6 +240,10 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
                     ctx.fireChannelRead(channel1);
                     return channel1;
                 });
+
+                if (payload == null) {
+                    payload = NULL;
+                }
 
                 channel.writeAndFlush(payload).addListener(f -> {
                     if (f.isSuccess()) {
@@ -256,7 +262,7 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final MigrationMessage addressedMsg) {
-            final Object msg = addressedMsg.message();
+            Object msg = addressedMsg.message();
             final IdentityPublicKey sender = (IdentityPublicKey) addressedMsg.address();
 
             // create/get channel
@@ -266,6 +272,10 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
                 ctx.fireChannelRead(channel1);
                 return channel1;
             });
+
+            if (msg == null) {
+                msg = NULL;
+            }
 
             // pass message to channel
             channel.pipeline().fireChannelRead(msg);

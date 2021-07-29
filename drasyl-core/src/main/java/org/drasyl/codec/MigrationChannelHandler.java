@@ -28,10 +28,13 @@ import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
+import org.drasyl.pipeline.address.Address;
 
 import java.net.SocketAddress;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+
+import static org.drasyl.codec.Null.NULL;
 
 public class MigrationChannelHandler extends ChannelHandlerAdapter implements ChannelOutboundHandler, ChannelInboundHandler {
     private final Handler handler;
@@ -93,7 +96,12 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
                     promise.setFailure(throwable);
                 }
             });
-            handler.onOutbound(handlerCtx, ((MigrationMessage<?, ?>) msg).address(), ((MigrationMessage<?, ?>) msg).message(), future);
+            final Address recipient = ((MigrationMessage<?, ?>) msg).address();
+            Object payload = ((MigrationMessage<?, ?>) msg).message();
+            if (payload == NULL) {
+                payload = null;
+            }
+            handler.onOutbound(handlerCtx, recipient, payload, future);
         }
         else {
             throw new RuntimeException("not implemented yet");
@@ -129,7 +137,12 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
         if (msg instanceof MigrationMessage) {
             final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
-            handler.onInbound(handlerCtx, ((MigrationMessage<?, ?>) msg).address(), ((MigrationMessage<?, ?>) msg).message(), new CompletableFuture<>());
+            final Address sender = ((MigrationMessage<?, ?>) msg).address();
+            Object payload = ((MigrationMessage<?, ?>) msg).message();
+            if (payload == NULL) {
+                payload = null;
+            }
+            handler.onInbound(handlerCtx, sender, payload, new CompletableFuture<>());
         }
         else {
             throw new RuntimeException("not implemented yet");
