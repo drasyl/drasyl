@@ -23,6 +23,7 @@ package org.drasyl;
 
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.codec.MigrationChannelHandler;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -393,39 +394,14 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), new byte[]{
-                        (byte) 0,
-                        (byte) 1
-                }).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
                 node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
-
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), new byte[]{
-                        (byte) 0,
-                        (byte) 1
-                }).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
                 node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
 
                 //
                 // verify
                 //
-                node1Messages.awaitCount(10).assertValueCount(10);
-                node2Messages.awaitCount(10).assertValueCount(10);
+                node1Messages.awaitCount(1).assertValueCount(1);
+                node2Messages.awaitCount(1).assertValueCount(1);
             }
         }
 
@@ -615,7 +591,7 @@ class DrasylNodeIT {
                         .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
                         .build();
                 client = new EmbeddedNode(config).started();
-                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new OutboundMessageFilter<ByteBuf, Address>() {
+                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new MigrationChannelHandler(new OutboundMessageFilter<ByteBuf, Address>() {
                     @Override
                     protected boolean accept(final HandlerContext ctx,
                                              final Address sender,
@@ -631,7 +607,7 @@ class DrasylNodeIT {
                         LOG.trace("UDP message blocked: {}", msg);
                         future.complete(null);
                     }
-                });
+                }));
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client"));
             }
 
