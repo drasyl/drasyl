@@ -26,16 +26,61 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylAddress;
+import org.drasyl.event.Event;
+import org.drasyl.event.Node;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeUpEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
+    private final Consumer<Event> eventConsumer;
+
+    public DrasylServerChannelInitializer(final Consumer<Event> eventConsumer) {
+        this.eventConsumer = eventConsumer;
+    }
+
     @Override
     protected void initChannel(final Channel ch) {
         ch.pipeline().addFirst(new SimpleChannelInboundHandler<AddressedObject>() {
+            private Identity identity;
             private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
+
+            @Override
+            public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
+                eventConsumer.accept(NodeNormalTerminationEvent.of(Node.of(identity)));
+
+                super.channelUnregistered(ctx);
+            }
+
+            @Override
+            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+                identity = ((DrasylServerChannel) ctx.channel()).localAddress0();
+
+                eventConsumer.accept(NodeUpEvent.of(Node.of(identity)));
+
+                super.channelActive(ctx);
+            }
+
+            @Override
+            public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+                eventConsumer.accept(NodeDownEvent.of(Node.of(identity)));
+
+                super.channelInactive(ctx);
+            }
+
+            @Override
+            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                           final Object evt) throws Exception {
+                eventConsumer.accept((Event) evt);
+
+                super.userEventTriggered(ctx, evt);
+            }
 
             @Override
             protected void channelRead0(final ChannelHandlerContext ctx,

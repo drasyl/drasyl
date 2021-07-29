@@ -30,11 +30,10 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.net.SocketAddress;
+import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 
@@ -84,17 +83,17 @@ public class DrasylChannel extends AbstractChannel {
     }
 
     @Override
-    protected void doBind(final SocketAddress localAddress) throws Exception {
+    protected void doBind(final SocketAddress localAddress) {
         state = State.BOUND;
     }
 
     @Override
-    protected void doDisconnect() throws Exception {
+    protected void doDisconnect() {
         doClose();
     }
 
     @Override
-    protected void doClose() throws Exception {
+    protected void doClose() {
         localAddress = null;
 
         state = State.CLOSED;
@@ -126,12 +125,7 @@ public class DrasylChannel extends AbstractChannel {
                 break;
             }
 
-            parent().writeAndFlush(new AddressedObject(msg, remoteAddress, null)).addListener(new GenericFutureListener<Future<? super Void>>() {
-                @Override
-                public void operationComplete(final Future<? super Void> future) throws Exception {
-                    System.out.println("future = " + future);
-                }
-            });
+            parent().writeAndFlush(new AddressedObject(msg, remoteAddress, null));
             in.remove();
         }
     }
@@ -161,7 +155,16 @@ public class DrasylChannel extends AbstractChannel {
         public void connect(final SocketAddress remoteAddress,
                             final SocketAddress localAddress,
                             final ChannelPromise promise) {
+            if (!promise.setUncancellable() || !ensureOpen(promise)) {
+                return;
+            }
 
+            if (state == State.CONNECTED) {
+                final Exception cause = new AlreadyConnectedException();
+                safeSetFailure(promise, cause);
+                pipeline().fireExceptionCaught(cause);
+                return;
+            }
         }
     }
 }

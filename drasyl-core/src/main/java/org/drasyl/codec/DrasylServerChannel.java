@@ -66,15 +66,12 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     @Override
     protected void doBind(final SocketAddress localAddress) {
-        System.out.println("MyServerChannel.doBind");
         this.localAddress = (Identity) localAddress;
         state = 1;
     }
 
     @Override
-    protected void doClose() throws Exception {
-        System.out.println("MyServerChannel.doClose");
-
+    protected void doClose() {
         if (state <= 1) {
             // Update all internal state before the closeFuture is notified.
             if (localAddress != null) {
@@ -86,8 +83,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     @Override
     protected void doBeginRead() {
-        System.out.println("DrasylServerChannel.doBeginRead");
-
         // do nothing.
         // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings to us
     }

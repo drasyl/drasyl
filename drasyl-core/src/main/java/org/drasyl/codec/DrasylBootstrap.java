@@ -25,9 +25,12 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.DrasylConfig;
+import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
+
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,17 +38,15 @@ public class DrasylBootstrap {
     private final ServerBootstrap bootstrap;
     private DrasylConfig config = DrasylConfig.of();
 
-    public DrasylBootstrap(final Identity identity) {
+    public DrasylBootstrap(final Consumer<Event> eventConsumer, final Identity identity) {
         final NioEventLoopGroup parentGroup = new NioEventLoopGroup(1);
         final NioEventLoopGroup childGroup = new NioEventLoopGroup(5);
         bootstrap = new ServerBootstrap()
                 .group(parentGroup, childGroup)
-                .channelFactory(() -> new DrasylServerChannel(config, new PeersManager(event -> {
-                    System.err.println("NOT IMPLEMENTED YET " + event);
-                }, identity), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
+                .channelFactory(() -> new DrasylServerChannel(config, new PeersManager(eventConsumer, identity), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                         new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())))
-                .handler(new DrasylServerChannelInitializer())
-                .childHandler(new DrasylChannelInitializer());
+                .handler(new DrasylServerChannelInitializer(eventConsumer))
+                .childHandler(new DrasylChannelInitializer(eventConsumer));
     }
 
     public ChannelFuture bind(final Identity identity) {

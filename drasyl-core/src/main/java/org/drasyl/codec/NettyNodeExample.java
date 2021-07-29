@@ -21,31 +21,22 @@
  */
 package org.drasyl.codec;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
-import org.drasyl.identity.IdentityPublicKey;
 
-import java.util.function.Consumer;
-
-class DrasylChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    private final Consumer<Event> eventConsumer;
-
-    public DrasylChannelInitializer(final Consumer<Event> eventConsumer) {
-        this.eventConsumer = eventConsumer;
-    }
-
-    @Override
-    protected void initChannel(final DrasylChannel ch) {
-        ch.pipeline().addFirst(new SimpleChannelInboundHandler<>() {
+public class NettyNodeExample {
+    public static void main(final String[] args) throws DrasylException, InterruptedException {
+        final DrasylNode node = new DrasylNode() {
             @Override
-            protected void channelRead0(final ChannelHandlerContext ctx, final Object msg) {
-                final IdentityPublicKey sender = IdentityPublicKey.of(ctx.channel().remoteAddress().toString());
-                final MessageEvent event = MessageEvent.of(sender, msg);
-                eventConsumer.accept(event);
+            public void onEvent(final Event event) {
+                System.out.println("NettyNodeExample.onEvent");
+                System.out.println("event = " + event);
             }
-        });
+        };
+
+        node.start().join();
+
+//        Thread.sleep(10000);
+//        node.shutdown().join();
     }
 }

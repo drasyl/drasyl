@@ -23,9 +23,7 @@ package org.drasyl.codec;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 
 import java.io.IOException;
@@ -45,7 +43,9 @@ public class NettyCodecExample {
         // new DrasylNode()
         final IdentityManager identityManager = new IdentityManager(DrasylConfig.of());
         identityManager.loadOrCreateIdentity();
-        final DrasylBootstrap bootstrap = new DrasylBootstrap(identityManager.getIdentity())
+        final DrasylBootstrap bootstrap = new DrasylBootstrap(event -> {
+            System.err.println("NOT IMPLEMENTED YET = " + event);
+        }, identityManager.getIdentity())
                 .config(DrasylConfig.of())
                 // TODO: idleTimeout(60 seconds)
 //                .handler(new SimpleChannelInboundHandler<Object>() {
