@@ -33,12 +33,37 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylPipeline.class);
+    public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
+    public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
+    public static final String CHANNEL_SPAWNER = "CHANNEL_SPAWNER";
+    public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
+    public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
+    public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
+    public static final String INTERNET_DISCOVERY = "INTERNET_DISCOVERY";
+    public static final String LOCAL_NETWORK_DISCOVER = "LOCAL_NETWORK_DISCOVER";
+    public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
+    public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
+    public static final String RATE_LIMITER = "RATE_LIMITER";
+    public static final String ARM_HANDLER = "ARM_HANDLER";
+    public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
+    public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
+    public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
+    public static final String REMOTE_MESSAGE_TO_BYTE_BUF_CODEC = "REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC";
+    public static final String UDP_MULTICAST_SERVER = "UDP_MULTICAST_SERVER";
+    public static final String TCP_SERVER = "TCP_SERVER";
+    public static final String TCP_CLIENT = "TCP_CLIENT";
+    public static final String PORT_MAPPER = "PORT_MAPPER";
+    public static final String UDP_SERVER = "UDP_SERVER";
     private final Consumer<Event> eventConsumer;
 
     public DrasylServerChannelInitializer(final Consumer<Event> eventConsumer) {
@@ -47,67 +72,88 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
 
     @Override
     protected void initChannel(final Channel ch) {
-        ch.pipeline().addFirst(new SimpleChannelInboundHandler<AddressedObject>() {
-            private Identity identity;
-            private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
+        ch.pipeline().addFirst(CHANNEL_SPAWNER, new ChannelSpawner());
 
-            @Override
-            public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
-                eventConsumer.accept(NodeNormalTerminationEvent.of(Node.of(identity)));
+        if (((DrasylServerChannel) ch).drasylConfig().isRemoteEnabled()) {
+            // convert Object <-> ApplicationMessage
+            ch.pipeline().addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
-                super.channelUnregistered(ctx);
+            // discover nodes on the internet
+            ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(((DrasylServerChannel) ch).drasylConfig()));
+
+            // arm outbound and disarm inbound messages
+            if (((DrasylServerChannel) ch).drasylConfig().isRemoteMessageArmEnabled()) {
+                ch.pipeline().addFirst(ARM_HANDLER, new ArmHandler(
+                        ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionMaxCount(),
+                        ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionMaxAgreements(),
+                        ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionExpireAfter(),
+                        ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionRetryInterval()));
             }
 
-            @Override
-            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-                identity = ((DrasylServerChannel) ctx.channel()).localAddress0();
+            // convert RemoteMessage <-> ByteBuf
+            ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 
-                eventConsumer.accept(NodeUpEvent.of(Node.of(identity)));
-
-                super.channelActive(ctx);
+            // udp server
+            if (((DrasylServerChannel) ch).drasylConfig().isRemoteExposeEnabled()) {
+                ch.pipeline().addFirst(PORT_MAPPER, new PortMapper());
             }
+            ch.pipeline().addFirst(UDP_SERVER, new UdpServer());
+        }
+    }
 
-            @Override
-            public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-                eventConsumer.accept(NodeDownEvent.of(Node.of(identity)));
+    private class ChannelSpawner extends SimpleChannelInboundHandler<AddressedObject> {
+        private Identity identity;
+        private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
 
-                super.channelInactive(ctx);
-            }
+        @Override
+        public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
+            eventConsumer.accept(NodeNormalTerminationEvent.of(Node.of(identity)));
 
-            @Override
-            public void userEventTriggered(final ChannelHandlerContext ctx,
-                                           final Object evt) throws Exception {
+            super.channelUnregistered(ctx);
+        }
+
+        @Override
+        public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+            identity = ((DrasylServerChannel) ctx.channel()).localAddress0();
+
+            eventConsumer.accept(NodeUpEvent.of(Node.of(identity)));
+
+            super.channelActive(ctx);
+        }
+
+        @Override
+        public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+            eventConsumer.accept(NodeDownEvent.of(Node.of(identity)));
+
+            super.channelInactive(ctx);
+        }
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                       final Object evt) throws Exception {
+            if (evt instanceof Event) {
                 eventConsumer.accept((Event) evt);
-
-                super.userEventTriggered(ctx, evt);
             }
 
-            @Override
-            protected void channelRead0(final ChannelHandlerContext ctx,
-                                        final AddressedObject addressedMsg) throws Exception {
-                final Object msg = addressedMsg.content();
-                final IdentityPublicKey sender = addressedMsg.sender();
+            super.userEventTriggered(ctx, evt);
+        }
 
-                // create/get channel
-                final Channel channel = channels.computeIfAbsent(sender, key -> {
-                    final DrasylChannel channel1 = new DrasylChannel(ctx.channel(), sender);
-                    channel1.closeFuture().addListener(future -> channels.remove(key));
-                    ctx.fireChannelRead(channel1);
-                    return channel1;
-                });
+        @Override
+        protected void channelRead0(final ChannelHandlerContext ctx,
+                                    final AddressedObject addressedMsg) throws Exception {
+            final Object msg = addressedMsg.content();
+            final IdentityPublicKey sender = addressedMsg.sender();
 
-                // pass message to channel
-                channel.pipeline().fireChannelRead(msg);
-            }
-        });
-        ch.pipeline().addFirst(MessageSerializer.INSTANCE);
-        ch.pipeline().addFirst(new InternetDiscovery(((DrasylServerChannel) ch).drasylConfig()));
-        ch.pipeline().addFirst(new ArmHandler(
-                ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionMaxCount(),
-                ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionMaxAgreements(),
-                ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionExpireAfter(),
-                ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionRetryInterval()));
-        ch.pipeline().addFirst(RemoteMessageToByteBufCodec.INSTANCE);
-        ch.pipeline().addFirst(new UdpServer());
+            // create/get channel
+            final Channel channel = channels.computeIfAbsent(sender, key -> {
+                final DrasylChannel channel1 = new DrasylChannel(ctx.channel(), sender);
+                channel1.closeFuture().addListener(future -> channels.remove(key));
+                ctx.fireChannelRead(channel1);
+                return channel1;
+            });
+
+            // pass message to channel
+            channel.pipeline().fireChannelRead(msg);
+        }
     }
 }

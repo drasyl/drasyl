@@ -31,8 +31,12 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
+import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedInteger;
@@ -41,11 +45,16 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
+/**
+ * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the
+ * {@link DrasylPipeline}.
+ */
 class UdpServer extends ChannelOutboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(org.drasyl.remote.handler.UdpServer.class);
     private static final short MIN_DERIVED_PORT = 22528;
@@ -74,9 +83,18 @@ class UdpServer extends ChannelOutboundHandlerAdapter {
                      final ChannelPromise promise) throws Exception {
         super.bind(ctx, localAddress, promise);
 
-        LOG.debug("Start Server...");
-        final int bindPort;
-        if (((DrasylServerChannel) ctx.channel()).drasylConfig().getRemoteBindPort() == -1) {
+        final NodeUpEvent event = NodeUpEvent.of(Node.of(((DrasylServerChannel) (ctx.channel())).localAddress0()));
+        startServer(new MigrationHandlerContext(ctx), event, new CompletableFuture<>());
+    }
+
+    @SuppressWarnings("UnstableApiUsage")
+    private synchronized void startServer(final HandlerContext ctx,
+                                          final Event event,
+                                          final CompletableFuture<Void> future) {
+        if (channel == null) {
+            LOG.debug("Start Server...");
+            final int bindPort;
+            if (ctx.config().getRemoteBindPort() == -1) {
                 /*
                  derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
                  own identity. this is done because we also expose this port via
@@ -85,36 +103,41 @@ class UdpServer extends ChannelOutboundHandlerAdapter {
                  a completely random port would have the disadvantage that every time the node is
                  started it would use a new port and this would make discovery more difficult
                 */
-            final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(((DrasylServerChannel) ctx.channel()).localAddress0().getIdentityPublicKey().toByteArray()).asBytes()).getValue();
-            bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
+                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.identity().getIdentityPublicKey().toByteArray()).asBytes()).getValue();
+                bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
+            }
+            else {
+                bindPort = ctx.config().getRemoteBindPort();
+            }
+            final ChannelFuture channelFuture = bootstrap
+                    .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
+                        @Override
+                        protected void channelRead0(final ChannelHandlerContext channelCtx,
+                                                    final DatagramPacket packet) {
+                            LOG.trace("Datagram received {}", packet);
+                            ctx.passInbound(new InetSocketAddressWrapper(packet.sender()), packet.content().retain(), new CompletableFuture<>());
+                        }
+                    })
+                    .bind(ctx.config().getRemoteBindHost(), bindPort);
+            channelFuture.awaitUninterruptibly();
+
+            if (channelFuture.isSuccess()) {
+                // server successfully started
+                this.channel = channelFuture.channel();
+                final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+                LOG.info("Server started and listening at udp:/{}", socketAddress);
+
+                // consume NodeUpEvent and publish NodeUpEvent with port
+                ctx.passEvent(NodeUpEvent.of(Node.of(ctx.identity(), socketAddress.getPort())), future);
+            }
+            else {
+                // server start failed
+                future.completeExceptionally(new Exception("Unable to bind server to address udp://" + ctx.config().getRemoteBindHost() + ":" + bindPort, channelFuture.cause()));
+            }
         }
         else {
-            bindPort = ((DrasylServerChannel) ctx.channel()).drasylConfig().getRemoteBindPort();
-        }
-        final ChannelFuture channelFuture = bootstrap
-                .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
-                    @Override
-                    protected void channelRead0(final ChannelHandlerContext channelCtx,
-                                                final DatagramPacket packet) {
-                        LOG.trace("Datagram received {}", packet);
-                        ctx.fireChannelRead(packet.retain());
-                    }
-                })
-                .bind(((DrasylServerChannel) ctx.channel()).drasylConfig().getRemoteBindHost(), bindPort);
-        channelFuture.awaitUninterruptibly();
-
-        if (channelFuture.isSuccess()) {
-            // server successfully started
-            this.channel = channelFuture.channel();
-            final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-            LOG.info("Server started and listening at udp:/{}", socketAddress);
-
-            // consume NodeUpEvent and publish NodeUpEvent with port
-            ctx.fireUserEventTriggered(NodeUpEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).localAddress0(), socketAddress.getPort())));
-        }
-        else {
-            // server start failed
-            throw new Exception("Unable to bind server to address udp://" + ((DrasylServerChannel) ctx.channel()).drasylConfig().getRemoteBindHost() + ":" + bindPort, channelFuture.cause());
+            // passthrough event
+            ctx.passEvent(event, future);
         }
     }
 
@@ -150,6 +173,18 @@ class UdpServer extends ChannelOutboundHandlerAdapter {
         else {
             ReferenceCountUtil.safeRelease(msg);
             throw new Exception("UDP channel is not present or is not writable.");
+        }
+    }
+
+    public class UdpServerPort {
+        private final int port;
+
+        public int getPort() {
+            return port;
+        }
+
+        public UdpServerPort(final int port) {
+            this.port = port;
         }
     }
 }
