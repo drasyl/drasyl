@@ -21,12 +21,23 @@
  */
 package org.drasyl.codec;
 
-import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.pipeline.address.Address;
 
-public interface AddressedRemoteMessage<T extends RemoteMessage> {
-    T content();
+public class MigrationMessage<T, A extends Address> {
+    private final T message;
+    private final A address;
 
-    Object recipient();
+    public T message() {
+        return message;
+    }
 
-    Object sender();
+    public A address() {
+        return address;
+    }
+
+    public MigrationMessage(final T message,
+                            final A address) {
+        this.message = message;
+        this.address = address;
+    }
 }

@@ -101,8 +101,6 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected void doBeginRead() {
-        System.out.println("DrasylChannel.doBeginRead");
-
         // do nothing.
         // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings to us
     }
@@ -125,7 +123,7 @@ public class DrasylChannel extends AbstractChannel {
                 break;
             }
 
-            parent().writeAndFlush(new AddressedObject(msg, remoteAddress, null));
+            parent().writeAndFlush(new MigrationMessage<>(msg, remoteAddress));
             in.remove();
         }
     }

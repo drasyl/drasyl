@@ -39,11 +39,11 @@ public class DrasylBootstrap {
     private DrasylConfig config = DrasylConfig.of();
 
     public DrasylBootstrap(final Consumer<Event> eventConsumer, final Identity identity) {
-        final NioEventLoopGroup parentGroup = new NioEventLoopGroup(1);
+        final NioEventLoopGroup parentGroup = new NioEventLoopGroup(5);
         final NioEventLoopGroup childGroup = new NioEventLoopGroup(5);
         bootstrap = new ServerBootstrap()
                 .group(parentGroup, childGroup)
-                .channelFactory(() -> new DrasylServerChannel(config, new PeersManager(eventConsumer, identity), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
+                .channelFactory(() -> new DrasylServerChannel(config, identity, new PeersManager(eventConsumer, identity), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                         new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())))
                 .handler(new DrasylServerChannelInitializer(eventConsumer))
                 .childHandler(new DrasylChannelInitializer(eventConsumer));

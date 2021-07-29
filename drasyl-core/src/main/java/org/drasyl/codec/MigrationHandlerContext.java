@@ -22,8 +22,8 @@
 package org.drasyl.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -33,7 +33,6 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
-import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -48,12 +47,17 @@ public class MigrationHandlerContext implements HandlerContext {
 
     @Override
     public ByteBuf alloc() {
-        return null;
+        return alloc(false);
     }
 
     @Override
     public ByteBuf alloc(final boolean preferDirect) {
-        return null;
+        if (preferDirect) {
+            return ctx.alloc().directBuffer();
+        }
+        else {
+            return ctx.alloc().ioBuffer();
+        }
     }
 
     @Override
@@ -75,20 +79,49 @@ public class MigrationHandlerContext implements HandlerContext {
     public CompletableFuture<Void> passInbound(final Address sender,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-        return null;
+        final MigrationMessage addressedMsg = new MigrationMessage(msg, sender);
+
+        try {
+            ctx.fireChannelRead(addressedMsg);
+            future.complete(null);
+        }
+        catch (final Exception e) {
+            future.completeExceptionally(e);
+        }
+
+        return future;
     }
 
     @Override
     public CompletableFuture<Void> passEvent(final Event event,
                                              final CompletableFuture<Void> future) {
-        return null;
+        try {
+            ctx.fireUserEventTriggered(event);
+            future.complete(null);
+        }
+        catch (final Exception e) {
+            future.completeExceptionally(e);
+        }
+
+        return future;
     }
 
     @Override
     public CompletableFuture<Void> passOutbound(final Address recipient,
                                                 final Object msg,
                                                 final CompletableFuture<Void> future) {
-        return null;
+        final MigrationMessage addressedMsg = new MigrationMessage(msg, recipient);
+
+        ctx.writeAndFlush(addressedMsg).addListener(f -> {
+            if (f.isSuccess()) {
+                future.complete(null);
+            }
+            else {
+                future.completeExceptionally(f.cause());
+            }
+        });
+
+        return future;
     }
 
     @Override
@@ -102,18 +135,18 @@ public class MigrationHandlerContext implements HandlerContext {
     }
 
     @Override
-    public DrasylScheduler independentScheduler() {
-        return null;
+    public Scheduler independentScheduler() {
+        return new MigrationScheduler(ctx.executor());
     }
 
     @Override
-    public DrasylScheduler dependentScheduler() {
-        return null;
+    public Scheduler dependentScheduler() {
+        return new MigrationScheduler(ctx.executor());
     }
 
     @Override
     public Identity identity() {
-        return channel.localAddress0();
+        return channel.identity();
     }
 
     @Override

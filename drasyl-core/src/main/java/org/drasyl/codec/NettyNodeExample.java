@@ -36,7 +36,7 @@ public class NettyNodeExample {
 
         node.start().join();
 
-//        Thread.sleep(10000);
-//        node.shutdown().join();
+        Thread.sleep(10000);
+        node.shutdown().join();
     }
 }

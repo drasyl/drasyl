@@ -27,24 +27,21 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.IdentityManager;
 
 import java.io.IOException;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class NettyCodecExample {
     public static void main(final String[] args) throws InterruptedException, IOException {
-        final Logger root = Logger.getLogger("");
-        root.setLevel(Level.ALL);
-        for (final Handler handler : root.getHandlers()) {
-            handler.setLevel(Level.ALL);
-        }
-        System.out.println("level set: " + Level.ALL.getName());
+//        final Logger root = Logger.getLogger("");
+//        root.setLevel(Level.ALL);
+//        for (final Handler handler : root.getHandlers()) {
+//            handler.setLevel(Level.ALL);
+//        }
+//        System.out.println("level set: " + Level.ALL.getName());
 
         // new DrasylNode()
         final IdentityManager identityManager = new IdentityManager(DrasylConfig.of());
         identityManager.loadOrCreateIdentity();
         final DrasylBootstrap bootstrap = new DrasylBootstrap(event -> {
-            System.err.println("NOT IMPLEMENTED YET = " + event);
+            System.err.println("event = " + event);
         }, identityManager.getIdentity())
                 .config(DrasylConfig.of())
                 // TODO: idleTimeout(60 seconds)
@@ -74,7 +71,6 @@ public class NettyCodecExample {
 //        Thread.sleep(5_000);
 //
 //        // DrasylNode#shutdown
-//        System.out.println("DrasylNode#shutdown");
 //        channel.close();
     }
 }

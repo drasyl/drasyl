@@ -21,14 +21,27 @@
  */
 package org.drasyl.codec;
 
-import org.drasyl.remote.protocol.BodyChunkMessage;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.SucceededFuture;
+import io.reactivex.rxjava3.disposables.Disposable;
 
-import java.net.InetSocketAddress;
+import static java.util.Objects.requireNonNull;
 
-public class AddressedBodyChunkMessage extends AddressedPartialReadMessage<BodyChunkMessage> {
-    public AddressedBodyChunkMessage(final BodyChunkMessage message,
-                                     final InetSocketAddress recipient,
-                                     final InetSocketAddress sender) {
-        super(message, recipient, sender);
+public class MigrationDisposable implements Disposable {
+    public static final Disposable DISPOSED = new MigrationDisposable(new SucceededFuture(null, null));
+    private final Future<?> future;
+
+    public MigrationDisposable(final Future<?> future) {
+        this.future = requireNonNull(future);
+    }
+
+    @Override
+    public void dispose() {
+        future.cancel(false);
+    }
+
+    @Override
+    public boolean isDisposed() {
+        return future.isCancelled();
     }
 }
