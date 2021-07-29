@@ -29,8 +29,10 @@ import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.pipeline.serialization.Serialization;
+import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
 import org.drasyl.remote.handler.InternetDiscovery;
@@ -46,11 +48,13 @@ import org.drasyl.remote.handler.crypto.ArmHandler;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
+import org.drasyl.remote.protocol.UnarmedMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.scheduler.DrasylScheduler;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
@@ -74,6 +78,7 @@ public class DrasylPipeline extends AbstractPipeline {
     public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     public static final String RATE_LIMITER = "RATE_LIMITER";
+    public static final String UNARMED_MESSAGE_READER = "UNARMED_MESSAGE_READER";
     public static final String ARM_HANDLER = "ARM_HANDLER";
     public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
@@ -147,6 +152,16 @@ public class DrasylPipeline extends AbstractPipeline {
             }
 
             addFirst(RATE_LIMITER, new RateLimiter());
+
+            addFirst(UNARMED_MESSAGE_READER, new SimpleInboundHandler<UnarmedMessage, Address>() {
+                @Override
+                protected void matchedInbound(final HandlerContext ctx,
+                                              final Address sender,
+                                              final UnarmedMessage msg,
+                                              final CompletableFuture<Void> future) throws Exception {
+                    ctx.passInbound(sender, msg.readAndRelease(), future);
+                }
+            });
 
             // arm outbound and disarm inbound messages
             if (config.isRemoteMessageArmEnabled()) {
