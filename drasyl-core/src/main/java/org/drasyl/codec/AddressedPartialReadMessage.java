@@ -22,12 +22,12 @@
 package org.drasyl.codec;
 
 import io.netty.channel.DefaultAddressedEnvelope;
-import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.remote.protocol.PartialReadMessage;
 
 import java.net.InetSocketAddress;
 
-public class AddressedPartialReadMessage extends DefaultAddressedEnvelope<RemoteMessage, InetSocketAddress> implements AddressedRemoteMessage {
-    public AddressedPartialReadMessage(final RemoteMessage message,
+public class AddressedPartialReadMessage<T extends PartialReadMessage> extends DefaultAddressedEnvelope<T, InetSocketAddress> implements AddressedRemoteMessage<T> {
+    public AddressedPartialReadMessage(final T message,
                                        final InetSocketAddress recipient,
                                        final InetSocketAddress sender) {
         super(message, recipient, sender);

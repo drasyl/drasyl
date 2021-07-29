@@ -29,6 +29,7 @@ import io.netty.channel.nio.NioEventLoop;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.serialization.Serialization;
 
 import java.net.SocketAddress;
 
@@ -40,11 +41,17 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private final PeersManager peersManager;
     private volatile Identity localAddress;
+    private final Serialization inboundSerialization;
+    private final Serialization outboundSerialization;
 
     public DrasylServerChannel(final DrasylConfig drasylConfig,
-                               final PeersManager peersManager) {
+                               final PeersManager peersManager,
+                               final Serialization inboundSerialization,
+                               final Serialization outboundSerialization) {
         this.drasylConfig = requireNonNull(drasylConfig);
         this.peersManager = requireNonNull(peersManager);
+        this.inboundSerialization = requireNonNull(inboundSerialization);
+        this.outboundSerialization = requireNonNull(outboundSerialization);
     }
 
     @Override
@@ -78,8 +85,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     @Override
-    protected void doBeginRead() throws Exception {
-        System.out.println("MyServerChannel.doBeginRead");
+    protected void doBeginRead() {
+        System.out.println("DrasylServerChannel.doBeginRead");
 
         // do nothing.
         // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings to us
@@ -106,5 +113,13 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     public PeersManager peersManager() {
         return peersManager;
+    }
+
+    public Serialization inboundSerialization() {
+        return inboundSerialization;
+    }
+
+    public Serialization outboundSerialization() {
+        return outboundSerialization;
     }
 }

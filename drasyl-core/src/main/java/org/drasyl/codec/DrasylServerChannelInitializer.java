@@ -26,16 +26,36 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
     @Override
     protected void initChannel(final Channel ch) {
-        ch.pipeline().addFirst(new SimpleChannelInboundHandler<AddressedFullReadMessage>() {
+        ch.pipeline().addFirst(new SimpleChannelInboundHandler<AddressedObject>() {
+            private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
+
             @Override
-            protected void channelRead0(ChannelHandlerContext ctx, AddressedFullReadMessage msg) throws Exception {
-                 ctx.fireChannelRead(new DrasylChannel(ctx.channel(), (DrasylAddress) msg.sender()));
+            protected void channelRead0(final ChannelHandlerContext ctx,
+                                        final AddressedObject addressedMsg) throws Exception {
+                final Object msg = addressedMsg.content();
+                final IdentityPublicKey sender = addressedMsg.sender();
+
+                // create/get channel
+                final Channel channel = channels.computeIfAbsent(sender, key -> {
+                    final DrasylChannel channel1 = new DrasylChannel(ctx.channel(), sender);
+                    channel1.closeFuture().addListener(future -> channels.remove(key));
+                    ctx.fireChannelRead(channel1);
+                    return channel1;
+                });
+
+                // pass message to channel
+                channel.pipeline().fireChannelRead(msg);
             }
         });
+        ch.pipeline().addFirst(MessageSerializer.INSTANCE);
         ch.pipeline().addFirst(new InternetDiscovery(((DrasylServerChannel) ch).drasylConfig()));
         ch.pipeline().addFirst(new ArmHandler(
                 ((DrasylServerChannel) ch).drasylConfig().getRemoteMessageArmSessionMaxCount(),

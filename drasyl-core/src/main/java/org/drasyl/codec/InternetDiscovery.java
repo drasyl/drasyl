@@ -22,7 +22,6 @@
 package org.drasyl.codec;
 
 import com.google.common.cache.CacheBuilder;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -37,6 +36,7 @@ import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.Protocol;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.remote.protocol.UniteMessage;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
@@ -54,11 +54,10 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.RandomUtil.randomLong;
 
-public class InternetDiscovery extends ChannelDuplexHandler {
+public class InternetDiscovery extends SimpleChannelDuplexHandler<AddressedRemoteMessage, AddressedApplicationMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscovery.class);
     private static final Object path = org.drasyl.remote.handler.InternetDiscovery.class;
     private final Map<Nonce, InternetDiscovery.Ping> openPingsCache;
@@ -70,6 +69,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private IdentityPublicKey bestSuperPeer;
 
     public InternetDiscovery(final DrasylConfig config) {
+        super(false, false, true);
         openPingsCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getRemotePingMaxPeers())
                 .expireAfterWrite(config.getRemotePingTimeout())
@@ -221,25 +221,54 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     }
 
     @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object o,
-                      final ChannelPromise promise) throws Exception {
-        final AddressedApplicationMessage msg = (AddressedApplicationMessage) o;
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedRemoteMessage addressedMsg) throws Exception {
+        final RemoteMessage msg = addressedMsg.content();
+        final Object sender = addressedMsg.sender();
 
-        if (msg.recipient() instanceof IdentityPublicKey) {
-            // record communication to keep active connections alive
-            if (directConnectionPeers.contains(msg.recipient())) {
-                final Peer peer = peers.computeIfAbsent((IdentityPublicKey) msg.recipient(), key -> new Peer());
-                peer.applicationTrafficOccurred();
+        if (sender instanceof InetSocketAddress && msg.getRecipient() != null) {
+            // This message is for us and we will fully decode it
+            if (((DrasylServerChannel) ctx.channel()).localAddress0().getIdentityPublicKey().equals(msg.getRecipient()) && msg instanceof FullReadMessage) {
+                handleMessage(ctx, (InetSocketAddressWrapper) sender, (FullReadMessage<?>) msg);
             }
-
-            if (!processMessage(ctx, (IdentityPublicKey) msg.recipient(), msg)) {
-                // passthrough message
-                ctx.writeAndFlush(o, promise);
+            else if (!((DrasylServerChannel) ctx.channel()).drasylConfig().isRemoteSuperPeerEnabled()) {
+                if (!processMessage(ctx, msg.getRecipient(), msg)) {
+                    // passthrough message
+                    ctx.writeAndFlush(addressedMsg);
+                }
+            }
+            else if (LOG.isDebugEnabled()) {
+                LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", msg, sender, msg.getRecipient());
             }
         }
         else {
-            super.write(ctx, msg, promise);
+            // passthrough message
+            ctx.writeAndFlush(addressedMsg);
+        }
+    }
+
+    @Override
+    protected void channelWrite0(final ChannelHandlerContext ctx,
+                                 final AddressedApplicationMessage addressedMsg,
+                                 final ChannelPromise promise) throws Exception {
+        final ApplicationMessage msg = addressedMsg.content();
+        final Object recipient = addressedMsg.recipient();
+
+        if (recipient instanceof IdentityPublicKey) {
+            // record communication to keep active connections alive
+            if (directConnectionPeers.contains(recipient)) {
+                final Peer peer = peers.computeIfAbsent((IdentityPublicKey) recipient, key -> new Peer());
+                peer.applicationTrafficOccurred();
+            }
+
+            if (!processMessage(ctx, (IdentityPublicKey) recipient, msg)) {
+                // passthrough message
+                ctx.writeAndFlush(addressedMsg, promise);
+            }
+        }
+        else {
+            // passthrough message
+            ctx.writeAndFlush(addressedMsg, promise);
         }
     }
 
@@ -255,7 +284,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean processMessage(final ChannelHandlerContext ctx,
                                    final IdentityPublicKey recipient,
-                                   final AddressedRemoteMessage msg) {
+                                   final RemoteMessage msg) {
         final Peer recipientPeer = peers.get(recipient);
 
         final Peer superPeerPeer;
@@ -268,13 +297,13 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
         if (recipientPeer != null && recipientPeer.getAddress() != null && recipientPeer.isReachable(((DrasylServerChannel) ctx.channel()).drasylConfig())) {
             final InetSocketAddressWrapper recipientSocketAddress = recipientPeer.getAddress();
-            final Peer senderPeer = peers.get(msg.content().getSender());
+            final Peer senderPeer = peers.get(msg.getSender());
 
             // rendezvous? I'm a super peer?
             if (senderPeer != null && superPeerPeer == null && senderPeer.getAddress() != null) {
                 final InetSocketAddressWrapper senderSocketAddress = senderPeer.getAddress();
-                final IdentityPublicKey msgSender = msg.content().getSender();
-                final IdentityPublicKey msgRecipient = msg.content().getRecipient();
+                final IdentityPublicKey msgSender = msg.getSender();
+                final IdentityPublicKey msgRecipient = msg.getRecipient();
                 LOG.trace("Relay message from {} to {}.", msgSender, recipient);
 
                 if (shouldTryUnite(msgSender, msgRecipient)) {
@@ -283,18 +312,28 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             }
 
             LOG.trace("Send message to {} to {}.", recipient, recipientSocketAddress);
-            // FIXME
-            System.out.println();
-//            ctx.passOutbound(recipientSocketAddress, msg, future);
+            if (msg instanceof ApplicationMessage) {
+                ctx.writeAndFlush(new AddressedApplicationMessage((ApplicationMessage) msg, recipientSocketAddress, null));
+            }
+            else {
+                // FIXME
+                throw new RuntimeException("not implemented yet");
+//            ctx.passOutbound(superPeerSocketAddress, msg, future);
+            }
 
             return true;
         }
         else if (superPeerPeer != null) {
             final InetSocketAddressWrapper superPeerSocketAddress = superPeerPeer.getAddress();
             LOG.trace("No connection to {}. Send message to super peer.", recipient);
-            // FIXME
-            System.out.println();
+            if (msg instanceof ApplicationMessage) {
+                ctx.writeAndFlush(new AddressedApplicationMessage((ApplicationMessage) msg, superPeerSocketAddress, null));
+            }
+            else {
+                // FIXME
+                throw new RuntimeException("not implemented yet");
 //            ctx.passOutbound(superPeerSocketAddress, msg, future);
+            }
 
             return true;
         }
@@ -347,31 +386,6 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             key = Pair.of(recipient, sender);
         }
         return uniteAttemptsCache != null && uniteAttemptsCache.putIfAbsent(key, TRUE) == null;
-    }
-
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object o) throws Exception {
-        final AddressedRemoteMessage msg = (AddressedRemoteMessage) o;
-
-        if (msg.sender() instanceof InetSocketAddress && msg.content().getRecipient() != null) {
-            // This message is for us and we will fully decode it
-            if (((DrasylServerChannel) ctx.channel()).localAddress0().getIdentityPublicKey().equals(msg.content().getRecipient()) && msg.content() instanceof FullReadMessage) {
-                handleMessage(ctx, (InetSocketAddressWrapper) msg.sender(), (FullReadMessage<?>) msg.content());
-            }
-            else if (!((DrasylServerChannel) ctx.channel()).drasylConfig().isRemoteSuperPeerEnabled()) {
-                if (!processMessage(ctx, msg.content().getRecipient(), msg)) {
-                    // passthrough message
-                    ctx.writeAndFlush(o);
-                }
-            }
-            else if (LOG.isDebugEnabled()) {
-                LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", msg.content(), msg.sender(), msg.content().getRecipient());
-            }
-        }
-        else {
-            // passthrough message
-            ctx.writeAndFlush(o);
-        }
     }
 
     private void handleMessage(final ChannelHandlerContext ctx,
@@ -498,7 +512,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             peer.applicationTrafficOccurred();
         }
 
-        ctx.fireChannelRead(new AddressedFullReadMessage(msg, null, msg.getSender()));
+        ctx.fireChannelRead(new AddressedApplicationMessage(msg, null, msg.getSender()));
     }
 
     private void sendPing(final ChannelHandlerContext ctx,

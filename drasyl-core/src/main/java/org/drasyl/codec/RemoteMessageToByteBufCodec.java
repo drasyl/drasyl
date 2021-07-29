@@ -26,8 +26,12 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.remote.protocol.ArmedMessage;
+import org.drasyl.remote.protocol.BodyChunkMessage;
+import org.drasyl.remote.protocol.HeadChunkMessage;
 import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.remote.protocol.UnarmedMessage;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -53,6 +57,19 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Dat
     protected void decode(final ChannelHandlerContext ctx,
                           final DatagramPacket msg,
                           final List<Object> out) throws Exception {
-        out.add(new AddressedPartialReadMessage(PartialReadMessage.of(msg.content().retain()), null, msg.sender()));
+        final PartialReadMessage content = PartialReadMessage.of(msg.content().retain());
+
+        if (content instanceof HeadChunkMessage) {
+            out.add(new AddressedHeadChunkMessage((HeadChunkMessage) content, null, msg.sender()));
+        }
+        else if (content instanceof BodyChunkMessage) {
+            out.add(new AddressedBodyChunkMessage((BodyChunkMessage) content, null, msg.sender()));
+        }
+        else if (content instanceof ArmedMessage) {
+            out.add(new AddressedArmedMessage((ArmedMessage) content, null, msg.sender()));
+        }
+        else {
+            out.add(new AddressedUnarmedMessage((UnarmedMessage) content, null, msg.sender()));
+        }
     }
 }

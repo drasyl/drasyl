@@ -21,15 +21,14 @@
  */
 package org.drasyl.codec;
 
-import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 
-public class AddressedFullReadMessage implements AddressedRemoteMessage {
-    private final FullReadMessage<?> message;
+public class AddressedFullReadMessage<T extends FullReadMessage<?>> implements AddressedRemoteMessage<T> {
+    private final T message;
     private final Object recipient;
     private final Object sender;
 
-    public FullReadMessage content() {
+    public T content() {
         return message;
     }
 
@@ -41,7 +40,7 @@ public class AddressedFullReadMessage implements AddressedRemoteMessage {
         return sender;
     }
 
-    public AddressedFullReadMessage(final FullReadMessage message,
+    public AddressedFullReadMessage(final T message,
                                     final Object recipient,
                                     final Object sender) {
         this.message = message;

@@ -23,11 +23,13 @@ package org.drasyl.codec;
 
 import com.google.common.cache.CacheBuilder;
 import com.goterl.lazysodium.utils.SessionPair;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.event.LongTimeEncryptionEvent;
+import org.drasyl.event.Peer;
+import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.pipeline.address.Address;
@@ -40,7 +42,6 @@ import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
 import org.drasyl.remote.protocol.KeyExchangeMessage;
 import org.drasyl.util.ConcurrentReference;
-import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -52,7 +53,7 @@ import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongUnaryOperator;
 
-public class ArmHandler extends ChannelDuplexHandler {
+public class ArmHandler extends SimpleChannelDuplexHandler<AddressedArmedMessage, AddressedFullReadMessage<?>> {
     private static final Logger LOG = LoggerFactory.getLogger(ArmHandler.class);
     private final Map<IdentityPublicKey, Session> sessions;
     private final Crypto crypto;
@@ -67,6 +68,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                          final Duration expireAfter,
                          final Duration retryInterval,
                          final LongUnaryOperator updateLastModificationTime) {
+        super(false, false, true);
         this.sessions = sessions;
         this.crypto = crypto;
         this.maxAgreements = maxAgreements;
@@ -106,55 +108,10 @@ public class ArmHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object o,
-                      final ChannelPromise promise) throws Exception {
-        final Address recipient = (Address) ((AddressedFullReadMessage) o).recipient();
-        final FullReadMessage<?> msg = (FullReadMessage<?>) ((AddressedFullReadMessage) o).content();
-
-        final IdentityPublicKey recipientsKey = msg.getRecipient();
-        final Session session = getSession(ctx, recipientsKey);
-
-        if (this.maxAgreements > 0) {
-            ctx.executor().execute(() -> {
-                try {
-                    checkForRenewAgreement(ctx, session, recipient, recipientsKey);
-                }
-                catch (CryptoException e) {
-                    e.printStackTrace();
-                }
-            });
-        }
-
-        final Optional<Agreement> agreement = session.getCurrentActiveAgreement().getValue();
-        if (agreement.isPresent()
-                && agreement.get().isInitialized()
-                && !agreement.get().isStale()) {
-            // do PFS encryption
-            ArmHandlerUtil.sendEncrypted(crypto, agreement.get().getSessionPair().get(), agreement.get().getAgreementId().get(), ctx, recipient, msg); //NOSONAR
-        }
-        else {
-            // do normal encryption
-            ArmHandlerUtil.sendEncrypted(crypto, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipient, msg);
-
-            // start key exchange
-            if (this.maxAgreements > 0) {
-                ctx.executor().execute(() -> {
-                    try {
-                        doKeyExchange(session, ctx, recipient, recipientsKey);
-                    }
-                    catch (CryptoException e) {
-                        e.printStackTrace();
-                    }
-                });
-            }
-        }
-    }
-
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object o) throws Exception {
-        final Address sender = new InetSocketAddressWrapper(((AddressedPartialReadMessage) o).sender());
-        final ArmedMessage msg = (ArmedMessage) ((AddressedPartialReadMessage) o).content();
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedArmedMessage addressedMsg) throws Exception {
+        final Address sender = new InetSocketAddressWrapper(addressedMsg.sender());
+        final ArmedMessage msg = addressedMsg.content();
 
         final IdentityPublicKey recipientsKey = msg.getSender(); // on inbound our recipient is the sender of the message
         final Session session = getSession(ctx, recipientsKey);
@@ -167,7 +124,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                 try {
                     checkForRenewAgreement(ctx, session, sender, recipientsKey);
                 }
-                catch (CryptoException e) {
+                catch (final CryptoException e) {
                     e.printStackTrace();
                 }
             });
@@ -191,8 +148,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                     session.getInitializedAgreements().remove(agreementId);
 
                     session.getCurrentActiveAgreement().computeOnCondition(a -> agreementId.equals(a.getAgreementId().orElse(null)), a -> {
-                        // FIXME:
-                        //ctx.passEvent(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)), new CompletableFuture<>());
+                        ctx.fireUserEventTriggered(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)));
 
                         return null;
                     });
@@ -226,6 +182,52 @@ public class ArmHandler extends ChannelDuplexHandler {
         }
         else {
             ctx.fireChannelRead(new AddressedFullReadMessage(plaintextMsg, null, sender));
+        }
+    }
+
+    @Override
+    protected void channelWrite0(final ChannelHandlerContext ctx,
+                                 final AddressedFullReadMessage<?> addressedMsg,
+                                 final ChannelPromise promise) throws Exception {
+        final FullReadMessage<?> msg = addressedMsg.content();
+        final Address recipient = (Address) addressedMsg.recipient();
+
+        final IdentityPublicKey recipientsKey = msg.getRecipient();
+        final Session session = getSession(ctx, recipientsKey);
+
+        if (this.maxAgreements > 0) {
+            ctx.executor().execute(() -> {
+                try {
+                    checkForRenewAgreement(ctx, session, recipient, recipientsKey);
+                }
+                catch (final CryptoException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+        final Optional<Agreement> agreement = session.getCurrentActiveAgreement().getValue();
+        if (agreement.isPresent()
+                && agreement.get().isInitialized()
+                && !agreement.get().isStale()) {
+            // do PFS encryption
+            ArmHandlerUtil.sendEncrypted(crypto, agreement.get().getSessionPair().get(), agreement.get().getAgreementId().get(), ctx, recipient, msg); //NOSONAR
+        }
+        else {
+            // do normal encryption
+            ArmHandlerUtil.sendEncrypted(crypto, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipient, msg);
+
+            // start key exchange
+            if (this.maxAgreements > 0) {
+                ctx.executor().execute(() -> {
+                    try {
+                        doKeyExchange(session, ctx, recipient, recipientsKey);
+                    }
+                    catch (final CryptoException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
         }
     }
 
@@ -270,8 +272,7 @@ public class ArmHandler extends ChannelDuplexHandler {
         return session.getCurrentActiveAgreement()
                 // remove stale agreement
                 .computeOnCondition(a -> a != null && a.isStale(), agreement -> {
-                    // FIXME:
-//                    ctx.passEvent(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)), new CompletableFuture<>());
+                    ctx.fireUserEventTriggered(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)));
 
                     return null;
                 })
@@ -326,8 +327,7 @@ public class ArmHandler extends ChannelDuplexHandler {
             session.getInitializedAgreements().put(id, initializedAgreement);
             session.getCurrentActiveAgreement().computeOnCondition(c -> true, f -> initializedAgreement);
 
-            // FIXME
-//            ctx.passEvent(PerfectForwardSecrecyEncryptionEvent.of(Peer.of(recipientsPublicKey)), new CompletableFuture<>());
+            ctx.fireUserEventTriggered((PerfectForwardSecrecyEncryptionEvent.of(Peer.of(recipientsPublicKey))));
 
             return null;
         });
@@ -341,7 +341,6 @@ public class ArmHandler extends ChannelDuplexHandler {
      * @param sender       the sender of the {@link KeyExchangeMessage} message
      * @param plaintextMsg the message
      * @param session      the corresponding session
-     * @param future       the future to fulfill
      */
     private void receivedKeyExchangeMessage(final ChannelHandlerContext ctx,
                                             final Address sender,
@@ -389,8 +388,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                                         final IdentityPublicKey recipientsKey) throws CryptoException {
         // remove stale agreement
         final Optional<Agreement> agreement = session.getCurrentActiveAgreement().computeOnCondition(a -> a != null && a.isStale(), a -> {
-            // FIXME:
-//            ctx.passEvent(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)), new CompletableFuture<>());
+            ctx.fireUserEventTriggered(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)));
 
             return null;
         });

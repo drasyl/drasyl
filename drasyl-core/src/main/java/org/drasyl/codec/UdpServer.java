@@ -26,41 +26,25 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.DefaultAddressedEnvelope;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-import org.drasyl.DrasylConfig;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
-import static org.drasyl.util.network.NetworkUtil.getAddresses;
 
 class UdpServer extends ChannelOutboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(org.drasyl.remote.handler.UdpServer.class);
@@ -82,34 +66,6 @@ class UdpServer extends ChannelOutboundHandlerAdapter {
                         .option(ChannelOption.SO_BROADCAST, false),
                 null
         );
-    }
-
-    static Set<Endpoint> determineActualEndpoints(final Identity identity,
-                                                  final DrasylConfig config,
-                                                  final InetSocketAddress listenAddress) {
-        final Set<Endpoint> configEndpoints = config.getRemoteEndpoints();
-        if (!configEndpoints.isEmpty()) {
-            // read endpoints from config
-            return configEndpoints.stream().map(endpoint -> {
-                if (endpoint.getPort() == 0) {
-                    return Endpoint.of(endpoint.getHost(), listenAddress.getPort(), identity.getIdentityPublicKey());
-                }
-                return endpoint;
-            }).collect(Collectors.toSet());
-        }
-
-        final Set<InetAddress> addresses;
-        if (listenAddress.getAddress().isAnyLocalAddress()) {
-            // use all available addresses
-            addresses = getAddresses();
-        }
-        else {
-            // use given host
-            addresses = Set.of(listenAddress.getAddress());
-        }
-        return addresses.stream()
-                .map(address -> Endpoint.of(address.getHostAddress(), listenAddress.getPort(), identity.getIdentityPublicKey()))
-                .collect(Collectors.toSet());
     }
 
     @Override
@@ -154,7 +110,7 @@ class UdpServer extends ChannelOutboundHandlerAdapter {
             LOG.info("Server started and listening at udp:/{}", socketAddress);
 
             // consume NodeUpEvent and publish NodeUpEvent with port
-            ctx.fireUserEventTriggered(new UdpServer.Started(socketAddress.getPort()));
+            ctx.fireUserEventTriggered(NodeUpEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).localAddress0(), socketAddress.getPort())));
         }
         else {
             // server start failed
@@ -165,14 +121,14 @@ class UdpServer extends ChannelOutboundHandlerAdapter {
     @Override
     public void close(final ChannelHandlerContext ctx,
                       final ChannelPromise promise) throws Exception {
+        super.close(ctx, promise);
+
         final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
         LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
         // shutdown server
         channel.close().awaitUninterruptibly();
         channel = null;
         LOG.debug("Server stopped");
-
-        super.close(ctx, promise);
     }
 
     @Override
@@ -182,24 +138,18 @@ class UdpServer extends ChannelOutboundHandlerAdapter {
         if (channel != null && channel.isWritable()) {
             final DatagramPacket packet = (DatagramPacket) msg;
             LOG.trace("Send Datagram {}", packet);
-            channel.writeAndFlush(packet/*, promise*/);
-            LOG.trace("DONE");
+            channel.writeAndFlush(packet).addListener(future -> {
+                if (future.isSuccess()) {
+                    promise.setSuccess();
+                }
+                else {
+                    promise.setFailure(future.cause());
+                }
+            });
         }
         else {
             ReferenceCountUtil.safeRelease(msg);
             throw new Exception("UDP channel is not present or is not writable.");
-        }
-    }
-
-    public static class Started {
-        private final int port;
-
-        public Started(final int port) {
-            this.port = port;
-        }
-
-        public int getPort() {
-            return port;
         }
     }
 }

@@ -29,7 +29,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.handler.crypto.Agreement;
 import org.drasyl.remote.handler.crypto.AgreementId;
@@ -45,7 +44,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * A simple util/helper class for the {@link ArmHandler} that provides some static methods.
@@ -77,7 +75,6 @@ public final class ArmHandlerUtil {
                                      final FullReadMessage<?> msg) throws CryptoException {
         try {
             final ArmedMessage armedMessage = msg.setAgreementId(agreementId).arm(cryptoInstance, agreementPair);
-            // FIXME
             ctx.writeAndFlush(new AddressedPartialReadMessage(armedMessage, (InetSocketAddress) recipient, null)); // send encrypted message
         }
         catch (final IOException e) {

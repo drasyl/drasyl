@@ -30,10 +30,13 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
-import org.drasyl.DrasylAddress;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.NotYetConnectedException;
 
 public class DrasylChannel extends AbstractChannel {
     private enum State {OPEN, BOUND, CONNECTED, CLOSED}
@@ -41,10 +44,12 @@ public class DrasylChannel extends AbstractChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private volatile State state;
-    private final DrasylAddress remoteAddress;
+    private volatile SocketAddress localAddress;
+    private final IdentityPublicKey remoteAddress;
 
-    public DrasylChannel(final Channel parent, final DrasylAddress remoteAddress) {
+    public DrasylChannel(final Channel parent, final IdentityPublicKey remoteAddress) {
         super(parent);
+        this.localAddress = parent.localAddress();
         this.remoteAddress = remoteAddress;
     }
 
@@ -60,7 +65,7 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected SocketAddress localAddress0() {
-        return parent().localAddress();
+        return localAddress;
     }
 
     @Override
@@ -74,28 +79,61 @@ public class DrasylChannel extends AbstractChannel {
     }
 
     @Override
-    protected void doBind(final SocketAddress localAddress) throws Exception {
+    protected void doRegister() {
+        state = State.CONNECTED;
+    }
 
+    @Override
+    protected void doBind(final SocketAddress localAddress) throws Exception {
+        state = State.BOUND;
     }
 
     @Override
     protected void doDisconnect() throws Exception {
-
+        doClose();
     }
 
     @Override
     protected void doClose() throws Exception {
+        localAddress = null;
 
+        state = State.CLOSED;
     }
 
     @Override
-    protected void doBeginRead() throws Exception {
+    protected void doBeginRead() {
+        System.out.println("DrasylChannel.doBeginRead");
 
+        // do nothing.
+        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings to us
     }
 
     @Override
     protected void doWrite(final ChannelOutboundBuffer in) throws Exception {
+        switch (state) {
+            case OPEN:
+            case BOUND:
+                throw new NotYetConnectedException();
+            case CLOSED:
+                throw new ClosedChannelException();
+            case CONNECTED:
+                break;
+        }
 
+        for (; ; ) {
+            final Object msg = in.current();
+            if (msg == null) {
+                break;
+            }
+
+            parent().writeAndFlush(new AddressedObject(msg, remoteAddress, null)).addListener(new GenericFutureListener<Future<? super Void>>() {
+                @Override
+                public void operationComplete(final Future<? super Void> future) throws Exception {
+                    System.out.println("future = " + future);
+                }
+            });
+            in.remove();
+        }
     }
 
     @Override

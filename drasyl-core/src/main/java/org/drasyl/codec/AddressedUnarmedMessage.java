@@ -21,12 +21,14 @@
  */
 package org.drasyl.codec;
 
-import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.remote.protocol.UnarmedMessage;
 
-public interface AddressedRemoteMessage<T extends RemoteMessage> {
-    T content();
+import java.net.InetSocketAddress;
 
-    Object recipient();
-
-    Object sender();
+public class AddressedUnarmedMessage extends AddressedPartialReadMessage<UnarmedMessage> {
+    public AddressedUnarmedMessage(final UnarmedMessage message,
+                                   final InetSocketAddress recipient,
+                                   final InetSocketAddress sender) {
+        super(message, recipient, sender);
+    }
 }

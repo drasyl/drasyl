@@ -23,28 +23,10 @@ package org.drasyl.codec;
 
 import org.drasyl.remote.protocol.ApplicationMessage;
 
-public class AddressedApplicationMessage implements AddressedRemoteMessage {
-    private final ApplicationMessage message;
-    private final Object recipient;
-    private final Object sender;
-
-    public ApplicationMessage content() {
-        return message;
-    }
-
-    public Object recipient() {
-        return recipient;
-    }
-
-    public Object sender() {
-        return sender;
-    }
-
+public class AddressedApplicationMessage extends AddressedFullReadMessage<ApplicationMessage> {
     public AddressedApplicationMessage(final ApplicationMessage message,
                                        final Object recipient,
                                        final Object sender) {
-        this.message = message;
-        this.recipient = recipient;
-        this.sender = sender;
+        super(message, recipient, sender);
     }
 }

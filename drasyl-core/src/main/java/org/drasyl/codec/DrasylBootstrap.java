@@ -27,6 +27,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.serialization.Serialization;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,7 +42,8 @@ public class DrasylBootstrap {
                 .group(parentGroup, childGroup)
                 .channelFactory(() -> new DrasylServerChannel(config, new PeersManager(event -> {
                     System.err.println("NOT IMPLEMENTED YET " + event);
-                }, identity)))
+                }, identity), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
+                        new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())))
                 .handler(new DrasylServerChannelInitializer())
                 .childHandler(new DrasylChannelInitializer());
     }

@@ -21,12 +21,14 @@
  */
 package org.drasyl.codec;
 
-import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.remote.protocol.HeadChunkMessage;
 
-public interface AddressedRemoteMessage<T extends RemoteMessage> {
-    T content();
+import java.net.InetSocketAddress;
 
-    Object recipient();
-
-    Object sender();
+public class AddressedHeadChunkMessage extends AddressedPartialReadMessage<HeadChunkMessage> {
+    public AddressedHeadChunkMessage(final HeadChunkMessage message,
+                                     final InetSocketAddress recipient,
+                                     final InetSocketAddress sender) {
+        super(message, recipient, sender);
+    }
 }

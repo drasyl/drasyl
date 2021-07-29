@@ -35,6 +35,7 @@ class DrasylChannelInitializer extends ChannelInitializer<DrasylChannel> {
             @Override
             protected void channelRead0(final ChannelHandlerContext ctx, final Object msg) {
                 System.out.println("from " + ctx.channel().remoteAddress() + ": " + msg);
+                ctx.writeAndFlush("ACK");
             }
         });
     }

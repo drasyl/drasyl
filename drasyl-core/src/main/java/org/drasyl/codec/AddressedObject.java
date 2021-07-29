@@ -21,12 +21,30 @@
  */
 package org.drasyl.codec;
 
-import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.identity.IdentityPublicKey;
 
-public interface AddressedRemoteMessage<T extends RemoteMessage> {
-    T content();
+public class AddressedObject {
+    private final Object message;
+    private final IdentityPublicKey recipient;
+    private final IdentityPublicKey sender;
 
-    Object recipient();
+    public Object content() {
+        return message;
+    }
 
-    Object sender();
+    public IdentityPublicKey recipient() {
+        return recipient;
+    }
+
+    public IdentityPublicKey sender() {
+        return sender;
+    }
+
+    public AddressedObject(final Object message,
+                           final IdentityPublicKey recipient,
+                           final IdentityPublicKey sender) {
+        this.message = message;
+        this.recipient = recipient;
+        this.sender = sender;
+    }
 }
