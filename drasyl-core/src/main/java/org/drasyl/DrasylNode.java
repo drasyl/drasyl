@@ -160,7 +160,7 @@ public abstract class DrasylNode {
                     })
                     .childHandler(new ChannelInitializer<DrasylChannel>() {
                         @Override
-                        protected void initChannel(final DrasylChannel ch) throws Exception {
+                        protected void initChannel(final DrasylChannel ch) {
                             ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
                                 @Override
                                 public void channelRead(final ChannelHandlerContext ctx,
@@ -249,7 +249,7 @@ public abstract class DrasylNode {
      */
     @NonNull
     public CompletionStage<Void> send(@NonNull final String recipient,
-                                      final Object payload) {
+                                      @Nullable final Object payload) {
         try {
             return send(IdentityPublicKey.of(recipient), payload);
         }
@@ -281,16 +281,51 @@ public abstract class DrasylNode {
      * @since 0.1.3
      */
     @NonNull
-    public CompletionStage<Void> send(@Nullable final DrasylAddress recipient,
-                                      final Object payload) {
+    public CompletionStage<Void> send(@NonNull final DrasylAddress recipient,
+                                      @Nullable final Object payload) {
         if (channel != null) {
             final CompletableFuture<Void> future = new CompletableFuture<>();
-            channel.pipeline().fireUserEventTriggered(new OutboundMessage(payload, recipient, future));
+            resolve(recipient).thenAccept(c -> {
+                final Object p;
+                if (payload == null) {
+                    p = NULL;
+                }
+                else {
+                    p = payload;
+                }
+
+                c.writeAndFlush(p).addListener(f -> {
+                    if (f.isSuccess()) {
+                        future.complete(null);
+                    }
+                    else {
+                        future.completeExceptionally(f.cause());
+                    }
+                });
+            });
+
             return future;
         }
         else {
             return failedFuture(new Exception("You have to call DrasylNode#start() first!"));
         }
+    }
+
+    @NonNull
+    public CompletionStage<Channel> resolve(@NonNull final String recipient) {
+        try {
+            return resolve(IdentityPublicKey.of(recipient));
+        }
+        catch (final IllegalArgumentException e) {
+            return failedFuture(new DrasylException("Recipient does not conform to a valid public key.", e));
+        }
+    }
+
+    @NonNull
+    public CompletionStage<Channel> resolve(@NonNull final DrasylAddress recipient) {
+        final CompletableFuture<Channel> future = new CompletableFuture<>();
+        channel.pipeline().fireUserEventTriggered(new Resolve(recipient, future));
+        return future;
     }
 
     /**
@@ -384,6 +419,29 @@ public abstract class DrasylNode {
     }
 
     /**
+     * Signals {@link DrasylNodeHandler} to resolve a given {@link DrasylAddress} to a {@link
+     * Channel}.
+     */
+    public static class Resolve {
+        private final DrasylAddress recipient;
+        private final CompletableFuture<Channel> future;
+
+        public Resolve(final DrasylAddress recipient,
+                       final CompletableFuture<Channel> future) {
+            this.recipient = requireNonNull(recipient);
+            this.future = requireNonNull(future);
+        }
+
+        public DrasylAddress recipient() {
+            return recipient;
+        }
+
+        public CompletableFuture<Channel> future() {
+            return future;
+        }
+    }
+
+    /**
      * Signals {@link DrasylNodeHandler} to send an outbound message.
      */
     public static class OutboundMessage {
@@ -429,11 +487,11 @@ public abstract class DrasylNode {
             return payload;
         }
 
-        public DrasylAddress getRecipient() {
+        public DrasylAddress recipient() {
             return recipient;
         }
 
-        public CompletableFuture<Void> getFuture() {
+        public CompletableFuture<Void> future() {
             return future;
         }
     }
@@ -445,25 +503,10 @@ public abstract class DrasylNode {
             if (evt instanceof Event) {
                 onEvent((Event) evt);
             }
-            else if (evt instanceof OutboundMessage) {
-                final DrasylAddress recipient = ((OutboundMessage) evt).getRecipient();
-                Object payload = ((OutboundMessage) evt).getPayload();
-                final CompletableFuture<Void> future = ((OutboundMessage) evt).getFuture();
-
-                final Channel peerChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient);
-
-                if (payload == null) {
-                    payload = NULL;
-                }
-
-                peerChannel.writeAndFlush(payload).addListener(f -> {
-                    if (f.isSuccess()) {
-                        future.complete(null);
-                    }
-                    else {
-                        future.completeExceptionally(f.cause());
-                    }
-                });
+            else if (evt instanceof Resolve) {
+                final DrasylAddress recipient = ((Resolve) evt).recipient();
+                final CompletableFuture<Channel> future = ((Resolve) evt).future();
+                future.complete(((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient));
             }
             else {
                 ctx.fireUserEventTriggered(ctx);
