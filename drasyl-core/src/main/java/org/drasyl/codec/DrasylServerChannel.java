@@ -95,6 +95,9 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 localAddress = null;
             }
             state = 2; // NOSONAR
+
+            // close all child channels
+            channels.forEach((address, channel) -> channel.close());
         }
     }
 
