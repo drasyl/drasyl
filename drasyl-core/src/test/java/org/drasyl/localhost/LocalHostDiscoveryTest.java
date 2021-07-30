@@ -339,7 +339,7 @@ class LocalHostDiscoveryTest {
                     new InetSocketAddressWrapper("192.168.188.23", 12345)
             ), routes);
 
-            verify(ctx.peersManager()).addPath(eq(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b")), any());
+            verify(ctx.peersManager()).addPath(any(), eq(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b")), any());
         }
     }
 }

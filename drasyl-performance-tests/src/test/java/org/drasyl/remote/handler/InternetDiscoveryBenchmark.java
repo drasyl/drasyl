@@ -118,8 +118,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
                     .remotePingCommunicationTimeout(ofDays(1))
                     .build();
             identity = IdentityTestUtil.ID_1;
-            peersManager = new PeersManager(event -> {
-            }, identity);
+            peersManager = new PeersManager(identity);
         }
 
         @Override

@@ -63,7 +63,7 @@ class StaticRoutesHandlerTest {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
             pipeline.processInbound(event).join();
 
-            verify(peersManager).addPath(eq(publicKey), any());
+            verify(peersManager).addPath(any(), eq(publicKey), any());
         }
     }
 
@@ -76,7 +76,7 @@ class StaticRoutesHandlerTest {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
             pipeline.processInbound(event).join();
 
-            verify(peersManager).removePath(eq(publicKey), any());
+            verify(peersManager).removePath(any(), eq(publicKey), any());
         }
     }
 
@@ -89,7 +89,7 @@ class StaticRoutesHandlerTest {
         try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
             pipeline.processInbound(event).join();
 
-            verify(peersManager).removePath(eq(publicKey), any());
+            verify(peersManager).removePath(any(), eq(publicKey), any());
         }
     }
 

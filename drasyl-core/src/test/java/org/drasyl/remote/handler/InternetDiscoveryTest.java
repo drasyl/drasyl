@@ -182,7 +182,7 @@ class InternetDiscoveryTest {
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(m -> m instanceof AcknowledgementMessage);
-                verify(peersManager, never()).addPath(any(), any());
+                verify(peersManager, never()).addPath(any(), any(), any());
             }
         }
 
@@ -197,7 +197,7 @@ class InternetDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(address, acknowledgementMessage).join();
 
-                verify(peersManager).addPath(any(), any());
+                verify(peersManager).addPath(any(), any(), any());
             }
         }
 
@@ -216,7 +216,7 @@ class InternetDiscoveryTest {
             try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(address, acknowledgementMessage).join();
 
-                verify(peersManager).addPathAndSuperPeer(any(), any());
+                verify(peersManager).addPathAndSuperPeer(any(), any(), any());
             }
         }
 
@@ -246,7 +246,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx.peersManager()).removeSuperPeerAndPath(eq(publicKey), any());
+            verify(ctx.peersManager()).removeSuperPeerAndPath(any(), eq(publicKey), any());
         }
 
         @Test
@@ -259,7 +259,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx.peersManager()).removeChildrenAndPath(eq(publicKey), any());
+            verify(ctx.peersManager()).removeChildrenAndPath(any(), eq(publicKey), any());
         }
 
         @Test
@@ -307,7 +307,7 @@ class InternetDiscoveryTest {
             handler.doHeartbeat(ctx);
 
             verify(ctx, never()).passOutbound(any(), any(), any());
-            verify(ctx.peersManager()).removeChildrenAndPath(eq(publicKey), any());
+            verify(ctx.peersManager()).removeChildrenAndPath(any(), eq(publicKey), any());
         }
     }
 

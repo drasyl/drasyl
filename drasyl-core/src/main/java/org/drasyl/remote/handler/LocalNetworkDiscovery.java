@@ -117,7 +117,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
 
     synchronized void clearRoutes(final HandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            ctx.peersManager().removePath(publicKey, path);
+            ctx.peersManager().removePath(ctx, publicKey, path);
             peers.remove(publicKey);
         }));
         peers.clear();
@@ -132,7 +132,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (peer.isStale(ctx)) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundPingTime());
-                ctx.peersManager().removePath(publicKey, path);
+                ctx.peersManager().removePath(ctx, publicKey, path);
                 peers.remove(publicKey);
             }
         }));
@@ -160,7 +160,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
             final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer((InetSocketAddressWrapper) sender));
             peer.inboundPingOccurred();
-            ctx.peersManager().addPath(msgSender, path);
+            ctx.peersManager().addPath(ctx, msgSender, path);
         }
 
         future.complete(null);

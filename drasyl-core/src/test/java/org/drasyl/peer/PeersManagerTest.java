@@ -23,15 +23,15 @@ package org.drasyl.peer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
-import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.pipeline.HandlerContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -43,7 +43,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -52,6 +51,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -63,8 +63,6 @@ class PeersManagerTest {
     private Set<IdentityPublicKey> children;
     private Set<IdentityPublicKey> superPeers;
     @Mock
-    private Consumer<Event> eventConsumer;
-    @Mock
     private Identity identity;
     private PeersManager underTest;
 
@@ -73,19 +71,20 @@ class PeersManagerTest {
         paths = HashMultimap.create();
         children = new HashSet<>();
         superPeers = new HashSet<>();
-        underTest = new PeersManager(lock, paths, children, superPeers, eventConsumer, identity);
+        underTest = new PeersManager(lock, paths, children, superPeers, identity);
     }
 
     @Nested
     class GetPeers {
         @Test
-        void shouldReturnAllPeers(@Mock final IdentityPublicKey superPeer,
+        void shouldReturnAllPeers(@Mock final HandlerContext ctx,
+                                  @Mock final IdentityPublicKey superPeer,
                                   @Mock final IdentityPublicKey children,
                                   @Mock final IdentityPublicKey peer,
                                   @Mock final Object path) {
-            underTest.addPathAndSuperPeer(superPeer, path);
-            underTest.addPathAndChildren(children, path);
-            underTest.addPath(peer, path);
+            underTest.addPathAndSuperPeer(ctx, superPeer, path);
+            underTest.addPathAndChildren(ctx, children, path);
+            underTest.addPath(ctx, peer, path);
 
             assertEquals(Set.of(superPeer, children, peer), underTest.getPeers());
         }
@@ -132,7 +131,8 @@ class PeersManagerTest {
     @Nested
     class GetPaths {
         @Test
-        void shouldReturnPaths(@Mock final IdentityPublicKey publicKey,
+        void shouldReturnPaths(@Mock final HandlerContext ctx,
+                               @Mock final IdentityPublicKey publicKey,
                                @Mock final Object path) {
             paths.put(publicKey, path);
 
@@ -143,57 +143,62 @@ class PeersManagerTest {
     @Nested
     class AddPath {
         @Test
-        void shouldEmitEventIfThisIsTheFirstPath(@Mock final IdentityPublicKey publicKey,
+        void shouldEmitEventIfThisIsTheFirstPath(@Mock final HandlerContext ctx,
+                                                 @Mock final IdentityPublicKey publicKey,
                                                  @Mock final Object path) {
-            underTest.addPath(publicKey, path);
+            underTest.addPath(ctx, publicKey, path);
 
-            verify(eventConsumer).accept(PeerDirectEvent.of(Peer.of(publicKey)));
+            verify(ctx).passEvent(eq(PeerDirectEvent.of(Peer.of(publicKey))), any());
         }
 
         @Test
-        void shouldEmitNotEventIfPeerHasAlreadyPaths(@Mock final IdentityPublicKey publicKey,
+        void shouldEmitNotEventIfPeerHasAlreadyPaths(@Mock final HandlerContext ctx,
+                                                     @Mock final IdentityPublicKey publicKey,
                                                      @Mock final Object path1,
                                                      @Mock final Object path2) {
             paths.put(publicKey, path1);
 
-            underTest.addPath(publicKey, path2);
+            underTest.addPath(ctx, publicKey, path2);
 
-            verify(eventConsumer, never()).accept(any());
+            verify(ctx, never()).passEvent(any(), any());
         }
     }
 
     @Nested
     class RemovePath {
         @Test
-        void shouldRemovePath(@Mock final IdentityPublicKey publicKey,
+        void shouldRemovePath(@Mock final HandlerContext ctx,
+                              @Mock final IdentityPublicKey publicKey,
                               @Mock final Object path) {
             paths.put(publicKey, path);
 
-            underTest.removePath(publicKey, path);
+            underTest.removePath(ctx, publicKey, path);
 
             assertThat(paths.get(publicKey), not(contains(path)));
         }
 
         @Test
-        void shouldEmitNotEventIfPeerHasStillPaths(@Mock final IdentityPublicKey publicKey,
+        void shouldEmitNotEventIfPeerHasStillPaths(@Mock final HandlerContext ctx,
+                                                   @Mock final IdentityPublicKey publicKey,
                                                    @Mock final Object path1,
                                                    @Mock final Object path2) {
             paths.put(publicKey, path1);
             paths.put(publicKey, path2);
 
-            underTest.removePath(publicKey, path1);
+            underTest.removePath(ctx, publicKey, path1);
 
-            verify(eventConsumer, never()).accept(any());
+            verify(ctx, never()).passEvent(any(), any());
         }
 
         @Test
-        void shouldEmitPeerRelayEventIfNoPathLeftAndThereIsASuperPeer(@Mock final IdentityPublicKey publicKey,
+        void shouldEmitPeerRelayEventIfNoPathLeftAndThereIsASuperPeer(@Mock final HandlerContext ctx,
+                                                                      @Mock final IdentityPublicKey publicKey,
                                                                       @Mock final Object path) {
             paths.put(publicKey, path);
 
-            underTest.removePath(publicKey, path);
+            underTest.removePath(ctx, publicKey, path);
 
-            verify(eventConsumer).accept(PeerRelayEvent.of(Peer.of(publicKey)));
+            verify(ctx).passEvent(eq(PeerRelayEvent.of(Peer.of(publicKey))), any());
         }
 
         @AfterEach
@@ -206,33 +211,36 @@ class PeersManagerTest {
     @Nested
     class RemoveSuperPeerAndPath {
         @Test
-        void shouldRemoveSuperPeerAndPath(@Mock final IdentityPublicKey publicKey,
+        void shouldRemoveSuperPeerAndPath(@Mock final HandlerContext ctx,
+                                          @Mock final IdentityPublicKey publicKey,
                                           @Mock final Object path) {
-            underTest.removeSuperPeerAndPath(publicKey, path);
+            underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
             assertEquals(Set.of(), underTest.getSuperPeers());
         }
 
         @Test
-        void shouldEmitNodeOfflineEventWhenRemovingLastSuperPeer(@Mock final IdentityPublicKey publicKey,
+        void shouldEmitNodeOfflineEventWhenRemovingLastSuperPeer(@Mock final HandlerContext ctx,
+                                                                 @Mock final IdentityPublicKey publicKey,
                                                                  @Mock final Object path) {
             superPeers.add(publicKey);
 
-            underTest.removeSuperPeerAndPath(publicKey, path);
+            underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(eventConsumer).accept(NodeOfflineEvent.of(Node.of(identity)));
+            verify(ctx).passEvent(eq(NodeOfflineEvent.of(Node.of(identity))), any());
         }
 
         @Test
-        void shouldNotEmitNodeOfflineEventWhenRemovingNonLastSuperPeer(@Mock final IdentityPublicKey publicKey,
+        void shouldNotEmitNodeOfflineEventWhenRemovingNonLastSuperPeer(@Mock final HandlerContext ctx,
+                                                                       @Mock final IdentityPublicKey publicKey,
                                                                        @Mock final IdentityPublicKey publicKey2,
                                                                        @Mock final Object path) {
             superPeers.add(publicKey2);
             superPeers.add(publicKey);
 
-            underTest.removeSuperPeerAndPath(publicKey, path);
+            underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(eventConsumer, never()).accept(NodeOfflineEvent.of(Node.of(identity)));
+            verify(ctx, never()).passEvent(eq(NodeOfflineEvent.of(Node.of(identity))), any());
         }
 
         @AfterEach
@@ -245,21 +253,23 @@ class PeersManagerTest {
     @Nested
     class AddPathAndSuperPeer {
         @Test
-        void shouldAddPathAndAddSuperPeer(@Mock final IdentityPublicKey publicKey,
+        void shouldAddPathAndAddSuperPeer(@Mock final HandlerContext ctx,
+                                          @Mock final IdentityPublicKey publicKey,
                                           @Mock final Object path) {
-            underTest.addPathAndSuperPeer(publicKey, path);
+            underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
             assertEquals(Set.of(publicKey), underTest.getSuperPeers());
             assertEquals(Set.of(path), underTest.getPaths(publicKey));
         }
 
         @Test
-        void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock final IdentityPublicKey publicKey,
+        void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock final HandlerContext ctx,
+                                                                     @Mock final IdentityPublicKey publicKey,
                                                                      @Mock final Object path) {
-            underTest.addPathAndSuperPeer(publicKey, path);
+            underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
-            verify(eventConsumer).accept(PeerDirectEvent.of(Peer.of(publicKey)));
-            verify(eventConsumer).accept(NodeOnlineEvent.of(Node.of(identity)));
+            verify(ctx).passEvent(eq(PeerDirectEvent.of(Peer.of(publicKey))), any());
+            verify(ctx).passEvent(eq(NodeOnlineEvent.of(Node.of(identity))), any());
         }
 
         @AfterEach
@@ -272,22 +282,24 @@ class PeersManagerTest {
     @Nested
     class RemoveChildrenAndPath {
         @Test
-        void shouldRemoveChildrenAndPath(@Mock final IdentityPublicKey publicKey,
+        void shouldRemoveChildrenAndPath(@Mock final HandlerContext ctx,
+                                         @Mock final IdentityPublicKey publicKey,
                                          @Mock final Object path) {
             paths.put(publicKey, path);
 
-            underTest.removeChildrenAndPath(publicKey, path);
+            underTest.removeChildrenAndPath(ctx, publicKey, path);
 
             assertThat(underTest.getPeers(), not(hasItem(publicKey)));
             assertEquals(Set.of(), underTest.getChildren());
         }
 
         @Test
-        void shouldNotEmitEventWhenRemovingUnknownPeer(@Mock final IdentityPublicKey publicKey,
+        void shouldNotEmitEventWhenRemovingUnknownPeer(@Mock final HandlerContext ctx,
+                                                       @Mock final IdentityPublicKey publicKey,
                                                        @Mock final Object path) {
-            underTest.removeChildrenAndPath(publicKey, path);
+            underTest.removeChildrenAndPath(ctx, publicKey, path);
 
-            verify(eventConsumer, never()).accept(any());
+            verify(ctx, never()).passEvent(any(), any());
         }
 
         @AfterEach
@@ -300,31 +312,34 @@ class PeersManagerTest {
     @Nested
     class AddPathAndChildren {
         @Test
-        void shouldAddPathAndChildren(@Mock final IdentityPublicKey publicKey,
+        void shouldAddPathAndChildren(@Mock final HandlerContext ctx,
+                                      @Mock final IdentityPublicKey publicKey,
                                       @Mock final Object path) {
-            underTest.addPathAndChildren(publicKey, path);
+            underTest.addPathAndChildren(ctx, publicKey, path);
 
             assertThat(underTest.getPeers(), hasItem(publicKey));
             assertEquals(Set.of(publicKey), underTest.getChildren());
         }
 
         @Test
-        void shouldEmitPeerDirectEventIfGivenPathIsTheFirstOneForThePeer(@Mock final IdentityPublicKey publicKey,
+        void shouldEmitPeerDirectEventIfGivenPathIsTheFirstOneForThePeer(@Mock final HandlerContext ctx,
+                                                                         @Mock final IdentityPublicKey publicKey,
                                                                          @Mock final Object path) {
-            underTest.addPathAndChildren(publicKey, path);
+            underTest.addPathAndChildren(ctx, publicKey, path);
 
-            verify(eventConsumer).accept(PeerDirectEvent.of(Peer.of(publicKey)));
+            verify(ctx).passEvent(eq(PeerDirectEvent.of(Peer.of(publicKey))), any());
         }
 
         @Test
-        void shouldEmitNoEventIfGivenPathIsNotTheFirstOneForThePeer(@Mock final IdentityPublicKey publicKey,
+        void shouldEmitNoEventIfGivenPathIsNotTheFirstOneForThePeer(@Mock final HandlerContext ctx,
+                                                                    @Mock final IdentityPublicKey publicKey,
                                                                     @Mock final Object path,
                                                                     @Mock final Object o) {
             paths.put(publicKey, o);
 
-            underTest.addPathAndChildren(publicKey, path);
+            underTest.addPathAndChildren(ctx, publicKey, path);
 
-            verify(eventConsumer, never()).accept(any());
+            verify(ctx, never()).passEvent(any(), any());
         }
 
         @AfterEach

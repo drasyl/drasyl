@@ -23,22 +23,22 @@ package org.drasyl.peer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
-import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.util.SetUtil;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
@@ -56,12 +56,11 @@ public class PeersManager {
     private final ReadWriteLock lock;
     private final SetMultimap<IdentityPublicKey, Object> paths;
     private final Set<IdentityPublicKey> children;
-    private final Consumer<Event> eventConsumer;
     private final Identity identity;
     private final Set<IdentityPublicKey> superPeers;
 
-    public PeersManager(final Consumer<Event> eventConsumer, final Identity identity) {
-        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashSet<>(), new HashSet<>(), eventConsumer, identity);
+    public PeersManager(final Identity identity) {
+        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashSet<>(), new HashSet<>(), identity);
     }
 
     @SuppressWarnings("java:S2384")
@@ -69,13 +68,11 @@ public class PeersManager {
                  final SetMultimap<IdentityPublicKey, Object> paths,
                  final Set<IdentityPublicKey> children,
                  final Set<IdentityPublicKey> superPeers,
-                 final Consumer<Event> eventConsumer,
                  final Identity identity) {
         this.lock = lock;
         this.paths = paths;
         this.children = children;
         this.superPeers = superPeers;
-        this.eventConsumer = eventConsumer;
         this.identity = identity;
     }
 
@@ -87,7 +84,6 @@ public class PeersManager {
             return "PeersManager{" +
                     ", paths=" + paths +
                     ", children=" + children +
-                    ", eventConsumer=" + eventConsumer +
                     ", superPeers=" + superPeers +
                     '}';
         }
@@ -148,7 +144,8 @@ public class PeersManager {
         }
     }
 
-    public void addPath(final IdentityPublicKey publicKey,
+    public void addPath(final HandlerContext ctx,
+                        final IdentityPublicKey publicKey,
                         final Object path) {
         requireNonNull(publicKey);
 
@@ -157,16 +154,17 @@ public class PeersManager {
 
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                eventConsumer.accept(PeerDirectEvent.of(Peer.of(publicKey)));
+                ctx.passEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
             }
-
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void removePath(final IdentityPublicKey publicKey, final Object path) {
+    public void removePath(final HandlerContext ctx,
+                           final IdentityPublicKey publicKey,
+                           final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
 
@@ -174,7 +172,7 @@ public class PeersManager {
             lock.writeLock().lock();
 
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                eventConsumer.accept(PeerRelayEvent.of(Peer.of(publicKey)));
+                ctx.passEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
             }
         }
         finally {
@@ -182,7 +180,8 @@ public class PeersManager {
         }
     }
 
-    public void addPathAndSuperPeer(final IdentityPublicKey publicKey,
+    public void addPathAndSuperPeer(final HandlerContext ctx,
+                                    final IdentityPublicKey publicKey,
                                     final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
@@ -193,13 +192,13 @@ public class PeersManager {
             // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                eventConsumer.accept(PeerDirectEvent.of(Peer.of(publicKey)));
+                ctx.passEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
             }
 
             // role (super peer)
             final boolean firstSuperPeer = superPeers.isEmpty();
             if (superPeers.add(publicKey) && firstSuperPeer) {
-                eventConsumer.accept(NodeOnlineEvent.of(Node.of(identity)));
+                ctx.passEvent(NodeOnlineEvent.of(Node.of(identity)), new CompletableFuture<>());
             }
         }
         finally {
@@ -207,7 +206,8 @@ public class PeersManager {
         }
     }
 
-    public void removeSuperPeerAndPath(final IdentityPublicKey publicKey,
+    public void removeSuperPeerAndPath(final HandlerContext ctx,
+                                       final IdentityPublicKey publicKey,
                                        final Object path) {
         requireNonNull(path);
 
@@ -216,12 +216,12 @@ public class PeersManager {
 
             // role (super peer)
             if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-                eventConsumer.accept(NodeOfflineEvent.of(Node.of(identity)));
+                ctx.passEvent(NodeOfflineEvent.of(Node.of(identity)), new CompletableFuture<>());
             }
 
             // path
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                eventConsumer.accept(PeerRelayEvent.of(Peer.of(publicKey)));
+                ctx.passEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
             }
         }
         finally {
@@ -229,7 +229,8 @@ public class PeersManager {
         }
     }
 
-    public void addPathAndChildren(final IdentityPublicKey publicKey,
+    public void addPathAndChildren(final HandlerContext ctx,
+                                   final IdentityPublicKey publicKey,
                                    final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
@@ -240,7 +241,7 @@ public class PeersManager {
             // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                eventConsumer.accept(PeerDirectEvent.of(Peer.of(publicKey)));
+                ctx.passEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
             }
 
             // role (children peer)
@@ -251,7 +252,8 @@ public class PeersManager {
         }
     }
 
-    public void removeChildrenAndPath(final IdentityPublicKey publicKey,
+    public void removeChildrenAndPath(final HandlerContext ctx,
+                                      final IdentityPublicKey publicKey,
                                       final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
@@ -261,7 +263,7 @@ public class PeersManager {
 
             // path
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                eventConsumer.accept(PeerRelayEvent.of(Peer.of(publicKey)));
+                ctx.passEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
             }
 
             // role (children)

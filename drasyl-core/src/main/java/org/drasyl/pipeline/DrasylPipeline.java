@@ -217,8 +217,7 @@ public class DrasylPipeline extends AbstractPipeline {
                 getInstanceHeavy(),
                 config,
                 identity,
-                new PeersManager(event -> {
-                }, identity),
+                new PeersManager(identity),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()),
                 outboundMessagesBuffer);
