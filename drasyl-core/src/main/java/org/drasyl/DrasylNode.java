@@ -89,7 +89,7 @@ import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static String version;
-    private final DrasylBootstrap bootstrap;
+    protected final DrasylBootstrap bootstrap;
     private ChannelFuture channelFuture;
     private Channel channel;
 
@@ -149,31 +149,8 @@ public abstract class DrasylNode {
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
             bootstrap = new DrasylBootstrap(config)
-                    .handler(new DrasylServerChannelInitializer() {
-                        @Override
-                        protected void initChannel(final Channel ch) {
-                            ch.pipeline().addFirst(new DrasylNodeHandler());
-
-                            super.initChannel(ch);
-                        }
-                    })
-                    .childHandler(new ChannelInitializer<DrasylChannel>() {
-                        @Override
-                        protected void initChannel(final DrasylChannel ch) {
-                            ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void channelRead(final ChannelHandlerContext ctx,
-                                                        Object msg) {
-                                    if (msg == NULL) {
-                                        msg = null;
-                                    }
-
-                                    final MessageEvent event = MessageEvent.of((IdentityPublicKey) ctx.channel().remoteAddress(), msg);
-                                    onEvent(event);
-                                }
-                            });
-                        }
-                    })
+                    .handler(new DrasylNodeServerChannelInitializer())
+                    .childHandler(new DrasylNodeChannelInitializer())
             ;
 
             LOG.debug("drasyl node with config `{}` and identity `{}` created", config, bootstrap.identity());
@@ -423,8 +400,8 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Signals {@link DrasylNodeHandler} to resolve a given {@link DrasylAddress} to a {@link
-     * Channel}.
+     * Signals {@link DrasylNodeServerChannelInitializer}'s {@link io.netty.channel.ChannelHandler}
+     * to resolve a given {@link DrasylAddress} to a {@link Channel}.
      */
     public static class Resolve {
         private final DrasylAddress recipient;
@@ -445,21 +422,46 @@ public abstract class DrasylNode {
         }
     }
 
-    private class DrasylNodeHandler extends ChannelInboundHandlerAdapter {
+    public class DrasylNodeServerChannelInitializer extends DrasylServerChannelInitializer {
         @Override
-        public void userEventTriggered(final ChannelHandlerContext ctx,
-                                       final Object evt) {
-            if (evt instanceof Event) {
-                onEvent((Event) evt);
-            }
-            else if (evt instanceof Resolve) {
-                final DrasylAddress recipient = ((Resolve) evt).recipient();
-                final CompletableFuture<Channel> future = ((Resolve) evt).future();
-                future.complete(((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient));
-            }
-            else {
-                ctx.fireUserEventTriggered(ctx);
-            }
+        protected void initChannel(final Channel ch) {
+            ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx,
+                                               final Object evt) {
+                    if (evt instanceof Event) {
+                        onEvent((Event) evt);
+                    }
+                    else if (evt instanceof Resolve) {
+                        final DrasylAddress recipient = ((Resolve) evt).recipient();
+                        final CompletableFuture<Channel> future = ((Resolve) evt).future();
+                        future.complete(((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient));
+                    }
+                    else {
+                        ctx.fireUserEventTriggered(ctx);
+                    }
+                }
+            });
+
+            super.initChannel(ch);
+        }
+    }
+
+    public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChannel> {
+        @Override
+        protected void initChannel(final DrasylChannel ch) {
+            ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void channelRead(final ChannelHandlerContext ctx,
+                                        Object msg) {
+                    if (msg == NULL) {
+                        msg = null;
+                    }
+
+                    final MessageEvent event = MessageEvent.of((IdentityPublicKey) ctx.channel().remoteAddress(), msg);
+                    onEvent(event);
+                }
+            });
         }
     }
 }
