@@ -21,7 +21,6 @@
  */
 package org.drasyl;
 
-import io.netty.channel.EventLoopGroup;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
@@ -219,24 +218,6 @@ public abstract class DrasylNode {
         }
 
         return version;
-    }
-
-    /**
-     * This method stops the shared threads ({@link EventLoopGroup}s), but only if none {@link
-     * DrasylNode} is using them anymore.
-     *
-     * <p>
-     * <b>This operation cannot be undone. After performing this operation, no new DrasylNodes can
-     * be created!</b>
-     * </p>
-     *
-     * @deprecated Use {@link EventLoopGroupUtil#shutdown()} instead.
-     */
-    @Deprecated(since = "0.5.0", forRemoval = true)
-    public static void irrevocablyTerminate() {
-        if (INSTANCES.isEmpty()) {
-            EventLoopGroupUtil.shutdown().join();
-        }
     }
 
     /**
