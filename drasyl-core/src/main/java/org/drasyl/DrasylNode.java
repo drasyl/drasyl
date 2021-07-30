@@ -261,7 +261,7 @@ public abstract class DrasylNode {
      * exceptionally completion stage
      * @see org.drasyl.pipeline.Handler
      * @see MessageSerializer
-     * @since 0.1.3-SNAPSHOT
+     * @since 0.1.3
      */
     @NonNull
     public CompletionStage<Void> send(@NonNull final String recipient,
@@ -294,7 +294,7 @@ public abstract class DrasylNode {
      * exceptionally completion stage
      * @see org.drasyl.pipeline.Handler
      * @see MessageSerializer
-     * @since 0.1.3-SNAPSHOT
+     * @since 0.1.3
      */
     @NonNull
     public CompletionStage<Void> send(@Nullable final DrasylAddress recipient,
