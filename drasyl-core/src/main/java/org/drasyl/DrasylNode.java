@@ -323,9 +323,14 @@ public abstract class DrasylNode {
 
     @NonNull
     public CompletionStage<Channel> resolve(@NonNull final DrasylAddress recipient) {
-        final CompletableFuture<Channel> future = new CompletableFuture<>();
-        channel.pipeline().fireUserEventTriggered(new Resolve(recipient, future));
-        return future;
+        if (channel != null) {
+            final CompletableFuture<Channel> future = new CompletableFuture<>();
+            channel.pipeline().fireUserEventTriggered(new Resolve(recipient, future));
+            return future;
+        }
+        else {
+            return failedFuture(new Exception("You have to call DrasylNode#start() first!"));
+        }
     }
 
     /**
