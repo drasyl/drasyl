@@ -111,7 +111,7 @@ class SendingWormholeNodeTest {
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof TextMessage && m.getRecipient().equals(event.getSender())));
+                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof TextMessage && m.recipient().equals(event.getSender())));
             }
 
             @Test
@@ -122,7 +122,7 @@ class SendingWormholeNodeTest {
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof WrongPasswordMessage && m.getRecipient().equals(event.getSender())));
+                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof WrongPasswordMessage && m.recipient().equals(event.getSender())));
             }
 
             @Nested
