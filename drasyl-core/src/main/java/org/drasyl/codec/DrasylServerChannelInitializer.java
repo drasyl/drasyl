@@ -26,7 +26,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -38,7 +37,6 @@ import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
-import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.MessageSerializer;
@@ -59,21 +57,15 @@ import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
 import org.drasyl.remote.protocol.UnarmedMessage;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 import static org.drasyl.codec.Null.NULL;
 
 class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylPipeline.class);
     public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
     public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
-    public static final String CHANNEL_SPAWNER = "CHANNEL_SPAWNER";
+    public static final String CHILD_CHANNEL_ROUTER = "CHILD_CHANNEL_ROUTER";
     public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
     public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
     public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
@@ -93,17 +85,12 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
     public static final String TCP_CLIENT = "TCP_CLIENT";
     public static final String PORT_MAPPER = "PORT_MAPPER";
     public static final String UDP_SERVER = "UDP_SERVER";
-    private final Consumer<Event> eventConsumer;
-
-    public DrasylServerChannelInitializer(final Consumer<Event> eventConsumer) {
-        this.eventConsumer = eventConsumer;
-    }
 
     @Override
     protected void initChannel(final Channel ch) {
         final DrasylConfig config = ((DrasylServerChannel) ch).drasylConfig();
 
-        ch.pipeline().addFirst(CHANNEL_SPAWNER, new ChannelSpawner());
+        ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 
         // convert outbound messages addresses to us to inbound messages
         ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new MigrationChannelHandler(new LoopbackMessageHandler()));
@@ -220,45 +207,7 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
         });
     }
 
-    private class ChannelSpawner extends SimpleChannelInboundHandler<MigrationMessage> {
-        private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
-
-        @Override
-        public void userEventTriggered(final ChannelHandlerContext ctx,
-                                       final Object evt) throws Exception {
-            if (evt instanceof Event) {
-                eventConsumer.accept((Event) evt);
-            }
-            else if (evt instanceof DrasylNode.OutboundMessage) {
-                final DrasylAddress recipient = ((DrasylNode.OutboundMessage) evt).getRecipient();
-                Object payload = ((DrasylNode.OutboundMessage) evt).getPayload();
-                final CompletableFuture<Void> future = ((DrasylNode.OutboundMessage) evt).getFuture();
-
-                final Channel channel = channels.computeIfAbsent(recipient, key -> {
-                    final DrasylChannel channel1 = new DrasylChannel(ctx.channel(), (IdentityPublicKey) recipient);
-                    channel1.closeFuture().addListener(f -> channels.remove(key));
-                    ctx.fireChannelRead(channel1);
-                    return channel1;
-                });
-
-                if (payload == null) {
-                    payload = NULL;
-                }
-
-                channel.writeAndFlush(payload).addListener(f -> {
-                    if (f.isSuccess()) {
-                        future.complete(null);
-                    }
-                    else {
-                        future.completeExceptionally(f.cause());
-                    }
-                });
-            }
-            else {
-                super.userEventTriggered(ctx, evt);
-            }
-        }
-
+    private static class ChildChannelRouter extends SimpleChannelInboundHandler<MigrationMessage<?, ?>> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final MigrationMessage addressedMsg) {
@@ -266,12 +215,7 @@ class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
             final IdentityPublicKey sender = (IdentityPublicKey) addressedMsg.address();
 
             // create/get channel
-            final Channel channel = channels.computeIfAbsent(sender, key -> {
-                final DrasylChannel channel1 = new DrasylChannel(ctx.channel(), sender);
-                channel1.closeFuture().addListener(future -> channels.remove(key));
-                ctx.fireChannelRead(channel1);
-                return channel1;
-            });
+            final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
 
             if (msg == null) {
                 msg = NULL;

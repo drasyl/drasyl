@@ -31,8 +31,7 @@ public class NettyNodeExample {
         final DrasylNode node = new DrasylNode() {
             @Override
             public void onEvent(final Event event) {
-                System.out.println("NettyNodeExample.onEvent");
-                System.out.println("event = " + event);
+                System.out.println("NettyNodeExample.onEvent: event = " + event);
             }
         };
 
@@ -40,9 +39,8 @@ public class NettyNodeExample {
 
         Thread.sleep(5_000);
 
-        System.out.println("send!");
+        System.out.print("send...");
         node.send("7b6f15b4c058c74708e8830ba0526156f3fa5d3f73cbae8331879644df83a0de", "Hallo").toCompletableFuture().get();
-
-        //        node.shutdown().join();
+        System.out.println("done!");
     }
 }

@@ -22,16 +22,22 @@
 package org.drasyl.codec;
 
 import io.netty.channel.AbstractServerChannel;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
+import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
 
 import java.net.SocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 
@@ -44,6 +50,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private volatile Identity localAddress; // NOSONAR
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
+    private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
 
     public DrasylServerChannel(final DrasylConfig drasylConfig,
                                final Identity identity,
@@ -127,5 +134,15 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     public Identity identity() {
         return identity;
+    }
+
+    public Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
+                                           final IdentityPublicKey peer) {
+        return channels.computeIfAbsent(peer, key -> {
+            final DrasylChannel channel = new DrasylChannel(ctx.channel(), peer);
+            channel.closeFuture().addListener(future -> channels.remove(key));
+            ctx.fireChannelRead(channel);
+            return channel;
+        });
     }
 }

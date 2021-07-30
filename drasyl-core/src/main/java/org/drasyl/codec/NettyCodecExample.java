@@ -22,9 +22,8 @@
 package org.drasyl.codec;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import org.drasyl.DrasylConfig;
-import org.drasyl.identity.IdentityManager;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.io.IOException;
 
@@ -37,40 +36,23 @@ public class NettyCodecExample {
 //        }
 //        System.out.println("level set: " + Level.ALL.getName());
 
-        // new DrasylNode()
-        final IdentityManager identityManager = new IdentityManager(DrasylConfig.of());
-        identityManager.loadOrCreateIdentity();
-        final DrasylBootstrap bootstrap = new DrasylBootstrap(event -> {
-            System.err.println("event = " + event);
-        }, identityManager.getIdentity())
-                .config(DrasylConfig.of())
-                // TODO: idleTimeout(60 seconds)
-//                .handler(new SimpleChannelInboundHandler<Object>() {
-//                    @Override
-//                    protected void channelRead0(final ChannelHandlerContext ctx,
-//                                                final Object msg) {
-//                        // DrasylNode#onEvent()
-//                    }
-//                })
-                ;
+        final Channel channel = new DrasylBootstrap(event -> System.err.println("event = " + event))
+                .childHandler(new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void channelRead(final ChannelHandlerContext ctx,
+                                            final Object msg) {
+                        System.out.println("From " + ctx.channel().remoteAddress() + ": " + msg);
+                        ctx.writeAndFlush("ACK");
+                    }
+                })
+                .bind()
+                .awaitUninterruptibly()
+                .channel();
 
-        // DrasylNode#start
+        Thread.sleep(5_000);
 
-        final ChannelFuture future = bootstrap.bind();
-        future.awaitUninterruptibly();
+        channel.closeFuture().awaitUninterruptibly();
 
-        final Channel channel = future.channel();
-
-//        Thread.sleep(5_000);
-//
-//        // DrasylNode#send()
-//        // wirft UnsupportedOperationException, müssen an ein child channel ran
-//        final ChannelPromise promise = channel.newPromise();
-//        channel.writeAndFlush("Hallo welt", promise); // empfänger fehlt
-//
-//        Thread.sleep(5_000);
-//
-//        // DrasylNode#shutdown
-//        channel.close();
+//        channel.close().awaitUninterruptibly();
     }
 }
