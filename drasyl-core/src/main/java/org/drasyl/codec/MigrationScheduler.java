@@ -25,11 +25,15 @@ import io.netty.util.concurrent.EventExecutor;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.pipeline.Handler;
 
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
+ */
 public class MigrationScheduler extends Scheduler {
     private final EventExecutor executor;
 
@@ -39,7 +43,7 @@ public class MigrationScheduler extends Scheduler {
 
     @Override
     public @NonNull Worker createWorker() {
-        throw new RuntimeException("not implemented yet");
+        throw new RuntimeException("not implemented yet"); // NOSONAR
     }
 
     @Override

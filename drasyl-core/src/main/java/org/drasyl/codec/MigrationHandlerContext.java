@@ -36,6 +36,9 @@ import org.drasyl.pipeline.serialization.Serialization;
 
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
+ */
 public class MigrationHandlerContext implements HandlerContext {
     private final ChannelHandlerContext ctx;
     private final DrasylServerChannel channel;
@@ -62,12 +65,12 @@ public class MigrationHandlerContext implements HandlerContext {
 
     @Override
     public String name() {
-        return null;
+        throw new RuntimeException("not implemented yet"); // NOSONAR
     }
 
     @Override
     public Handler handler() {
-        return null;
+        throw new RuntimeException("not implemented yet"); // NOSONAR
     }
 
     @Override
@@ -79,13 +82,13 @@ public class MigrationHandlerContext implements HandlerContext {
     public CompletableFuture<Void> passInbound(final Address sender,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-        final MigrationMessage addressedMsg = new MigrationMessage(msg, sender);
+        final MigrationMessage<?, ?> addressedMsg = new MigrationMessage<>(msg, sender);
 
         try {
             ctx.fireChannelRead(addressedMsg);
             future.complete(null);
         }
-        catch (final Exception e) {
+        catch (final Exception e) { // NOSONAR
             future.completeExceptionally(e);
         }
 
@@ -99,7 +102,7 @@ public class MigrationHandlerContext implements HandlerContext {
             ctx.fireUserEventTriggered(event);
             future.complete(null);
         }
-        catch (final Exception e) {
+        catch (final Exception e) { // NOSONAR
             future.completeExceptionally(e);
         }
 
@@ -110,7 +113,7 @@ public class MigrationHandlerContext implements HandlerContext {
     public CompletableFuture<Void> passOutbound(final Address recipient,
                                                 final Object msg,
                                                 final CompletableFuture<Void> future) {
-        final MigrationMessage addressedMsg = new MigrationMessage(msg, recipient);
+        final MigrationMessage<?, ?> addressedMsg = new MigrationMessage<>(msg, recipient);
 
         ctx.writeAndFlush(addressedMsg).addListener(f -> {
             if (f.isSuccess()) {
@@ -131,7 +134,7 @@ public class MigrationHandlerContext implements HandlerContext {
 
     @Override
     public Pipeline pipeline() {
-        throw new RuntimeException("not supported");
+        throw new RuntimeException("not supported"); // NOSONAR
     }
 
     @Override

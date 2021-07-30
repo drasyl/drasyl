@@ -23,6 +23,7 @@ package org.drasyl.codec;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -62,6 +63,10 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.codec.Null.NULL;
 
+/**
+ * A special {@link ChannelInboundHandler} to initialize the default {@link DrasylServerChannel}
+ * behavior.
+ */
 public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
     public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
     public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
@@ -86,6 +91,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
     public static final String PORT_MAPPER = "PORT_MAPPER";
     public static final String UDP_SERVER = "UDP_SERVER";
 
+    @SuppressWarnings({ "java:S138", "java:S1541", "java:S3776" })
     @Override
     protected void initChannel(final Channel ch) {
         final DrasylConfig config = ((DrasylServerChannel) ch).drasylConfig();

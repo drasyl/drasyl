@@ -41,6 +41,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * A {@link Channel} for overlay network management.
+ */
 public class DrasylServerChannel extends AbstractServerChannel {
     private final DrasylConfig drasylConfig;
     private volatile int state; // 0 - open (node created), 1 - active (node started), 2 - closed (node shut down)

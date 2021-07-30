@@ -37,13 +37,16 @@ import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 
+/**
+ * A {@link Channel} for peer communication.
+ */
 public class DrasylChannel extends AbstractChannel {
     private enum State {OPEN, BOUND, CONNECTED, CLOSED}
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private volatile State state;
-    private volatile SocketAddress localAddress;
+    private volatile SocketAddress localAddress; // NOSONAR
     private final IdentityPublicKey remoteAddress;
 
     public DrasylChannel(final Channel parent, final IdentityPublicKey remoteAddress) {
@@ -54,7 +57,7 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected AbstractUnsafe newUnsafe() {
-        return new MyChannelUnsafe();
+        return new DrasylChannelUnsafe();
     }
 
     @Override
@@ -143,7 +146,7 @@ public class DrasylChannel extends AbstractChannel {
         return METADATA;
     }
 
-    private class MyChannelUnsafe extends AbstractUnsafe {
+    private class DrasylChannelUnsafe extends AbstractUnsafe {
         @Override
         public void connect(final SocketAddress remoteAddress,
                             final SocketAddress localAddress,
@@ -156,7 +159,8 @@ public class DrasylChannel extends AbstractChannel {
                 final Exception cause = new AlreadyConnectedException();
                 safeSetFailure(promise, cause);
                 pipeline().fireExceptionCaught(cause);
-                return;
+                //noinspection UnnecessaryReturnStatement
+                return; // NOSONAR
             }
         }
     }

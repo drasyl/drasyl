@@ -22,6 +22,7 @@
 package org.drasyl.codec;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFactory;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -40,6 +41,9 @@ import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Bootstrap that helps to bootstrap {@link DrasylChannel}s to communicate with peers.
+ */
 public class DrasylBootstrap {
     private final EventLoopGroup parentGroup;
     private final EventLoopGroup childGroup;
@@ -49,6 +53,12 @@ public class DrasylBootstrap {
     private ChannelHandler handler;
     private ChannelHandler childHandler;
 
+    /**
+     * Creates a new instance which uses the given {@code DrasylConfig} and {@code Consumer<Event>}
+     * to bootstrap the {@link DrasylChannel}s.
+     *
+     * @throws IOException if identity could not be loaded or created
+     */
     public DrasylBootstrap(final DrasylConfig config,
                            final Consumer<Event> eventConsumer) throws IOException {
         this.config = Objects.requireNonNull(config);
@@ -68,28 +78,50 @@ public class DrasylBootstrap {
         handler = new DrasylServerChannelInitializer();
     }
 
+    /**
+     * Creates a new instance which uses the default {@code DrasylConfig} and {@code
+     * Consumer<Event>} to bootstrap the {@link DrasylChannel}s.
+     *
+     * @throws IOException if identity could not be loaded or created
+     */
     public DrasylBootstrap(final Consumer<Event> eventConsumer) throws IOException {
         this(DrasylConfig.of(), eventConsumer);
     }
 
+    /**
+     * Set the {@link ChannelHandler} which is used to handle overlay network management and spawn
+     * new child {@link Channel}'s for peer communication.
+     */
     public DrasylBootstrap handler(final ChannelHandler handler) {
         this.handler = requireNonNull(handler);
         return this;
     }
 
+    /**
+     * Set the {@link ChannelHandler} which is used to handle peer communication.
+     */
     public DrasylBootstrap childHandler(final ChannelHandler childHandler) {
         this.childHandler = requireNonNull(childHandler);
         return this;
     }
 
+    /**
+     * Returns the {@link DrasylConfig} used by this bootstrap.
+     */
     public DrasylConfig config() {
         return config;
     }
 
+    /**
+     * Returns the {@link Identity} used by this bootstrap.
+     */
     public Identity identity() {
         return identity;
     }
 
+    /**
+     * Create a new {@link Channel} and bind it to {@link #identity}.
+     */
     public ChannelFuture bind() {
         return new ServerBootstrap()
                 .group(parentGroup, childGroup)

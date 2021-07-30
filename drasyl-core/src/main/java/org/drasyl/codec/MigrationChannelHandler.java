@@ -36,6 +36,9 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.codec.Null.NULL;
 
+/**
+ * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
+ */
 public class MigrationChannelHandler extends ChannelHandlerAdapter implements ChannelOutboundHandler, ChannelInboundHandler {
     private final Handler handler;
 
@@ -104,7 +107,7 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
             handler.onOutbound(handlerCtx, recipient, payload, future);
         }
         else {
-            throw new RuntimeException("not implemented yet");
+            throw new RuntimeException("not implemented yet"); // NOSONAR
         }
     }
 
@@ -145,7 +148,7 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
             handler.onInbound(handlerCtx, sender, payload, new CompletableFuture<>());
         }
         else {
-            throw new RuntimeException("not implemented yet");
+            throw new RuntimeException("not implemented yet"); // NOSONAR
         }
     }
 

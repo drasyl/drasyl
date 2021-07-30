@@ -21,11 +21,21 @@
  */
 package org.drasyl.codec;
 
+import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 
+/**
+ * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
+ */
 public class MigrationMessage<T, A extends Address> {
     private final T message;
     private final A address;
+
+    public MigrationMessage(final T message,
+                            final A address) {
+        this.message = message;
+        this.address = address;
+    }
 
     public T message() {
         return message;
@@ -33,11 +43,5 @@ public class MigrationMessage<T, A extends Address> {
 
     public A address() {
         return address;
-    }
-
-    public MigrationMessage(final T message,
-                            final A address) {
-        this.message = message;
-        this.address = address;
     }
 }
