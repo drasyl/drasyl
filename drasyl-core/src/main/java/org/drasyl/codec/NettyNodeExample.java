@@ -21,6 +21,7 @@
  */
 package org.drasyl.codec;
 
+import io.netty.channel.Channel;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
@@ -41,7 +42,8 @@ public class NettyNodeExample {
         Thread.sleep(5_000);
 
         System.out.print("send...");
-        node.send("7b6f15b4c058c74708e8830ba0526156f3fa5d3f73cbae8331879644df83a0de", "Hallo").toCompletableFuture().get();
-        System.out.println("done!");
+        final Channel channel = node.resolve("7b6f15b4c058c74708e8830ba0526156f3fa5d3f73cbae8331879644df83a0de").toCompletableFuture().get();
+        channel.writeAndFlush("Hallo!").awaitUninterruptibly();
+        node.shutdown().join();
     }
 }
