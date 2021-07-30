@@ -21,19 +21,16 @@
  */
 package org.drasyl.cli.command.wormhole;
 
-import io.reactivex.rxjava3.core.Scheduler;
-import org.drasyl.DrasylConfig;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.RequestText;
+import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,7 +41,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -64,27 +60,19 @@ class ReceivingWormholeNodeTest {
     private CompletableFuture<Void> doneFuture;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private RequestText request;
-    @Mock
-    private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
-    @Mock
-    private PeersManager peersManager;
+    private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Pipeline pipeline;
-    @Mock
-    private PluginManager pluginManager;
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
-    @Mock
-    private Scheduler scheduler;
+    private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Channel channel;
     private ReceivingWormholeNode underTest;
 
     @BeforeEach
     void setUp() {
         outStream = new ByteArrayOutputStream();
         out = new PrintStream(outStream, true);
-        underTest = new ReceivingWormholeNode(doneFuture, out, request, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        underTest = new ReceivingWormholeNode(doneFuture, out, request, bootstrap, channelFuture, channel);
     }
 
     @Nested
@@ -148,12 +136,12 @@ class ReceivingWormholeNodeTest {
             class OnRequestText {
                 @Test
                 void shouldRequestText(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
-                    underTest = new ReceivingWormholeNode(doneFuture, out, null, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+                    underTest = new ReceivingWormholeNode(doneFuture, out, null, bootstrap, channelFuture, channel);
 
                     underTest.onEvent(nodeOnline);
                     underTest.onEvent(event);
 
-                    verify(pipeline).processOutbound(any(), any());
+                    verify(channel.pipeline()).fireUserEventTriggered(any());
                 }
             }
         }
@@ -162,11 +150,11 @@ class ReceivingWormholeNodeTest {
         class OnRequestText {
             @Test
             void shouldNotRequestTextBecauseNotOffline(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
-                underTest = new ReceivingWormholeNode(doneFuture, out, null, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+                underTest = new ReceivingWormholeNode(doneFuture, out, null, bootstrap, channelFuture, channel);
 
                 underTest.onEvent(event);
 
-                verify(pipeline, never()).processOutbound(any(), any());
+                verify(channel.pipeline(), never()).fireUserEventTriggered(any());
             }
         }
 

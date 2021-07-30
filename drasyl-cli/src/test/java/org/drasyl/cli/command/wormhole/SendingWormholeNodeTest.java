@@ -21,35 +21,33 @@
  */
 package org.drasyl.cli.command.wormhole;
 
-import io.reactivex.rxjava3.core.Scheduler;
-import org.drasyl.DrasylConfig;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import org.drasyl.DrasylNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode.SetText;
+import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,27 +61,19 @@ class SendingWormholeNodeTest {
     private PrintStream out;
     @SuppressWarnings("FieldCanBeLocal")
     private final String password = "123";
-    @Mock
-    private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
-    @Mock
-    private PeersManager peersManager;
+    private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Pipeline pipeline;
-    @Mock
-    private PluginManager pluginManager;
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
-    @Mock
-    private Scheduler scheduler;
+    private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Channel channel;
     private SendingWormholeNode underTest;
 
     @BeforeEach
     void setUp() {
         outStream = new ByteArrayOutputStream();
         out = new PrintStream(outStream, true);
-        underTest = new SendingWormholeNode(doneFuture, out, password, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        underTest = new SendingWormholeNode(doneFuture, out, password, bootstrap, channelFuture, channel);
     }
 
     @Nested
@@ -121,7 +111,7 @@ class SendingWormholeNodeTest {
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(pipeline).processOutbound(eq(event.getSender()), any(TextMessage.class));
+                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof TextMessage && m.getRecipient().equals(event.getSender())));
             }
 
             @Test
@@ -132,7 +122,7 @@ class SendingWormholeNodeTest {
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(pipeline).processOutbound(eq(event.getSender()), any(WrongPasswordMessage.class));
+                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof WrongPasswordMessage && m.getRecipient().equals(event.getSender())));
             }
 
             @Nested

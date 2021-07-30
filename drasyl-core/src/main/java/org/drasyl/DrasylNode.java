@@ -21,26 +21,27 @@
  */
 package org.drasyl;
 
-import io.netty.channel.EventLoopGroup;
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
+import org.drasyl.codec.DrasylBootstrap;
+import org.drasyl.codec.DrasylChannel;
+import org.drasyl.codec.DrasylServerChannel;
+import org.drasyl.codec.DrasylServerChannelInitializer;
 import org.drasyl.event.Event;
-import org.drasyl.event.Node;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeNormalTerminationEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
+import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.serialization.MessageSerializer;
-import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -49,19 +50,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static org.drasyl.codec.Null.NULL;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
-import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 
 /**
  * Represents a node in the drasyl Overlay Network. Applications that want to run on drasyl must
@@ -91,13 +89,14 @@ import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceHeavy;
 @Beta
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
-    private static final List<DrasylNode> INSTANCES;
     private static String version;
+    private final DrasylBootstrap bootstrap;
+    private ChannelFuture channelFuture;
+    private Channel channel;
 
     static {
         // https://github.com/netty/netty/issues/7817
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
-        INSTANCES = Collections.synchronizedList(new ArrayList<>());
 
         if (unsafeStaticFieldOffsetSupported()) {
             // dirty fix from Stack Overflow: https://stackoverflow.com/questions/46454995/how-to-hide-warning-illegal-reflective-access-in-java-9-without-jvm-argument/53517025#53517025
@@ -120,15 +119,6 @@ public abstract class DrasylNode {
             }
         }
     }
-
-    private final DrasylConfig config;
-    private final Identity identity;
-    private final PeersManager peersManager;
-    private final Pipeline pipeline;
-    private final PluginManager pluginManager;
-    private final AtomicReference<CompletableFuture<Void>> startFuture;
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture;
-    private final Scheduler scheduler;
 
     /**
      * Creates a new drasyl Node. The node is only being created, it neither connects to the Overlay
@@ -159,42 +149,48 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
-            this.config = requireNonNull(config);
-            final IdentityManager identityManager = new IdentityManager(this.config);
-            identityManager.loadOrCreateIdentity();
-            this.identity = identityManager.getIdentity();
-            this.peersManager = new PeersManager(this::onInternalEvent, identity);
-            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager);
-            this.pluginManager = new PluginManager(config, identity, pipeline);
-            this.startFuture = new AtomicReference<>();
-            this.shutdownFuture = new AtomicReference<>(completedFuture(null));
-            this.scheduler = getInstanceHeavy();
+            bootstrap = new DrasylBootstrap(config, this::onEvent)
+                    .handler(new DrasylServerChannelInitializer() {
+                        @Override
+                        protected void initChannel(final Channel ch) {
+                            ch.pipeline().addFirst(new DrasylNodeHandler());
 
-            LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
+                            super.initChannel(ch);
+                        }
+                    })
+                    .childHandler(new ChannelInitializer<DrasylChannel>() {
+                        @Override
+                        protected void initChannel(final DrasylChannel ch) throws Exception {
+                            ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
+                                @Override
+                                public void channelRead(final ChannelHandlerContext ctx,
+                                                        Object msg) {
+                                    if (msg == NULL) {
+                                        msg = null;
+                                    }
+
+                                    final MessageEvent event = MessageEvent.of((IdentityPublicKey) ctx.channel().remoteAddress(), msg);
+                                    onEvent(event);
+                                }
+                            });
+                        }
+                    })
+            ;
+
+            LOG.debug("drasyl node with config `{}` and identity `{}` created", config, bootstrap.identity());
         }
         catch (final IOException e) {
             throw new DrasylException("Couldn't load or create identity", e);
         }
     }
 
-    protected DrasylNode(final DrasylConfig config,
-                         final Identity identity,
-                         final PeersManager peersManager,
-                         final Pipeline pipeline,
-                         final PluginManager pluginManager,
-                         final AtomicReference<CompletableFuture<Void>> startFuture,
-                         final AtomicReference<CompletableFuture<Void>> shutdownFuture,
-                         final Scheduler scheduler) {
-        this.config = config;
-        this.identity = identity;
-        this.peersManager = peersManager;
-        this.pipeline = pipeline;
-        this.pluginManager = pluginManager;
-        this.startFuture = startFuture;
-        this.shutdownFuture = shutdownFuture;
-        this.scheduler = scheduler;
-
-        LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
+    protected DrasylNode(final DrasylBootstrap bootstrap,
+                         final ChannelFuture channelFuture,
+                         final Channel channel) {
+        this.bootstrap = bootstrap;
+        this.channelFuture = channelFuture;
+        this.channel = channel;
+        LOG.debug("drasyl node with config `{}` and identity `{}` created", bootstrap.config(), bootstrap.identity());
     }
 
     /**
@@ -219,37 +215,6 @@ public abstract class DrasylNode {
         }
 
         return version;
-    }
-
-    /**
-     * This method stops the shared threads ({@link EventLoopGroup}s), but only if none {@link
-     * DrasylNode} is using them anymore.
-     *
-     * <p>
-     * <b>This operation cannot be undone. After performing this operation, no new DrasylNodes can
-     * be created!</b>
-     * </p>
-     *
-     * @deprecated Use {@link EventLoopGroupUtil#shutdown()} instead.
-     */
-    @Deprecated(since = "0.5.0", forRemoval = true)
-    public static void irrevocablyTerminate() {
-        if (INSTANCES.isEmpty()) {
-            EventLoopGroupUtil.shutdown().join();
-        }
-    }
-
-    /**
-     * Sends <code>event</code> to the {@link Pipeline} and tells it information about the local
-     * node, other peers, connections or incoming messages.
-     * <br>
-     * <b>This method should be used by all drasyl internal operations, so that the event can pass
-     * the {@link org.drasyl.pipeline.Pipeline}</b>
-     *
-     * @param event the event
-     */
-    CompletableFuture<Void> onInternalEvent(final Event event) {
-        return pipeline.processInbound(event);
     }
 
     /**
@@ -280,7 +245,7 @@ public abstract class DrasylNode {
      * exceptionally completion stage
      * @see org.drasyl.pipeline.Handler
      * @see MessageSerializer
-     * @since 0.1.3-SNAPSHOT
+     * @since 0.1.3
      */
     @NonNull
     public CompletionStage<Void> send(@NonNull final String recipient,
@@ -313,14 +278,19 @@ public abstract class DrasylNode {
      * exceptionally completion stage
      * @see org.drasyl.pipeline.Handler
      * @see MessageSerializer
-     * @since 0.1.3-SNAPSHOT
+     * @since 0.1.3
      */
     @NonNull
     public CompletionStage<Void> send(@Nullable final DrasylAddress recipient,
                                       final Object payload) {
-        return pipeline
-                .processOutbound(recipient, payload)
-                .minimalCompletionStage();
+        if (channel != null) {
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            channel.pipeline().fireUserEventTriggered(new OutboundMessage(payload, recipient, future));
+            return future;
+        }
+        else {
+            return failedFuture(new Exception("You have to call DrasylNode#start() first!"));
+        }
     }
 
     /**
@@ -338,36 +308,25 @@ public abstract class DrasylNode {
      * completed.
      */
     @NonNull
-    public CompletableFuture<Void> shutdown() {
-        final CompletableFuture<Void> newShutdownFuture = new CompletableFuture<>();
-        final CompletableFuture<Void> previousShutdownFuture = shutdownFuture.compareAndExchange(null, newShutdownFuture);
-        if (previousShutdownFuture == null) {
-            LOG.info("Shutdown drasyl node with identity `{}`...", identity);
-            scheduler.scheduleDirect(() -> {
-                synchronized (startFuture) {
-                    onInternalEvent(NodeDownEvent.of(Node.of(identity))).whenComplete((result, e) -> {
-                        if (e != null) {
-                            LOG.error("drasyl node faced error on shutdown (NodeDownEvent):", e);
-                        }
-                        pluginManager.beforeShutdown();
-                        onInternalEvent(NodeNormalTerminationEvent.of(Node.of(identity))).whenComplete((result2, e2) -> {
-                            if (e2 != null) {
-                                LOG.error("drasyl node faced error on shutdown (NodeNormalTerminationEvent):", e2);
-                            }
-                            LOG.info("drasyl node with identity `{}` has shut down", identity);
-                            pluginManager.afterShutdown();
-                            INSTANCES.remove(DrasylNode.this);
-                            newShutdownFuture.complete(null);
-                            startFuture.set(null);
-                        });
-                    });
+    @SuppressWarnings("java:S1905")
+    public synchronized CompletableFuture<Void> shutdown() {
+        if (channel != null) {
+            final ChannelFuture closeFuture = channel.close();
+            channel = null;
+            final CompletableFuture<Void> result = new CompletableFuture<>();
+            closeFuture.addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+                    this.channelFuture = null;
+                    result.complete(null);
+                }
+                else {
+                    result.completeExceptionally(future.cause());
                 }
             });
-
-            return newShutdownFuture;
+            return result;
         }
         else {
-            return previousShutdownFuture;
+            return completedFuture(null);
         }
     }
 
@@ -386,45 +345,22 @@ public abstract class DrasylNode {
      * operation have been started.
      */
     @NonNull
-    public CompletableFuture<Void> start() {
-        final CompletableFuture<Void> newStartFuture = new CompletableFuture<>();
-        final CompletableFuture<Void> previousStartFuture = startFuture.compareAndExchange(null, newStartFuture);
-        if (previousStartFuture == null) {
-            LOG.info("Start drasyl node with identity `{}`...", identity);
-            scheduler.scheduleDirect(() -> {
-                synchronized (startFuture) {
-                    INSTANCES.add(this);
-                    pluginManager.beforeStart();
-                    onInternalEvent(NodeUpEvent.of(Node.of(identity))).whenComplete((result, e) -> {
-                        if (e == null) {
-                            LOG.info("drasyl node with identity `{}` has started", identity);
-                            pluginManager.afterStart();
-                            newStartFuture.complete(null);
-                            shutdownFuture.set(null);
-                        }
-                        else {
-                            LOG.warn("Could not start drasyl node:", e);
-                            pluginManager.beforeShutdown();
-                            onInternalEvent(NodeUnrecoverableErrorEvent.of(Node.of(identity), e)).whenComplete((result2, e2) -> {
-                                if (e2 != null) {
-                                    LOG.error("drasyl node faced error `{}` on startup, which caused it to shut down all already started components. This again resulted in an error: {}", e.getMessage(), e2.getMessage());
-                                }
-
-                                pluginManager.afterShutdown();
-                                INSTANCES.remove(DrasylNode.this);
-                                newStartFuture.completeExceptionally(new Exception("drasyl node start failed:", e));
-                                startFuture.set(null);
-                            });
-                        }
-                    });
-                }
-            });
-
-            return newStartFuture;
+    @SuppressWarnings("java:S1905")
+    public synchronized CompletableFuture<Void> start() {
+        if (channelFuture == null) {
+            channelFuture = bootstrap.bind();
         }
-        else {
-            return previousStartFuture;
-        }
+        final CompletableFuture<Void> result = new CompletableFuture<>();
+        channelFuture.addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
+                channel = future.channel();
+                result.complete(null);
+            }
+            else {
+                result.completeExceptionally(future.cause());
+            }
+        });
+        return result;
     }
 
     /**
@@ -433,8 +369,8 @@ public abstract class DrasylNode {
      * @return the pipeline
      */
     @NonNull
-    public Pipeline pipeline() {
-        return this.pipeline;
+    public ChannelPipeline pipeline() {
+        return channel.pipeline();
     }
 
     /**
@@ -444,6 +380,94 @@ public abstract class DrasylNode {
      */
     @NonNull
     public Identity identity() {
-        return identity;
+        return bootstrap.identity();
+    }
+
+    /**
+     * Signals {@link DrasylNodeHandler} to send an outbound message.
+     */
+    public static class OutboundMessage {
+        private final Object payload;
+        private final DrasylAddress recipient;
+        private final CompletableFuture<Void> future;
+
+        public OutboundMessage(final Object payload,
+                               final DrasylAddress recipient,
+                               final CompletableFuture<Void> future) {
+            this.payload = payload;
+            this.recipient = requireNonNull(recipient);
+            this.future = requireNonNull(future);
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final OutboundMessage that = (OutboundMessage) o;
+            return Objects.equals(payload, that.payload) && Objects.equals(recipient, that.recipient) && Objects.equals(future, that.future);
+        }
+
+        @Override
+        public String toString() {
+            return "OutboundMessage{" +
+                    "payload=" + payload +
+                    ", recipient=" + recipient +
+                    ", future=" + future +
+                    '}';
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(payload, recipient, future);
+        }
+
+        public Object getPayload() {
+            return payload;
+        }
+
+        public DrasylAddress getRecipient() {
+            return recipient;
+        }
+
+        public CompletableFuture<Void> getFuture() {
+            return future;
+        }
+    }
+
+    private class DrasylNodeHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                       final Object evt) {
+            if (evt instanceof Event) {
+                onEvent((Event) evt);
+            }
+            else if (evt instanceof OutboundMessage) {
+                final DrasylAddress recipient = ((OutboundMessage) evt).getRecipient();
+                Object payload = ((OutboundMessage) evt).getPayload();
+                final CompletableFuture<Void> future = ((OutboundMessage) evt).getFuture();
+
+                final Channel peerChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient);
+
+                if (payload == null) {
+                    payload = NULL;
+                }
+
+                peerChannel.writeAndFlush(payload).addListener(f -> {
+                    if (f.isSuccess()) {
+                        future.complete(null);
+                    }
+                    else {
+                        future.completeExceptionally(f.cause());
+                    }
+                });
+            }
+            else {
+                ctx.fireUserEventTriggered(ctx);
+            }
+        }
     }
 }

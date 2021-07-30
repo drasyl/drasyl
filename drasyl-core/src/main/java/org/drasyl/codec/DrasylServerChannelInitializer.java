@@ -62,7 +62,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.codec.Null.NULL;
 
-class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
+public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
     public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
     public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
     public static final String CHILD_CHANNEL_ROUTER = "CHILD_CHANNEL_ROUTER";

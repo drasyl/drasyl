@@ -21,8 +21,10 @@
  */
 package org.drasyl.cli.command.perf;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.reactivex.rxjava3.core.Scheduler;
-import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.PerfClientNode.DirectConnectionTimeout;
 import org.drasyl.cli.command.perf.PerfClientNode.OnlineTimeout;
@@ -31,6 +33,7 @@ import org.drasyl.cli.command.perf.PerfClientNode.TestOptions;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
+import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -39,23 +42,20 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,20 +80,12 @@ class PerfClientNodeTest {
     @Mock
     private Scheduler perfScheduler;
     private Set<IdentityPublicKey> directConnections;
-    @Mock
-    private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
-    @Mock
-    private PeersManager peersManager;
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
+    private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Pipeline pipeline;
-    @Mock
-    private PluginManager pluginManager;
-    @Mock
-    private Scheduler scheduler;
+    private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Channel channel;
     private PerfClientNode underTest;
 
     @BeforeEach
@@ -101,7 +93,7 @@ class PerfClientNodeTest {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
         directConnections = new HashSet<>();
-        underTest = new PerfClientNode(doneFuture, printStream, perfScheduler, directConnections, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        underTest = new PerfClientNode(doneFuture, printStream, perfScheduler, directConnections, bootstrap, channelFuture, channel);
     }
 
     @Nested
@@ -155,7 +147,7 @@ class PerfClientNodeTest {
                     void shouldRequestSession() {
                         underTest.onEvent(nodeOnline);
 
-                        verify(pipeline).processOutbound(any(), any(SessionRequest.class));
+                        verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof SessionRequest));
                     }
                 }
 
@@ -173,7 +165,7 @@ class PerfClientNodeTest {
                     void shouldTriggerDirectConnection() {
                         underTest.onEvent(nodeOnline);
 
-                        verify(pipeline).processOutbound(any(), eq(new byte[0]));
+                        verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> Arrays.equals((byte[]) m.getPayload(), new byte[0])));
                     }
 
                     @Test
@@ -192,18 +184,18 @@ class PerfClientNodeTest {
                 void shouldWaitForServer() {
                     underTest.onEvent(nodeOnline);
 
-                    verify(pipeline, never()).processOutbound(any(), any());
+                    verify(channel.pipeline(), never()).fireUserEventTriggered(any());
                 }
 
                 @Nested
                 class OnSetServer {
                     @Test
-                    void shouldRequestSession(@Mock final TestOptions serverAndOptions) {
+                    void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final TestOptions serverAndOptions) {
                         when(serverAndOptions.requireDirectConnection()).thenReturn(true);
                         underTest.onEvent(nodeOnline);
                         underTest.onEvent(serverAndOptions);
 
-                        verify(pipeline).processOutbound(any(), eq(new byte[0]));
+                        verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> Arrays.equals((byte[]) m.getPayload(), new byte[0])));
                     }
                 }
             }
@@ -226,7 +218,7 @@ class PerfClientNodeTest {
                     underTest.onEvent(serverAndOptions);
                     underTest.onEvent(messageEvent);
 
-                    verify(pipeline).processOutbound(any(), any(SessionRequest.class));
+                    verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof SessionRequest));
                 }
             }
 

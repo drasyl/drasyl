@@ -21,13 +21,10 @@
  */
 package org.drasyl.behaviour;
 
-import io.reactivex.rxjava3.core.Scheduler;
-import org.drasyl.DrasylConfig;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -52,18 +49,12 @@ import static org.mockito.Mockito.when;
 class BehavioralDrasylNodeTest {
     private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
     private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
-    @Mock
-    private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
+    private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private PeersManager peersManager;
+    private ChannelFuture channelFuture;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Pipeline pipeline;
-    @Mock
-    private PluginManager pluginManager;
-    @Mock
-    private Scheduler scheduler;
+    private Channel channel;
     @Mock
     private Behavior behavior;
 
@@ -73,7 +64,7 @@ class BehavioralDrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            node = spy(new BehavioralDrasylNode(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler, behavior) {
+            node = spy(new BehavioralDrasylNode(bootstrap, channelFuture, channel, behavior) {
                 @Override
                 protected Behavior created() {
                     return null;

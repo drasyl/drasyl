@@ -21,29 +21,26 @@
  */
 package org.drasyl.cli.command.wormhole;
 
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
+import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
@@ -66,15 +63,10 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
     SendingWormholeNode(final CompletableFuture<Void> doneFuture,
                         final PrintStream out,
                         final String password,
-                        final DrasylConfig config,
-                        final Identity identity,
-                        final PeersManager peersManager,
-                        final Pipeline pipeline,
-                        final PluginManager pluginManager,
-                        final AtomicReference<CompletableFuture<Void>> startFuture,
-                        final AtomicReference<CompletableFuture<Void>> shutdownFuture,
-                        final Scheduler scheduler) {
-        super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+                        final DrasylBootstrap bootstrap,
+                        final ChannelFuture channelFuture,
+                        final Channel channel) {
+        super(bootstrap, channelFuture, channel);
         this.doneFuture = requireNonNull(doneFuture);
         this.out = requireNonNull(out);
         this.password = password;

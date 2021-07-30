@@ -21,32 +21,31 @@
  */
 package org.drasyl.cli.command.perf;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.reactivex.rxjava3.core.Scheduler;
-import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylNode;
 import org.drasyl.cli.command.perf.PerfServerNode.OnlineTimeout;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
+import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -54,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -67,27 +67,19 @@ class PerfServerNodeTest {
     private CompletableFuture<Void> doneFuture;
     @Mock
     private Scheduler perfScheduler;
-    @Mock
-    private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
-    @Mock
-    private PeersManager peersManager;
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
+    private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Pipeline pipeline;
-    @Mock
-    private PluginManager pluginManager;
-    @Mock
-    private Scheduler scheduler;
+    private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Channel channel;
     private PerfServerNode underTest;
 
     @BeforeEach
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new PerfServerNode(doneFuture, printStream, perfScheduler, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        underTest = new PerfServerNode(doneFuture, printStream, perfScheduler, bootstrap, channelFuture, channel);
     }
 
     @Nested
@@ -143,7 +135,7 @@ class PerfServerNodeTest {
                     underTest.onEvent(nodeOnline);
                     underTest.onEvent(messageEvent);
 
-                    verify(pipeline).processOutbound(any(), any(SessionConfirmation.class));
+                    verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof SessionConfirmation));
                 }
 
                 @Test

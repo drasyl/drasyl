@@ -22,6 +22,7 @@
 package org.drasyl.codec;
 
 import org.drasyl.DrasylException;
+import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
 
 import java.util.concurrent.ExecutionException;

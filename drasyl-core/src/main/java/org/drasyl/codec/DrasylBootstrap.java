@@ -35,6 +35,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
@@ -42,6 +43,7 @@ import static java.util.Objects.requireNonNull;
 public class DrasylBootstrap {
     private final EventLoopGroup parentGroup;
     private final EventLoopGroup childGroup;
+    private final DrasylConfig config;
     private final Identity identity;
     private final ChannelFactory<ServerChannel> channelFactory;
     private ChannelHandler handler;
@@ -49,7 +51,8 @@ public class DrasylBootstrap {
 
     public DrasylBootstrap(final DrasylConfig config,
                            final Consumer<Event> eventConsumer) throws IOException {
-        final IdentityManager identityManager = new IdentityManager(config);
+        this.config = Objects.requireNonNull(config);
+        final IdentityManager identityManager = new IdentityManager(this.config);
         identityManager.loadOrCreateIdentity();
         identity = identityManager.getIdentity();
 
@@ -77,6 +80,10 @@ public class DrasylBootstrap {
     public DrasylBootstrap childHandler(final ChannelHandler childHandler) {
         this.childHandler = requireNonNull(childHandler);
         return this;
+    }
+
+    public DrasylConfig config() {
+        return config;
     }
 
     public Identity identity() {

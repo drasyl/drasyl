@@ -21,6 +21,8 @@
  */
 package org.drasyl.cli.command.perf;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.drasyl.DrasylConfig;
@@ -31,24 +33,20 @@ import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.message.PerfMessage;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
+import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
@@ -74,15 +72,10 @@ public class PerfServerNode extends BehavioralDrasylNode {
     PerfServerNode(final CompletableFuture<Void> doneFuture,
                    final PrintStream printStream,
                    final Scheduler perfScheduler,
-                   final DrasylConfig config,
-                   final Identity identity,
-                   final PeersManager peersManager,
-                   final Pipeline pipeline,
-                   final PluginManager pluginManager,
-                   final AtomicReference<CompletableFuture<Void>> startFuture,
-                   final AtomicReference<CompletableFuture<Void>> shutdownFuture,
-                   final Scheduler scheduler) {
-        super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+                   final DrasylBootstrap bootstrap,
+                   final ChannelFuture channelFuture,
+                   final Channel channel) {
+        super(bootstrap, channelFuture, channel);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.perfScheduler = perfScheduler;

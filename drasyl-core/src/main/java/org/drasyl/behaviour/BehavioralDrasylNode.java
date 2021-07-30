@@ -21,22 +21,17 @@
  */
 package org.drasyl.behaviour;
 
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.behaviour.Behavior.BehaviorBuilder;
+import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 
@@ -71,16 +66,11 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     }
 
     @SuppressWarnings("unused")
-    protected BehavioralDrasylNode(final DrasylConfig config,
-                                   final Identity identity,
-                                   final PeersManager peersManager,
-                                   final Pipeline pipeline,
-                                   final PluginManager pluginManager,
-                                   final AtomicReference<CompletableFuture<Void>> startFuture,
-                                   final AtomicReference<CompletableFuture<Void>> shutdownFuture,
-                                   final Scheduler scheduler,
+    protected BehavioralDrasylNode(final DrasylBootstrap bootstrap,
+                                   final ChannelFuture channelFuture,
+                                   final Channel channel,
                                    final Behavior behavior) {
-        super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        super(bootstrap, channelFuture, channel);
         logger = LoggerFactory.getLogger(getClass());
         if (behavior instanceof DeferredBehavior) {
             this.behavior = ((DeferredBehavior) behavior).apply(this);
@@ -91,15 +81,10 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     }
 
     @SuppressWarnings("unused")
-    protected BehavioralDrasylNode(final DrasylConfig config,
-                                   final Identity identity,
-                                   final PeersManager peersManager,
-                                   final Pipeline pipeline,
-                                   final PluginManager pluginManager,
-                                   final AtomicReference<CompletableFuture<Void>> startFuture,
-                                   final AtomicReference<CompletableFuture<Void>> shutdownFuture,
-                                   final Scheduler scheduler) {
-        super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+    protected BehavioralDrasylNode(final DrasylBootstrap bootstrap,
+                                   final ChannelFuture channelFuture,
+                                   final Channel channel) {
+        super(bootstrap, channelFuture, channel);
         logger = LoggerFactory.getLogger(getClass());
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {
