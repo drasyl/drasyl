@@ -39,7 +39,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -53,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -129,13 +127,18 @@ class PerfServerNodeTest {
             class WhenWaitingForSession {
                 @Test
                 void shouldConfirmRequest(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
-                                          @Mock final SessionRequest sessionRequest) {
+                                          @Mock final SessionRequest sessionRequest,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
+                    when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                        invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                        return null;
+                    });
                     when(messageEvent.getPayload()).thenReturn(sessionRequest);
 
                     underTest.onEvent(nodeOnline);
                     underTest.onEvent(messageEvent);
 
-                    verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof SessionConfirmation));
+                    verify(childChannel).writeAndFlush(any(SessionConfirmation.class));
                 }
 
                 @Test

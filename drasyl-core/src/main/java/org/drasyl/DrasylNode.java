@@ -50,7 +50,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -442,61 +441,6 @@ public abstract class DrasylNode {
         }
 
         public CompletableFuture<Channel> future() {
-            return future;
-        }
-    }
-
-    /**
-     * Signals {@link DrasylNodeHandler} to send an outbound message.
-     */
-    public static class OutboundMessage {
-        private final Object payload;
-        private final DrasylAddress recipient;
-        private final CompletableFuture<Void> future;
-
-        public OutboundMessage(final Object payload,
-                               final DrasylAddress recipient,
-                               final CompletableFuture<Void> future) {
-            this.payload = payload;
-            this.recipient = requireNonNull(recipient);
-            this.future = requireNonNull(future);
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            final OutboundMessage that = (OutboundMessage) o;
-            return Objects.equals(payload, that.payload) && Objects.equals(recipient, that.recipient) && Objects.equals(future, that.future);
-        }
-
-        @Override
-        public String toString() {
-            return "OutboundMessage{" +
-                    "payload=" + payload +
-                    ", recipient=" + recipient +
-                    ", future=" + future +
-                    '}';
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(payload, recipient, future);
-        }
-
-        public Object getPayload() {
-            return payload;
-        }
-
-        public DrasylAddress recipient() {
-            return recipient;
-        }
-
-        public CompletableFuture<Void> future() {
             return future;
         }
     }

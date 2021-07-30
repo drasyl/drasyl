@@ -46,13 +46,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -64,7 +62,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -144,10 +141,14 @@ class PerfClientNodeTest {
                     }
 
                     @Test
-                    void shouldRequestSession() {
+                    void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
+                        when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                            invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                            return null;
+                        });
                         underTest.onEvent(nodeOnline);
 
-                        verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof SessionRequest));
+                        verify(childChannel).writeAndFlush(any(SessionRequest.class));
                     }
                 }
 
@@ -162,10 +163,14 @@ class PerfClientNodeTest {
                     }
 
                     @Test
-                    void shouldTriggerDirectConnection() {
+                    void shouldTriggerDirectConnection(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
+                        when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                            invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                            return null;
+                        });
                         underTest.onEvent(nodeOnline);
 
-                        verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> Arrays.equals((byte[]) m.getPayload(), new byte[0])));
+                        verify(childChannel).writeAndFlush(new byte[0]);
                     }
 
                     @Test
@@ -190,12 +195,17 @@ class PerfClientNodeTest {
                 @Nested
                 class OnSetServer {
                     @Test
-                    void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final TestOptions serverAndOptions) {
+                    void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final TestOptions serverAndOptions,
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
+                        when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                            invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                            return null;
+                        });
                         when(serverAndOptions.requireDirectConnection()).thenReturn(true);
                         underTest.onEvent(nodeOnline);
                         underTest.onEvent(serverAndOptions);
 
-                        verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> Arrays.equals((byte[]) m.getPayload(), new byte[0])));
+                        verify(childChannel).writeAndFlush(new byte[0]);
                     }
                 }
             }
@@ -206,7 +216,12 @@ class PerfClientNodeTest {
                 void shouldRequestSession(@Mock final TestOptions serverAndOptions,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                           @Mock final SessionConfirmation sessionConfirmation,
-                                          @Mock final IdentityPublicKey sender) {
+                                          @Mock final IdentityPublicKey sender,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
+                    when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                        invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                        return null;
+                    });
                     when(serverAndOptions.getMessagesPerSecond()).thenReturn(100);
                     when(serverAndOptions.getTestDuration()).thenReturn(10);
                     when(serverAndOptions.getMessageSize()).thenReturn(850);
@@ -218,7 +233,7 @@ class PerfClientNodeTest {
                     underTest.onEvent(serverAndOptions);
                     underTest.onEvent(messageEvent);
 
-                    verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof SessionRequest));
+                    verify(childChannel).writeAndFlush(any(SessionRequest.class));
                 }
             }
 

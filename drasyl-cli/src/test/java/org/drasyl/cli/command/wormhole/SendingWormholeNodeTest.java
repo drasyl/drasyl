@@ -104,25 +104,37 @@ class SendingWormholeNodeTest {
             private NodeOnlineEvent nodeOnline;
 
             @Test
-            void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+            void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
+                when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                    invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                    return null;
+                });
                 when(event.getPayload()).thenReturn(new PasswordMessage("123"));
                 underTest.setText("Hi");
 
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof TextMessage && m.recipient().equals(event.getSender())));
+                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.Resolve>) m -> m.recipient().equals(event.getSender())));
+                verify(childChannel).writeAndFlush(any(TextMessage.class));
             }
 
             @Test
-            void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+            void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
+                when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                    invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                    return null;
+                });
                 when(event.getPayload()).thenReturn(new PasswordMessage("456"));
                 underTest.setText("Hi");
 
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.OutboundMessage>) m -> m.getPayload() instanceof WrongPasswordMessage && m.recipient().equals(event.getSender())));
+                verify(channel.pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.Resolve>) m -> m.recipient().equals(event.getSender())));
+                verify(childChannel).writeAndFlush(any(WrongPasswordMessage.class));
             }
 
             @Nested
