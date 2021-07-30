@@ -177,10 +177,10 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             if (!peer.hasControlTraffic(ctx.config())) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundControlTrafficTime());
                 if (superPeers.contains(publicKey)) {
-                    ctx.peersManager().removeSuperPeerAndPath(publicKey, path);
+                    ctx.peersManager().removeSuperPeerAndPath(ctx, publicKey, path);
                 }
                 else {
-                    ctx.peersManager().removeChildrenAndPath(publicKey, path);
+                    ctx.peersManager().removeChildrenAndPath(ctx, publicKey, path);
                 }
                 peers.remove(publicKey);
                 directConnectionPeers.remove(publicKey);
@@ -226,7 +226,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             // remove trivial communications, that does not send any user generated messages
             else {
                 LOG.debug("Last application communication to {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastApplicationTrafficTime());
-                ctx.peersManager().removeChildrenAndPath(publicKey, path);
+                ctx.peersManager().removeChildrenAndPath(ctx, publicKey, path);
                 directConnectionPeers.remove(publicKey);
             }
         }
@@ -235,10 +235,10 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     private void removeAllPeers(final HandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (superPeers.contains(publicKey)) {
-                ctx.peersManager().removeSuperPeerAndPath(publicKey, path);
+                ctx.peersManager().removeSuperPeerAndPath(ctx, publicKey, path);
             }
             else {
-                ctx.peersManager().removeChildrenAndPath(publicKey, path);
+                ctx.peersManager().removeChildrenAndPath(ctx, publicKey, path);
             }
             peers.remove(publicKey);
             directConnectionPeers.remove(publicKey);
@@ -438,7 +438,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(envelopeSender) && !ctx.peersManager().getPaths(envelopeSender).contains(path)) {
                 LOG.debug("PING! Add {} as children", envelopeSender);
             }
-            ctx.peersManager().addPathAndChildren(envelopeSender, path);
+            ctx.peersManager().addPathAndChildren(ctx, envelopeSender, path);
         }
 
         // reply with pong
@@ -471,14 +471,14 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
                 if (LOG.isDebugEnabled() && !ctx.peersManager().getChildren().contains(envelopeSender) && !ctx.peersManager().getPaths(envelopeSender).contains(path)) {
                     LOG.debug("PONG! Add {} as super peer", envelopeSender);
                 }
-                ctx.peersManager().addPathAndSuperPeer(envelopeSender, path);
+                ctx.peersManager().addPathAndSuperPeer(ctx, envelopeSender, path);
             }
             else {
                 // store peer information
                 if (LOG.isDebugEnabled() && !ctx.peersManager().getPaths(envelopeSender).contains(path)) {
                     LOG.debug("PONG! Add {} as peer", envelopeSender);
                 }
-                ctx.peersManager().addPath(envelopeSender, path);
+                ctx.peersManager().addPath(ctx, envelopeSender, path);
             }
         }
         future.complete(null);

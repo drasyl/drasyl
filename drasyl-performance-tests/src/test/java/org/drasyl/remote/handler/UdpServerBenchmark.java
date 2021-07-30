@@ -79,8 +79,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     .identitySecretKey(identity2.getIdentitySecretKey())
                     .build();
 
-            pipeline = new EmbeddedPipeline(config2, identity2, new PeersManager((e) -> {
-            }, identity2),
+            pipeline = new EmbeddedPipeline(config2, identity2, new PeersManager(identity2),
                     handler,
                     new SimpleInboundHandler<ByteBuf, Address>() {
                         @Override

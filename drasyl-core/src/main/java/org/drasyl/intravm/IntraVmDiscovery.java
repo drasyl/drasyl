@@ -109,8 +109,8 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
                 final Integer networkId = key.first();
                 final IdentityPublicKey publicKey = key.second();
                 if (myCtx.config().getNetworkId() == networkId) {
-                    otherCtx.peersManager().addPath(myCtx.identity().getIdentityPublicKey(), path);
-                    myCtx.peersManager().addPath(publicKey, path);
+                    otherCtx.peersManager().addPath(otherCtx, myCtx.identity().getIdentityPublicKey(), path);
+                    myCtx.peersManager().addPath(myCtx, publicKey, path);
                 }
             });
             discoveries.put(
@@ -138,8 +138,8 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
                 final Integer networkId = key.first();
                 final IdentityPublicKey publicKey = key.second();
                 if (ctx.config().getNetworkId() == networkId) {
-                    otherCtx.peersManager().removePath(publicKey, path);
-                    ctx.peersManager().removePath(publicKey, path);
+                    otherCtx.peersManager().removePath(ctx, publicKey, path);
+                    ctx.peersManager().removePath(ctx, publicKey, path);
                 }
             });
 

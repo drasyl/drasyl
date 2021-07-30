@@ -151,7 +151,7 @@ class LocalNetworkDiscoveryTest {
             handler.doHeartbeat(ctx);
 
             verify(peer).isStale(any());
-            verify(ctx.peersManager()).removePath(eq(publicKey), any());
+            verify(ctx.peersManager()).removePath(any(), eq(publicKey), any());
             assertTrue(peers.isEmpty());
             verify(ctx).passOutbound(eq(MULTICAST_ADDRESS), any(DiscoveryMessage.class), any(CompletableFuture.class));
         }
@@ -179,7 +179,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             handler.clearRoutes(ctx);
 
-            verify(ctx.peersManager()).removePath(eq(publicKey), any());
+            verify(ctx.peersManager()).removePath(any(), eq(publicKey), any());
             assertTrue(peers.isEmpty());
         }
     }
@@ -197,7 +197,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
 
-            verify(ctx.peersManager()).addPath(eq(publicKey), any());
+            verify(ctx.peersManager()).addPath(any(), eq(publicKey), any());
         }
 
         @Test
@@ -209,7 +209,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
 
-            verify(ctx.peersManager(), never()).addPath(eq(msg.getSender()), any());
+            verify(ctx.peersManager(), never()).addPath(any(), eq(msg.getSender()), any());
         }
 
         @Test

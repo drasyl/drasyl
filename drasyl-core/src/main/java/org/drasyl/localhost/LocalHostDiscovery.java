@@ -187,7 +187,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
             }
         }
 
-        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, LocalHostDiscovery.path));
+        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(ctx, publicKey, LocalHostDiscovery.path));
         routes.clear();
 
         LOG.debug("Local Host Discovery stopped.");
@@ -303,7 +303,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
 
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                ctx.peersManager().removePath(publicKey, path);
+                ctx.peersManager().removePath(ctx, publicKey, path);
                 i.remove();
             }
         }
@@ -312,7 +312,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         newRoutes.forEach(((publicKey, address) -> {
             if (!routes.containsKey(publicKey)) {
                 routes.put(publicKey, new InetSocketAddressWrapper(address));
-                ctx.peersManager().addPath(publicKey, path);
+                ctx.peersManager().addPath(ctx, publicKey, path);
             }
         }));
     }

@@ -84,10 +84,10 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
     }
 
     private static synchronized void populateRoutes(final HandlerContext ctx) {
-        ctx.config().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.peersManager().addPath(publicKey, path)));
+        ctx.config().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.peersManager().addPath(ctx, publicKey, path)));
     }
 
     private static synchronized void clearRoutes(final HandlerContext ctx) {
-        ctx.config().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.peersManager().removePath(publicKey, path));
+        ctx.config().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.peersManager().removePath(ctx, publicKey, path));
     }
 }

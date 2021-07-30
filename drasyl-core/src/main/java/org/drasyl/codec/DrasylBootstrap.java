@@ -29,15 +29,12 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
 
 import java.io.IOException;
-import java.util.Objects;
-import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
@@ -59,9 +56,8 @@ public class DrasylBootstrap {
      *
      * @throws IOException if identity could not be loaded or created
      */
-    public DrasylBootstrap(final DrasylConfig config,
-                           final Consumer<Event> eventConsumer) throws IOException {
-        this.config = Objects.requireNonNull(config);
+    public DrasylBootstrap(final DrasylConfig config) throws IOException {
+        this.config = requireNonNull(config);
         final IdentityManager identityManager = new IdentityManager(this.config);
         identityManager.loadOrCreateIdentity();
         identity = identityManager.getIdentity();
@@ -71,7 +67,7 @@ public class DrasylBootstrap {
         channelFactory = () -> new DrasylServerChannel(
                 config,
                 identity,
-                new PeersManager(eventConsumer, identity),
+                new PeersManager(identity),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())
         );
@@ -84,8 +80,8 @@ public class DrasylBootstrap {
      *
      * @throws IOException if identity could not be loaded or created
      */
-    public DrasylBootstrap(final Consumer<Event> eventConsumer) throws IOException {
-        this(DrasylConfig.of(), eventConsumer);
+    public DrasylBootstrap() throws IOException {
+        this(DrasylConfig.of());
     }
 
     /**

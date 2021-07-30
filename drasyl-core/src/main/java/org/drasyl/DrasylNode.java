@@ -149,7 +149,7 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
-            bootstrap = new DrasylBootstrap(config, this::onEvent)
+            bootstrap = new DrasylBootstrap(config)
                     .handler(new DrasylServerChannelInitializer() {
                         @Override
                         protected void initChannel(final Channel ch) {
