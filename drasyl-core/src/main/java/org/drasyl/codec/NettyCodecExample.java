@@ -36,13 +36,21 @@ public class NettyCodecExample {
 //        }
 //        System.out.println("level set: " + Level.ALL.getName());
 
-        final Channel channel = new DrasylBootstrap(event -> System.err.println("event = " + event))
+        final Channel channel = new DrasylBootstrap()
                 .childHandler(new ChannelInboundHandlerAdapter() {
                     @Override
                     public void channelRead(final ChannelHandlerContext ctx,
                                             final Object msg) {
-                        System.out.println("From " + ctx.channel().remoteAddress() + ": " + msg);
+                        System.out.println("Message from " + ctx.channel().remoteAddress() + ": " + msg);
                         ctx.writeAndFlush("ACK");
+                    }
+
+                    @Override
+                    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                   final Object evt) throws Exception {
+                        super.userEventTriggered(ctx, evt);
+
+                        System.out.println("Event: " + evt);
                     }
                 })
                 .bind()

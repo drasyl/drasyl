@@ -230,5 +230,15 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             // pass message to channel
             channel.pipeline().fireChannelRead(msg);
         }
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                       final Object evt) throws Exception {
+            super.userEventTriggered(ctx, evt);
+
+            if (evt instanceof Event) {
+                ((DrasylServerChannel) ctx.channel()).channels().forEach((address, channel) -> channel.pipeline().fireUserEventTriggered(evt));
+            }
+        }
     }
 }

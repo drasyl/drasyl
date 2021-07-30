@@ -142,6 +142,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return identity;
     }
 
+    public Map<DrasylAddress, Channel> channels() {
+        return Map.copyOf(channels);
+    }
+
     public Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
                                            final IdentityPublicKey peer) {
         return channels.computeIfAbsent(peer, key -> {
