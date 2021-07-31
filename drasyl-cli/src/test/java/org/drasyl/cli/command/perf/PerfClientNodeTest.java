@@ -28,6 +28,7 @@ import org.drasyl.cli.command.perf.PerfClientNode.DirectConnectionTimeout;
 import org.drasyl.cli.command.perf.PerfClientNode.OnlineTimeout;
 import org.drasyl.cli.command.perf.PerfClientNode.RequestSessionTimeout;
 import org.drasyl.cli.command.perf.PerfClientNode.TestOptions;
+import org.drasyl.cli.command.perf.message.Ping;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
@@ -38,8 +39,8 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
@@ -64,7 +65,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -173,7 +173,7 @@ class PerfClientNodeTest {
                     void shouldTriggerDirectConnection() {
                         underTest.onEvent(nodeOnline);
 
-                        verify(pipeline).processOutbound(any(), eq(new byte[0]));
+                        verify(pipeline).processOutbound(any(), any(Ping.class));
                     }
 
                     @Test
@@ -203,7 +203,7 @@ class PerfClientNodeTest {
                         underTest.onEvent(nodeOnline);
                         underTest.onEvent(serverAndOptions);
 
-                        verify(pipeline).processOutbound(any(), eq(new byte[0]));
+                        verify(pipeline).processOutbound(any(), any(Ping.class));
                     }
                 }
             }

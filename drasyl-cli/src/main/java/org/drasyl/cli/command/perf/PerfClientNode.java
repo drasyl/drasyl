@@ -29,6 +29,7 @@ import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.message.PerfMessage;
+import org.drasyl.cli.command.perf.message.Ping;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
@@ -232,7 +233,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
      */
     private Behavior initiateDirectConnection() {
         // send empty message to trigger rendezvous
-        send(testOptions.getServer(), new byte[0]);
+        send(testOptions.getServer(), new Ping());
 
         return Behaviors.withScheduler(eventScheduler -> {
             // timeout guard
