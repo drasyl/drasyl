@@ -21,6 +21,7 @@
  */
 package org.drasyl.behaviour;
 
+import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behavior.BehaviorBuilder;
 import org.drasyl.behaviour.Behavior.Case;
 import org.drasyl.event.Event;
@@ -39,10 +40,12 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static org.drasyl.behaviour.Behavior.SAME;
 import static org.drasyl.behaviour.Behavior.UNHANDLED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class BehaviorTest {
@@ -166,6 +169,21 @@ class BehaviorTest {
                 assertEquals(newBehavior, behavior.receive(MessageEvent.of(sender, "Hallo Welt")));
                 assertEquals(newBehavior, behavior.receive(MessageEvent.of(sender, 42)));
                 assertEquals(UNHANDLED, behavior.receive(NodeDownEvent.of(node)));
+            }
+        }
+
+        @Nested
+        class MessageAdapter {
+            @Test
+            void shouldAddCase(final @Mock IdentityPublicKey sender,
+                               final @Mock Node node,
+                               final @Mock DrasylNode drasylNode) {
+                final Behavior behavior = BehaviorBuilder.create().messageAdapter(String.class, (Function<String, Object>) String::getBytes).build();
+
+                final Behavior newBehavior = ((DeferredBehavior) behavior.receive(MessageEvent.of(sender, "Hallo Welt"))).apply(drasylNode);
+
+                assertEquals(SAME, newBehavior);
+                verify(drasylNode).onEvent(MessageEvent.of(sender, "Hallo Welt".getBytes()));
             }
         }
     }
