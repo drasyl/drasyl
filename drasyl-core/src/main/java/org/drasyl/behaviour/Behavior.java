@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.behaviour.Behaviors.same;
 
 /**
  * The behavior of an node defines how it reacts to the events that it receives.
@@ -187,7 +188,7 @@ public class Behavior {
         }
 
         /**
-         * Add a new predicated case to the event matching matching events of type {@link
+         * Add a new predicated case to the event handling matching events of type {@link
          * MessageEvent} with {@link MessageEvent#getPayload()} matching {@code messageType}.
          *
          * @param messageType type of the event to match
@@ -208,7 +209,7 @@ public class Behavior {
         }
 
         /**
-         * Add a new case to the event matching matching events of type {@link MessageEvent} with
+         * Add a new case to the event handling matching events of type {@link MessageEvent} with
          * {@link MessageEvent#getPayload()} matching {@code messageType}.
          *
          * @param messageType type of the event to match
@@ -241,8 +242,8 @@ public class Behavior {
         }
 
         /**
-         * Adds a new case to the event handling matching any {@link MessageEvent}. Subsequent
-         * {@code onMessage(...)} clauses will never see any messages.
+         * Add a new case to the event handling matching any {@link MessageEvent}. Subsequent {@code
+         * onMessage(...)} clauses will never see any messages.
          *
          * @param handler action to apply for any message
          * @return a new {@link BehaviorBuilder} with the specified handling appended
@@ -253,6 +254,41 @@ public class Behavior {
                     MessageEvent.class,
                     event -> handler.apply(event.getSender(), (M) event.getPayload())
             );
+        }
+
+        /**
+         * Add a new case to the event handling matching events of type {@link MessageEvent} with
+         * {@link MessageEvent#getPayload()} matching {@code messageType}. This case will pass the
+         * message payload to {@code adapter} and then passes the {@link MessageEvent} with the
+         * wrapped payload to the behavior.
+         *
+         * @param messageType type of the event to match
+         * @param adapter     adapter wrapping {@link MessageEvent#getPayload()}
+         * @param <M>         type of event to match
+         * @return a new {@link BehaviorBuilder} with the specified handling appended
+         */
+        public <M> BehaviorBuilder messageAdapter(final Class<M> messageType,
+                                                  final BiFunction<IdentityPublicKey, M, Object> adapter) {
+            return onMessage(messageType, (mySender, myMessage) -> new DeferredBehavior(node -> {
+                node.onEvent(MessageEvent.of(mySender, adapter.apply(mySender, myMessage)));
+                return same();
+            }));
+        }
+
+        /**
+         * Add a new case to the event handling matching events of type {@link MessageEvent} with
+         * {@link MessageEvent#getPayload()} matching {@code messageType}. This case will pass the
+         * message payload to {@code adapter} and then passes the {@link MessageEvent} with the
+         * wrapped payload to the behavior.
+         *
+         * @param messageType type of the event to match
+         * @param adapter     adapter wrapping {@link MessageEvent#getPayload()}
+         * @param <M>         type of event to match
+         * @return a new {@link BehaviorBuilder} with the specified handling appended
+         */
+        public <M> BehaviorBuilder messageAdapter(final Class<M> messageType,
+                                                  final Function<M, Object> adapter) {
+            return messageAdapter(messageType, (mySender, myMessage) -> adapter.apply(myMessage));
         }
 
         /**
