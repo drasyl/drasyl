@@ -150,8 +150,7 @@ public abstract class DrasylNode {
         try {
             bootstrap = new DrasylBootstrap(config)
                     .handler(new DrasylNodeServerChannelInitializer())
-                    .childHandler(new DrasylNodeChannelInitializer())
-            ;
+                    .childHandler(new DrasylNodeChannelInitializer());
 
             LOG.debug("drasyl node with config `{}` and identity `{}` created", config, bootstrap.identity());
         }
