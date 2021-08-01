@@ -434,7 +434,8 @@ public abstract class DrasylNode {
                     else if (evt instanceof Resolve) {
                         final DrasylAddress recipient = ((Resolve) evt).recipient();
                         final CompletableFuture<Channel> future = ((Resolve) evt).future();
-                        future.complete(((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient));
+                        final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient);
+                        channel.eventLoop().execute(() -> future.complete(channel));
                     }
                     else {
                         ctx.fireUserEventTriggered(ctx);
