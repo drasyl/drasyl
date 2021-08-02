@@ -34,6 +34,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
+import org.drasyl.plugin.PluginManager;
 
 import java.net.SocketAddress;
 import java.util.Map;
@@ -50,6 +51,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private final Identity identity;
     private final PeersManager peersManager;
+    private final PluginManager pluginManager;
     private volatile Identity localAddress; // NOSONAR
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
@@ -58,11 +60,13 @@ public class DrasylServerChannel extends AbstractServerChannel {
     public DrasylServerChannel(final DrasylConfig drasylConfig,
                                final Identity identity,
                                final PeersManager peersManager,
+                               final PluginManager pluginManager,
                                final Serialization inboundSerialization,
                                final Serialization outboundSerialization) {
         this.drasylConfig = requireNonNull(drasylConfig);
         this.identity = requireNonNull(identity);
         this.peersManager = requireNonNull(peersManager);
+        this.pluginManager = requireNonNull(pluginManager);
         this.inboundSerialization = requireNonNull(inboundSerialization);
         this.outboundSerialization = requireNonNull(outboundSerialization);
     }
@@ -140,6 +144,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     public Identity identity() {
         return identity;
+    }
+
+    public PluginManager pluginManager() {
+        return pluginManager;
     }
 
     public Map<DrasylAddress, Channel> channels() {

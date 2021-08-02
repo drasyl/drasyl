@@ -85,6 +85,18 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
     }
 
     @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
+        handler.onAdded(handlerCtx);
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
+        final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
+        handler.onRemoved(handlerCtx);
+    }
+
+    @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) throws Exception {

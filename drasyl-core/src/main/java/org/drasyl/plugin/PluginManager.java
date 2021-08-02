@@ -21,9 +21,11 @@
  */
 package org.drasyl.plugin;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
+import org.drasyl.codec.DrasylServerChannel;
 import org.drasyl.identity.Identity;
-import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -33,22 +35,17 @@ import org.drasyl.util.logging.LoggerFactory;
  */
 public class PluginManager {
     private static final Logger LOG = LoggerFactory.getLogger(PluginManager.class);
-    private final DrasylConfig config;
-    private final Identity identity;
-    private final Pipeline pipeline;
-
-    public PluginManager(final DrasylConfig config,
-                         final Identity identity,
-                         final Pipeline pipeline) {
-        this.config = config;
-        this.identity = identity;
-        this.pipeline = pipeline;
-    }
 
     /**
      * This method is called first when the {@link org.drasyl.DrasylNode} is started.
+     *
+     * @param ctx
      */
-    public void beforeStart() {
+    public void beforeStart(final ChannelHandlerContext ctx) {
+        final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
+        final DrasylConfig config = channel.drasylConfig();
+        final Identity identity = channel.identity();
+        final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeStart listeners for all plugins...");
             final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
@@ -59,8 +56,14 @@ public class PluginManager {
 
     /**
      * This method is called last when the {@link org.drasyl.DrasylNode} is started.
+     *
+     * @param ctx
      */
-    public void afterStart() {
+    public void afterStart(final ChannelHandlerContext ctx) {
+        final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
+        final DrasylConfig config = channel.drasylConfig();
+        final Identity identity = channel.identity();
+        final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterStart listeners for all plugins...");
             final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
@@ -71,8 +74,14 @@ public class PluginManager {
 
     /**
      * This method get called first when the {@link org.drasyl.DrasylNode} is shut down.
+     *
+     * @param ctx
      */
-    public void beforeShutdown() {
+    public void beforeShutdown(final ChannelHandlerContext ctx) {
+        final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
+        final DrasylConfig config = channel.drasylConfig();
+        final Identity identity = channel.identity();
+        final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeShutdown listeners for all plugins...");
             final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
@@ -83,8 +92,14 @@ public class PluginManager {
 
     /**
      * This method get called last when the {@link org.drasyl.DrasylNode} is shut down.
+     *
+     * @param ctx
      */
-    public void afterShutdown() {
+    public void afterShutdown(final ChannelHandlerContext ctx) {
+        final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
+        final DrasylConfig config = channel.drasylConfig();
+        final Identity identity = channel.identity();
+        final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterShutdown listeners for all plugins...");
             final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);

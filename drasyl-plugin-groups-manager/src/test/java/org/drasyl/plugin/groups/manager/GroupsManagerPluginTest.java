@@ -22,7 +22,8 @@
 package org.drasyl.plugin.groups.manager;
 
 import com.typesafe.config.ConfigFactory;
-import org.drasyl.pipeline.Pipeline;
+import io.netty.channel.ChannelPipeline;
+import org.drasyl.codec.MigrationChannelHandler;
 import org.drasyl.plugin.PluginEnvironment;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
@@ -52,7 +53,7 @@ class GroupsManagerPluginTest {
     @Mock
     private GroupsManagerConfig groupsManagerConfig;
     @Mock
-    private Pipeline pipeline;
+    private ChannelPipeline pipeline;
     @Mock
     private PluginEnvironment env;
     @Mock
@@ -84,7 +85,7 @@ class GroupsManagerPluginTest {
 
             plugin.onBeforeStart(env);
 
-            verify(pipeline).addLast(eq(GROUPS_MANAGER_HANDLER), isA(GroupsManagerHandler.class));
+            verify(pipeline).addLast(eq(GROUPS_MANAGER_HANDLER), isA(MigrationChannelHandler.class));
         }
     }
 

@@ -21,9 +21,9 @@
  */
 package org.drasyl.plugin;
 
+import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
-import org.drasyl.pipeline.Pipeline;
 
 import java.util.Objects;
 
@@ -35,11 +35,11 @@ import static java.util.Objects.requireNonNull;
 public class PluginEnvironment {
     private final DrasylConfig config;
     private final Identity identity;
-    private final Pipeline pipeline;
+    private final ChannelPipeline pipeline;
 
     public PluginEnvironment(final DrasylConfig config,
                              final Identity identity,
-                             final Pipeline pipeline) {
+                             final ChannelPipeline pipeline) {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
         this.pipeline = requireNonNull(pipeline);
@@ -53,7 +53,7 @@ public class PluginEnvironment {
         return identity;
     }
 
-    public Pipeline getPipeline() {
+    public ChannelPipeline getPipeline() {
         return pipeline;
     }
 

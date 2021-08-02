@@ -21,9 +21,9 @@
  */
 package org.drasyl.plugin;
 
+import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
-import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +38,7 @@ class PluginEnvironmentTest {
     @Nested
     class Equals {
         @Mock
-        private Pipeline pipeline;
+        private ChannelPipeline pipeline;
         @Mock
         private Identity identity;
 
@@ -56,7 +56,7 @@ class PluginEnvironmentTest {
     @Nested
     class HashCode {
         @Mock
-        private Pipeline pipeline;
+        private ChannelPipeline pipeline;
         @Mock
         private Identity identity;
 

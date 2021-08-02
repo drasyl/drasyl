@@ -191,16 +191,24 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             public void channelActive(final ChannelHandlerContext ctx) throws Exception {
                 super.channelActive(ctx);
 
+                ((DrasylServerChannel) ctx.channel()).pluginManager().beforeStart(ctx);
+
                 final Event event = NodeUpEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
                 ctx.fireUserEventTriggered(event);
+
+                ((DrasylServerChannel) ctx.channel()).pluginManager().afterStart(ctx);
             }
 
             @Override
             public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
                 super.channelInactive(ctx);
 
+                ((DrasylServerChannel) ctx.channel()).pluginManager().beforeShutdown(ctx);
+
                 final Event event = NodeDownEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
                 ctx.fireUserEventTriggered(event);
+
+                ((DrasylServerChannel) ctx.channel()).pluginManager().afterShutdown(ctx);
             }
 
             @Override

@@ -42,7 +42,6 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -172,7 +171,7 @@ class PerfClientNodeTest {
                         });
                         underTest.onEvent(nodeOnline);
 
-                        verify(childChannel).writeAndFlush(new byte[0]);
+                        verify(childChannel).writeAndFlush(any(Ping.class));
                     }
 
                     @Test
@@ -207,7 +206,7 @@ class PerfClientNodeTest {
                         underTest.onEvent(nodeOnline);
                         underTest.onEvent(serverAndOptions);
 
-                        verify(childChannel).writeAndFlush(new byte[0]);
+                        verify(childChannel).writeAndFlush(any(Ping.class));
                     }
                 }
             }

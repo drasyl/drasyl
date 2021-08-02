@@ -29,6 +29,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
+import org.drasyl.codec.MigrationChannelHandler;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -106,13 +107,13 @@ class PluginsIT {
 
         @Override
         public void onAfterStart(final PluginEnvironment environment) {
-            environment.getPipeline().addLast("TestHandler", new HandlerAdapter() {
+            environment.getPipeline().addFirst("TestHandler", new MigrationChannelHandler(new HandlerAdapter() {
                 @Override
                 public void onAdded(final HandlerContext ctx) {
                     ctx.passEvent(event1, new CompletableFuture<>());
                 }
-            });
-            environment.getPipeline().processInbound(event2);
+            }));
+            environment.getPipeline().fireUserEventTriggered(event2);
         }
     }
 }

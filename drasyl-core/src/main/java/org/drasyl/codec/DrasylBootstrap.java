@@ -33,6 +33,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
+import org.drasyl.plugin.PluginManager;
 
 import java.io.IOException;
 
@@ -68,7 +69,7 @@ public class DrasylBootstrap {
                 config,
                 identity,
                 new PeersManager(identity),
-                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
+                new PluginManager(), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())
         );
         handler = new DrasylServerChannelInitializer();

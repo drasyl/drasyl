@@ -21,8 +21,9 @@
  */
 package org.drasyl.plugin.groups.client;
 
+import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
-import org.drasyl.pipeline.Pipeline;
+import org.drasyl.codec.MigrationChannelHandler;
 import org.drasyl.plugin.PluginEnvironment;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,7 +42,7 @@ class GroupsClientPluginTest {
     @Mock
     private GroupsClientConfig groupsClientConfig;
     @Mock
-    private Pipeline pipeline;
+    private ChannelPipeline pipeline;
     @Mock
     private DrasylConfig config;
     @Mock
@@ -54,7 +55,7 @@ class GroupsClientPluginTest {
 
         plugin.onBeforeStart(env);
 
-        verify(pipeline).addLast(eq(GROUPS_CLIENT_HANDLER), isA(GroupsClientHandler.class));
+        verify(pipeline).addLast(eq(GROUPS_CLIENT_HANDLER), isA(MigrationChannelHandler.class));
     }
 
     @Test
