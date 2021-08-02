@@ -57,7 +57,7 @@ import java.util.concurrent.ExecutionException;
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.pipeline.DrasylPipeline.UDP_SERVER;
+import static org.drasyl.codec.DrasylServerChannelInitializer.UDP_SERVER;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertThrows;

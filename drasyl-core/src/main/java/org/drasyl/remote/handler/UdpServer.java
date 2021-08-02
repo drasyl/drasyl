@@ -38,7 +38,6 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -63,7 +62,7 @@ import static org.drasyl.util.network.NetworkUtil.getAddresses;
 
 /**
  * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the
- * {@link DrasylPipeline}.
+ * {@link org.drasyl.pipeline.Pipeline}.
  */
 public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressWrapper> {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
