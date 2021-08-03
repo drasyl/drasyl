@@ -23,6 +23,7 @@ package org.drasyl;
 
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -46,6 +47,8 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import test.util.IdentityTestUtil;
 
+import java.io.IOException;
+import java.net.DatagramSocket;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -56,10 +59,12 @@ import java.util.concurrent.ExecutionException;
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.drasyl.pipeline.DrasylPipeline.UDP_SERVER;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DrasylNodeIT {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeIT.class);
@@ -1037,6 +1042,43 @@ class DrasylNodeIT {
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void sendToAnOtherPeerShouldThrowException() {
                 assertThrows(ExecutionException.class, () -> node.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get());
+            }
+        }
+    }
+
+    @Nested
+    class Start {
+        private DrasylConfig.Builder configBuilder;
+
+        @BeforeEach
+        void setUp() {
+            configBuilder = DrasylConfig.newBuilder()
+                    .networkId(0)
+                    .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
+                    .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
+                    .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                    .remoteExposeEnabled(false)
+                    .remoteEnabled(true)
+                    .remoteBindHost(createInetAddress("127.0.0.1"))
+                    .remoteSuperPeerEnabled(false)
+                    .remoteLocalHostDiscoveryEnabled(false)
+                    .remoteLocalNetworkDiscoveryEnabled(false)
+                    .remoteTcpFallbackEnabled(false);
+        }
+
+        @Test
+        @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+        void shouldEmitErrorEventAndCompleteExceptionallyIfStartFailed() throws DrasylException, IOException {
+            try (final DatagramSocket socket = new DatagramSocket(0)) {
+                final DrasylConfig config = configBuilder
+                        .remoteBindPort(socket.getLocalPort())
+                        .build();
+                final EmbeddedNode node = new EmbeddedNode(config);
+                final TestObserver<Event> events = node.events().test();
+                final CompletableFuture<Void> future = node.start();
+
+                await().untilAsserted(() -> assertTrue(future.isCompletedExceptionally()));
+                events.assertError(e -> e instanceof Exception);
             }
         }
     }
