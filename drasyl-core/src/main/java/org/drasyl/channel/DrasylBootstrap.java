@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
+import io.netty.util.internal.ObjectUtil;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
@@ -42,8 +43,8 @@ import static java.util.Objects.requireNonNull;
  * Bootstrap that helps to bootstrap {@link DrasylChannel}s to communicate with peers.
  */
 public class DrasylBootstrap {
-    private final EventLoopGroup parentGroup;
-    private final EventLoopGroup childGroup;
+    private volatile EventLoopGroup parentGroup;
+    private volatile EventLoopGroup childGroup;
     private final DrasylConfig config;
     private final Identity identity;
     private final ChannelFactory<ServerChannel> channelFactory;
@@ -62,16 +63,42 @@ public class DrasylBootstrap {
         identityManager.loadOrCreateIdentity();
         identity = identityManager.getIdentity();
 
-        parentGroup = DrasylChannelEventLoopGroupUtil.getParentGroup();
-        childGroup = DrasylChannelEventLoopGroupUtil.getChildGroup();
         channelFactory = () -> new DrasylServerChannel(
                 config,
                 identity,
-                new PeersManager(identity),
+                new PeersManager(),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())
         );
         handler = new DrasylServerChannelInitializer();
+    }
+
+    /**
+     * Specify the {@link EventLoopGroup} which is used for the parent channel and the child
+     * channels.
+     */
+    public DrasylBootstrap group(final EventLoopGroup group) {
+        return group(group, group);
+    }
+
+    /**
+     * Set the {@link EventLoopGroup} for the parent (acceptor) and the child (client). These {@link
+     * EventLoopGroup}'s are used to handle all the events and IO for {@link ServerChannel} and
+     * {@link Channel}'s.
+     */
+    public DrasylBootstrap group(final EventLoopGroup parentGroup,
+                                 final EventLoopGroup childGroup) {
+        if (this.parentGroup != null) {
+            throw new IllegalStateException("parentGroup set already");
+        }
+        this.parentGroup = ObjectUtil.checkNotNull(parentGroup, "parentGroup");
+
+        if (this.childGroup != null) {
+            throw new IllegalStateException("childGroup set already");
+        }
+        this.childGroup = ObjectUtil.checkNotNull(childGroup, "childGroup");
+
+        return this;
     }
 
     /**

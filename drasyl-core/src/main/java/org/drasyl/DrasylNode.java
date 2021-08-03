@@ -35,6 +35,7 @@ import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.DrasylChannelEventLoopGroupUtil;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DrasylServerChannelInitializer;
 import org.drasyl.channel.MigrationEvent;
@@ -156,6 +157,7 @@ public abstract class DrasylNode {
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
             bootstrap = new DrasylBootstrap(config)
+                    .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
                     .handler(new DrasylNodeServerChannelInitializer())
                     .childHandler(new DrasylNodeChannelInitializer(this::onEvent));
             pluginManager = new PluginManager();

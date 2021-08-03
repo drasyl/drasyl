@@ -24,6 +24,7 @@ package org.drasyl.channel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.DrasylConfig;
 
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class NettyCodecExample {
 //        System.out.println("level set: " + Level.ALL.getName());
 
         final Channel channel = new DrasylBootstrap(DrasylConfig.of())
+                .group(new NioEventLoopGroup(10))
                 .childHandler(new ChannelInboundHandlerAdapter() {
                     @Override
                     public void channelRead(final ChannelHandlerContext ctx,
