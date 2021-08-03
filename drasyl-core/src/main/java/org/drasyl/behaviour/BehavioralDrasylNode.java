@@ -30,6 +30,7 @@ import org.drasyl.annotation.NonNull;
 import org.drasyl.behaviour.Behavior.BehaviorBuilder;
 import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.event.Event;
+import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -67,10 +68,11 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
 
     @SuppressWarnings("unused")
     protected BehavioralDrasylNode(final DrasylBootstrap bootstrap,
+                                   final PluginManager pluginManager,
                                    final ChannelFuture channelFuture,
                                    final Channel channel,
                                    final Behavior behavior) {
-        super(bootstrap, channelFuture, channel);
+        super(bootstrap, pluginManager, channelFuture);
         logger = LoggerFactory.getLogger(getClass());
         if (behavior instanceof DeferredBehavior) {
             this.behavior = ((DeferredBehavior) behavior).apply(this);
@@ -82,9 +84,9 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
 
     @SuppressWarnings("unused")
     protected BehavioralDrasylNode(final DrasylBootstrap bootstrap,
-                                   final ChannelFuture channelFuture,
-                                   final Channel channel) {
-        super(bootstrap, channelFuture, channel);
+                                   final PluginManager pluginManager,
+                                   final ChannelFuture channelFuture) {
+        super(bootstrap, pluginManager, channelFuture);
         logger = LoggerFactory.getLogger(getClass());
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {

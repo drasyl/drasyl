@@ -954,10 +954,10 @@ class DrasylNodeIT {
          */
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-        void applicationMessagesShouldBeDelivered() {
+        void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
             final TestObserver<MessageEvent> node1Messages = node.messages().test();
 
-            node.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt");
+            node.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
 
             node1Messages.awaitCount(1).assertValueCount(1)
                     .assertValue(m -> "Hallo Welt".equals(m.getPayload()));
@@ -1040,7 +1040,7 @@ class DrasylNodeIT {
 
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-        void shouldEmitErrorEventAndCompleteExceptionallyIfStartFailed() throws DrasylException, IOException {
+        void shouldEmitErrorEventAndCompleteNotExceptionallyIfStartFailed() throws DrasylException, IOException {
             try (final DatagramSocket socket = new DatagramSocket(0)) {
                 final DrasylConfig config = configBuilder
                         .remoteBindPort(socket.getLocalPort())
@@ -1049,7 +1049,7 @@ class DrasylNodeIT {
                 final TestObserver<Event> events = node.events().test();
                 final CompletableFuture<Void> future = node.start();
 
-                await().untilAsserted(() -> assertTrue(future.isCompletedExceptionally()));
+                await().untilAsserted(() -> assertTrue(future.isDone()));
                 events.assertError(e -> e instanceof Exception);
             }
         }

@@ -26,9 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelPromise;
-import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.address.Address;
 
 import java.net.SocketAddress;
 import java.util.Objects;
@@ -91,7 +89,7 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
     }
 
     @Override
-    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
         final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
         handler.onRemoved(handlerCtx);
     }
@@ -100,7 +98,8 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
-        if (msg instanceof MigrationMessage) {
+        if (msg instanceof MigrationOutboundMessage) {
+            final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
             final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
             final CompletableFuture<Void> future = new CompletableFuture<>();
             future.whenComplete((unused, throwable) -> {
@@ -111,12 +110,11 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
                     promise.setFailure(throwable);
                 }
             });
-            final Address recipient = ((MigrationMessage<?, ?>) msg).address();
-            Object payload = ((MigrationMessage<?, ?>) msg).message();
+            Object payload = migrationMsg.message();
             if (payload == NULL) {
                 payload = null;
             }
-            handler.onOutbound(handlerCtx, recipient, payload, future);
+            handler.onOutbound(handlerCtx, migrationMsg.address(), payload, future);
         }
         else {
             throw new RuntimeException("not implemented yet"); // NOSONAR
@@ -150,14 +148,14 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
-        if (msg instanceof MigrationMessage) {
+        if (msg instanceof MigrationInboundMessage) {
+            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
             final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
-            final Address sender = ((MigrationMessage<?, ?>) msg).address();
-            Object payload = ((MigrationMessage<?, ?>) msg).message();
+            Object payload = migrationMsg.message();
             if (payload == NULL) {
                 payload = null;
             }
-            handler.onInbound(handlerCtx, sender, payload, new CompletableFuture<>());
+            handler.onInbound(handlerCtx, migrationMsg.address(), payload, migrationMsg.future());
         }
         else {
             throw new RuntimeException("not implemented yet"); // NOSONAR
@@ -172,9 +170,9 @@ public class MigrationChannelHandler extends ChannelHandlerAdapter implements Ch
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof Event) {
+        if (evt instanceof MigrationEvent) {
             final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
-            handler.onEvent(handlerCtx, (Event) evt, new CompletableFuture<>());
+            handler.onEvent(handlerCtx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
         }
         else {
             ctx.fireUserEventTriggered(evt);

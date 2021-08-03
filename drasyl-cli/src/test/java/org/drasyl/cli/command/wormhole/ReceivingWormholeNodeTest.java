@@ -21,7 +21,6 @@
  */
 package org.drasyl.cli.command.wormhole;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.RequestText;
@@ -31,6 +30,7 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -63,16 +63,16 @@ class ReceivingWormholeNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private ChannelFuture channelFuture;
+    private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Channel channel;
+    private ChannelFuture channelFuture;
     private ReceivingWormholeNode underTest;
 
     @BeforeEach
     void setUp() {
         outStream = new ByteArrayOutputStream();
         out = new PrintStream(outStream, true);
-        underTest = new ReceivingWormholeNode(doneFuture, out, request, bootstrap, channelFuture, channel);
+        underTest = new ReceivingWormholeNode(doneFuture, out, request, bootstrap, pluginManager, channelFuture);
     }
 
     @Nested
@@ -121,6 +121,7 @@ class ReceivingWormholeNodeTest {
                 @Test
                 void shouldFailOnWrongPasswordMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
                                                       @Mock final IdentityPublicKey publicKey) {
+                    when(channelFuture.channel().isOpen()).thenReturn(true);
                     when(event.getPayload()).thenReturn(new WrongPasswordMessage());
                     when(event.getSender()).thenReturn(publicKey);
                     when(request.getSender()).thenReturn(publicKey);
@@ -136,12 +137,14 @@ class ReceivingWormholeNodeTest {
             class OnRequestText {
                 @Test
                 void shouldRequestText(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
-                    underTest = new ReceivingWormholeNode(doneFuture, out, null, bootstrap, channelFuture, channel);
+                    when(channelFuture.channel().isOpen()).thenReturn(true);
+
+                    underTest = new ReceivingWormholeNode(doneFuture, out, null, bootstrap, pluginManager, channelFuture);
 
                     underTest.onEvent(nodeOnline);
                     underTest.onEvent(event);
 
-                    verify(channel.pipeline()).fireUserEventTriggered(any());
+                    verify(channelFuture.channel().pipeline()).fireUserEventTriggered(any());
                 }
             }
         }
@@ -150,11 +153,11 @@ class ReceivingWormholeNodeTest {
         class OnRequestText {
             @Test
             void shouldNotRequestTextBecauseNotOffline(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
-                underTest = new ReceivingWormholeNode(doneFuture, out, null, bootstrap, channelFuture, channel);
+                underTest = new ReceivingWormholeNode(doneFuture, out, null, bootstrap, pluginManager, channelFuture);
 
                 underTest.onEvent(event);
 
-                verify(channel.pipeline(), never()).fireUserEventTriggered(any());
+                verify(channelFuture.channel().pipeline(), never()).fireUserEventTriggered(any());
             }
         }
 

@@ -82,15 +82,9 @@ public class MigrationHandlerContext implements HandlerContext {
     public CompletableFuture<Void> passInbound(final Address sender,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-        final MigrationMessage<?, ?> addressedMsg = new MigrationMessage<>(msg, sender);
+        final MigrationInboundMessage<?, ?> migrationMsg = new MigrationInboundMessage<>(msg, sender, future);
 
-        try {
-            ctx.fireChannelRead(addressedMsg);
-            future.complete(null);
-        }
-        catch (final Exception e) { // NOSONAR
-            future.completeExceptionally(e);
-        }
+        ctx.fireChannelRead(migrationMsg);
 
         return future;
     }
@@ -98,13 +92,7 @@ public class MigrationHandlerContext implements HandlerContext {
     @Override
     public CompletableFuture<Void> passEvent(final Event event,
                                              final CompletableFuture<Void> future) {
-        try {
-            ctx.fireUserEventTriggered(event);
-            future.complete(null);
-        }
-        catch (final Exception e) { // NOSONAR
-            future.completeExceptionally(e);
-        }
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
 
         return future;
     }
@@ -113,9 +101,9 @@ public class MigrationHandlerContext implements HandlerContext {
     public CompletableFuture<Void> passOutbound(final Address recipient,
                                                 final Object msg,
                                                 final CompletableFuture<Void> future) {
-        final MigrationMessage<?, ?> addressedMsg = new MigrationMessage<>(msg, recipient);
+        final MigrationOutboundMessage<?, ?> migrationMsg = new MigrationOutboundMessage<>(msg, recipient);
 
-        ctx.writeAndFlush(addressedMsg).addListener(f -> {
+        ctx.writeAndFlush(migrationMsg).addListener(f -> {
             if (f.isSuccess()) {
                 future.complete(null);
             }

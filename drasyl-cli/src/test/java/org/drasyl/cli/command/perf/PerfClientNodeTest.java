@@ -43,6 +43,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -81,9 +82,9 @@ class PerfClientNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private ChannelFuture channelFuture;
+    private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Channel channel;
+    private ChannelFuture channelFuture;
     private PerfClientNode underTest;
 
     @BeforeEach
@@ -91,7 +92,7 @@ class PerfClientNodeTest {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
         directConnections = new HashSet<>();
-        underTest = new PerfClientNode(doneFuture, printStream, perfScheduler, directConnections, bootstrap, channelFuture, channel);
+        underTest = new PerfClientNode(doneFuture, printStream, perfScheduler, directConnections, bootstrap, pluginManager, channelFuture);
     }
 
     @Nested
@@ -143,7 +144,8 @@ class PerfClientNodeTest {
 
                     @Test
                     void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                        when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                        when(channelFuture.channel().isOpen()).thenReturn(true);
+                        when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
                             invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
                             return null;
                         });
@@ -165,7 +167,8 @@ class PerfClientNodeTest {
 
                     @Test
                     void shouldTriggerDirectConnection(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                        when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                        when(channelFuture.channel().isOpen()).thenReturn(true);
+                        when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
                             invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
                             return null;
                         });
@@ -190,7 +193,7 @@ class PerfClientNodeTest {
                 void shouldWaitForServer() {
                     underTest.onEvent(nodeOnline);
 
-                    verify(channel.pipeline(), never()).fireUserEventTriggered(any());
+                    verify(channelFuture.channel().pipeline(), never()).fireUserEventTriggered(any());
                 }
 
                 @Nested
@@ -198,7 +201,8 @@ class PerfClientNodeTest {
                     @Test
                     void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final TestOptions serverAndOptions,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                        when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                        when(channelFuture.channel().isOpen()).thenReturn(true);
+                        when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
                             invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
                             return null;
                         });
@@ -219,7 +223,8 @@ class PerfClientNodeTest {
                                           @Mock final SessionConfirmation sessionConfirmation,
                                           @Mock final IdentityPublicKey sender,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                    when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                    when(channelFuture.channel().isOpen()).thenReturn(true);
+                    when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
                         invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
                         return null;
                     });

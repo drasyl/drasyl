@@ -23,7 +23,6 @@ package org.drasyl;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -38,6 +37,7 @@ import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.codec.DrasylChannel;
 import org.drasyl.codec.DrasylServerChannel;
 import org.drasyl.codec.DrasylServerChannelInitializer;
+import org.drasyl.codec.MigrationEvent;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -45,7 +45,9 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.serialization.MessageSerializer;
+import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.EventLoopGroupUtil;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -93,8 +95,8 @@ public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static String version;
     protected final DrasylBootstrap bootstrap;
+    private final PluginManager pluginManager;
     private ChannelFuture channelFuture;
-    private Channel channel;
 
     static {
         // https://github.com/netty/netty/issues/7817
@@ -154,6 +156,7 @@ public abstract class DrasylNode {
             bootstrap = new DrasylBootstrap(config)
                     .handler(new DrasylNodeServerChannelInitializer())
                     .childHandler(new DrasylNodeChannelInitializer());
+            pluginManager = new PluginManager();
 
             LOG.debug("drasyl node with config `{}` and identity `{}` created", config, bootstrap.identity());
         }
@@ -163,11 +166,11 @@ public abstract class DrasylNode {
     }
 
     protected DrasylNode(final DrasylBootstrap bootstrap,
-                         final ChannelFuture channelFuture,
-                         final Channel channel) {
-        this.bootstrap = bootstrap;
+                         final PluginManager pluginManager,
+                         final ChannelFuture channelFuture) {
+        this.bootstrap = requireNonNull(bootstrap);
+        this.pluginManager = pluginManager;
         this.channelFuture = channelFuture;
-        this.channel = channel;
         LOG.debug("drasyl node with config `{}` and identity `{}` created", bootstrap.config(), bootstrap.identity());
     }
 
@@ -263,7 +266,7 @@ public abstract class DrasylNode {
     @NonNull
     public CompletionStage<Void> send(@NonNull final DrasylAddress recipient,
                                       @Nullable final Object payload) {
-        if (channel != null) {
+        if (channelFuture != null && channelFuture.channel().isOpen()) {
             final CompletableFuture<Void> future = new CompletableFuture<>();
             resolve(recipient).thenAccept(c -> {
                 final Object p;
@@ -302,12 +305,14 @@ public abstract class DrasylNode {
      * @return future containing {@link Channel} for {@code address} on completion
      */
     @NonNull
-    public CompletionStage<Channel> resolve(@NonNull final String address) {
-        try {
-            return resolve(IdentityPublicKey.of(address));
+    public CompletionStage<Channel> resolve(@NonNull final DrasylAddress address) {
+        if (channelFuture != null && channelFuture.channel().isOpen()) {
+            final CompletableFuture<Channel> future = new CompletableFuture<>();
+            channelFuture.channel().pipeline().fireUserEventTriggered(new Resolve(address, future));
+            return future;
         }
-        catch (final IllegalArgumentException e) {
-            return failedFuture(new DrasylException("address does not conform to a valid public key.", e));
+        else {
+            return failedFuture(new Exception("You have to call DrasylNode#start() first!"));
         }
     }
 
@@ -322,14 +327,12 @@ public abstract class DrasylNode {
      * @return future containing {@link Channel} for {@code address} on completion
      */
     @NonNull
-    public CompletionStage<Channel> resolve(@NonNull final DrasylAddress address) {
-        if (channel != null) {
-            final CompletableFuture<Channel> future = new CompletableFuture<>();
-            channel.pipeline().fireUserEventTriggered(new Resolve(address, future));
-            return future;
+    public CompletionStage<Channel> resolve(@NonNull final String address) {
+        try {
+            return resolve(IdentityPublicKey.of(address));
         }
-        else {
-            return failedFuture(new Exception("You have to call DrasylNode#start() first!"));
+        catch (final IllegalArgumentException e) {
+            return failedFuture(new DrasylException("address does not conform to a valid public key.", e));
         }
     }
 
@@ -350,20 +353,13 @@ public abstract class DrasylNode {
     @NonNull
     @SuppressWarnings("java:S1905")
     public synchronized CompletableFuture<Void> shutdown() {
-        if (channel != null) {
-            final ChannelFuture closeFuture = channel.close();
-            channel = null;
-            final CompletableFuture<Void> result = new CompletableFuture<>();
-            closeFuture.addListener((ChannelFutureListener) future -> {
-                if (future.isSuccess()) {
-                    this.channelFuture = null;
-                    result.complete(null);
-                }
-                else {
-                    result.completeExceptionally(future.cause());
-                }
-            });
-            return result;
+        if (channelFuture != null) {
+            try {
+                return FutureUtil.toFuture(channelFuture.channel().close());
+            }
+            finally {
+                channelFuture = null;
+            }
         }
         else {
             return completedFuture(null);
@@ -389,18 +385,11 @@ public abstract class DrasylNode {
     public synchronized CompletableFuture<Void> start() {
         if (channelFuture == null) {
             channelFuture = bootstrap.bind();
+            return FutureUtil.toFuture(channelFuture);
         }
-        final CompletableFuture<Void> result = new CompletableFuture<>();
-        channelFuture.addListener((ChannelFutureListener) future -> {
-            if (future.isSuccess()) {
-                channel = future.channel();
-                result.complete(null);
-            }
-            else {
-                result.completeExceptionally(future.cause());
-            }
-        });
-        return result;
+        else {
+            return completedFuture(null);
+        }
     }
 
     /**
@@ -410,7 +399,7 @@ public abstract class DrasylNode {
      */
     @NonNull
     public ChannelPipeline pipeline() {
-        return channel.pipeline();
+        return channelFuture.channel().pipeline();
     }
 
     /**
@@ -447,19 +436,58 @@ public abstract class DrasylNode {
     }
 
     public class DrasylNodeServerChannelInitializer extends DrasylServerChannelInitializer {
+        @SuppressWarnings("java:S1188")
         @Override
         protected void initChannel(final Channel ch) {
             ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
                 @Override
+                public void channelRegistered(final ChannelHandlerContext ctx) throws Exception {
+                    super.channelRegistered(ctx);
+
+                    pluginManager.beforeStart(ctx);
+                }
+
+                @Override
+                public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+                    super.channelActive(ctx);
+
+                    pluginManager.afterStart(ctx);
+                }
+
+                @Override
+                public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+                    super.channelInactive(ctx);
+
+                    pluginManager.beforeShutdown(ctx);
+                }
+
+                @Override
+                public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
+                    super.channelUnregistered(ctx);
+
+                    pluginManager.afterShutdown(ctx);
+                }
+
+                @SuppressWarnings("java:S2221")
+                @Override
                 public void userEventTriggered(final ChannelHandlerContext ctx,
                                                final Object evt) {
-                    if (evt instanceof Event) {
-                        onEvent((Event) evt);
+                    if (evt instanceof MigrationEvent) {
+                        final MigrationEvent e = (MigrationEvent) evt;
+
+                        try {
+                            onEvent(e.event());
+                            e.future().complete(null);
+                        }
+                        catch (final Exception ex) {
+                            e.future().completeExceptionally(ex);
+                        }
                     }
                     else if (evt instanceof Resolve) {
-                        final DrasylAddress recipient = ((Resolve) evt).recipient();
-                        final CompletableFuture<Channel> future = ((Resolve) evt).future();
-                        final Channel resolvedChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient);
+                        final Resolve e = (Resolve) evt;
+                        final IdentityPublicKey recipient = (IdentityPublicKey) e.recipient();
+                        final CompletableFuture<Channel> future = e.future();
+                        final Channel resolvedChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
                         resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
                     }
                     else {
@@ -489,14 +517,14 @@ public abstract class DrasylNode {
             });
             final int inactivityTimeout = (int) ((DrasylServerChannel) ch.parent()).drasylConfig().getChannelInactivityTimeout().getSeconds();
             if (inactivityTimeout > 0) {
-                ch.pipeline().addLast("INACTIVITY_TIMEOUT", new ChannelInboundHandlerAdapter() {
+                ch.pipeline().addFirst("INACTIVITY_TIMEOUT", new ChannelInboundHandlerAdapter() {
                     @Override
                     public void userEventTriggered(final ChannelHandlerContext ctx,
                                                    final Object evt) throws Exception {
                         if (evt instanceof IdleStateEvent) {
                             final IdleStateEvent e = (IdleStateEvent) evt;
                             if (e.state() == IdleState.ALL_IDLE) {
-                                LOG.debug("Close channel to {} due to inactivity.", ctx.channel().remoteAddress());
+                                LOG.debug("Close channel to {} due to inactivity.", ctx.channel()::remoteAddress);
                                 ctx.close();
                             }
                         }

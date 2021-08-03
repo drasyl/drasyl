@@ -21,7 +21,6 @@
  */
 package org.drasyl.cli.command.perf;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -41,6 +40,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -73,9 +73,9 @@ public class PerfServerNode extends BehavioralDrasylNode {
                    final PrintStream printStream,
                    final Scheduler perfScheduler,
                    final DrasylBootstrap bootstrap,
-                   final ChannelFuture channelFuture,
-                   final Channel channel) {
-        super(bootstrap, channelFuture, channel);
+                   final PluginManager pluginManager,
+                   final ChannelFuture channelFuture) {
+        super(bootstrap, pluginManager, channelFuture);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.perfScheduler = perfScheduler;

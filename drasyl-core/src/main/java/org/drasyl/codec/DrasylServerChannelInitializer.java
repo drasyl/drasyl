@@ -28,10 +28,10 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.intravm.IntraVmDiscovery;
@@ -58,6 +58,8 @@ import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
 import org.drasyl.remote.protocol.UnarmedMessage;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -68,6 +70,7 @@ import static org.drasyl.codec.Null.NULL;
  * behavior.
  */
 public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannelInitializer.class);
     public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
     public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
     public static final String CHILD_CHANNEL_ROUTER = "CHILD_CHANNEL_ROUTER";
@@ -90,6 +93,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
     public static final String TCP_CLIENT = "TCP_CLIENT";
     public static final String PORT_MAPPER = "PORT_MAPPER";
     public static final String UDP_SERVER = "UDP_SERVER";
+    public static final String NODE_EVENTS = "NODE_EVENTS";
 
     @SuppressWarnings({ "java:S138", "java:S1541", "java:S3776" })
     @Override
@@ -186,47 +190,15 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             ch.pipeline().addFirst(UDP_SERVER, new MigrationChannelHandler(new UdpServer()));
         }
 
-        ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-                super.channelActive(ctx);
-
-                ((DrasylServerChannel) ctx.channel()).pluginManager().beforeStart(ctx);
-
-                final Event event = NodeUpEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
-                ctx.fireUserEventTriggered(event);
-
-                ((DrasylServerChannel) ctx.channel()).pluginManager().afterStart(ctx);
-            }
-
-            @Override
-            public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-                super.channelInactive(ctx);
-
-                ((DrasylServerChannel) ctx.channel()).pluginManager().beforeShutdown(ctx);
-
-                final Event event = NodeDownEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
-                ctx.fireUserEventTriggered(event);
-
-                ((DrasylServerChannel) ctx.channel()).pluginManager().afterShutdown(ctx);
-            }
-
-            @Override
-            public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
-                super.channelUnregistered(ctx);
-
-                final Event event = NodeNormalTerminationEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()));
-                ctx.fireUserEventTriggered(event);
-            }
-        });
+        ch.pipeline().addFirst(NODE_EVENTS, new NodeEvents());
     }
 
-    private static class ChildChannelRouter extends SimpleChannelInboundHandler<MigrationMessage<?, ?>> {
+    private static class ChildChannelRouter extends SimpleChannelInboundHandler<MigrationInboundMessage<?, ?>> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final MigrationMessage addressedMsg) {
-            Object msg = addressedMsg.message();
-            final IdentityPublicKey sender = (IdentityPublicKey) addressedMsg.address();
+                                    final MigrationInboundMessage<?, ?> migrationMsg) {
+            Object msg = migrationMsg.message();
+            final IdentityPublicKey sender = (IdentityPublicKey) migrationMsg.address();
 
             // create/get channel
             final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
@@ -244,9 +216,58 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                                        final Object evt) throws Exception {
             super.userEventTriggered(ctx, evt);
 
-            if (evt instanceof Event) {
-                ((DrasylServerChannel) ctx.channel()).channels().forEach((address, channel) -> channel.pipeline().fireUserEventTriggered(evt));
+            if (evt instanceof MigrationEvent) {
+                final MigrationEvent e = (MigrationEvent) evt;
+                ((DrasylServerChannel) ctx.channel()).channels().forEach((address, channel) -> channel.pipeline().fireUserEventTriggered(e.event()));
             }
+        }
+    }
+
+    private static class NodeEvents extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+            super.channelActive(ctx);
+
+            LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
+            final CompletableFuture<Void> f1 = new CompletableFuture<>();
+            ctx.fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())), f1));
+            f1.whenComplete((result, e) -> {
+                if (e == null) {
+                    LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
+                }
+                else {
+                    LOG.warn("Could not start drasyl node:", e);
+                    final CompletableFuture<Void> f2 = new CompletableFuture<>();
+                    ctx.fireUserEventTriggered(new MigrationEvent(NodeUnrecoverableErrorEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()), e), f2));
+                    f2.whenComplete((result2, e2) -> {
+                        if (e2 != null) {
+                            LOG.error("drasyl node faced error `{}` on startup, which caused it to shut down all already started components. This again resulted in an error: {}", e.getMessage(), e2.getMessage());
+                        }
+                    });
+                }
+            });
+        }
+
+        @Override
+        public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+            super.channelInactive(ctx);
+
+            LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
+            final CompletableFuture<Void> f1 = new CompletableFuture<>();
+            ctx.fireUserEventTriggered(new MigrationEvent(NodeDownEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())), f1));
+            f1.whenComplete((result, e) -> {
+                if (e != null) {
+                    LOG.error("drasyl node faced error on shutdown (NodeDownEvent):", e);
+                }
+                final CompletableFuture<Void> f2 = new CompletableFuture<>();
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeNormalTerminationEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())), f2));
+                f2.whenComplete((result2, e2) -> {
+                    if (e2 != null) {
+                        LOG.error("drasyl node faced error on shutdown (NodeNormalTerminationEvent):", e2);
+                    }
+                    LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
+                });
+            });
         }
     }
 }

@@ -35,6 +35,7 @@ import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -68,16 +69,16 @@ class PerfServerNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private ChannelFuture channelFuture;
+    private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Channel channel;
+    private ChannelFuture channelFuture;
     private PerfServerNode underTest;
 
     @BeforeEach
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new PerfServerNode(doneFuture, printStream, perfScheduler, bootstrap, channelFuture, channel);
+        underTest = new PerfServerNode(doneFuture, printStream, perfScheduler, bootstrap, pluginManager, channelFuture);
     }
 
     @Nested
@@ -129,7 +130,8 @@ class PerfServerNodeTest {
                 void shouldConfirmRequest(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                           @Mock final SessionRequest sessionRequest,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                    when(channel.pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
+                    when(channelFuture.channel().isOpen()).thenReturn(true);
+                    when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
                         invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
                         return null;
                     });
