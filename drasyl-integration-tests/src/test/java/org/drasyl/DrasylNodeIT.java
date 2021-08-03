@@ -1040,7 +1040,7 @@ class DrasylNodeIT {
 
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-        void shouldEmiteErrorEventAndCompleteExceptionallyIfStartFailed() throws DrasylException, IOException {
+        void shouldEmitErrorEventAndCompleteExceptionallyIfStartFailed() throws DrasylException, IOException {
             try (final DatagramSocket socket = new DatagramSocket(0)) {
                 final DrasylConfig config = configBuilder
                         .remoteBindPort(socket.getLocalPort())
