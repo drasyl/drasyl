@@ -23,13 +23,11 @@ package org.drasyl.peer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
-import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.junit.jupiter.api.AfterEach;
@@ -62,8 +60,6 @@ class PeersManagerTest {
     private SetMultimap<IdentityPublicKey, Object> paths;
     private Set<IdentityPublicKey> children;
     private Set<IdentityPublicKey> superPeers;
-    @Mock
-    private Identity identity;
     private PeersManager underTest;
 
     @BeforeEach
@@ -71,13 +67,13 @@ class PeersManagerTest {
         paths = HashMultimap.create();
         children = new HashSet<>();
         superPeers = new HashSet<>();
-        underTest = new PeersManager(lock, paths, children, superPeers, identity);
+        underTest = new PeersManager(lock, paths, children, superPeers);
     }
 
     @Nested
     class GetPeers {
         @Test
-        void shouldReturnAllPeers(@Mock final HandlerContext ctx,
+        void shouldReturnAllPeers(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                   @Mock final IdentityPublicKey superPeer,
                                   @Mock final IdentityPublicKey children,
                                   @Mock final IdentityPublicKey peer,
@@ -220,14 +216,14 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitNodeOfflineEventWhenRemovingLastSuperPeer(@Mock final HandlerContext ctx,
+        void shouldEmitNodeOfflineEventWhenRemovingLastSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                                                  @Mock final IdentityPublicKey publicKey,
                                                                  @Mock final Object path) {
             superPeers.add(publicKey);
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(ctx).passEvent(eq(NodeOfflineEvent.of(Node.of(identity))), any());
+            verify(ctx).passEvent(any(NodeOfflineEvent.class), any());
         }
 
         @Test
@@ -240,7 +236,7 @@ class PeersManagerTest {
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(ctx, never()).passEvent(eq(NodeOfflineEvent.of(Node.of(identity))), any());
+            verify(ctx, never()).passEvent(any(NodeOfflineEvent.class), any());
         }
 
         @AfterEach
@@ -253,7 +249,7 @@ class PeersManagerTest {
     @Nested
     class AddPathAndSuperPeer {
         @Test
-        void shouldAddPathAndAddSuperPeer(@Mock final HandlerContext ctx,
+        void shouldAddPathAndAddSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                           @Mock final IdentityPublicKey publicKey,
                                           @Mock final Object path) {
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
@@ -263,13 +259,13 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock final HandlerContext ctx,
+        void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
                                                                      @Mock final IdentityPublicKey publicKey,
                                                                      @Mock final Object path) {
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
             verify(ctx).passEvent(eq(PeerDirectEvent.of(Peer.of(publicKey))), any());
-            verify(ctx).passEvent(eq(NodeOnlineEvent.of(Node.of(identity))), any());
+            verify(ctx).passEvent(any(NodeOnlineEvent.class), any());
         }
 
         @AfterEach

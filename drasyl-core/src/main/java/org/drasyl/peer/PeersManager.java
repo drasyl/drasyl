@@ -29,7 +29,6 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.util.SetUtil;
@@ -56,24 +55,21 @@ public class PeersManager {
     private final ReadWriteLock lock;
     private final SetMultimap<IdentityPublicKey, Object> paths;
     private final Set<IdentityPublicKey> children;
-    private final Identity identity;
     private final Set<IdentityPublicKey> superPeers;
 
-    public PeersManager(final Identity identity) {
-        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashSet<>(), new HashSet<>(), identity);
+    public PeersManager() {
+        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashSet<>(), new HashSet<>());
     }
 
     @SuppressWarnings("java:S2384")
     PeersManager(final ReadWriteLock lock,
                  final SetMultimap<IdentityPublicKey, Object> paths,
                  final Set<IdentityPublicKey> children,
-                 final Set<IdentityPublicKey> superPeers,
-                 final Identity identity) {
+                 final Set<IdentityPublicKey> superPeers) {
         this.lock = lock;
         this.paths = paths;
         this.children = children;
         this.superPeers = superPeers;
-        this.identity = identity;
     }
 
     @Override
@@ -198,7 +194,7 @@ public class PeersManager {
             // role (super peer)
             final boolean firstSuperPeer = superPeers.isEmpty();
             if (superPeers.add(publicKey) && firstSuperPeer) {
-                ctx.passEvent(NodeOnlineEvent.of(Node.of(identity)), new CompletableFuture<>());
+                ctx.passEvent(NodeOnlineEvent.of(Node.of(ctx.identity())), new CompletableFuture<>());
             }
         }
         finally {
@@ -216,7 +212,7 @@ public class PeersManager {
 
             // role (super peer)
             if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-                ctx.passEvent(NodeOfflineEvent.of(Node.of(identity)), new CompletableFuture<>());
+                ctx.passEvent(NodeOfflineEvent.of(Node.of(ctx.identity())), new CompletableFuture<>());
             }
 
             // path

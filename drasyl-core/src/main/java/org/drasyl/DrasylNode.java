@@ -162,7 +162,7 @@ public abstract class DrasylNode {
             final IdentityManager identityManager = new IdentityManager(this.config);
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
-            this.peersManager = new PeersManager(identity);
+            this.peersManager = new PeersManager();
             this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager);
             this.pluginManager = new PluginManager(config, identity, pipeline);
             this.startFuture = new AtomicReference<>();

@@ -96,7 +96,7 @@ class DrasylPipelineIT {
                 .remoteTcpFallbackEnabled(false)
                 .build();
 
-        final PeersManager peersManager = new PeersManager(identity1);
+        final PeersManager peersManager = new PeersManager();
         pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager);
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<>() {
             @Override
