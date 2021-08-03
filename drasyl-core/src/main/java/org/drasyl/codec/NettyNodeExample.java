@@ -24,6 +24,7 @@ package org.drasyl.codec;
 import io.netty.channel.Channel;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 
 import java.util.concurrent.ExecutionException;
@@ -32,7 +33,7 @@ public class NettyNodeExample {
     public static void main(final String[] args) throws DrasylException, InterruptedException, ExecutionException {
         final DrasylNode node = new DrasylNode() {
             @Override
-            public void onEvent(final Event event) {
+            public void onEvent(@NonNull final Event event) {
                 System.out.println("NettyNodeExample.onEvent: event = " + event);
             }
         };

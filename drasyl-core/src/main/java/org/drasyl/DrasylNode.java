@@ -28,6 +28,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
@@ -173,6 +176,7 @@ public abstract class DrasylNode {
      *
      * @return the version of the node. If the version could not be read, {@code null} is returned
      */
+    @SuppressWarnings("java:S2444")
     @Nullable
     public static String getVersion() {
         if (version == null) {
@@ -255,6 +259,7 @@ public abstract class DrasylNode {
      * @see MessageSerializer
      * @since 0.1.3
      */
+    @SuppressWarnings("ReplaceNullCheck")
     @NonNull
     public CompletionStage<Void> send(@NonNull final DrasylAddress recipient,
                                       @Nullable final Object payload) {
@@ -286,21 +291,41 @@ public abstract class DrasylNode {
         }
     }
 
+    /**
+     * Creates a future containing a {@link Channel} for communication with {@code address}.
+     * <p>
+     * Note: be aware that the returned channel can be closed on inactivity according to {@link
+     * DrasylConfig#getChannelInactivityTimeout()}. A closed channel can no longer be used. However,
+     * a new channel can be created via this method.
+     *
+     * @param address peer address used for {@link Channel} creation
+     * @return future containing {@link Channel} for {@code address} on completion
+     */
     @NonNull
-    public CompletionStage<Channel> resolve(@NonNull final String recipient) {
+    public CompletionStage<Channel> resolve(@NonNull final String address) {
         try {
-            return resolve(IdentityPublicKey.of(recipient));
+            return resolve(IdentityPublicKey.of(address));
         }
         catch (final IllegalArgumentException e) {
-            return failedFuture(new DrasylException("Recipient does not conform to a valid public key.", e));
+            return failedFuture(new DrasylException("address does not conform to a valid public key.", e));
         }
     }
 
+    /**
+     * Creates a future containing a {@link Channel} for communication with {@code address}.
+     * <p>
+     * Note: be aware that the returned channel can be closed on inactivity according to {@link
+     * DrasylConfig#getChannelInactivityTimeout()}. A closed channel can no longer be used. However,
+     * a new channel can be created via this method.
+     *
+     * @param address peer address used for {@link Channel} creation
+     * @return future containing {@link Channel} for {@code address} on completion
+     */
     @NonNull
-    public CompletionStage<Channel> resolve(@NonNull final DrasylAddress recipient) {
+    public CompletionStage<Channel> resolve(@NonNull final DrasylAddress address) {
         if (channel != null) {
             final CompletableFuture<Channel> future = new CompletableFuture<>();
-            channel.pipeline().fireUserEventTriggered(new Resolve(recipient, future));
+            channel.pipeline().fireUserEventTriggered(new Resolve(address, future));
             return future;
         }
         else {
@@ -434,8 +459,8 @@ public abstract class DrasylNode {
                     else if (evt instanceof Resolve) {
                         final DrasylAddress recipient = ((Resolve) evt).recipient();
                         final CompletableFuture<Channel> future = ((Resolve) evt).future();
-                        final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient);
-                        channel.eventLoop().execute(() -> future.complete(channel));
+                        final Channel resolvedChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, (IdentityPublicKey) recipient);
+                        resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
                     }
                     else {
                         ctx.fireUserEventTriggered(ctx);
@@ -450,7 +475,7 @@ public abstract class DrasylNode {
     public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChannel> {
         @Override
         protected void initChannel(final DrasylChannel ch) {
-            ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
+            ch.pipeline().addFirst("MESSAGE_EVENT", new ChannelInboundHandlerAdapter() {
                 @Override
                 public void channelRead(final ChannelHandlerContext ctx,
                                         Object msg) {
@@ -462,6 +487,26 @@ public abstract class DrasylNode {
                     onEvent(event);
                 }
             });
+            final int inactivityTimeout = (int) ((DrasylServerChannel) ch.parent()).drasylConfig().getChannelInactivityTimeout().getSeconds();
+            if (inactivityTimeout > 0) {
+                ch.pipeline().addLast("INACTIVITY_TIMEOUT", new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                   final Object evt) throws Exception {
+                        if (evt instanceof IdleStateEvent) {
+                            final IdleStateEvent e = (IdleStateEvent) evt;
+                            if (e.state() == IdleState.ALL_IDLE) {
+                                LOG.debug("Close channel to {} due to inactivity.", ctx.channel().remoteAddress());
+                                ctx.close();
+                            }
+                        }
+                        else {
+                            super.userEventTriggered(ctx, evt);
+                        }
+                    }
+                });
+                ch.pipeline().addFirst(new IdleStateHandler(0, 0, inactivityTimeout));
+            }
         }
     }
 }

@@ -121,6 +121,7 @@ public abstract class DrasylConfig {
     public static final String MONITORING_INFLUX_PASSWORD = "drasyl.monitoring.influx.password";
     public static final String MONITORING_INFLUX_DATABASE = "drasyl.monitoring.influx.database";
     public static final String MONITORING_INFLUX_REPORTING_FREQUENCY = "drasyl.monitoring.influx.reporting-frequency";
+    public static final String CHANNEL_INACTIVITY_TIMEOUT = "drasyl.channel.inactivity-timeout";
     public static final String PLUGINS = "drasyl.plugins";
     public static final String SERIALIZATION_SERIALIZERS = "drasyl.serialization.serializers";
     public static final String SERIALIZATION_BINDINGS_INBOUND = "drasyl.serialization.bindings.inbound";
@@ -130,6 +131,7 @@ public abstract class DrasylConfig {
         return of(ConfigFactory.load());
     }
 
+    @SuppressWarnings("java:S138")
     public static DrasylConfig of(final Config config) {
         try {
             config.checkValid(ConfigFactory.defaultReference(), "drasyl");
@@ -220,6 +222,9 @@ public abstract class DrasylConfig {
             builder.serializationSerializers(DrasylConfig.getSerializationSerializers(config, SERIALIZATION_SERIALIZERS));
             builder.serializationsBindingsInbound(DrasylConfig.getSerializationBindings(config, SERIALIZATION_BINDINGS_INBOUND, DrasylConfig.getSerializationSerializers(config, SERIALIZATION_SERIALIZERS).keySet()));
             builder.serializationsBindingsOutbound(DrasylConfig.getSerializationBindings(config, SERIALIZATION_BINDINGS_OUTBOUND, DrasylConfig.getSerializationSerializers(config, SERIALIZATION_SERIALIZERS).keySet()));
+
+            // channel
+            builder.channelInactivityTimeout(config.getDuration(CHANNEL_INACTIVITY_TIMEOUT));
 
             return builder.build();
         }
@@ -481,7 +486,7 @@ public abstract class DrasylConfig {
         }
     }
 
-    @SuppressWarnings({ "java:S1192" })
+    @SuppressWarnings({ "java:S1192", "java:S2658" })
     private static DrasylPlugin initiatePlugin(final String path,
                                                final String clazzName,
                                                final Config pluginConfig) {
@@ -516,7 +521,7 @@ public abstract class DrasylConfig {
         }
     }
 
-    @SuppressWarnings({ "java:S1192" })
+    @SuppressWarnings({ "java:S1192", "java:S2658" })
     private static Serializer initiateSerializer(final String path,
                                                  final String clazzName) {
         try {
@@ -531,6 +536,7 @@ public abstract class DrasylConfig {
         }
     }
 
+    @SuppressWarnings("java:S2658")
     public static Map<Class<?>, String> getSerializationBindings(final Config config,
                                                                  final String path,
                                                                  final Collection<String> serializers) {
@@ -749,6 +755,8 @@ public abstract class DrasylConfig {
 
     public abstract ImmutableMap<Class<?>, String> getSerializationsBindingsOutbound();
 
+    public abstract Duration getChannelInactivityTimeout();
+
     @SuppressWarnings("java:S118")
     @AutoValue.Builder
     public abstract static class Builder {
@@ -870,6 +878,8 @@ public abstract class DrasylConfig {
             return this;
         }
 
+        abstract Builder channelInactivityTimeout(final Duration channelInactivityTimeout);
+
         abstract DrasylConfig autoBuild();
 
         @SuppressWarnings({ "java:S1192", "java:S1541", "java:S3776" })
@@ -911,6 +921,9 @@ public abstract class DrasylConfig {
             }
             if (config.getRemoteMessageComposedMessageTransferTimeout().isNegative() || config.getRemoteMessageComposedMessageTransferTimeout().isZero()) {
                 throw new DrasylConfigException(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT, "Must be a positive value.");
+            }
+            if (config.getChannelInactivityTimeout().isNegative()) {
+                throw new DrasylConfigException(REMOTE_UNITE_MIN_INTERVAL, "Must be a non-negative value.");
             }
             return config;
         }
