@@ -195,10 +195,6 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                superPeer.events().subscribe(System.out::println);
-                client1.events().subscribe(System.out::println);
-                client2.events().subscribe(System.out::println);
-
                 final TestObserver<MessageEvent> superPeerMessages = superPeer.messages().test();
                 final TestObserver<MessageEvent> client1Messages = client1.messages().test();
                 final TestObserver<MessageEvent> client2Messages = client2.messages().test();
@@ -219,17 +215,17 @@ class DrasylNodeIT {
                 // verify
                 //
                 superPeerMessages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
                 client1Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
                 client2Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
             }
 
             @Test
@@ -791,24 +787,24 @@ class DrasylNodeIT {
                 // verify
                 //
                 node1Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(3, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(3, m -> "Hallo Welt".equals(m.getPayload()));
                 nodes2Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(3, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(3, m -> "Hallo Welt".equals(m.getPayload()));
                 node3Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
                 node4Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(3, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(3, m -> "Hallo Welt".equals(m.getPayload()));
             }
 
             /**
@@ -988,7 +984,7 @@ class DrasylNodeIT {
             node.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt");
 
             node1Messages.awaitCount(1).assertValueCount(1)
-                    .assertValue(m -> m.getPayload().equals("Hallo Welt"));
+                    .assertValue(m -> "Hallo Welt".equals(m.getPayload()));
         }
     }
 
