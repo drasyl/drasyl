@@ -33,11 +33,11 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
-import org.drasyl.codec.DrasylBootstrap;
-import org.drasyl.codec.DrasylChannel;
-import org.drasyl.codec.DrasylServerChannel;
-import org.drasyl.codec.DrasylServerChannelInitializer;
-import org.drasyl.codec.MigrationEvent;
+import org.drasyl.channel.DrasylBootstrap;
+import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelInitializer;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -64,7 +64,7 @@ import java.util.function.Consumer;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
-import static org.drasyl.codec.Null.NULL;
+import static org.drasyl.channel.Null.NULL;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
 
 /**

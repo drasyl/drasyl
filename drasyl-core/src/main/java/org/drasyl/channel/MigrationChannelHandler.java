@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.codec;
+package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,7 +32,7 @@ import java.net.SocketAddress;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.codec.Null.NULL;
+import static org.drasyl.channel.Null.NULL;
 
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.

@@ -23,7 +23,7 @@ package org.drasyl.behaviour;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import org.drasyl.codec.DrasylBootstrap;
+import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.event.Event;
 import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;

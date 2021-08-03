@@ -28,7 +28,7 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.behaviour.Behavior.BehaviorBuilder;
-import org.drasyl.codec.DrasylBootstrap;
+import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.event.Event;
 import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;

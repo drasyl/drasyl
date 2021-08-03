@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.codec;
+package org.drasyl.channel;
 
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;

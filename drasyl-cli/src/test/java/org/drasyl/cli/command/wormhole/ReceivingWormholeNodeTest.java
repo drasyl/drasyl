@@ -22,9 +22,9 @@
 package org.drasyl.cli.command.wormhole;
 
 import io.netty.channel.ChannelFuture;
+import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.RequestText;
-import org.drasyl.codec.DrasylBootstrap;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;

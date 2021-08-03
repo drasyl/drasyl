@@ -23,7 +23,7 @@ package org.drasyl.plugin;
 
 import com.google.common.collect.ImmutableSet;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.codec.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

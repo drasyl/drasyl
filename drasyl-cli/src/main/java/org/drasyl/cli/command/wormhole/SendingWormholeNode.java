@@ -27,7 +27,7 @@ import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
-import org.drasyl.codec.DrasylBootstrap;
+import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;

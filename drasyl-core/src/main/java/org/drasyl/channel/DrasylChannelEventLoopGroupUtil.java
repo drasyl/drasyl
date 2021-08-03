@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.codec;
+package org.drasyl.channel;
 
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.internal.SystemPropertyUtil;

@@ -23,7 +23,7 @@ package org.drasyl;
 
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
-import org.drasyl.codec.MigrationChannelHandler;
+import org.drasyl.channel.MigrationChannelHandler;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOfflineEvent;
@@ -61,7 +61,7 @@ import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.codec.DrasylServerChannelInitializer.UDP_SERVER;
+import static org.drasyl.channel.DrasylServerChannelInitializer.UDP_SERVER;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertThrows;

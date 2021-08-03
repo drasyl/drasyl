@@ -19,10 +19,10 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.codec;
+package org.drasyl.channel;
 
+import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -31,25 +31,17 @@ import static java.util.Objects.requireNonNull;
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
  */
-public class MigrationInboundMessage<T, A extends Address> {
-    private final T message;
-    private final A address;
+public class MigrationEvent {
+    private final Event event;
     private final CompletableFuture<Void> future;
 
-    public MigrationInboundMessage(final T message,
-                                   final A address,
-                                   final CompletableFuture<Void> future) {
-        this.message = message;
-        this.address = requireNonNull(address);
+    public MigrationEvent(final Event event, final CompletableFuture<Void> future) {
+        this.event = requireNonNull(event);
         this.future = requireNonNull(future);
     }
 
-    public T message() {
-        return message;
-    }
-
-    public A address() {
-        return address;
+    public Event event() {
+        return event;
     }
 
     public CompletableFuture<Void> future() {

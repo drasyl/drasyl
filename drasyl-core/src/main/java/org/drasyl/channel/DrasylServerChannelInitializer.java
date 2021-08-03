@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.codec;
+package org.drasyl.channel;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -63,7 +63,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.codec.Null.NULL;
+import static org.drasyl.channel.Null.NULL;
 
 /**
  * A special {@link ChannelInboundHandler} to initialize the default {@link DrasylServerChannel}

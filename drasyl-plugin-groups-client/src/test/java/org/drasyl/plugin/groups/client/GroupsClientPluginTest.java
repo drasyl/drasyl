@@ -23,7 +23,7 @@ package org.drasyl.plugin.groups.client;
 
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
-import org.drasyl.codec.MigrationChannelHandler;
+import org.drasyl.channel.MigrationChannelHandler;
 import org.drasyl.plugin.PluginEnvironment;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

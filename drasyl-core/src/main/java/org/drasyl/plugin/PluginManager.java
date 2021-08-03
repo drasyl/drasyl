@@ -24,7 +24,7 @@ package org.drasyl.plugin;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
-import org.drasyl.codec.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;

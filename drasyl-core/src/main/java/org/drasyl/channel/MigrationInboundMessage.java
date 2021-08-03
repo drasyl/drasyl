@@ -19,12 +19,40 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.codec;
+package org.drasyl.channel;
+
+import org.drasyl.pipeline.Handler;
+import org.drasyl.pipeline.address.Address;
+
+import java.util.concurrent.CompletableFuture;
+
+import static java.util.Objects.requireNonNull;
 
 /**
- * As {@code null} values cannot be processed by a {@link io.netty.channel.Channel}, we need a
- * special type representation this kind fo messages.
+ * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
  */
-public enum Null {
-    NULL
+public class MigrationInboundMessage<T, A extends Address> {
+    private final T message;
+    private final A address;
+    private final CompletableFuture<Void> future;
+
+    public MigrationInboundMessage(final T message,
+                                   final A address,
+                                   final CompletableFuture<Void> future) {
+        this.message = message;
+        this.address = requireNonNull(address);
+        this.future = requireNonNull(future);
+    }
+
+    public T message() {
+        return message;
+    }
+
+    public A address() {
+        return address;
+    }
+
+    public CompletableFuture<Void> future() {
+        return future;
+    }
 }

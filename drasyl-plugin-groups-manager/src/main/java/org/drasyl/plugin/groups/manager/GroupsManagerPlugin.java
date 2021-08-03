@@ -22,7 +22,7 @@
 package org.drasyl.plugin.groups.manager;
 
 import com.typesafe.config.Config;
-import org.drasyl.codec.MigrationChannelHandler;
+import org.drasyl.channel.MigrationChannelHandler;
 import org.drasyl.plugin.DrasylPlugin;
 import org.drasyl.plugin.PluginEnvironment;
 import org.drasyl.plugin.groups.manager.data.Group;

@@ -19,32 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.codec;
-
-import org.drasyl.event.Event;
-import org.drasyl.pipeline.Handler;
-
-import java.util.concurrent.CompletableFuture;
-
-import static java.util.Objects.requireNonNull;
-
 /**
- * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
+ * <a href="">netty</a> transport for the drasyl overlay network.
  */
-public class MigrationEvent {
-    private final Event event;
-    private final CompletableFuture<Void> future;
-
-    public MigrationEvent(final Event event, final CompletableFuture<Void> future) {
-        this.event = requireNonNull(event);
-        this.future = requireNonNull(future);
-    }
-
-    public Event event() {
-        return event;
-    }
-
-    public CompletableFuture<Void> future() {
-        return future;
-    }
-}
+package org.drasyl.channel;
