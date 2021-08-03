@@ -190,9 +190,13 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             ch.pipeline().addFirst(UDP_SERVER, new MigrationChannelHandler(new UdpServer()));
         }
 
-        ch.pipeline().addFirst(NODE_EVENTS, new NodeEvents());
+        ch.pipeline().addFirst(NODE_EVENTS, new NodeLifecycleEvents());
     }
 
+    /**
+     * Routes inbound messages to the correct child channel and broadcast events to all child
+     * channels.
+     */
     private static class ChildChannelRouter extends SimpleChannelInboundHandler<MigrationInboundMessage<?, ?>> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
@@ -223,7 +227,11 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
         }
     }
 
-    private static class NodeEvents extends ChannelInboundHandlerAdapter {
+    /**
+     * Emits node lifecycle events ({@link NodeUpEvent}, {@link NodeDownEvent}, {@link
+     * NodeNormalTerminationEvent}, {@link NodeUnrecoverableErrorEvent}).
+     */
+    private static class NodeLifecycleEvents extends ChannelInboundHandlerAdapter {
         @Override
         public void channelActive(final ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);

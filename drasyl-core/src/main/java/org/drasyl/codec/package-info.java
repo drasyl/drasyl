@@ -19,31 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.codec;
-
-import io.netty.util.concurrent.Future;
-import io.reactivex.rxjava3.disposables.Disposable;
-import org.drasyl.pipeline.Handler;
-
-import static java.util.Objects.requireNonNull;
-
 /**
- * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
+ * drasyl codec for <a href="https://netty.io/">netty</a>.
  */
-public class MigrationDisposable implements Disposable {
-    private final Future<?> future;
-
-    public MigrationDisposable(final Future<?> future) {
-        this.future = requireNonNull(future);
-    }
-
-    @Override
-    public void dispose() {
-        future.cancel(false);
-    }
-
-    @Override
-    public boolean isDisposed() {
-        return future.isCancelled();
-    }
-}
+package org.drasyl.codec;

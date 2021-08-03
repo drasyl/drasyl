@@ -55,9 +55,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -155,7 +157,7 @@ public abstract class DrasylNode {
         try {
             bootstrap = new DrasylBootstrap(config)
                     .handler(new DrasylNodeServerChannelInitializer())
-                    .childHandler(new DrasylNodeChannelInitializer());
+                    .childHandler(new DrasylNodeChannelInitializer(this::onEvent));
             pluginManager = new PluginManager();
 
             LOG.debug("drasyl node with config `{}` and identity `{}` created", config, bootstrap.identity());
@@ -397,9 +399,14 @@ public abstract class DrasylNode {
      *
      * @return the pipeline
      */
-    @NonNull
+    @Nullable
     public ChannelPipeline pipeline() {
-        return channelFuture.channel().pipeline();
+        if (channelFuture != null) {
+            return channelFuture.channel().pipeline();
+        }
+        else {
+            return null;
+        }
     }
 
     /**
@@ -413,8 +420,8 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Signals {@link DrasylNodeServerChannelInitializer}'s {@link io.netty.channel.ChannelHandler}
-     * to resolve a given {@link DrasylAddress} to a {@link Channel}.
+     * Signals {@link DrasylNodeServerChannelInitializer} to resolve a given {@link DrasylAddress}
+     * to a {@link Channel}.
      */
     public static class Resolve {
         private final DrasylAddress recipient;
@@ -435,6 +442,9 @@ public abstract class DrasylNode {
         }
     }
 
+    /**
+     * Initialize the {@link io.netty.channel.ServerChannel} used by {@link DrasylNode}.
+     */
     public class DrasylNodeServerChannelInitializer extends DrasylServerChannelInitializer {
         @SuppressWarnings("java:S1188")
         @Override
@@ -500,10 +510,23 @@ public abstract class DrasylNode {
         }
     }
 
-    public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChannel> {
+    /**
+     * Initialize child {@link Channel}s used by {@link DrasylNode}.
+     */
+    public static class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChannel> {
+        public static final String MESSAGE_ACCEPTOR = "NULL_MESSAGE_UNWRAPPER";
+        public static final String INACTIVITY_CLOSER = "INACTIVITY_CLOSER";
+        public static final String INACTIVITY_DETECTOR = "INACTIVITY_DETECTOR";
+        private final Consumer<Event> onEvent;
+
+        public DrasylNodeChannelInitializer(final Consumer<Event> onEvent) {
+            this.onEvent = Objects.requireNonNull(onEvent);
+        }
+
         @Override
         protected void initChannel(final DrasylChannel ch) {
-            ch.pipeline().addFirst("MESSAGE_EVENT", new ChannelInboundHandlerAdapter() {
+            // emit MessageEvents for every inbound message
+            ch.pipeline().addFirst(MESSAGE_ACCEPTOR, new ChannelInboundHandlerAdapter() {
                 @Override
                 public void channelRead(final ChannelHandlerContext ctx,
                                         Object msg) {
@@ -512,12 +535,14 @@ public abstract class DrasylNode {
                     }
 
                     final MessageEvent event = MessageEvent.of((IdentityPublicKey) ctx.channel().remoteAddress(), msg);
-                    onEvent(event);
+                    onEvent.accept(event);
                 }
             });
+
+            // close inactive channels (to free up resources)
             final int inactivityTimeout = (int) ((DrasylServerChannel) ch.parent()).drasylConfig().getChannelInactivityTimeout().getSeconds();
             if (inactivityTimeout > 0) {
-                ch.pipeline().addFirst("INACTIVITY_TIMEOUT", new ChannelInboundHandlerAdapter() {
+                ch.pipeline().addFirst(INACTIVITY_CLOSER, new ChannelInboundHandlerAdapter() {
                     @Override
                     public void userEventTriggered(final ChannelHandlerContext ctx,
                                                    final Object evt) throws Exception {
@@ -533,7 +558,7 @@ public abstract class DrasylNode {
                         }
                     }
                 });
-                ch.pipeline().addFirst(new IdleStateHandler(0, 0, inactivityTimeout));
+                ch.pipeline().addFirst(INACTIVITY_DETECTOR, new IdleStateHandler(0, 0, inactivityTimeout));
             }
         }
     }

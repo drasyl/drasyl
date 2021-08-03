@@ -22,6 +22,7 @@
 package org.drasyl.codec;
 
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.SucceededFuture;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -49,7 +50,7 @@ public class MigrationScheduler extends Scheduler {
     @Override
     public @NonNull Disposable scheduleDirect(@NonNull final Runnable run) {
         executor.execute(run);
-        return MigrationDisposable.DISPOSED;
+        return new MigrationDisposable(new SucceededFuture<>(null, null));
     }
 
     @Override
