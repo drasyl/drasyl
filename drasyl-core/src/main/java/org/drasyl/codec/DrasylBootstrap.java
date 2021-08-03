@@ -75,16 +75,6 @@ public class DrasylBootstrap {
     }
 
     /**
-     * Creates a new instance which uses the default {@code DrasylConfig} and {@code
-     * Consumer<Event>} to bootstrap the {@link DrasylChannel}s.
-     *
-     * @throws IOException if identity could not be loaded or created
-     */
-    public DrasylBootstrap() throws IOException {
-        this(DrasylConfig.of());
-    }
-
-    /**
      * Set the {@link ChannelHandler} which is used to handle overlay network management and spawn
      * new child {@link Channel}'s for peer communication.
      */
