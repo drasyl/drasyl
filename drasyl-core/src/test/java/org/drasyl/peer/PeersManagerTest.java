@@ -29,7 +29,6 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.junit.jupiter.api.AfterEach;
@@ -62,8 +61,6 @@ class PeersManagerTest {
     private SetMultimap<IdentityPublicKey, Object> paths;
     private Set<IdentityPublicKey> children;
     private Set<IdentityPublicKey> superPeers;
-    @Mock
-    private Identity identity;
     private PeersManager underTest;
 
     @BeforeEach
@@ -71,7 +68,7 @@ class PeersManagerTest {
         paths = HashMultimap.create();
         children = new HashSet<>();
         superPeers = new HashSet<>();
-        underTest = new PeersManager(lock, paths, children, superPeers, identity);
+        underTest = new PeersManager(lock, paths, children, superPeers);
     }
 
     @Nested
@@ -227,7 +224,7 @@ class PeersManagerTest {
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(ctx).passEvent(eq(NodeOfflineEvent.of(Node.of(identity))), any());
+            verify(ctx).passEvent(eq(NodeOfflineEvent.of(Node.of(ctx.identity()))), any());
         }
 
         @Test
@@ -240,7 +237,7 @@ class PeersManagerTest {
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(ctx, never()).passEvent(eq(NodeOfflineEvent.of(Node.of(identity))), any());
+            verify(ctx, never()).passEvent(eq(NodeOfflineEvent.of(Node.of(ctx.identity()))), any());
         }
 
         @AfterEach
@@ -269,7 +266,7 @@ class PeersManagerTest {
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
             verify(ctx).passEvent(eq(PeerDirectEvent.of(Peer.of(publicKey))), any());
-            verify(ctx).passEvent(eq(NodeOnlineEvent.of(Node.of(identity))), any());
+            verify(ctx).passEvent(eq(NodeOnlineEvent.of(Node.of(ctx.identity()))), any());
         }
 
         @AfterEach
