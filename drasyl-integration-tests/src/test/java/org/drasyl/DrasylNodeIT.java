@@ -24,6 +24,7 @@ package org.drasyl;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.codec.MigrationChannelHandler;
+import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -47,6 +48,8 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import test.util.IdentityTestUtil;
 
+import java.io.IOException;
+import java.net.DatagramSocket;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -57,10 +60,12 @@ import java.util.concurrent.ExecutionException;
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.drasyl.codec.DrasylServerChannelInitializer.UDP_SERVER;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DrasylNodeIT {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeIT.class);
@@ -191,10 +196,6 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                superPeer.events().subscribe(System.out::println);
-                client1.events().subscribe(System.out::println);
-                client2.events().subscribe(System.out::println);
-
                 final TestObserver<MessageEvent> superPeerMessages = superPeer.messages().test();
                 final TestObserver<MessageEvent> client1Messages = client1.messages().test();
                 final TestObserver<MessageEvent> client2Messages = client2.messages().test();
@@ -215,17 +216,17 @@ class DrasylNodeIT {
                 // verify
                 //
                 superPeerMessages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
                 client1Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
                 client2Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
             }
 
             @Test
@@ -762,24 +763,24 @@ class DrasylNodeIT {
                 // verify
                 //
                 node1Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(3, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(3, m -> "Hallo Welt".equals(m.getPayload()));
                 nodes2Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(3, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(3, m -> "Hallo Welt".equals(m.getPayload()));
                 node3Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
                 node4Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(1, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(2, m -> m.getPayload().equals("Hallo Welt"))
-                        .assertValueAt(3, m -> m.getPayload().equals("Hallo Welt"));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(3, m -> "Hallo Welt".equals(m.getPayload()));
             }
 
             /**
@@ -959,7 +960,7 @@ class DrasylNodeIT {
             node.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt");
 
             node1Messages.awaitCount(1).assertValueCount(1)
-                    .assertValue(m -> m.getPayload().equals("Hallo Welt"));
+                    .assertValue(m -> "Hallo Welt".equals(m.getPayload()));
         }
     }
 
@@ -1013,6 +1014,43 @@ class DrasylNodeIT {
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void sendToAnOtherPeerShouldThrowException() {
                 assertThrows(ExecutionException.class, () -> node.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get());
+            }
+        }
+    }
+
+    @Nested
+    class Start {
+        private DrasylConfig.Builder configBuilder;
+
+        @BeforeEach
+        void setUp() {
+            configBuilder = DrasylConfig.newBuilder()
+                    .networkId(0)
+                    .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
+                    .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
+                    .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                    .remoteExposeEnabled(false)
+                    .remoteEnabled(true)
+                    .remoteBindHost(createInetAddress("127.0.0.1"))
+                    .remoteSuperPeerEnabled(false)
+                    .remoteLocalHostDiscoveryEnabled(false)
+                    .remoteLocalNetworkDiscoveryEnabled(false)
+                    .remoteTcpFallbackEnabled(false);
+        }
+
+        @Test
+        @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+        void shouldEmiteErrorEventAndCompleteExceptionallyIfStartFailed() throws DrasylException, IOException {
+            try (final DatagramSocket socket = new DatagramSocket(0)) {
+                final DrasylConfig config = configBuilder
+                        .remoteBindPort(socket.getLocalPort())
+                        .build();
+                final EmbeddedNode node = new EmbeddedNode(config);
+                final TestObserver<Event> events = node.events().test();
+                final CompletableFuture<Void> future = node.start();
+
+                await().untilAsserted(() -> assertTrue(future.isCompletedExceptionally()));
+                events.assertError(e -> e instanceof Exception);
             }
         }
     }
