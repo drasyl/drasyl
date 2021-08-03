@@ -238,7 +238,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
             final CompletableFuture<Void> f1 = new CompletableFuture<>();
-            ctx.fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())), f1));
+            ctx.fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).localAddress0())), f1));
             f1.whenComplete((result, e) -> {
                 if (e == null) {
                     LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
@@ -246,7 +246,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                 else {
                     LOG.warn("Could not start drasyl node:", e);
                     final CompletableFuture<Void> f2 = new CompletableFuture<>();
-                    ctx.fireUserEventTriggered(new MigrationEvent(NodeUnrecoverableErrorEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity()), e), f2));
+                    ctx.fireUserEventTriggered(new MigrationEvent(NodeUnrecoverableErrorEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).localAddress0()), e), f2));
                     f2.whenComplete((result2, e2) -> {
                         if (e2 != null) {
                             LOG.error("drasyl node faced error `{}` on startup, which caused it to shut down all already started components. This again resulted in an error: {}", e.getMessage(), e2.getMessage());
@@ -262,13 +262,13 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
             final CompletableFuture<Void> f1 = new CompletableFuture<>();
-            ctx.fireUserEventTriggered(new MigrationEvent(NodeDownEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())), f1));
+            ctx.fireUserEventTriggered(new MigrationEvent(NodeDownEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).localAddress0())), f1));
             f1.whenComplete((result, e) -> {
                 if (e != null) {
                     LOG.error("drasyl node faced error on shutdown (NodeDownEvent):", e);
                 }
                 final CompletableFuture<Void> f2 = new CompletableFuture<>();
-                ctx.fireUserEventTriggered(new MigrationEvent(NodeNormalTerminationEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())), f2));
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeNormalTerminationEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).localAddress0())), f2));
                 f2.whenComplete((result2, e2) -> {
                     if (e2 != null) {
                         LOG.error("drasyl node faced error on shutdown (NodeNormalTerminationEvent):", e2);

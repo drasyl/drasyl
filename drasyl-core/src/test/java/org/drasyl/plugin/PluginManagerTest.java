@@ -24,6 +24,7 @@ package org.drasyl.plugin;
 import com.google.common.collect.ImmutableSet;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,10 +57,11 @@ class PluginManagerTest {
         @Test
         void shouldCallOnBeforeStartOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(serverChannel.drasylConfig().getPlugins()).thenReturn(ImmutableSet.of(plugin));
+            when(serverChannel.localAddress()).thenReturn(mock(Identity.class));
 
             underTest.beforeStart(ctx);
 
-            verify(plugin).onBeforeStart(new PluginEnvironment(serverChannel.drasylConfig(), serverChannel.identity(), serverChannel.pipeline()));
+            verify(plugin).onBeforeStart(new PluginEnvironment(serverChannel.drasylConfig(), (Identity) serverChannel.localAddress(), serverChannel.pipeline()));
         }
     }
 
@@ -67,10 +70,11 @@ class PluginManagerTest {
         @Test
         void shouldCallOnAfterStartOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(serverChannel.drasylConfig().getPlugins()).thenReturn(ImmutableSet.of(plugin));
+            when(serverChannel.localAddress()).thenReturn(mock(Identity.class));
 
             underTest.afterStart(ctx);
 
-            verify(plugin).onAfterStart(new PluginEnvironment(serverChannel.drasylConfig(), serverChannel.identity(), serverChannel.pipeline()));
+            verify(plugin).onAfterStart(new PluginEnvironment(serverChannel.drasylConfig(), (Identity) serverChannel.localAddress(), serverChannel.pipeline()));
         }
     }
 
@@ -79,10 +83,11 @@ class PluginManagerTest {
         @Test
         void shouldCallOnBeforeShutdownOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(serverChannel.drasylConfig().getPlugins()).thenReturn(ImmutableSet.of(plugin));
+            when(serverChannel.localAddress()).thenReturn(mock(Identity.class));
 
             underTest.beforeShutdown(ctx);
 
-            verify(plugin).onBeforeShutdown(new PluginEnvironment(serverChannel.drasylConfig(), serverChannel.identity(), serverChannel.pipeline()));
+            verify(plugin).onBeforeShutdown(new PluginEnvironment(serverChannel.drasylConfig(), (Identity) serverChannel.localAddress(), serverChannel.pipeline()));
         }
     }
 
@@ -91,10 +96,11 @@ class PluginManagerTest {
         @Test
         void shouldCallOnAfterShutdownOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(serverChannel.drasylConfig().getPlugins()).thenReturn(ImmutableSet.of(plugin));
+            when(serverChannel.localAddress()).thenReturn(mock(Identity.class));
 
             underTest.afterShutdown(ctx);
 
-            verify(plugin).onAfterShutdown(new PluginEnvironment(serverChannel.drasylConfig(), serverChannel.identity(), serverChannel.pipeline()));
+            verify(plugin).onAfterShutdown(new PluginEnvironment(serverChannel.drasylConfig(), (Identity) serverChannel.localAddress(), serverChannel.pipeline()));
         }
     }
 }

@@ -48,7 +48,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private final DrasylConfig drasylConfig;
     private volatile int state; // 0 - open (node created), 1 - active (node started), 2 - closed (node shut down)
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Identity identity;
     private final PeersManager peersManager;
     private volatile Identity localAddress; // NOSONAR
     private final Serialization inboundSerialization;
@@ -56,12 +55,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
 
     public DrasylServerChannel(final DrasylConfig drasylConfig,
-                               final Identity identity,
                                final PeersManager peersManager,
                                final Serialization inboundSerialization,
                                final Serialization outboundSerialization) {
         this.drasylConfig = requireNonNull(drasylConfig);
-        this.identity = requireNonNull(identity);
         this.peersManager = requireNonNull(peersManager);
         this.inboundSerialization = requireNonNull(inboundSerialization);
         this.outboundSerialization = requireNonNull(outboundSerialization);
@@ -136,10 +133,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     public Serialization outboundSerialization() {
         return outboundSerialization;
-    }
-
-    public Identity identity() {
-        return identity;
     }
 
     public Map<DrasylAddress, Channel> channels() {

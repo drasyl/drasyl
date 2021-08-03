@@ -137,7 +137,7 @@ public class MigrationHandlerContext implements HandlerContext {
 
     @Override
     public Identity identity() {
-        return channel.identity();
+        return channel.localAddress0();
     }
 
     @Override

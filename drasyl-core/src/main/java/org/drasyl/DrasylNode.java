@@ -453,14 +453,9 @@ public abstract class DrasylNode {
         protected void initChannel(final Channel ch) {
             ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
                 @Override
-                public void channelRegistered(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelRegistered(ctx);
-
-                    pluginManager.beforeStart(ctx);
-                }
-
-                @Override
                 public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+                    pluginManager.beforeStart(ctx);
+
                     super.channelActive(ctx);
 
                     pluginManager.afterStart(ctx);
@@ -468,14 +463,9 @@ public abstract class DrasylNode {
 
                 @Override
                 public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelInactive(ctx);
-
                     pluginManager.beforeShutdown(ctx);
-                }
 
-                @Override
-                public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelUnregistered(ctx);
+                    super.channelInactive(ctx);
 
                     pluginManager.afterShutdown(ctx);
                 }
