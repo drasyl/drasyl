@@ -22,7 +22,6 @@
 package org.drasyl.plugin.groups.manager;
 
 import com.typesafe.config.Config;
-import org.drasyl.channel.MigrationChannelHandler;
 import org.drasyl.plugin.DrasylPlugin;
 import org.drasyl.plugin.PluginEnvironment;
 import org.drasyl.plugin.groups.manager.data.Group;
@@ -79,7 +78,7 @@ public class GroupsManagerPlugin implements DrasylPlugin {
                 }
             }
 
-            env.getPipeline().addLast(GROUPS_MANAGER_HANDLER, new MigrationChannelHandler(new GroupsManagerHandler(database)));
+            env.getPipeline().addLast(GROUPS_MANAGER_HANDLER, new GroupsManagerHandler(database));
 
             LOG.debug("Groups Manager Plugin was started with options: {}", config);
         }

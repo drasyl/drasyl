@@ -23,7 +23,6 @@ package org.drasyl.plugin.groups.client;
 
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.MigrationChannelHandler;
 import org.drasyl.plugin.PluginEnvironment;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +54,7 @@ class GroupsClientPluginTest {
 
         plugin.onBeforeStart(env);
 
-        verify(pipeline).addLast(eq(GROUPS_CLIENT_HANDLER), isA(MigrationChannelHandler.class));
+        verify(pipeline).addLast(eq(GROUPS_CLIENT_HANDLER), isA(GroupsClientHandler.class));
     }
 
     @Test

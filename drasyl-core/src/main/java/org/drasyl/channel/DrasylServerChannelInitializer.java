@@ -103,45 +103,45 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
         ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 
         // convert outbound messages addresses to us to inbound messages
-        ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new MigrationChannelHandler(new LoopbackMessageHandler()));
+        ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
 
         // discover nodes running within the same jvm.
         if (config.isIntraVmDiscoveryEnabled()) {
-            ch.pipeline().addFirst(INTRA_VM_DISCOVERY, new MigrationChannelHandler(IntraVmDiscovery.INSTANCE));
+            ch.pipeline().addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
         }
 
         if (config.isRemoteEnabled()) {
             // convert Object <-> ApplicationMessage
-            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MigrationChannelHandler(MessageSerializer.INSTANCE));
+            ch.pipeline().addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
 
             // route outbound messages to pre-configured ip addresses
             if (!config.getRemoteStaticRoutes().isEmpty()) {
-                ch.pipeline().addFirst(STATIC_ROUTES_HANDLER, new MigrationChannelHandler(StaticRoutesHandler.INSTANCE));
+                ch.pipeline().addFirst(STATIC_ROUTES_HANDLER, StaticRoutesHandler.INSTANCE);
             }
 
             if (config.isRemoteLocalHostDiscoveryEnabled()) {
                 // discover nodes running on the same local computer
-                ch.pipeline().addFirst(LOCAL_HOST_DISCOVERY, new MigrationChannelHandler(new LocalHostDiscovery()));
+                ch.pipeline().addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery());
             }
 
             // discovery nodes on the local network
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new MigrationChannelHandler(new LocalNetworkDiscovery()));
+                ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery());
             }
 
             // discover nodes on the internet
-            ch.pipeline().addFirst(INTERNET_DISCOVERY, new MigrationChannelHandler(new InternetDiscovery(config)));
+            ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config));
 
             // outbound message guards
-            ch.pipeline().addFirst(HOP_COUNT_GUARD, new MigrationChannelHandler(HopCountGuard.INSTANCE));
+            ch.pipeline().addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
 
             if (config.isMonitoringEnabled()) {
-                ch.pipeline().addFirst(MONITORING_HANDLER, new MigrationChannelHandler(new Monitoring()));
+                ch.pipeline().addFirst(MONITORING_HANDLER, new Monitoring());
             }
 
-            ch.pipeline().addFirst(RATE_LIMITER, new MigrationChannelHandler(new RateLimiter()));
+            ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter());
 
-            ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new MigrationChannelHandler(new SimpleInboundHandler<UnarmedMessage, Address>() {
+            ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleInboundHandler<UnarmedMessage, Address>() {
                 @Override
                 protected void matchedInbound(final HandlerContext ctx,
                                               final Address sender,
@@ -149,45 +149,45 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                                               final CompletableFuture<Void> future) throws Exception {
                     ctx.passInbound(sender, msg.readAndRelease(), future);
                 }
-            }));
+            });
 
             // arm outbound and disarm inbound messages
             if (config.isRemoteMessageArmEnabled()) {
-                ch.pipeline().addFirst(ARM_HANDLER, new MigrationChannelHandler(new ArmHandler(
+                ch.pipeline().addFirst(ARM_HANDLER, new ArmHandler(
                         config.getRemoteMessageArmSessionMaxCount(),
                         config.getRemoteMessageArmSessionMaxAgreements(),
                         config.getRemoteMessageArmSessionExpireAfter(),
-                        config.getRemoteMessageArmSessionRetryInterval())));
+                        config.getRemoteMessageArmSessionRetryInterval()));
             }
 
             // filter out inbound messages with invalid proof of work or other network id
-            ch.pipeline().addFirst(INVALID_PROOF_OF_WORK_FILTER, new MigrationChannelHandler(InvalidProofOfWorkFilter.INSTANCE));
-            ch.pipeline().addFirst(OTHER_NETWORK_FILTER, new MigrationChannelHandler(OtherNetworkFilter.INSTANCE));
+            ch.pipeline().addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);
+            ch.pipeline().addFirst(OTHER_NETWORK_FILTER, OtherNetworkFilter.INSTANCE);
 
             // split messages too big for udp
-            ch.pipeline().addFirst(CHUNKING_HANDLER, new MigrationChannelHandler(new ChunkingHandler()));
+            ch.pipeline().addFirst(CHUNKING_HANDLER, new ChunkingHandler());
             // convert RemoteMessage <-> ByteBuf
-            ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, new MigrationChannelHandler(RemoteMessageToByteBufCodec.INSTANCE));
+            ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addFirst(UDP_MULTICAST_SERVER, new MigrationChannelHandler(UdpMulticastServer.getInstance()));
+                ch.pipeline().addFirst(UDP_MULTICAST_SERVER, UdpMulticastServer.getInstance());
             }
 
             // tcp fallback
             if (config.isRemoteTcpFallbackEnabled()) {
                 if (!config.isRemoteSuperPeerEnabled()) {
-                    ch.pipeline().addFirst(TCP_SERVER, new MigrationChannelHandler(new TcpServer()));
+                    ch.pipeline().addFirst(TCP_SERVER, new TcpServer());
                 }
                 else {
-                    ch.pipeline().addFirst(TCP_CLIENT, new MigrationChannelHandler(new TcpClient(config)));
+                    ch.pipeline().addFirst(TCP_CLIENT, new TcpClient(config));
                 }
             }
 
             // udp server
             if (config.isRemoteExposeEnabled()) {
-                ch.pipeline().addFirst(PORT_MAPPER, new MigrationChannelHandler(new PortMapper()));
+                ch.pipeline().addFirst(PORT_MAPPER, new PortMapper());
             }
-            ch.pipeline().addFirst(UDP_SERVER, new MigrationChannelHandler(new UdpServer()));
+            ch.pipeline().addFirst(UDP_SERVER, new UdpServer());
         }
 
         ch.pipeline().addFirst(NODE_EVENTS, new NodeLifecycleEvents());

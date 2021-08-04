@@ -21,7 +21,13 @@
  */
 package org.drasyl.pipeline;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.MigrationEvent;
+import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -29,7 +35,10 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.util.scheduler.DrasylScheduler;
 
+import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
+
+import static org.drasyl.channel.Null.NULL;
 
 /**
  * Skeleton implementation for end handler of the {@link Pipeline}.
@@ -97,5 +106,151 @@ abstract class AbstractEndHandler extends AbstractHandlerContext implements Hand
                            final CompletableFuture<Void> future) {
         // skip
         ctx.passOutbound(recipient, msg, future);
+    }
+
+    @Override
+    public void bind(final ChannelHandlerContext ctx,
+                     final SocketAddress localAddress,
+                     final ChannelPromise promise) throws Exception {
+        ctx.bind(localAddress, promise);
+    }
+
+    @Override
+    public void connect(final ChannelHandlerContext ctx,
+                        final SocketAddress remoteAddress,
+                        final SocketAddress localAddress,
+                        final ChannelPromise promise) throws Exception {
+        ctx.connect(remoteAddress, localAddress, promise);
+    }
+
+    @Override
+    public void disconnect(final ChannelHandlerContext ctx,
+                           final ChannelPromise promise) {
+        ctx.disconnect(promise);
+    }
+
+    @Override
+    public void close(final ChannelHandlerContext ctx,
+                      final ChannelPromise promise) throws Exception {
+        ctx.close(promise);
+    }
+
+    @Override
+    public void deregister(final ChannelHandlerContext ctx,
+                           final ChannelPromise promise) throws Exception {
+        ctx.deregister(promise);
+    }
+
+    @Override
+    public void read(final ChannelHandlerContext ctx) throws Exception {
+        ctx.read();
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
+        onAdded(handlerCtx);
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
+        onRemoved(handlerCtx);
+    }
+
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx,
+                                final Throwable cause) {
+        ctx.fireExceptionCaught(cause);
+    }
+
+    @Override
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof MigrationOutboundMessage) {
+            final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
+            final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            future.whenComplete((unused, throwable) -> {
+                if (throwable == null) {
+                    promise.setSuccess();
+                }
+                else {
+                    promise.setFailure(throwable);
+                }
+            });
+            Object payload = migrationMsg.message();
+            if (payload == NULL) {
+                payload = null;
+            }
+            onOutbound(handlerCtx, migrationMsg.address(), payload, future);
+        }
+        else {
+            throw new RuntimeException("not implemented yet"); // NOSONAR
+        }
+    }
+
+    @Override
+    public void flush(final ChannelHandlerContext ctx) {
+        ctx.flush();
+    }
+
+    @Override
+    public void channelRegistered(final ChannelHandlerContext ctx) {
+        ctx.fireChannelRegistered();
+    }
+
+    @Override
+    public void channelUnregistered(final ChannelHandlerContext ctx) {
+        ctx.fireChannelUnregistered();
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof MigrationInboundMessage) {
+            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
+            final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
+            Object payload = migrationMsg.message();
+            if (payload == NULL) {
+                payload = null;
+            }
+            onInbound(handlerCtx, migrationMsg.address(), payload, migrationMsg.future());
+        }
+        else {
+            throw new RuntimeException("not implemented yet"); // NOSONAR
+        }
+    }
+
+    @Override
+    public void channelReadComplete(final ChannelHandlerContext ctx) {
+        ctx.fireChannelReadComplete();
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
+            onEvent(handlerCtx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
+        }
+    }
+
+    @Override
+    public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
+        ctx.fireChannelWritabilityChanged();
     }
 }

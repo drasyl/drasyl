@@ -21,6 +21,8 @@
  */
 package org.drasyl.pipeline;
 
+import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelOutboundHandler;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -44,7 +46,7 @@ import java.util.concurrent.CompletableFuture;
  * context object, the {@link Handler} can pass events upstream or downstream or modify the pipeline
  * dynamically.
  */
-public interface Handler {
+public interface Handler extends ChannelOutboundHandler, ChannelInboundHandler {
     /**
      * Gets called after the {@link Handler} was added to the actual context and it's ready to
      * handle events.

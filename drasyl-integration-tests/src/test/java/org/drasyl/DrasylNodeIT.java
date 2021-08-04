@@ -23,7 +23,6 @@ package org.drasyl;
 
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
-import org.drasyl.channel.MigrationChannelHandler;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOfflineEvent;
@@ -548,6 +547,7 @@ class DrasylNodeIT {
             private EmbeddedNode superPeer;
             private EmbeddedNode client;
 
+            @SuppressWarnings("ConstantConditions")
             @BeforeEach
             void setUp() throws DrasylException {
                 //
@@ -592,7 +592,7 @@ class DrasylNodeIT {
                         .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
                         .build();
                 client = new EmbeddedNode(config).started();
-                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new MigrationChannelHandler(new OutboundMessageFilter<ByteBuf, Address>() {
+                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new OutboundMessageFilter<ByteBuf, Address>() {
                     @Override
                     protected boolean accept(final HandlerContext ctx,
                                              final Address sender,
@@ -608,7 +608,7 @@ class DrasylNodeIT {
                         LOG.trace("UDP message blocked: {}", msg);
                         future.complete(null);
                     }
-                }));
+                });
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client"));
             }
 

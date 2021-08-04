@@ -23,7 +23,6 @@ package org.drasyl.plugin.groups.manager;
 
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.MigrationChannelHandler;
 import org.drasyl.plugin.PluginEnvironment;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
@@ -85,7 +84,7 @@ class GroupsManagerPluginTest {
 
             plugin.onBeforeStart(env);
 
-            verify(pipeline).addLast(eq(GROUPS_MANAGER_HANDLER), isA(MigrationChannelHandler.class));
+            verify(pipeline).addLast(eq(GROUPS_MANAGER_HANDLER), isA(GroupsManagerHandler.class));
         }
     }
 
