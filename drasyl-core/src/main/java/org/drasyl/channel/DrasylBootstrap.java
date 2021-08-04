@@ -63,7 +63,7 @@ public class DrasylBootstrap {
         identityManager.loadOrCreateIdentity();
         identity = identityManager.getIdentity();
 
-        channelFactory = () -> new DrasylServerChannel(
+        channelFactory = () -> new DefaultDrasylServerChannel(
                 config,
                 identity,
                 new PeersManager(),
