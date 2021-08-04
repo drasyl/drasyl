@@ -27,6 +27,7 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.DefaultEmbeddedPipeline;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
@@ -124,7 +125,7 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnEventTriggeredWithMultipleHandler(@Mock final Event event) {
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
                 final TestObserver<Event> events = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event);
@@ -138,7 +139,7 @@ class HandlerAdapterTest {
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler(@Mock final IdentityPublicKey sender,
                                                          @Mock final RemoteMessage msg) {
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
                 pipeline.processInbound(sender, msg);

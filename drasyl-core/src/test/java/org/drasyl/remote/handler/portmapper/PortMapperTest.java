@@ -31,6 +31,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.DefaultEmbeddedPipeline;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.junit.jupiter.api.Nested;
@@ -67,7 +68,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Event> inboundEvents;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 inboundEvents = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event).join();
@@ -85,7 +86,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Event> inboundEvents;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 inboundEvents = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event).join();
@@ -104,7 +105,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, retryTask);
             final TestObserver<Event> inboundEvents;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 inboundEvents = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event).join();
@@ -129,7 +130,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Object> inboundMessages;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
@@ -146,7 +147,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Object> inboundMessages;
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
@@ -172,7 +173,7 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method1, method2));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
                 verify(method2).start(any(), any(), any());

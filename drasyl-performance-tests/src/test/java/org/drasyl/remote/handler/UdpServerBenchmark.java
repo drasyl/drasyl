@@ -29,6 +29,7 @@ import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.DefaultEmbeddedPipeline;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
@@ -79,7 +80,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     .identitySecretKey(identity2.getIdentitySecretKey())
                     .build();
 
-            pipeline = new EmbeddedPipeline(config2, identity2, new PeersManager(),
+            pipeline = new DefaultEmbeddedPipeline(config2, identity2, new PeersManager(),
                     handler,
                     new SimpleInboundHandler<ByteBuf, Address>() {
                         @Override

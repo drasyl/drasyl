@@ -26,6 +26,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.DefaultEmbeddedPipeline;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
@@ -54,7 +55,7 @@ class OutboundMessagesThrottlingHandlerTest {
     void shouldThrottleOutboundMessages(@Mock final Address recipient,
                                         @Mock final ByteBuf msg) {
         final Handler handler = new OutboundMessagesThrottlingHandler(10);
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
             final TestObserver<Object> inboundMessages = pipeline.outboundMessages().test();
 
             final CompletableFuture<Void>[] futures = new CompletableFuture[10];

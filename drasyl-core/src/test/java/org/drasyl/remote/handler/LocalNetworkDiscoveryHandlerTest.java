@@ -30,6 +30,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.DefaultEmbeddedPipeline;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
@@ -93,7 +94,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldStartHeartbeatingOnNodeUpEvent(@Mock final NodeUpEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, null));
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
                 verify(handler).startHeartbeat(any());
                 handler.stopHeartbeat(); // we must stop, otherwise this handler goes crazy cause to the PT0S ping interval
@@ -103,7 +104,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, pingDisposable));
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
                 verify(handler).stopHeartbeat();
@@ -114,7 +115,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnNodeDownEvent(@Mock final NodeDownEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, pingDisposable));
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 pipeline.processInbound(event).join();
 
                 verify(handler).stopHeartbeat();
@@ -216,7 +217,7 @@ class LocalNetworkDiscoveryTest {
         void shouldPassthroughUnicastMessages(@Mock final InetSocketAddressWrapper sender,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
                 pipeline.processInbound(sender, msg).join();
@@ -236,7 +237,7 @@ class LocalNetworkDiscoveryTest {
         when(peers.get(any())).thenReturn(peer);
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
         pipeline.processOutbound(recipient, message).join();
@@ -251,7 +252,7 @@ class LocalNetworkDiscoveryTest {
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler);
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
         pipeline.processOutbound(recipient, message).join();

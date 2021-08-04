@@ -29,6 +29,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.DefaultEmbeddedPipeline;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
@@ -98,7 +99,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
                 final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
                 pipeline.processOutbound(recipient, payload);
@@ -138,7 +139,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
                 final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
@@ -183,7 +184,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
                 final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -228,7 +229,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
                 final TestObserver<RemoteMessage> outboundMessageTestObserver = pipeline.outboundMessages(RemoteMessage.class).test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -272,7 +273,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event);
@@ -309,7 +310,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event);

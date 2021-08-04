@@ -28,6 +28,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.DefaultEmbeddedPipeline;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
@@ -66,7 +67,7 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(ImmutableMap.of("string", new StringSerializer()));
             when(config.getSerializationsBindingsInbound()).thenReturn(ImmutableMap.of(String.class, "string"));
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(address, message).join();
@@ -84,7 +85,7 @@ class MessageSerializerTest {
             when(config.getSerializationsBindingsInbound()).thenReturn(ImmutableMap.of(Object.class, "object"));
             when(serializer.fromByteArray(any(), anyString())).thenReturn("Hallo Welt");
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(address, message).join();
@@ -98,7 +99,7 @@ class MessageSerializerTest {
         @Test
         void shouldBeAbleToDeserializeNullMessage(@Mock final IdentityPublicKey address) {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), null, null);
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(address, message).join();
@@ -112,7 +113,7 @@ class MessageSerializerTest {
         @Test
         void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final IdentityPublicKey sender) throws InterruptedException {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
@@ -128,7 +129,7 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(ImmutableMap.of("string", serializer));
             when(config.getSerializationsBindingsInbound()).thenReturn(ImmutableMap.of(String.class, "string"));
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
@@ -147,7 +148,7 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(ImmutableMap.of("string", new StringSerializer()));
             when(config.getSerializationsBindingsOutbound()).thenReturn(ImmutableMap.of(String.class, "string"));
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.outboundMessages(ApplicationMessage.class).test();
 
                 pipeline.processOutbound(identity.getIdentityPublicKey(), "Hello World").join();
@@ -166,7 +167,7 @@ class MessageSerializerTest {
             when(config.getSerializationsBindingsOutbound()).thenReturn(ImmutableMap.of(Object.class, "object"));
             when(serializer.toByteArray(any())).thenReturn(new byte[0]);
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.outboundMessages(ApplicationMessage.class).test();
 
                 pipeline.processOutbound(identity.getIdentityPublicKey(), message).join();
@@ -179,7 +180,7 @@ class MessageSerializerTest {
         @Test
         void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final IdentityPublicKey recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) throws InterruptedException {
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
@@ -195,7 +196,7 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(ImmutableMap.of("string", serializer));
             when(config.getSerializationsBindingsOutbound()).thenReturn(ImmutableMap.of(String.class, "string"));
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
@@ -209,7 +210,7 @@ class MessageSerializerTest {
             when(identity.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
             when(identity.getProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
-            try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
+            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE)) {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.outboundMessages(ApplicationMessage.class).test();
 
                 pipeline.processOutbound(identity.getIdentityPublicKey(), null);

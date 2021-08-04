@@ -40,7 +40,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class EmbeddedPipelineTest {
+class DefaultEmbeddedPipelineTest {
     @Mock
     private Identity identity;
     @Mock
@@ -57,7 +57,7 @@ class EmbeddedPipelineTest {
     @Test
     void shouldReturnInboundMessagesAndEvents(@Mock final IdentityPublicKey sender,
                                               @Mock final RemoteMessage msg) {
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager)) {
+        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager)) {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
             final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -77,7 +77,7 @@ class EmbeddedPipelineTest {
     @Test
     void shouldReturnOutboundMessages(@Mock final IdentityPublicKey sender,
                                       @Mock final IdentityPublicKey recipient) {
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(
                 config,
                 identity,
                 peersManager,

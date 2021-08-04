@@ -23,9 +23,10 @@ package org.drasyl.pipeline.skeleton;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.DefaultEmbeddedPipeline;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
@@ -61,7 +62,7 @@ class SimpleOutboundHandlerTest {
             }
         };
 
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
             final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
 
             pipeline.processOutbound(recipient, "Hallo Welt".getBytes());
@@ -84,7 +85,7 @@ class SimpleOutboundHandlerTest {
             }
         };
 
-        try (final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, handler)) {
+        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
             final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
 
             pipeline.processOutbound(recipient, 1337);
