@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import io.netty.channel.ChannelHandler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
@@ -34,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
  * This handler filters out all messages received from other networks.
  */
 @SuppressWarnings("java:S110")
+@ChannelHandler.Sharable
 @Stateless
 public final class OtherNetworkFilter extends InboundMessageFilter<RemoteMessage, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();

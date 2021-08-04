@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import io.netty.channel.ChannelHandler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
@@ -34,6 +35,7 @@ import java.util.List;
  * increments the hop counter of each outgoing message. If the limit of hops is reached, the message
  * is discarded. Otherwise the message can pass.
  */
+@ChannelHandler.Sharable
 @Stateless
 public final class HopCountGuard extends MessageToMessageEncoder<RemoteMessage, Address> {
     public static final HopCountGuard INSTANCE = new HopCountGuard();

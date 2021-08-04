@@ -21,6 +21,7 @@
  */
 package org.drasyl.loopback.handler;
 
+import io.netty.channel.ChannelHandler;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -36,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
  * This handler converts outgoing messages addressed to the local node to incoming messages
  * addressed to the local node.
  */
+@ChannelHandler.Sharable
 @Stateless
 public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Address> {
     private boolean started;

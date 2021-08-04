@@ -22,6 +22,7 @@
 package org.drasyl.pipeline.serialization;
 
 import com.google.protobuf.ByteString;
+import io.netty.channel.ChannelHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
@@ -36,6 +37,7 @@ import java.util.List;
 /**
  * This handler serializes messages to {@link ApplicationMessage} an vice vera.
  */
+@ChannelHandler.Sharable
 @Stateless
 @SuppressWarnings({ "java:S110" })
 public final class MessageSerializer extends MessageToMessageCodec<ApplicationMessage, Object, IdentityPublicKey> {

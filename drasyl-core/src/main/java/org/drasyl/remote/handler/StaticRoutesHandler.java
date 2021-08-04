@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler;
 
 import com.typesafe.config.Config;
+import io.netty.channel.ChannelHandler;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -41,6 +42,7 @@ import java.util.concurrent.CompletableFuture;
  * This handler uses preconfigured static routes ({@link org.drasyl.DrasylConfig#getStaticRoutes(Config,
  * String)}) to deliver messages.
  */
+@ChannelHandler.Sharable
 @Stateless
 public final class StaticRoutesHandler extends SimpleOutboundHandler<ApplicationMessage, IdentityPublicKey> {
     public static final StaticRoutesHandler INSTANCE = new StaticRoutesHandler();
