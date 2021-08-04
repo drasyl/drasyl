@@ -65,7 +65,7 @@ public class MigrationHandlerContext implements HandlerContext {
 
     @Override
     public String name() {
-        throw new RuntimeException("not implemented yet"); // NOSONAR
+        return ctx.name();
     }
 
     @Override
