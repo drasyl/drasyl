@@ -81,7 +81,7 @@ class MonitoringTest {
                 verify(registrySupplier).apply(any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -98,7 +98,7 @@ class MonitoringTest {
                 verify(registry).close();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -112,7 +112,7 @@ class MonitoringTest {
                 verify(registry).close();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -132,7 +132,7 @@ class MonitoringTest {
                         .assertValue(event);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -142,7 +142,7 @@ class MonitoringTest {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(sender, message);
 
@@ -150,7 +150,7 @@ class MonitoringTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -160,7 +160,7 @@ class MonitoringTest {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                 pipeline.processOutbound(recipient, message);
 
@@ -168,7 +168,7 @@ class MonitoringTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

@@ -136,7 +136,7 @@ class HandlerAdapterTest {
                         .assertValue(event);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -154,7 +154,7 @@ class HandlerAdapterTest {
                         .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

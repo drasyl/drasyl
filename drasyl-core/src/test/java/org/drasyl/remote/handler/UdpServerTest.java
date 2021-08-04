@@ -93,7 +93,7 @@ class UdpServerTest {
                 verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -140,7 +140,7 @@ class UdpServerTest {
                 verify(channel).close();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -156,7 +156,7 @@ class UdpServerTest {
                 verify(channel).close();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -178,7 +178,7 @@ class UdpServerTest {
                 verify(channel, times(3)).writeAndFlush(any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -203,7 +203,7 @@ class UdpServerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<ByteBuf> inboundMessages = pipeline.inboundMessages(ByteBuf.class).test();
+                final TestObserver<ByteBuf> inboundMessages = pipeline.drasylInboundMessages(ByteBuf.class).test();
 
                 pipeline.processInbound(event).join();
 
@@ -211,7 +211,7 @@ class UdpServerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

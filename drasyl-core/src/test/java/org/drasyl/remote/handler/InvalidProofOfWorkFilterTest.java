@@ -71,14 +71,14 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
         try {
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
             assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
 
             inboundMessages.assertNoValues();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -97,7 +97,7 @@ class InvalidProofOfWorkFilterTest {
                     .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -112,7 +112,7 @@ class InvalidProofOfWorkFilterTest {
             verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 }

@@ -91,7 +91,7 @@ class MessagesThroughputHandlerTest {
             verify(printStream).printf(anyString(), any(), any(), any(), any());
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -105,7 +105,7 @@ class MessagesThroughputHandlerTest {
             verify(disposable).dispose();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -119,7 +119,7 @@ class MessagesThroughputHandlerTest {
             verify(disposable).dispose();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -134,7 +134,7 @@ class MessagesThroughputHandlerTest {
             verify(inboundMessages, never()).increment();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -147,7 +147,7 @@ class MessagesThroughputHandlerTest {
             pipeline.processInbound(address, new Object()).join();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
 
         verify(outboundMessages, never()).increment();
@@ -160,14 +160,14 @@ class MessagesThroughputHandlerTest {
         final TestObserver<Object> observable;
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
         try {
-            observable = pipeline.outboundMessages().test();
+            observable = pipeline.drasylOutboundMessages().test();
 
             pipeline.processOutbound(address, new Object()).join();
 
             observable.assertEmpty();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -177,14 +177,14 @@ class MessagesThroughputHandlerTest {
         final TestObserver<Object> observable;
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
         try {
-            observable = pipeline.inboundMessages().test();
+            observable = pipeline.drasylInboundMessages().test();
 
             pipeline.processInbound(address, new Object()).join();
 
             observable.assertEmpty();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 }

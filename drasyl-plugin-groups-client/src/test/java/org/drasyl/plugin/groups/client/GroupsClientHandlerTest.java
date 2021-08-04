@@ -128,7 +128,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager);
             try {
-                final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundMessages(GroupLeaveMessage.class).test();
+                final TestObserver<GroupLeaveMessage> testObserver = pipeline.drasylOutboundMessages(GroupLeaveMessage.class).test();
 
                 pipeline.addLast("handler", handler);
                 pipeline.remove("handler");
@@ -140,7 +140,7 @@ class GroupsClientHandlerTest {
                 verify(renewTasks).clear();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -161,7 +161,7 @@ class GroupsClientHandlerTest {
                         .assertValue(event);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -173,7 +173,7 @@ class GroupsClientHandlerTest {
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
-                final TestObserver<GroupJoinMessage> outboundObserver = pipeline.outboundMessages(GroupJoinMessage.class).test();
+                final TestObserver<GroupJoinMessage> outboundObserver = pipeline.drasylOutboundMessages(GroupJoinMessage.class).test();
 
                 when(uri.getGroup()).thenReturn(group);
                 when(uri.getCredentials()).thenReturn(credentials);
@@ -189,7 +189,7 @@ class GroupsClientHandlerTest {
                 outboundObserver.assertValue(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false));
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -213,7 +213,7 @@ class GroupsClientHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -234,7 +234,7 @@ class GroupsClientHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -258,7 +258,7 @@ class GroupsClientHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -284,7 +284,7 @@ class GroupsClientHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -308,7 +308,7 @@ class GroupsClientHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

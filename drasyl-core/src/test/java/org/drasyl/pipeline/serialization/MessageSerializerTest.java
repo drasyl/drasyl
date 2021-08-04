@@ -69,7 +69,7 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(address, message).join();
 
@@ -78,7 +78,7 @@ class MessageSerializerTest {
                         .assertValue("Hallo Welt");
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -91,7 +91,7 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(address, message).join();
 
@@ -100,7 +100,7 @@ class MessageSerializerTest {
                         .assertValue("Hallo Welt");
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -109,7 +109,7 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), null, null);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(address, message).join();
 
@@ -118,7 +118,7 @@ class MessageSerializerTest {
                         .assertValue(NULL_MESSAGE);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -127,14 +127,14 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
                 inboundMessages.await(1, SECONDS);
                 inboundMessages.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -147,14 +147,14 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
                 inboundMessages.await(1, SECONDS);
                 inboundMessages.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -170,7 +170,7 @@ class MessageSerializerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<ApplicationMessage> outboundMessages = pipeline.outboundMessages(ApplicationMessage.class).test();
+                final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
                 pipeline.processOutbound(identity.getIdentityPublicKey(), "Hello World").join();
 
@@ -178,7 +178,7 @@ class MessageSerializerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -193,7 +193,7 @@ class MessageSerializerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<ApplicationMessage> outboundMessages = pipeline.outboundMessages(ApplicationMessage.class).test();
+                final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
                 pipeline.processOutbound(identity.getIdentityPublicKey(), message).join();
 
@@ -201,7 +201,7 @@ class MessageSerializerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -210,14 +210,14 @@ class MessageSerializerTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) throws InterruptedException {
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
                 outboundMessages.await(1, SECONDS);
                 outboundMessages.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -230,14 +230,14 @@ class MessageSerializerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
                 outboundMessages.await(1, SECONDS);
                 outboundMessages.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -248,7 +248,7 @@ class MessageSerializerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<ApplicationMessage> outboundMessages = pipeline.outboundMessages(ApplicationMessage.class).test();
+                final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
                 pipeline.processOutbound(identity.getIdentityPublicKey(), null);
 
@@ -256,7 +256,7 @@ class MessageSerializerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

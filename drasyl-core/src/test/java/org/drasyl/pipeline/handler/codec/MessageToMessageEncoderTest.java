@@ -65,7 +65,7 @@ class MessageToMessageEncoderTest {
             assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, new Object()).get());
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -83,7 +83,7 @@ class MessageToMessageEncoderTest {
             assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, new Object()).get());
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -98,7 +98,7 @@ class MessageToMessageEncoderTest {
             }
         });
         try {
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
             pipeline.processOutbound(recipient, new Object());
 
@@ -107,7 +107,7 @@ class MessageToMessageEncoderTest {
                     .assertValue("Hallo Welt");
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -142,7 +142,7 @@ class MessageToMessageEncoderTest {
             assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, new Object()).get());
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 }

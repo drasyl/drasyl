@@ -73,14 +73,14 @@ class OtherNetworkFilterTest {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
         try {
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
             assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
 
             inboundMessages.assertNoValues();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -101,7 +101,7 @@ class OtherNetworkFilterTest {
                     .assertValue(new DefaultAddressedEnvelope<>(sender, null, message));
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 }

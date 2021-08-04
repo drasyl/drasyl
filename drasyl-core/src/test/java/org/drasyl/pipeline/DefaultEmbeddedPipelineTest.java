@@ -60,7 +60,7 @@ class DefaultEmbeddedPipelineTest {
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager);
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
-            final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             pipeline.processInbound(sender, msg);
@@ -74,7 +74,7 @@ class DefaultEmbeddedPipelineTest {
             outboundMessageTestObserver.assertNoValues();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -89,8 +89,8 @@ class DefaultEmbeddedPipelineTest {
                 new HandlerAdapter()
         );
         try {
-            final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final TestObserver<Object> inboundMessageTestObserver = pipeline.drasylInboundMessages().test();
+            final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final byte[] msg = new byte[]{};
@@ -103,7 +103,7 @@ class DefaultEmbeddedPipelineTest {
             eventTestObserver.assertNoValues();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 }

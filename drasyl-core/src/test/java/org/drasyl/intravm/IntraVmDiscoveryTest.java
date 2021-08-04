@@ -75,7 +75,7 @@ class IntraVmDiscoveryTest {
                 assertThat(discoveries, aMapWithSize(1));
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -94,7 +94,7 @@ class IntraVmDiscoveryTest {
                 assertThat(discoveries, aMapWithSize(0));
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -111,7 +111,7 @@ class IntraVmDiscoveryTest {
                 assertThat(discoveries, aMapWithSize(0));
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -137,7 +137,7 @@ class IntraVmDiscoveryTest {
                 verify(ctx).passInbound(any(), any(), any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -147,14 +147,14 @@ class IntraVmDiscoveryTest {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                 pipeline.processOutbound(recipient, message).join();
 
                 outboundMessages.assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

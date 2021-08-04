@@ -115,7 +115,7 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<ArmedMessage> outboundMessages = pipeline.outboundMessages(ArmedMessage.class).test();
+                final TestObserver<ArmedMessage> outboundMessages = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
@@ -140,7 +140,7 @@ class ArmHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -149,7 +149,7 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
@@ -173,7 +173,7 @@ class ArmHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -182,7 +182,7 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
@@ -200,7 +200,7 @@ class ArmHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -209,7 +209,7 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
@@ -231,7 +231,7 @@ class ArmHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -254,7 +254,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
+                final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
@@ -277,7 +277,7 @@ class ArmHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -289,7 +289,7 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
+                final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
@@ -312,7 +312,7 @@ class ArmHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -321,7 +321,7 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
@@ -342,7 +342,7 @@ class ArmHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -352,7 +352,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
@@ -375,7 +375,7 @@ class ArmHandlerTest {
                 assertTrue(future.isDone());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -385,7 +385,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
+                final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
                 // construct wrong agreement id
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_3.getKeyAgreementPublicKey());
 
@@ -410,7 +410,7 @@ class ArmHandlerTest {
                 assertTrue(future.isCompletedExceptionally());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -457,7 +457,7 @@ class ArmHandlerTest {
                         .assertValue(v -> v instanceof PerfectForwardSecrecyEncryptionEvent);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -507,7 +507,7 @@ class ArmHandlerTest {
                         .assertValue(v -> v instanceof PerfectForwardSecrecyEncryptionEvent);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -520,7 +520,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
+                final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
                 final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
@@ -546,7 +546,7 @@ class ArmHandlerTest {
                 observerEvents.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -588,7 +588,7 @@ class ArmHandlerTest {
                 observerEvents.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -635,7 +635,7 @@ class ArmHandlerTest {
                 observerEvents.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -655,7 +655,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
@@ -687,7 +687,7 @@ class ArmHandlerTest {
                 observer.assertValue(armedMsg);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -703,7 +703,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
+                final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
 
                 doReturn(new byte[]{}).when(crypto).encrypt(any(), any(), any(), any());
 
@@ -731,7 +731,7 @@ class ArmHandlerTest {
                         .assertValueAt(0, Objects::nonNull);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -748,7 +748,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
@@ -772,7 +772,7 @@ class ArmHandlerTest {
                 observer.assertValue(armedMsg);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -789,8 +789,8 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> outObserver = pipeline.outboundMessages(RemoteMessage.class).test();
-                final TestObserver<FullReadMessage> inObserver = pipeline.inboundMessages(FullReadMessage.class).test();
+                final TestObserver<RemoteMessage> outObserver = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
+                final TestObserver<FullReadMessage> inObserver = pipeline.drasylInboundMessages(FullReadMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -810,7 +810,7 @@ class ArmHandlerTest {
                 inObserver.assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -823,7 +823,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
 
@@ -835,7 +835,7 @@ class ArmHandlerTest {
                         .assertValue(msg);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -845,7 +845,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
@@ -858,7 +858,7 @@ class ArmHandlerTest {
                         .assertValue(msg);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -872,7 +872,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -890,7 +890,7 @@ class ArmHandlerTest {
                         .assertValue(disarmedMessage);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -904,7 +904,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -922,7 +922,7 @@ class ArmHandlerTest {
                         .assertValue(disarmedMsg);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -936,7 +936,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -954,7 +954,7 @@ class ArmHandlerTest {
                         .assertValue(disarmedMessage);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -969,7 +969,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<FullReadMessage<?>> observer = pipeline.inboundMessages(new TypeReference<FullReadMessage<?>>() {
+                final TestObserver<FullReadMessage<?>> observer = pipeline.drasylInboundMessages(new TypeReference<FullReadMessage<?>>() {
                 }).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
@@ -994,7 +994,7 @@ class ArmHandlerTest {
                 assertTrue(agreements.isEmpty());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -1009,7 +1009,7 @@ class ArmHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -1035,7 +1035,7 @@ class ArmHandlerTest {
                         .assertValue(disarmedMessage);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

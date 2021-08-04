@@ -50,7 +50,7 @@ class LoopbackMessageHandlerTest {
                                                     @Mock final Object message) {
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler());
         try {
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
             pipeline.processOutbound(recipient, message);
 
@@ -58,7 +58,7 @@ class LoopbackMessageHandlerTest {
                     .assertValueCount(1);
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -69,7 +69,7 @@ class LoopbackMessageHandlerTest {
 
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler(true));
         try {
-            final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
             pipeline.processOutbound(recipient, message);
 
@@ -77,7 +77,7 @@ class LoopbackMessageHandlerTest {
                     .assertValueCount(1);
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 }

@@ -93,7 +93,7 @@ public class TcpClientTest {
                 verify(superPeerChannel.channel()).close();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -109,7 +109,7 @@ public class TcpClientTest {
                 verify(superPeerChannel.channel()).close();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -121,7 +121,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
 
@@ -130,7 +130,7 @@ public class TcpClientTest {
                         .assertValue(msg);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -145,7 +145,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
 
@@ -158,7 +158,7 @@ public class TcpClientTest {
                 assertEquals(0, noResponseFromSuperPeerSince.get());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -168,7 +168,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg).join();
 
@@ -177,7 +177,7 @@ public class TcpClientTest {
                         .assertValue(msg);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -193,7 +193,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg).join();
 
@@ -201,7 +201,7 @@ public class TcpClientTest {
                 outboundMessages.assertEmpty();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -229,7 +229,7 @@ public class TcpClientTest {
                 verify(superPeerChannel).addListener(any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

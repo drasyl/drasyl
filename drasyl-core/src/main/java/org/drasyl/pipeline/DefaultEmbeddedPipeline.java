@@ -167,7 +167,7 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Observable<T> inboundMessages(final Class<T> clazz) {
+    public <T> Observable<T> drasylInboundMessages(final Class<T> clazz) {
         return (Observable<T>) inboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(clazz::isInstance);
     }
 
@@ -176,12 +176,12 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Observable<T> inboundMessages(final TypeReference<T> typeReference) {
+    public <T> Observable<T> drasylInboundMessages(final TypeReference<T> typeReference) {
         return (Observable<T>) inboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(m -> isInstance(typeReference.getType(), m));
     }
 
     @Override
-    public Observable<Object> inboundMessages() {
+    public Observable<Object> drasylInboundMessages() {
         return inboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE);
     }
 
@@ -206,7 +206,7 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Observable<T> outboundMessages(final Class<T> clazz) {
+    public <T> Observable<T> drasylOutboundMessages(final Class<T> clazz) {
         return (Observable<T>) outboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(clazz::isInstance);
     }
 
@@ -215,7 +215,7 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Observable<T> outboundMessages(final TypeReference<T> typeReference) {
+    public <T> Observable<T> drasylOutboundMessages(final TypeReference<T> typeReference) {
         return (Observable<T>) outboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(m -> isInstance(typeReference.getType(), m));
     }
 
@@ -223,7 +223,7 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
      * @return all messages that passes the pipeline until the end
      */
     @Override
-    public Observable<Object> outboundMessages() {
+    public Observable<Object> drasylOutboundMessages() {
         return outboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE);
     }
 
@@ -240,7 +240,7 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
      * objects.
      */
     @Override
-    public void close() {
+    public void drasylClose() {
         outboundMessages.onComplete();
         inboundMessages.onComplete();
         inboundEvents.onComplete();

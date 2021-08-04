@@ -79,7 +79,7 @@ class PortMapperTest {
                 verify(method).start(any(), any(), any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -101,7 +101,7 @@ class PortMapperTest {
                 verify(method).stop(any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -125,7 +125,7 @@ class PortMapperTest {
                 verify(retryTask).dispose();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -144,14 +144,14 @@ class PortMapperTest {
             final TestObserver<Object> inboundMessages;
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                inboundMessages = pipeline.inboundMessages().test();
+                inboundMessages = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
 
                 inboundMessages.assertEmpty();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -165,7 +165,7 @@ class PortMapperTest {
             final TestObserver<Object> inboundMessages;
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                inboundMessages = pipeline.inboundMessages().test();
+                inboundMessages = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
 
@@ -173,7 +173,7 @@ class PortMapperTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -200,7 +200,7 @@ class PortMapperTest {
                 verify(method2).start(any(), any(), any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

@@ -75,7 +75,7 @@ class SimpleInboundHandlerTest {
                     .assertValue(new DefaultAddressedEnvelope<>(sender, null, "Hallo Welt"));
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -102,7 +102,7 @@ class SimpleInboundHandlerTest {
                     .assertValue(new DefaultAddressedEnvelope<>(sender, null, 1337));
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 

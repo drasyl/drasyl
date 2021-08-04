@@ -92,7 +92,7 @@ class HopCountGuardTest {
                     .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message.incrementHopCount()));
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -105,14 +105,14 @@ class HopCountGuardTest {
 
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
         try {
-            final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+            final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
             assertThrows(CompletionException.class, pipeline.processOutbound(message.getSender(), message)::join);
 
             outboundMessages.assertNoValues();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 }

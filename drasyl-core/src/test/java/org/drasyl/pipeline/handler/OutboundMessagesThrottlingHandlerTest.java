@@ -57,7 +57,7 @@ class OutboundMessagesThrottlingHandlerTest {
         final Handler handler = new OutboundMessagesThrottlingHandler(10);
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
         try {
-            final TestObserver<Object> inboundMessages = pipeline.outboundMessages().test();
+            final TestObserver<Object> inboundMessages = pipeline.drasylOutboundMessages().test();
 
             final CompletableFuture<Void>[] futures = new CompletableFuture[10];
             for (int i = 0; i < 10; i++) {
@@ -69,7 +69,7 @@ class OutboundMessagesThrottlingHandlerTest {
             inboundMessages.assertValueCount(10);
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 }

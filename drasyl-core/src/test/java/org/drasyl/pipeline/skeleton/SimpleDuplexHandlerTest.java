@@ -102,7 +102,7 @@ class SimpleDuplexHandlerTest {
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
-                final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
                 pipeline.processOutbound(recipient, payload);
 
                 inboundMessageTestObserver.awaitCount(1)
@@ -111,7 +111,7 @@ class SimpleDuplexHandlerTest {
                 outboundMessageTestObserver.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -145,8 +145,8 @@ class SimpleDuplexHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-                final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
+                final TestObserver<Object> inboundMessageTestObserver = pipeline.drasylInboundMessages().test();
+                final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
 
                 final byte[] payload = new byte[]{};
                 pipeline.processOutbound(recipient, payload);
@@ -157,7 +157,7 @@ class SimpleDuplexHandlerTest {
                 inboundMessageTestObserver.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -194,8 +194,8 @@ class SimpleDuplexHandlerTest {
 
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
-                final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
+                final TestObserver<Object> inboundMessageTestObserver = pipeline.drasylInboundMessages().test();
+                final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 final byte[] msg = new byte[]{};
@@ -208,7 +208,7 @@ class SimpleDuplexHandlerTest {
                 eventTestObserver.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -244,7 +244,7 @@ class SimpleDuplexHandlerTest {
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
-                final TestObserver<RemoteMessage> outboundMessageTestObserver = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> outboundMessageTestObserver = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(sender, msg);
@@ -258,7 +258,7 @@ class SimpleDuplexHandlerTest {
                 outboundMessageTestObserver.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -299,7 +299,7 @@ class SimpleDuplexHandlerTest {
                 eventTestObserver.assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -341,7 +341,7 @@ class SimpleDuplexHandlerTest {
                         .assertValue(event);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 

@@ -119,7 +119,7 @@ class InternetDiscoveryTest {
                     .assertValue(m -> m instanceof NodeEvent);
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -137,7 +137,7 @@ class InternetDiscoveryTest {
                 verify(handler).startHeartbeat(any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -158,7 +158,7 @@ class InternetDiscoveryTest {
                 assertTrue(peers.isEmpty());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -179,7 +179,7 @@ class InternetDiscoveryTest {
                 assertTrue(peers.isEmpty());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -193,7 +193,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> outboundMessages = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
                 pipeline.processInbound(address, discoveryMessage);
 
@@ -203,7 +203,7 @@ class InternetDiscoveryTest {
                 verify(peersManager, never()).addPath(any(), any(), any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -222,7 +222,7 @@ class InternetDiscoveryTest {
                 verify(peersManager).addPath(any(), any(), any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -245,7 +245,7 @@ class InternetDiscoveryTest {
                 verify(peersManager).addPathAndSuperPeer(any(), any(), any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -361,7 +361,7 @@ class InternetDiscoveryTest {
                 verify(rendezvousPeers).add(any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -386,7 +386,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(message.getSender(), senderPeer, message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> outboundMessages = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
                 pipeline.processInbound(sender, message).join();
 
@@ -397,7 +397,7 @@ class InternetDiscoveryTest {
                         .assertValueAt(2, m -> m instanceof UniteMessage);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -416,7 +416,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
                 try {
-                    final @NonNull TestObserver<RemoteMessage> outboundMessages = pipeline.outboundMessages(RemoteMessage.class).test();
+                    final @NonNull TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
                     pipeline.processInbound(sender, message).join();
 
@@ -425,7 +425,7 @@ class InternetDiscoveryTest {
                             .assertValue(message);
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -439,14 +439,14 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                    final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                     assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
                     outboundMessages.await(1, SECONDS);
                     outboundMessages.assertNoValues();
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -474,7 +474,7 @@ class InternetDiscoveryTest {
                             .assertValue(new DefaultAddressedEnvelope<>(sender, null, applicationMessage));
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
         }
@@ -502,7 +502,7 @@ class InternetDiscoveryTest {
                             .assertValue(new DefaultAddressedEnvelope<>(null, recipientSocketAddress, message));
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -526,7 +526,7 @@ class InternetDiscoveryTest {
                             .assertValue(new DefaultAddressedEnvelope<>(null, superPeerSocketAddress, message));
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -549,7 +549,7 @@ class InternetDiscoveryTest {
                             .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message));
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -570,7 +570,7 @@ class InternetDiscoveryTest {
                     verify(peer).applicationTrafficOccurred();
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
         }

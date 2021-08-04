@@ -64,7 +64,7 @@ class SimpleOutboundHandlerTest {
 
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
         try {
-            final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
+            final TestObserver<String> outboundMessageTestObserver = pipeline.drasylOutboundMessages(String.class).test();
 
             pipeline.processOutbound(recipient, "Hallo Welt".getBytes());
 
@@ -73,7 +73,7 @@ class SimpleOutboundHandlerTest {
                     .assertValue("Hallo Welt");
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 
@@ -91,14 +91,14 @@ class SimpleOutboundHandlerTest {
 
         final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
         try {
-            final TestObserver<String> outboundMessageTestObserver = pipeline.outboundMessages(String.class).test();
+            final TestObserver<String> outboundMessageTestObserver = pipeline.drasylOutboundMessages(String.class).test();
 
             pipeline.processOutbound(recipient, 1337);
 
             outboundMessageTestObserver.assertNoValues();
         }
         finally {
-            pipeline.close();
+            pipeline.drasylClose();
         }
     }
 

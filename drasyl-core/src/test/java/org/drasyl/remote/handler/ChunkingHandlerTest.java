@@ -98,7 +98,7 @@ class ChunkingHandlerTest {
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                    final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                     final ByteBuf bytes = Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]);
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes);
@@ -108,7 +108,7 @@ class ChunkingHandlerTest {
                     inboundMessages.assertNoValues();
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -121,7 +121,7 @@ class ChunkingHandlerTest {
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<UnarmedMessage> inboundMessages = pipeline.inboundMessages(UnarmedMessage.class).test();
+                    final TestObserver<UnarmedMessage> inboundMessages = pipeline.drasylInboundMessages(UnarmedMessage.class).test();
 
                     final ByteBuf bytes = Unpooled.buffer();
                     final ApplicationMessage message = ApplicationMessage.of(0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFrom(randomBytes(remoteMessageMtu - 200)));
@@ -138,7 +138,7 @@ class ChunkingHandlerTest {
                             .assertValueAt(0, m -> m.read().equals(message));
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -155,7 +155,7 @@ class ChunkingHandlerTest {
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
+                    final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
@@ -188,7 +188,7 @@ class ChunkingHandlerTest {
                     inboundMessages.assertNoValues();
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
         }
@@ -213,7 +213,7 @@ class ChunkingHandlerTest {
                             .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -226,7 +226,7 @@ class ChunkingHandlerTest {
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<ChunkMessage> inboundMessages = pipeline.inboundMessages(ChunkMessage.class).test();
+                    final TestObserver<ChunkMessage> inboundMessages = pipeline.drasylInboundMessages(ChunkMessage.class).test();
 
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                             .setNonce(nonce.toByteString())
@@ -245,7 +245,7 @@ class ChunkingHandlerTest {
                     }
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
         }
@@ -280,7 +280,7 @@ class ChunkingHandlerTest {
                             .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -297,13 +297,13 @@ class ChunkingHandlerTest {
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMaxContentLength]));
                 final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                    final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                     assertThrows(ExecutionException.class, pipeline.processOutbound(address, msg)::get);
                     outboundMessages.assertNoValues();
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
 
@@ -323,7 +323,7 @@ class ChunkingHandlerTest {
                 final Handler handler = new ChunkingHandler();
                 final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<ChunkMessage> outboundMessages = pipeline.outboundMessages(ChunkMessage.class).test();
+                    final TestObserver<ChunkMessage> outboundMessages = pipeline.drasylOutboundMessages(ChunkMessage.class).test();
 
                     pipeline.processOutbound(address, msg).join();
 
@@ -334,7 +334,7 @@ class ChunkingHandlerTest {
                             .assertValueAt(2, m -> m instanceof BodyChunkMessage && ((BodyChunkMessage) m).getChunkNo().getValue() == 2 && m.getBytes().readableBytes() <= remoteMessageMtu);
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
         }
@@ -359,7 +359,7 @@ class ChunkingHandlerTest {
                             .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
                 }
                 finally {
-                    pipeline.close();
+                    pipeline.drasylClose();
                 }
             }
         }

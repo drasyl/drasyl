@@ -82,7 +82,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
             try {
                 final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
-                final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
+                final TestObserver<Object> testObserver = pipeline.drasylOutboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg);
 
@@ -90,7 +90,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -116,7 +116,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
             try {
                 final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
-                final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
+                final TestObserver<Object> testObserver = pipeline.drasylOutboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg);
 
@@ -124,7 +124,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                         .assertNoValues();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -134,7 +134,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
             try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
 
-                final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
+                final TestObserver<Object> testObserver = pipeline.drasylOutboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg);
 
@@ -142,7 +142,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -152,7 +152,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
             try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
 
-                final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
+                final TestObserver<Object> testObserver = pipeline.drasylOutboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg);
 
@@ -160,7 +160,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -173,7 +173,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
             try {
                 final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
-                final TestObserver<Object> testObserver = pipeline.inboundMessages().test();
+                final TestObserver<Object> testObserver = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(sender, msg);
 
@@ -181,7 +181,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -191,7 +191,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
             try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
 
-                final TestObserver<Object> testObserver = pipeline.inboundMessages().test();
+                final TestObserver<Object> testObserver = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(sender, msg);
 
@@ -199,7 +199,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -209,7 +209,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
             try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
 
-                final TestObserver<Object> testObserver = pipeline.inboundMessages().test();
+                final TestObserver<Object> testObserver = pipeline.drasylInboundMessages().test();
 
                 pipeline.processInbound(sender, msg);
 
@@ -217,7 +217,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

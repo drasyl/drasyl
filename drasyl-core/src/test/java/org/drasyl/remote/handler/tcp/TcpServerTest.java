@@ -95,7 +95,7 @@ class TcpServerTest {
                 verify(bootstrap.childHandler(any())).bind(any(InetAddress.class), anyInt());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -114,7 +114,7 @@ class TcpServerTest {
                 verify(serverChannel).close();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -130,7 +130,7 @@ class TcpServerTest {
                 verify(serverChannel).close();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -157,7 +157,7 @@ class TcpServerTest {
                 verify(client).writeAndFlush(any());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -174,7 +174,7 @@ class TcpServerTest {
                 assertThrows(CompletionException.class, pipeline.processOutbound(recipient, msg)::join);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -184,7 +184,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
+                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg).join();
 
@@ -192,7 +192,7 @@ class TcpServerTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

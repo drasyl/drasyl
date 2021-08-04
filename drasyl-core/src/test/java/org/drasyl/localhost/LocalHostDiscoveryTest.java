@@ -151,7 +151,7 @@ class LocalHostDiscoveryTest {
                 verify(discoveryPath).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -267,7 +267,7 @@ class LocalHostDiscoveryTest {
                 assertTrue(routes.isEmpty());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -287,7 +287,7 @@ class LocalHostDiscoveryTest {
                 assertTrue(routes.isEmpty());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -305,7 +305,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> outboundMessages = pipeline.outboundMessages(RemoteMessage.class).test();
+                final TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
                 pipeline.processOutbound(recipient, message).join();
 
@@ -313,7 +313,7 @@ class LocalHostDiscoveryTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -332,7 +332,7 @@ class LocalHostDiscoveryTest {
                         .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message));
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

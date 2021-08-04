@@ -85,7 +85,7 @@ class RemoteMessageToByteBufCodecTest {
             final Handler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
             try {
-                final TestObserver<PartialReadMessage> inboundMessages = pipeline.inboundMessages(PartialReadMessage.class).test();
+                final TestObserver<PartialReadMessage> inboundMessages = pipeline.drasylInboundMessages(PartialReadMessage.class).test();
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
@@ -95,7 +95,7 @@ class RemoteMessageToByteBufCodecTest {
                         .assertValueCount(1);
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }
@@ -121,7 +121,7 @@ class RemoteMessageToByteBufCodecTest {
                 byteBuf.release();
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
 
@@ -136,7 +136,7 @@ class RemoteMessageToByteBufCodecTest {
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, messageEnvelope).get());
             }
             finally {
-                pipeline.close();
+                pipeline.drasylClose();
             }
         }
     }

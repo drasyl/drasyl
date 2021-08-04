@@ -30,33 +30,33 @@ import org.drasyl.util.TypeReference;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-public interface EmbeddedPipeline extends AutoCloseable, Pipeline {
+public interface EmbeddedPipeline extends Pipeline {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     Optional<Object> NULL_MESSAGE = Optional.empty();
 
     @SuppressWarnings("unchecked")
-    <T> Observable<T> inboundMessages(Class<T> clazz);
+    <T> Observable<T> drasylInboundMessages(Class<T> clazz);
 
     @SuppressWarnings("unchecked")
-    <T> Observable<T> inboundMessages(TypeReference<T> typeReference);
+    <T> Observable<T> drasylInboundMessages(TypeReference<T> typeReference);
 
-    Observable<Object> inboundMessages();
+    Observable<Object> drasylInboundMessages();
 
     Observable<AddressedEnvelope<Address, Object>> inboundMessagesWithSender();
 
     Observable<Event> inboundEvents();
 
     @SuppressWarnings("unchecked")
-    <T> Observable<T> outboundMessages(Class<T> clazz);
+    <T> Observable<T> drasylOutboundMessages(Class<T> clazz);
 
     @SuppressWarnings("unchecked")
-    <T> Observable<T> outboundMessages(TypeReference<T> typeReference);
+    <T> Observable<T> drasylOutboundMessages(TypeReference<T> typeReference);
 
-    Observable<Object> outboundMessages();
+    Observable<Object> drasylOutboundMessages();
 
     Observable<AddressedEnvelope<Address, Object>> outboundMessagesWithRecipient();
 
-    void close();
+    void drasylClose();
 
     boolean isWritable();
 
