@@ -147,17 +147,6 @@ import java.util.concurrent.CompletableFuture;
 @SuppressWarnings("UnusedReturnValue")
 public interface Pipeline {
     /**
-     * Inserts a {@link Handler} at the first position of this pipeline.
-     *
-     * @param name    the name of the handler to insert first
-     * @param handler the handler to insert first
-     * @throws IllegalArgumentException if there's an entry with the same name already in the
-     *                                  pipeline
-     * @throws NullPointerException     if the specified handler is {@code null}
-     */
-    Pipeline addFirst(String name, Handler handler);
-
-    /**
      * Appends a {@link Handler} at the last position of this pipeline.
      *
      * @param name    the name of the handler to append
@@ -169,34 +158,6 @@ public interface Pipeline {
     Pipeline addLast(String name, Handler handler);
 
     /**
-     * Inserts a {@link Handler} before an existing handler of this pipeline.
-     *
-     * @param baseName the name of the existing handler
-     * @param name     the name of the handler to insert before
-     * @param handler  the handler to insert before
-     * @throws NoSuchElementException   if there's no such entry with the specified {@code
-     *                                  baseName}
-     * @throws IllegalArgumentException if there's an entry with the same name already in the
-     *                                  pipeline
-     * @throws NullPointerException     if the specified baseName or handler is {@code null}
-     */
-    Pipeline addBefore(String baseName, String name, Handler handler);
-
-    /**
-     * Inserts a {@link Handler} after an existing handler of this pipeline.
-     *
-     * @param baseName the name of the existing handler
-     * @param name     the name of the handler to insert after
-     * @param handler  the handler to insert after
-     * @throws NoSuchElementException   if there's no such entry with the specified {@code
-     *                                  baseName}
-     * @throws IllegalArgumentException if there's an entry with the same name already in the
-     *                                  pipeline
-     * @throws NullPointerException     if the specified baseName or handler is {@code null}
-     */
-    Pipeline addAfter(String baseName, String name, Handler handler);
-
-    /**
      * Removes the {@link Handler} with the specified name from this pipeline.
      *
      * @param name the name under which the {@link Handler} was stored.
@@ -205,36 +166,6 @@ public interface Pipeline {
      * @throws NullPointerException   if the specified name is {@code null}
      */
     Pipeline remove(String name);
-
-    /**
-     * Replaces the {@link Handler} of the specified name with a new handler in this pipeline.
-     *
-     * @param oldName    the name of the {@link Handler} to be replaced
-     * @param newName    the name under which the replacement should be added
-     * @param newHandler the {@link Handler} which is used as replacement
-     * @throws NoSuchElementException   if the handler with the specified old name does not exist in
-     *                                  this pipeline
-     * @throws IllegalArgumentException if a handler with the specified new name already exists in
-     *                                  this pipeline, except for the handler to be replaced
-     * @throws NullPointerException     if the specified old handler or new handler is {@code null}
-     */
-    Pipeline replace(String oldName, String newName, Handler newHandler);
-
-    /**
-     * Returns the {@link Handler} with the specified name in this pipeline.
-     *
-     * @return the handler with the specified name. {@code null} if there's no such handler in this
-     * pipeline.
-     */
-    Handler get(String name);
-
-    /**
-     * Returns the context object of the {@link Handler} with the specified name in this pipeline.
-     *
-     * @return the context object of the handler with the specified name. {@code null} if there's no
-     * such handler in this pipeline.
-     */
-    HandlerContext context(String name);
 
     /**
      * Processes an inbound message by the pipeline.
@@ -266,18 +197,4 @@ public interface Pipeline {
      * exceptionally future
      */
     CompletableFuture<Void> processOutbound(Address recipient, Object msg);
-
-    /**
-     * Returns {@code true} if the pipeline accepts new outbound messages for processing. Any calls
-     * to {@link #processOutbound(Address, Object)} while this method returns {@code false} will be
-     * rejected with an exceptionally future.
-     */
-    boolean isWritable();
-
-    /**
-     * Returns the remaining number of messages the pipeline will accept for processing before
-     * {@link #isWritable()} returns {@code false}. This quantity will always be non-negative. If
-     * {@link #isWritable()} is {@code false} then {@code 0} will be returned.
-     */
-    int messagesBeforeUnwritable();
 }

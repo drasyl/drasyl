@@ -257,16 +257,6 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
         inboundMessages.toList().blockingGet().forEach(o -> ReferenceCountUtil.safeRelease(o.getContent()));
     }
 
-    @Override
-    public boolean isWritable() {
-        return false;
-    }
-
-    @Override
-    public int messagesBeforeUnwritable() {
-        return 0;
-    }
-
     protected Logger log() {
         return LOG;
     }
@@ -282,30 +272,6 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
         catch (final Exception e) {
             this.head.passException(e);
         }
-    }
-
-    @Override
-    public Pipeline addFirst(final String name, final Handler handler) {
-        requireNonNull(name);
-        requireNonNull(handler);
-        final AbstractHandlerContext newCtx;
-
-        synchronized (this) {
-            collisionCheck(name);
-
-            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(this.head);
-            newCtx.setNextHandlerContext(this.head.getNext());
-
-            // Set correct pointer on old context
-            this.head.getNext().setPrevHandlerContext(newCtx);
-            this.head.setNextHandlerContext(newCtx);
-
-            registerNewHandler(name, newCtx);
-        }
-
-        return this;
     }
 
     /**
@@ -361,62 +327,6 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
     }
 
     @Override
-    public Pipeline addBefore(final String baseName, final String name, final Handler handler) {
-        requireNonNull(baseName);
-        requireNonNull(name);
-        requireNonNull(handler);
-        final AbstractHandlerContext newCtx;
-
-        synchronized (this) {
-            collisionCheck(name);
-
-            final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
-            requireNonNull(baseCtx);
-
-            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(baseCtx.getPrev());
-            newCtx.setNextHandlerContext(baseCtx);
-
-            // Set correct pointer on old context
-            baseCtx.getPrev().setNextHandlerContext(newCtx);
-            baseCtx.setPrevHandlerContext(newCtx);
-
-            registerNewHandler(name, newCtx);
-        }
-
-        return this;
-    }
-
-    @Override
-    public Pipeline addAfter(final String baseName, final String name, final Handler handler) {
-        requireNonNull(baseName);
-        requireNonNull(name);
-        requireNonNull(handler);
-        final AbstractHandlerContext newCtx;
-
-        synchronized (this) {
-            collisionCheck(name);
-
-            final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
-            requireNonNull(baseCtx);
-
-            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(baseCtx);
-            newCtx.setNextHandlerContext(baseCtx.getNext());
-
-            // Set correct pointer on old context
-            baseCtx.getNext().setPrevHandlerContext(newCtx);
-            baseCtx.setNextHandlerContext(newCtx);
-
-            registerNewHandler(name, newCtx);
-        }
-
-        return this;
-    }
-
-    @Override
     public Pipeline remove(final String name) {
         requireNonNull(name);
 
@@ -448,58 +358,6 @@ public class DefaultEmbeddedPipeline implements EmbeddedPipeline {
             ctx.passException(e);
             log().warn("Error on adding handler `{}`: ", ctx::name, () -> e);
         }
-    }
-
-    @Override
-    public Pipeline replace(final String oldName, final String newName, final Handler newHandler) {
-        requireNonNull(oldName);
-        requireNonNull(newName);
-        requireNonNull(newHandler);
-        final AbstractHandlerContext newCtx;
-
-        synchronized (this) {
-            if (!oldName.equals(newName)) {
-                collisionCheck(newName);
-            }
-
-            final AbstractHandlerContext oldCtx = handlerNames.remove(oldName);
-            final AbstractHandlerContext prev = oldCtx.getPrev();
-            final AbstractHandlerContext next = oldCtx.getNext();
-
-            // call remove action
-            removeHandlerAction(oldCtx);
-
-            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
-            // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(prev);
-            newCtx.setNextHandlerContext(next);
-
-            // Set correct pointer on old context
-            prev.setNextHandlerContext(newCtx);
-            next.setPrevHandlerContext(newCtx);
-
-            registerNewHandler(newName, newCtx);
-        }
-
-        return this;
-    }
-
-    @Override
-    public Handler get(final String name) {
-        requireNonNull(name);
-
-        if (handlerNames.containsKey(name)) {
-            return handlerNames.get(name).handler();
-        }
-
-        return null;
-    }
-
-    @Override
-    public HandlerContext context(final String name) {
-        requireNonNull(name);
-
-        return handlerNames.get(name);
     }
 
     @Override

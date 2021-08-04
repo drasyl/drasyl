@@ -58,25 +58,9 @@ public interface EmbeddedPipeline extends Pipeline {
 
     void drasylClose();
 
-    boolean isWritable();
-
-    int messagesBeforeUnwritable();
-
-    Pipeline addFirst(String name, Handler handler);
-
     Pipeline addLast(String name, Handler handler);
 
-    Pipeline addBefore(String baseName, String name, Handler handler);
-
-    Pipeline addAfter(String baseName, String name, Handler handler);
-
     Pipeline remove(String name);
-
-    Pipeline replace(String oldName, String newName, Handler newHandler);
-
-    Handler get(String name);
-
-    HandlerContext context(String name);
 
     CompletableFuture<Void> processInbound(Address sender,
                                            Object msg);
