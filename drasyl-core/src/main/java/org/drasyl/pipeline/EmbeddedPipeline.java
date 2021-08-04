@@ -38,32 +38,49 @@ import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.scheduler.DrasylScheduler;
 import org.drasyl.util.scheduler.DrasylSchedulerUtil.DrasylExecutor;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.util.RandomUtil.randomString;
 
 /**
  * Embedded {@link Pipeline} implementation, that allows easy testing of {@link Handler}s.
  */
 @SuppressWarnings({ "java:S107" })
-public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable {
+public class EmbeddedPipeline implements AutoCloseable, Pipeline {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static final Optional<Object> NULL_MESSAGE = Optional.empty();
     private static final short DEFAULT_HANDLER_RANDOM_SUFFIX_LENGTH = 16;
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedPipeline.class);
+    protected final Map<String, AbstractHandlerContext> handlerNames;
+    protected final DrasylScheduler dependentScheduler;
+    protected final DrasylScheduler independentScheduler;
+    protected final DrasylConfig config;
+    protected final Identity identity;
+    protected final PeersManager peersManager;
+    protected final Serialization inboundSerialization;
+    protected final Serialization outboundSerialization;
+    protected final Semaphore outboundMessagesBuffer;
     private final Subject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
     private final Subject<AddressedEnvelope<Address, Object>> outboundMessages;
     private final DrasylExecutor dependentExecutor;
     private final DrasylExecutor independentExecutor;
+    protected AbstractEndHandler head;
+    protected AbstractEndHandler tail;
 
     /**
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
@@ -98,7 +115,15 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
                              final Serialization outboundSerialization,
                              final DrasylExecutor dependentExecutor,
                              final DrasylExecutor independentExecutor) {
-        super(new ConcurrentHashMap<>(), dependentExecutor.getScheduler(), independentExecutor.getScheduler(), config, identity, peersManager, inboundSerialization, outboundSerialization, null);
+        this.handlerNames = requireNonNull((Map<String, AbstractHandlerContext>) new ConcurrentHashMap<String, AbstractHandlerContext>());
+        this.dependentScheduler = requireNonNull(dependentExecutor.getScheduler());
+        this.independentScheduler = requireNonNull(independentExecutor.getScheduler());
+        this.config = requireNonNull(config);
+        this.identity = requireNonNull(identity);
+        this.peersManager = requireNonNull(peersManager);
+        this.inboundSerialization = requireNonNull(inboundSerialization);
+        this.outboundSerialization = requireNonNull(outboundSerialization);
+        this.outboundMessagesBuffer = null;
         this.dependentExecutor = dependentExecutor;
         this.independentExecutor = independentExecutor;
         inboundMessages = ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized();
@@ -236,9 +261,277 @@ public class EmbeddedPipeline extends AbstractPipeline implements AutoCloseable 
         return 0;
     }
 
-    @Override
     protected Logger log() {
         return LOG;
+    }
+
+    @SuppressWarnings("java:S2221")
+    protected void initPointer() {
+        this.head.setNextHandlerContext(this.tail);
+        this.tail.setPrevHandlerContext(this.head);
+        try {
+            this.head.handler().onAdded(this.head);
+            this.tail.handler().onAdded(this.head);
+        }
+        catch (final Exception e) {
+            this.head.passException(e);
+        }
+    }
+
+    @Override
+    public Pipeline addFirst(final String name, final Handler handler) {
+        requireNonNull(name);
+        requireNonNull(handler);
+        final AbstractHandlerContext newCtx;
+
+        synchronized (this) {
+            collisionCheck(name);
+
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
+            // Set correct pointer on new context
+            newCtx.setPrevHandlerContext(this.head);
+            newCtx.setNextHandlerContext(this.head.getNext());
+
+            // Set correct pointer on old context
+            this.head.getNext().setPrevHandlerContext(newCtx);
+            this.head.setNextHandlerContext(newCtx);
+
+            registerNewHandler(name, newCtx);
+        }
+
+        return this;
+    }
+
+    /**
+     * Checks if the handler is already registered, if so an {@link IllegalArgumentException} is
+     * thrown.
+     *
+     * @param name handler name
+     * @throws IllegalArgumentException if handler is already registered
+     */
+    private void collisionCheck(final String name) {
+        if (handlerNames.containsKey(name)) {
+            throw new IllegalArgumentException("A handler with this name is already registered");
+        }
+    }
+
+    @SuppressWarnings("java:S2221")
+    private void registerNewHandler(final String name, final AbstractHandlerContext handlerCtx) {
+        // Add to handlerName list
+        handlerNames.put(name, handlerCtx);
+
+        // Call handler added
+        try {
+            handlerCtx.handler().onAdded(handlerCtx);
+        }
+        catch (final Exception e) {
+            handlerCtx.passException(e);
+            log().warn("Error on adding handler `{}`: ", handlerCtx::name, () -> e);
+        }
+    }
+
+    @Override
+    public Pipeline addLast(final String name, final Handler handler) {
+        requireNonNull(name);
+        requireNonNull(handler);
+        final AbstractHandlerContext newCtx;
+
+        synchronized (this) {
+            collisionCheck(name);
+
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
+            // Set correct pointer on new context
+            newCtx.setPrevHandlerContext(this.tail.getPrev());
+            newCtx.setNextHandlerContext(this.tail);
+
+            // Set correct pointer on old context
+            this.tail.getPrev().setNextHandlerContext(newCtx);
+            this.tail.setPrevHandlerContext(newCtx);
+
+            registerNewHandler(name, newCtx);
+        }
+
+        return this;
+    }
+
+    @Override
+    public Pipeline addBefore(final String baseName, final String name, final Handler handler) {
+        requireNonNull(baseName);
+        requireNonNull(name);
+        requireNonNull(handler);
+        final AbstractHandlerContext newCtx;
+
+        synchronized (this) {
+            collisionCheck(name);
+
+            final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
+            requireNonNull(baseCtx);
+
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
+            // Set correct pointer on new context
+            newCtx.setPrevHandlerContext(baseCtx.getPrev());
+            newCtx.setNextHandlerContext(baseCtx);
+
+            // Set correct pointer on old context
+            baseCtx.getPrev().setNextHandlerContext(newCtx);
+            baseCtx.setPrevHandlerContext(newCtx);
+
+            registerNewHandler(name, newCtx);
+        }
+
+        return this;
+    }
+
+    @Override
+    public Pipeline addAfter(final String baseName, final String name, final Handler handler) {
+        requireNonNull(baseName);
+        requireNonNull(name);
+        requireNonNull(handler);
+        final AbstractHandlerContext newCtx;
+
+        synchronized (this) {
+            collisionCheck(name);
+
+            final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
+            requireNonNull(baseCtx);
+
+            newCtx = new DefaultHandlerContext(name, handler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
+            // Set correct pointer on new context
+            newCtx.setPrevHandlerContext(baseCtx);
+            newCtx.setNextHandlerContext(baseCtx.getNext());
+
+            // Set correct pointer on old context
+            baseCtx.getNext().setPrevHandlerContext(newCtx);
+            baseCtx.setNextHandlerContext(newCtx);
+
+            registerNewHandler(name, newCtx);
+        }
+
+        return this;
+    }
+
+    @Override
+    public Pipeline remove(final String name) {
+        requireNonNull(name);
+
+        synchronized (this) {
+            final AbstractHandlerContext ctx = handlerNames.remove(name);
+            if (ctx == null) {
+                throw new NoSuchElementException("There is no handler with this name in the pipeline");
+            }
+
+            // call remove action
+            removeHandlerAction(ctx);
+
+            final AbstractHandlerContext prev = ctx.getPrev();
+            final AbstractHandlerContext next = ctx.getNext();
+            prev.setNextHandlerContext(next);
+            next.setPrevHandlerContext(prev);
+        }
+
+        return this;
+    }
+
+    @SuppressWarnings("java:S2221")
+    private void removeHandlerAction(final AbstractHandlerContext ctx) {
+        // call remove action
+        try {
+            ctx.handler().onRemoved(ctx);
+        }
+        catch (final Exception e) {
+            ctx.passException(e);
+            log().warn("Error on adding handler `{}`: ", ctx::name, () -> e);
+        }
+    }
+
+    @Override
+    public Pipeline replace(final String oldName, final String newName, final Handler newHandler) {
+        requireNonNull(oldName);
+        requireNonNull(newName);
+        requireNonNull(newHandler);
+        final AbstractHandlerContext newCtx;
+
+        synchronized (this) {
+            if (!oldName.equals(newName)) {
+                collisionCheck(newName);
+            }
+
+            final AbstractHandlerContext oldCtx = handlerNames.remove(oldName);
+            final AbstractHandlerContext prev = oldCtx.getPrev();
+            final AbstractHandlerContext next = oldCtx.getNext();
+
+            // call remove action
+            removeHandlerAction(oldCtx);
+
+            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, dependentScheduler, independentScheduler, identity, peersManager, inboundSerialization, outboundSerialization);
+            // Set correct pointer on new context
+            newCtx.setPrevHandlerContext(prev);
+            newCtx.setNextHandlerContext(next);
+
+            // Set correct pointer on old context
+            prev.setNextHandlerContext(newCtx);
+            next.setPrevHandlerContext(newCtx);
+
+            registerNewHandler(newName, newCtx);
+        }
+
+        return this;
+    }
+
+    @Override
+    public Handler get(final String name) {
+        requireNonNull(name);
+
+        if (handlerNames.containsKey(name)) {
+            return handlerNames.get(name).handler();
+        }
+
+        return null;
+    }
+
+    @Override
+    public HandlerContext context(final String name) {
+        requireNonNull(name);
+
+        return handlerNames.get(name);
+    }
+
+    @Override
+    public CompletableFuture<Void> processInbound(final Address sender,
+                                                  final Object msg) {
+        final CompletableFuture<Void> rtn = new CompletableFuture<>();
+
+        this.head.passInbound(sender, msg, rtn);
+
+        return rtn;
+    }
+
+    @Override
+    public CompletableFuture<Void> processInbound(final Event event) {
+        final CompletableFuture<Void> rtn = new CompletableFuture<>();
+
+        this.head.passEvent(event, rtn);
+
+        return rtn;
+    }
+
+    @Override
+    public CompletableFuture<Void> processOutbound(final Address recipient,
+                                                   final Object msg) {
+        if (outboundMessagesBuffer == null) {
+            final CompletableFuture<Void> rtn = new CompletableFuture<>();
+            this.tail.passOutbound(recipient, msg, rtn);
+            return rtn;
+        }
+        else if (outboundMessagesBuffer.tryAcquire()) {
+            final CompletableFuture<Void> rtn = new CompletableFuture<>();
+            rtn.whenComplete((unused, e) -> outboundMessagesBuffer.release());
+            this.tail.passOutbound(recipient, msg, rtn);
+            return rtn;
+        }
+        else {
+            return failedFuture(new Exception("Outbound messages buffer capacity exceeded. New messages can only be enqueued once the previous ones have been processed. Alternatively drasyl.message.buffer-size can be increased."));
+        }
     }
 
     private static boolean isInstance(final Type type, final Object obj) {
