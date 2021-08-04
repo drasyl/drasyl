@@ -48,13 +48,17 @@ class LoopbackMessageHandlerTest {
     @Test
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final IdentityPublicKey recipient,
                                                     @Mock final Object message) {
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler())) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler());
+        try {
             final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
             pipeline.processOutbound(recipient, message);
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1);
+        }
+        finally {
+            pipeline.close();
         }
     }
 
@@ -63,13 +67,17 @@ class LoopbackMessageHandlerTest {
                                                    @Mock(answer = Answers.RETURNS_DEEP_STUBS) final Object message) {
         when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler(true))) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new LoopbackMessageHandler(true));
+        try {
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             pipeline.processOutbound(recipient, message);
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1);
+        }
+        finally {
+            pipeline.close();
         }
     }
 }

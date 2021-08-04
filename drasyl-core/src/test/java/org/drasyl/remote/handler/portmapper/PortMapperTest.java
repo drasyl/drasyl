@@ -68,7 +68,8 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Event> inboundEvents;
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 inboundEvents = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event).join();
@@ -76,6 +77,9 @@ class PortMapperTest {
                 inboundEvents.awaitCount(1)
                         .assertValueCount(1);
                 verify(method).start(any(), any(), any());
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -86,7 +90,8 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Event> inboundEvents;
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 inboundEvents = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event).join();
@@ -94,6 +99,9 @@ class PortMapperTest {
                 inboundEvents.awaitCount(1)
                         .assertValueCount(1);
                 verify(method).stop(any());
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -105,7 +113,8 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, retryTask);
             final TestObserver<Event> inboundEvents;
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 inboundEvents = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event).join();
@@ -114,6 +123,9 @@ class PortMapperTest {
                         .assertValueCount(1);
                 verify(method).stop(any());
                 verify(retryTask).dispose();
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -130,12 +142,16 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Object> inboundMessages;
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
 
                 inboundMessages.assertEmpty();
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -147,13 +163,17 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Object> inboundMessages;
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -173,10 +193,14 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method1, method2));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(method2).start(any(), any(), any());
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

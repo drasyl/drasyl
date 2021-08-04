@@ -71,12 +71,16 @@ class OtherNetworkFilterTest {
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        try {
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
 
             inboundMessages.assertNoValues();
+        }
+        finally {
+            pipeline.close();
         }
     }
 
@@ -86,7 +90,8 @@ class OtherNetworkFilterTest {
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final AcknowledgementMessage message = AcknowledgementMessage.of(123, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
             pipeline.processInbound(sender, message).join();
@@ -94,6 +99,9 @@ class OtherNetworkFilterTest {
             inboundMessages.awaitCount(1)
                     .assertValueCount(1)
                     .assertValue(new DefaultAddressedEnvelope<>(sender, null, message));
+        }
+        finally {
+            pipeline.close();
         }
     }
 }

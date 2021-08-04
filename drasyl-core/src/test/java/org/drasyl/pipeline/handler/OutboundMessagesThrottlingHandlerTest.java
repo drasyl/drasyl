@@ -55,7 +55,8 @@ class OutboundMessagesThrottlingHandlerTest {
     void shouldThrottleOutboundMessages(@Mock final Address recipient,
                                         @Mock final ByteBuf msg) {
         final Handler handler = new OutboundMessagesThrottlingHandler(10);
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        try {
             final TestObserver<Object> inboundMessages = pipeline.outboundMessages().test();
 
             final CompletableFuture<Void>[] futures = new CompletableFuture[10];
@@ -66,6 +67,9 @@ class OutboundMessagesThrottlingHandlerTest {
             assertThat(inboundMessages.values().size(), lessThanOrEqualTo(10));
             CompletableFuture.allOf(futures).join();
             inboundMessages.assertValueCount(10);
+        }
+        finally {
+            pipeline.close();
         }
     }
 }

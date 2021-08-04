@@ -90,12 +90,16 @@ class UdpMulticastServerTest {
             when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).awaitUninterruptibly().isSuccess()).thenReturn(true);
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(nodes).put(eq(identity.getIdentityPublicKey()), any());
                 verify(bootstrap.handler(any())).bind(anyString(), anyInt());
                 verify(datagramChannel).joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -107,12 +111,16 @@ class UdpMulticastServerTest {
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127")));
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, channel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(nodes).remove(identity.getIdentityPublicKey());
                 verify(channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE)).awaitUninterruptibly();
                 verify(channel.close()).awaitUninterruptibly();
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -134,10 +142,14 @@ class UdpMulticastServerTest {
 
             final HashMap<IdentityPublicKey, HandlerContext> nodes = new HashMap<>(Map.of(publicKey, ctx));
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(ctx).passInbound(any(), any(), any());
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

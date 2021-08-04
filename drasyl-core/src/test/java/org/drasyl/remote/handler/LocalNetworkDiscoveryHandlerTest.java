@@ -94,32 +94,44 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldStartHeartbeatingOnNodeUpEvent(@Mock final NodeUpEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, null));
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
                 verify(handler).startHeartbeat(any());
                 handler.stopHeartbeat(); // we must stop, otherwise this handler goes crazy cause to the PT0S ping interval
+            }
+            finally {
+                pipeline.close();
             }
         }
 
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, pingDisposable));
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(handler).stopHeartbeat();
                 verify(handler).clearRoutes(any());
+            }
+            finally {
+                pipeline.close();
             }
         }
 
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnNodeDownEvent(@Mock final NodeDownEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, pingDisposable));
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(handler).stopHeartbeat();
                 verify(handler).clearRoutes(any());
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -217,7 +229,8 @@ class LocalNetworkDiscoveryTest {
         void shouldPassthroughUnicastMessages(@Mock final InetSocketAddressWrapper sender,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
                 pipeline.processInbound(sender, msg).join();
@@ -225,6 +238,9 @@ class LocalNetworkDiscoveryTest {
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

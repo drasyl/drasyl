@@ -64,7 +64,8 @@ class SimpleInboundHandlerTest {
             }
         };
 
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
 
             pipeline.processInbound(sender, "Hallo Welt".getBytes());
@@ -72,6 +73,9 @@ class SimpleInboundHandlerTest {
             inboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
                     .assertValue(new DefaultAddressedEnvelope<>(sender, null, "Hallo Welt"));
+        }
+        finally {
+            pipeline.close();
         }
     }
 
@@ -87,7 +91,8 @@ class SimpleInboundHandlerTest {
             }
         };
 
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
 
             pipeline.processInbound(sender, 1337).join();
@@ -95,6 +100,9 @@ class SimpleInboundHandlerTest {
             inboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
                     .assertValue(new DefaultAddressedEnvelope<>(sender, null, 1337));
+        }
+        finally {
+            pipeline.close();
         }
     }
 

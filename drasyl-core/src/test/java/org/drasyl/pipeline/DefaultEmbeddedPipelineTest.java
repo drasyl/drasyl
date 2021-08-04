@@ -57,7 +57,8 @@ class DefaultEmbeddedPipelineTest {
     @Test
     void shouldReturnInboundMessagesAndEvents(@Mock final IdentityPublicKey sender,
                                               @Mock final RemoteMessage msg) {
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager);
+        try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
             final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -72,18 +73,22 @@ class DefaultEmbeddedPipelineTest {
                     .assertValue(MessageEvent.of(sender, msg));
             outboundMessageTestObserver.assertNoValues();
         }
+        finally {
+            pipeline.close();
+        }
     }
 
     @Test
     void shouldReturnOutboundMessages(@Mock final IdentityPublicKey sender,
                                       @Mock final IdentityPublicKey recipient) {
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(
                 config,
                 identity,
                 peersManager,
                 new HandlerAdapter(),
                 new HandlerAdapter()
-        )) {
+        );
+        try {
             final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
             final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -96,6 +101,9 @@ class DefaultEmbeddedPipelineTest {
                     .assertValue(msg);
             inboundMessageTestObserver.assertNoValues();
             eventTestObserver.assertNoValues();
+        }
+        finally {
+            pipeline.close();
         }
     }
 }

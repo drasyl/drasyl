@@ -69,12 +69,16 @@ class InvalidProofOfWorkFilterTest {
     void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+        try {
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
 
             inboundMessages.assertNoValues();
+        }
+        finally {
+            pipeline.close();
         }
     }
 
@@ -82,7 +86,8 @@ class InvalidProofOfWorkFilterTest {
     void shouldPassMessagesWithValidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, IdentityTestUtil.ID_1.getProofOfWork(), recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+        try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
             pipeline.processInbound(message.getSender(), message).join();
@@ -91,16 +96,23 @@ class InvalidProofOfWorkFilterTest {
                     .assertValueCount(1)
                     .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
         }
+        finally {
+            pipeline.close();
+        }
     }
 
     @Test
     void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_3, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_3, peersManager, handler);
+        try {
             pipeline.processInbound(message.getSender(), message).join();
 
             verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
+        }
+        finally {
+            pipeline.close();
         }
     }
 }

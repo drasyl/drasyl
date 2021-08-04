@@ -88,10 +88,14 @@ class TcpServerTest {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, null);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(bootstrap.childHandler(any())).bind(any(InetAddress.class), anyInt());
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -103,10 +107,14 @@ class TcpServerTest {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(serverChannel).close();
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -115,10 +123,14 @@ class TcpServerTest {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(serverChannel).close();
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -138,10 +150,14 @@ class TcpServerTest {
             when(channelFuture.isSuccess()).thenReturn(true);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processOutbound(recipient, msg).join();
 
                 verify(client).writeAndFlush(any());
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -153,8 +169,12 @@ class TcpServerTest {
             when(clientChannels.get(any())).thenReturn(client);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 assertThrows(CompletionException.class, pipeline.processOutbound(recipient, msg)::join);
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -162,13 +182,17 @@ class TcpServerTest {
         void shouldPassthroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg).join();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

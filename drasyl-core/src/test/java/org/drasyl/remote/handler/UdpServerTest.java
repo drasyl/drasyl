@@ -86,10 +86,14 @@ class UdpServerTest {
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "")));
 
             final UdpServer handler = new UdpServer(bootstrap, null);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -129,10 +133,14 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(channel).close();
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -141,10 +149,14 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(channel).close();
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -159,10 +171,14 @@ class UdpServerTest {
             when(channel.writeAndFlush(any()).isSuccess()).thenReturn(true);
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processOutbound(recipient, msg).join();
 
                 verify(channel, times(3)).writeAndFlush(any());
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -185,13 +201,17 @@ class UdpServerTest {
 
             final UdpServer handler = new UdpServer(bootstrap, null);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<ByteBuf> inboundMessages = pipeline.inboundMessages(ByteBuf.class).test();
 
                 pipeline.processInbound(event).join();
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

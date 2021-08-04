@@ -61,10 +61,14 @@ class StaticRoutesHandlerTest {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        try {
             pipeline.processInbound(event).join();
 
             verify(peersManager).addPath(any(), eq(publicKey), any());
+        }
+        finally {
+            pipeline.close();
         }
     }
 
@@ -74,10 +78,14 @@ class StaticRoutesHandlerTest {
                                           @Mock final InetSocketAddressWrapper address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        try {
             pipeline.processInbound(event).join();
 
             verify(peersManager).removePath(any(), eq(publicKey), any());
+        }
+        finally {
+            pipeline.close();
         }
     }
 
@@ -87,10 +95,14 @@ class StaticRoutesHandlerTest {
                                                         @Mock final InetSocketAddressWrapper address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        try {
             pipeline.processInbound(event).join();
 
             verify(peersManager).removePath(any(), eq(publicKey), any());
+        }
+        finally {
+            pipeline.close();
         }
     }
 
@@ -101,7 +113,8 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        try {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
             pipeline.processOutbound(publicKey, message).join();
@@ -109,6 +122,9 @@ class StaticRoutesHandlerTest {
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
                     .assertValue(new DefaultAddressedEnvelope<>(null, address, message));
+        }
+        finally {
+            pipeline.close();
         }
     }
 
@@ -118,7 +134,8 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
 
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        try {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
             pipeline.processOutbound(publicKey, message).join();
@@ -126,6 +143,9 @@ class StaticRoutesHandlerTest {
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
                     .assertValue(new DefaultAddressedEnvelope<>(null, publicKey, message));
+        }
+        finally {
+            pipeline.close();
         }
     }
 }

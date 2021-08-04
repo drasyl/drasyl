@@ -99,7 +99,8 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
                 final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
                 pipeline.processOutbound(recipient, payload);
@@ -108,6 +109,9 @@ class SimpleDuplexHandlerTest {
                         .assertValueCount(1)
                         .assertValue(new DefaultAddressedEnvelope<>(sender, null, payload));
                 outboundMessageTestObserver.assertNoValues();
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -139,7 +143,8 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
                 final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
@@ -150,6 +155,9 @@ class SimpleDuplexHandlerTest {
                         .assertValueCount(1)
                         .assertValue(payload);
                 inboundMessageTestObserver.assertNoValues();
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -184,7 +192,8 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Object> inboundMessageTestObserver = pipeline.inboundMessages().test();
                 final TestObserver<Object> outboundMessageTestObserver = pipeline.outboundMessages().test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -197,6 +206,9 @@ class SimpleDuplexHandlerTest {
                         .assertValue(msg);
                 inboundMessageTestObserver.assertNoValues();
                 eventTestObserver.assertNoValues();
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -229,7 +241,8 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
                 final TestObserver<RemoteMessage> outboundMessageTestObserver = pipeline.outboundMessages(RemoteMessage.class).test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -243,6 +256,9 @@ class SimpleDuplexHandlerTest {
                         .assertValueCount(1)
                         .assertValue(MessageEvent.of(sender, msg));
                 outboundMessageTestObserver.assertNoValues();
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -273,13 +289,17 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event);
 
                 eventTestObserver.await(1, TimeUnit.SECONDS);
                 eventTestObserver.assertNoValues();
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -310,7 +330,8 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event);
@@ -318,6 +339,9 @@ class SimpleDuplexHandlerTest {
                 eventTestObserver.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(event);
+            }
+            finally {
+                pipeline.close();
             }
         }
 

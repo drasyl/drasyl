@@ -68,10 +68,14 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldStartDiscoveryOnNodeUpEvent(@Mock final NodeUpEvent event) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 assertThat(discoveries, aMapWithSize(1));
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -83,10 +87,14 @@ class IntraVmDiscoveryTest {
                                                               @Mock final HandlerContext ctx) {
             discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 assertThat(discoveries, aMapWithSize(0));
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -96,10 +104,14 @@ class IntraVmDiscoveryTest {
             discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 assertThat(discoveries, aMapWithSize(0));
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -118,10 +130,14 @@ class IntraVmDiscoveryTest {
             });
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processOutbound(recipient, message).join();
 
                 verify(ctx).passInbound(any(), any(), any());
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -129,12 +145,16 @@ class IntraVmDiscoveryTest {
         void shouldPasstroughOutgoingMessageForUnknownRecipients(@Mock final IdentityPublicKey recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processOutbound(recipient, message).join();
 
                 outboundMessages.assertValueCount(1);
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

@@ -83,7 +83,8 @@ class RemoteMessageToByteBufCodecTest {
         void shouldConvertByteBufToEnvelope(@Mock final InetSocketAddressWrapper sender) throws IOException {
             final RemoteMessage message = AcknowledgementMessage.of(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
             final Handler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<PartialReadMessage> inboundMessages = pipeline.inboundMessages(PartialReadMessage.class).test();
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
@@ -92,6 +93,9 @@ class RemoteMessageToByteBufCodecTest {
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -102,7 +106,8 @@ class RemoteMessageToByteBufCodecTest {
         void shouldConvertEnvelopeToByteBuf(@Mock final InetSocketAddressWrapper recipient) throws IOException {
             final ApplicationMessage message = ApplicationMessage.of(1337, IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"), ProofOfWork.of(3556154), IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), byte[].class.getName(), ByteString.copyFromUtf8("Hello World"));
             final Handler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
                 pipeline.processOutbound(recipient, message).join();
 
@@ -115,6 +120,9 @@ class RemoteMessageToByteBufCodecTest {
 
                 byteBuf.release();
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -123,8 +131,12 @@ class RemoteMessageToByteBufCodecTest {
             doThrow(RuntimeException.class).when(messageEnvelope).writeTo(any());
 
             final Handler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, messageEnvelope).get());
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

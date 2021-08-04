@@ -81,7 +81,8 @@ class HopCountGuardTest {
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final FullReadMessage<AcknowledgementMessage> message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
 
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        try {
             final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
             pipeline.processOutbound(recipient, message).join();
@@ -89,6 +90,9 @@ class HopCountGuardTest {
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
                     .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message.incrementHopCount()));
+        }
+        finally {
+            pipeline.close();
         }
     }
 
@@ -99,12 +103,16 @@ class HopCountGuardTest {
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final RemoteMessage message = AcknowledgementMessage.of(randomNonce(), 0, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, HopCount.of(MAX_HOP_COUNT), agreementId, correspondingId);
 
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        try {
             final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
             assertThrows(CompletionException.class, pipeline.processOutbound(message.getSender(), message)::join);
 
             outboundMessages.assertNoValues();
+        }
+        finally {
+            pipeline.close();
         }
     }
 }

@@ -144,10 +144,14 @@ class LocalHostDiscoveryTest {
             when(config.isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(discoveryPath).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -254,12 +258,16 @@ class LocalHostDiscoveryTest {
             routes.put(publicKey, address);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(watchDisposable).dispose();
                 verify(postDisposable).dispose();
                 assertTrue(routes.isEmpty());
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -270,12 +278,16 @@ class LocalHostDiscoveryTest {
             routes.put(publicKey, address);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(watchDisposable).dispose();
                 verify(postDisposable).dispose();
                 assertTrue(routes.isEmpty());
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -291,7 +303,8 @@ class LocalHostDiscoveryTest {
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> outboundMessages = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 pipeline.processOutbound(recipient, message).join();
@@ -299,13 +312,17 @@ class LocalHostDiscoveryTest {
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
                 pipeline.processOutbound(recipient, message).join();
@@ -313,6 +330,9 @@ class LocalHostDiscoveryTest {
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message));
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

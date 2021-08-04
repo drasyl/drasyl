@@ -125,7 +125,8 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnEventTriggeredWithMultipleHandler(@Mock final Event event) {
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            try {
                 final TestObserver<Event> events = pipeline.inboundEvents().test();
 
                 pipeline.processInbound(event);
@@ -134,12 +135,16 @@ class HandlerAdapterTest {
                         .assertValueCount(1)
                         .assertValue(event);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler(@Mock final IdentityPublicKey sender,
                                                          @Mock final RemoteMessage msg) {
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new))) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
                 pipeline.processInbound(sender, msg);
@@ -147,6 +152,9 @@ class HandlerAdapterTest {
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

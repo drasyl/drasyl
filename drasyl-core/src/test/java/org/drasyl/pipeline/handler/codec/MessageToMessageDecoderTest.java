@@ -53,42 +53,51 @@ class MessageToMessageDecoderTest {
 
     @Test
     void shouldCompleteExceptionallyOnException(@Mock final Address recipient) {
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
             @Override
             protected void decode(final HandlerContext ctx,
                                   final Address sender,
                                   final Object msg, final List<Object> out) throws Exception {
                 throw new Exception();
             }
-        })) {
+        });
+        try {
             assertThrows(ExecutionException.class, () -> pipeline.processInbound(recipient, new Object()).get());
+        }
+        finally {
+            pipeline.close();
         }
     }
 
     @Test
     void shouldCompleteExceptionallyOnEmptyEncodingResult(@Mock final Address recipient) {
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
             @Override
             protected void decode(final HandlerContext ctx,
                                   final Address sender,
                                   final Object msg, final List<Object> out) {
                 // do nothing
             }
-        })) {
+        });
+        try {
             assertThrows(ExecutionException.class, () -> pipeline.processInbound(recipient, new Object()).get());
+        }
+        finally {
+            pipeline.close();
         }
     }
 
     @Test
     void shouldPassEncodedResult(@Mock final Address recipient) {
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
             @Override
             protected void decode(final HandlerContext ctx,
                                   final Address sender,
                                   final Object msg, final List<Object> out) {
                 out.add("Hallo Welt");
             }
-        })) {
+        });
+        try {
             final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
             pipeline.processInbound(recipient, new Object());
@@ -97,11 +106,14 @@ class MessageToMessageDecoderTest {
                     .assertValueCount(1)
                     .assertValue("Hallo Welt");
         }
+        finally {
+            pipeline.close();
+        }
     }
 
     @Test
     void shouldCreateCombinedFutureOnMultiEncodingResult(@Mock final Address sender) {
-        try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
+        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
             @Override
             protected void decode(final HandlerContext ctx,
                                   final Address sender,
@@ -125,8 +137,12 @@ class MessageToMessageDecoderTest {
                     future.completeExceptionally(new Exception());
                 }
             }
-        })) {
+        });
+        try {
             assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, new Object()).get());
+        }
+        finally {
+            pipeline.close();
         }
     }
 }

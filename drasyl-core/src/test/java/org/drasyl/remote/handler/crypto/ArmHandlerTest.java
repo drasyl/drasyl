@@ -113,7 +113,8 @@ class ArmHandlerTest {
         @Test
         void shouldEncryptOutgoingMessageWithRecipientAndFromMe() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<ArmedMessage> outboundMessages = pipeline.outboundMessages(ArmedMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
@@ -138,12 +139,16 @@ class ArmHandlerTest {
                         .assertValueAt(1, m -> m.disarm(Crypto.INSTANCE, sessionPairReceiver) instanceof KeyExchangeMessage);
                 assertTrue(future.isDone());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldNotEncryptOutgoingMessageWithSenderThatIsNotMe() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
@@ -167,12 +172,16 @@ class ArmHandlerTest {
                         .assertValue(msg);
                 assertTrue(future.isDone());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldNotEncryptOutgoingMessageWithNoRecipient() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
@@ -190,12 +199,16 @@ class ArmHandlerTest {
                         .assertValue(msg);
                 assertTrue(future.isDone());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldNotEncryptOutgoingMessageWithLoopback() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
@@ -217,6 +230,9 @@ class ArmHandlerTest {
                         .assertValue(msg);
                 assertTrue(future.isDone());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -236,7 +252,8 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
@@ -259,6 +276,9 @@ class ArmHandlerTest {
                         .assertValue(v -> msg.equals(v.disarm(Crypto.INSTANCE, sessionPairReceiver)));
                 assertTrue(future.isDone());
             }
+            finally {
+                pipeline.close();
+            }
         }
     }
 
@@ -267,7 +287,8 @@ class ArmHandlerTest {
         @Test
         void shouldSendKeyExchangeMessageOnOutbound() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
@@ -290,12 +311,16 @@ class ArmHandlerTest {
                         .assertValueAt(1, m -> m.disarm(Crypto.INSTANCE, sessionPairReceiver) instanceof KeyExchangeMessage);
                 assertTrue(future.isDone());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldNotSendKeyExchangeMessageOnOutboundIfMaxAgreementOptionIsZero() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
@@ -316,13 +341,17 @@ class ArmHandlerTest {
                         .assertValueCount(1);
                 assertTrue(future.isDone());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldNotSendKeyExchangeMessageOnInbound() throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
@@ -345,13 +374,17 @@ class ArmHandlerTest {
                         .assertNoValues();
                 assertTrue(future.isDone());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldSendKeyExchangeMessageOnInboundOnUnknownAgreementId() throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
                 // construct wrong agreement id
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_3.getKeyAgreementPublicKey());
@@ -376,6 +409,9 @@ class ArmHandlerTest {
                         .assertValue(m -> m.disarmAndRelease(Crypto.INSTANCE, sessionPairReceiver) instanceof KeyExchangeMessage);
                 assertTrue(future.isCompletedExceptionally());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -395,7 +431,8 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            try {
                 final TestObserver<Event> observer = pipeline.inboundEvents().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
@@ -419,6 +456,9 @@ class ArmHandlerTest {
                 observer.assertValueCount(1)
                         .assertValue(v -> v instanceof PerfectForwardSecrecyEncryptionEvent);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -438,7 +478,8 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            try {
                 final TestObserver<Event> observer = pipeline.inboundEvents().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
@@ -465,6 +506,9 @@ class ArmHandlerTest {
                 observer.assertValueCount(1)
                         .assertValue(v -> v instanceof PerfectForwardSecrecyEncryptionEvent);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -474,7 +518,8 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            try {
                 final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
                 final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
 
@@ -500,6 +545,9 @@ class ArmHandlerTest {
                         .assertValue(v -> v.disarm(Crypto.INSTANCE, sessionPairSender) instanceof KeyExchangeMessage);
                 observerEvents.assertNoValues();
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -513,7 +561,8 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            try {
                 final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
@@ -538,6 +587,9 @@ class ArmHandlerTest {
                 assertEquals(0, session.getInitializedAgreements().size());
                 observerEvents.assertNoValues();
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -557,7 +609,8 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            try {
                 final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
@@ -581,6 +634,9 @@ class ArmHandlerTest {
                 assertEquals(keyPair.getPublicKey(), session.getCurrentInactiveAgreement().getValue().get().getRecipientsKeyAgreementKey().get());
                 observerEvents.assertNoValues();
             }
+            finally {
+                pipeline.close();
+            }
         }
     }
 
@@ -597,7 +653,8 @@ class ArmHandlerTest {
                                                                               @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException, CryptoException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
@@ -629,6 +686,9 @@ class ArmHandlerTest {
                 future.join();
                 observer.assertValue(armedMsg);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -641,7 +701,8 @@ class ArmHandlerTest {
                                                                              @Mock final Crypto crypto) throws CryptoException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<ArmedMessage> observer = pipeline.outboundMessages(ArmedMessage.class).test();
 
                 doReturn(new byte[]{}).when(crypto).encrypt(any(), any(), any(), any());
@@ -669,6 +730,9 @@ class ArmHandlerTest {
                         .awaitCount(2)
                         .assertValueAt(0, Objects::nonNull);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -682,7 +746,8 @@ class ArmHandlerTest {
                                                                        @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.outboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
@@ -706,6 +771,9 @@ class ArmHandlerTest {
                 future.join();
                 observer.assertValue(armedMsg);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -719,7 +787,8 @@ class ArmHandlerTest {
                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Agreement agreement) {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> outObserver = pipeline.outboundMessages(RemoteMessage.class).test();
                 final TestObserver<FullReadMessage> inObserver = pipeline.inboundMessages(FullReadMessage.class).test();
 
@@ -740,6 +809,9 @@ class ArmHandlerTest {
                 outObserver.assertNoValues();
                 inObserver.assertValueCount(1);
             }
+            finally {
+                pipeline.close();
+            }
         }
     }
 
@@ -749,7 +821,8 @@ class ArmHandlerTest {
         void shouldSkipMessagesNotForMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
@@ -761,13 +834,17 @@ class ArmHandlerTest {
                         .assertValueCount(1)
                         .assertValue(msg);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldSkipMessagesFromMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -780,6 +857,9 @@ class ArmHandlerTest {
                         .assertValueCount(1)
                         .assertValue(msg);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -790,7 +870,8 @@ class ArmHandlerTest {
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
@@ -808,6 +889,9 @@ class ArmHandlerTest {
                         .assertValueCount(1)
                         .assertValue(disarmedMessage);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -818,7 +902,8 @@ class ArmHandlerTest {
                                                                            @Mock final FullReadMessage<?> disarmedMsg) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, 0, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
@@ -836,6 +921,9 @@ class ArmHandlerTest {
                         .assertValueCount(1)
                         .assertValue(disarmedMsg);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -846,7 +934,8 @@ class ArmHandlerTest {
                                             @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
@@ -864,6 +953,9 @@ class ArmHandlerTest {
                         .assertValueCount(1)
                         .assertValue(disarmedMessage);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -875,7 +967,8 @@ class ArmHandlerTest {
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<FullReadMessage<?>> observer = pipeline.inboundMessages(new TypeReference<FullReadMessage<?>>() {
                 }).test();
 
@@ -900,6 +993,9 @@ class ArmHandlerTest {
                         .assertValue(disarmedMessage);
                 assertTrue(agreements.isEmpty());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
@@ -911,7 +1007,8 @@ class ArmHandlerTest {
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final TestObserver<RemoteMessage> observer = pipeline.inboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
@@ -936,6 +1033,9 @@ class ArmHandlerTest {
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(disarmedMessage);
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

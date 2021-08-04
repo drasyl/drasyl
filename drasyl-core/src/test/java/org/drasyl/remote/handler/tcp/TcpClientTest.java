@@ -86,10 +86,14 @@ public class TcpClientTest {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(superPeerChannel.channel()).close();
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -98,10 +102,14 @@ public class TcpClientTest {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processInbound(event).join();
 
                 verify(superPeerChannel.channel()).close();
+            }
+            finally {
+                pipeline.close();
             }
         }
     }
@@ -111,7 +119,8 @@ public class TcpClientTest {
         @Test
         void shouldPasstroughInboundMessages(@Mock final Address sender, @Mock final Object msg) {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
@@ -119,6 +128,9 @@ public class TcpClientTest {
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(msg);
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -131,7 +143,8 @@ public class TcpClientTest {
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1337);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                 pipeline.processInbound(sender, msg).join();
@@ -144,13 +157,17 @@ public class TcpClientTest {
                 verify(superPeerChannel.channel()).close();
                 assertEquals(0, noResponseFromSuperPeerSince.get());
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldPasstroughOutboundMessagesWhenNoTcpConnectionIsPresent(@Mock final InetSocketAddressWrapper recipient,
                                                                           @Mock final ByteBuf msg) {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg).join();
@@ -158,6 +175,9 @@ public class TcpClientTest {
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(msg);
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -171,13 +191,17 @@ public class TcpClientTest {
             when(channelFuture.isSuccess()).thenReturn(true);
 
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                 pipeline.processOutbound(recipient, msg).join();
 
                 verify(superPeerChannel.channel()).writeAndFlush(msg);
                 outboundMessages.assertEmpty();
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -197,11 +221,15 @@ public class TcpClientTest {
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, null);
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            try {
                 pipeline.processOutbound(recipient, msg).join();
 
                 verify(bootstrap.handler(any())).connect(any(InetSocketAddress.class));
                 verify(superPeerChannel).addListener(any());
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

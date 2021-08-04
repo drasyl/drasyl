@@ -78,7 +78,8 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
     class Outbound {
         @Test
         void shouldSkipOnNullReceiver(@Mock final Address recipient) {
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
                 final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
@@ -87,6 +88,9 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
 
                 testObserver.awaitCount(1)
                         .assertValueCount(1);
+            }
+            finally {
+                pipeline.close();
             }
         }
 
@@ -108,7 +112,8 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                 }
             };
 
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
                 final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
@@ -118,11 +123,15 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                 testObserver.awaitCount(1)
                         .assertNoValues();
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldSkipIfMessageComesNotFromMe(@Mock final Address recipient) {
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
 
                 final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
@@ -132,11 +141,15 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                 testObserver.awaitCount(1)
                         .assertValueCount(1);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldSkipIfMessageIsForMe(@Mock final Address recipient) {
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
 
                 final TestObserver<Object> testObserver = pipeline.outboundMessages().test();
@@ -146,6 +159,9 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                 testObserver.awaitCount(1)
                         .assertValueCount(1);
             }
+            finally {
+                pipeline.close();
+            }
         }
     }
 
@@ -153,7 +169,8 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
     class Inbound {
         @Test
         void shouldSkipOnNullReceiver(@Mock final Address sender) {
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
                 final TestObserver<Object> testObserver = pipeline.inboundMessages().test();
@@ -163,11 +180,15 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                 testObserver.awaitCount(1)
                         .assertValueCount(1);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldSkipIfMessageComesFromMe(@Mock final Address sender) {
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
 
                 final TestObserver<Object> testObserver = pipeline.inboundMessages().test();
@@ -177,11 +198,15 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                 testObserver.awaitCount(1)
                         .assertValueCount(1);
             }
+            finally {
+                pipeline.close();
+            }
         }
 
         @Test
         void shouldSkipIfMessageIsNotForMe(@Mock final Address sender) {
-            try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler)) {
+            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
 
                 final TestObserver<Object> testObserver = pipeline.inboundMessages().test();
@@ -190,6 +215,9 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
 
                 testObserver.awaitCount(1)
                         .assertValueCount(1);
+            }
+            finally {
+                pipeline.close();
             }
         }
     }

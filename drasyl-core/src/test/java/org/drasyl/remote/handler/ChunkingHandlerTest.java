@@ -96,7 +96,8 @@ class ChunkingHandlerTest {
                 when(identity.getIdentityPublicKey()).thenReturn(ID_2.getIdentityPublicKey());
 
                 final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+                final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+                try {
                     final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                     final ByteBuf bytes = Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]);
@@ -105,6 +106,9 @@ class ChunkingHandlerTest {
 
                     inboundMessages.await(1, SECONDS);
                     inboundMessages.assertNoValues();
+                }
+                finally {
+                    pipeline.close();
                 }
             }
 
@@ -115,7 +119,8 @@ class ChunkingHandlerTest {
                 when(identity.getIdentityPublicKey()).thenReturn(ID_2.getIdentityPublicKey());
 
                 final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+                final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+                try {
                     final TestObserver<UnarmedMessage> inboundMessages = pipeline.inboundMessages(UnarmedMessage.class).test();
 
                     final ByteBuf bytes = Unpooled.buffer();
@@ -132,6 +137,9 @@ class ChunkingHandlerTest {
                             .assertValueCount(1)
                             .assertValueAt(0, m -> m.read().equals(message));
                 }
+                finally {
+                    pipeline.close();
+                }
             }
 
             @Test
@@ -145,7 +153,8 @@ class ChunkingHandlerTest {
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+                final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+                try {
                     final TestObserver<Object> inboundMessages = pipeline.inboundMessages().test();
 
                     // head chunk
@@ -178,6 +187,9 @@ class ChunkingHandlerTest {
                     inboundMessages.await(1, SECONDS);
                     inboundMessages.assertNoValues();
                 }
+                finally {
+                    pipeline.close();
+                }
             }
         }
 
@@ -190,7 +202,8 @@ class ChunkingHandlerTest {
 
                 final Handler handler = new ChunkingHandler();
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
-                try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+                final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+                try {
                     final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
                     pipeline.processInbound(sender, msg).join();
@@ -198,6 +211,9 @@ class ChunkingHandlerTest {
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
                             .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+                }
+                finally {
+                    pipeline.close();
                 }
             }
 
@@ -208,7 +224,8 @@ class ChunkingHandlerTest {
                 final Nonce nonce = randomNonce();
 
                 final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+                final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+                try {
                     final TestObserver<ChunkMessage> inboundMessages = pipeline.inboundMessages(ChunkMessage.class).test();
 
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
@@ -226,6 +243,9 @@ class ChunkingHandlerTest {
                         inboundMessages.awaitCount(1)
                                 .assertValueCount(1);
                     }
+                }
+                finally {
+                    pipeline.close();
                 }
             }
         }
@@ -249,7 +269,8 @@ class ChunkingHandlerTest {
                 final Handler handler = new ChunkingHandler();
                 final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]))
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
-                try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+                final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+                try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
                     pipeline.processOutbound(recipientAddress, msg).join();
@@ -257,6 +278,9 @@ class ChunkingHandlerTest {
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
                             .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
+                }
+                finally {
+                    pipeline.close();
                 }
             }
 
@@ -271,11 +295,15 @@ class ChunkingHandlerTest {
 
                 final Handler handler = new ChunkingHandler();
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMaxContentLength]));
-                try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+                final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+                try {
                     final TestObserver<Object> outboundMessages = pipeline.outboundMessages().test();
 
                     assertThrows(ExecutionException.class, pipeline.processOutbound(address, msg)::get);
                     outboundMessages.assertNoValues();
+                }
+                finally {
+                    pipeline.close();
                 }
             }
 
@@ -293,7 +321,8 @@ class ChunkingHandlerTest {
                 final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, byte[].class.getName(), ByteString.copyFrom(randomBytes(remoteMessageMtu * 2)))
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
                 final Handler handler = new ChunkingHandler();
-                try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+                final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+                try {
                     final TestObserver<ChunkMessage> outboundMessages = pipeline.outboundMessages(ChunkMessage.class).test();
 
                     pipeline.processOutbound(address, msg).join();
@@ -303,6 +332,9 @@ class ChunkingHandlerTest {
                             .assertValueAt(0, m -> m instanceof HeadChunkMessage && ((HeadChunkMessage) m).getTotalChunks().getValue() == 3 && m.getBytes().readableBytes() <= remoteMessageMtu)
                             .assertValueAt(1, m -> m instanceof BodyChunkMessage && ((BodyChunkMessage) m).getChunkNo().getValue() == 1 && m.getBytes().readableBytes() <= remoteMessageMtu)
                             .assertValueAt(2, m -> m instanceof BodyChunkMessage && ((BodyChunkMessage) m).getChunkNo().getValue() == 2 && m.getBytes().readableBytes() <= remoteMessageMtu);
+                }
+                finally {
+                    pipeline.close();
                 }
             }
         }
@@ -316,7 +348,8 @@ class ChunkingHandlerTest {
 
                 final Handler handler = new ChunkingHandler();
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
-                try (final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler)) {
+                final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+                try {
                     final @NonNull TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
                     pipeline.processOutbound(recipientAddress, msg).join();
@@ -324,6 +357,9 @@ class ChunkingHandlerTest {
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
                             .assertValue(new DefaultAddressedEnvelope<>(null, recipientAddress, msg));
+                }
+                finally {
+                    pipeline.close();
                 }
             }
         }
