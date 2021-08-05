@@ -49,25 +49,6 @@ public class MigrationPipeline implements ChannelPipeline {
         this.channelPipeline = requireNonNull(channelPipeline);
     }
 
-    public CompletableFuture<Void> processInbound(final Address sender,
-                                                  final Object msg) {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
-        return future;
-    }
-
-    public CompletableFuture<Void> processInbound(final Event event) {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        fireUserEventTriggered(new MigrationEvent(event, future));
-        return future;
-    }
-
-    public CompletableFuture<Void> processOutbound(final Address recipient, final Object msg) {
-        final ChannelPromise promise = channelPipeline.newPromise();
-        writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);
-        return FutureUtil.toFuture(promise);
-    }
-
     @Override
     public ChannelPipeline addFirst(final String name, final ChannelHandler handler) {
         return null;
@@ -415,5 +396,24 @@ public class MigrationPipeline implements ChannelPipeline {
     @Override
     public Iterator<Map.Entry<String, ChannelHandler>> iterator() {
         return null;
+    }
+
+    public CompletableFuture<Void> processInbound(final Address sender,
+                                                  final Object msg) {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+        return future;
+    }
+
+    public CompletableFuture<Void> processInbound(final Event event) {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        fireUserEventTriggered(new MigrationEvent(event, future));
+        return future;
+    }
+
+    public CompletableFuture<Void> processOutbound(final Address recipient, final Object msg) {
+        final ChannelPromise promise = channelPipeline.newPromise();
+        writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);
+        return FutureUtil.toFuture(promise);
     }
 }
