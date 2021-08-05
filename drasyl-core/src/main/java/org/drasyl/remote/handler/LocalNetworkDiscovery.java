@@ -21,7 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -67,10 +67,10 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
     private static final Object path = LocalNetworkDiscovery.class;
     private final Map<IdentityPublicKey, Peer> peers;
-    private Disposable pingDisposable;
+    private MigrationDisposable pingDisposable;
 
     public LocalNetworkDiscovery(final Map<IdentityPublicKey, Peer> peers,
-                                 final Disposable pingDisposable) {
+                                 final MigrationDisposable pingDisposable) {
         this.peers = requireNonNull(peers);
         this.pingDisposable = pingDisposable;
     }
@@ -109,7 +109,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     synchronized void stopHeartbeat() {
         if (pingDisposable != null) {
             LOG.debug("Stop Network Host Discovery...");
-            pingDisposable.dispose();
+            pingDisposable.cancel(false);
             pingDisposable = null;
             LOG.debug("Network Discovery stopped.");
         }

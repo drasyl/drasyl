@@ -21,10 +21,10 @@
  */
 package org.drasyl.plugin.groups.client;
 
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
@@ -73,7 +73,7 @@ class GroupsClientHandlerTest {
     @Mock
     private MigrationHandlerContext ctx;
     @Mock
-    private HashMap<Group, Disposable> renewTasks;
+    private HashMap<Group, MigrationDisposable> renewTasks;
     @Mock
     private Map<Group, GroupUri> groups;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -112,13 +112,13 @@ class GroupsClientHandlerTest {
     @Nested
     class HandlerRemoved {
         @Test
-        void shouldStopRenewTasks(@Mock final Disposable disposable) {
-            final Map<Group, Disposable> renewTasks = new HashMap<>(Map.of(group, disposable));
+        void shouldStopRenewTasks(@Mock final MigrationDisposable disposable) {
+            final Map<Group, MigrationDisposable> renewTasks = new HashMap<>(Map.of(group, disposable));
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay);
 
             handler.onRemoved(ctx);
 
-            verify(disposable).dispose();
+            verify(disposable).cancel(false);
             assertTrue(renewTasks.isEmpty());
         }
 

@@ -29,7 +29,6 @@ import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.concurrent.SucceededFuture;
 import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.pipeline.Handler;
 
 import java.util.Collection;
@@ -219,21 +218,21 @@ public class MigrationScheduler implements EventExecutor {
         executor.execute(command);
     }
 
-    public @NonNull Disposable scheduleDirect(@NonNull final Runnable run) {
+    public @NonNull MigrationDisposable scheduleDirect(@NonNull final Runnable run) {
         execute(run);
         return new MigrationDisposable(new SucceededFuture<>(null, null));
     }
 
-    public @NonNull Disposable scheduleDirect(@NonNull final Runnable run,
-                                              final long delay,
-                                              @NonNull final TimeUnit unit) {
+    public @NonNull MigrationDisposable scheduleDirect(@NonNull final Runnable run,
+                                                       final long delay,
+                                                       @NonNull final TimeUnit unit) {
         return new MigrationDisposable(schedule(run, delay, unit));
     }
 
-    public @NonNull Disposable schedulePeriodicallyDirect(@NonNull final Runnable run,
-                                                          final long initialDelay,
-                                                          final long period,
-                                                          @NonNull final TimeUnit unit) {
+    public @NonNull MigrationDisposable schedulePeriodicallyDirect(@NonNull final Runnable run,
+                                                                   final long initialDelay,
+                                                                   final long period,
+                                                                   @NonNull final TimeUnit unit) {
         return new MigrationDisposable(scheduleAtFixedRate(run, initialDelay, period, unit));
     }
 }

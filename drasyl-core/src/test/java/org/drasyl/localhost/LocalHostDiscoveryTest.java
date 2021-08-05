@@ -21,10 +21,10 @@
  */
 package org.drasyl.localhost;
 
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -94,9 +94,9 @@ class LocalHostDiscoveryTest {
     private ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<IdentityPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
     @Mock
-    private Disposable watchDisposable;
+    private MigrationDisposable watchDisposable;
     @Mock
-    private Disposable postDisposable;
+    private MigrationDisposable postDisposable;
 
     @Nested
     class StartDiscovery {
@@ -261,8 +261,8 @@ class LocalHostDiscoveryTest {
             try {
                 pipeline.processInbound(event).join();
 
-                verify(watchDisposable).dispose();
-                verify(postDisposable).dispose();
+                verify(watchDisposable).cancel(false);
+                verify(postDisposable).cancel(false);
                 assertTrue(routes.isEmpty());
             }
             finally {
@@ -281,8 +281,8 @@ class LocalHostDiscoveryTest {
             try {
                 pipeline.processInbound(event).join();
 
-                verify(watchDisposable).dispose();
-                verify(postDisposable).dispose();
+                verify(watchDisposable).cancel(false);
+                verify(postDisposable).cancel(false);
                 assertTrue(routes.isEmpty());
             }
             finally {

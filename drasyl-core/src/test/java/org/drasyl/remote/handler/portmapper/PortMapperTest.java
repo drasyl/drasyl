@@ -22,10 +22,10 @@
 package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -107,7 +107,7 @@ class PortMapperTest {
         @Test
         void shouldStopCurrentMethodOnNodeUnrecoverableErrorEvent(@Mock final PortMapping method,
                                                                   @Mock final NodeUnrecoverableErrorEvent event,
-                                                                  @Mock final Disposable retryTask) {
+                                                                  @Mock final MigrationDisposable retryTask) {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, retryTask);
@@ -121,7 +121,7 @@ class PortMapperTest {
                 inboundEvents.awaitCount(1)
                         .assertValueCount(1);
                 verify(method).stop(any());
-                verify(retryTask).dispose();
+                verify(retryTask).cancel(false);
             }
             finally {
                 pipeline.drasylClose();

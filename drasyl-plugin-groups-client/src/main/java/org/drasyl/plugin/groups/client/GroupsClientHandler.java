@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.client;
 
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
@@ -64,11 +64,11 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     private static final Duration FIRST_JOIN_DELAY = Duration.ofSeconds(5);
     private final Duration firstJoinDelay;
     private final Map<Group, GroupUri> groups;
-    private final Map<Group, Disposable> renewTasks;
+    private final Map<Group, MigrationDisposable> renewTasks;
 
     @SuppressWarnings("java:S2384")
     GroupsClientHandler(final Map<Group, GroupUri> groups,
-                        final Map<Group, Disposable> renewTasks,
+                        final Map<Group, MigrationDisposable> renewTasks,
                         final Duration firstJoinDelay) {
         this.groups = requireNonNull(groups);
         this.renewTasks = requireNonNull(renewTasks);
@@ -89,8 +89,8 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     @Override
     public void onRemoved(final MigrationHandlerContext ctx) {
         // Stop all renew tasks
-        for (final Disposable renewTask : renewTasks.values()) {
-            renewTask.dispose();
+        for (final MigrationDisposable renewTask : renewTasks.values()) {
+            renewTask.cancel(false);
         }
         renewTasks.clear();
 
@@ -173,9 +173,9 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         final Group group = msg.getGroup();
 
         // cancel renew task
-        final Disposable disposable = renewTasks.remove(group);
+        final MigrationDisposable disposable = renewTasks.remove(group);
         if (disposable != null) {
-            disposable.dispose();
+            disposable.cancel(false);
         }
 
         FutureCombiner.getInstance()
@@ -198,9 +198,9 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
 
         if (msg.getMember().equals(ctx.identity().getIdentityPublicKey())) {
             // cancel renew task
-            final Disposable disposable = renewTasks.remove(group);
+            final MigrationDisposable disposable = renewTasks.remove(group);
             if (disposable != null) {
-                disposable.dispose();
+                disposable.cancel(false);
             }
 
             FutureCombiner.getInstance()
@@ -230,9 +230,9 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         final Duration timeout = groups.get(group).getTimeout();
 
         // replace old re-try task with renew task
-        final Disposable disposable = renewTasks.remove(group);
+        final MigrationDisposable disposable = renewTasks.remove(group);
         if (disposable != null) {
-            disposable.dispose();
+            disposable.cancel(false);
         }
 
         // Add renew task

@@ -21,10 +21,10 @@
  */
 package org.drasyl.plugin.groups.manager;
 
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationScheduler;
 import org.drasyl.event.Event;
@@ -92,7 +92,7 @@ class GroupsManagerHandlerTest {
     @Mock
     private Pipeline pipeline;
     @Mock
-    private Disposable staleTask;
+    private MigrationDisposable staleTask;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
@@ -155,7 +155,7 @@ class GroupsManagerHandlerTest {
 
             handler.onRemoved(ctx);
 
-            verify(staleTask).dispose();
+            verify(staleTask).cancel(false);
         }
     }
 

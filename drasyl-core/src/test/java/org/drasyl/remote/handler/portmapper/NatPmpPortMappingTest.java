@@ -23,7 +23,7 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.event.NodeUpEvent;
@@ -72,15 +72,15 @@ class NatPmpPortMappingTest {
         @Test
         void shouldDestroyMapping(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                   @Mock final InetAddress externalAddress,
-                                  @Mock final Disposable timeoutGuard,
-                                  @Mock final Disposable refreshTask,
+                                  @Mock final MigrationDisposable timeoutGuard,
+                                  @Mock final MigrationDisposable refreshTask,
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
             final AtomicBoolean externalAddressRequested = new AtomicBoolean();
             final AtomicBoolean mappingRequested = new AtomicBoolean();
             new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, new InetSocketAddressWrapper(12345), externalAddress, timeoutGuard, refreshTask, null, defaultGatewaySupplier).stop(ctx);
 
-            verify(timeoutGuard).dispose();
-            verify(refreshTask).dispose();
+            verify(timeoutGuard).cancel(false);
+            verify(refreshTask).cancel(false);
             verify(ctx).passOutbound(any(), any(), any());
         }
     }
@@ -104,7 +104,7 @@ class NatPmpPortMappingTest {
             @Test
             void shouldScheduleRefreshOnMappingMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                        @Mock final InetSocketAddressWrapper sender,
-                                                       @Mock final Disposable timeoutGuard,
+                                                       @Mock final MigrationDisposable timeoutGuard,
                                                        @Mock final InetAddress externalAddress,
                                                        @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
                 final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008100000004f9bf63f163f100000258"));
@@ -112,7 +112,7 @@ class NatPmpPortMappingTest {
                 final AtomicBoolean mappingRequested = new AtomicBoolean(true);
                 new NatPmpPortMapping(externalAddressRequested, mappingRequested, 25585, new InetSocketAddressWrapper(12345), externalAddress, timeoutGuard, null, null, defaultGatewaySupplier).handleMessage(ctx, sender, byteBuf);
 
-                verify(timeoutGuard).dispose();
+                verify(timeoutGuard).cancel(false);
                 verify(ctx.independentScheduler()).scheduleDirect(any(), eq((long) 300), eq(SECONDS));
             }
         }
@@ -134,16 +134,16 @@ class NatPmpPortMappingTest {
     class Fail {
         @Test
         void shouldDisposeAllTasks(
-                @Mock final Disposable timeoutGuard,
-                @Mock final Disposable refreshTask,
+                @Mock final MigrationDisposable timeoutGuard,
+                @Mock final MigrationDisposable refreshTask,
                 @Mock final Runnable onFailure,
                 @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
             final AtomicBoolean externalAddressRequested = new AtomicBoolean();
             final AtomicBoolean mappingRequested = new AtomicBoolean();
             new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, null, null, timeoutGuard, refreshTask, onFailure, defaultGatewaySupplier).fail();
 
-            verify(timeoutGuard).dispose();
-            verify(refreshTask).dispose();
+            verify(timeoutGuard).cancel(false);
+            verify(refreshTask).cancel(false);
             verify(onFailure).run();
         }
     }

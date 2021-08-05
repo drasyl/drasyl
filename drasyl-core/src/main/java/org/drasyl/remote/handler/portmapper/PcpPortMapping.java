@@ -24,7 +24,7 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -74,8 +74,8 @@ public class PcpPortMapping implements PortMapping {
     private Runnable onFailure;
     private byte[] nonce;
     private InetSocketAddressWrapper defaultGateway;
-    private Disposable timeoutGuard;
-    private Disposable refreshTask;
+    private MigrationDisposable timeoutGuard;
+    private MigrationDisposable refreshTask;
     private Set<InetAddress> interfaces;
     private final Supplier<InetAddress> defaultGatewaySupplier;
     private final Supplier<Set<InetAddress>> interfacesSupplier;
@@ -86,8 +86,8 @@ public class PcpPortMapping implements PortMapping {
                    final Runnable onFailure,
                    final byte[] nonce,
                    final InetSocketAddressWrapper defaultGateway,
-                   final Disposable timeoutGuard,
-                   final Disposable refreshTask,
+                   final MigrationDisposable timeoutGuard,
+                   final MigrationDisposable refreshTask,
                    final Set<InetAddress> interfaces,
                    final Supplier<InetAddress> defaultGatewaySupplier,
                    final Supplier<Set<InetAddress>> interfaceSupplier) {
@@ -185,10 +185,10 @@ public class PcpPortMapping implements PortMapping {
 
     private synchronized void unmapPort(final MigrationHandlerContext ctx) {
         if (timeoutGuard != null) {
-            timeoutGuard.dispose();
+            timeoutGuard.cancel(false);
         }
         if (refreshTask != null) {
-            refreshTask.dispose();
+            refreshTask.cancel(false);
             LOG.debug("Destroy mapping by creating a mapping request with zero lifetime.");
             for (final InetAddress clientAddress : interfaces) {
                 requestMapping(ctx, Duration.ZERO, clientAddress, nonce, PROTO_UDP, port, ZERO_IPV4);
@@ -198,11 +198,11 @@ public class PcpPortMapping implements PortMapping {
 
     synchronized void fail() {
         if (timeoutGuard != null) {
-            timeoutGuard.dispose();
+            timeoutGuard.cancel(false);
             timeoutGuard = null;
         }
         if (refreshTask != null) {
-            refreshTask.dispose();
+            refreshTask.cancel(false);
             refreshTask = null;
         }
         if (onFailure != null) {
@@ -237,7 +237,7 @@ public class PcpPortMapping implements PortMapping {
         if (mappingRequested.get() > 0) {
             final int openRequests = mappingRequested.decrementAndGet();
             if (message.getResultCode() == SUCCESS) {
-                timeoutGuard.dispose();
+                timeoutGuard.cancel(false);
                 if (message.getExternalSuggestedPort() == port) {
                     mappingRequested.set(0);
                     //noinspection unchecked

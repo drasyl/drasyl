@@ -23,7 +23,7 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.event.NodeUpEvent;
@@ -58,9 +58,9 @@ public class UpnpIgdPortMappingTest {
         @Test
         void shouldStartSsdpDiscovery(@Mock final UpnpIgdUtil upnpIgdUtil,
                                       @Mock final Set<URI> ssdpServices,
-                                      @Mock final Disposable timeoutGuard,
-                                      @Mock final Disposable ssdpDiscoverTask,
-                                      @Mock final Disposable refreshTask,
+                                      @Mock final MigrationDisposable timeoutGuard,
+                                      @Mock final MigrationDisposable ssdpDiscoverTask,
+                                      @Mock final MigrationDisposable refreshTask,
                                       @Mock final Service upnpService,
                                       @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                       @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
@@ -74,9 +74,9 @@ public class UpnpIgdPortMappingTest {
         class OnDiscoveryTimeout {
             @Test
             void shouldScheduleRefreshWhenMappingCouldBeCreated(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                                @Mock final Disposable timeoutGuard,
-                                                                @Mock final Disposable ssdpDiscoverTask,
-                                                                @Mock final Disposable refreshTask,
+                                                                @Mock final MigrationDisposable timeoutGuard,
+                                                                @Mock final MigrationDisposable ssdpDiscoverTask,
+                                                                @Mock final MigrationDisposable refreshTask,
                                                                 @Mock final Service upnpService,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
@@ -98,9 +98,9 @@ public class UpnpIgdPortMappingTest {
 
             @Test
             void shouldScheduleRefreshWhenThereIsAnExistingMapping(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                                   @Mock final Disposable timeoutGuard,
-                                                                   @Mock final Disposable ssdpDiscoverTask,
-                                                                   @Mock final Disposable refreshTask,
+                                                                   @Mock final MigrationDisposable timeoutGuard,
+                                                                   @Mock final MigrationDisposable ssdpDiscoverTask,
+                                                                   @Mock final MigrationDisposable refreshTask,
                                                                    @Mock final Service upnpService,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
@@ -126,9 +126,9 @@ public class UpnpIgdPortMappingTest {
             class WhenMappingFailed {
                 @Test
                 void shouldFailIfServiceDetailsCouldNotObtained(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                                @Mock final Disposable timeoutGuard,
-                                                                @Mock final Disposable ssdpDiscoverTask,
-                                                                @Mock final Disposable refreshTask,
+                                                                @Mock final MigrationDisposable timeoutGuard,
+                                                                @Mock final MigrationDisposable ssdpDiscoverTask,
+                                                                @Mock final MigrationDisposable refreshTask,
                                                                 @Mock final Service upnpService,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
@@ -150,9 +150,9 @@ public class UpnpIgdPortMappingTest {
 
                 @Test
                 void shouldFailIfStatusInfoCouldNotObtained(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                            @Mock final Disposable timeoutGuard,
-                                                            @Mock final Disposable ssdpDiscoverTask,
-                                                            @Mock final Disposable refreshTask,
+                                                            @Mock final MigrationDisposable timeoutGuard,
+                                                            @Mock final MigrationDisposable ssdpDiscoverTask,
+                                                            @Mock final MigrationDisposable refreshTask,
                                                             @Mock final Service upnpService,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
@@ -174,9 +174,9 @@ public class UpnpIgdPortMappingTest {
 
                 @Test
                 void shouldFailIfExternalAddressCouldNotObtained(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                                 @Mock final Disposable timeoutGuard,
-                                                                 @Mock final Disposable ssdpDiscoverTask,
-                                                                 @Mock final Disposable refreshTask,
+                                                                 @Mock final MigrationDisposable timeoutGuard,
+                                                                 @Mock final MigrationDisposable ssdpDiscoverTask,
+                                                                 @Mock final MigrationDisposable refreshTask,
                                                                  @Mock final Service upnpService,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
@@ -199,9 +199,9 @@ public class UpnpIgdPortMappingTest {
 
                 @Test
                 void shouldFailIfMappingRequestFailed(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                      @Mock final Disposable timeoutGuard,
-                                                      @Mock final Disposable ssdpDiscoverTask,
-                                                      @Mock final Disposable refreshTask,
+                                                      @Mock final MigrationDisposable timeoutGuard,
+                                                      @Mock final MigrationDisposable ssdpDiscoverTask,
+                                                      @Mock final MigrationDisposable refreshTask,
                                                       @Mock final Service upnpService,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
@@ -230,9 +230,9 @@ public class UpnpIgdPortMappingTest {
         @Test
         void shouldDestroyMapping(@Mock final UpnpIgdUtil upnpIgdUtil,
                                   @Mock final Set<URI> ssdpServices,
-                                  @Mock final Disposable timeoutGuard,
-                                  @Mock final Disposable ssdpDiscoverTask,
-                                  @Mock final Disposable refreshTask,
+                                  @Mock final MigrationDisposable timeoutGuard,
+                                  @Mock final MigrationDisposable ssdpDiscoverTask,
+                                  @Mock final MigrationDisposable refreshTask,
                                   @Mock final Service upnpService,
                                   @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) throws InterruptedException {
             when(ctx.independentScheduler().scheduleDirect(any())).then(invocation -> {
@@ -251,9 +251,9 @@ public class UpnpIgdPortMappingTest {
     class HandleMessage {
         @Test
         void shouldHandleIncomingSsdpPacket(@Mock final UpnpIgdUtil upnpIgdUtil,
-                                            @Mock final Disposable timeoutGuard,
-                                            @Mock final Disposable ssdpDiscoverTask,
-                                            @Mock final Disposable refreshTask,
+                                            @Mock final MigrationDisposable timeoutGuard,
+                                            @Mock final MigrationDisposable ssdpDiscoverTask,
+                                            @Mock final MigrationDisposable refreshTask,
                                             @Mock final Service upnpService,
                                             @Mock final Runnable onFailure,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
@@ -269,15 +269,15 @@ public class UpnpIgdPortMappingTest {
     class Fail {
         @Test
         void shouldDisposeAllTasks(@Mock final UpnpIgdUtil upnpIgdUtil,
-                                   @Mock final Disposable timeoutGuard,
-                                   @Mock final Disposable ssdpDiscoverTask,
-                                   @Mock final Disposable refreshTask,
+                                   @Mock final MigrationDisposable timeoutGuard,
+                                   @Mock final MigrationDisposable ssdpDiscoverTask,
+                                   @Mock final MigrationDisposable refreshTask,
                                    @Mock final Service upnpService,
                                    @Mock final Runnable onFailure) {
             new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, new HashSet<>(), null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, onFailure).fail();
 
-            verify(timeoutGuard).dispose();
-            verify(refreshTask).dispose();
+            verify(timeoutGuard).cancel(false);
+            verify(refreshTask).cancel(false);
             verify(onFailure).run();
         }
     }

@@ -24,7 +24,7 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -72,8 +72,8 @@ public class NatPmpPortMapping implements PortMapping {
     private int port;
     private InetSocketAddressWrapper defaultGateway;
     private InetAddress externalAddress;
-    private Disposable timeoutGuard;
-    private Disposable refreshTask;
+    private MigrationDisposable timeoutGuard;
+    private MigrationDisposable refreshTask;
     private Runnable onFailure;
     private final Supplier<InetAddress> defaultGatewaySupplier;
 
@@ -82,8 +82,8 @@ public class NatPmpPortMapping implements PortMapping {
                              final int port,
                              final InetSocketAddressWrapper defaultGateway,
                              final InetAddress externalAddress,
-                             final Disposable timeoutGuard,
-                             final Disposable refreshTask,
+                             final MigrationDisposable timeoutGuard,
+                             final MigrationDisposable refreshTask,
                              final Runnable onFailure,
                              final Supplier<InetAddress> defaultGatewaySupplier) {
         this.externalAddressRequested = externalAddressRequested;
@@ -169,10 +169,10 @@ public class NatPmpPortMapping implements PortMapping {
 
     private synchronized void unmapPort(final MigrationHandlerContext ctx) {
         if (timeoutGuard != null) {
-            timeoutGuard.dispose();
+            timeoutGuard.cancel(false);
         }
         if (refreshTask != null) {
-            refreshTask.dispose();
+            refreshTask.cancel(false);
             LOG.debug("Destroy mapping by creating a mapping request with zero lifetime.");
             requestMapping(ctx, Duration.ZERO);
         }
@@ -180,11 +180,11 @@ public class NatPmpPortMapping implements PortMapping {
 
     synchronized void fail() {
         if (timeoutGuard != null) {
-            timeoutGuard.dispose();
+            timeoutGuard.cancel(false);
             timeoutGuard = null;
         }
         if (refreshTask != null) {
-            refreshTask.dispose();
+            refreshTask.cancel(false);
             refreshTask = null;
         }
         defaultGateway = null;
@@ -242,7 +242,7 @@ public class NatPmpPortMapping implements PortMapping {
                                final MappingUdpResponseMessage message) {
         if (mappingRequested.compareAndSet(true, false)) {
             if (message.getResultCode() == SUCCESS) {
-                timeoutGuard.dispose();
+                timeoutGuard.cancel(false);
                 if (message.getExternalPort() == port) {
                     //noinspection unchecked
                     LOG.info("Got port mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, message::getExternalPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostName);

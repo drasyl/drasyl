@@ -21,10 +21,10 @@
  */
 package org.drasyl.remote.handler;
 
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -80,7 +80,7 @@ class LocalNetworkDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Map<IdentityPublicKey, Peer> peers;
     @Mock
-    private Disposable pingDisposable;
+    private MigrationDisposable pingDisposable;
 
     @Nested
     class EventHandling {
@@ -179,7 +179,7 @@ class LocalNetworkDiscoveryTest {
 
             handler.stopHeartbeat();
 
-            verify(pingDisposable).dispose();
+            verify(pingDisposable).cancel(false);
         }
     }
 

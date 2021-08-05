@@ -22,8 +22,8 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.cache.CacheBuilder;
-import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -81,7 +81,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     private final Map<IdentityPublicKey, Peer> peers;
     private final Set<IdentityPublicKey> directConnectionPeers;
     private final Set<IdentityPublicKey> superPeers;
-    private Disposable heartbeatDisposable;
+    private MigrationDisposable heartbeatDisposable;
     private IdentityPublicKey bestSuperPeer;
 
     public InternetDiscovery(final DrasylConfig config) {
@@ -150,7 +150,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     synchronized void stopHeartbeat() {
         if (heartbeatDisposable != null) {
             LOG.debug("Stop heartbeat scheduler");
-            heartbeatDisposable.dispose();
+            heartbeatDisposable.cancel(false);
             heartbeatDisposable = null;
         }
     }

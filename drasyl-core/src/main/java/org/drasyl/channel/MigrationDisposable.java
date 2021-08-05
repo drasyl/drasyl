@@ -22,28 +22,129 @@
 package org.drasyl.channel;
 
 import io.netty.util.concurrent.Future;
-import io.reactivex.rxjava3.disposables.Disposable;
+import io.netty.util.concurrent.GenericFutureListener;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.pipeline.Handler;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
  */
-public class MigrationDisposable implements Disposable {
-    private final Future<?> future;
+public class MigrationDisposable<V> implements Future<V> {
+    private final Future<V> future;
 
-    public MigrationDisposable(final Future<?> future) {
+    public MigrationDisposable(final Future<V> future) {
         this.future = requireNonNull(future);
     }
 
     @Override
-    public void dispose() {
-        future.cancel(false);
+    public boolean isSuccess() {
+        return future.isSuccess();
     }
 
     @Override
-    public boolean isDisposed() {
+    public boolean isCancellable() {
+        return future.isCancellable();
+    }
+
+    @Override
+    public Throwable cause() {
+        return future.cause();
+    }
+
+    @Override
+    public Future<V> addListener(final GenericFutureListener<? extends Future<? super V>> listener) {
+        return future.addListener(listener);
+    }
+
+    @Override
+    public Future<V> addListeners(final GenericFutureListener<? extends Future<? super V>>... listeners) {
+        return future.addListeners(listeners);
+    }
+
+    @Override
+    public Future<V> removeListener(final GenericFutureListener<? extends Future<? super V>> listener) {
+        return future.removeListener(listener);
+    }
+
+    @Override
+    public Future<V> removeListeners(final GenericFutureListener<? extends Future<? super V>>... listeners) {
+        return future.removeListeners(listeners);
+    }
+
+    @Override
+    public Future<V> sync() throws InterruptedException {
+        return future.sync();
+    }
+
+    @Override
+    public Future<V> syncUninterruptibly() {
+        return future.syncUninterruptibly();
+    }
+
+    @Override
+    public Future<V> await() throws InterruptedException {
+        return future.await();
+    }
+
+    @Override
+    public Future<V> awaitUninterruptibly() {
+        return future.awaitUninterruptibly();
+    }
+
+    @Override
+    public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
+        return future.await(timeout, unit);
+    }
+
+    @Override
+    public boolean await(final long timeoutMillis) throws InterruptedException {
+        return future.await(timeoutMillis);
+    }
+
+    @Override
+    public boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
+        return future.awaitUninterruptibly(timeout, unit);
+    }
+
+    @Override
+    public boolean awaitUninterruptibly(final long timeoutMillis) {
+        return future.awaitUninterruptibly(timeoutMillis);
+    }
+
+    @Override
+    public V getNow() {
+        return future.getNow();
+    }
+
+    @Override
+    public boolean cancel(final boolean mayInterruptIfRunning) {
+        return future.cancel(mayInterruptIfRunning);
+    }
+
+    @Override
+    public boolean isCancelled() {
         return future.isCancelled();
+    }
+
+    @Override
+    public boolean isDone() {
+        return future.isDone();
+    }
+
+    @Override
+    public V get() throws InterruptedException, ExecutionException {
+        return future.get();
+    }
+
+    @Override
+    public V get(final long timeout,
+                 @NonNull final TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        return future.get(timeout, unit);
     }
 }

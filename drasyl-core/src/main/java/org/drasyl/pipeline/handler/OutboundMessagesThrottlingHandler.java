@@ -21,7 +21,7 @@
  */
 package org.drasyl.pipeline.handler;
 
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -66,7 +66,7 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
     public static class RateLimitedQueue {
         public final Queue<Runnable> queue;
         public final TokenBucket tokenBucket;
-        private Disposable queueConsumer;
+        private MigrationDisposable queueConsumer;
 
         public RateLimitedQueue(final long maxEventsPerSecond) {
             queue = new LinkedList<>();

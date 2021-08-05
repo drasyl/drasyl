@@ -22,7 +22,7 @@
 package org.drasyl.localhost;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -85,8 +85,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     public static final String FILE_SUFFIX = ".json";
     private final ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<IdentityPublicKey, InetSocketAddressWrapper> routes;
-    private Disposable watchDisposable;
-    private Disposable postDisposable;
+    private MigrationDisposable watchDisposable;
+    private MigrationDisposable postDisposable;
     private WatchService watchService; // NOSONAR
 
     public LocalHostDiscovery() {
@@ -101,8 +101,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     @SuppressWarnings({ "java:S107" })
     LocalHostDiscovery(final ThrowingBiConsumer<File, Object, IOException> jacksonWriter,
                        final Map<IdentityPublicKey, InetSocketAddressWrapper> routes,
-                       final Disposable watchDisposable,
-                       final Disposable postDisposable) {
+                       final MigrationDisposable watchDisposable,
+                       final MigrationDisposable postDisposable) {
         this.jacksonWriter = requireNonNull(jacksonWriter);
         this.routes = requireNonNull(routes);
         this.watchDisposable = watchDisposable;
@@ -171,10 +171,10 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         LOG.debug("Stop Local Host Discovery...");
 
         if (watchDisposable != null) {
-            watchDisposable.dispose();
+            watchDisposable.cancel(false);
         }
         if (postDisposable != null) {
-            postDisposable.dispose();
+            postDisposable.cancel(false);
         }
 
         final Path filePath = discoveryPath(ctx).resolve(ctx.identity().getIdentityPublicKey().toString() + ".json");

@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.manager;
 
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
@@ -56,10 +56,10 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, IdentityPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
-    private Disposable staleTask;
+    private MigrationDisposable staleTask;
 
     GroupsManagerHandler(final DatabaseAdapter database,
-                         final Disposable staleTask) {
+                         final MigrationDisposable staleTask) {
         this.database = database;
         this.staleTask = staleTask;
     }
@@ -102,7 +102,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     @Override
     public void onRemoved(final MigrationHandlerContext ctx) {
         if (staleTask != null) {
-            staleTask.dispose();
+            staleTask.cancel(false);
         }
     }
 

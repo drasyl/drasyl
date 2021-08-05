@@ -24,7 +24,7 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationDisposable;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeUpEvent;
@@ -77,9 +77,9 @@ public class UpnpIgdPortMapping implements PortMapping {
     private final Set<URI> ssdpServices;
     private String description;
     private int port;
-    private Disposable timeoutGuard;
-    private Disposable ssdpDiscoverTask;
-    private Disposable refreshTask;
+    private MigrationDisposable timeoutGuard;
+    private MigrationDisposable ssdpDiscoverTask;
+    private MigrationDisposable refreshTask;
     private Service upnpService;
     private Runnable onFailure;
 
@@ -89,9 +89,9 @@ public class UpnpIgdPortMapping implements PortMapping {
                        final Set<URI> ssdpServices,
                        final String description,
                        final int port,
-                       final Disposable timeoutGuard,
-                       final Disposable ssdpDiscoverTask,
-                       final Disposable refreshTask,
+                       final MigrationDisposable timeoutGuard,
+                       final MigrationDisposable ssdpDiscoverTask,
+                       final MigrationDisposable refreshTask,
                        final Service upnpService,
                        final Runnable onFailure) {
         this.ssdpDiscoveryActive = ssdpDiscoveryActive;
@@ -194,15 +194,15 @@ public class UpnpIgdPortMapping implements PortMapping {
 
     void fail() {
         if (timeoutGuard != null) {
-            timeoutGuard.dispose();
+            timeoutGuard.cancel(false);
             timeoutGuard = null;
         }
         if (refreshTask != null) {
-            refreshTask.dispose();
+            refreshTask.cancel(false);
             refreshTask = null;
         }
         if (ssdpDiscoverTask != null) {
-            ssdpDiscoverTask.dispose();
+            ssdpDiscoverTask.cancel(false);
             ssdpDiscoverTask = null;
         }
         this.upnpService = null;
