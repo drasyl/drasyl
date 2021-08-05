@@ -382,12 +382,10 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
                             return null;
                         }
 
-                        @Override
                         public Map<DrasylAddress, Channel> channels() {
                             return null;
                         }
 
-                        @Override
                         public Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
                                                                final IdentityPublicKey peer) {
                             return null;

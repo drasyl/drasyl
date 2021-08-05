@@ -33,7 +33,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -51,7 +50,6 @@ import org.drasyl.util.TypeReference;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -290,15 +288,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Dras
 
     public Identity identity() {
         return attr(IDENTITY_ATTR_KEY).get();
-    }
-
-    public Map<DrasylAddress, Channel> channels() {
-        throw new RuntimeException("not implemented yet");
-    }
-
-    public Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
-                                           final IdentityPublicKey peer) {
-        throw new RuntimeException("not implemented yet");
     }
 
     private static boolean isInstance(final Type type, final Object obj) {

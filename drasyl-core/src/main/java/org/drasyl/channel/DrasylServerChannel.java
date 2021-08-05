@@ -21,17 +21,11 @@
  */
 package org.drasyl.channel;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ServerChannel;
-import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.serialization.Serialization;
-
-import java.util.Map;
 
 public interface DrasylServerChannel extends ServerChannel {
     DrasylConfig drasylConfig();
@@ -43,9 +37,4 @@ public interface DrasylServerChannel extends ServerChannel {
     Serialization outboundSerialization();
 
     Identity identity();
-
-    Map<DrasylAddress, Channel> channels();
-
-    Channel getOrCreateChildChannel(ChannelHandlerContext ctx,
-                                    IdentityPublicKey peer);
 }

@@ -204,7 +204,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             final IdentityPublicKey sender = (IdentityPublicKey) migrationMsg.address();
 
             // create/get channel
-            final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
+            final Channel channel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
 
             if (msg == null) {
                 msg = NULL;
@@ -221,7 +221,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             if (evt instanceof MigrationEvent) {
                 final MigrationEvent e = (MigrationEvent) evt;
-                ((DrasylServerChannel) ctx.channel()).channels().forEach((address, channel) -> channel.pipeline().fireUserEventTriggered(e.event()));
+                ((DefaultDrasylServerChannel) ctx.channel()).channels().forEach((address, channel) -> channel.pipeline().fireUserEventTriggered(e.event()));
             }
         }
     }

@@ -33,6 +33,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
+import org.drasyl.channel.DefaultDrasylServerChannel;
 import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylChannelEventLoopGroupUtil;
@@ -497,7 +498,7 @@ public abstract class DrasylNode {
                         final Resolve e = (Resolve) evt;
                         final IdentityPublicKey recipient = (IdentityPublicKey) e.recipient();
                         final CompletableFuture<Channel> future = e.future();
-                        final Channel resolvedChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
+                        final Channel resolvedChannel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
                         resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
                     }
                     else {
