@@ -126,7 +126,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
                                    final CompletableFuture<Void> future) throws Exception {
         if (ctx.identity().getIdentityPublicKey().equals(msg.getSender())) {
             // message from us, check if we have to chunk it
-            final ByteBuf messageByteBuf = ctx.alloc();
+            final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
             msg.writeTo(messageByteBuf);
             final int messageLength = messageByteBuf.readableBytes();
             final int messageMaxContentLength = ctx.config().getRemoteMessageMaxContentLength();
@@ -178,7 +178,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
 
             while (messageByteBuf.readableBytes() > 0) {
                 ByteBuf chunkBodyByteBuf = null;
-                final ByteBuf chunkByteBuf = ctx.alloc();
+                final ByteBuf chunkByteBuf = ctx.alloc().ioBuffer();
                 try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(chunkByteBuf)) {
                     RemoteMessage.MAGIC_NUMBER.writeTo(outputStream);
 

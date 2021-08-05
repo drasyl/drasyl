@@ -604,16 +604,6 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public ByteBuf alloc() {
-            return PooledByteBufAllocator.DEFAULT.ioBuffer();
-        }
-
-        @Override
-        public ByteBuf alloc(final boolean preferDirect) {
-            return null;
-        }
-
-        @Override
         public String name() {
             return null;
         }
@@ -654,7 +644,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public Pipeline pipeline() {
+        public Pipeline drasylPipeline() {
             return null;
         }
 

@@ -21,8 +21,17 @@
  */
 package org.drasyl.channel;
 
-import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelProgressivePromise;
+import io.netty.channel.ChannelPromise;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.EventExecutor;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -33,12 +42,13 @@ import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
 
+import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
  */
-public class MigrationHandlerContext {
+public class MigrationHandlerContext implements ChannelHandlerContext {
     private final ChannelHandlerContext ctx;
     private final DrasylServerChannel channel;
 
@@ -47,29 +57,217 @@ public class MigrationHandlerContext {
         this.channel = (DrasylServerChannel) ctx.channel();
     }
 
-    public ByteBuf alloc() {
-        return alloc(false);
+    @Override
+    public Channel channel() {
+        return ctx.channel();
     }
 
-    public ByteBuf alloc(final boolean preferDirect) {
-        if (preferDirect) {
-            return ctx.alloc().directBuffer();
-        }
-        else {
-            return ctx.alloc().ioBuffer();
-        }
+    @Override
+    public EventExecutor executor() {
+        return ctx.executor();
     }
 
+    @Override
     public String name() {
         return ctx.name();
     }
 
-    public Handler handler() {
-        throw new RuntimeException("not implemented yet"); // NOSONAR
+    @Override
+    public ChannelHandler handler() {
+        return ctx.handler();
+    }
+
+    @Override
+    public boolean isRemoved() {
+        return ctx.isRemoved();
+    }
+
+    @Override
+    public ChannelHandlerContext fireChannelRegistered() {
+        return ctx.fireChannelRegistered();
+    }
+
+    @Override
+    public ChannelHandlerContext fireChannelUnregistered() {
+        return ctx.fireChannelUnregistered();
+    }
+
+    @Override
+    public ChannelHandlerContext fireChannelActive() {
+        return ctx.fireChannelActive();
+    }
+
+    @Override
+    public ChannelHandlerContext fireChannelInactive() {
+        return ctx.fireChannelInactive();
+    }
+
+    @Override
+    public ChannelHandlerContext fireExceptionCaught(final Throwable cause) {
+        return ctx.fireExceptionCaught(cause);
+    }
+
+    @Override
+    public ChannelHandlerContext fireUserEventTriggered(final Object evt) {
+        return ctx.fireUserEventTriggered(evt);
+    }
+
+    @Override
+    public ChannelHandlerContext fireChannelRead(final Object msg) {
+        return ctx.fireChannelRead(msg);
+    }
+
+    @Override
+    public ChannelHandlerContext fireChannelReadComplete() {
+        return ctx.fireChannelReadComplete();
+    }
+
+    @Override
+    public ChannelHandlerContext fireChannelWritabilityChanged() {
+        return ctx.fireChannelWritabilityChanged();
+    }
+
+    @Override
+    public ChannelFuture bind(final SocketAddress localAddress) {
+        return ctx.bind(localAddress);
+    }
+
+    @Override
+    public ChannelFuture connect(final SocketAddress remoteAddress) {
+        return ctx.connect(remoteAddress);
+    }
+
+    @Override
+    public ChannelFuture connect(final SocketAddress remoteAddress,
+                                 final SocketAddress localAddress) {
+        return ctx.connect(remoteAddress, localAddress);
+    }
+
+    @Override
+    public ChannelFuture disconnect() {
+        return ctx.disconnect();
+    }
+
+    @Override
+    public ChannelFuture close() {
+        return ctx.close();
+    }
+
+    @Override
+    public ChannelFuture deregister() {
+        return ctx.deregister();
+    }
+
+    @Override
+    public ChannelFuture bind(final SocketAddress localAddress, final ChannelPromise promise) {
+        return ctx.bind(localAddress, promise);
+    }
+
+    @Override
+    public ChannelFuture connect(final SocketAddress remoteAddress, final ChannelPromise promise) {
+        return ctx.connect(remoteAddress, promise);
+    }
+
+    @Override
+    public ChannelFuture connect(final SocketAddress remoteAddress,
+                                 final SocketAddress localAddress,
+                                 final ChannelPromise promise) {
+        return ctx.connect(remoteAddress, localAddress, promise);
+    }
+
+    @Override
+    public ChannelFuture disconnect(final ChannelPromise promise) {
+        return ctx.disconnect(promise);
+    }
+
+    @Override
+    public ChannelFuture close(final ChannelPromise promise) {
+        return ctx.close(promise);
+    }
+
+    @Override
+    public ChannelFuture deregister(final ChannelPromise promise) {
+        return ctx.deregister(promise);
+    }
+
+    @Override
+    public ChannelHandlerContext read() {
+        return ctx.read();
+    }
+
+    @Override
+    public ChannelFuture write(final Object msg) {
+        return ctx.write(msg);
+    }
+
+    @Override
+    public ChannelFuture write(final Object msg, final ChannelPromise promise) {
+        return ctx.write(msg, promise);
+    }
+
+    @Override
+    public ChannelHandlerContext flush() {
+        return ctx.flush();
+    }
+
+    @Override
+    public ChannelFuture writeAndFlush(final Object msg, final ChannelPromise promise) {
+        return ctx.writeAndFlush(msg, promise);
+    }
+
+    @Override
+    public ChannelFuture writeAndFlush(final Object msg) {
+        return ctx.writeAndFlush(msg);
+    }
+
+    @Override
+    public ChannelPromise newPromise() {
+        return ctx.newPromise();
+    }
+
+    @Override
+    public ChannelProgressivePromise newProgressivePromise() {
+        return ctx.newProgressivePromise();
+    }
+
+    @Override
+    public ChannelFuture newSucceededFuture() {
+        return ctx.newSucceededFuture();
+    }
+
+    @Override
+    public ChannelFuture newFailedFuture(final Throwable cause) {
+        return ctx.newFailedFuture(cause);
+    }
+
+    @Override
+    public ChannelPromise voidPromise() {
+        return ctx.voidPromise();
+    }
+
+    @Override
+    public ChannelPipeline pipeline() {
+        return ctx.pipeline();
+    }
+
+    @Override
+    public ByteBufAllocator alloc() {
+        return ctx.alloc();
+    }
+
+    @Override
+    public <T> Attribute<T> attr(final AttributeKey<T> key) {
+        return ctx.attr(key);
+    }
+
+    @Override
+    public <T> boolean hasAttr(final AttributeKey<T> key) {
+        return ctx.hasAttr(key);
     }
 
     public MigrationHandlerContext passException(final Exception cause) {
-        return null;
+        fireExceptionCaught(cause);
+        return this;
     }
 
     public CompletableFuture<Void> passInbound(final Address sender,
@@ -77,7 +275,7 @@ public class MigrationHandlerContext {
                                                final CompletableFuture<Void> future) {
         final MigrationInboundMessage<?, ?> migrationMsg = new MigrationInboundMessage<>(msg, sender, future);
 
-        ctx.fireChannelRead(migrationMsg);
+        fireChannelRead(migrationMsg);
 
         return future;
     }
@@ -85,7 +283,7 @@ public class MigrationHandlerContext {
     @SuppressWarnings("UnusedReturnValue")
     public CompletableFuture<Void> passEvent(final Event event,
                                              final CompletableFuture<Void> future) {
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+        fireUserEventTriggered(new MigrationEvent(event, future));
 
         return future;
     }
@@ -95,7 +293,7 @@ public class MigrationHandlerContext {
                                                 final CompletableFuture<Void> future) {
         final MigrationOutboundMessage<?, ?> migrationMsg = new MigrationOutboundMessage<>(msg, recipient);
 
-        ctx.writeAndFlush(migrationMsg).addListener(f -> {
+        writeAndFlush(migrationMsg).addListener(f -> {
             if (f.isSuccess()) {
                 future.complete(null);
             }
@@ -111,16 +309,16 @@ public class MigrationHandlerContext {
         return channel.drasylConfig();
     }
 
-    public Pipeline pipeline() {
-        return new MigrationPipeline(ctx.pipeline());
+    public Pipeline drasylPipeline() {
+        return new MigrationPipeline(pipeline());
     }
 
     public Scheduler independentScheduler() {
-        return new MigrationScheduler(ctx.executor());
+        return new MigrationScheduler(executor());
     }
 
     public Scheduler dependentScheduler() {
-        return new MigrationScheduler(ctx.executor());
+        return new MigrationScheduler(executor());
     }
 
     public Identity identity() {

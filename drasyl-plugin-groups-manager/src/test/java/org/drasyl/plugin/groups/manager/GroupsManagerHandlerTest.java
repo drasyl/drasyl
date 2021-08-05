@@ -138,7 +138,7 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             when(databaseAdapter.deleteStaleMemberships()).thenReturn(memberships);
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
-            when(ctx.pipeline()).thenReturn(pipeline);
+            when(ctx.drasylPipeline()).thenReturn(pipeline);
             when(pipeline.processOutbound(any(), any())).thenReturn(new CompletableFuture<>());
 
             handler.staleTask(ctx);

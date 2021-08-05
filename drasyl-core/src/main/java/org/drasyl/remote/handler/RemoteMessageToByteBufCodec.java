@@ -58,7 +58,7 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Byt
                           final InetSocketAddressWrapper recipient,
                           final RemoteMessage msg,
                           final List<Object> out) throws Exception {
-        final ByteBuf buffer = ctx.alloc();
+        final ByteBuf buffer = ctx.alloc().ioBuffer();
         msg.writeTo(buffer);
         out.add(buffer);
     }

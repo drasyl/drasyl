@@ -22,7 +22,6 @@
 package org.drasyl.remote.handler;
 
 import com.google.protobuf.ByteString;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
@@ -587,16 +586,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public ByteBuf alloc() {
-            return null;
-        }
-
-        @Override
-        public ByteBuf alloc(final boolean preferDirect) {
-            return null;
-        }
-
-        @Override
         public String name() {
             return null;
         }
@@ -637,7 +626,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public Pipeline pipeline() {
+        public Pipeline drasylPipeline() {
             return null;
         }
 

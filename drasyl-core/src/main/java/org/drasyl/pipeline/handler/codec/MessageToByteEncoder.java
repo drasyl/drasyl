@@ -69,7 +69,13 @@ public abstract class MessageToByteEncoder<O, A extends Address> extends SimpleO
                                    final O msg,
                                    final CompletableFuture<Void> future) throws Exception {
         try {
-            final ByteBuf buf = ctx.alloc(preferDirect);
+            final ByteBuf buf;
+            if (preferDirect) {
+                buf = ctx.alloc().directBuffer();
+            }
+            else {
+                buf = ctx.alloc().ioBuffer();
+            }
             try {
                 encode(ctx, recipient, msg, buf);
             }
