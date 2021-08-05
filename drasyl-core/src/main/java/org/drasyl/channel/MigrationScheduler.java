@@ -218,21 +218,21 @@ public class MigrationScheduler implements EventExecutor {
         executor.execute(command);
     }
 
-    public @NonNull MigrationDisposable scheduleDirect(@NonNull final Runnable run) {
+    public @NonNull Future scheduleDirect(@NonNull final Runnable run) {
         execute(run);
-        return new MigrationDisposable(new SucceededFuture<>(null, null));
+        return new SucceededFuture<>(null, null);
     }
 
-    public @NonNull MigrationDisposable scheduleDirect(@NonNull final Runnable run,
-                                                       final long delay,
-                                                       @NonNull final TimeUnit unit) {
-        return new MigrationDisposable(schedule(run, delay, unit));
+    public @NonNull Future<?> scheduleDirect(@NonNull final Runnable run,
+                                             final long delay,
+                                             @NonNull final TimeUnit unit) {
+        return schedule(run, delay, unit);
     }
 
-    public @NonNull MigrationDisposable schedulePeriodicallyDirect(@NonNull final Runnable run,
-                                                                   final long initialDelay,
-                                                                   final long period,
-                                                                   @NonNull final TimeUnit unit) {
-        return new MigrationDisposable(scheduleAtFixedRate(run, initialDelay, period, unit));
+    public @NonNull Future<?> schedulePeriodicallyDirect(@NonNull final Runnable run,
+                                                         final long initialDelay,
+                                                         final long period,
+                                                         @NonNull final TimeUnit unit) {
+        return scheduleAtFixedRate(run, initialDelay, period, unit);
     }
 }

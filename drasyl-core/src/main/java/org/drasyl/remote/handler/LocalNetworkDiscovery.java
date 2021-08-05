@@ -21,7 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
-import org.drasyl.channel.MigrationDisposable;
+import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -67,10 +67,10 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
     private static final Object path = LocalNetworkDiscovery.class;
     private final Map<IdentityPublicKey, Peer> peers;
-    private MigrationDisposable pingDisposable;
+    private Future pingDisposable;
 
     public LocalNetworkDiscovery(final Map<IdentityPublicKey, Peer> peers,
-                                 final MigrationDisposable pingDisposable) {
+                                 final Future pingDisposable) {
         this.peers = requireNonNull(peers);
         this.pingDisposable = pingDisposable;
     }

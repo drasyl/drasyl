@@ -22,7 +22,7 @@
 package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
-import org.drasyl.channel.MigrationDisposable;
+import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -53,12 +53,12 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
     private static final Logger LOG = LoggerFactory.getLogger(PortMapper.class);
     private final ArrayList<PortMapping> methods;
     private int currentMethodPointer;
-    private MigrationDisposable retryTask;
+    private Future retryTask;
 
     @SuppressWarnings("java:S2384")
     PortMapper(final ArrayList<PortMapping> methods,
                final int currentMethodPointer,
-               final MigrationDisposable retryTask) {
+               final Future retryTask) {
         this.methods = methods;
         this.currentMethodPointer = currentMethodPointer;
         this.retryTask = retryTask;

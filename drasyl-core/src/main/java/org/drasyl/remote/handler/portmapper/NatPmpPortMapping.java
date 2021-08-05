@@ -24,7 +24,7 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
-import org.drasyl.channel.MigrationDisposable;
+import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -72,8 +72,8 @@ public class NatPmpPortMapping implements PortMapping {
     private int port;
     private InetSocketAddressWrapper defaultGateway;
     private InetAddress externalAddress;
-    private MigrationDisposable timeoutGuard;
-    private MigrationDisposable refreshTask;
+    private Future timeoutGuard;
+    private Future refreshTask;
     private Runnable onFailure;
     private final Supplier<InetAddress> defaultGatewaySupplier;
 
@@ -82,8 +82,8 @@ public class NatPmpPortMapping implements PortMapping {
                              final int port,
                              final InetSocketAddressWrapper defaultGateway,
                              final InetAddress externalAddress,
-                             final MigrationDisposable timeoutGuard,
-                             final MigrationDisposable refreshTask,
+                             final Future timeoutGuard,
+                             final Future refreshTask,
                              final Runnable onFailure,
                              final Supplier<InetAddress> defaultGatewaySupplier) {
         this.externalAddressRequested = externalAddressRequested;

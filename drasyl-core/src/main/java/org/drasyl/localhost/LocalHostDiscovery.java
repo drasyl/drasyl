@@ -22,7 +22,7 @@
 package org.drasyl.localhost;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.drasyl.channel.MigrationDisposable;
+import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -85,8 +85,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     public static final String FILE_SUFFIX = ".json";
     private final ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<IdentityPublicKey, InetSocketAddressWrapper> routes;
-    private MigrationDisposable watchDisposable;
-    private MigrationDisposable postDisposable;
+    private Future watchDisposable;
+    private Future postDisposable;
     private WatchService watchService; // NOSONAR
 
     public LocalHostDiscovery() {
@@ -101,8 +101,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     @SuppressWarnings({ "java:S107" })
     LocalHostDiscovery(final ThrowingBiConsumer<File, Object, IOException> jacksonWriter,
                        final Map<IdentityPublicKey, InetSocketAddressWrapper> routes,
-                       final MigrationDisposable watchDisposable,
-                       final MigrationDisposable postDisposable) {
+                       final Future watchDisposable,
+                       final Future postDisposable) {
         this.jacksonWriter = requireNonNull(jacksonWriter);
         this.routes = requireNonNull(routes);
         this.watchDisposable = watchDisposable;

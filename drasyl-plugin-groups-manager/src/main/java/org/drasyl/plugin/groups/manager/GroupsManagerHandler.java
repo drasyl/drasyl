@@ -21,7 +21,7 @@
  */
 package org.drasyl.plugin.groups.manager;
 
-import org.drasyl.channel.MigrationDisposable;
+import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
@@ -56,10 +56,10 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, IdentityPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
-    private MigrationDisposable staleTask;
+    private Future staleTask;
 
     GroupsManagerHandler(final DatabaseAdapter database,
-                         final MigrationDisposable staleTask) {
+                         final Future staleTask) {
         this.database = database;
         this.staleTask = staleTask;
     }

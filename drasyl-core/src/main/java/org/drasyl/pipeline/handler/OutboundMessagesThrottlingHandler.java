@@ -21,7 +21,7 @@
  */
 package org.drasyl.pipeline.handler;
 
-import org.drasyl.channel.MigrationDisposable;
+import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -66,7 +66,7 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
     public static class RateLimitedQueue {
         public final Queue<Runnable> queue;
         public final TokenBucket tokenBucket;
-        private MigrationDisposable queueConsumer;
+        private Future queueConsumer;
 
         public RateLimitedQueue(final long maxEventsPerSecond) {
             queue = new LinkedList<>();

@@ -23,7 +23,7 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.drasyl.channel.MigrationDisposable;
+import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.event.NodeUpEvent;
@@ -72,8 +72,8 @@ class NatPmpPortMappingTest {
         @Test
         void shouldDestroyMapping(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                   @Mock final InetAddress externalAddress,
-                                  @Mock final MigrationDisposable timeoutGuard,
-                                  @Mock final MigrationDisposable refreshTask,
+                                  @Mock final Future timeoutGuard,
+                                  @Mock final Future refreshTask,
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
             final AtomicBoolean externalAddressRequested = new AtomicBoolean();
             final AtomicBoolean mappingRequested = new AtomicBoolean();
@@ -104,7 +104,7 @@ class NatPmpPortMappingTest {
             @Test
             void shouldScheduleRefreshOnMappingMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                        @Mock final InetSocketAddressWrapper sender,
-                                                       @Mock final MigrationDisposable timeoutGuard,
+                                                       @Mock final Future timeoutGuard,
                                                        @Mock final InetAddress externalAddress,
                                                        @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
                 final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008100000004f9bf63f163f100000258"));
@@ -134,8 +134,8 @@ class NatPmpPortMappingTest {
     class Fail {
         @Test
         void shouldDisposeAllTasks(
-                @Mock final MigrationDisposable timeoutGuard,
-                @Mock final MigrationDisposable refreshTask,
+                @Mock final Future timeoutGuard,
+                @Mock final Future refreshTask,
                 @Mock final Runnable onFailure,
                 @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
             final AtomicBoolean externalAddressRequested = new AtomicBoolean();

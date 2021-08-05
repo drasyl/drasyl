@@ -24,7 +24,7 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
-import org.drasyl.channel.MigrationDisposable;
+import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -74,8 +74,8 @@ public class PcpPortMapping implements PortMapping {
     private Runnable onFailure;
     private byte[] nonce;
     private InetSocketAddressWrapper defaultGateway;
-    private MigrationDisposable timeoutGuard;
-    private MigrationDisposable refreshTask;
+    private Future timeoutGuard;
+    private Future refreshTask;
     private Set<InetAddress> interfaces;
     private final Supplier<InetAddress> defaultGatewaySupplier;
     private final Supplier<Set<InetAddress>> interfacesSupplier;
@@ -86,8 +86,8 @@ public class PcpPortMapping implements PortMapping {
                    final Runnable onFailure,
                    final byte[] nonce,
                    final InetSocketAddressWrapper defaultGateway,
-                   final MigrationDisposable timeoutGuard,
-                   final MigrationDisposable refreshTask,
+                   final Future timeoutGuard,
+                   final Future refreshTask,
                    final Set<InetAddress> interfaces,
                    final Supplier<InetAddress> defaultGatewaySupplier,
                    final Supplier<Set<InetAddress>> interfaceSupplier) {
