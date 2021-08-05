@@ -145,7 +145,7 @@ class LocalNetworkDiscoveryTest {
 
             handler.startHeartbeat(ctx);
 
-            verify(ctx.independentScheduler()).schedulePeriodicallyDirect(any(Runnable.class), anyLong(), anyLong(), any(TimeUnit.class));
+            verify(ctx.executor()).scheduleAtFixedRate(any(Runnable.class), anyLong(), anyLong(), any(TimeUnit.class));
         }
     }
 

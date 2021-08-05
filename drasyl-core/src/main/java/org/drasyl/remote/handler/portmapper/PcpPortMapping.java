@@ -161,7 +161,7 @@ public class PcpPortMapping implements PortMapping {
     }
 
     private synchronized void mapPort(final MigrationHandlerContext ctx) {
-        timeoutGuard = ctx.independentScheduler().scheduleDirect(() -> {
+        timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
             if (refreshTask == null) {
                 LOG.debug("Unable to create mapping within {}s.", TIMEOUT::toSeconds);
@@ -245,7 +245,7 @@ public class PcpPortMapping implements PortMapping {
                     if (message.getLifetime() > 0) {
                         final long delay = message.getLifetime() / 2;
                         LOG.debug("Schedule refresh of mapping for in {}s.", delay);
-                        refreshTask = ctx.independentScheduler().scheduleDirect(() -> {
+                        refreshTask = ctx.executor().schedule(() -> {
                             refreshTask = null;
                             mapPort(ctx);
                         }, delay, SECONDS);

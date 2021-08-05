@@ -74,7 +74,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
         ctx.outboundSerialization().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
 
         // Register stale task timer
-        staleTask = ctx.independentScheduler().schedulePeriodicallyDirect(() -> staleTask(ctx), 1L, 1L, MINUTES);
+        staleTask = ctx.executor().scheduleAtFixedRate(() -> staleTask(ctx), 1L, 1L, MINUTES);
     }
 
     /**
@@ -137,10 +137,10 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                                   final GroupsClientMessage msg,
                                   final CompletableFuture<Void> future) {
         if (msg instanceof GroupJoinMessage) {
-            ctx.independentScheduler().scheduleDirect(() -> handleJoinRequest(ctx, sender, (GroupJoinMessage) msg, future));
+            ctx.executor().execute(() -> handleJoinRequest(ctx, sender, (GroupJoinMessage) msg, future));
         }
         else if (msg instanceof GroupLeaveMessage) {
-            ctx.independentScheduler().scheduleDirect(() -> handleLeaveRequest(ctx, sender, (GroupLeaveMessage) msg, future));
+            ctx.executor().execute(() -> handleLeaveRequest(ctx, sender, (GroupLeaveMessage) msg, future));
         }
     }
 

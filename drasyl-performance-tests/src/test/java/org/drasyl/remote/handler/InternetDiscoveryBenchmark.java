@@ -42,7 +42,6 @@ import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
-import org.drasyl.channel.MigrationScheduler;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -651,13 +650,11 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
             return null;
         }
 
-        @Override
-        public MigrationScheduler independentScheduler() {
+        public EventExecutor independentScheduler() {
             return null;
         }
 
-        @Override
-        public MigrationScheduler dependentScheduler() {
+        public EventExecutor dependentScheduler() {
             return null;
         }
 

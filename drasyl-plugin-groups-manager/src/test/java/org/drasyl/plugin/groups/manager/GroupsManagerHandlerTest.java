@@ -21,12 +21,12 @@
  */
 package org.drasyl.plugin.groups.manager;
 
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
-import org.drasyl.channel.MigrationScheduler;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -86,7 +86,7 @@ class GroupsManagerHandlerTest {
     @Mock
     private DatabaseAdapter databaseAdapter;
     @Mock
-    private MigrationScheduler scheduler;
+    private EventExecutor scheduler;
     @Mock
     private IdentityPublicKey publicKey;
     @Mock
@@ -119,7 +119,7 @@ class GroupsManagerHandlerTest {
                                                         @Mock final Serialization outboundSerialization) {
             when(ctx.inboundSerialization()).thenReturn(inboundSerialization);
             when(ctx.outboundSerialization()).thenReturn(outboundSerialization);
-            when(ctx.independentScheduler()).thenReturn(scheduler);
+            when(ctx.executor()).thenReturn(scheduler);
 
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
 
@@ -127,7 +127,7 @@ class GroupsManagerHandlerTest {
 
             verify(inboundSerialization).addSerializer(eq(GroupsClientMessage.class), any(JacksonJsonSerializer.class));
             verify(outboundSerialization).addSerializer(eq(GroupsServerMessage.class), any(JacksonJsonSerializer.class));
-            verify(scheduler).schedulePeriodicallyDirect(any(), eq(1L), eq(1L), eq(TimeUnit.MINUTES));
+            verify(scheduler).scheduleAtFixedRate(any(), eq(1L), eq(1L), eq(TimeUnit.MINUTES));
         }
     }
 

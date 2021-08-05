@@ -21,7 +21,6 @@
  */
 package org.drasyl.pipeline.handler;
 
-import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -33,6 +32,7 @@ import java.time.Duration;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -66,20 +66,21 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
     public static class RateLimitedQueue {
         public final Queue<Runnable> queue;
         public final TokenBucket tokenBucket;
-        private Future queueConsumer;
+        private final AtomicBoolean queueConsumer;
 
         public RateLimitedQueue(final long maxEventsPerSecond) {
             queue = new LinkedList<>();
             final Duration refillInterval = Duration.ofSeconds(1).dividedBy(requirePositive(maxEventsPerSecond, "maxEventsPerSecond must be a positive number"));
             final boolean doBusyWait = refillInterval.toMillis() < 20;
             tokenBucket = new TokenBucket(1, refillInterval, doBusyWait);
+            queueConsumer = new AtomicBoolean(false);
         }
 
         public synchronized void add(final MigrationHandlerContext ctx, final Runnable value) {
             queue.add(value);
             LOG.trace("New message has been enqueued. Messages in queue: {}", queue::size);
-            if (queueConsumer == null) {
-                this.queueConsumer = ctx.dependentScheduler().scheduleDirect(new QueueConsumer(this));
+            if (queueConsumer.compareAndSet(false, true)) {
+                ctx.executor().execute(new QueueConsumer(this));
             }
         }
 
@@ -112,7 +113,7 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
                     break;
                 }
             }
-            queue.queueConsumer = null;
+            queue.queueConsumer.set(false);
             LOG.trace("Queue Consumer is done.");
         }
     }

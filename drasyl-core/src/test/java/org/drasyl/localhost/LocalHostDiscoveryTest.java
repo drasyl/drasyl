@@ -21,6 +21,7 @@
  */
 package org.drasyl.localhost;
 
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -73,6 +74,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -104,15 +106,13 @@ class LocalHostDiscoveryTest {
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void shouldStartDiscoveryOnNodeUpEvent(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
-            when(ctx.dependentScheduler().scheduleDirect(any())).then(invocation -> {
-                invocation.getArgument(0, Runnable.class).run();
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+            when(ctx.executor()).thenReturn(executor);
+            doAnswer(invocation2 -> {
+                invocation2.getArgument(0, Runnable.class).run();
                 return null;
-            });
-            when(ctx.independentScheduler().scheduleDirect(any())).then(invocation -> {
-                invocation.getArgument(0, Runnable.class).run();
-                return null;
-            });
+            }).when(executor).execute(any());
             when(ctx.passEvent(any(), any())).then(invocation -> {
                 final CompletableFuture<Void> future = invocation.getArgument(1, CompletableFuture.class);
                 future.complete(null);
@@ -130,7 +130,7 @@ class LocalHostDiscoveryTest {
             handler.onEvent(ctx, event, future);
             future.join();
 
-            verify(ctx.dependentScheduler()).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+            verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
         }
 
         @Test
@@ -158,15 +158,13 @@ class LocalHostDiscoveryTest {
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
-            when(ctx.dependentScheduler().scheduleDirect(any())).then(invocation -> {
-                invocation.getArgument(0, Runnable.class).run();
+                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+            when(ctx.executor()).thenReturn(executor);
+            doAnswer(invocation1 -> {
+                invocation1.getArgument(0, Runnable.class).run();
                 return null;
-            });
-            when(ctx.independentScheduler().scheduleDirect(any())).then(invocation -> {
-                invocation.getArgument(0, Runnable.class).run();
-                return null;
-            });
+            }).when(executor).execute(any());
             when(ctx.passEvent(any(), any())).then(invocation -> {
                 final CompletableFuture<Void> future = invocation.getArgument(1, CompletableFuture.class);
                 future.complete(null);
@@ -186,8 +184,8 @@ class LocalHostDiscoveryTest {
             handler.onEvent(ctx, event, future);
             future.join();
 
-            verify(ctx.dependentScheduler()).schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
-            verify(ctx.dependentScheduler()).schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
+            verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+            verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
         }
 
         @SuppressWarnings("unchecked")
@@ -197,7 +195,9 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
-                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) throws IOException {
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) throws IOException {
+            when(ctx.executor()).thenReturn(executor);
             final Path path = Paths.get(dir.toString(), "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127.json");
             final File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
 
@@ -206,19 +206,15 @@ class LocalHostDiscoveryTest {
             doReturn(true).when(file).canRead();
             doReturn(true).when(file).canWrite();
             doReturn(path).when(discoveryPath).resolve(anyString());
-            when(ctx.dependentScheduler().scheduleDirect(any())).then(invocation -> {
+            doAnswer(invocation1 -> {
+                invocation1.getArgument(0, Runnable.class).run();
+                return null;
+            }).when(executor).execute(any());
+            when((Future<?>) ctx.executor().scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS))).then(invocation -> {
                 invocation.getArgument(0, Runnable.class).run();
                 return null;
             });
-            when(ctx.independentScheduler().scheduleDirect(any())).then(invocation -> {
-                invocation.getArgument(0, Runnable.class).run();
-                return null;
-            });
-            when(ctx.dependentScheduler().schedulePeriodicallyDirect(any(), anyLong(), eq(5_000L), eq(MILLISECONDS))).then(invocation -> {
-                invocation.getArgument(0, Runnable.class).run();
-                return null;
-            });
-            when(ctx.dependentScheduler().schedulePeriodicallyDirect(any(), anyLong(), eq(55_000L), eq(MILLISECONDS))).then(invocation -> {
+            when((Future<?>) ctx.executor().scheduleAtFixedRate(any(), anyLong(), eq(55_000L), eq(MILLISECONDS))).then(invocation -> {
                 invocation.getArgument(0, Runnable.class).run();
                 return null;
             });

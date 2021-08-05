@@ -142,8 +142,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         if (heartbeatDisposable == null) {
             LOG.debug("Start heartbeat scheduler");
             final long pingInterval = ctx.config().getRemotePingInterval().toMillis();
-            heartbeatDisposable = ctx.independentScheduler()
-                    .schedulePeriodicallyDirect(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
+            heartbeatDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
         }
     }
 
@@ -305,7 +304,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
                 LOG.trace("Relay message from {} to {}.", msgSender, recipient);
 
                 if (shouldTryUnite(msgSender, msgRecipient)) {
-                    ctx.independentScheduler().scheduleDirect(() -> sendUnites(ctx, msgSender, msgRecipient, recipientSocketAddress, senderSocketAddress));
+                    ctx.executor().execute(() -> sendUnites(ctx, msgSender, msgRecipient, recipientSocketAddress, senderSocketAddress));
                 }
             }
 

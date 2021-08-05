@@ -120,7 +120,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                                 final NodeUpEvent event,
                                 final CompletableFuture<Void> future) {
         // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
-        ctx.independentScheduler().scheduleDirect(() -> groups.values().forEach(group ->
+        ctx.executor().schedule(() -> groups.values().forEach(group ->
                 joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
 
         ctx.passEvent(event, future);
@@ -236,9 +236,8 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         }
 
         // Add renew task
-        renewTasks.put(group, ctx.independentScheduler().schedulePeriodicallyDirect(() ->
-                        joinGroup(ctx, groups.get(group), true),
-                timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
+        renewTasks.put(group, ctx.executor().scheduleAtFixedRate(() ->
+                joinGroup(ctx, groups.get(group), true), timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
 
         FutureCombiner.getInstance()
                 .add(ctx.drasylPipeline().processInbound(
@@ -266,10 +265,8 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
 
         // Add re-try task
         if (!renewTasks.containsKey(group.getGroup())) {
-            renewTasks.put(group.getGroup(), ctx.independentScheduler().schedulePeriodicallyDirect(() ->
-                            joinGroup(ctx, groups.get(group.getGroup()), false),
-                    RETRY_DELAY.toMillis(),
-                    RETRY_DELAY.toMillis(), MILLISECONDS));
+            renewTasks.put(group.getGroup(), ctx.executor().scheduleAtFixedRate(() ->
+                    joinGroup(ctx, groups.get(group.getGroup()), false), RETRY_DELAY.toMillis(), RETRY_DELAY.toMillis(), MILLISECONDS));
         }
 
         LOG.debug("Send join (renew={}) request for group `{}`", () -> renew, () -> group);

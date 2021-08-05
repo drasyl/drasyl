@@ -118,7 +118,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
         final Session session = getSession(ctx, recipientsKey);
 
         if (this.maxAgreements > 0) {
-            ctx.independentScheduler().scheduleDirect(() -> checkForRenewAgreement(ctx, session, recipient, recipientsKey));
+            ctx.executor().execute(() -> checkForRenewAgreement(ctx, session, recipient, recipientsKey));
         }
 
         final Optional<Agreement> agreement = session.getCurrentActiveAgreement().getValue();
@@ -134,7 +134,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
 
             // start key exchange
             if (this.maxAgreements > 0) {
-                ctx.independentScheduler().scheduleDirect(() -> doKeyExchange(session, ctx, recipient, recipientsKey));
+                ctx.executor().execute(() -> doKeyExchange(session, ctx, recipient, recipientsKey));
             }
         }
     }
@@ -151,7 +151,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
         boolean longTimeEncryptionUsed = false;
 
         if (this.maxAgreements > 0) {
-            ctx.independentScheduler().scheduleDirect(() -> checkForRenewAgreement(ctx, session, sender, recipientsKey));
+            ctx.executor().execute(() -> checkForRenewAgreement(ctx, session, sender, recipientsKey));
         }
 
         // long time encryption was used
@@ -328,7 +328,12 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
                                             final KeyExchangeMessage plaintextMsg,
                                             final Session session,
                                             final CompletableFuture<Void> future) {
-        ctx.independentScheduler().scheduleDirect(() -> {
+        //TODO: Umschreiben. Hier lieber schauen, ob die Exchange Nachricht sich auf den aktuellen aktiven Key bezieht oder einen möglichen neuen
+        //TODO: in jedem Fall den jeweiligen Key mit einem ACK bestätigen.
+        //TODO: Handlet es sich um einen neuen Key muss auch ein neuer "inactive" key erzeugt und bestätigt werden
+        // on inbound our recipient is the sender of the message
+        // encrypt message with long time key
+        ctx.executor().execute(() -> {
             try {
                 //TODO: Umschreiben. Hier lieber schauen, ob die Exchange Nachricht sich auf den aktuellen aktiven Key bezieht oder einen möglichen neuen
                 //TODO: in jedem Fall den jeweiligen Key mit einem ACK bestätigen.

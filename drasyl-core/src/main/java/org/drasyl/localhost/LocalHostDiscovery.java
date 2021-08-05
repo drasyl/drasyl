@@ -159,7 +159,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
             if (ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()) {
                 tryWatchDirectory(ctx, discoveryPath);
             }
-            ctx.dependentScheduler().scheduleDirect(() -> scan(ctx));
+            ctx.executor().execute(() -> scan(ctx));
             keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.identity().getIdentityPublicKey().toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
@@ -207,7 +207,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
             discoveryPath.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
             LOG.debug("Watch service for directory `{}` registered", directory);
             final long pollInterval = WATCH_SERVICE_POLL_INTERVAL.toMillis();
-            watchDisposable = ctx.dependentScheduler().schedulePeriodicallyDirect(() -> {
+            // directory has been changed
+            watchDisposable = ctx.executor().scheduleAtFixedRate(() -> {
                 if (watchService.poll() != null) {
                     // directory has been changed
                     scan(ctx);
@@ -247,7 +248,8 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         else {
             refreshInterval = ofSeconds(1);
         }
-        postDisposable = ctx.dependentScheduler().schedulePeriodicallyDirect(() -> {
+        // only scan in polling mode when watchService does not work
+        postDisposable = ctx.executor().scheduleAtFixedRate(() -> {
             // only scan in polling mode when watchService does not work
             if (watchService == null) {
                 scan(ctx);

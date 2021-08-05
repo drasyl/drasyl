@@ -101,7 +101,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         if (pingDisposable == null) {
             LOG.debug("Start Network Network Discovery...");
             final long pingInterval = ctx.config().getRemotePingInterval().toMillis();
-            pingDisposable = ctx.independentScheduler().schedulePeriodicallyDirect(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
+            pingDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
             LOG.debug("Network Discovery started.");
         }
     }

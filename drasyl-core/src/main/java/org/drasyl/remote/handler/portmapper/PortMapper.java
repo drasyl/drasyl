@@ -95,7 +95,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
                                   final CompletableFuture<Void> future) {
         if (methods.get(currentMethodPointer).acceptMessage(sender, msg)) {
             future.complete(null);
-            ctx.independentScheduler().scheduleDirect(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, msg));
+            ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, msg));
         }
         else {
             // message was not for the mapper -> passthrough
@@ -109,7 +109,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
         if (currentMethodPointer == 0) {
             //noinspection unchecked
             LOG.debug("Method `{}` was unable to create mapping. All methods have failed. Wait {}s and then give next method `{}` a try.", () -> methods.get(oldMethodPointer), RETRY_DELAY::toSeconds, () -> methods.get(currentMethodPointer));
-            retryTask = ctx.independentScheduler().scheduleDirect(() -> {
+            retryTask = ctx.executor().schedule(() -> {
                 LOG.debug("Try to map port with method `{}`.", () -> methods.get(currentMethodPointer));
                 methods.get(currentMethodPointer).start(ctx, event, () -> cycleNextMethod(ctx, event));
             }, RETRY_DELAY.toMillis(), MILLISECONDS);

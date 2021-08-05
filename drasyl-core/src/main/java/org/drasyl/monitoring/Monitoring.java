@@ -101,7 +101,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
-        ctx.independentScheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.events", event));
+        ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.events", event));
 
         if (event instanceof NodeUpEvent) {
             startMonitoring(ctx);
@@ -119,7 +119,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
                                   final Address sender,
                                   final Object msg,
                                   final CompletableFuture<Void> future) {
-        ctx.independentScheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
+        ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
 
         // passthrough message
         ctx.passInbound(sender, msg, future);
@@ -130,7 +130,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
                                    final Address recipient,
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
-        ctx.independentScheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
+        ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
 
         // passthrough message
         ctx.passOutbound(recipient, msg, future);

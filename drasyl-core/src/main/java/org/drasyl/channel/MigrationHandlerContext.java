@@ -312,14 +312,6 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
         return new MigrationPipeline(pipeline());
     }
 
-    public MigrationScheduler independentScheduler() {
-        return new MigrationScheduler(executor());
-    }
-
-    public MigrationScheduler dependentScheduler() {
-        return new MigrationScheduler(executor());
-    }
-
     public Identity identity() {
         return channel.identity();
     }

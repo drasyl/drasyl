@@ -166,7 +166,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     }
 
     private synchronized void mapPort(final MigrationHandlerContext ctx) {
-        timeoutGuard = ctx.independentScheduler().scheduleDirect(() -> {
+        timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
             if (refreshTask == null) {
                 LOG.debug("Unable to create mapping within {}s.", TIMEOUT::toSeconds);
@@ -178,7 +178,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     }
 
     private synchronized void unmapPort(final MigrationHandlerContext ctx) {
-        ctx.independentScheduler().scheduleDirect(() -> {
+        ctx.executor().execute(() -> {
             if (upnpService != null) {
                 try {
                     LOG.debug("Delete mapping for `{}/UDP`.", () -> port);
@@ -218,7 +218,8 @@ public class UpnpIgdPortMapping implements PortMapping {
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         ssdpServices.clear();
         ssdpDiscoveryActive.set(true);
-        ssdpDiscoverTask = ctx.independentScheduler().scheduleDirect(() -> {
+        // failed
+        ssdpDiscoverTask = ctx.executor().schedule(() -> {
             ssdpDiscoveryActive.set(false);
             final Set<URI> serviceLocations = this.ssdpServices;
             LOG.debug("Stop SSDP discovery. Found {} service(s).", serviceLocations.size());
@@ -236,7 +237,7 @@ public class UpnpIgdPortMapping implements PortMapping {
 
                         final long delay = MAPPING_LIFETIME.dividedBy(2).toSeconds();
                         LOG.debug("Schedule refresh of mapping for in {}s.", delay);
-                        refreshTask = ctx.independentScheduler().scheduleDirect(() -> {
+                        refreshTask = ctx.executor().schedule(() -> {
                             refreshTask = null;
                             mapPort(ctx);
                         }, delay, SECONDS);
@@ -246,7 +247,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                     LOG.debug("Unable to create mapping.");
                     fail();
                 }
-                catch (final InterruptedException e) {
+                catch (final InterruptedException e1) {
                     Thread.currentThread().interrupt();
                 }
             }
