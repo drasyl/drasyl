@@ -35,7 +35,7 @@ import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Enables a {@link Handler} to interact with its {@link Pipeline} and other handlers. Among other
+ * w Enables a {@link Handler} to interact with its {@link Pipeline} and other handlers. Among other
  * things a handler can notify the next {@link Handler} in the {@link Pipeline} as well as modify
  * the {@link Pipeline} it belongs to dynamically.
  */

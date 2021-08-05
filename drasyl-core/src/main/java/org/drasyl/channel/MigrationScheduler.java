@@ -49,8 +49,6 @@ public class MigrationScheduler extends Scheduler {
 
     @Override
     public @NonNull Disposable scheduleDirect(@NonNull final Runnable run) {
-        System.out.println("MigrationScheduler.scheduleDirectx");
-        System.out.println("run = " + run);
         executor.execute(run);
         return new MigrationDisposable(new SucceededFuture<>(null, null));
     }
@@ -59,8 +57,6 @@ public class MigrationScheduler extends Scheduler {
     public @NonNull Disposable scheduleDirect(@NonNull final Runnable run,
                                               final long delay,
                                               @NonNull final TimeUnit unit) {
-        System.out.println("MigrationScheduler.scheduleDirect");
-        System.out.println("run = " + run + ", delay = " + delay + ", unit = " + unit);
         return new MigrationDisposable(executor.schedule(run, delay, unit));
     }
 
@@ -69,8 +65,6 @@ public class MigrationScheduler extends Scheduler {
                                                           final long initialDelay,
                                                           final long period,
                                                           @NonNull final TimeUnit unit) {
-        System.out.println("MigrationScheduler.schedulePeriodicallyDirect");
-        System.out.println("run = " + run + ", initialDelay = " + initialDelay + ", period = " + period + ", unit = " + unit);
         return new MigrationDisposable(executor.scheduleAtFixedRate(run, initialDelay, period, unit));
     }
 }
