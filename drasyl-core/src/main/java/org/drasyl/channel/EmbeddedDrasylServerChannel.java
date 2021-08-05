@@ -55,6 +55,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.channel.Null.NULL;
 
 /**
@@ -64,11 +69,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Dras
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static final
     Optional<Object> NULL_MESSAGE = Optional.empty();
-    private final DrasylConfig config;
-    private final Identity identity;
-    private final PeersManager peersManager;
-    protected final Serialization inboundSerialization;
-    protected final Serialization outboundSerialization;
     private final Subject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
     private final Subject<AddressedEnvelope<Address, Object>> outboundMessages;
@@ -82,14 +82,15 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Dras
                                        final Subject<Event> inboundEvents,
                                        final Subject<AddressedEnvelope<Address, Object>> outboundMessages,
                                        final ChannelHandler... handlers) {
-        this.config = config;
-        this.identity = identity;
-        this.peersManager = peersManager;
-        this.inboundSerialization = inboundSerialization;
-        this.outboundSerialization = outboundSerialization;
         this.inboundMessages = inboundMessages;
         this.inboundEvents = inboundEvents;
         this.outboundMessages = outboundMessages;
+
+        attr(CONFIG_ATTR_KEY).set(config);
+        attr(IDENTITY_ATTR_KEY).set(identity);
+        attr(PEERS_MANAGER_ATTR_KEY).set(peersManager);
+        attr(INBOUND_SERIALIZATION_ATTR_KEY).set(inboundSerialization);
+        attr(OUTBOUND_SERIALIZATION_ATTR_KEY).set(outboundSerialization);
 
         // my tail
         pipeline().addLast("MY_TAIL", new ChannelInboundHandlerAdapter() {
@@ -271,37 +272,30 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Dras
         return FutureUtil.toFuture(promise);
     }
 
-    @Override
     public DrasylConfig drasylConfig() {
-        return config;
+        return attr(CONFIG_ATTR_KEY).get();
     }
 
-    @Override
     public PeersManager peersManager() {
-        return peersManager;
+        return attr(PEERS_MANAGER_ATTR_KEY).get();
     }
 
-    @Override
     public Serialization inboundSerialization() {
-        return inboundSerialization;
+        return attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 
-    @Override
     public Serialization outboundSerialization() {
-        return outboundSerialization;
+        return attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 
-    @Override
     public Identity identity() {
-        return identity;
+        return attr(IDENTITY_ATTR_KEY).get();
     }
 
-    @Override
     public Map<DrasylAddress, Channel> channels() {
         throw new RuntimeException("not implemented yet");
     }
 
-    @Override
     public Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
                                            final IdentityPublicKey peer) {
         throw new RuntimeException("not implemented yet");

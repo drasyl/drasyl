@@ -28,6 +28,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
+import io.netty.util.AttributeKey;
 import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
@@ -39,20 +40,18 @@ import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * A {@link Channel} for overlay network management.
  */
 public class DefaultDrasylServerChannel extends AbstractServerChannel implements DrasylServerChannel {
-    private final DrasylConfig drasylConfig;
+    public static final AttributeKey<DrasylConfig> CONFIG_ATTR_KEY = AttributeKey.valueOf(DrasylConfig.class, "CONFIG");
+    public static final AttributeKey<Identity> IDENTITY_ATTR_KEY = AttributeKey.valueOf(Identity.class, "IDENTITY");
+    public static final AttributeKey<PeersManager> PEERS_MANAGER_ATTR_KEY = AttributeKey.valueOf(PeersManager.class, "PEERS_MANAGER");
+    public static final AttributeKey<Serialization> INBOUND_SERIALIZATION_ATTR_KEY = AttributeKey.valueOf(Serialization.class, "INBOUND_SERIALIZATION");
+    public static final AttributeKey<Serialization> OUTBOUND_SERIALIZATION_ATTR_KEY = AttributeKey.valueOf(Serialization.class, "OUTBOUND_SERIALIZATION");
     private volatile int state; // 0 - open (node created), 1 - active (node started), 2 - closed (node shut down)
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Identity identity;
-    private final PeersManager peersManager;
     private volatile Identity localAddress; // NOSONAR
-    private final Serialization inboundSerialization;
-    private final Serialization outboundSerialization;
     private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
 
     public DefaultDrasylServerChannel(final DrasylConfig drasylConfig,
@@ -60,11 +59,11 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel implements
                                       final PeersManager peersManager,
                                       final Serialization inboundSerialization,
                                       final Serialization outboundSerialization) {
-        this.drasylConfig = requireNonNull(drasylConfig);
-        this.identity = requireNonNull(identity);
-        this.peersManager = requireNonNull(peersManager);
-        this.inboundSerialization = requireNonNull(inboundSerialization);
-        this.outboundSerialization = requireNonNull(outboundSerialization);
+        attr(CONFIG_ATTR_KEY).set(drasylConfig);
+        attr(IDENTITY_ATTR_KEY).set(identity);
+        attr(PEERS_MANAGER_ATTR_KEY).set(peersManager);
+        attr(INBOUND_SERIALIZATION_ATTR_KEY).set(inboundSerialization);
+        attr(OUTBOUND_SERIALIZATION_ATTR_KEY).set(outboundSerialization);
     }
 
     @Override
@@ -124,27 +123,27 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel implements
 
     @Override
     public DrasylConfig drasylConfig() {
-        return drasylConfig;
+        return attr(CONFIG_ATTR_KEY).get();
     }
 
     @Override
     public PeersManager peersManager() {
-        return peersManager;
+        return attr(PEERS_MANAGER_ATTR_KEY).get();
     }
 
     @Override
     public Serialization inboundSerialization() {
-        return inboundSerialization;
+        return attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 
     @Override
     public Serialization outboundSerialization() {
-        return outboundSerialization;
+        return attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 
     @Override
     public Identity identity() {
-        return identity;
+        return attr(IDENTITY_ATTR_KEY).get();
     }
 
     @Override
