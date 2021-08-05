@@ -24,7 +24,6 @@ package org.drasyl.pipeline;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
 
-import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -145,27 +144,6 @@ import java.util.concurrent.CompletableFuture;
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface Pipeline {
-    /**
-     * Appends a {@link Handler} at the last position of this pipeline.
-     *
-     * @param name    the name of the handler to append
-     * @param handler the handler to append
-     * @throws IllegalArgumentException if there's an entry with the same name already in the
-     *                                  pipeline
-     * @throws NullPointerException     if the specified handler is {@code null}
-     */
-    Pipeline addLast(String name, Handler handler);
-
-    /**
-     * Removes the {@link Handler} with the specified name from this pipeline.
-     *
-     * @param name the name under which the {@link Handler} was stored.
-     * @throws NoSuchElementException if there's no such handler with the specified name in this
-     *                                pipeline
-     * @throws NullPointerException   if the specified name is {@code null}
-     */
-    Pipeline remove(String name);
-
     /**
      * Processes an inbound message by the pipeline.
      * <p>

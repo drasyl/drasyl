@@ -40,7 +40,6 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -247,18 +246,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Dras
         inboundMessages.toList().blockingGet().forEach(o -> ReferenceCountUtil.safeRelease(o.getContent()));
 
         close();
-    }
-
-    @Override
-    public Pipeline addLast(final String name, final Handler handler) {
-        pipeline().addLast(name, handler);
-        return this;
-    }
-
-    @Override
-    public Pipeline remove(final String name) {
-        pipeline().remove(name);
-        return this;
     }
 
     @Override

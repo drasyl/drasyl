@@ -130,8 +130,8 @@ class GroupsClientHandlerTest {
             try {
                 final TestObserver<GroupLeaveMessage> testObserver = pipeline.drasylOutboundMessages(GroupLeaveMessage.class).test();
 
-                pipeline.addLast("handler", handler);
-                pipeline.remove("handler");
+                pipeline.pipeline().addLast("handler", handler);
+                pipeline.pipeline().remove("handler");
 
                 testObserver.awaitCount(1)
                         .assertValueCount(1)
