@@ -21,6 +21,7 @@
  */
 package org.drasyl.example.qotm;
 
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
@@ -29,7 +30,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.example.qotm.QuoteOfTheMomentServer.Quote;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -81,8 +81,8 @@ public class QuoteOfTheMomentClient extends DrasylNode {
         node.start().join();
         node.online().join();
 
-        //ask for next quote periodically every n seconds
-        DrasylSchedulerUtil.getInstanceLight().schedulePeriodicallyDirect(
+        // ask for next quote periodically every n seconds
+        Schedulers.io().schedulePeriodicallyDirect(
                 () -> node.send(recipient, null),
                 0, pullTimeout.toSeconds(), TimeUnit.SECONDS);
     }

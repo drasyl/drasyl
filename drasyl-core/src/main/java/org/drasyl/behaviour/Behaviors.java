@@ -23,6 +23,7 @@ package org.drasyl.behaviour;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.drasyl.behaviour.Behavior.BehaviorBuilder;
 import org.drasyl.event.Event;
 
@@ -32,7 +33,6 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.util.scheduler.DrasylSchedulerUtil.getInstanceLight;
 
 /**
  * Factories for {@link Behavior}.
@@ -104,7 +104,7 @@ public final class Behaviors {
      * @param factory function that returns the behavior that should react to scheduled self events
      */
     public static Behavior withScheduler(final Function<EventScheduler, Behavior> factory) {
-        return withScheduler(factory, getInstanceLight());
+        return withScheduler(factory, Schedulers.io());
     }
 
     public static class EventScheduler {

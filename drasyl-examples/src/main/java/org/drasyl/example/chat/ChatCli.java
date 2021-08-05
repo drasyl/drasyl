@@ -38,7 +38,6 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -211,7 +210,6 @@ public class ChatCli {
         }
 
         node.shutdown().join();
-        DrasylSchedulerUtil.shutdown();
     }
 
     static void addBeforePrompt(final Object x) {

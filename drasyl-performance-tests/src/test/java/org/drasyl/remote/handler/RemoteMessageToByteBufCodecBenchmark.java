@@ -39,6 +39,7 @@ import io.netty.channel.EventLoop;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
@@ -58,7 +59,6 @@ import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.HopCount;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.util.RandomUtil;
-import org.drasyl.util.scheduler.DrasylScheduler;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -649,12 +649,12 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public DrasylScheduler independentScheduler() {
+        public Scheduler independentScheduler() {
             return null;
         }
 
         @Override
-        public DrasylScheduler dependentScheduler() {
+        public Scheduler dependentScheduler() {
             return null;
         }
 

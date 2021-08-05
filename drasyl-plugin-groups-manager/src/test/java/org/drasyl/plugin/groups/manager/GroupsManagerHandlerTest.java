@@ -21,6 +21,7 @@
  */
 package org.drasyl.plugin.groups.manager;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -48,7 +49,6 @@ import org.drasyl.plugin.groups.manager.data.Membership;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
 import org.drasyl.serialization.JacksonJsonSerializer;
-import org.drasyl.util.scheduler.DrasylScheduler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -86,7 +86,7 @@ class GroupsManagerHandlerTest {
     @Mock
     private DatabaseAdapter databaseAdapter;
     @Mock
-    private DrasylScheduler scheduler;
+    private Scheduler scheduler;
     @Mock
     private IdentityPublicKey publicKey;
     @Mock
