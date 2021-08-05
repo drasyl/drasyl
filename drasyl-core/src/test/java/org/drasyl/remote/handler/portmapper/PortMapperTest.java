@@ -25,14 +25,13 @@ import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -68,7 +67,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Event> inboundEvents;
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 inboundEvents = pipeline.inboundEvents().test();
 
@@ -90,7 +89,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Event> inboundEvents;
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 inboundEvents = pipeline.inboundEvents().test();
 
@@ -113,7 +112,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, retryTask);
             final TestObserver<Event> inboundEvents;
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 inboundEvents = pipeline.inboundEvents().test();
 
@@ -142,7 +141,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Object> inboundMessages;
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 inboundMessages = pipeline.drasylInboundMessages().test();
 
@@ -163,7 +162,7 @@ class PortMapperTest {
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Object> inboundMessages;
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 inboundMessages = pipeline.drasylInboundMessages().test();
 
@@ -193,7 +192,7 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method1, method2));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 

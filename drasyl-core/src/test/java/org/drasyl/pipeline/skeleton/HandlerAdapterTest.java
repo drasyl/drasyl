@@ -23,12 +23,11 @@ package org.drasyl.pipeline.skeleton;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -125,7 +124,7 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnEventTriggeredWithMultipleHandler(@Mock final Event event) {
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
             try {
                 final TestObserver<Event> events = pipeline.inboundEvents().test();
 
@@ -143,7 +142,7 @@ class HandlerAdapterTest {
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler(@Mock final IdentityPublicKey sender,
                                                          @Mock final RemoteMessage msg) {
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 

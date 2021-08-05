@@ -24,13 +24,12 @@ package org.drasyl.remote.handler;
 import com.google.common.collect.ImmutableMap;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -61,7 +60,7 @@ class StaticRoutesHandlerTest {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
             pipeline.processInbound(event).join();
 
@@ -78,7 +77,7 @@ class StaticRoutesHandlerTest {
                                           @Mock final InetSocketAddressWrapper address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
             pipeline.processInbound(event).join();
 
@@ -95,7 +94,7 @@ class StaticRoutesHandlerTest {
                                                         @Mock final InetSocketAddressWrapper address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
             pipeline.processInbound(event).join();
 
@@ -113,7 +112,7 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
@@ -134,7 +133,7 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
 
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 

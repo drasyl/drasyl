@@ -24,6 +24,7 @@ package org.drasyl.plugin.groups.client;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -31,8 +32,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
@@ -61,6 +60,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -126,7 +126,7 @@ class GroupsClientHandlerTest {
         void shouldDeregisterFromGroups() {
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager);
             try {
                 final TestObserver<GroupLeaveMessage> testObserver = pipeline.drasylOutboundMessages(GroupLeaveMessage.class).test();
 
@@ -150,7 +150,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldPassThroughOnNotMatchingEvent(@Mock final NodeOfflineEvent event) {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
@@ -170,7 +170,7 @@ class GroupsClientHandlerTest {
             final String credentials = "test";
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final TestObserver<GroupJoinMessage> outboundObserver = pipeline.drasylOutboundMessages(GroupJoinMessage.class).test();
@@ -181,12 +181,17 @@ class GroupsClientHandlerTest {
 
                 pipeline.processInbound(event).join();
 
-                eventObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(event);
+                await().untilAsserted(() -> {
+                    pipeline.runPendingTasks();
+                    eventObserver.awaitCount(1)
+                            .assertValueCount(1)
+                            .assertValue(event);
+                });
 
-                outboundObserver.awaitCount(1).assertValueCount(1);
-                outboundObserver.assertValue(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false));
+                outboundObserver
+                        .awaitCount(1)
+                        .assertValueCount(1)
+                        .assertValue(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false));
             }
             finally {
                 pipeline.drasylClose();
@@ -199,7 +204,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessMemberJoined() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
@@ -220,7 +225,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessMemberLeft() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
@@ -243,7 +248,7 @@ class GroupsClientHandlerTest {
             when(identity.getIdentityPublicKey()).thenReturn(publicKey);
 
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
@@ -266,7 +271,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessWelcome() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
@@ -291,7 +296,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessJoinFailed() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;

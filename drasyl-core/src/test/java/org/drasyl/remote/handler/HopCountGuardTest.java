@@ -23,12 +23,11 @@ package org.drasyl.remote.handler;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
@@ -81,7 +80,7 @@ class HopCountGuardTest {
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final FullReadMessage<AcknowledgementMessage> message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
 
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
@@ -103,7 +102,7 @@ class HopCountGuardTest {
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final RemoteMessage message = AcknowledgementMessage.of(randomNonce(), 0, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, HopCount.of(MAX_HOP_COUNT), agreementId, correspondingId);
 
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 

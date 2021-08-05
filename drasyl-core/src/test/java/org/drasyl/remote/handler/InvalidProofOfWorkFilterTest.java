@@ -23,11 +23,10 @@ package org.drasyl.remote.handler;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
@@ -69,7 +68,7 @@ class InvalidProofOfWorkFilterTest {
     void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
         try {
             final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
@@ -86,7 +85,7 @@ class InvalidProofOfWorkFilterTest {
     void shouldPassMessagesWithValidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, IdentityTestUtil.ID_1.getProofOfWork(), recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
@@ -105,7 +104,7 @@ class InvalidProofOfWorkFilterTest {
     void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_3, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_3, peersManager, handler);
         try {
             pipeline.processInbound(message.getSender(), message).join();
 

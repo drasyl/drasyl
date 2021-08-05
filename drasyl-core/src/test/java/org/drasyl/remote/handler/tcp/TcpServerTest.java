@@ -30,13 +30,12 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerChannelInitializer;
@@ -88,7 +87,7 @@ class TcpServerTest {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, null);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -107,7 +106,7 @@ class TcpServerTest {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -123,7 +122,7 @@ class TcpServerTest {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -150,7 +149,7 @@ class TcpServerTest {
             when(channelFuture.isSuccess()).thenReturn(true);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processOutbound(recipient, msg).join();
 
@@ -169,7 +168,7 @@ class TcpServerTest {
             when(clientChannels.get(any())).thenReturn(client);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 assertThrows(CompletionException.class, pipeline.processOutbound(recipient, msg)::join);
             }
@@ -182,7 +181,7 @@ class TcpServerTest {
         void shouldPassthroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 

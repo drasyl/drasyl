@@ -23,10 +23,9 @@ package org.drasyl.pipeline.handler.codec;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
@@ -53,7 +52,7 @@ class MessageToMessageDecoderTest {
 
     @Test
     void shouldCompleteExceptionallyOnException(@Mock final Address recipient) {
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new MessageToMessageDecoder<>() {
             @Override
             protected void decode(final HandlerContext ctx,
                                   final Address sender,
@@ -71,7 +70,7 @@ class MessageToMessageDecoderTest {
 
     @Test
     void shouldCompleteExceptionallyOnEmptyEncodingResult(@Mock final Address recipient) {
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new MessageToMessageDecoder<>() {
             @Override
             protected void decode(final HandlerContext ctx,
                                   final Address sender,
@@ -89,7 +88,7 @@ class MessageToMessageDecoderTest {
 
     @Test
     void shouldPassEncodedResult(@Mock final Address recipient) {
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new MessageToMessageDecoder<>() {
             @Override
             protected void decode(final HandlerContext ctx,
                                   final Address sender,
@@ -113,7 +112,7 @@ class MessageToMessageDecoderTest {
 
     @Test
     void shouldCreateCombinedFutureOnMultiEncodingResult(@Mock final Address sender) {
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, new MessageToMessageDecoder<>() {
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new MessageToMessageDecoder<>() {
             @Override
             protected void decode(final HandlerContext ctx,
                                   final Address sender,

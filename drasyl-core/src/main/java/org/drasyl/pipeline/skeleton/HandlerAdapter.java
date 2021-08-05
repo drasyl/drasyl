@@ -23,6 +23,7 @@ package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -149,7 +150,7 @@ public class HandlerAdapter implements Handler {
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         if (msg instanceof MigrationOutboundMessage) {
             final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
             final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
@@ -166,7 +167,14 @@ public class HandlerAdapter implements Handler {
             if (payload == NULL) {
                 payload = null;
             }
-            onOutbound(handlerCtx, migrationMsg.address(), payload, future);
+            try {
+                onOutbound(handlerCtx, migrationMsg.address(), payload, future);
+            }
+            catch (final Exception e) {
+                future.completeExceptionally(e);
+                handlerCtx.passException(e);
+                ReferenceCountUtil.safeRelease(msg);
+            }
         }
         else {
             throw new RuntimeException("not implemented yet"); // NOSONAR
@@ -199,7 +207,7 @@ public class HandlerAdapter implements Handler {
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof MigrationInboundMessage) {
             final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
             final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
@@ -207,7 +215,14 @@ public class HandlerAdapter implements Handler {
             if (payload == NULL) {
                 payload = null;
             }
-            onInbound(handlerCtx, migrationMsg.address(), payload, migrationMsg.future());
+            try {
+                onInbound(handlerCtx, migrationMsg.address(), payload, migrationMsg.future());
+            }
+            catch (final Exception e) {
+                migrationMsg.future().completeExceptionally(e);
+                handlerCtx.passException(e);
+                ReferenceCountUtil.safeRelease(msg);
+            }
         }
         else {
             throw new RuntimeException("not implemented yet"); // NOSONAR

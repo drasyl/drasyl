@@ -25,14 +25,13 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.RemoteMessage;
@@ -74,7 +73,7 @@ class MonitoringTest {
             when(registrySupplier.apply(any())).thenReturn(registry);
 
             final Monitoring handler = new Monitoring(counters, registrySupplier, null);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -91,7 +90,7 @@ class MonitoringTest {
         @Test
         void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
             final Monitoring handler = new Monitoring(counters, registrySupplier, registry);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -105,7 +104,7 @@ class MonitoringTest {
         @Test
         void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -122,7 +121,7 @@ class MonitoringTest {
         @Test
         void shouldPassthroughAllEvents(@Mock final Event event) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
 
@@ -140,7 +139,7 @@ class MonitoringTest {
         void shouldPassthroughInboundMessages(@Mock final Address sender,
                                               @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
@@ -158,7 +157,7 @@ class MonitoringTest {
         void shouldPassthroughOutboundMessages(@Mock final Address recipient,
                                                @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 

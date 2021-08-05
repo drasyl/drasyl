@@ -122,7 +122,7 @@ public class MigrationHandlerContext implements HandlerContext {
 
     @Override
     public Pipeline pipeline() {
-        throw new RuntimeException("not supported"); // NOSONAR
+        return new MigrationPipeline(ctx.pipeline());
     }
 
     @Override

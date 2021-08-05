@@ -23,9 +23,8 @@ package org.drasyl.pipeline.skeleton;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
@@ -78,7 +77,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
     class Outbound {
         @Test
         void shouldSkipOnNullReceiver(@Mock final Address recipient) {
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
@@ -112,7 +111,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
@@ -130,7 +129,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
 
         @Test
         void shouldSkipIfMessageComesNotFromMe(@Mock final Address recipient) {
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
 
@@ -148,7 +147,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
 
         @Test
         void shouldSkipIfMessageIsForMe(@Mock final Address recipient) {
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), nonce);
 
@@ -169,7 +168,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
     class Inbound {
         @Test
         void shouldSkipOnNullReceiver(@Mock final Address sender) {
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final RemoteMessage msg = DiscoveryMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork());
 
@@ -187,7 +186,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
 
         @Test
         void shouldSkipIfMessageComesFromMe(@Mock final Address sender) {
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
 
@@ -205,7 +204,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
 
         @Test
         void shouldSkipIfMessageIsNotForMe(@Mock final Address sender) {
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final RemoteMessage msg = AcknowledgementMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), nonce);
 

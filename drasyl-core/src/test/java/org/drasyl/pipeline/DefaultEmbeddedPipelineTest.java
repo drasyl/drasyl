@@ -23,6 +23,7 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -57,7 +58,7 @@ class DefaultEmbeddedPipelineTest {
     @Test
     void shouldReturnInboundMessagesAndEvents(@Mock final IdentityPublicKey sender,
                                               @Mock final RemoteMessage msg) {
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager);
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
             final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
@@ -81,7 +82,7 @@ class DefaultEmbeddedPipelineTest {
     @Test
     void shouldReturnOutboundMessages(@Mock final IdentityPublicKey sender,
                                       @Mock final IdentityPublicKey recipient) {
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(
                 config,
                 identity,
                 peersManager,

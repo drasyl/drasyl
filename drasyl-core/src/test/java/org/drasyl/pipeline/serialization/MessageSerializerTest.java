@@ -25,11 +25,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.serialization.StringSerializer;
@@ -44,7 +43,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.pipeline.EmbeddedPipeline.NULL_MESSAGE;
+import static org.drasyl.channel.EmbeddedDrasylServerChannel.NULL_MESSAGE;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -67,7 +66,7 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(ImmutableMap.of("string", new StringSerializer()));
             when(config.getSerializationsBindingsInbound()).thenReturn(ImmutableMap.of(String.class, "string"));
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
@@ -89,7 +88,7 @@ class MessageSerializerTest {
             when(config.getSerializationsBindingsInbound()).thenReturn(ImmutableMap.of(Object.class, "object"));
             when(serializer.fromByteArray(any(), anyString())).thenReturn("Hallo Welt");
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
@@ -107,7 +106,7 @@ class MessageSerializerTest {
         @Test
         void shouldBeAbleToDeserializeNullMessage(@Mock final IdentityPublicKey address) {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), null, null);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
@@ -125,7 +124,7 @@ class MessageSerializerTest {
         @Test
         void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final IdentityPublicKey sender) throws InterruptedException {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
@@ -145,7 +144,7 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(ImmutableMap.of("string", serializer));
             when(config.getSerializationsBindingsInbound()).thenReturn(ImmutableMap.of(String.class, "string"));
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
@@ -168,7 +167,7 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(ImmutableMap.of("string", new StringSerializer()));
             when(config.getSerializationsBindingsOutbound()).thenReturn(ImmutableMap.of(String.class, "string"));
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
@@ -191,7 +190,7 @@ class MessageSerializerTest {
             when(config.getSerializationsBindingsOutbound()).thenReturn(ImmutableMap.of(Object.class, "object"));
             when(serializer.toByteArray(any())).thenReturn(new byte[0]);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
@@ -208,7 +207,7 @@ class MessageSerializerTest {
         @Test
         void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final IdentityPublicKey recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) throws InterruptedException {
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
@@ -228,7 +227,7 @@ class MessageSerializerTest {
             when(config.getSerializationSerializers()).thenReturn(ImmutableMap.of("string", serializer));
             when(config.getSerializationsBindingsOutbound()).thenReturn(ImmutableMap.of(String.class, "string"));
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
@@ -246,7 +245,7 @@ class MessageSerializerTest {
             when(identity.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
             when(identity.getProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, MessageSerializer.INSTANCE);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 

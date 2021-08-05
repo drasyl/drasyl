@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -34,8 +35,6 @@ import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.ArmedMessage;
@@ -66,6 +65,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.awaitility.Awaitility.await;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -113,7 +113,7 @@ class ArmHandlerTest {
         @Test
         void shouldEncryptOutgoingMessageWithRecipientAndFromMe() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<ArmedMessage> outboundMessages = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
@@ -147,7 +147,7 @@ class ArmHandlerTest {
         @Test
         void shouldNotEncryptOutgoingMessageWithSenderThatIsNotMe() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
@@ -180,7 +180,7 @@ class ArmHandlerTest {
         @Test
         void shouldNotEncryptOutgoingMessageWithNoRecipient() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
@@ -207,7 +207,7 @@ class ArmHandlerTest {
         @Test
         void shouldNotEncryptOutgoingMessageWithLoopback() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
@@ -252,7 +252,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
 
@@ -287,7 +287,7 @@ class ArmHandlerTest {
         @Test
         void shouldSendKeyExchangeMessageOnOutbound() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
 
@@ -319,7 +319,7 @@ class ArmHandlerTest {
         @Test
         void shouldNotSendKeyExchangeMessageOnOutboundIfMaxAgreementOptionIsZero() {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
@@ -350,7 +350,7 @@ class ArmHandlerTest {
         void shouldNotSendKeyExchangeMessageOnInbound() throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
@@ -383,7 +383,7 @@ class ArmHandlerTest {
         void shouldSendKeyExchangeMessageOnInboundOnUnknownAgreementId() throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
                 // construct wrong agreement id
@@ -431,7 +431,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
                 final TestObserver<Event> observer = pipeline.inboundEvents().test();
 
@@ -478,7 +478,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
                 final TestObserver<Event> observer = pipeline.inboundEvents().test();
 
@@ -518,7 +518,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
                 final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
                 final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
@@ -561,7 +561,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
                 final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
 
@@ -581,8 +581,10 @@ class ArmHandlerTest {
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
-                future.join();
-                assertTrue(future.isDone());
+                await().until(() -> {
+                    pipeline.runPendingTasks();
+                    return future.isDone();
+                });
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(0, session.getInitializedAgreements().size());
                 observerEvents.assertNoValues();
@@ -609,7 +611,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_2, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
                 final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
 
@@ -628,8 +630,10 @@ class ArmHandlerTest {
 
                 final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
 
-                future.join();
-                assertTrue(future.isDone());
+                await().until(() -> {
+                    pipeline.runPendingTasks();
+                    return future.isDone();
+                });
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(keyPair.getPublicKey(), session.getCurrentInactiveAgreement().getValue().get().getRecipientsKeyAgreementKey().get());
                 observerEvents.assertNoValues();
@@ -653,7 +657,7 @@ class ArmHandlerTest {
                                                                               @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException, CryptoException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
@@ -701,7 +705,7 @@ class ArmHandlerTest {
                                                                              @Mock final Crypto crypto) throws CryptoException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<ArmedMessage> observer = pipeline.drasylOutboundMessages(ArmedMessage.class).test();
 
@@ -723,9 +727,8 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                assertFalse(future.isDone());
                 observer
                         .awaitCount(2)
                         .assertValueAt(0, Objects::nonNull);
@@ -746,7 +749,7 @@ class ArmHandlerTest {
                                                                        @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
@@ -787,7 +790,7 @@ class ArmHandlerTest {
                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Agreement agreement) {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> outObserver = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
                 final TestObserver<FullReadMessage> inObserver = pipeline.drasylInboundMessages(FullReadMessage.class).test();
@@ -821,15 +824,14 @@ class ArmHandlerTest {
         void shouldSkipMessagesNotForMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(msg);
@@ -843,16 +845,15 @@ class ArmHandlerTest {
         void shouldSkipMessagesFromMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
             final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(msg);
@@ -870,7 +871,7 @@ class ArmHandlerTest {
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
@@ -882,9 +883,8 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(disarmedMessage);
@@ -902,7 +902,7 @@ class ArmHandlerTest {
                                                                            @Mock final FullReadMessage<?> disarmedMsg) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, 0, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
@@ -914,9 +914,8 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMsg).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(disarmedMsg);
@@ -934,7 +933,7 @@ class ArmHandlerTest {
                                             @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
@@ -946,9 +945,8 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(disarmedMessage);
@@ -967,7 +965,7 @@ class ArmHandlerTest {
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<FullReadMessage<?>> observer = pipeline.drasylInboundMessages(new TypeReference<FullReadMessage<?>>() {
                 }).test();
@@ -985,9 +983,8 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(disarmedMessage);
@@ -1007,7 +1004,7 @@ class ArmHandlerTest {
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval);
 
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, IdentityTestUtil.ID_1, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, handler);
             try {
                 final TestObserver<RemoteMessage> observer = pipeline.drasylInboundMessages(RemoteMessage.class).test();
 
@@ -1027,9 +1024,8 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                assertFalse(future.isDone());
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(disarmedMessage);

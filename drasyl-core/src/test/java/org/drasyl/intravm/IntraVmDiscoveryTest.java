@@ -23,14 +23,13 @@ package org.drasyl.intravm;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
@@ -68,7 +67,7 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldStartDiscoveryOnNodeUpEvent(@Mock final NodeUpEvent event) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -87,7 +86,7 @@ class IntraVmDiscoveryTest {
                                                               @Mock final HandlerContext ctx) {
             discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -104,7 +103,7 @@ class IntraVmDiscoveryTest {
             discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -130,7 +129,7 @@ class IntraVmDiscoveryTest {
             });
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processOutbound(recipient, message).join();
 
@@ -145,7 +144,7 @@ class IntraVmDiscoveryTest {
         void shouldPasstroughOutgoingMessageForUnknownRecipients(@Mock final IdentityPublicKey recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 

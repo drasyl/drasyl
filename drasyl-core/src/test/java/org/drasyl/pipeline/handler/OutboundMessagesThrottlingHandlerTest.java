@@ -24,10 +24,9 @@ package org.drasyl.pipeline.handler;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.junit.jupiter.api.Test;
@@ -55,7 +54,7 @@ class OutboundMessagesThrottlingHandlerTest {
     void shouldThrottleOutboundMessages(@Mock final Address recipient,
                                         @Mock final ByteBuf msg) {
         final Handler handler = new OutboundMessagesThrottlingHandler(10);
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             final TestObserver<Object> inboundMessages = pipeline.drasylOutboundMessages().test();
 

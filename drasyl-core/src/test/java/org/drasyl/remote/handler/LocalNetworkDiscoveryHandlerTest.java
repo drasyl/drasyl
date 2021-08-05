@@ -24,14 +24,13 @@ package org.drasyl.remote.handler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DefaultEmbeddedPipeline;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -93,8 +92,10 @@ class LocalNetworkDiscoveryTest {
 
         @Test
         void shouldStartHeartbeatingOnNodeUpEvent(@Mock final NodeUpEvent event) {
+            when(config.getRemotePingInterval()).thenReturn(ofSeconds(1));
+
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, null));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
                 verify(handler).startHeartbeat(any());
@@ -108,7 +109,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, pingDisposable));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -123,7 +124,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnNodeDownEvent(@Mock final NodeDownEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, pingDisposable));
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.processInbound(event).join();
 
@@ -229,7 +230,7 @@ class LocalNetworkDiscoveryTest {
         void shouldPassthroughUnicastMessages(@Mock final InetSocketAddressWrapper sender,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-            final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
@@ -253,7 +254,7 @@ class LocalNetworkDiscoveryTest {
         when(peers.get(any())).thenReturn(peer);
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
         pipeline.processOutbound(recipient, message).join();
@@ -268,7 +269,7 @@ class LocalNetworkDiscoveryTest {
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-        final EmbeddedPipeline pipeline = new DefaultEmbeddedPipeline(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
         pipeline.processOutbound(recipient, message).join();
