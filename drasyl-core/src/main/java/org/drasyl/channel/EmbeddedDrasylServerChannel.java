@@ -40,7 +40,6 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
@@ -61,7 +60,7 @@ import static org.drasyl.channel.Null.NULL;
 /**
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
  */
-public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements DrasylServerChannel, Pipeline {
+public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements DrasylServerChannel {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static final
     Optional<Object> NULL_MESSAGE = Optional.empty();
@@ -248,7 +247,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Dras
         close();
     }
 
-    @Override
     public CompletableFuture<Void> processInbound(final Address sender, final Object msg) {
         final ChannelPromise promise = newPromise();
         final CompletableFuture<Void> future = FutureUtil.toFuture(promise);
@@ -256,7 +254,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Dras
         return future;
     }
 
-    @Override
     public CompletableFuture<Void> processInbound(final Event event) {
         final CompletableFuture<Void> future = new CompletableFuture<>();
         pipeline().fireUserEventTriggered(new MigrationEvent(event, future));
@@ -264,7 +261,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Dras
         return future;
     }
 
-    @Override
     public CompletableFuture<Void> processOutbound(final Address recipient, Object msg) {
         final ChannelPromise promise = newPromise();
         if (msg == null) {
