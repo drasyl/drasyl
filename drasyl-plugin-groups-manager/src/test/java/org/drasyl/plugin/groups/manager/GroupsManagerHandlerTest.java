@@ -21,12 +21,12 @@
  */
 package org.drasyl.plugin.groups.manager;
 
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationScheduler;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -86,7 +86,7 @@ class GroupsManagerHandlerTest {
     @Mock
     private DatabaseAdapter databaseAdapter;
     @Mock
-    private Scheduler scheduler;
+    private MigrationScheduler scheduler;
     @Mock
     private IdentityPublicKey publicKey;
     @Mock

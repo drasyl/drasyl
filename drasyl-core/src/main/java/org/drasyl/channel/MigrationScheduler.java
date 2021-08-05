@@ -22,20 +22,30 @@
 package org.drasyl.channel;
 
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.ProgressivePromise;
+import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.concurrent.SucceededFuture;
 import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.pipeline.Handler;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
  */
-public class MigrationScheduler extends Scheduler {
+public class MigrationScheduler implements EventExecutor {
     private final EventExecutor executor;
 
     public MigrationScheduler(final EventExecutor executor) {
@@ -43,28 +53,187 @@ public class MigrationScheduler extends Scheduler {
     }
 
     @Override
-    public @NonNull Worker createWorker() {
-        throw new RuntimeException("not implemented yet"); // NOSONAR
+    public boolean isShuttingDown() {
+        return executor.isShuttingDown();
     }
 
     @Override
+    public Future<?> shutdownGracefully() {
+        return executor.shutdownGracefully();
+    }
+
+    @Override
+    public Future<?> shutdownGracefully(final long quietPeriod,
+                                        final long timeout,
+                                        final TimeUnit unit) {
+        return executor.shutdownGracefully(quietPeriod, timeout, unit);
+    }
+
+    @Override
+    public Future<?> terminationFuture() {
+        return executor.terminationFuture();
+    }
+
+    @Override
+    public void shutdown() {
+        executor.shutdown();
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+        return executor.shutdownNow();
+    }
+
+    @Override
+    public boolean isShutdown() {
+        return executor.isShutdown();
+    }
+
+    @Override
+    public boolean isTerminated() {
+        return executor.isTerminated();
+    }
+
+    @Override
+    public boolean awaitTermination(final long timeout,
+                                    final TimeUnit unit) throws InterruptedException {
+        return executor.awaitTermination(timeout, unit);
+    }
+
+    @Override
+    public EventExecutor next() {
+        return executor.next();
+    }
+
+    @Override
+    public Iterator<EventExecutor> iterator() {
+        return executor.iterator();
+    }
+
+    @Override
+    public Future<?> submit(final Runnable task) {
+        return executor.submit(task);
+    }
+
+    @Override
+    public <T> List<java.util.concurrent.Future<T>> invokeAll(final Collection<? extends Callable<T>> tasks) throws InterruptedException {
+        return executor.invokeAll(tasks);
+    }
+
+    @Override
+    public <T> List<java.util.concurrent.Future<T>> invokeAll(final Collection<? extends Callable<T>> tasks,
+                                                              final long timeout,
+                                                              final TimeUnit unit) throws InterruptedException {
+        return executor.invokeAll(tasks, timeout, unit);
+    }
+
+    @Override
+    public <T> T invokeAny(final Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+        return executor.invokeAny(tasks);
+    }
+
+    @Override
+    public <T> T invokeAny(final Collection<? extends Callable<T>> tasks,
+                           final long timeout,
+                           final TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        return executor.invokeAny(tasks, timeout, unit);
+    }
+
+    @Override
+    public <T> Future<T> submit(final Runnable task, final T result) {
+        return executor.submit(task, result);
+    }
+
+    @Override
+    public <T> Future<T> submit(final Callable<T> task) {
+        return executor.submit(task);
+    }
+
+    @Override
+    public ScheduledFuture<?> schedule(final Runnable command,
+                                       final long delay,
+                                       final TimeUnit unit) {
+        return executor.schedule(command, delay, unit);
+    }
+
+    @Override
+    public <V> ScheduledFuture<V> schedule(final Callable<V> callable,
+                                           final long delay,
+                                           final TimeUnit unit) {
+        return executor.schedule(callable, delay, unit);
+    }
+
+    @Override
+    public ScheduledFuture<?> scheduleAtFixedRate(final Runnable command,
+                                                  final long initialDelay,
+                                                  final long period,
+                                                  final TimeUnit unit) {
+        return executor.scheduleAtFixedRate(command, initialDelay, period, unit);
+    }
+
+    @Override
+    public ScheduledFuture<?> scheduleWithFixedDelay(final Runnable command,
+                                                     final long initialDelay,
+                                                     final long delay,
+                                                     final TimeUnit unit) {
+        return executor.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+    }
+
+    @Override
+    public EventExecutorGroup parent() {
+        return executor.parent();
+    }
+
+    @Override
+    public boolean inEventLoop() {
+        return executor.inEventLoop();
+    }
+
+    @Override
+    public boolean inEventLoop(final Thread thread) {
+        return executor.inEventLoop(thread);
+    }
+
+    @Override
+    public <V> Promise<V> newPromise() {
+        return executor.newPromise();
+    }
+
+    @Override
+    public <V> ProgressivePromise<V> newProgressivePromise() {
+        return executor.newProgressivePromise();
+    }
+
+    @Override
+    public <V> Future<V> newSucceededFuture(final V result) {
+        return executor.newSucceededFuture(result);
+    }
+
+    @Override
+    public <V> Future<V> newFailedFuture(final Throwable cause) {
+        return executor.newFailedFuture(cause);
+    }
+
+    @Override
+    public void execute(@NonNull final Runnable command) {
+        executor.execute(command);
+    }
+
     public @NonNull Disposable scheduleDirect(@NonNull final Runnable run) {
-        executor.execute(run);
+        execute(run);
         return new MigrationDisposable(new SucceededFuture<>(null, null));
     }
 
-    @Override
     public @NonNull Disposable scheduleDirect(@NonNull final Runnable run,
                                               final long delay,
                                               @NonNull final TimeUnit unit) {
-        return new MigrationDisposable(executor.schedule(run, delay, unit));
+        return new MigrationDisposable(schedule(run, delay, unit));
     }
 
-    @Override
     public @NonNull Disposable schedulePeriodicallyDirect(@NonNull final Runnable run,
                                                           final long initialDelay,
                                                           final long period,
                                                           @NonNull final TimeUnit unit) {
-        return new MigrationDisposable(executor.scheduleAtFixedRate(run, initialDelay, period, unit));
+        return new MigrationDisposable(scheduleAtFixedRate(run, initialDelay, period, unit));
     }
 }

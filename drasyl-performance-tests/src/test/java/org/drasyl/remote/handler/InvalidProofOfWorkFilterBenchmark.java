@@ -37,12 +37,12 @@ import io.netty.channel.EventLoop;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationScheduler;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -631,12 +631,12 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public Scheduler independentScheduler() {
+        public MigrationScheduler independentScheduler() {
             return null;
         }
 
         @Override
-        public Scheduler dependentScheduler() {
+        public MigrationScheduler dependentScheduler() {
             return null;
         }
 

@@ -32,7 +32,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
-import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -313,11 +312,11 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
         return new MigrationPipeline(pipeline());
     }
 
-    public Scheduler independentScheduler() {
+    public MigrationScheduler independentScheduler() {
         return new MigrationScheduler(executor());
     }
 
-    public Scheduler dependentScheduler() {
+    public MigrationScheduler dependentScheduler() {
         return new MigrationScheduler(executor());
     }
 
