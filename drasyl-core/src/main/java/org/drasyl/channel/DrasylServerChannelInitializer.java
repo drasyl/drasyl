@@ -62,6 +62,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.Null.NULL;
 
 /**
@@ -97,7 +98,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
     @SuppressWarnings({ "java:S138", "java:S1541", "java:S3776" })
     @Override
     protected void initChannel(final Channel ch) {
-        final DrasylConfig config = ((DrasylServerChannel) ch).drasylConfig();
+        final DrasylConfig config = ch.attr(CONFIG_ATTR_KEY).get();
 
         ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 

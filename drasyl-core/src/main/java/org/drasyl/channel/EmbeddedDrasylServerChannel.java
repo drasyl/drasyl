@@ -270,10 +270,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Dras
         return FutureUtil.toFuture(promise);
     }
 
-    public DrasylConfig drasylConfig() {
-        return attr(CONFIG_ATTR_KEY).get();
-    }
-
     public PeersManager peersManager() {
         return attr(PEERS_MANAGER_ATTR_KEY).get();
     }

@@ -29,6 +29,8 @@ import org.drasyl.identity.Identity;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+
 /**
  * The {@code PluginManager} notifies all enabled plugins about specific node events (like startup
  * or shutdown).
@@ -43,7 +45,7 @@ public class PluginManager {
      */
     public void beforeStart(final ChannelHandlerContext ctx) {
         final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
-        final DrasylConfig config = channel.drasylConfig();
+        final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
         final Identity identity = channel.identity();
         final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
@@ -61,7 +63,7 @@ public class PluginManager {
      */
     public void afterStart(final ChannelHandlerContext ctx) {
         final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
-        final DrasylConfig config = channel.drasylConfig();
+        final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
         final Identity identity = channel.identity();
         final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
@@ -79,7 +81,7 @@ public class PluginManager {
      */
     public void beforeShutdown(final ChannelHandlerContext ctx) {
         final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
-        final DrasylConfig config = channel.drasylConfig();
+        final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
         final Identity identity = channel.identity();
         final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
@@ -97,7 +99,7 @@ public class PluginManager {
      */
     public void afterShutdown(final ChannelHandlerContext ctx) {
         final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
-        final DrasylConfig config = channel.drasylConfig();
+        final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
         final Identity identity = channel.identity();
         final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {

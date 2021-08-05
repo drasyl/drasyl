@@ -37,7 +37,6 @@ import org.drasyl.channel.DefaultDrasylServerChannel;
 import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylChannelEventLoopGroupUtil;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DrasylServerChannelInitializer;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.event.Event;
@@ -64,6 +63,7 @@ import java.util.function.Consumer;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.Null.NULL;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
 
@@ -541,7 +541,7 @@ public abstract class DrasylNode {
             });
 
             // close inactive channels (to free up resources)
-            final int inactivityTimeout = (int) ((DrasylServerChannel) ch.parent()).drasylConfig().getChannelInactivityTimeout().getSeconds();
+            final int inactivityTimeout = (int) ch.parent().attr(CONFIG_ATTR_KEY).get().getChannelInactivityTimeout().getSeconds();
             if (inactivityTimeout > 0) {
                 ch.pipeline().addFirst(INACTIVITY_CLOSER, new ChannelInboundHandlerAdapter() {
                     @Override

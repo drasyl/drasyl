@@ -358,11 +358,6 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
                         }
 
                         @Override
-                        public DrasylConfig drasylConfig() {
-                            return null;
-                        }
-
-                        @Override
                         public PeersManager peersManager() {
                             return null;
                         }

@@ -355,11 +355,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
                         }
 
                         @Override
-                        public DrasylConfig drasylConfig() {
-                            return null;
-                        }
-
-                        @Override
                         public PeersManager peersManager() {
                             return null;
                         }

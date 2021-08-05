@@ -122,11 +122,6 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel implements
     }
 
     @Override
-    public DrasylConfig drasylConfig() {
-        return attr(CONFIG_ATTR_KEY).get();
-    }
-
-    @Override
     public PeersManager peersManager() {
         return attr(PEERS_MANAGER_ATTR_KEY).get();
     }
