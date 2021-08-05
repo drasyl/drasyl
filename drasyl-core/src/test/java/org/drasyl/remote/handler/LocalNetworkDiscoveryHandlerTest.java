@@ -53,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -64,6 +65,7 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -156,6 +158,7 @@ class LocalNetworkDiscoveryTest {
         void shouldRemoveStalePeersAndPingLocalNetworkPeers(@Mock final IdentityPublicKey publicKey,
                                                             @Mock final Peer peer,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(ctx.identity().getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
             when(ctx.identity().getProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
             when(peer.isStale(any())).thenReturn(true);
@@ -165,7 +168,7 @@ class LocalNetworkDiscoveryTest {
             handler.doHeartbeat(ctx);
 
             verify(peer).isStale(any());
-            verify(ctx.peersManager()).removePath(any(), eq(publicKey), any());
+            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removePath(any(), eq(publicKey), any());
             assertTrue(peers.isEmpty());
             verify(ctx).passOutbound(eq(MULTICAST_ADDRESS), any(DiscoveryMessage.class), any(CompletableFuture.class));
         }
@@ -189,11 +192,12 @@ class LocalNetworkDiscoveryTest {
         void shouldClearRoutes(@Mock final IdentityPublicKey publicKey,
                                @Mock final Peer peer,
                                @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             handler.clearRoutes(ctx);
 
-            verify(ctx.peersManager()).removePath(any(), eq(publicKey), any());
+            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removePath(any(), eq(publicKey), any());
             assertTrue(peers.isEmpty());
         }
     }
@@ -204,6 +208,7 @@ class LocalNetworkDiscoveryTest {
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddressWrapper sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                    @Mock final Peer peer) {
+            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
             when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
@@ -211,19 +216,20 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
 
-            verify(ctx.peersManager()).addPath(any(), eq(publicKey), any());
+            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).addPath(any(), eq(publicKey), any());
         }
 
         @Test
         void shouldIgnoreInboundPingFromItself(@Mock final InetSocketAddressWrapper sender,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
             when(ctx.identity().getIdentityPublicKey()).thenReturn(publicKey);
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
 
-            verify(ctx.peersManager(), never()).addPath(any(), eq(msg.getSender()), any());
+            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get(), never()).addPath(any(), eq(msg.getSender()), any());
         }
 
         @Test

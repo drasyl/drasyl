@@ -67,6 +67,7 @@ import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -78,6 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -253,6 +255,7 @@ class InternetDiscoveryTest {
                                             @Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddressWrapper address,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
+            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(peer.getAddress()).thenReturn(address);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
@@ -267,6 +270,7 @@ class InternetDiscoveryTest {
                                         @Mock final InetSocketAddressWrapper address,
                                         @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                         @Mock final Endpoint superPeerEndpoint) {
+            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(peer.getAddress()).thenReturn(address);
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
             when(superPeers.contains(publicKey)).thenReturn(true);
@@ -274,7 +278,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx.peersManager()).removeSuperPeerAndPath(any(), eq(publicKey), any());
+            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removeSuperPeerAndPath(any(), eq(publicKey), any());
         }
 
         @Test
@@ -282,12 +286,13 @@ class InternetDiscoveryTest {
                                              @Mock final IdentityPublicKey publicKey,
                                              @Mock final InetSocketAddressWrapper address,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
+            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(peer.getAddress()).thenReturn(address);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx.peersManager()).removeChildrenAndPath(any(), eq(publicKey), any());
+            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removeChildrenAndPath(any(), eq(publicKey), any());
         }
 
         @Test
@@ -327,6 +332,7 @@ class InternetDiscoveryTest {
         @Test
         void shouldNotPingPeersWithoutRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                           @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
+            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
 
             when(peer.hasControlTraffic(any())).thenReturn(true);
@@ -335,7 +341,7 @@ class InternetDiscoveryTest {
             handler.doHeartbeat(ctx);
 
             verify(ctx, never()).passOutbound(any(), any(), any());
-            verify(ctx.peersManager()).removeChildrenAndPath(any(), eq(publicKey), any());
+            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removeChildrenAndPath(any(), eq(publicKey), any());
         }
     }
 

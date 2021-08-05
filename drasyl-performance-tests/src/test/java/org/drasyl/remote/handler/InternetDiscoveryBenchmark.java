@@ -38,7 +38,6 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
@@ -355,11 +354,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
                         }
 
                         @Override
-                        public PeersManager peersManager() {
-                            return null;
-                        }
-
-                        @Override
                         public Serialization inboundSerialization() {
                             return null;
                         }
@@ -371,15 +365,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
 
                         @Override
                         public Identity identity() {
-                            return null;
-                        }
-
-                        public Map<DrasylAddress, Channel> channels() {
-                            return null;
-                        }
-
-                        public Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
-                                                               final IdentityPublicKey peer) {
                             return null;
                         }
                     };
@@ -643,22 +628,9 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
             return null;
         }
 
-        public EventExecutor independentScheduler() {
-            return null;
-        }
-
-        public EventExecutor dependentScheduler() {
-            return null;
-        }
-
         @Override
         public Identity identity() {
             return identity;
-        }
-
-        @Override
-        public PeersManager peersManager() {
-            return peersManager;
         }
 
         @Override

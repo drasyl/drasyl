@@ -47,6 +47,7 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
+import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
  * Monitors various states or events in the drasyl node.
@@ -87,9 +88,9 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
                     );
 
                     // monitor PeersManager
-                    Gauge.builder("peersManager.peers", ctx.peersManager(), pm -> pm.getPeers().size()).register(newRegistry);
-                    Gauge.builder("peersManager.superPeers", ctx.peersManager(), pm -> pm.getSuperPeers().size()).register(newRegistry);
-                    Gauge.builder("peersManager.children", ctx.peersManager(), pm -> pm.getChildren().size()).register(newRegistry);
+                    Gauge.builder("peersManager.peers", ctx.attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getPeers().size()).register(newRegistry);
+                    Gauge.builder("peersManager.superPeers", ctx.attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getSuperPeers().size()).register(newRegistry);
+                    Gauge.builder("peersManager.children", ctx.attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getChildren().size()).register(newRegistry);
 
                     return newRegistry;
                 },

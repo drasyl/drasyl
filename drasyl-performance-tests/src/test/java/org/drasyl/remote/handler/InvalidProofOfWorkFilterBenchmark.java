@@ -38,15 +38,12 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
@@ -60,7 +57,6 @@ import org.openjdk.jmh.annotations.State;
 import test.util.IdentityTestUtil;
 
 import java.net.SocketAddress;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofDays;
@@ -335,11 +331,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
                         }
 
                         @Override
-                        public PeersManager peersManager() {
-                            return null;
-                        }
-
-                        @Override
                         public Serialization inboundSerialization() {
                             return null;
                         }
@@ -351,15 +342,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
 
                         @Override
                         public Identity identity() {
-                            return null;
-                        }
-
-                        public Map<DrasylAddress, Channel> channels() {
-                            return null;
-                        }
-
-                        public Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
-                                                               final IdentityPublicKey peer) {
                             return null;
                         }
                     };
@@ -622,22 +604,9 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
             return null;
         }
 
-        public EventExecutor independentScheduler() {
-            return null;
-        }
-
-        public EventExecutor dependentScheduler() {
-            return null;
-        }
-
         @Override
         public Identity identity() {
             return identity;
-        }
-
-        @Override
-        public PeersManager peersManager() {
-            return null;
         }
 
         @Override

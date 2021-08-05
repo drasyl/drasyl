@@ -35,7 +35,6 @@ import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
@@ -315,10 +314,6 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
 
     public Identity identity() {
         return channel.identity();
-    }
-
-    public PeersManager peersManager() {
-        return channel.peersManager();
     }
 
     public Serialization inboundSerialization() {

@@ -122,11 +122,6 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel implements
     }
 
     @Override
-    public PeersManager peersManager() {
-        return attr(PEERS_MANAGER_ATTR_KEY).get();
-    }
-
-    @Override
     public Serialization inboundSerialization() {
         return attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
     }

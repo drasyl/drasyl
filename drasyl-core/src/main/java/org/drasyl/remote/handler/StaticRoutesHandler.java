@@ -38,6 +38,8 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
+
 /**
  * This handler uses preconfigured static routes ({@link org.drasyl.DrasylConfig#getStaticRoutes(Config,
  * String)}) to deliver messages.
@@ -86,10 +88,10 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
     }
 
     private static synchronized void populateRoutes(final MigrationHandlerContext ctx) {
-        ctx.config().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.peersManager().addPath(ctx, publicKey, path)));
+        ctx.config().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path)));
     }
 
     private static synchronized void clearRoutes(final MigrationHandlerContext ctx) {
-        ctx.config().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.peersManager().removePath(ctx, publicKey, path));
+        ctx.config().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path));
     }
 }

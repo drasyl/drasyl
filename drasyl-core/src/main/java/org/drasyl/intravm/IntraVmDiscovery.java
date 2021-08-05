@@ -41,6 +41,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
@@ -109,8 +110,8 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
                 final Integer networkId = key.first();
                 final IdentityPublicKey publicKey = key.second();
                 if (myCtx.config().getNetworkId() == networkId) {
-                    otherCtx.peersManager().addPath(otherCtx, myCtx.identity().getIdentityPublicKey(), path);
-                    myCtx.peersManager().addPath(myCtx, publicKey, path);
+                    otherCtx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(otherCtx, myCtx.identity().getIdentityPublicKey(), path);
+                    myCtx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(myCtx, publicKey, path);
                 }
             });
             discoveries.put(
@@ -138,8 +139,8 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
                 final Integer networkId = key.first();
                 final IdentityPublicKey publicKey = key.second();
                 if (ctx.config().getNetworkId() == networkId) {
-                    otherCtx.peersManager().removePath(ctx, publicKey, path);
-                    ctx.peersManager().removePath(ctx, publicKey, path);
+                    otherCtx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
+                    ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
                 }
             });
 

@@ -62,6 +62,7 @@ import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.RandomUtil.randomLong;
@@ -187,7 +188,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
             }
         }
 
-        routes.keySet().forEach(publicKey -> ctx.peersManager().removePath(ctx, publicKey, LocalHostDiscovery.path));
+        routes.keySet().forEach(publicKey -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, LocalHostDiscovery.path));
         routes.clear();
 
         LOG.debug("Local Host Discovery stopped.");
@@ -305,7 +306,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
 
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                ctx.peersManager().removePath(ctx, publicKey, path);
+                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
                 i.remove();
             }
         }
@@ -314,7 +315,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         newRoutes.forEach(((publicKey, address) -> {
             if (!routes.containsKey(publicKey)) {
                 routes.put(publicKey, new InetSocketAddressWrapper(address));
-                ctx.peersManager().addPath(ctx, publicKey, path);
+                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path);
             }
         }));
     }

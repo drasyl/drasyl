@@ -44,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_INTERFACE;
 import static org.drasyl.util.RandomUtil.randomLong;
@@ -117,7 +118,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
 
     synchronized void clearRoutes(final MigrationHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            ctx.peersManager().removePath(ctx, publicKey, path);
+            ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
             peers.remove(publicKey);
         }));
         peers.clear();
@@ -132,7 +133,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (peer.isStale(ctx)) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundPingTime());
-                ctx.peersManager().removePath(ctx, publicKey, path);
+                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
                 peers.remove(publicKey);
             }
         }));
@@ -160,7 +161,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
             final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer((InetSocketAddressWrapper) sender));
             peer.inboundPingOccurred();
-            ctx.peersManager().addPath(ctx, msgSender, path);
+            ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, msgSender, path);
         }
 
         future.complete(null);
