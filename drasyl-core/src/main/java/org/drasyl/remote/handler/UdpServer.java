@@ -31,6 +31,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
@@ -38,7 +39,6 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -115,7 +115,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
@@ -131,7 +131,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    private synchronized void startServer(final HandlerContext ctx,
+    private synchronized void startServer(final MigrationHandlerContext ctx,
                                           final Event event,
                                           final CompletableFuture<Void> future) {
         if (channel == null) {
@@ -184,7 +184,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
     }
 
-    private synchronized void stopServer(final HandlerContext ctx,
+    private synchronized void stopServer(final MigrationHandlerContext ctx,
                                          final Event event,
                                          final CompletableFuture<Void> future) {
         if (channel != null) {
@@ -215,7 +215,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final ByteBuf msg,
                                    final CompletableFuture<Void> future) {

@@ -30,11 +30,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.tcp.TcpClient.TcpClientHandler;
@@ -236,7 +236,7 @@ public class TcpClientTest {
     @Nested
     class TcpClientHandlerTest {
         @Mock
-        private HandlerContext ctx;
+        private MigrationHandlerContext ctx;
 
         @Test
         void shouldPassInboundMessageToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx,

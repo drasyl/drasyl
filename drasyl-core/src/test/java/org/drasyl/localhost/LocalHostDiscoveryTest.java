@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -32,7 +33,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -104,7 +104,7 @@ class LocalHostDiscoveryTest {
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void shouldStartDiscoveryOnNodeUpEvent(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
             when(ctx.dependentScheduler().scheduleDirect(any())).then(invocation -> {
                 invocation.getArgument(0, Runnable.class).run();
                 return null;
@@ -158,7 +158,7 @@ class LocalHostDiscoveryTest {
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
+                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
             when(ctx.dependentScheduler().scheduleDirect(any())).then(invocation -> {
                 invocation.getArgument(0, Runnable.class).run();
                 return null;
@@ -197,7 +197,7 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
-                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws IOException {
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) throws IOException {
             final Path path = Paths.get(dir.toString(), "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127.json");
             final File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
 
@@ -340,7 +340,7 @@ class LocalHostDiscoveryTest {
     class Scan {
         @Test
         void shouldScanDirectory(@TempDir final Path dir,
-                                 @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+                                 @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                  @Mock final InetSocketAddressWrapper address) throws IOException {
             final IdentityPublicKey publicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             routes.put(publicKey, address);

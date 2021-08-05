@@ -22,11 +22,11 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.util.internal.TypeParameterMatcher;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 
@@ -89,7 +89,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
     }
 
     @Override
-    public void onInbound(final HandlerContext ctx,
+    public void onInbound(final MigrationHandlerContext ctx,
                           final Address sender,
                           final Object msg,
                           final CompletableFuture<Void> future) throws Exception {
@@ -104,7 +104,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
     }
 
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (acceptEvent(event)) {
@@ -131,7 +131,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
      * @param event  the event
      * @param future the future of the message
      */
-    protected abstract void matchedEvent(HandlerContext ctx,
+    protected abstract void matchedEvent(MigrationHandlerContext ctx,
                                          E event,
                                          CompletableFuture<Void> future);
 
@@ -152,7 +152,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
      * @param future the future of the message
      */
     @SuppressWarnings("java:S112")
-    protected abstract void matchedInbound(HandlerContext ctx,
+    protected abstract void matchedInbound(MigrationHandlerContext ctx,
                                            A sender,
                                            I msg,
                                            CompletableFuture<Void> future) throws Exception;

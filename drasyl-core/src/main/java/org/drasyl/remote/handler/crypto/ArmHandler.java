@@ -23,6 +23,7 @@ package org.drasyl.remote.handler.crypto;
 
 import com.google.common.cache.CacheBuilder;
 import com.goterl.lazysodium.utils.SessionPair;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.LongTimeEncryptionEvent;
@@ -30,7 +31,6 @@ import org.drasyl.event.Peer;
 import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexRemoteMessageSkipLoopbackHandler;
 import org.drasyl.remote.protocol.ArmedMessage;
@@ -110,7 +110,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
     }
 
     @Override
-    protected void filteredOutbound(final HandlerContext ctx,
+    protected void filteredOutbound(final MigrationHandlerContext ctx,
                                     final Address recipient,
                                     final FullReadMessage<?> msg,
                                     final CompletableFuture<Void> future) {
@@ -140,7 +140,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
     }
 
     @Override
-    protected void filteredInbound(final HandlerContext ctx,
+    protected void filteredInbound(final MigrationHandlerContext ctx,
                                    final Address sender,
                                    final ArmedMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -218,7 +218,8 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param recipientsKey the recipients key
      * @return corresponding {@link Session}
      */
-    private Session getSession(final HandlerContext ctx, final IdentityPublicKey recipientsKey) {
+    private Session getSession(final MigrationHandlerContext ctx,
+                               final IdentityPublicKey recipientsKey) {
         return sessions.computeIfAbsent(recipientsKey, k -> {
             try {
                 final SessionPair longTimeSession = crypto.generateSessionKeyPair(
@@ -247,7 +248,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      */
     private Agreement computeOnEmptyOrStaleAgreement(final Session session,
                                                      final IdentityPublicKey recipientsKey,
-                                                     final HandlerContext ctx) {
+                                                     final MigrationHandlerContext ctx) {
         return session.getCurrentActiveAgreement()
                 // remove stale agreement
                 .computeOnCondition(a -> a != null && a.isStale(), agreement -> {
@@ -268,7 +269,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param recipientPublicKey the recipient's public key
      */
     private void doKeyExchange(final Session session,
-                               final HandlerContext ctx,
+                               final MigrationHandlerContext ctx,
                                final Address recipient,
                                final IdentityPublicKey recipientPublicKey) {
         final Agreement agreement = computeOnEmptyOrStaleAgreement(session, recipientPublicKey, ctx);
@@ -292,7 +293,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param session             the corresponding session
      * @param recipientsPublicKey the public key of the recipient
      */
-    private void receivedAcknowledgement(final HandlerContext ctx,
+    private void receivedAcknowledgement(final MigrationHandlerContext ctx,
                                          final AgreementId id,
                                          final Session session,
                                          final IdentityPublicKey recipientsPublicKey) {
@@ -322,7 +323,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param session      the corresponding session
      * @param future       the future to fulfill
      */
-    private void receivedKeyExchangeMessage(final HandlerContext ctx,
+    private void receivedKeyExchangeMessage(final MigrationHandlerContext ctx,
                                             final Address sender,
                                             final KeyExchangeMessage plaintextMsg,
                                             final Session session,
@@ -363,7 +364,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param recipient     the recipient of the agreement
      * @param recipientsKey the public key of the recipient
      */
-    private void checkForRenewAgreement(final HandlerContext ctx,
+    private void checkForRenewAgreement(final MigrationHandlerContext ctx,
                                         final Session session,
                                         final Address recipient,
                                         final IdentityPublicKey recipientsKey) {

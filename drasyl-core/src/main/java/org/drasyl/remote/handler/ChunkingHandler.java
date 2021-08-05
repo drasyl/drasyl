@@ -28,7 +28,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -65,7 +65,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
+    protected void matchedInbound(final MigrationHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
                                   final ChunkMessage msg,
                                   final CompletableFuture<Void> future) throws IOException {
@@ -79,7 +79,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
         }
     }
 
-    private void handleInboundChunk(final HandlerContext ctx,
+    private void handleInboundChunk(final MigrationHandlerContext ctx,
                                     final InetSocketAddressWrapper sender,
                                     final ChunkMessage chunk,
                                     final CompletableFuture<Void> future) throws IOException {
@@ -120,7 +120,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
 
     @SuppressWarnings("java:S112")
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final RemoteMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -151,7 +151,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
     }
 
     @SuppressWarnings("unchecked")
-    private static void chunkMessage(final HandlerContext ctx,
+    private static void chunkMessage(final MigrationHandlerContext ctx,
                                      final Address recipient,
                                      final RemoteMessage msg,
                                      final CompletableFuture<Void> future,

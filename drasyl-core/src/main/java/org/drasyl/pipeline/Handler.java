@@ -23,6 +23,7 @@ package org.drasyl.pipeline;
 
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -51,13 +52,13 @@ public interface Handler extends ChannelOutboundHandler, ChannelInboundHandler {
      * Gets called after the {@link Handler} was added to the actual context and it's ready to
      * handle events.
      */
-    void onAdded(HandlerContext ctx);
+    void onAdded(MigrationHandlerContext ctx);
 
     /**
      * Gets called after the {@link Handler} was removed from the actual context and it doesn't
      * handle events anymore.
      */
-    void onRemoved(HandlerContext ctx);
+    void onRemoved(MigrationHandlerContext ctx);
 
     /**
      * Gets called if a {@link Object} was received.
@@ -68,7 +69,7 @@ public interface Handler extends ChannelOutboundHandler, ChannelInboundHandler {
      * @param future a future for the message
      */
     @SuppressWarnings("java:S112")
-    void onInbound(HandlerContext ctx,
+    void onInbound(MigrationHandlerContext ctx,
                    Address sender,
                    Object msg,
                    CompletableFuture<Void> future) throws Exception;
@@ -80,14 +81,14 @@ public interface Handler extends ChannelOutboundHandler, ChannelInboundHandler {
      * @param event  the event
      * @param future a future for the message
      */
-    void onEvent(HandlerContext ctx,
+    void onEvent(MigrationHandlerContext ctx,
                  Event event,
                  CompletableFuture<Void> future);
 
     /**
      * Gets called if a {@link Exception} was thrown.
      */
-    void onException(HandlerContext ctx, Exception cause);
+    void onException(MigrationHandlerContext ctx, Exception cause);
 
     /**
      * Gets called if a {@link Object} was send from the application to a recipient.
@@ -98,7 +99,7 @@ public interface Handler extends ChannelOutboundHandler, ChannelInboundHandler {
      * @param future    a future for the message
      */
     @SuppressWarnings("java:S112")
-    void onOutbound(HandlerContext ctx,
+    void onOutbound(MigrationHandlerContext ctx,
                     Address recipient,
                     Object msg,
                     CompletableFuture<Void> future) throws Exception;

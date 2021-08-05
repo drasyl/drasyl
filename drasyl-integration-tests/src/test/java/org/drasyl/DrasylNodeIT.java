@@ -23,6 +23,7 @@ package org.drasyl;
 
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOfflineEvent;
@@ -30,7 +31,6 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.handler.filter.OutboundMessageFilter;
@@ -594,14 +594,14 @@ class DrasylNodeIT {
                 client = new EmbeddedNode(config).started();
                 client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new OutboundMessageFilter<ByteBuf, Address>() {
                     @Override
-                    protected boolean accept(final HandlerContext ctx,
+                    protected boolean accept(final MigrationHandlerContext ctx,
                                              final Address sender,
                                              final ByteBuf msg) {
                         return false; // drop all messages
                     }
 
                     @Override
-                    protected void messageRejected(final HandlerContext ctx,
+                    protected void messageRejected(final MigrationHandlerContext ctx,
                                                    final Address sender,
                                                    final ByteBuf msg,
                                                    final CompletableFuture<Void> future) {

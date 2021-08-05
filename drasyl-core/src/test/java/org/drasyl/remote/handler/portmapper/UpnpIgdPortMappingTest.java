@@ -24,9 +24,9 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.util.protocol.UpnpIgdUtil;
 import org.drasyl.util.protocol.UpnpIgdUtil.Service;
 import org.junit.jupiter.api.Nested;
@@ -62,7 +62,7 @@ public class UpnpIgdPortMappingTest {
                                       @Mock final Disposable ssdpDiscoverTask,
                                       @Mock final Disposable refreshTask,
                                       @Mock final Service upnpService,
-                                      @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+                                      @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                       @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                       @Mock final Runnable onFailure) {
             new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
@@ -78,7 +78,7 @@ public class UpnpIgdPortMappingTest {
                                                                 @Mock final Disposable ssdpDiscoverTask,
                                                                 @Mock final Disposable refreshTask,
                                                                 @Mock final Service upnpService,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+                                                                @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                 @Mock final Runnable onFailure) throws InterruptedException {
                 final Set<URI> ssdpServices = new HashSet<>();
@@ -102,7 +102,7 @@ public class UpnpIgdPortMappingTest {
                                                                    @Mock final Disposable ssdpDiscoverTask,
                                                                    @Mock final Disposable refreshTask,
                                                                    @Mock final Service upnpService,
-                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                    @Mock final Runnable onFailure) throws InterruptedException {
                 final Set<URI> ssdpServices = new HashSet<>();
@@ -130,7 +130,7 @@ public class UpnpIgdPortMappingTest {
                                                                 @Mock final Disposable ssdpDiscoverTask,
                                                                 @Mock final Disposable refreshTask,
                                                                 @Mock final Service upnpService,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+                                                                @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                 @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
@@ -154,7 +154,7 @@ public class UpnpIgdPortMappingTest {
                                                             @Mock final Disposable ssdpDiscoverTask,
                                                             @Mock final Disposable refreshTask,
                                                             @Mock final Service upnpService,
-                                                            @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                             @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
@@ -178,7 +178,7 @@ public class UpnpIgdPortMappingTest {
                                                                  @Mock final Disposable ssdpDiscoverTask,
                                                                  @Mock final Disposable refreshTask,
                                                                  @Mock final Service upnpService,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                  @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
@@ -203,7 +203,7 @@ public class UpnpIgdPortMappingTest {
                                                       @Mock final Disposable ssdpDiscoverTask,
                                                       @Mock final Disposable refreshTask,
                                                       @Mock final Service upnpService,
-                                                      @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+                                                      @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                       @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
@@ -234,7 +234,7 @@ public class UpnpIgdPortMappingTest {
                                   @Mock final Disposable ssdpDiscoverTask,
                                   @Mock final Disposable refreshTask,
                                   @Mock final Service upnpService,
-                                  @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws InterruptedException {
+                                  @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) throws InterruptedException {
             when(ctx.independentScheduler().scheduleDirect(any())).then(invocation -> {
                 final Runnable runnable = invocation.getArgument(0, Runnable.class);
                 runnable.run();
@@ -256,7 +256,7 @@ public class UpnpIgdPortMappingTest {
                                             @Mock final Disposable refreshTask,
                                             @Mock final Service upnpService,
                                             @Mock final Runnable onFailure,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
+                                            @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
             final Set<URI> ssdpServices = new HashSet<>();
             final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("485454502f312e3120323030204f4b0d0a43414348452d434f4e54524f4c3a206d61782d6167653d3132300d0a53543a2075726e3a736368656d61732d75706e702d6f72673a736572766963653a57414e436f6d6d6f6e496e74657266616365436f6e6669673a310d0a55534e3a20757569643a64623730643264372d333030312d343763632d626331622d6537316536636335623537343a3a75726e3a736368656d61732d75706e702d6f72673a736572766963653a57414e436f6d6d6f6e496e74657266616365436f6e6669673a310d0a4558543a0d0a5345525645523a20416d706c6946692f416d706c6946692f2055506e502f312e31204d696e6955506e50642f322e310d0a4c4f434154494f4e3a20687474703a2f2f3139322e3136382e3138382e313a353030302f726f6f74446573632e786d6c0d0a4f50543a2022687474703a2f2f736368656d61732e75706e702e6f72672f75706e702f312f302f223b206e733d30310d0a30312d4e4c533a20313630333337353039370d0a424f4f5449442e55504e502e4f52473a20313630333337353039370d0a434f4e46494749442e55504e502e4f52473a20313333370d0a0d0a"));
             new UpnpIgdPortMapping(new AtomicBoolean(true), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, onFailure).handleMessage(ctx, SSDP_MULTICAST_ADDRESS, byteBuf);

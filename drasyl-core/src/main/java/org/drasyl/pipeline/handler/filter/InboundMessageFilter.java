@@ -22,7 +22,7 @@
 package org.drasyl.pipeline.handler.filter;
 
 import io.netty.util.ReferenceCounted;
-import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.util.ReferenceCountUtil;
@@ -33,10 +33,10 @@ import java.util.concurrent.CompletableFuture;
  * This class provides the functionality to either accept or reject new inbound messages.
  * <p>
  * You should inherit from this class if you would like to implement your own inbound messages
- * filter. Basically you have to implement {@link #accept(HandlerContext, Address, Object)} to
- * decided whether you want to pass through or drop a message.
+ * filter. Basically you have to implement {@link #accept(MigrationHandlerContext, Address, Object)}
+ * to decided whether you want to pass through or drop a message.
  * <p>
- * Furthermore overriding {@link #messageRejected(HandlerContext, Address, Object,
+ * Furthermore overriding {@link #messageRejected(MigrationHandlerContext, Address, Object,
  * CompletableFuture)} gives you the flexibility to respond to rejected messages.
  * <p>
  * This class will automatically call {@link ReferenceCounted#release()} on rejected messages and
@@ -45,7 +45,7 @@ import java.util.concurrent.CompletableFuture;
 @SuppressWarnings("java:S118")
 public abstract class InboundMessageFilter<I, A extends Address> extends SimpleInboundHandler<I, A> {
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
+    protected void matchedInbound(final MigrationHandlerContext ctx,
                                   final A sender,
                                   final I msg,
                                   final CompletableFuture<Void> future) throws Exception {
@@ -76,17 +76,17 @@ public abstract class InboundMessageFilter<I, A extends Address> extends SimpleI
      * dropped.
      */
     @SuppressWarnings("java:S112")
-    protected abstract boolean accept(HandlerContext ctx,
+    protected abstract boolean accept(MigrationHandlerContext ctx,
                                       final A sender,
                                       final I msg) throws Exception;
 
     /**
-     * This method is called if {@code msg} gets rejected by {@link #accept(HandlerContext, Address,
-     * Object)}. You should override it if you would like to handle (e.g. respond to) rejected
-     * messages.
+     * This method is called if {@code msg} gets rejected by {@link #accept(MigrationHandlerContext,
+     * Address, Object)}. You should override it if you would like to handle (e.g. respond to)
+     * rejected messages.
      */
     @SuppressWarnings({ "unused", "RedundantThrows", "java:S112" })
-    protected void messageRejected(final HandlerContext ctx,
+    protected void messageRejected(final MigrationHandlerContext ctx,
                                    final A sender,
                                    final I msg,
                                    final CompletableFuture<Void> future) throws Exception {

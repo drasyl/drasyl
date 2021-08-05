@@ -29,7 +29,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
@@ -39,7 +38,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
  */
-public class MigrationHandlerContext implements HandlerContext {
+public class MigrationHandlerContext {
     private final ChannelHandlerContext ctx;
     private final DrasylServerChannel channel;
 
@@ -48,12 +47,10 @@ public class MigrationHandlerContext implements HandlerContext {
         this.channel = (DrasylServerChannel) ctx.channel();
     }
 
-    @Override
     public ByteBuf alloc() {
         return alloc(false);
     }
 
-    @Override
     public ByteBuf alloc(final boolean preferDirect) {
         if (preferDirect) {
             return ctx.alloc().directBuffer();
@@ -63,22 +60,18 @@ public class MigrationHandlerContext implements HandlerContext {
         }
     }
 
-    @Override
     public String name() {
         return ctx.name();
     }
 
-    @Override
     public Handler handler() {
         throw new RuntimeException("not implemented yet"); // NOSONAR
     }
 
-    @Override
-    public HandlerContext passException(final Exception cause) {
+    public MigrationHandlerContext passException(final Exception cause) {
         return null;
     }
 
-    @Override
     public CompletableFuture<Void> passInbound(final Address sender,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
@@ -89,7 +82,7 @@ public class MigrationHandlerContext implements HandlerContext {
         return future;
     }
 
-    @Override
+    @SuppressWarnings("UnusedReturnValue")
     public CompletableFuture<Void> passEvent(final Event event,
                                              final CompletableFuture<Void> future) {
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
@@ -97,7 +90,6 @@ public class MigrationHandlerContext implements HandlerContext {
         return future;
     }
 
-    @Override
     public CompletableFuture<Void> passOutbound(final Address recipient,
                                                 final Object msg,
                                                 final CompletableFuture<Void> future) {
@@ -115,42 +107,34 @@ public class MigrationHandlerContext implements HandlerContext {
         return future;
     }
 
-    @Override
     public DrasylConfig config() {
         return channel.drasylConfig();
     }
 
-    @Override
     public Pipeline pipeline() {
         return new MigrationPipeline(ctx.pipeline());
     }
 
-    @Override
     public Scheduler independentScheduler() {
         return new MigrationScheduler(ctx.executor());
     }
 
-    @Override
     public Scheduler dependentScheduler() {
         return new MigrationScheduler(ctx.executor());
     }
 
-    @Override
     public Identity identity() {
         return channel.identity();
     }
 
-    @Override
     public PeersManager peersManager() {
         return channel.peersManager();
     }
 
-    @Override
     public Serialization inboundSerialization() {
         return channel.inboundSerialization();
     }
 
-    @Override
     public Serialization outboundSerialization() {
         return channel.outboundSerialization();
     }

@@ -26,13 +26,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.Nested;
@@ -61,7 +61,7 @@ class MonitoringTest {
     private PeersManager peersManager;
     private final Map<String, Counter> counters = new HashMap<>();
     @Mock
-    private Function<HandlerContext, MeterRegistry> registrySupplier;
+    private Function<MigrationHandlerContext, MeterRegistry> registrySupplier;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private MeterRegistry registry;
 

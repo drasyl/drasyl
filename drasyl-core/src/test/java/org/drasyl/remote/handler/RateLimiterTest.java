@@ -22,9 +22,9 @@
 package org.drasyl.remote.handler;
 
 import com.google.protobuf.ByteString;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.ApplicationMessage;
@@ -64,7 +64,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void shouldRejectAcknowledgementMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+    void shouldRejectAcknowledgementMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                    @Mock final Address msgSender,
                                                                    @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
@@ -81,7 +81,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void shouldRejectDiscoveryMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+    void shouldRejectDiscoveryMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                              @Mock final Address msgSender,
                                                              @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
@@ -98,7 +98,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void shouldRejectUniteMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+    void shouldRejectUniteMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                          @Mock final Address msgSender,
                                                          @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
@@ -115,7 +115,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void shouldNotRateLimitMessagesNotAddressedToUs(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+    void shouldNotRateLimitMessagesNotAddressedToUs(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                     @Mock final Address msgSender,
                                                     @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
@@ -131,7 +131,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void shouldNotRateLimitApplicationMessages(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+    void shouldNotRateLimitApplicationMessages(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                @Mock final Address msgSender,
                                                @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());

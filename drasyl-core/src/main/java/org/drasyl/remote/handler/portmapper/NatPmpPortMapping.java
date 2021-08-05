@@ -25,8 +25,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -102,7 +102,7 @@ public class NatPmpPortMapping implements PortMapping {
     }
 
     @Override
-    public void start(final HandlerContext ctx,
+    public void start(final MigrationHandlerContext ctx,
                       final NodeUpEvent event,
                       final Runnable onFailure) {
         this.onFailure = onFailure;
@@ -111,7 +111,7 @@ public class NatPmpPortMapping implements PortMapping {
     }
 
     @Override
-    public void stop(final HandlerContext ctx) {
+    public void stop(final MigrationHandlerContext ctx) {
         unmapPort(ctx);
     }
 
@@ -122,7 +122,7 @@ public class NatPmpPortMapping implements PortMapping {
     }
 
     @Override
-    public void handleMessage(final HandlerContext ctx,
+    public void handleMessage(final MigrationHandlerContext ctx,
                               final InetSocketAddressWrapper sender,
                               final ByteBuf msg) {
         try (final InputStream in = new DataInputStream(new ByteBufInputStream(msg))) {
@@ -146,7 +146,7 @@ public class NatPmpPortMapping implements PortMapping {
         }
     }
 
-    private synchronized void mapPort(final HandlerContext ctx) {
+    private synchronized void mapPort(final MigrationHandlerContext ctx) {
         timeoutGuard = ctx.independentScheduler().scheduleDirect(() -> {
             timeoutGuard = null;
             if (refreshTask == null) {
@@ -167,7 +167,7 @@ public class NatPmpPortMapping implements PortMapping {
         requestExternalAddress(ctx);
     }
 
-    private synchronized void unmapPort(final HandlerContext ctx) {
+    private synchronized void unmapPort(final MigrationHandlerContext ctx) {
         if (timeoutGuard != null) {
             timeoutGuard.dispose();
         }
@@ -195,7 +195,7 @@ public class NatPmpPortMapping implements PortMapping {
         }
     }
 
-    private void requestExternalAddress(final HandlerContext ctx) {
+    private void requestExternalAddress(final MigrationHandlerContext ctx) {
         LOG.debug("Request external address from gateway `{}`.", defaultGateway::getHostName);
 
         final byte[] content = NatPmpUtil.buildExternalAddressRequestMessage();
@@ -208,7 +208,7 @@ public class NatPmpPortMapping implements PortMapping {
         });
     }
 
-    private void handleExternalAddress(final HandlerContext ctx,
+    private void handleExternalAddress(final MigrationHandlerContext ctx,
                                        final ExternalAddressResponseMessage message) {
         if (externalAddressRequested.compareAndSet(true, false)) {
             if (message.getResultCode() == SUCCESS) {
@@ -224,7 +224,7 @@ public class NatPmpPortMapping implements PortMapping {
         }
     }
 
-    private void requestMapping(final HandlerContext ctx, final Duration lifetime) {
+    private void requestMapping(final MigrationHandlerContext ctx, final Duration lifetime) {
         //noinspection unchecked
         LOG.debug("Request mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, () -> port, () -> port, lifetime::toSeconds, defaultGateway::getHostName);
 
@@ -238,7 +238,7 @@ public class NatPmpPortMapping implements PortMapping {
         });
     }
 
-    private void handleMapping(final HandlerContext ctx,
+    private void handleMapping(final MigrationHandlerContext ctx,
                                final MappingUdpResponseMessage message) {
         if (mappingRequested.compareAndSet(true, false)) {
             if (message.getResultCode() == SUCCESS) {

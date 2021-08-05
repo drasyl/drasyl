@@ -30,10 +30,10 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.MigrationEvent;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,7 +109,7 @@ class PluginsIT {
         public void onAfterStart(final PluginEnvironment environment) {
             environment.getPipeline().addFirst("TestHandler", new HandlerAdapter() {
                 @Override
-                public void onAdded(final HandlerContext ctx) {
+                public void onAdded(final MigrationHandlerContext ctx) {
                     final CompletableFuture<Void> future = new CompletableFuture<>();
                     ctx.passEvent(event1, future);
                 }

@@ -22,7 +22,7 @@
 package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandler;
-import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.codec.MessageToMessageEncoder;
@@ -46,7 +46,7 @@ public final class HopCountGuard extends MessageToMessageEncoder<RemoteMessage, 
 
     @SuppressWarnings("java:S112")
     @Override
-    protected void encode(final HandlerContext ctx,
+    protected void encode(final MigrationHandlerContext ctx,
                           final Address recipient,
                           final RemoteMessage msg, final List<Object> out) throws Exception {
         if (msg.getHopCount().getByte() < ctx.config().getRemoteMessageHopLimit()) {

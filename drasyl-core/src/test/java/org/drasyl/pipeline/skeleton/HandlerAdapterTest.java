@@ -24,11 +24,11 @@ package org.drasyl.pipeline.skeleton;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @ExtendWith(MockitoExtension.class)
 class HandlerAdapterTest {
     @Mock
-    private HandlerContext ctx;
+    private MigrationHandlerContext ctx;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
@@ -63,12 +63,12 @@ class HandlerAdapterTest {
     void shouldDoNothing() {
         final HandlerAdapter adapter = new HandlerAdapter() {
             @Override
-            public void onAdded(final HandlerContext ctx) {
+            public void onAdded(final MigrationHandlerContext ctx) {
                 super.onAdded(ctx);
             }
 
             @Override
-            public void onRemoved(final HandlerContext ctx) {
+            public void onRemoved(final MigrationHandlerContext ctx) {
                 super.onRemoved(ctx);
             }
         };

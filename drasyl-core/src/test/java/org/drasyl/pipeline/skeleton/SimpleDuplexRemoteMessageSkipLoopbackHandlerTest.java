@@ -24,9 +24,9 @@ package org.drasyl.pipeline.skeleton;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
@@ -57,14 +57,14 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
                 .build();
         handler = new SimpleDuplexRemoteMessageSkipLoopbackHandler<>() {
             @Override
-            protected void filteredOutbound(final HandlerContext ctx,
+            protected void filteredOutbound(final MigrationHandlerContext ctx,
                                             final Address recipient,
                                             final RemoteMessage msg,
                                             final CompletableFuture<Void> future) {
             }
 
             @Override
-            protected void filteredInbound(final HandlerContext ctx,
+            protected void filteredInbound(final MigrationHandlerContext ctx,
                                            final Address sender,
                                            final RemoteMessage msg,
                                            final CompletableFuture<Void> future) {
@@ -97,14 +97,14 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
         void shouldNotSkipIfNotActive(@Mock final Address recipient) {
             handler = new SimpleDuplexRemoteMessageSkipLoopbackHandler<>(false) {
                 @Override
-                protected void filteredOutbound(final HandlerContext ctx,
+                protected void filteredOutbound(final MigrationHandlerContext ctx,
                                                 final Address recipient,
                                                 final RemoteMessage msg,
                                                 final CompletableFuture<Void> future) {
                 }
 
                 @Override
-                protected void filteredInbound(final HandlerContext ctx,
+                protected void filteredInbound(final MigrationHandlerContext ctx,
                                                final Address sender,
                                                final RemoteMessage msg,
                                                final CompletableFuture<Void> future) {

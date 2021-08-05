@@ -24,6 +24,7 @@ package org.drasyl.remote.handler;
 import com.google.common.cache.CacheBuilder;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -31,7 +32,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -121,7 +121,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     }
 
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
@@ -138,7 +138,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         ctx.passEvent(event, future);
     }
 
-    synchronized void startHeartbeat(final HandlerContext ctx) {
+    synchronized void startHeartbeat(final MigrationHandlerContext ctx) {
         if (heartbeatDisposable == null) {
             LOG.debug("Start heartbeat scheduler");
             final long pingInterval = ctx.config().getRemotePingInterval().toMillis();
@@ -160,7 +160,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
      *
      * @param ctx handler's context
      */
-    void doHeartbeat(final HandlerContext ctx) {
+    void doHeartbeat(final MigrationHandlerContext ctx) {
         removeStalePeers(ctx);
         pingSuperPeers(ctx);
         pingDirectConnectionPeers(ctx);
@@ -171,7 +171,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
      *
      * @param ctx the handler context
      */
-    private void removeStalePeers(final HandlerContext ctx) {
+    private void removeStalePeers(final MigrationHandlerContext ctx) {
         // check lastContactTimes
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (!peer.hasControlTraffic(ctx.config())) {
@@ -193,7 +193,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
      *
      * @param ctx handler's context
      */
-    private void pingSuperPeers(final HandlerContext ctx) {
+    private void pingSuperPeers(final MigrationHandlerContext ctx) {
         if (ctx.config().isRemoteSuperPeerEnabled()) {
             for (final Endpoint endpoint : ctx.config().getRemoteSuperPeerEndpoints()) {
                 final InetSocketAddressWrapper address = new InetSocketAddressWrapper(endpoint.getHost(), endpoint.getPort());
@@ -212,7 +212,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
      *
      * @param ctx handler's context
      */
-    private void pingDirectConnectionPeers(final HandlerContext ctx) {
+    private void pingDirectConnectionPeers(final MigrationHandlerContext ctx) {
         for (final IdentityPublicKey publicKey : new HashSet<>(directConnectionPeers)) {
             final Peer peer = peers.get(publicKey);
             final InetSocketAddressWrapper address = peer.getAddress();
@@ -232,7 +232,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
     }
 
-    private void removeAllPeers(final HandlerContext ctx) {
+    private void removeAllPeers(final MigrationHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (superPeers.contains(publicKey)) {
                 ctx.peersManager().removeSuperPeerAndPath(ctx, publicKey, path);
@@ -246,7 +246,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final Address recipient,
                                    final ApplicationMessage msg,
                                    final CompletableFuture<Void> future) throws IOException {
@@ -279,7 +279,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
      * @return {@code true} if message could be processed. Otherwise {@code false}
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private boolean processMessage(final HandlerContext ctx,
+    private boolean processMessage(final MigrationHandlerContext ctx,
                                    final IdentityPublicKey recipient,
                                    final RemoteMessage msg,
                                    final CompletableFuture<Void> future) {
@@ -336,7 +336,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
      * @param recipient    the recipient socket address
      * @param sender       the sender socket address
      */
-    private static void sendUnites(final HandlerContext ctx,
+    private static void sendUnites(final MigrationHandlerContext ctx,
                                    final IdentityPublicKey senderKey,
                                    final IdentityPublicKey recipientKey,
                                    final InetSocketAddressWrapper recipient,
@@ -373,7 +373,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
+    protected void matchedInbound(final MigrationHandlerContext ctx,
                                   final Address sender,
                                   final RemoteMessage msg,
                                   final CompletableFuture<Void> future) throws IOException {
@@ -398,7 +398,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
     }
 
-    private void handleMessage(final HandlerContext ctx,
+    private void handleMessage(final MigrationHandlerContext ctx,
                                final InetSocketAddressWrapper sender,
                                final FullReadMessage<?> msg,
                                final CompletableFuture<Void> future) {
@@ -420,7 +420,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
     }
 
-    private void handlePing(final HandlerContext ctx,
+    private void handlePing(final MigrationHandlerContext ctx,
                             final InetSocketAddressWrapper sender,
                             final DiscoveryMessage msg,
                             final CompletableFuture<Void> future) {
@@ -450,7 +450,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         ctx.passOutbound(sender, responseEnvelope, future);
     }
 
-    private void handlePong(final HandlerContext ctx,
+    private void handlePong(final MigrationHandlerContext ctx,
                             final InetSocketAddressWrapper sender,
                             final AcknowledgementMessage msg,
                             final CompletableFuture<Void> future) {
@@ -505,7 +505,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         bestSuperPeer = newBestSuperPeer;
     }
 
-    private void handleUnite(final HandlerContext ctx,
+    private void handleUnite(final MigrationHandlerContext ctx,
                              final UniteMessage msg,
                              final CompletableFuture<Void> future) {
         final InetAddress address = msg.getAddress();
@@ -520,7 +520,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         sendPing(ctx, msg.getPublicKey(), socketAddress, future);
     }
 
-    private void handleApplication(final HandlerContext ctx,
+    private void handleApplication(final MigrationHandlerContext ctx,
                                    final ApplicationMessage msg,
                                    final CompletableFuture<Void> future) {
         if (directConnectionPeers.contains(msg.getSender())) {
@@ -531,7 +531,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         ctx.passInbound(msg.getSender(), msg, future);
     }
 
-    private CompletableFuture<Void> sendPing(final HandlerContext ctx,
+    private CompletableFuture<Void> sendPing(final MigrationHandlerContext ctx,
                                              final IdentityPublicKey recipient,
                                              final InetSocketAddressWrapper recipientAddress,
                                              final CompletableFuture<Void> future) {

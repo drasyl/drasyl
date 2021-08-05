@@ -23,13 +23,13 @@ package org.drasyl.peer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.HandlerContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -73,7 +73,7 @@ class PeersManagerTest {
     @Nested
     class GetPeers {
         @Test
-        void shouldReturnAllPeers(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldReturnAllPeers(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                   @Mock final IdentityPublicKey superPeer,
                                   @Mock final IdentityPublicKey children,
                                   @Mock final IdentityPublicKey peer,
@@ -127,7 +127,7 @@ class PeersManagerTest {
     @Nested
     class GetPaths {
         @Test
-        void shouldReturnPaths(@Mock final HandlerContext ctx,
+        void shouldReturnPaths(@Mock final MigrationHandlerContext ctx,
                                @Mock final IdentityPublicKey publicKey,
                                @Mock final Object path) {
             paths.put(publicKey, path);
@@ -139,7 +139,7 @@ class PeersManagerTest {
     @Nested
     class AddPath {
         @Test
-        void shouldEmitEventIfThisIsTheFirstPath(@Mock final HandlerContext ctx,
+        void shouldEmitEventIfThisIsTheFirstPath(@Mock final MigrationHandlerContext ctx,
                                                  @Mock final IdentityPublicKey publicKey,
                                                  @Mock final Object path) {
             underTest.addPath(ctx, publicKey, path);
@@ -148,7 +148,7 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitNotEventIfPeerHasAlreadyPaths(@Mock final HandlerContext ctx,
+        void shouldEmitNotEventIfPeerHasAlreadyPaths(@Mock final MigrationHandlerContext ctx,
                                                      @Mock final IdentityPublicKey publicKey,
                                                      @Mock final Object path1,
                                                      @Mock final Object path2) {
@@ -163,7 +163,7 @@ class PeersManagerTest {
     @Nested
     class RemovePath {
         @Test
-        void shouldRemovePath(@Mock final HandlerContext ctx,
+        void shouldRemovePath(@Mock final MigrationHandlerContext ctx,
                               @Mock final IdentityPublicKey publicKey,
                               @Mock final Object path) {
             paths.put(publicKey, path);
@@ -174,7 +174,7 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitNotEventIfPeerHasStillPaths(@Mock final HandlerContext ctx,
+        void shouldEmitNotEventIfPeerHasStillPaths(@Mock final MigrationHandlerContext ctx,
                                                    @Mock final IdentityPublicKey publicKey,
                                                    @Mock final Object path1,
                                                    @Mock final Object path2) {
@@ -187,7 +187,7 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitPeerRelayEventIfNoPathLeftAndThereIsASuperPeer(@Mock final HandlerContext ctx,
+        void shouldEmitPeerRelayEventIfNoPathLeftAndThereIsASuperPeer(@Mock final MigrationHandlerContext ctx,
                                                                       @Mock final IdentityPublicKey publicKey,
                                                                       @Mock final Object path) {
             paths.put(publicKey, path);
@@ -207,7 +207,7 @@ class PeersManagerTest {
     @Nested
     class RemoveSuperPeerAndPath {
         @Test
-        void shouldRemoveSuperPeerAndPath(@Mock final HandlerContext ctx,
+        void shouldRemoveSuperPeerAndPath(@Mock final MigrationHandlerContext ctx,
                                           @Mock final IdentityPublicKey publicKey,
                                           @Mock final Object path) {
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
@@ -216,7 +216,7 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitNodeOfflineEventWhenRemovingLastSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldEmitNodeOfflineEventWhenRemovingLastSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                  @Mock final IdentityPublicKey publicKey,
                                                                  @Mock final Object path) {
             superPeers.add(publicKey);
@@ -227,7 +227,7 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldNotEmitNodeOfflineEventWhenRemovingNonLastSuperPeer(@Mock final HandlerContext ctx,
+        void shouldNotEmitNodeOfflineEventWhenRemovingNonLastSuperPeer(@Mock final MigrationHandlerContext ctx,
                                                                        @Mock final IdentityPublicKey publicKey,
                                                                        @Mock final IdentityPublicKey publicKey2,
                                                                        @Mock final Object path) {
@@ -249,7 +249,7 @@ class PeersManagerTest {
     @Nested
     class AddPathAndSuperPeer {
         @Test
-        void shouldAddPathAndAddSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldAddPathAndAddSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                           @Mock final IdentityPublicKey publicKey,
                                           @Mock final Object path) {
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
@@ -259,7 +259,7 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                      @Mock final IdentityPublicKey publicKey,
                                                                      @Mock final Object path) {
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
@@ -278,7 +278,7 @@ class PeersManagerTest {
     @Nested
     class RemoveChildrenAndPath {
         @Test
-        void shouldRemoveChildrenAndPath(@Mock final HandlerContext ctx,
+        void shouldRemoveChildrenAndPath(@Mock final MigrationHandlerContext ctx,
                                          @Mock final IdentityPublicKey publicKey,
                                          @Mock final Object path) {
             paths.put(publicKey, path);
@@ -290,7 +290,7 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldNotEmitEventWhenRemovingUnknownPeer(@Mock final HandlerContext ctx,
+        void shouldNotEmitEventWhenRemovingUnknownPeer(@Mock final MigrationHandlerContext ctx,
                                                        @Mock final IdentityPublicKey publicKey,
                                                        @Mock final Object path) {
             underTest.removeChildrenAndPath(ctx, publicKey, path);
@@ -308,7 +308,7 @@ class PeersManagerTest {
     @Nested
     class AddPathAndChildren {
         @Test
-        void shouldAddPathAndChildren(@Mock final HandlerContext ctx,
+        void shouldAddPathAndChildren(@Mock final MigrationHandlerContext ctx,
                                       @Mock final IdentityPublicKey publicKey,
                                       @Mock final Object path) {
             underTest.addPathAndChildren(ctx, publicKey, path);
@@ -318,7 +318,7 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitPeerDirectEventIfGivenPathIsTheFirstOneForThePeer(@Mock final HandlerContext ctx,
+        void shouldEmitPeerDirectEventIfGivenPathIsTheFirstOneForThePeer(@Mock final MigrationHandlerContext ctx,
                                                                          @Mock final IdentityPublicKey publicKey,
                                                                          @Mock final Object path) {
             underTest.addPathAndChildren(ctx, publicKey, path);
@@ -327,7 +327,7 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitNoEventIfGivenPathIsNotTheFirstOneForThePeer(@Mock final HandlerContext ctx,
+        void shouldEmitNoEventIfGivenPathIsNotTheFirstOneForThePeer(@Mock final MigrationHandlerContext ctx,
                                                                     @Mock final IdentityPublicKey publicKey,
                                                                     @Mock final Object path,
                                                                     @Mock final Object o) {

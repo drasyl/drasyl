@@ -22,7 +22,7 @@
 package org.drasyl.pipeline.handler;
 
 import io.reactivex.rxjava3.disposables.Disposable;
-import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.TokenBucket;
@@ -56,7 +56,7 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
     }
 
     @Override
-    public void onOutbound(final HandlerContext ctx,
+    public void onOutbound(final MigrationHandlerContext ctx,
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) {
@@ -75,7 +75,7 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
             tokenBucket = new TokenBucket(1, refillInterval, doBusyWait);
         }
 
-        public synchronized void add(final HandlerContext ctx, final Runnable value) {
+        public synchronized void add(final MigrationHandlerContext ctx, final Runnable value) {
             queue.add(value);
             LOG.trace("New message has been enqueued. Messages in queue: {}", queue::size);
             if (queueConsumer == null) {

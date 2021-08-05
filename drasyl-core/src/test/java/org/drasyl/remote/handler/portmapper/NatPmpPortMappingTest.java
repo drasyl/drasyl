@@ -24,9 +24,9 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ class NatPmpPortMappingTest {
     @Nested
     class Start {
         @Test
-        void shouldRequestExternalMessage(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldRequestExternalMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Runnable onFailure,
                                           @Mock final Supplier<InetAddress> defaultGatewaySupplier) throws UnknownHostException {
@@ -70,7 +70,7 @@ class NatPmpPortMappingTest {
     @Nested
     class Stop {
         @Test
-        void shouldDestroyMapping(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldDestroyMapping(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                   @Mock final InetAddress externalAddress,
                                   @Mock final Disposable timeoutGuard,
                                   @Mock final Disposable refreshTask,
@@ -90,7 +90,7 @@ class NatPmpPortMappingTest {
         @Nested
         class FromGateway {
             @Test
-            void shouldRequestMappingAfterReceivingExternalAddressMessage(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+            void shouldRequestMappingAfterReceivingExternalAddressMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                           @Mock final InetSocketAddressWrapper sender,
                                                                           @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
                 final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008000000004f79fc0a8b202"));
@@ -102,7 +102,7 @@ class NatPmpPortMappingTest {
             }
 
             @Test
-            void shouldScheduleRefreshOnMappingMessage(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+            void shouldScheduleRefreshOnMappingMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                        @Mock final InetSocketAddressWrapper sender,
                                                        @Mock final Disposable timeoutGuard,
                                                        @Mock final InetAddress externalAddress,

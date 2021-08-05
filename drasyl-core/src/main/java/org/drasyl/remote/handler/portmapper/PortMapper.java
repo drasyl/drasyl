@@ -23,11 +23,11 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.util.logging.Logger;
@@ -69,7 +69,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
@@ -89,7 +89,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
+    protected void matchedInbound(final MigrationHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
                                   final ByteBuf msg,
                                   final CompletableFuture<Void> future) {
@@ -103,7 +103,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
         }
     }
 
-    private void cycleNextMethod(final HandlerContext ctx, final NodeUpEvent event) {
+    private void cycleNextMethod(final MigrationHandlerContext ctx, final NodeUpEvent event) {
         final int oldMethodPointer = currentMethodPointer;
         currentMethodPointer = (currentMethodPointer + 1) % methods.size();
         if (currentMethodPointer == 0) {

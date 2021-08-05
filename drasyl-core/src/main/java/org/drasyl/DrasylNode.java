@@ -43,7 +43,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.plugin.PluginManager;

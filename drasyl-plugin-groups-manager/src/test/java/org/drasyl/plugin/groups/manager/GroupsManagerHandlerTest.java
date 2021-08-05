@@ -25,12 +25,12 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
@@ -82,7 +82,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class GroupsManagerHandlerTest {
     @Mock
-    private HandlerContext ctx;
+    private MigrationHandlerContext ctx;
     @Mock
     private DatabaseAdapter databaseAdapter;
     @Mock

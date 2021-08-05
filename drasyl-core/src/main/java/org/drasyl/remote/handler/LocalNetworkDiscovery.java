@@ -22,12 +22,12 @@
 package org.drasyl.remote.handler;
 
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -80,7 +80,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     }
 
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (MULTICAST_INTERFACE != null) {
@@ -97,7 +97,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         ctx.passEvent(event, future);
     }
 
-    synchronized void startHeartbeat(final HandlerContext ctx) {
+    synchronized void startHeartbeat(final MigrationHandlerContext ctx) {
         if (pingDisposable == null) {
             LOG.debug("Start Network Network Discovery...");
             final long pingInterval = ctx.config().getRemotePingInterval().toMillis();
@@ -115,7 +115,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         }
     }
 
-    synchronized void clearRoutes(final HandlerContext ctx) {
+    synchronized void clearRoutes(final MigrationHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             ctx.peersManager().removePath(ctx, publicKey, path);
             peers.remove(publicKey);
@@ -123,12 +123,12 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         peers.clear();
     }
 
-    void doHeartbeat(final HandlerContext ctx) {
+    void doHeartbeat(final MigrationHandlerContext ctx) {
         removeStalePeers(ctx);
         pingLocalNetworkNodes(ctx);
     }
 
-    private void removeStalePeers(final HandlerContext ctx) {
+    private void removeStalePeers(final MigrationHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (peer.isStale(ctx)) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundPingTime());
@@ -139,7 +139,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
+    protected void matchedInbound(final MigrationHandlerContext ctx,
                                   final Address sender,
                                   final DiscoveryMessage msg,
                                   final CompletableFuture<Void> future) {
@@ -151,7 +151,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         }
     }
 
-    private void handlePing(final HandlerContext ctx,
+    private void handlePing(final MigrationHandlerContext ctx,
                             final Address sender,
                             final RemoteMessage msg,
                             final CompletableFuture<Void> future) {
@@ -168,7 +168,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
 
     @SuppressWarnings("SuspiciousMethodCalls")
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final Address recipient,
                                    final RemoteMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -182,7 +182,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         }
     }
 
-    private static void pingLocalNetworkNodes(final HandlerContext ctx) {
+    private static void pingLocalNetworkNodes(final MigrationHandlerContext ctx) {
         final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork());
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
         ctx.passOutbound(MULTICAST_ADDRESS, messageEnvelope, new CompletableFuture<>()).exceptionally(e -> {
@@ -213,7 +213,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
             lastInboundPingTime = System.currentTimeMillis();
         }
 
-        public boolean isStale(final HandlerContext ctx) {
+        public boolean isStale(final MigrationHandlerContext ctx) {
             return lastInboundPingTime < System.currentTimeMillis() - ctx.config().getRemotePingTimeout().toMillis();
         }
 

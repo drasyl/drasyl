@@ -22,7 +22,7 @@
 package org.drasyl.pipeline.handler.codec;
 
 import io.netty.util.ReferenceCounted;
-import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 
@@ -64,7 +64,7 @@ import java.util.concurrent.CompletableFuture;
 public abstract class MessageToMessageCodec<I, O, A extends Address> extends SimpleDuplexHandler<I, O, A> {
     private final MessageToMessageDecoder<I, A> decoder = new MessageToMessageDecoder<>() {
         @Override
-        protected void decode(final HandlerContext ctx,
+        protected void decode(final MigrationHandlerContext ctx,
                               final A sender,
                               final I msg,
                               final List<Object> out) throws Exception {
@@ -73,7 +73,7 @@ public abstract class MessageToMessageCodec<I, O, A extends Address> extends Sim
     };
     private final MessageToMessageEncoder<O, A> encoder = new MessageToMessageEncoder<>() {
         @Override
-        protected void encode(final HandlerContext ctx,
+        protected void encode(final MigrationHandlerContext ctx,
                               final A recipient,
                               final O msg,
                               final List<Object> out) throws Exception {
@@ -82,7 +82,7 @@ public abstract class MessageToMessageCodec<I, O, A extends Address> extends Sim
     };
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
+    protected void matchedInbound(final MigrationHandlerContext ctx,
                                   final A sender,
                                   final I msg,
                                   final CompletableFuture<Void> future) throws Exception {
@@ -90,7 +90,7 @@ public abstract class MessageToMessageCodec<I, O, A extends Address> extends Sim
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final A recipient,
                                    final O msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -109,7 +109,7 @@ public abstract class MessageToMessageCodec<I, O, A extends Address> extends Sim
      * @throws Exception is thrown if an error occurs
      */
     @SuppressWarnings("java:S112")
-    protected abstract void decode(final HandlerContext ctx,
+    protected abstract void decode(final MigrationHandlerContext ctx,
                                    final A sender,
                                    final I msg,
                                    final List<Object> out) throws Exception;
@@ -126,7 +126,7 @@ public abstract class MessageToMessageCodec<I, O, A extends Address> extends Sim
      * @throws Exception is thrown if an error occurs
      */
     @SuppressWarnings("java:S112")
-    protected abstract void encode(final HandlerContext ctx,
+    protected abstract void encode(final MigrationHandlerContext ctx,
                                    final A recipient,
                                    final O msg,
                                    final List<Object> out) throws Exception;

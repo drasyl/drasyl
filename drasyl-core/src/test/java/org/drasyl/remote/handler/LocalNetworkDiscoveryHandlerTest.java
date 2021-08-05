@@ -25,13 +25,13 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -140,7 +140,7 @@ class LocalNetworkDiscoveryTest {
     @Nested
     class StartHeartbeat {
         @Test
-        void shouldScheduleHeartbeat(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
+        void shouldScheduleHeartbeat(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, null));
 
             handler.startHeartbeat(ctx);
@@ -155,7 +155,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldRemoveStalePeersAndPingLocalNetworkPeers(@Mock final IdentityPublicKey publicKey,
                                                             @Mock final Peer peer,
-                                                            @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
             when(ctx.identity().getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
             when(ctx.identity().getProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
             when(peer.isStale(any())).thenReturn(true);
@@ -188,7 +188,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldClearRoutes(@Mock final IdentityPublicKey publicKey,
                                @Mock final Peer peer,
-                               @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
+                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
             final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             handler.clearRoutes(ctx);
@@ -202,7 +202,7 @@ class LocalNetworkDiscoveryTest {
     class InboundMessageHandling {
         @Test
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddressWrapper sender,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                    @Mock final Peer peer) {
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
@@ -216,7 +216,7 @@ class LocalNetworkDiscoveryTest {
 
         @Test
         void shouldIgnoreInboundPingFromItself(@Mock final InetSocketAddressWrapper sender,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
             when(ctx.identity().getIdentityPublicKey()).thenReturn(publicKey);
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
@@ -308,7 +308,7 @@ class LocalNetworkDiscoveryTest {
         class IsStale {
             @Test
             void shouldReturnCorrectValue(@Mock final InetSocketAddressWrapper address,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
                 when(ctx.config().getRemotePingTimeout()).thenReturn(ofSeconds(60));
 
                 assertFalse(new Peer(address, System.currentTimeMillis()).isStale(ctx));

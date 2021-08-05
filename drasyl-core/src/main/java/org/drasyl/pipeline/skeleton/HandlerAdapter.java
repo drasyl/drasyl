@@ -30,7 +30,6 @@ import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 
@@ -47,7 +46,7 @@ public class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void onAdded(final HandlerContext ctx) {
+    public void onAdded(final MigrationHandlerContext ctx) {
         // Do nothing
     }
 
@@ -55,13 +54,13 @@ public class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void onRemoved(final HandlerContext ctx) {
+    public void onRemoved(final MigrationHandlerContext ctx) {
         // Do nothing
     }
 
     @Skip
     @Override
-    public void onInbound(final HandlerContext ctx,
+    public void onInbound(final MigrationHandlerContext ctx,
                           final Address sender,
                           final Object msg,
                           final CompletableFuture<Void> future) throws Exception {
@@ -70,7 +69,7 @@ public class HandlerAdapter implements Handler {
 
     @Skip
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         ctx.passEvent(event, future);
@@ -78,13 +77,13 @@ public class HandlerAdapter implements Handler {
 
     @Skip
     @Override
-    public void onException(final HandlerContext ctx, final Exception cause) {
+    public void onException(final MigrationHandlerContext ctx, final Exception cause) {
         ctx.passException(cause);
     }
 
     @Skip
     @Override
-    public void onOutbound(final HandlerContext ctx,
+    public void onOutbound(final MigrationHandlerContext ctx,
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) throws Exception {

@@ -21,6 +21,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
 
@@ -33,10 +34,10 @@ import java.lang.annotation.Target;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Indicates that the annotated handler method ({@link Handler#onInbound(HandlerContext, Address, Object,
- * CompletableFuture)}, {@link Handler#onOutbound(HandlerContext, Address, Object, CompletableFuture)},
- * {@link Handler#onEvent(HandlerContext, Event, CompletableFuture)} or {@link
- * Handler#onException(HandlerContext, Exception)}) in {@link Handler} will not be invoked by
+ * Indicates that the annotated handler method ({@link Handler#onInbound(MigrationHandlerContext, Address, Object,
+ * CompletableFuture)}, {@link Handler#onOutbound(MigrationHandlerContext, Address, Object, CompletableFuture)},
+ * {@link Handler#onEvent(MigrationHandlerContext, Event, CompletableFuture)} or {@link
+ * Handler#onException(MigrationHandlerContext, Exception)}) in {@link Handler} will not be invoked by
  * the {@link Pipeline} and so <strong>MUST</strong> only be used when the {@link Handler} method
  * does nothing except forward to the next {@link Handler} in the pipeline.
  * <p>

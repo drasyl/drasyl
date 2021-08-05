@@ -22,13 +22,13 @@
 package org.drasyl.remote.handler.crypto;
 
 import com.goterl.lazysodium.utils.SessionPair;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.ArmedMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
@@ -66,7 +66,7 @@ public final class ArmHandlerUtil {
     public static CompletableFuture<Void> sendEncrypted(final Crypto cryptoInstance,
                                                         final SessionPair agreementPair,
                                                         final AgreementId agreementId,
-                                                        final HandlerContext ctx,
+                                                        final MigrationHandlerContext ctx,
                                                         final Address recipient,
                                                         final FullReadMessage<?> msg,
                                                         final CompletableFuture<Void> future) {
@@ -107,7 +107,7 @@ public final class ArmHandlerUtil {
      * @return the future for the acknowledgement message
      */
     public static CompletableFuture<Void> sendAck(final Crypto cryptoInstance,
-                                                  final HandlerContext ctx,
+                                                  final MigrationHandlerContext ctx,
                                                   final Address recipientsAddress,
                                                   final IdentityPublicKey recipientsKey,
                                                   final Session session) {
@@ -149,7 +149,7 @@ public final class ArmHandlerUtil {
      * @param recipientsKey  the public key of the recipient
      */
     public static void sendKeyExchangeMsg(final Crypto cryptoInstance,
-                                          final HandlerContext ctx,
+                                          final MigrationHandlerContext ctx,
                                           final Session session,
                                           final Agreement agreement,
                                           final Address recipient,

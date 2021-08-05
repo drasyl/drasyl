@@ -22,10 +22,10 @@
 package org.drasyl.plugin.groups.client;
 
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundEventAwareHandler;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
@@ -81,13 +81,13 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     }
 
     @Override
-    public void onAdded(final HandlerContext ctx) {
+    public void onAdded(final MigrationHandlerContext ctx) {
         ctx.inboundSerialization().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
         ctx.outboundSerialization().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
     }
 
     @Override
-    public void onRemoved(final HandlerContext ctx) {
+    public void onRemoved(final MigrationHandlerContext ctx) {
         // Stop all renew tasks
         for (final Disposable renewTask : renewTasks.values()) {
             renewTask.dispose();
@@ -116,7 +116,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     }
 
     @Override
-    protected void matchedEvent(final HandlerContext ctx,
+    protected void matchedEvent(final MigrationHandlerContext ctx,
                                 final NodeUpEvent event,
                                 final CompletableFuture<Void> future) {
         // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
@@ -127,7 +127,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
+    protected void matchedInbound(final MigrationHandlerContext ctx,
                                   final Address sender,
                                   final GroupsServerMessage msg,
                                   final CompletableFuture<Void> future) {
@@ -152,7 +152,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
      * @param msg    the member joined message
      * @param future the message future
      */
-    private static void onMemberJoined(final HandlerContext ctx,
+    private static void onMemberJoined(final MigrationHandlerContext ctx,
                                        final MemberJoinedMessage msg,
                                        final CompletableFuture<Void> future) {
         FutureCombiner.getInstance()
@@ -167,7 +167,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
      * @param msg    the join failed message
      * @param future the message future
      */
-    private void onJoinFailed(final HandlerContext ctx,
+    private void onJoinFailed(final MigrationHandlerContext ctx,
                               final GroupJoinFailedMessage msg,
                               final CompletableFuture<Void> future) {
         final Group group = msg.getGroup();
@@ -191,7 +191,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
      * @param msg    the member left message
      * @param future the message future
      */
-    private void onMemberLeft(final HandlerContext ctx,
+    private void onMemberLeft(final MigrationHandlerContext ctx,
                               final MemberLeftMessage msg,
                               final CompletableFuture<Void> future) {
         final Group group = msg.getGroup();
@@ -222,7 +222,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
      * @param msg    the welcome message
      * @param future the message future
      */
-    private void onWelcome(final HandlerContext ctx,
+    private void onWelcome(final MigrationHandlerContext ctx,
                            final Address sender,
                            final GroupWelcomeMessage msg,
                            final CompletableFuture<Void> future) {
@@ -256,7 +256,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
      * @param group the group to join
      * @param renew if this is a renew message or not
      */
-    private void joinGroup(final HandlerContext ctx,
+    private void joinGroup(final MigrationHandlerContext ctx,
                            final GroupUri group,
                            final boolean renew) {
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();

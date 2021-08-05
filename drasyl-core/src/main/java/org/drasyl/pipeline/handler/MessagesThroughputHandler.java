@@ -24,11 +24,11 @@ package org.drasyl.pipeline.handler;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -113,7 +113,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     }
 
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent && disposable == null) {
@@ -151,7 +151,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
@@ -165,7 +165,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     }
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
+    protected void matchedInbound(final MigrationHandlerContext ctx,
                                   final Address sender,
                                   final Object msg,
                                   final CompletableFuture<Void> future) {

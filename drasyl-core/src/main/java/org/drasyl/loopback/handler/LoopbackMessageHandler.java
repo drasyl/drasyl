@@ -22,11 +22,11 @@
 package org.drasyl.loopback.handler;
 
 import io.netty.channel.ChannelHandler;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -51,7 +51,7 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Addres
     }
 
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
@@ -66,7 +66,7 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Addres
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
                                    final CompletableFuture<Void> future) {

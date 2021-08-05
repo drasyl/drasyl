@@ -22,6 +22,7 @@
 package org.drasyl.pipeline;
 
 import io.netty.util.concurrent.FastThreadLocal;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.logging.Logger;
@@ -85,22 +86,22 @@ public final class HandlerMask {
         int mask = ALL;
 
         if (isSkippable(handlerClass, "onEvent",
-                HandlerContext.class, Event.class, CompletableFuture.class)) {
+                MigrationHandlerContext.class, Event.class, CompletableFuture.class)) {
             mask &= ~ON_EVENT_MASK;
         }
 
         if (isSkippable(handlerClass, "onException",
-                HandlerContext.class, Exception.class)) {
+                MigrationHandlerContext.class, Exception.class)) {
             mask &= ~ON_EXCEPTION_MASK;
         }
 
         if (isSkippable(handlerClass, "onInbound",
-                HandlerContext.class, Address.class, Object.class, CompletableFuture.class)) {
+                MigrationHandlerContext.class, Address.class, Object.class, CompletableFuture.class)) {
             mask &= ~ON_INBOUND_MASK;
         }
 
         if (isSkippable(handlerClass, "onOutbound",
-                HandlerContext.class, Address.class, Object.class, CompletableFuture.class)) {
+                MigrationHandlerContext.class, Address.class, Object.class, CompletableFuture.class)) {
             mask &= ~ON_OUTBOUND_MASK;
         }
 

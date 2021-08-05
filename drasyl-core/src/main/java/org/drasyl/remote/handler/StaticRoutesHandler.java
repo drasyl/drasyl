@@ -23,12 +23,12 @@ package org.drasyl.remote.handler;
 
 import com.typesafe.config.Config;
 import io.netty.channel.ChannelHandler;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -54,7 +54,7 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
     }
 
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
@@ -70,7 +70,7 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final IdentityPublicKey recipient,
                                    final ApplicationMessage envelope,
                                    final CompletableFuture<Void> future) {
@@ -85,11 +85,11 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
         }
     }
 
-    private static synchronized void populateRoutes(final HandlerContext ctx) {
+    private static synchronized void populateRoutes(final MigrationHandlerContext ctx) {
         ctx.config().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.peersManager().addPath(ctx, publicKey, path)));
     }
 
-    private static synchronized void clearRoutes(final HandlerContext ctx) {
+    private static synchronized void clearRoutes(final MigrationHandlerContext ctx) {
         ctx.config().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.peersManager().removePath(ctx, publicKey, path));
     }
 }

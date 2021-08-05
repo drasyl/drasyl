@@ -22,8 +22,8 @@
 package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 
 /**
@@ -38,14 +38,14 @@ public interface PortMapping {
      * @param event     the node up event
      * @param onFailure will be called once on failure
      */
-    void start(HandlerContext ctx, NodeUpEvent event, Runnable onFailure);
+    void start(MigrationHandlerContext ctx, NodeUpEvent event, Runnable onFailure);
 
     /**
      * Shall remove any existing port forwarding again.
      *
      * @param ctx the handler context
      */
-    void stop(HandlerContext ctx);
+    void stop(MigrationHandlerContext ctx);
 
     /**
      * Is called for incoming messages and thus enables this method to react to relevant messages.
@@ -54,7 +54,7 @@ public interface PortMapping {
      * @param sender the sender of the message
      * @param msg    the message
      */
-    void handleMessage(HandlerContext ctx,
+    void handleMessage(MigrationHandlerContext ctx,
                        InetSocketAddressWrapper sender,
                        ByteBuf msg);
 

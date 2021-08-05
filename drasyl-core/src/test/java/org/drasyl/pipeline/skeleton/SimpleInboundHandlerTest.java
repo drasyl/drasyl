@@ -24,10 +24,10 @@ package org.drasyl.pipeline.skeleton;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -55,7 +55,7 @@ class SimpleInboundHandlerTest {
     void shouldTriggerOnMatchedMessage(@Mock final Address sender) {
         final SimpleInboundEventAwareHandler<byte[], Event, Address> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedInbound(final HandlerContext ctx,
+            protected void matchedInbound(final MigrationHandlerContext ctx,
                                           final Address sender,
                                           final byte[] msg,
                                           final CompletableFuture<Void> future) {
@@ -82,7 +82,7 @@ class SimpleInboundHandlerTest {
     void shouldPassthroughsNotMatchingMessage(@Mock final Address sender) {
         final SimpleInboundHandler<byte[], Address> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedInbound(final HandlerContext ctx,
+            protected void matchedInbound(final MigrationHandlerContext ctx,
                                           final Address sender,
                                           final byte[] msg,
                                           final CompletableFuture<Void> future) {

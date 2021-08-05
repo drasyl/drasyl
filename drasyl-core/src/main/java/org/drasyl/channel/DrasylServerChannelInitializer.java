@@ -38,7 +38,6 @@ import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
@@ -143,7 +142,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleInboundHandler<UnarmedMessage, Address>() {
                 @Override
-                protected void matchedInbound(final HandlerContext ctx,
+                protected void matchedInbound(final MigrationHandlerContext ctx,
                                               final Address sender,
                                               final UnarmedMessage msg,
                                               final CompletableFuture<Void> future) throws Exception {

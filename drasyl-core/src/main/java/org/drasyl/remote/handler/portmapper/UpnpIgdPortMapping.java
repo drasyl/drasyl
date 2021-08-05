@@ -25,9 +25,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -111,7 +111,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     }
 
     @Override
-    public void start(final HandlerContext ctx,
+    public void start(final MigrationHandlerContext ctx,
                       final NodeUpEvent event,
                       final Runnable onFailure) {
         this.onFailure = onFailure;
@@ -122,7 +122,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     }
 
     @Override
-    public void stop(final HandlerContext ctx) {
+    public void stop(final MigrationHandlerContext ctx) {
         unmapPort(ctx);
     }
 
@@ -134,7 +134,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     }
 
     @Override
-    public void handleMessage(final HandlerContext ctx,
+    public void handleMessage(final MigrationHandlerContext ctx,
                               final InetSocketAddressWrapper sender,
                               final ByteBuf msg) {
         try {
@@ -165,7 +165,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         }
     }
 
-    private synchronized void mapPort(final HandlerContext ctx) {
+    private synchronized void mapPort(final MigrationHandlerContext ctx) {
         timeoutGuard = ctx.independentScheduler().scheduleDirect(() -> {
             timeoutGuard = null;
             if (refreshTask == null) {
@@ -177,7 +177,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         doSsdpDiscovery(ctx);
     }
 
-    private synchronized void unmapPort(final HandlerContext ctx) {
+    private synchronized void unmapPort(final MigrationHandlerContext ctx) {
         ctx.independentScheduler().scheduleDirect(() -> {
             if (upnpService != null) {
                 try {
@@ -212,7 +212,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         }
     }
 
-    private void doSsdpDiscovery(final HandlerContext ctx) {
+    private void doSsdpDiscovery(final MigrationHandlerContext ctx) {
         LOG.debug("Send SSDP discovery message to broadcast address `{}`.", SSDP_MULTICAST_ADDRESS);
         final byte[] content = UpnpIgdUtil.buildDiscoveryMessage();
         final ByteBuf msg = Unpooled.wrappedBuffer(content);

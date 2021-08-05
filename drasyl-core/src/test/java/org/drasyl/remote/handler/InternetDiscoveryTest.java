@@ -27,6 +27,7 @@ import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeEvent;
@@ -36,7 +37,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -249,7 +249,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldNotRemoveLivingSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldNotRemoveLivingSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                             @Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddressWrapper address,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
@@ -262,7 +262,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldRemoveDeadSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldRemoveDeadSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                         @Mock final IdentityPublicKey publicKey,
                                         @Mock final InetSocketAddressWrapper address,
                                         @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
@@ -278,7 +278,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldRemoveDeadChildrenOrPeers(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldRemoveDeadChildrenOrPeers(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                              @Mock final IdentityPublicKey publicKey,
                                              @Mock final InetSocketAddressWrapper address,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
@@ -291,7 +291,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldPingSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldPingSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                   @Mock final Endpoint superPeerEndpoint) {
             final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
@@ -309,7 +309,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldPingPeersWithRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldPingPeersWithRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
@@ -325,7 +325,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldNotPingPeersWithoutRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
+        void shouldNotPingPeersWithoutRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                           @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
 

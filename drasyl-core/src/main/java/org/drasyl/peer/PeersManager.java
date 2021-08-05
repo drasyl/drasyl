@@ -23,6 +23,7 @@ package org.drasyl.peer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -30,7 +31,6 @@ import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.util.SetUtil;
 
 import java.util.HashSet;
@@ -140,7 +140,7 @@ public class PeersManager {
         }
     }
 
-    public void addPath(final HandlerContext ctx,
+    public void addPath(final MigrationHandlerContext ctx,
                         final IdentityPublicKey publicKey,
                         final Object path) {
         requireNonNull(publicKey);
@@ -158,7 +158,7 @@ public class PeersManager {
         }
     }
 
-    public void removePath(final HandlerContext ctx,
+    public void removePath(final MigrationHandlerContext ctx,
                            final IdentityPublicKey publicKey,
                            final Object path) {
         requireNonNull(publicKey);
@@ -176,7 +176,7 @@ public class PeersManager {
         }
     }
 
-    public void addPathAndSuperPeer(final HandlerContext ctx,
+    public void addPathAndSuperPeer(final MigrationHandlerContext ctx,
                                     final IdentityPublicKey publicKey,
                                     final Object path) {
         requireNonNull(publicKey);
@@ -202,7 +202,7 @@ public class PeersManager {
         }
     }
 
-    public void removeSuperPeerAndPath(final HandlerContext ctx,
+    public void removeSuperPeerAndPath(final MigrationHandlerContext ctx,
                                        final IdentityPublicKey publicKey,
                                        final Object path) {
         requireNonNull(path);
@@ -225,7 +225,7 @@ public class PeersManager {
         }
     }
 
-    public void addPathAndChildren(final HandlerContext ctx,
+    public void addPathAndChildren(final MigrationHandlerContext ctx,
                                    final IdentityPublicKey publicKey,
                                    final Object path) {
         requireNonNull(publicKey);
@@ -248,7 +248,7 @@ public class PeersManager {
         }
     }
 
-    public void removeChildrenAndPath(final HandlerContext ctx,
+    public void removeChildrenAndPath(final MigrationHandlerContext ctx,
                                       final IdentityPublicKey publicKey,
                                       final Object path) {
         requireNonNull(publicKey);

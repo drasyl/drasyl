@@ -21,7 +21,7 @@
  */
 package org.drasyl.pipeline.skeleton;
 
-import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.RemoteMessage;
 
@@ -55,7 +55,7 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final A recipient,
                                    final O msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -82,13 +82,13 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
      * @param future    the future to complete
      * @throws Exception if any error occurs
      */
-    protected abstract void filteredOutbound(final HandlerContext ctx,
+    protected abstract void filteredOutbound(final MigrationHandlerContext ctx,
                                              final A recipient,
                                              final O msg,
                                              final CompletableFuture<Void> future) throws Exception;
 
     @Override
-    protected void matchedInbound(final HandlerContext ctx,
+    protected void matchedInbound(final MigrationHandlerContext ctx,
                                   final A sender,
                                   final I msg,
                                   final CompletableFuture<Void> future) throws Exception {
@@ -110,7 +110,7 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
      * @param future the future to complete
      * @throws Exception if any error occurs
      */
-    protected abstract void filteredInbound(final HandlerContext ctx,
+    protected abstract void filteredInbound(final MigrationHandlerContext ctx,
                                             final A sender,
                                             final I msg,
                                             final CompletableFuture<Void> future) throws Exception;

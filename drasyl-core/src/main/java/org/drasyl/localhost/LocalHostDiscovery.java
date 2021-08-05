@@ -23,12 +23,12 @@ package org.drasyl.localhost;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.ApplicationMessage;
@@ -110,7 +110,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     }
 
     @Override
-    public void onEvent(final HandlerContext ctx,
+    public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         final FutureCombiner combiner = FutureCombiner.getInstance();
@@ -128,7 +128,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     }
 
     @Override
-    protected void matchedOutbound(final HandlerContext ctx,
+    protected void matchedOutbound(final MigrationHandlerContext ctx,
                                    final IdentityPublicKey recipient,
                                    final ApplicationMessage message,
                                    final CompletableFuture<Void> future) {
@@ -143,7 +143,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         }
     }
 
-    private synchronized CompletableFuture<Void> startDiscovery(final HandlerContext ctx,
+    private synchronized CompletableFuture<Void> startDiscovery(final MigrationHandlerContext ctx,
                                                                 final int port) {
         LOG.debug("Start Local Host Discovery...");
         final Path discoveryPath = discoveryPath(ctx);
@@ -167,7 +167,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         return completedFuture(null);
     }
 
-    private synchronized CompletableFuture<Void> stopDiscovery(final HandlerContext ctx) {
+    private synchronized CompletableFuture<Void> stopDiscovery(final MigrationHandlerContext ctx) {
         LOG.debug("Stop Local Host Discovery...");
 
         if (watchDisposable != null) {
@@ -199,7 +199,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
      * Tries to monitor {@code discoveryPath} so that any changes are automatically reported. If
      * this is not possible, we have to fall back to periodical polling.
      */
-    private void tryWatchDirectory(final HandlerContext ctx, final Path discoveryPath) {
+    private void tryWatchDirectory(final MigrationHandlerContext ctx, final Path discoveryPath) {
         try {
             final File directory = discoveryPath.toFile();
             final FileSystem fileSystem = discoveryPath.getFileSystem();
@@ -225,7 +225,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     /**
      * Writes periodically the actual own information to {@link #discoveryPath}.
      */
-    private void keepOwnInformationUpToDate(final HandlerContext ctx,
+    private void keepOwnInformationUpToDate(final MigrationHandlerContext ctx,
                                             final Path filePath,
                                             final int port) {
         // get own address(es)
@@ -262,7 +262,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
      * @param ctx handler's context
      */
     @SuppressWarnings("java:S134")
-    synchronized void scan(final HandlerContext ctx) {
+    synchronized void scan(final MigrationHandlerContext ctx) {
         final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
         final String ownPublicKeyString = ctx.identity().getIdentityPublicKey().toString();
@@ -294,7 +294,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         }
     }
 
-    private void updateRoutes(final HandlerContext ctx,
+    private void updateRoutes(final MigrationHandlerContext ctx,
                               final Map<IdentityPublicKey, InetSocketAddress> newRoutes) {
         // remove outdated routes
         for (final Iterator<IdentityPublicKey> i = routes.keySet().iterator();
@@ -336,7 +336,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         }
     }
 
-    private static Path discoveryPath(final HandlerContext ctx) {
+    private static Path discoveryPath(final MigrationHandlerContext ctx) {
         return ctx.config().getRemoteLocalHostDiscoveryPath().resolve(String.valueOf(ctx.config().getNetworkId()));
     }
 }

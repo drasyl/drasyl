@@ -24,10 +24,10 @@ package org.drasyl.pipeline.skeleton;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ class SimpleOutboundHandlerTest {
     void shouldTriggerOnMatchedMessage(@Mock final Address recipient) {
         final SimpleOutboundHandler<byte[], Address> handler = new SimpleOutboundHandler<>() {
             @Override
-            protected void matchedOutbound(final HandlerContext ctx,
+            protected void matchedOutbound(final MigrationHandlerContext ctx,
                                            final Address recipient,
                                            final byte[] msg,
                                            final CompletableFuture<Void> future) {
@@ -80,7 +80,7 @@ class SimpleOutboundHandlerTest {
     void shouldPassthroughsNotMatchingMessage(@Mock final IdentityPublicKey recipient) {
         final SimpleOutboundHandler<byte[], Address> handler = new SimpleOutboundHandler<>() {
             @Override
-            protected void matchedOutbound(final HandlerContext ctx,
+            protected void matchedOutbound(final MigrationHandlerContext ctx,
                                            final Address recipient,
                                            final byte[] msg,
                                            final CompletableFuture<Void> future) {

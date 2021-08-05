@@ -22,8 +22,8 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.util.internal.TypeParameterMatcher;
+import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 
@@ -50,7 +50,7 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
     }
 
     @Override
-    public void onOutbound(final HandlerContext ctx,
+    public void onOutbound(final MigrationHandlerContext ctx,
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) throws Exception {
@@ -81,7 +81,7 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
      * @param future    a future for the message
      */
     @SuppressWarnings("java:S112")
-    protected abstract void matchedOutbound(HandlerContext ctx,
+    protected abstract void matchedOutbound(MigrationHandlerContext ctx,
                                             A recipient,
                                             O msg,
                                             CompletableFuture<Void> future) throws Exception;
