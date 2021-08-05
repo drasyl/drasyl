@@ -21,8 +21,6 @@
  */
 package org.drasyl.pipeline.address;
 
-import org.drasyl.pipeline.Pipeline;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 

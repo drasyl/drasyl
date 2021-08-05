@@ -37,7 +37,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
 
@@ -308,7 +307,7 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
         return channel.drasylConfig();
     }
 
-    public Pipeline drasylPipeline() {
+    public MigrationPipeline drasylPipeline() {
         return new MigrationPipeline(pipeline());
     }
 

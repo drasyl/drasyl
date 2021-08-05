@@ -31,7 +31,6 @@ import io.netty.channel.ChannelProgressivePromise;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.EventExecutorGroup;
 import org.drasyl.event.Event;
-import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureUtil;
 
@@ -43,14 +42,13 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
 
-public class MigrationPipeline implements Pipeline, ChannelPipeline {
+public class MigrationPipeline implements ChannelPipeline {
     private final ChannelPipeline channelPipeline;
 
     public MigrationPipeline(final ChannelPipeline channelPipeline) {
         this.channelPipeline = requireNonNull(channelPipeline);
     }
 
-    @Override
     public CompletableFuture<Void> processInbound(final Address sender,
                                                   final Object msg) {
         final CompletableFuture<Void> future = new CompletableFuture<>();
@@ -58,14 +56,12 @@ public class MigrationPipeline implements Pipeline, ChannelPipeline {
         return future;
     }
 
-    @Override
     public CompletableFuture<Void> processInbound(final Event event) {
         final CompletableFuture<Void> future = new CompletableFuture<>();
         fireUserEventTriggered(new MigrationEvent(event, future));
         return future;
     }
 
-    @Override
     public CompletableFuture<Void> processOutbound(final Address recipient, final Object msg) {
         final ChannelPromise promise = channelPipeline.newPromise();
         writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);

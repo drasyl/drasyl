@@ -27,12 +27,12 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
@@ -90,7 +90,7 @@ class GroupsManagerHandlerTest {
     @Mock
     private IdentityPublicKey publicKey;
     @Mock
-    private Pipeline pipeline;
+    private MigrationPipeline pipeline;
     @Mock
     private Future staleTask;
     @Mock(answer = RETURNS_DEEP_STUBS)

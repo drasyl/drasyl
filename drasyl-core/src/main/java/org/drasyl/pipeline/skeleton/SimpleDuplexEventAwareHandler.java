@@ -24,7 +24,6 @@ package org.drasyl.pipeline.skeleton;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;

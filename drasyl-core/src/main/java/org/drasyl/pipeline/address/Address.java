@@ -22,7 +22,6 @@
 package org.drasyl.pipeline.address;
 
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.Pipeline;
 
 /**
  * This class models an address, that can be used inside the {@link Pipeline} by {@link Handler}s,

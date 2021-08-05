@@ -44,12 +44,12 @@ import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.serialization.Serialization;
@@ -643,7 +643,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public Pipeline drasylPipeline() {
+        public MigrationPipeline drasylPipeline() {
             return null;
         }
 
