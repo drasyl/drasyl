@@ -21,8 +21,6 @@
  */
 package org.drasyl.pipeline.address;
 
-import org.drasyl.pipeline.Handler;
-
 /**
  * This class models an address, that can be used inside the {@link Pipeline} by {@link Handler}s,
  * to know an application/protocol specific endpoint of a sender or recipient.

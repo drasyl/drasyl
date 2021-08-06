@@ -44,7 +44,7 @@ class HandlerMaskTest {
 
         @Test
         void shouldCalcCorrectMaskForNoSkip() {
-            assertEquals(HandlerMask.ALL, HandlerMask.mask(Handler.class));
+            assertEquals(HandlerMask.ALL, HandlerMask.mask(HandlerAdapter.class));
         }
     }
 

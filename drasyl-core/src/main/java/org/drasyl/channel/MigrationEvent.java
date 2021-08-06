@@ -22,7 +22,6 @@
 package org.drasyl.channel;
 
 import org.drasyl.event.Event;
-import org.drasyl.pipeline.Handler;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;

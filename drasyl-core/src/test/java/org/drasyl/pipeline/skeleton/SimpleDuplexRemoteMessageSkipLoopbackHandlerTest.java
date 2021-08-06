@@ -26,7 +26,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
@@ -47,7 +46,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
     @Mock
     private PeersManager peersManager;
     private DrasylConfig config;
-    private Handler handler;
+    private HandlerAdapter handler;
     private Nonce nonce;
 
     @BeforeEach

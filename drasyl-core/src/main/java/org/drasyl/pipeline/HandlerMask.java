@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.FastThreadLocal;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -48,10 +49,10 @@ public final class HandlerMask {
     public static final int ALL = ON_EVENT_MASK |
             ON_EXCEPTION_MASK | ON_INBOUND_MASK | ON_OUTBOUND_MASK;
     private static final Logger LOG = LoggerFactory.getLogger(HandlerMask.class);
-    private static final FastThreadLocal<Map<Class<? extends Handler>, Integer>> MASK_CACHE =
+    private static final FastThreadLocal<Map<Class<? extends HandlerAdapter>, Integer>> MASK_CACHE =
             new FastThreadLocal<>() {
                 @Override
-                protected Map<Class<? extends Handler>, Integer> initialValue() {
+                protected Map<Class<? extends HandlerAdapter>, Integer> initialValue() {
                     return new WeakHashMap<>(32);
                 }
             };
@@ -65,8 +66,8 @@ public final class HandlerMask {
      * @param handlerClass the handler for which the mask should be returned
      * @return the handler mask
      */
-    public static int mask(final Class<? extends Handler> handlerClass) {
-        final Map<Class<? extends Handler>, Integer> cache = MASK_CACHE.get();
+    public static int mask(final Class<? extends HandlerAdapter> handlerClass) {
+        final Map<Class<? extends HandlerAdapter>, Integer> cache = MASK_CACHE.get();
         Integer mask = cache.get(handlerClass);
         if (mask == null) {
             mask = calcMask(handlerClass);
@@ -82,7 +83,7 @@ public final class HandlerMask {
      * @param handlerClass the handler for which the mask should be calculated
      * @return the handler mask
      */
-    private static int calcMask(final Class<? extends Handler> handlerClass) {
+    private static int calcMask(final Class<? extends HandlerAdapter> handlerClass) {
         int mask = ALL;
 
         if (isSkippable(handlerClass, "onEvent",
@@ -120,7 +121,7 @@ public final class HandlerMask {
      * @return if the given method {@code methodName} has the {@link Skip} annotation
      */
     @SuppressWarnings("java:S1905")
-    static boolean isSkippable(final Class<? extends Handler> handlerClass,
+    static boolean isSkippable(final Class<? extends HandlerAdapter> handlerClass,
                                final String methodName,
                                final Class<?>... paramTypes) {
         try {

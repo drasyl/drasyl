@@ -22,13 +22,14 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
-import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
@@ -40,13 +41,12 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.channel.Null.NULL;
 
 /**
- * Skeleton implementation of a {@link Handler}.
+ * Skeleton implementation of a {@link HandlerAdapter}.
  */
-public class HandlerAdapter implements Handler {
+public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHandler {
     /**
      * Do nothing by default, sub-classes may override this method.
      */
-    @Override
     public void onAdded(final ChannelHandlerContext ctx) {
         // Do nothing
     }
@@ -54,13 +54,12 @@ public class HandlerAdapter implements Handler {
     /**
      * Do nothing by default, sub-classes may override this method.
      */
-    @Override
     public void onRemoved(final ChannelHandlerContext ctx) {
         // Do nothing
     }
 
+    @SuppressWarnings("java:S112")
     @Skip
-    @Override
     public void onInbound(final ChannelHandlerContext ctx,
                           final Address sender,
                           final Object msg,
@@ -69,7 +68,6 @@ public class HandlerAdapter implements Handler {
     }
 
     @Skip
-    @Override
     public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
@@ -77,13 +75,12 @@ public class HandlerAdapter implements Handler {
     }
 
     @Skip
-    @Override
     public void onException(final ChannelHandlerContext ctx, final Exception cause) {
         ctx.fireExceptionCaught(cause);
     }
 
+    @SuppressWarnings("java:S112")
     @Skip
-    @Override
     public void onOutbound(final ChannelHandlerContext ctx,
                            final Address recipient,
                            final Object msg,

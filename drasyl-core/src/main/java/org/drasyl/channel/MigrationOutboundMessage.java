@@ -21,7 +21,6 @@
  */
 package org.drasyl.channel;
 
-import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 
 /**

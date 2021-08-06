@@ -24,7 +24,6 @@ package org.drasyl.pipeline.skeleton;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
