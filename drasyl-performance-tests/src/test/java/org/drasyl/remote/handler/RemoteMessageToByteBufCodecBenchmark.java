@@ -569,11 +569,6 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public MigrationHandlerContext passException(final Exception cause) {
-            return null;
-        }
-
-        @Override
         public CompletableFuture<Void> passInbound(final Address sender,
                                                    final Object msg,
                                                    final CompletableFuture<Void> future) {

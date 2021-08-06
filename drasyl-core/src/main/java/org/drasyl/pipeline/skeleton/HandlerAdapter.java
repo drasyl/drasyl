@@ -78,7 +78,7 @@ public class HandlerAdapter implements Handler {
     @Skip
     @Override
     public void onException(final MigrationHandlerContext ctx, final Exception cause) {
-        ctx.passException(cause);
+        ctx.fireExceptionCaught(cause);
     }
 
     @Skip
@@ -171,7 +171,7 @@ public class HandlerAdapter implements Handler {
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);
-                handlerCtx.passException(e);
+                handlerCtx.fireExceptionCaught(e);
                 ReferenceCountUtil.safeRelease(msg);
             }
         }
@@ -219,7 +219,7 @@ public class HandlerAdapter implements Handler {
             }
             catch (final Exception e) {
                 migrationMsg.future().completeExceptionally(e);
-                handlerCtx.passException(e);
+                handlerCtx.fireExceptionCaught(e);
                 ReferenceCountUtil.safeRelease(msg);
             }
         }

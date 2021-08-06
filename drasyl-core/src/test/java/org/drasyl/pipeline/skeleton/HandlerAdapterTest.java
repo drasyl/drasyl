@@ -119,7 +119,7 @@ class HandlerAdapterTest {
 
             handlerAdapter.onException(ctx, exception);
 
-            verify(ctx).passException(exception);
+            verify(ctx).fireExceptionCaught(exception);
         }
 
         @Test

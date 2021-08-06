@@ -39,7 +39,6 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -57,7 +56,6 @@ import test.util.IdentityTestUtil;
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
-import static java.time.Duration.ofDays;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 @State(Scope.Benchmark)
@@ -99,8 +97,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     }
 
     private static class MyHandlerContext extends MigrationHandlerContext {
-        private final DrasylConfig config;
-
         public MyHandlerContext() {
             super(new ChannelHandlerContext() {
                 @Override
@@ -534,10 +530,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
                     return false;
                 }
             });
-            config = DrasylConfig.newBuilder()
-                    .remotePingTimeout(ofDays(1))
-                    .remotePingCommunicationTimeout(ofDays(1))
-                    .build();
         }
 
         @Override
@@ -547,11 +539,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
 
         @Override
         public Handler handler() {
-            return null;
-        }
-
-        @Override
-        public MigrationHandlerContext passException(final Exception cause) {
             return null;
         }
 

@@ -39,7 +39,6 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityPublicKey;
@@ -66,8 +65,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-
-import static java.time.Duration.ofDays;
 
 @State(Scope.Benchmark)
 public class InternetDiscoveryBenchmark extends AbstractBenchmark {
@@ -119,8 +116,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     }
 
     private static class MyHandlerContext extends MigrationHandlerContext {
-        private final DrasylConfig config;
-
         public MyHandlerContext() {
             super(new ChannelHandlerContext() {
                 @Override
@@ -554,10 +549,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
                     return false;
                 }
             });
-            config = DrasylConfig.newBuilder()
-                    .remotePingTimeout(ofDays(1))
-                    .remotePingCommunicationTimeout(ofDays(1))
-                    .build();
         }
 
         @Override
@@ -567,11 +558,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
 
         @Override
         public Handler handler() {
-            return null;
-        }
-
-        @Override
-        public MigrationHandlerContext passException(final Exception cause) {
             return null;
         }
 

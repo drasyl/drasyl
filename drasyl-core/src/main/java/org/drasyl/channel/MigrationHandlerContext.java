@@ -259,16 +259,10 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
         return ctx.hasAttr(key);
     }
 
-    public MigrationHandlerContext passException(final Exception cause) {
-        fireExceptionCaught(cause);
-        return this;
-    }
-
     public CompletableFuture<Void> passInbound(final Address sender,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-        final MigrationInboundMessage<?, ?> migrationMsg = new MigrationInboundMessage<>(msg, sender, future);
-        fireChannelRead(migrationMsg);
+        fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
         return future;
     }
 
@@ -276,15 +270,13 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
     public CompletableFuture<Void> passEvent(final Event event,
                                              final CompletableFuture<Void> future) {
         fireUserEventTriggered(new MigrationEvent(event, future));
-
         return future;
     }
 
     public CompletableFuture<Void> passOutbound(final Address recipient,
                                                 final Object msg,
                                                 final CompletableFuture<Void> future) {
-        final MigrationOutboundMessage<?, ?> migrationMsg = new MigrationOutboundMessage<>(msg, recipient);
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(writeAndFlush(migrationMsg))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
         return future;
     }
 }
