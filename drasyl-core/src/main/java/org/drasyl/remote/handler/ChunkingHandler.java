@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER_LENGTH;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
@@ -70,7 +71,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
                                   final ChunkMessage msg,
                                   final CompletableFuture<Void> future) throws IOException {
         // message is addressed to me
-        if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient())) {
+        if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())) {
             handleInboundChunk(ctx, sender, msg, future);
         }
         else {
@@ -124,7 +125,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
                                    final InetSocketAddressWrapper recipient,
                                    final RemoteMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
-        if (ctx.identity().getIdentityPublicKey().equals(msg.getSender())) {
+        if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())) {
             // message from us, check if we have to chunk it
             final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
             msg.writeTo(messageByteBuf);

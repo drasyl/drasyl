@@ -62,6 +62,7 @@ import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
@@ -161,7 +162,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
                 tryWatchDirectory(ctx, discoveryPath);
             }
             ctx.executor().execute(() -> scan(ctx));
-            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.identity().getIdentityPublicKey().toString() + ".json"), port);
+            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
 
@@ -178,7 +179,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
             postDisposable.cancel(false);
         }
 
-        final Path filePath = discoveryPath(ctx).resolve(ctx.identity().getIdentityPublicKey().toString() + ".json");
+        final Path filePath = discoveryPath(ctx).resolve(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString() + ".json");
         if (filePath.toFile().exists()) {
             try {
                 Files.delete(filePath);
@@ -268,7 +269,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     synchronized void scan(final MigrationHandlerContext ctx) {
         final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
-        final String ownPublicKeyString = ctx.identity().getIdentityPublicKey().toString();
+        final String ownPublicKeyString = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString();
         final long maxAge = System.currentTimeMillis() - ctx.config().getRemoteLocalHostDiscoveryLeaseTime().toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
         if (files != null) {

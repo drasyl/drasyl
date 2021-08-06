@@ -61,6 +61,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofDays;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 @State(Scope.Benchmark)
 public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
@@ -74,7 +75,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         final Identity sender = IdentityTestUtil.ID_1;
         ctx = new MyHandlerContext(IdentityTestUtil.ID_2);
         msgSender = new MyAddress();
-        msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), ctx.identity().getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
+        msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
         msgNotAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
     }
 
@@ -339,11 +340,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
                         public Serialization outboundSerialization() {
                             return null;
                         }
-
-                        @Override
-                        public Identity identity() {
-                            return null;
-                        }
                     };
                 }
 
@@ -602,11 +598,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         @Override
         public MigrationPipeline drasylPipeline() {
             return null;
-        }
-
-        @Override
-        public Identity identity() {
-            return identity;
         }
 
         @Override

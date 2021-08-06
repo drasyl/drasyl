@@ -34,6 +34,8 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+
 /**
  * This handler serializes messages to {@link ApplicationMessage} an vice vera.
  */
@@ -81,7 +83,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ApplicationMe
         final Serializer serializer = ctx.outboundSerialization().findSerializerFor(type);
 
         if (serializer != null) {
-            final ApplicationMessage message = ApplicationMessage.of(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), recipient, type, ByteString.copyFrom(serializer.toByteArray(o)));
+            final ApplicationMessage message = ApplicationMessage.of(ctx.config().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipient, type, ByteString.copyFrom(serializer.toByteArray(o)));
             out.add(message);
             LOG.trace("Message has been serialized to `{}`", () -> message);
         }

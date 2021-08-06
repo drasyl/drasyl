@@ -45,9 +45,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,7 +69,8 @@ class RateLimiterTest {
     void shouldRejectAcknowledgementMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                                    @Mock final Address msgSender,
                                                                    @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
+        when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+        when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
@@ -84,7 +87,8 @@ class RateLimiterTest {
     void shouldRejectDiscoveryMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                              @Mock final Address msgSender,
                                                              @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
+        when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+        when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
@@ -101,7 +105,8 @@ class RateLimiterTest {
     void shouldRejectUniteMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                          @Mock final Address msgSender,
                                                          @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
+        when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+        when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
@@ -118,7 +123,8 @@ class RateLimiterTest {
     void shouldNotRateLimitMessagesNotAddressedToUs(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                     @Mock final Address msgSender,
                                                     @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
+        when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+        when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final UniteMessage msg = UniteMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), recipient.getIdentityPublicKey(), new InetSocketAddress(1337));
@@ -134,7 +140,8 @@ class RateLimiterTest {
     void shouldNotRateLimitApplicationMessages(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                @Mock final Address msgSender,
                                                @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.identity().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
+        when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+        when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final ApplicationMessage msg = ApplicationMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);

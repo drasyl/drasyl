@@ -51,6 +51,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+
 /**
  * Starts an UDP server which joins a multicast group and together with the {@link
  * LocalNetworkDiscovery} is responsible for discovering other nodes in the local network.
@@ -133,7 +135,7 @@ public class UdpMulticastServer extends HandlerAdapter {
             return;
         }
 
-        nodes.put(ctx.identity().getIdentityPublicKey(), ctx);
+        nodes.put(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx);
 
         if (channel == null) {
             LOG.debug("Start Server...");
@@ -144,7 +146,7 @@ public class UdpMulticastServer extends HandlerAdapter {
                                                     final DatagramPacket packet) {
                             final InetSocketAddressWrapper sender = new InetSocketAddressWrapper(packet.sender());
                             nodes.values().forEach(nodeCtx -> {
-                                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.identity()::getIdentityPublicKey);
+                                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.attr(IDENTITY_ATTR_KEY).get()::getIdentityPublicKey);
                                 nodeCtx.passInbound(sender, packet.content().retain(), new CompletableFuture<>());
                             });
                         }
@@ -181,7 +183,7 @@ public class UdpMulticastServer extends HandlerAdapter {
     }
 
     private synchronized void stopServer(final MigrationHandlerContext ctx) {
-        nodes.remove(ctx.identity().getIdentityPublicKey());
+        nodes.remove(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey());
 
         if (channel != null) {
             final InetSocketAddress socketAddress = channel.localAddress();

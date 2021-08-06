@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -59,10 +61,11 @@ class PluginManagerTest {
         void shouldCallOnBeforeStartOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(serverChannel.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class));
             when(serverChannel.attr(CONFIG_ATTR_KEY).get().getPlugins()).thenReturn(ImmutableSet.of(plugin));
+            when(serverChannel.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
 
             underTest.beforeStart(ctx);
 
-            verify(plugin).onBeforeStart(new PluginEnvironment(serverChannel.attr(CONFIG_ATTR_KEY).get(), serverChannel.identity(), serverChannel.pipeline()));
+            verify(plugin).onBeforeStart(new PluginEnvironment(serverChannel.attr(CONFIG_ATTR_KEY).get(), serverChannel.attr(IDENTITY_ATTR_KEY).get(), serverChannel.pipeline()));
         }
     }
 
@@ -72,10 +75,11 @@ class PluginManagerTest {
         void shouldCallOnAfterStartOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(serverChannel.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class));
             when(serverChannel.attr(CONFIG_ATTR_KEY).get().getPlugins()).thenReturn(ImmutableSet.of(plugin));
+            when(serverChannel.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
 
             underTest.afterStart(ctx);
 
-            verify(plugin).onAfterStart(new PluginEnvironment(serverChannel.attr(CONFIG_ATTR_KEY).get(), serverChannel.identity(), serverChannel.pipeline()));
+            verify(plugin).onAfterStart(new PluginEnvironment(serverChannel.attr(CONFIG_ATTR_KEY).get(), serverChannel.attr(IDENTITY_ATTR_KEY).get(), serverChannel.pipeline()));
         }
     }
 
@@ -85,10 +89,11 @@ class PluginManagerTest {
         void shouldCallOnBeforeShutdownOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(serverChannel.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class));
             when(serverChannel.attr(CONFIG_ATTR_KEY).get().getPlugins()).thenReturn(ImmutableSet.of(plugin));
+            when(serverChannel.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
 
             underTest.beforeShutdown(ctx);
 
-            verify(plugin).onBeforeShutdown(new PluginEnvironment(serverChannel.attr(CONFIG_ATTR_KEY).get(), serverChannel.identity(), serverChannel.pipeline()));
+            verify(plugin).onBeforeShutdown(new PluginEnvironment(serverChannel.attr(CONFIG_ATTR_KEY).get(), serverChannel.attr(IDENTITY_ATTR_KEY).get(), serverChannel.pipeline()));
         }
     }
 
@@ -98,10 +103,11 @@ class PluginManagerTest {
         void shouldCallOnAfterShutdownOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(serverChannel.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class));
             when(serverChannel.attr(CONFIG_ATTR_KEY).get().getPlugins()).thenReturn(ImmutableSet.of(plugin));
+            when(serverChannel.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
 
             underTest.afterShutdown(ctx);
 
-            verify(plugin).onAfterShutdown(new PluginEnvironment(serverChannel.attr(CONFIG_ATTR_KEY).get(), serverChannel.identity(), serverChannel.pipeline()));
+            verify(plugin).onAfterShutdown(new PluginEnvironment(serverChannel.attr(CONFIG_ATTR_KEY).get(), serverChannel.attr(IDENTITY_ATTR_KEY).get(), serverChannel.pipeline()));
         }
     }
 }

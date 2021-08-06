@@ -38,6 +38,7 @@ import java.util.function.Supplier;
 
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.util.DurationUtil.max;
 
 /**
@@ -75,7 +76,7 @@ public class RateLimiter extends InboundMessageFilter<FullReadMessage<?>, Addres
     protected boolean accept(final MigrationHandlerContext ctx,
                              final Address sender,
                              final FullReadMessage<?> msg) throws Exception {
-        return !ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) || rateLimitGate(msg);
+        return !ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient()) || rateLimitGate(msg);
     }
 
     @SuppressWarnings("java:S112")

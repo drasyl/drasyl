@@ -56,6 +56,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 import static org.drasyl.util.network.NetworkUtil.getAddresses;
@@ -146,7 +147,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                  a completely random port would have the disadvantage that every time the node is
                  started it would use a new port and this would make discovery more difficult
                 */
-                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.identity().getIdentityPublicKey().toByteArray()).asBytes()).getValue();
+                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toByteArray()).asBytes()).getValue();
                 bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
             }
             else {
@@ -171,7 +172,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                 LOG.info("Server started and listening at udp:/{}", socketAddress);
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
-                ctx.passEvent(NodeUpEvent.of(Node.of(ctx.identity(), socketAddress.getPort())), future);
+                ctx.passEvent(NodeUpEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get(), socketAddress.getPort())), future);
             }
             else {
                 // server start failed

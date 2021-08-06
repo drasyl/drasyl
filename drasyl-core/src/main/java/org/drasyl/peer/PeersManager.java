@@ -40,6 +40,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 /**
  * This class contains information about other peers. This includes the public keys, available
@@ -194,7 +195,7 @@ public class PeersManager {
             // role (super peer)
             final boolean firstSuperPeer = superPeers.isEmpty();
             if (superPeers.add(publicKey) && firstSuperPeer) {
-                ctx.passEvent(NodeOnlineEvent.of(Node.of(ctx.identity())), new CompletableFuture<>());
+                ctx.passEvent(NodeOnlineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())), new CompletableFuture<>());
             }
         }
         finally {
@@ -212,7 +213,7 @@ public class PeersManager {
 
             // role (super peer)
             if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-                ctx.passEvent(NodeOfflineEvent.of(Node.of(ctx.identity())), new CompletableFuture<>());
+                ctx.passEvent(NodeOfflineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())), new CompletableFuture<>());
             }
 
             // path

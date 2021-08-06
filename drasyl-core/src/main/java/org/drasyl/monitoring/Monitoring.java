@@ -47,6 +47,7 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
@@ -83,7 +84,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
                     }
 
                     newRegistry.config().commonTags(
-                            "public_key", ctx.identity().getIdentityPublicKey().toString(),
+                            "public_key", ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString(),
                             "host", hostTag
                     );
 

@@ -51,6 +51,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongUnaryOperator;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+
 /**
  * Arms (encrypt) outbound and disarms (decrypt) inbound messages. Considers only messages that are
  * addressed from or to us. Messages that could not be (dis-)armed are dropped.
@@ -223,10 +225,10 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
         return sessions.computeIfAbsent(recipientsKey, k -> {
             try {
                 final SessionPair longTimeSession = crypto.generateSessionKeyPair(
-                        ctx.identity().getKeyAgreementKeyPair(),
+                        ctx.attr(IDENTITY_ATTR_KEY).get().getKeyAgreementKeyPair(),
                         recipientsKey.getLongTimeKeyAgreementKey());
                 final AgreementId agreementId = AgreementId.of(
-                        ctx.identity().getKeyAgreementPublicKey(),
+                        ctx.attr(IDENTITY_ATTR_KEY).get().getKeyAgreementPublicKey(),
                         recipientsKey.getLongTimeKeyAgreementKey());
 
                 return new Session(agreementId, longTimeSession, this.maxAgreements, this.expireAfter);
@@ -279,7 +281,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
          * completed agreement, we want to send a key exchange message.
          */
         if (session.getLastKeyExchangeAt().getAndUpdate(updateLastModificationTime) < System.currentTimeMillis() - retryInterval.toMillis()) {
-            LOG.trace("[{} => {}] Send key exchange message, do to key exchange overdue", () -> ctx.identity().getIdentityPublicKey().toString().substring(0, 4), () -> recipientPublicKey.toString().substring(0, 4));
+            LOG.trace("[{} => {}] Send key exchange message, do to key exchange overdue", () -> ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientPublicKey.toString().substring(0, 4));
             ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, agreement, recipient, recipientPublicKey);
         }
     }
@@ -297,7 +299,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
                                          final AgreementId id,
                                          final Session session,
                                          final IdentityPublicKey recipientsPublicKey) {
-        LOG.trace("[{} <= {}] Received ack message", () -> ctx.identity().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsPublicKey.toString().substring(0, 4));
+        LOG.trace("[{} <= {}] Received ack message", () -> ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsPublicKey.toString().substring(0, 4));
 
         session.getCurrentInactiveAgreement().computeOnCondition(a -> a != null && id.equals(a.getAgreementId().orElse(null)), a -> {
             final Agreement initializedAgreement = a.toBuilder()
@@ -342,7 +344,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
                 final IdentityPublicKey recipientsKey = plaintextMsg.getSender(); // on inbound our recipient is the sender of the message
                 final KeyAgreementPublicKey sessionKey = plaintextMsg.getSessionKey();
 
-                LOG.trace("[{} <= {}] Received key exchange message", () -> ctx.identity().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
+                LOG.trace("[{} <= {}] Received key exchange message", () -> ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
 
                 ArmHandlerUtil.computeInactiveAgreementIfNeeded(crypto, session);
                 session.getCurrentInactiveAgreement().computeOnCondition(Objects::nonNull,
@@ -387,7 +389,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
                 && session.getLastRenewAttemptAt().getAndUpdate(updateLastModificationTime) < System.currentTimeMillis() - retryInterval.toMillis()) {
             final Agreement inactiveAgreement = ArmHandlerUtil.computeInactiveAgreementIfNeeded(crypto, session);
 
-            LOG.trace("[{} => {}] Send key exchange message, do to renewable", () -> ctx.identity().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
+            LOG.trace("[{} => {}] Send key exchange message, do to renewable", () -> ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
             ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, inactiveAgreement, recipient, recipientsKey);
         }
     }

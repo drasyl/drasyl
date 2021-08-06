@@ -27,6 +27,8 @@ import org.drasyl.remote.protocol.RemoteMessage;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+
 /**
  * This handler skips {@link RemoteMessage}s that has no recipient or sender or is addresses to a
  * loopback (to us from us).
@@ -64,8 +66,8 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
             return;
         }
 
-        if (!ctx.identity().getIdentityPublicKey().equals(msg.getSender())
-                || ctx.identity().getIdentityPublicKey().equals(msg.getRecipient())) {
+        if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())
+                || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())) {
             ctx.passOutbound(recipient, msg, future);
             return;
         }
@@ -92,8 +94,8 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
                                   final A sender,
                                   final I msg,
                                   final CompletableFuture<Void> future) throws Exception {
-        if (!ctx.identity().getIdentityPublicKey().equals(msg.getRecipient())
-                || ctx.identity().getIdentityPublicKey().equals(msg.getSender())) {
+        if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())
+                || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())) {
             ctx.passInbound(sender, msg, future);
             return;
         }

@@ -45,7 +45,6 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -362,11 +361,6 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
                         public Serialization outboundSerialization() {
                             return null;
                         }
-
-                        @Override
-                        public Identity identity() {
-                            return null;
-                        }
                     };
                 }
 
@@ -619,11 +613,6 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
 
         @Override
         public MigrationPipeline drasylPipeline() {
-            return null;
-        }
-
-        @Override
-        public Identity identity() {
             return null;
         }
 

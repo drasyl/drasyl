@@ -45,7 +45,6 @@ import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -125,7 +124,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     private static class MyHandlerContext extends MigrationHandlerContext {
         private final DrasylConfig config;
         private final Identity identity;
-        private final PeersManager peersManager;
 
         public MyHandlerContext() {
             super(new ChannelHandlerContext() {
@@ -362,11 +360,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
                         public Serialization outboundSerialization() {
                             return null;
                         }
-
-                        @Override
-                        public Identity identity() {
-                            return null;
-                        }
                     };
                 }
 
@@ -580,7 +573,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
                     .remotePingCommunicationTimeout(ofDays(1))
                     .build();
             identity = IdentityTestUtil.ID_1;
-            peersManager = new PeersManager();
         }
 
         @Override
@@ -626,11 +618,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         @Override
         public MigrationPipeline drasylPipeline() {
             return null;
-        }
-
-        @Override
-        public Identity identity() {
-            return identity;
         }
 
         @Override

@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsServerMessage, NodeUpEvent, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
@@ -196,7 +197,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                               final CompletableFuture<Void> future) {
         final Group group = msg.getGroup();
 
-        if (msg.getMember().equals(ctx.identity().getIdentityPublicKey())) {
+        if (msg.getMember().equals(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey())) {
             // cancel renew task
             final Future disposable = renewTasks.remove(group);
             if (disposable != null) {
@@ -258,7 +259,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     private void joinGroup(final MigrationHandlerContext ctx,
                            final GroupUri group,
                            final boolean renew) {
-        final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
+        final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
         ctx.drasylPipeline().processOutbound(groupManager, new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew));

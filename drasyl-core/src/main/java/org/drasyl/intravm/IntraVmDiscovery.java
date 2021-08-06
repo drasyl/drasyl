@@ -41,6 +41,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
@@ -96,7 +97,7 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
             ctx.passOutbound(recipient, msg, future);
         }
         else {
-            discoveree.passInbound(ctx.identity().getIdentityPublicKey(), msg, future);
+            discoveree.passInbound(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), msg, future);
         }
     }
 
@@ -110,12 +111,12 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
                 final Integer networkId = key.first();
                 final IdentityPublicKey publicKey = key.second();
                 if (myCtx.config().getNetworkId() == networkId) {
-                    otherCtx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(otherCtx, myCtx.identity().getIdentityPublicKey(), path);
+                    otherCtx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(otherCtx, myCtx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), path);
                     myCtx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(myCtx, publicKey, path);
                 }
             });
             discoveries.put(
-                    Pair.of(myCtx.config().getNetworkId(), myCtx.identity().getIdentityPublicKey()),
+                    Pair.of(myCtx.config().getNetworkId(), myCtx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()),
                     myCtx
             );
 
@@ -134,7 +135,7 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
             LOG.debug("Stop Intra VM Discovery...");
 
             // remove peer information
-            discoveries.remove(Pair.of(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey()));
+            discoveries.remove(Pair.of(ctx.config().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
             discoveries.forEach((key, otherCtx) -> {
                 final Integer networkId = key.first();
                 final IdentityPublicKey publicKey = key.second();

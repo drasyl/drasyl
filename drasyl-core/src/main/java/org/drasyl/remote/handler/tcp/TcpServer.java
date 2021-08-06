@@ -54,6 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.util.NettyUtil.getBestServerSocketChannel;
 
 /**
@@ -117,7 +118,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                 LOG.debug("Server started and listening at tcp:/{}", socketAddress);
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
-                ctx.passEvent(NodeUpEvent.of(Node.of(ctx.identity(), event.getNode().getPort(), socketAddress.getPort())), future);
+                ctx.passEvent(NodeUpEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get(), event.getNode().getPort(), socketAddress.getPort())), future);
                 return;
             }
             else {

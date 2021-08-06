@@ -131,11 +131,6 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel implements
         return attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 
-    @Override
-    public Identity identity() {
-        return attr(IDENTITY_ATTR_KEY).get();
-    }
-
     public Map<DrasylAddress, Channel> channels() {
         return Map.copyOf(channels);
     }

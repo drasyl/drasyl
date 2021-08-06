@@ -41,6 +41,8 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+
 /**
  * A simple util/helper class for the {@link ArmHandler} that provides some static methods.
  */
@@ -120,16 +122,16 @@ public final class ArmHandlerUtil {
             return ArmHandlerUtil.sendEncrypted(cryptoInstance, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipientsAddress,
                     KeyExchangeAcknowledgementMessage.of(
                             ctx.config().getNetworkId(),
-                            ctx.identity().getIdentityPublicKey(),
-                            ctx.identity().getProofOfWork(),
+                            ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
+                            ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
                             recipientsKey,
                             agreementId
                     ), new CompletableFuture<>()).whenComplete((x, e) -> {
                 if (e == null) {
-                    LOG.trace("[{} => {}] Send ack message for session {}", () -> ctx.identity().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId);
+                    LOG.trace("[{} => {}] Send ack message for session {}", () -> ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId);
                 }
                 else {
-                    LOG.debug("[{} => {}] Error on sending ack message for session {}: {}", () -> ctx.identity().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId, () -> e);
+                    LOG.debug("[{} => {}] Error on sending ack message for session {}: {}", () -> ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId, () -> e);
                 }
             });
         }
@@ -156,8 +158,8 @@ public final class ArmHandlerUtil {
                                           final IdentityPublicKey recipientsKey) {
         final FullReadMessage<?> msg = KeyExchangeMessage.of(
                 ctx.config().getNetworkId(),
-                ctx.identity().getIdentityPublicKey(),
-                ctx.identity().getProofOfWork(),
+                ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
+                ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
                 recipientsKey,
                 agreement.getKeyPair().getPublicKey());
 

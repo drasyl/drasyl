@@ -30,6 +30,7 @@ import org.drasyl.remote.protocol.RemoteMessage;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 
 /**
@@ -49,7 +50,7 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteM
     protected boolean accept(final MigrationHandlerContext ctx,
                              final Address sender,
                              final RemoteMessage msg) throws Exception {
-        return !ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
+        return !ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient()) || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
     }
 
     @SuppressWarnings("java:S112")

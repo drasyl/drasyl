@@ -30,6 +30,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 /**
  * The {@code PluginManager} notifies all enabled plugins about specific node events (like startup
@@ -46,7 +47,7 @@ public class PluginManager {
     public void beforeStart(final ChannelHandlerContext ctx) {
         final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
         final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
-        final Identity identity = channel.identity();
+        final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
         final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeStart listeners for all plugins...");
@@ -64,7 +65,7 @@ public class PluginManager {
     public void afterStart(final ChannelHandlerContext ctx) {
         final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
         final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
-        final Identity identity = channel.identity();
+        final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
         final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterStart listeners for all plugins...");
@@ -82,7 +83,7 @@ public class PluginManager {
     public void beforeShutdown(final ChannelHandlerContext ctx) {
         final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
         final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
-        final Identity identity = channel.identity();
+        final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
         final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeShutdown listeners for all plugins...");
@@ -100,7 +101,7 @@ public class PluginManager {
     public void afterShutdown(final ChannelHandlerContext ctx) {
         final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
         final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
-        final Identity identity = channel.identity();
+        final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
         final ChannelPipeline pipeline = channel.pipeline();
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterShutdown listeners for all plugins...");

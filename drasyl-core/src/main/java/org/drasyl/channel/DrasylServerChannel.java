@@ -22,13 +22,10 @@
 package org.drasyl.channel;
 
 import io.netty.channel.ServerChannel;
-import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.serialization.Serialization;
 
 public interface DrasylServerChannel extends ServerChannel {
     Serialization inboundSerialization();
 
     Serialization outboundSerialization();
-
-    Identity identity();
 }

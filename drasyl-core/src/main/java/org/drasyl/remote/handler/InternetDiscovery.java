@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.util.RandomUtil.randomLong;
 
@@ -342,7 +343,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
                                    final InetSocketAddressWrapper recipient,
                                    final InetSocketAddressWrapper sender) {
         // send recipient's information to sender
-        final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), senderKey, recipientKey, recipient);
+        final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.config().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
         ctx.passOutbound(sender, senderRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             //noinspection unchecked
@@ -351,7 +352,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         });
 
         // send sender's information to recipient
-        final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.config().getNetworkId(), ctx.identity().getIdentityPublicKey(), ctx.identity().getProofOfWork(), recipientKey, senderKey, sender);
+        final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.config().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
         ctx.passOutbound(recipient, recipientRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             //noinspection unchecked
@@ -379,7 +380,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
                                   final CompletableFuture<Void> future) throws IOException {
         if (sender instanceof InetSocketAddressWrapper && msg.getRecipient() != null) {
             // This message is for us and we will fully decode it
-            if (ctx.identity().getIdentityPublicKey().equals(msg.getRecipient()) && msg instanceof FullReadMessage) {
+            if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient()) && msg instanceof FullReadMessage) {
                 handleMessage(ctx, (InetSocketAddressWrapper) sender, (FullReadMessage<?>) msg, future);
             }
             else if (!ctx.config().isRemoteSuperPeerEnabled()) {
@@ -443,8 +444,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
 
         // reply with pong
         final int networkId = ctx.config().getNetworkId();
-        final IdentityPublicKey myPublicKey = ctx.identity().getIdentityPublicKey();
-        final ProofOfWork myProofOfWork = ctx.identity().getProofOfWork();
+        final IdentityPublicKey myPublicKey = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey();
+        final ProofOfWork myProofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final AcknowledgementMessage responseEnvelope = AcknowledgementMessage.of(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
         LOG.trace("Send {} to {}", responseEnvelope, sender);
         ctx.passOutbound(sender, responseEnvelope, future);
@@ -536,8 +537,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
                                              final InetSocketAddressWrapper recipientAddress,
                                              final CompletableFuture<Void> future) {
         final int networkId = ctx.config().getNetworkId();
-        final IdentityPublicKey sender = ctx.identity().getIdentityPublicKey();
-        final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
+        final IdentityPublicKey sender = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey();
+        final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
 
         final boolean isChildrenJoin = superPeers.contains(recipient);
         final DiscoveryMessage messageEnvelope;
