@@ -21,6 +21,7 @@
  */
 package org.drasyl.pipeline.skeleton;
 
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Skip;
@@ -48,13 +49,13 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Simpl
     public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Override
     protected void matchedEvent(final MigrationHandlerContext ctx,
                                 final Event event,
                                 final CompletableFuture<Void> future) {
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 }

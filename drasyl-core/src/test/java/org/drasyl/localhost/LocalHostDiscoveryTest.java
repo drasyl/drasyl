@@ -21,11 +21,13 @@
  */
 package org.drasyl.localhost;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -47,6 +49,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -118,10 +121,9 @@ class LocalHostDiscoveryTest {
                 invocation2.getArgument(0, Runnable.class).run();
                 return null;
             }).when(executor).execute(any());
-            when(ctx.passEvent(any(), any())).then(invocation -> {
-                final CompletableFuture<Void> future = invocation.getArgument(1, CompletableFuture.class);
-                future.complete(null);
-                return future;
+            when(ctx.fireUserEventTriggered(any())).then((Answer<ChannelHandlerContext>) invocation -> {
+                invocation.getArgument(0, MigrationEvent.class).future().complete(null);
+                return null;
             });
             when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().mkdirs()).thenReturn(true);
@@ -172,10 +174,9 @@ class LocalHostDiscoveryTest {
                 invocation1.getArgument(0, Runnable.class).run();
                 return null;
             }).when(executor).execute(any());
-            when(ctx.passEvent(any(), any())).then(invocation -> {
-                final CompletableFuture<Void> future = invocation.getArgument(1, CompletableFuture.class);
-                future.complete(null);
-                return future;
+            when(ctx.fireUserEventTriggered(any())).then((Answer<ChannelHandlerContext>) invocation -> {
+                invocation.getArgument(0, MigrationEvent.class).future().complete(null);
+                return null;
             });
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
@@ -227,10 +228,9 @@ class LocalHostDiscoveryTest {
                 invocation.getArgument(0, Runnable.class).run();
                 return null;
             });
-            when(ctx.passEvent(any(), any())).then(invocation -> {
-                final CompletableFuture<Void> future = invocation.getArgument(1, CompletableFuture.class);
-                future.complete(null);
-                return future;
+            when(ctx.fireUserEventTriggered(any())).then((Answer<ChannelHandlerContext>) invocation -> {
+                invocation.getArgument(0, MigrationEvent.class).future().complete(null);
+                return null;
             });
 
             when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));

@@ -23,6 +23,7 @@ package org.drasyl.peer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
@@ -151,7 +152,7 @@ public class PeersManager {
 
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                ctx.passEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
             }
         }
         finally {
@@ -169,7 +170,7 @@ public class PeersManager {
             lock.writeLock().lock();
 
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                ctx.passEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
             }
         }
         finally {
@@ -189,13 +190,13 @@ public class PeersManager {
             // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                ctx.passEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
             }
 
             // role (super peer)
             final boolean firstSuperPeer = superPeers.isEmpty();
             if (superPeers.add(publicKey) && firstSuperPeer) {
-                ctx.passEvent(NodeOnlineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())), new CompletableFuture<>());
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeOnlineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())), new CompletableFuture<Void>()));
             }
         }
         finally {
@@ -213,12 +214,12 @@ public class PeersManager {
 
             // role (super peer)
             if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-                ctx.passEvent(NodeOfflineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())), new CompletableFuture<>());
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeOfflineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())), new CompletableFuture<Void>()));
             }
 
             // path
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                ctx.passEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
             }
         }
         finally {
@@ -238,7 +239,7 @@ public class PeersManager {
             // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                ctx.passEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
             }
 
             // role (children peer)
@@ -260,7 +261,7 @@ public class PeersManager {
 
             // path
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                ctx.passEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<>());
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
             }
 
             // role (children)

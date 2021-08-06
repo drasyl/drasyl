@@ -24,6 +24,7 @@ package org.drasyl.channel;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
@@ -46,5 +47,30 @@ public class MigrationEvent {
 
     public CompletableFuture<Void> future() {
         return future;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final MigrationEvent that = (MigrationEvent) o;
+        return Objects.equals(event, that.event) && Objects.equals(future, that.future);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(event, future);
+    }
+
+    @Override
+    public String toString() {
+        return "MigrationEvent{" +
+                "event=" + event +
+                ", future=" + future +
+                '}';
     }
 }

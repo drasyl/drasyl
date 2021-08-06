@@ -24,6 +24,7 @@ package org.drasyl.remote.handler;
 import com.google.common.cache.CacheBuilder;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -139,7 +140,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     synchronized void startHeartbeat(final MigrationHandlerContext ctx) {

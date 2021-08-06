@@ -28,6 +28,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
 import org.drasyl.annotation.NonNull;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -115,7 +116,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Override

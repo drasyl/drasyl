@@ -29,6 +29,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -115,11 +116,11 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
                     future.completeExceptionally(e);
                 }
             });
-            ctx.passEvent(event, otherHandlersFuture);
+            ctx.fireUserEventTriggered(new MigrationEvent(event, otherHandlersFuture));
         }
         else {
             // passthrough event
-            ctx.passEvent(event, future);
+            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
         }
     }
 

@@ -21,6 +21,7 @@
  */
 package org.drasyl.pipeline.skeleton;
 
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityPublicKey;
@@ -68,13 +69,13 @@ public abstract class SimpleInboundHandler<I, A extends Address> extends SimpleI
     public void onEvent(final MigrationHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Override
     protected void matchedEvent(final MigrationHandlerContext ctx,
                                 final Event event,
                                 final CompletableFuture<Void> future) {
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 }

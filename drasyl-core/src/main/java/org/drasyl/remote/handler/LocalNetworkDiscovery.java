@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler;
 
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -98,7 +99,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     synchronized void startHeartbeat(final MigrationHandlerContext ctx) {

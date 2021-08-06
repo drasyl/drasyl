@@ -542,7 +542,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
             return null;
         }
 
-        @Override
         public CompletableFuture<Void> passEvent(final Event event,
                                                  final CompletableFuture<Void> future) {
             return null;

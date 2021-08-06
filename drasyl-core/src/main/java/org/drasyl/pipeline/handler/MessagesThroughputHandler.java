@@ -24,6 +24,7 @@ package org.drasyl.pipeline.handler;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -124,7 +125,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     private void start() {

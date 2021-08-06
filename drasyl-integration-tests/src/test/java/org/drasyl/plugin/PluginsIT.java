@@ -111,7 +111,7 @@ class PluginsIT {
                 @Override
                 public void onAdded(final MigrationHandlerContext ctx) {
                     final CompletableFuture<Void> future = new CompletableFuture<>();
-                    ctx.passEvent(event1, future);
+                    ctx.fireUserEventTriggered(new MigrationEvent(event1, future));
                 }
             });
             environment.getPipeline().fireUserEventTriggered(new MigrationEvent(event2, new CompletableFuture<>()));

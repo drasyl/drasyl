@@ -22,6 +22,7 @@
 package org.drasyl.loopback.handler;
 
 import io.netty.channel.ChannelHandler;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -65,7 +66,7 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Addres
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Override

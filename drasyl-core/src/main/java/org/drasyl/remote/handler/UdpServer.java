@@ -31,6 +31,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -130,7 +131,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
         else {
             // passthrough event
-            ctx.passEvent(event, future);
+            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
         }
     }
 
@@ -175,7 +176,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                 LOG.info("Server started and listening at udp:/{}", socketAddress);
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
-                ctx.passEvent(NodeUpEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get(), socketAddress.getPort())), future);
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get(), socketAddress.getPort())), future));
             }
             else {
                 // server start failed
@@ -184,7 +185,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
         else {
             // passthrough event
-            ctx.passEvent(event, future);
+            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
         }
     }
 
@@ -210,11 +211,11 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                     future.completeExceptionally(e);
                 }
             });
-            ctx.passEvent(event, otherHandlersFuture);
+            ctx.fireUserEventTriggered(new MigrationEvent(event, otherHandlersFuture));
         }
         else {
             // passthrough event
-            ctx.passEvent(event, future);
+            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
         }
     }
 

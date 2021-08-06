@@ -23,6 +23,7 @@ package org.drasyl.localhost;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -126,7 +127,9 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         }
 
         // passthrough event
-        combiner.add(ctx.passEvent(event, new CompletableFuture<>()))
+        final CompletableFuture<Void> future1 = new CompletableFuture<>();
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future1));
+        combiner.add(future1)
                 .combine(future);
     }
 

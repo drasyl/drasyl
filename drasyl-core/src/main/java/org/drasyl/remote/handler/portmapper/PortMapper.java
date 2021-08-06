@@ -23,6 +23,7 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -87,7 +88,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Override

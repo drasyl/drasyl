@@ -21,6 +21,7 @@
  */
 package org.drasyl.intravm;
 
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -83,7 +84,9 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
         }
 
         // passthrough event
-        combiner.add(ctx.passEvent(event, new CompletableFuture<>()))
+        final CompletableFuture<Void> future1 = new CompletableFuture<>();
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future1));
+        combiner.add(future1)
                 .combine(future);
     }
 

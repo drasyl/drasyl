@@ -30,6 +30,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -100,7 +101,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
         else {
             // passthrough event
-            ctx.passEvent(event, future);
+            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
         }
     }
 
@@ -121,7 +122,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                 LOG.debug("Server started and listening at tcp:/{}", socketAddress);
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
-                ctx.passEvent(NodeUpEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get(), event.getNode().getPort(), socketAddress.getPort())), future);
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get(), event.getNode().getPort(), socketAddress.getPort())), future));
                 return;
             }
             else {
@@ -132,7 +133,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     private synchronized void stopServer(final MigrationHandlerContext ctx,
@@ -157,11 +158,11 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                     future.completeExceptionally(e);
                 }
             });
-            ctx.passEvent(event, otherHandlersFuture);
+            ctx.fireUserEventTriggered(new MigrationEvent(event, otherHandlersFuture));
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Override

@@ -23,6 +23,7 @@ package org.drasyl.remote.handler;
 
 import com.typesafe.config.Config;
 import io.netty.channel.ChannelHandler;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -69,7 +70,7 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
         }
 
         // passthrough event
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Override

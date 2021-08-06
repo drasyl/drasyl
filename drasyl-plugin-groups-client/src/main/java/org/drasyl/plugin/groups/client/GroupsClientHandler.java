@@ -22,6 +22,7 @@
 package org.drasyl.plugin.groups.client;
 
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
@@ -126,7 +127,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         ctx.executor().schedule(() -> groups.values().forEach(group ->
                 joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
 
-        ctx.passEvent(event, future);
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Override
@@ -158,8 +159,10 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     private static void onMemberJoined(final MigrationHandlerContext ctx,
                                        final MemberJoinedMessage msg,
                                        final CompletableFuture<Void> future) {
+        final CompletableFuture<Void> future1 = new CompletableFuture<>();
+        ctx.fireUserEventTriggered(new MigrationEvent(GroupMemberJoinedEvent.of(msg.getMember(), msg.getGroup()), future1));
         FutureCombiner.getInstance()
-                .add(ctx.passEvent(GroupMemberJoinedEvent.of(msg.getMember(), msg.getGroup()), new CompletableFuture<>()))
+                .add(future1)
                 .combine(future);
     }
 
@@ -181,9 +184,11 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
             disposable.cancel(false);
         }
 
+        final CompletableFuture<Void> future1 = new CompletableFuture<>();
+        ctx.fireUserEventTriggered(new MigrationEvent(GroupJoinFailedEvent.of(group, msg.getReason(),
+                () -> joinGroup(ctx, groups.get(group), false)), future1));
         FutureCombiner.getInstance()
-                .add(ctx.passEvent(GroupJoinFailedEvent.of(group, msg.getReason(),
-                        () -> joinGroup(ctx, groups.get(group), false)), new CompletableFuture<>()))
+                .add(future1)
                 .combine(future);
     }
 
@@ -206,13 +211,17 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                 disposable.cancel(false);
             }
 
+            final CompletableFuture<Void> future1 = new CompletableFuture<>();
+            ctx.fireUserEventTriggered(new MigrationEvent(GroupLeftEvent.of(group, () -> joinGroup(ctx, groups.get(group), false)), future1));
             FutureCombiner.getInstance()
-                    .add(ctx.passEvent(GroupLeftEvent.of(group, () -> joinGroup(ctx, groups.get(group), false)), new CompletableFuture<>()))
+                    .add(future1)
                     .combine(future);
         }
         else {
+            final CompletableFuture<Void> future1 = new CompletableFuture<>();
+            ctx.fireUserEventTriggered(new MigrationEvent(GroupMemberLeftEvent.of(msg.getMember(), group), future1));
             FutureCombiner.getInstance()
-                    .add(ctx.passEvent(GroupMemberLeftEvent.of(msg.getMember(), group), new CompletableFuture<>()))
+                    .add(future1)
                     .combine(future);
         }
     }
@@ -242,12 +251,13 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         renewTasks.put(group, ctx.executor().scheduleAtFixedRate(() ->
                 joinGroup(ctx, groups.get(group), true), timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
 
+        final CompletableFuture<Void> future1 = new CompletableFuture<>();
+        ctx.fireUserEventTriggered(new MigrationEvent(GroupJoinedEvent.of(
+                group,
+                msg.getMembers(),
+                () -> ctx.passOutbound(sender, new GroupLeaveMessage(group), new CompletableFuture<>())), future1));
         FutureCombiner.getInstance()
-                .add(ctx.passEvent(
-                        GroupJoinedEvent.of(
-                                group,
-                                msg.getMembers(),
-                                () -> ctx.passOutbound(sender, new GroupLeaveMessage(group), new CompletableFuture<>())), new CompletableFuture<>()))
+                .add(future1)
                 .combine(future);
     }
 

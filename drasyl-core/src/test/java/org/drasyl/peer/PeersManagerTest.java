@@ -23,6 +23,7 @@ package org.drasyl.peer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -51,7 +53,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -149,7 +151,7 @@ class PeersManagerTest {
                                                  @Mock final Object path) {
             underTest.addPath(ctx, publicKey, path);
 
-            verify(ctx).passEvent(eq(PeerDirectEvent.of(Peer.of(publicKey))), any());
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e.event())));
         }
 
         @Test
@@ -161,7 +163,7 @@ class PeersManagerTest {
 
             underTest.addPath(ctx, publicKey, path2);
 
-            verify(ctx, never()).passEvent(any(), any());
+            verify(ctx, never()).fireUserEventTriggered(any());
         }
     }
 
@@ -188,7 +190,7 @@ class PeersManagerTest {
 
             underTest.removePath(ctx, publicKey, path1);
 
-            verify(ctx, never()).passEvent(any(), any());
+            verify(ctx, never()).fireUserEventTriggered(any());
         }
 
         @Test
@@ -199,7 +201,7 @@ class PeersManagerTest {
 
             underTest.removePath(ctx, publicKey, path);
 
-            verify(ctx).passEvent(eq(PeerRelayEvent.of(Peer.of(publicKey))), any());
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> PeerRelayEvent.of(Peer.of(publicKey)).equals(e.event())));
         }
 
         @AfterEach
@@ -229,7 +231,7 @@ class PeersManagerTest {
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(ctx).passEvent(any(NodeOfflineEvent.class), any());
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> e.event() instanceof NodeOfflineEvent));
         }
 
         @Test
@@ -242,7 +244,7 @@ class PeersManagerTest {
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(ctx, never()).passEvent(any(NodeOfflineEvent.class), any());
+            verify(ctx, never()).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> e.event() instanceof NodeOfflineEvent));
         }
 
         @AfterEach
@@ -272,8 +274,8 @@ class PeersManagerTest {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
-            verify(ctx).passEvent(eq(PeerDirectEvent.of(Peer.of(publicKey))), any());
-            verify(ctx).passEvent(any(NodeOnlineEvent.class), any());
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e.event())));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> e.event() instanceof NodeOnlineEvent));
         }
 
         @AfterEach
@@ -303,7 +305,7 @@ class PeersManagerTest {
                                                        @Mock final Object path) {
             underTest.removeChildrenAndPath(ctx, publicKey, path);
 
-            verify(ctx, never()).passEvent(any(), any());
+            verify(ctx, never()).fireUserEventTriggered(any());
         }
 
         @AfterEach
@@ -331,7 +333,7 @@ class PeersManagerTest {
                                                                          @Mock final Object path) {
             underTest.addPathAndChildren(ctx, publicKey, path);
 
-            verify(ctx).passEvent(eq(PeerDirectEvent.of(Peer.of(publicKey))), any());
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e.event())));
         }
 
         @Test
@@ -343,7 +345,7 @@ class PeersManagerTest {
 
             underTest.addPathAndChildren(ctx, publicKey, path);
 
-            verify(ctx, never()).passEvent(any(), any());
+            verify(ctx, never()).fireUserEventTriggered(any());
         }
 
         @AfterEach

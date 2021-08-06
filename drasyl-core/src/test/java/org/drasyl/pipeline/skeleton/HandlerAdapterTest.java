@@ -24,6 +24,7 @@ package org.drasyl.pipeline.skeleton;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -111,7 +112,7 @@ class HandlerAdapterTest {
 
             handlerAdapter.onEvent(ctx, event, future);
 
-            verify(ctx).passEvent(event, future);
+            verify(ctx).fireUserEventTriggered(new MigrationEvent(event, future));
         }
 
         @Test

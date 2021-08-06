@@ -24,6 +24,7 @@ package org.drasyl.pipeline.skeleton;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
@@ -78,7 +79,7 @@ class SimpleDuplexHandlerTest {
                 @Override
                 protected void matchedEvent(final MigrationHandlerContext ctx, final Event event,
                                             final CompletableFuture<Void> future) {
-                    ctx.passEvent(event, future);
+                    ctx.fireUserEventTriggered(new MigrationEvent(event, future));
                 }
 
                 @Override
@@ -122,7 +123,7 @@ class SimpleDuplexHandlerTest {
                 protected void matchedEvent(final MigrationHandlerContext ctx,
                                             final Event event,
                                             final CompletableFuture<Void> future) {
-                    ctx.passEvent(event, future);
+                    ctx.fireUserEventTriggered(new MigrationEvent(event, future));
                 }
 
                 @Override
@@ -228,7 +229,7 @@ class SimpleDuplexHandlerTest {
                 protected void matchedEvent(final MigrationHandlerContext ctx,
                                             final Event event,
                                             final CompletableFuture<Void> future) {
-                    ctx.passEvent(event, future);
+                    ctx.fireUserEventTriggered(new MigrationEvent(event, future));
                 }
 
                 @Override

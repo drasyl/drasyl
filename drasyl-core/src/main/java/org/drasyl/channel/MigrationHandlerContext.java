@@ -32,7 +32,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
-import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
@@ -257,13 +256,6 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
     @Override
     public <T> boolean hasAttr(final AttributeKey<T> key) {
         return ctx.hasAttr(key);
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    public CompletableFuture<Void> passEvent(final Event event,
-                                             final CompletableFuture<Void> future) {
-        fireUserEventTriggered(new MigrationEvent(event, future));
-        return future;
     }
 
     public CompletableFuture<Void> passOutbound(final Address recipient,
