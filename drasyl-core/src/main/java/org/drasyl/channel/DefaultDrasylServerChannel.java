@@ -121,14 +121,6 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel {
         return state == 1;
     }
 
-    public Serialization inboundSerialization() {
-        return attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
-    }
-
-    public Serialization outboundSerialization() {
-        return attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get();
-    }
-
     public Map<DrasylAddress, Channel> channels() {
         return Map.copyOf(channels);
     }
