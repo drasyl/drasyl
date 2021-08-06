@@ -591,11 +591,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         public Serialization inboundSerialization() {
             return null;
         }
-
-        @Override
-        public Serialization outboundSerialization() {
-            return null;
-        }
     }
 
     private static class MyAddress implements Address {

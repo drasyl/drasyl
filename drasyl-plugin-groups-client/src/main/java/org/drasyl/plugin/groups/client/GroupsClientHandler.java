@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 
 public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsServerMessage, NodeUpEvent, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
@@ -84,7 +85,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     @Override
     public void onAdded(final MigrationHandlerContext ctx) {
         ctx.inboundSerialization().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
-        ctx.outboundSerialization().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
+        ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
     }
 
     @Override

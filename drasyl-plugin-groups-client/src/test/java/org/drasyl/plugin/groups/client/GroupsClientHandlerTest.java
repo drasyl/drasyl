@@ -61,6 +61,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,7 +71,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GroupsClientHandlerTest {
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private MigrationHandlerContext ctx;
     @Mock
     private HashMap<Group, Future> renewTasks;
@@ -98,7 +99,7 @@ class GroupsClientHandlerTest {
         void shouldStartHandler(@Mock final Serialization inboundSerialization,
                                 @Mock final Serialization outboundSerialization) {
             when(ctx.inboundSerialization()).thenReturn(inboundSerialization);
-            when(ctx.outboundSerialization()).thenReturn(outboundSerialization);
+            when(ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(outboundSerialization);
 
             final GroupsClientHandler handler = new GroupsClientHandler(Set.of());
 

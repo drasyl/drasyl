@@ -49,6 +49,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
@@ -71,7 +72,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     @Override
     public void onAdded(final MigrationHandlerContext ctx) {
         ctx.inboundSerialization().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
-        ctx.outboundSerialization().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
+        ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
 
         // Register stale task timer
         staleTask = ctx.executor().scheduleAtFixedRate(() -> staleTask(ctx), 1L, 1L, MINUTES);
