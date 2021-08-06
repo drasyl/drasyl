@@ -35,7 +35,6 @@ import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.channel.DefaultDrasylServerChannel;
 import org.drasyl.channel.DrasylBootstrap;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylChannelEventLoopGroupUtil;
 import org.drasyl.channel.DrasylServerChannelInitializer;
 import org.drasyl.channel.MigrationEvent;
@@ -514,7 +513,7 @@ public abstract class DrasylNode {
     /**
      * Initialize child {@link Channel}s used by {@link DrasylNode}.
      */
-    public static class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChannel> {
+    public static class DrasylNodeChannelInitializer extends ChannelInitializer<Channel> {
         public static final String MESSAGE_ACCEPTOR = "NULL_MESSAGE_UNWRAPPER";
         public static final String INACTIVITY_CLOSER = "INACTIVITY_CLOSER";
         public static final String INACTIVITY_DETECTOR = "INACTIVITY_DETECTOR";
@@ -525,7 +524,7 @@ public abstract class DrasylNode {
         }
 
         @Override
-        protected void initChannel(final DrasylChannel ch) {
+        protected void initChannel(final Channel ch) {
             // emit MessageEvents for every inbound message
             ch.pipeline().addFirst(MESSAGE_ACCEPTOR, new ChannelInboundHandlerAdapter() {
                 @Override

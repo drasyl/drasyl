@@ -136,7 +136,7 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel {
     public Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
                                            final IdentityPublicKey peer) {
         return channels.computeIfAbsent(peer, key -> {
-            final DrasylChannel channel = new DrasylChannel(ctx.channel(), peer);
+            final Channel channel = new DrasylChannel(ctx.channel(), peer);
             channel.closeFuture().addListener(future -> channels.remove(key));
             ctx.fireChannelRead(channel);
             return channel;
