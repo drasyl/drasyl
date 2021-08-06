@@ -48,14 +48,12 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
      * Do nothing by default, sub-classes may override this method.
      */
     public void onAdded(final ChannelHandlerContext ctx) {
-        // Do nothing
     }
 
     /**
      * Do nothing by default, sub-classes may override this method.
      */
     public void onRemoved(final ChannelHandlerContext ctx) {
-        // Do nothing
     }
 
     @SuppressWarnings("java:S112")
