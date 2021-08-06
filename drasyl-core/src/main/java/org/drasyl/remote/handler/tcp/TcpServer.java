@@ -33,6 +33,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
@@ -186,7 +187,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
         else {
             // message is not addressed to any of our clients. passthrough message
-            ctx.passOutbound(recipient, msg, future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient)))).combine(future);
         }
     }
 

@@ -27,6 +27,7 @@ import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -38,6 +39,8 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -173,7 +176,7 @@ class SimpleDuplexHandlerTest {
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-                    ctx.passOutbound(recipient, msg, future);
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
                 }
 
                 @Override
@@ -189,7 +192,7 @@ class SimpleDuplexHandlerTest {
                                               final byte[] msg,
                                               final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
-                    ctx.passOutbound(sender, msg, new CompletableFuture<>());
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, sender)))).combine(new CompletableFuture<Void>());
                 }
             };
 
@@ -222,7 +225,7 @@ class SimpleDuplexHandlerTest {
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-                    ctx.passOutbound(recipient, msg, future);
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
                 }
 
                 @Override
@@ -238,7 +241,7 @@ class SimpleDuplexHandlerTest {
                                               final List<?> msg,
                                               final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
-                    ctx.passOutbound(sender, msg, new CompletableFuture<>());
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, sender)))).combine(new CompletableFuture<Void>());
                 }
             };
 
@@ -271,7 +274,7 @@ class SimpleDuplexHandlerTest {
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-                    ctx.passOutbound(recipient, msg, future);
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
                 }
 
                 @Override
@@ -312,7 +315,7 @@ class SimpleDuplexHandlerTest {
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-                    ctx.passOutbound(recipient, msg, future);
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
                 }
 
                 @Override

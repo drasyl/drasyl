@@ -26,6 +26,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.annotations.NonNull;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -64,7 +65,7 @@ class NatPmpPortMappingTest {
             final AtomicBoolean mappingRequested = new AtomicBoolean();
             new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, null, null, null, null, onFailure, defaultGatewaySupplier).start(ctx, event, onFailure);
 
-            verify(ctx).passOutbound(any(), any(), any());
+            verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
             assertTrue(externalAddressRequested.get());
         }
     }
@@ -83,7 +84,7 @@ class NatPmpPortMappingTest {
 
             verify(timeoutGuard).cancel(false);
             verify(refreshTask).cancel(false);
-            verify(ctx).passOutbound(any(), any(), any());
+            verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
         }
     }
 
@@ -100,7 +101,7 @@ class NatPmpPortMappingTest {
                 final AtomicBoolean mappingRequested = new AtomicBoolean();
                 new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, new InetSocketAddressWrapper(12345), null, null, null, null, defaultGatewaySupplier).handleMessage(ctx, sender, byteBuf);
 
-                verify(ctx).passOutbound(any(), any(), any());
+                verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
             }
 
             @Test

@@ -24,8 +24,11 @@ package org.drasyl.pipeline.handler.codec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 
 import java.util.concurrent.CompletableFuture;
@@ -84,11 +87,11 @@ public abstract class MessageToByteEncoder<O, A extends Address> extends SimpleO
             }
 
             if (buf.isReadable()) {
-                ctx.passOutbound(recipient, buf, future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) buf, (Address) recipient)))).combine(future);
             }
             else {
                 buf.release();
-                ctx.passOutbound(recipient, Unpooled.EMPTY_BUFFER, future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) Unpooled.EMPTY_BUFFER, (Address) recipient)))).combine(future);
             }
         }
         catch (final EncoderException e) {

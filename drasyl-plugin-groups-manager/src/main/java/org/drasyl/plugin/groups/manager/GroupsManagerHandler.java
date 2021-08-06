@@ -23,7 +23,9 @@ package org.drasyl.plugin.groups.manager;
 
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
@@ -41,6 +43,7 @@ import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
 import org.drasyl.serialization.JacksonJsonSerializer;
 import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -91,7 +94,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                         member.getMember().getPublicKey(),
                         org.drasyl.plugin.groups.client.Group.of(member.getGroup().getName()));
 
-                ctx.passOutbound(member.getMember().getPublicKey(), leftMessage, new CompletableFuture<>());
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) leftMessage, (Address) member.getMember().getPublicKey())))).combine(new CompletableFuture<Void>());
                 notifyMembers(ctx, member.getGroup().getName(), leftMessage, new CompletableFuture<>());
                 LOG.debug("Remove stale member `{}` from group `{}`", member.getMember()::getPublicKey, member.getGroup()::getName);
             }
@@ -124,7 +127,11 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
 
             final FutureCombiner combiner = FutureCombiner.getInstance();
 
-            recipients.forEach(member -> combiner.add(ctx.passOutbound(member.getMember().getPublicKey(), msg, new CompletableFuture<>())));
+            recipients.forEach(member -> {
+                final CompletableFuture<Void> future1 = new CompletableFuture<>();
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) member.getMember().getPublicKey())))).combine(future1);
+                combiner.add(future1);
+            });
 
             combiner.combine(future);
         }
@@ -167,14 +174,14 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                     doJoin(ctx, sender, group, future, msg.isRenew());
                 }
                 else {
-                    ctx.passOutbound(sender, new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_PROOF_TO_WEAK), new CompletableFuture<>());
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_PROOF_TO_WEAK), (Address) sender)))).combine(new CompletableFuture<Void>());
                     future.completeExceptionally(new IllegalArgumentException("Member '" + sender + "' does not fulfill requirements of group '" + groupName + "'"));
 
                     LOG.debug("Member `{}` does not fulfill requirements of group `{}`", sender, groupName);
                 }
             }
             else {
-                ctx.passOutbound(sender, new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_GROUP_NOT_FOUND), new CompletableFuture<>());
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_GROUP_NOT_FOUND), (Address) sender)))).combine(new CompletableFuture<Void>());
                 future.completeExceptionally(new IllegalArgumentException("There is no group '" + groupName + "'"));
 
                 LOG.debug("There is no group `{}`.", groupName);
@@ -203,7 +210,9 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
             final MemberLeftMessage leftMessage = new MemberLeftMessage(sender, msg.getGroup());
 
             database.removeGroupMember(sender, msg.getGroup().getName());
-            final CompletableFuture<Void> future1 = ctx.passOutbound(sender, leftMessage, new CompletableFuture<>());
+            final CompletableFuture<Void> future3 = new CompletableFuture<>();
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) leftMessage, (Address) sender)))).combine(future3);
+            final CompletableFuture<Void> future1 = future3;
             final CompletableFuture<Void> future2 = new CompletableFuture<>();
             notifyMembers(ctx, msg.getGroup().getName(), leftMessage, future2);
 
@@ -241,8 +250,9 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                         .sequential()
                         .map(v -> v.getMember().getPublicKey())
                         .collect(Collectors.toSet());
-                final CompletableFuture<Void> future1 = ctx.passOutbound(sender,
-                        new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), memberships), new CompletableFuture<>());
+                final CompletableFuture<Void> future3 = new CompletableFuture<>();
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), memberships), (Address) sender)))).combine(future3);
+                final CompletableFuture<Void> future1 = future3;
                 final CompletableFuture<Void> future2 = new CompletableFuture<>();
                 FutureCombiner.getInstance().addAll(future1, future2).combine(future);
 
@@ -255,7 +265,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
             }
         }
         catch (final DatabaseException e) {
-            ctx.passOutbound(sender, new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), new CompletableFuture<>());
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), (Address) sender)))).combine(new CompletableFuture<Void>());
             future.completeExceptionally(e);
 
             LOG.debug("Error occurred during join: ", e);

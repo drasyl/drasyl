@@ -23,9 +23,11 @@ package org.drasyl.pipeline.handler.codec;
 
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 
 import java.util.ArrayList;
@@ -74,13 +76,15 @@ public abstract class MessageToMessageEncoder<O, A extends Address> extends Simp
 
             final int size = out.size();
             if (size == 1) {
-                ctx.passOutbound(recipient, out.get(0), future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(out.get(0), (Address) recipient)))).combine(future);
             }
             else {
                 final FutureCombiner combiner = FutureCombiner.getInstance();
 
                 for (final Object o : out) {
-                    combiner.add(ctx.passOutbound(recipient, o, new CompletableFuture<>()));
+                    final CompletableFuture<Void> future1 = new CompletableFuture<>();
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(o, (Address) recipient)))).combine(future1);
+                    combiner.add(future1);
                 }
 
                 combiner.combine(future);

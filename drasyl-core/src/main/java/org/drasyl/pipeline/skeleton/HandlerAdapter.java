@@ -32,6 +32,8 @@ import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
@@ -87,7 +89,7 @@ public class HandlerAdapter implements Handler {
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) throws Exception {
-        ctx.passOutbound(recipient, msg, future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
     }
 
     @Override

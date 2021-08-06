@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandler;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -32,6 +33,8 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -78,7 +81,7 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Addres
             ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), future));
         }
         else {
-            ctx.passOutbound(recipient, msg, future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
         }
     }
 }

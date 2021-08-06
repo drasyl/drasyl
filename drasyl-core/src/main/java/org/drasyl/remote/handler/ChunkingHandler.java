@@ -30,6 +30,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -39,6 +40,7 @@ import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedShort;
 import org.drasyl.util.Worm;
@@ -144,12 +146,12 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
             else {
                 ReferenceCountUtil.safeRelease(messageByteBuf);
                 // message is small enough. No chunking required
-                ctx.passOutbound(recipient, msg, future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient)))).combine(future);
             }
         }
         else {
             // message not from us. Passthrough
-            ctx.passOutbound(recipient, msg, future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient)))).combine(future);
         }
     }
 
@@ -197,7 +199,9 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
                     // send chunk
                     final RemoteMessage chunk = PartialReadMessage.of(chunkByteBuf);
 
-                    combiner.add(ctx.passOutbound(recipient, chunk, new CompletableFuture<>()));
+                    final CompletableFuture<Void> future1 = new CompletableFuture<>();
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) chunk, recipient)))).combine(future1);
+                    combiner.add(future1);
                 }
                 finally {
                     ReferenceCountUtil.safeRelease(chunkBodyByteBuf);

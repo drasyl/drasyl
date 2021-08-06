@@ -26,8 +26,12 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -202,7 +206,9 @@ public class NatPmpPortMapping implements PortMapping {
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         externalAddressRequested.set(true);
 
-        ctx.passOutbound(defaultGateway, msg, new CompletableFuture<>()).exceptionally(e -> {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) defaultGateway)))).combine(future);
+        future.exceptionally(e -> {
             LOG.warn("Unable to send external address request message to `{}`", () -> defaultGateway, () -> e);
             return null;
         });
@@ -232,7 +238,9 @@ public class NatPmpPortMapping implements PortMapping {
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         mappingRequested.set(true);
 
-        ctx.passOutbound(defaultGateway, msg, new CompletableFuture<>()).exceptionally(e -> {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) defaultGateway)))).combine(future);
+        future.exceptionally(e -> {
             LOG.warn("Unable to send mapping request message to `{}`", () -> defaultGateway, () -> e);
             return null;
         });

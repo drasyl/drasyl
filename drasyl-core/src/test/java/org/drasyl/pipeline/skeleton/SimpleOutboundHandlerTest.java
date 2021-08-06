@@ -25,11 +25,14 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -57,7 +60,7 @@ class SimpleOutboundHandlerTest {
                                            final Address recipient,
                                            final byte[] msg,
                                            final CompletableFuture<Void> future) {
-                ctx.passOutbound(recipient, new String(msg), future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new String(msg), recipient)))).combine(future);
             }
         };
 
@@ -84,7 +87,7 @@ class SimpleOutboundHandlerTest {
                                            final Address recipient,
                                            final byte[] msg,
                                            final CompletableFuture<Void> future) {
-                ctx.passOutbound(recipient, new String(msg), future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new String(msg), recipient)))).combine(future);
             }
         };
 

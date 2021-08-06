@@ -22,8 +22,11 @@
 package org.drasyl.pipeline.handler;
 
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.TokenBucket;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -60,7 +63,7 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) {
-        queue.add(ctx, () -> ctx.passOutbound(recipient, msg, future));
+        queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future));
     }
 
     public static class RateLimitedQueue {

@@ -32,6 +32,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -178,8 +179,10 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
         }
         else {
             // passthrough message
+            final CompletableFuture<Void> future1 = new CompletableFuture<>();
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient)))).combine(future1);
             FutureCombiner.getInstance()
-                    .add(ctx.passOutbound(recipient, msg, new CompletableFuture<>()))
+                    .add(future1)
                     .add(checkForUnreachableSuperPeers(ctx, recipient))
                     .combine(future);
         }

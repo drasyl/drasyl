@@ -24,6 +24,7 @@ package org.drasyl.plugin.groups.client;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -44,6 +45,7 @@ import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
 import org.drasyl.serialization.JacksonJsonSerializer;
 import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -107,7 +109,9 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
             final Group group = entry.getKey();
             final GroupUri groupURI = entry.getValue();
             try {
-                ctx.passOutbound(groupURI.getManager(), new GroupLeaveMessage(group), new CompletableFuture<>()).get();
+                final CompletableFuture<Void> future = new CompletableFuture<>();
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupLeaveMessage(group), (Address) groupURI.getManager())))).combine(future);
+                future.get();
             }
             catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -255,7 +259,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         ctx.fireUserEventTriggered(new MigrationEvent(GroupJoinedEvent.of(
                 group,
                 msg.getMembers(),
-                () -> ctx.passOutbound(sender, new GroupLeaveMessage(group), new CompletableFuture<>())), future1));
+                () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupLeaveMessage(group), sender)))).combine(new CompletableFuture<Void>())), future1));
         FutureCombiner.getInstance()
                 .add(future1)
                 .combine(future);
@@ -274,7 +278,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        ctx.passOutbound(groupManager, new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), new CompletableFuture<>());
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), (Address) groupManager)))).combine(new CompletableFuture<Void>());
 
         // Add re-try task
         if (!renewTasks.containsKey(group.getGroup())) {

@@ -23,8 +23,11 @@ package org.drasyl.pipeline.handler.filter;
 
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 
 import java.util.concurrent.CompletableFuture;
@@ -51,7 +54,7 @@ public abstract class OutboundMessageFilter<O, A extends Address> extends Simple
                                    final CompletableFuture<Void> future) throws Exception {
         try {
             if (accept(ctx, recipient, msg)) {
-                ctx.passOutbound(recipient, msg, future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient)))).combine(future);
             }
             else {
                 messageRejected(ctx, recipient, msg, future);

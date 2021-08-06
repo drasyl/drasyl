@@ -25,15 +25,18 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.logging.Logger;
@@ -141,11 +144,11 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         final InetSocketAddressWrapper localAddress = routes.get(recipient);
         if (localAddress != null) {
             LOG.trace("Send message `{}` via local route {}.", () -> message, () -> localAddress);
-            ctx.passOutbound(localAddress, message, future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) localAddress)))).combine(future);
         }
         else {
             // passthrough message
-            ctx.passOutbound(recipient, message, future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient)))).combine(future);
         }
     }
 

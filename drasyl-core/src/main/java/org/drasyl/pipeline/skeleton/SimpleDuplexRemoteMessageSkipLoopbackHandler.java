@@ -23,8 +23,11 @@ package org.drasyl.pipeline.skeleton;
 
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -63,13 +66,13 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
                                    final O msg,
                                    final CompletableFuture<Void> future) throws Exception {
         if (skipNullAddresses && msg.getRecipient() == null) {
-            ctx.passOutbound(recipient, msg, future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient)))).combine(future);
             return;
         }
 
         if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())
                 || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())) {
-            ctx.passOutbound(recipient, msg, future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient)))).combine(future);
             return;
         }
 

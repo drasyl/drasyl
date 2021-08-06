@@ -26,9 +26,13 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -252,7 +256,9 @@ public class UpnpIgdPortMapping implements PortMapping {
                 }
             }
         }, SSDP_DISCOVERY_TIMEOUT.toMillis(), MILLISECONDS);
-        ctx.passOutbound(SSDP_MULTICAST_ADDRESS, msg, new CompletableFuture<>()).exceptionally(e -> {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) SSDP_MULTICAST_ADDRESS)))).combine(future);
+        future.exceptionally(e -> {
             LOG.warn("Unable to send ssdp discovery message to `{}`", () -> SSDP_MULTICAST_ADDRESS, () -> e);
             return null;
         });

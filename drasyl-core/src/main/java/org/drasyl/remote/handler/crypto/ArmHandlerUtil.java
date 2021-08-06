@@ -23,6 +23,7 @@ package org.drasyl.remote.handler.crypto;
 
 import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.IdentityPublicKey;
@@ -34,6 +35,8 @@ import org.drasyl.remote.protocol.ArmedMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
 import org.drasyl.remote.protocol.KeyExchangeMessage;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -75,7 +78,8 @@ public final class ArmHandlerUtil {
                                                         final CompletableFuture<Void> future) {
         try {
             final ArmedMessage armedMessage = msg.setAgreementId(agreementId).arm(cryptoInstance, agreementPair);
-            ctx.passOutbound(recipient, armedMessage, future); // send encrypted message
+            // send encrypted message
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) armedMessage, recipient)))).combine(future);
         }
         catch (final IOException e) {
             future.completeExceptionally(new CryptoException(e));

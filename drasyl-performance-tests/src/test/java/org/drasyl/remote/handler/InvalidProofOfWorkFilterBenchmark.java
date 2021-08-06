@@ -547,7 +547,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
             return null;
         }
 
-        @Override
         public CompletableFuture<Void> passOutbound(final Address recipient,
                                                     final Object msg,
                                                     final CompletableFuture<Void> future) {

@@ -33,12 +33,8 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 
 import java.net.SocketAddress;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
@@ -256,12 +252,5 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
     @Override
     public <T> boolean hasAttr(final AttributeKey<T> key) {
         return ctx.hasAttr(key);
-    }
-
-    public CompletableFuture<Void> passOutbound(final Address recipient,
-                                                final Object msg,
-                                                final CompletableFuture<Void> future) {
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
-        return future;
     }
 }

@@ -26,6 +26,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -50,7 +51,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class HandlerAdapterTest {
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private MigrationHandlerContext ctx;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
@@ -90,7 +91,7 @@ class HandlerAdapterTest {
 
             handlerAdapter.onOutbound(ctx, recipient, msg, future);
 
-            verify(ctx).passOutbound(recipient, msg, future);
+            verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
         }
     }
 

@@ -23,8 +23,11 @@ package org.drasyl.pipeline.skeleton;
 
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -59,7 +62,7 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
             matchedOutbound(ctx, castedAddress, castedMsg, future);
         }
         else {
-            ctx.passOutbound(recipient, msg, future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
         }
     }
 
