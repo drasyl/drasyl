@@ -48,7 +48,6 @@ import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.HopCount;
@@ -603,11 +602,6 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
 
         @Override
         public MigrationPipeline drasylPipeline() {
-            return null;
-        }
-
-        @Override
-        public Serialization inboundSerialization() {
             return null;
         }
     }
