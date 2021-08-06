@@ -245,7 +245,7 @@ public class TcpClientTest {
 
             new TcpClientHandler(ctx).channelRead0(nettyCtx, msg);
 
-            verify(ctx).passInbound(any(InetSocketAddressWrapper.class), any(), any());
+            verify(ctx).fireChannelRead(any());
         }
     }
 }

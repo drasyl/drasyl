@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -59,7 +60,7 @@ class SimpleInboundHandlerTest {
                                           final Address sender,
                                           final byte[] msg,
                                           final CompletableFuture<Void> future) {
-                ctx.passInbound(sender, new String(msg), future);
+                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) new String(msg), sender, future));
             }
         };
 
@@ -86,7 +87,7 @@ class SimpleInboundHandlerTest {
                                           final Address sender,
                                           final byte[] msg,
                                           final CompletableFuture<Void> future) {
-                ctx.passInbound(sender, new String(msg), future);
+                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) new String(msg), sender, future));
             }
         };
 

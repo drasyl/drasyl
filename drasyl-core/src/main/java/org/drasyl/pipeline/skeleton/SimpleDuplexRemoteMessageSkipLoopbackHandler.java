@@ -22,6 +22,7 @@
 package org.drasyl.pipeline.skeleton;
 
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.RemoteMessage;
 
@@ -96,7 +97,7 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
                                   final CompletableFuture<Void> future) throws Exception {
         if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())
                 || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())) {
-            ctx.passInbound(sender, msg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future));
             return;
         }
 

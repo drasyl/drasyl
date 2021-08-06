@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -85,7 +86,7 @@ class SimpleDuplexHandlerTest {
                                               final IdentityPublicKey sender,
                                               final Object msg,
                                               final CompletableFuture<Void> future) {
-                    ctx.passInbound(sender, msg, future);
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) sender, future));
                 }
 
                 @Override
@@ -94,7 +95,7 @@ class SimpleDuplexHandlerTest {
                                                final byte[] msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.passInbound(identity.getIdentityPublicKey(), msg, new CompletableFuture<>());
+                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) identity.getIdentityPublicKey(), new CompletableFuture<Void>()));
                 }
             };
 
@@ -129,7 +130,7 @@ class SimpleDuplexHandlerTest {
                                               final IdentityPublicKey sender,
                                               final Object msg,
                                               final CompletableFuture<Void> future) {
-                    ctx.passInbound(sender, msg, future);
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) sender, future));
                 }
 
                 @Override
@@ -138,7 +139,7 @@ class SimpleDuplexHandlerTest {
                                                final MyMessage msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.passInbound(msg.getSender(), msg, new CompletableFuture<>());
+                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) msg.getSender(), new CompletableFuture<Void>()));
                 }
             };
 
@@ -284,7 +285,7 @@ class SimpleDuplexHandlerTest {
                                               final Address sender,
                                               final RemoteMessage msg,
                                               final CompletableFuture<Void> future) {
-                    ctx.passInbound(sender, msg, future);
+                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
                 }
             };
 
@@ -325,7 +326,7 @@ class SimpleDuplexHandlerTest {
                                               final Address sender,
                                               final MyMessage msg,
                                               final CompletableFuture<Void> future) {
-                    ctx.passInbound(sender, msg, future);
+                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
                 }
             };
 

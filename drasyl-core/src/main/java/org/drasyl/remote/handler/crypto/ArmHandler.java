@@ -24,6 +24,7 @@ package org.drasyl.remote.handler.crypto;
 import com.google.common.cache.CacheBuilder;
 import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.LongTimeEncryptionEvent;
@@ -209,7 +210,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
             future.complete(null);
         }
         else {
-            ctx.passInbound(sender, plaintextMsg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) plaintextMsg, sender, future));
         }
     }
 

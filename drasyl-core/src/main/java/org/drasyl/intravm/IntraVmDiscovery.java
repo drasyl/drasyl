@@ -22,6 +22,7 @@
 package org.drasyl.intravm;
 
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -98,7 +99,7 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
             ctx.passOutbound(recipient, msg, future);
         }
         else {
-            discoveree.passInbound(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), msg, future);
+            discoveree.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), future));
         }
     }
 

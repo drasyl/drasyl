@@ -29,6 +29,7 @@ import io.netty.buffer.ByteBufOutputStream;
 import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -77,7 +78,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
         }
         else {
             // passthrough all messages not addressed to us
-            ctx.passInbound(sender, msg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future));
         }
     }
 
@@ -92,7 +93,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
             if (message != null) {
                 // message complete, pass it inbound
                 getChunksCollectors(ctx.attr(CONFIG_ATTR_KEY).get()).remove(chunk.getNonce());
-                ctx.passInbound(sender, message, future);
+                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender, future));
             }
             else {
                 // other chunks missing, but this chunk has been processed

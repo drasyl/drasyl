@@ -43,6 +43,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -101,7 +102,7 @@ class HandlerAdapterTest {
 
             handlerAdapter.onInbound(ctx, sender, msg, future);
 
-            verify(ctx).passInbound(sender, msg, future);
+            verify(ctx).fireChannelRead(any());
         }
 
         @Test

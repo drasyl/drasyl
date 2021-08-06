@@ -30,11 +30,13 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -147,7 +149,7 @@ public class UdpMulticastServer extends HandlerAdapter {
                             final InetSocketAddressWrapper sender = new InetSocketAddressWrapper(packet.sender());
                             nodes.values().forEach(nodeCtx -> {
                                 LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.attr(IDENTITY_ATTR_KEY).get()::getIdentityPublicKey);
-                                nodeCtx.passInbound(sender, packet.content().retain(), new CompletableFuture<>());
+                                nodeCtx.fireChannelRead(new MigrationInboundMessage<>((Object) packet.content().retain(), (Address) sender, new CompletableFuture<Void>()));
                             });
                         }
                     })

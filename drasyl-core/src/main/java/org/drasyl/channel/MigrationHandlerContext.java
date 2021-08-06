@@ -259,13 +259,6 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
         return ctx.hasAttr(key);
     }
 
-    public CompletableFuture<Void> passInbound(final Address sender,
-                                               final Object msg,
-                                               final CompletableFuture<Void> future) {
-        fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
-        return future;
-    }
-
     @SuppressWarnings("UnusedReturnValue")
     public CompletableFuture<Void> passEvent(final Event event,
                                              final CompletableFuture<Void> future) {

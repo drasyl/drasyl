@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -178,7 +179,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
             }
         }
         else {
-            ctx.passInbound(sender, msg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
         }
     }
 }

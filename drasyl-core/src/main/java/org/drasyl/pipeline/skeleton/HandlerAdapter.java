@@ -64,7 +64,7 @@ public class HandlerAdapter implements Handler {
                           final Address sender,
                           final Object msg,
                           final CompletableFuture<Void> future) throws Exception {
-        ctx.passInbound(sender, msg, future);
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
     }
 
     @Skip

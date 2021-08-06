@@ -562,13 +562,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public CompletableFuture<Void> passInbound(final Address sender,
-                                                   final Object msg,
-                                                   final CompletableFuture<Void> future) {
-            return null;
-        }
-
-        @Override
         public CompletableFuture<Void> passEvent(final Event event,
                                                  final CompletableFuture<Void> future) {
             return null;
@@ -578,10 +571,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         public CompletableFuture<Void> passOutbound(final Address recipient,
                                                     final Object msg,
                                                     final CompletableFuture<Void> future) {
-            return null;
-        }
-
-        public ChannelPipeline drasylPipeline() {
             return null;
         }
     }

@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -40,7 +41,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -122,9 +122,9 @@ class IntraVmDiscoveryTest {
                                                        @Mock(answer = RETURNS_DEEP_STUBS) final Object message,
                                                        @Mock final MigrationHandlerContext ctx) {
             discoveries.put(Pair.of(0, recipient), ctx);
-            when(ctx.passInbound(any(), any(), any())).thenAnswer(invocation -> {
-                @SuppressWarnings("unchecked") final CompletableFuture<Void> future = invocation.getArgument(2, CompletableFuture.class);
-                future.complete(null);
+            when(ctx.fireChannelRead(any())).thenAnswer(invocation -> {
+                @SuppressWarnings("unchecked") final MigrationInboundMessage msg = invocation.getArgument(0, MigrationInboundMessage.class);
+                msg.future().complete(null);
                 return null;
             });
 
@@ -133,7 +133,7 @@ class IntraVmDiscoveryTest {
             try {
                 pipeline.processOutbound(recipient, message).join();
 
-                verify(ctx).passInbound(any(), any(), any());
+                verify(ctx).fireChannelRead(any());
             }
             finally {
                 pipeline.drasylClose();

@@ -30,10 +30,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.peer.Endpoint;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -137,8 +139,10 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
                                   final InetSocketAddressWrapper sender,
                                   final ByteBuf msg,
                                   final CompletableFuture<Void> future) throws Exception {
+        final CompletableFuture<Void> future1 = new CompletableFuture<>();
+        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future1));
         FutureCombiner.getInstance()
-                .add(ctx.passInbound(sender, msg, new CompletableFuture<>()))
+                .add(future1)
                 .add(checkForReachableSuperPeer(sender))
                 .combine(future);
     }
@@ -246,7 +250,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
                                     final ByteBuf msg) {
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
-            ctx.passInbound(new InetSocketAddressWrapper(sender), msg.retain(), new CompletableFuture<>());
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender), new CompletableFuture<Void>()));
         }
     }
 }

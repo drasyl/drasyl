@@ -23,6 +23,7 @@ package org.drasyl.loopback.handler;
 
 import io.netty.channel.ChannelHandler;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -73,7 +74,7 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Addres
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
         if (started && ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(recipient)) {
-            ctx.passInbound(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), msg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), future));
         }
         else {
             ctx.passOutbound(recipient, msg, future);

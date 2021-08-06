@@ -31,11 +31,13 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
@@ -249,7 +251,9 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                                     final ByteBuf msg) {
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
-            ctx.passInbound(new InetSocketAddressWrapper(sender), msg.retain(), new CompletableFuture<>()).exceptionally(e -> {
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender), future));
+            future.exceptionally(e -> {
                 if (e.getCause() instanceof InvalidMessageFormatException) {
                     LOG.debug("Close TCP connection to `{}` because a message with an invalid format has been received. Possibly not a drasyl client talks to us!?", nettyCtx.channel()::remoteAddress, () -> e);
                     nettyCtx.close();

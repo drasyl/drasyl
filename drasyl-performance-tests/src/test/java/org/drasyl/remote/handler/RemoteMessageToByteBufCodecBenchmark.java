@@ -568,7 +568,6 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
             return null;
         }
 
-        @Override
         public CompletableFuture<Void> passInbound(final Address sender,
                                                    final Object msg,
                                                    final CompletableFuture<Void> future) {
@@ -585,10 +584,6 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
         public CompletableFuture<Void> passOutbound(final Address recipient,
                                                     final Object msg,
                                                     final CompletableFuture<Void> future) {
-            return null;
-        }
-
-        public ChannelPipeline drasylPipeline() {
             return null;
         }
     }

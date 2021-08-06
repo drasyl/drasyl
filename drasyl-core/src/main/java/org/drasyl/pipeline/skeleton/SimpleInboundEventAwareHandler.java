@@ -23,6 +23,7 @@ package org.drasyl.pipeline.skeleton;
 
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.IdentityPublicKey;
@@ -98,7 +99,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
             matchedInbound(ctx, castedAddress, castedMsg, future);
         }
         else {
-            ctx.passInbound(sender, msg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
         }
     }
 

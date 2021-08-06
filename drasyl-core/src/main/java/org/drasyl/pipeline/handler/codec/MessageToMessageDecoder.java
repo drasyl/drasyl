@@ -23,6 +23,7 @@ package org.drasyl.pipeline.handler.codec;
 
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.util.FutureCombiner;
@@ -76,13 +77,15 @@ public abstract class MessageToMessageDecoder<I, A extends Address> extends Simp
 
             final int size = out.size();
             if (size == 1) {
-                ctx.passInbound(sender, out.get(0), future);
+                ctx.fireChannelRead(new MigrationInboundMessage<>(out.get(0), (Address) sender, future));
             }
             else {
                 final FutureCombiner combiner = FutureCombiner.getInstance();
 
                 for (final Object o : out) {
-                    combiner.add(ctx.passInbound(sender, o, new CompletableFuture<>()));
+                    final CompletableFuture<Void> future1 = new CompletableFuture<>();
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(o, (Address) sender, future1));
+                    combiner.add(future1);
                 }
 
                 combiner.combine(future);

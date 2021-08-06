@@ -23,6 +23,7 @@ package org.drasyl.remote.handler;
 
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -150,7 +151,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
             handlePing(ctx, sender, msg, future);
         }
         else {
-            ctx.passInbound(sender, msg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
         }
     }
 

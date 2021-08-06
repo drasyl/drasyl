@@ -148,7 +148,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                                               final Address sender,
                                               final UnarmedMessage msg,
                                               final CompletableFuture<Void> future) throws Exception {
-                    ctx.passInbound(sender, msg.readAndRelease(), future);
+                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.readAndRelease(), sender, future));
                 }
             });
 

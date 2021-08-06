@@ -148,7 +148,7 @@ class UdpMulticastServerTest {
             try {
                 pipeline.processInbound(event).join();
 
-                verify(ctx).passInbound(any(), any(), any());
+                verify(ctx).fireChannelRead(any());
             }
             finally {
                 pipeline.drasylClose();

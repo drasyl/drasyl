@@ -32,6 +32,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -54,7 +56,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionException;
 
 import static java.net.InetSocketAddress.createUnresolved;
-import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -245,14 +246,17 @@ class TcpServerTest {
 
             new TcpServerHandler(clients, ctx).channelRead0(nettyCtx, msg);
 
-            verify(ctx).passInbound(any(InetSocketAddressWrapper.class), any(), any());
+            verify(ctx).fireChannelRead(any());
         }
 
         @Test
         void shouldCloseConnectionWhenInboundMessageIsInvalid(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx,
                                                               @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
-            when(ctx.passInbound(any(), any(), any())).thenReturn(failedFuture(new Exception(new InvalidMessageFormatException())));
+            when(ctx.fireChannelRead(any())).then((Answer<ChannelHandlerContext>) invocation -> {
+                invocation.getArgument(0, MigrationInboundMessage.class).future().completeExceptionally(new Exception(new InvalidMessageFormatException()));
+                return null;
+            });
 
             new TcpServerHandler(clients, ctx).channelRead0(nettyCtx, msg);
 

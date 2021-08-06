@@ -25,6 +25,7 @@ import com.google.common.cache.CacheBuilder;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -387,7 +388,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             else if (!ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
                 if (!processMessage(ctx, msg.getRecipient(), msg, future)) {
                     // passthrough message
-                    ctx.passInbound(sender, msg, future);
+                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
                 }
             }
             else if (LOG.isDebugEnabled()) {
@@ -396,7 +397,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
         else {
             // passthrough message
-            ctx.passInbound(sender, msg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
         }
     }
 
@@ -418,7 +419,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
         else {
             // passthrough message
-            ctx.passInbound(sender, msg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future));
         }
     }
 
@@ -530,7 +531,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             peer.applicationTrafficOccurred();
         }
 
-        ctx.passInbound(msg.getSender(), msg, future);
+        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) msg.getSender(), future));
     }
 
     private CompletableFuture<Void> sendPing(final MigrationHandlerContext ctx,

@@ -24,10 +24,12 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationHandlerContext;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.util.logging.Logger;
@@ -99,7 +101,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
         }
         else {
             // message was not for the mapper -> passthrough
-            ctx.passInbound(sender, msg, future);
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future));
         }
     }
 
