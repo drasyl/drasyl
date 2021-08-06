@@ -34,12 +34,12 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelProgressivePromise;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
+import io.netty.channel.ServerChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
@@ -60,7 +60,6 @@ import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofDays;
-import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 @State(Scope.Benchmark)
@@ -73,7 +72,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     @Setup
     public void setup() {
         final Identity sender = IdentityTestUtil.ID_1;
-        ctx = new MyHandlerContext(IdentityTestUtil.ID_2);
+        ctx = new MyHandlerContext();
         msgSender = new MyAddress();
         msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
         msgNotAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
@@ -103,13 +102,12 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
 
     private static class MyHandlerContext extends MigrationHandlerContext {
         private final DrasylConfig config;
-        private final Identity identity;
 
-        public MyHandlerContext(final Identity identity) {
+        public MyHandlerContext() {
             super(new ChannelHandlerContext() {
                 @Override
                 public Channel channel() {
-                    return new DrasylServerChannel() {
+                    return new ServerChannel() {
                         @Override
                         public int compareTo(final Channel o) {
                             return 0;
@@ -330,16 +328,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
                         public ChannelPromise voidPromise() {
                             return null;
                         }
-
-                        @Override
-                        public Serialization inboundSerialization() {
-                            return null;
-                        }
-
-                        @Override
-                        public Serialization outboundSerialization() {
-                            return null;
-                        }
                     };
                 }
 
@@ -552,7 +540,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
                     .remotePingTimeout(ofDays(1))
                     .remotePingCommunicationTimeout(ofDays(1))
                     .build();
-            this.identity = requireNonNull(identity);
         }
 
         @Override

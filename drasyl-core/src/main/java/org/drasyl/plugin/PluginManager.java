@@ -23,8 +23,8 @@ package org.drasyl.plugin;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ServerChannel;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -45,7 +45,7 @@ public class PluginManager {
      * @param ctx
      */
     public void beforeStart(final ChannelHandlerContext ctx) {
-        final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
+        final ServerChannel channel = (ServerChannel) ctx.channel();
         final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
         final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
         final ChannelPipeline pipeline = channel.pipeline();
@@ -63,7 +63,7 @@ public class PluginManager {
      * @param ctx
      */
     public void afterStart(final ChannelHandlerContext ctx) {
-        final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
+        final ServerChannel channel = (ServerChannel) ctx.channel();
         final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
         final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
         final ChannelPipeline pipeline = channel.pipeline();
@@ -81,7 +81,7 @@ public class PluginManager {
      * @param ctx
      */
     public void beforeShutdown(final ChannelHandlerContext ctx) {
-        final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
+        final ServerChannel channel = (ServerChannel) ctx.channel();
         final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
         final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
         final ChannelPipeline pipeline = channel.pipeline();
@@ -99,7 +99,7 @@ public class PluginManager {
      * @param ctx
      */
     public void afterShutdown(final ChannelHandlerContext ctx) {
-        final DrasylServerChannel channel = (DrasylServerChannel) ctx.channel();
+        final ServerChannel channel = (ServerChannel) ctx.channel();
         final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
         final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
         final ChannelPipeline pipeline = channel.pipeline();

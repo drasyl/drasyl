@@ -29,6 +29,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelProgressivePromise;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.ServerChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
@@ -42,17 +43,19 @@ import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
  */
 public class MigrationHandlerContext implements ChannelHandlerContext {
     private final ChannelHandlerContext ctx;
-    private final DrasylServerChannel channel;
+    private final ServerChannel channel;
 
     public MigrationHandlerContext(final ChannelHandlerContext ctx) {
         this.ctx = ctx;
-        this.channel = (DrasylServerChannel) ctx.channel();
+        this.channel = (ServerChannel) ctx.channel();
     }
 
     @Override
@@ -312,10 +315,10 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
     }
 
     public Serialization inboundSerialization() {
-        return channel.inboundSerialization();
+        return channel.attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 
     public Serialization outboundSerialization() {
-        return channel.outboundSerialization();
+        return channel.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 }

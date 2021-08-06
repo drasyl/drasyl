@@ -23,8 +23,8 @@ package org.drasyl.plugin;
 
 import com.google.common.collect.ImmutableSet;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ServerChannel;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -46,7 +46,7 @@ class PluginManagerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelHandlerContext ctx;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylServerChannel serverChannel;
+    private ServerChannel serverChannel;
     @InjectMocks
     private PluginManager underTest;
 

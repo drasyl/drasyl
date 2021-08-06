@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A {@link Channel} for overlay network management.
  */
-public class DefaultDrasylServerChannel extends AbstractServerChannel implements DrasylServerChannel {
+public class DefaultDrasylServerChannel extends AbstractServerChannel {
     public static final AttributeKey<DrasylConfig> CONFIG_ATTR_KEY = AttributeKey.valueOf(DrasylConfig.class, "CONFIG");
     public static final AttributeKey<Identity> IDENTITY_ATTR_KEY = AttributeKey.valueOf(Identity.class, "IDENTITY");
     public static final AttributeKey<PeersManager> PEERS_MANAGER_ATTR_KEY = AttributeKey.valueOf(PeersManager.class, "PEERS_MANAGER");
@@ -121,12 +121,10 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel implements
         return state == 1;
     }
 
-    @Override
     public Serialization inboundSerialization() {
         return attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 
-    @Override
     public Serialization outboundSerialization() {
         return attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get();
     }

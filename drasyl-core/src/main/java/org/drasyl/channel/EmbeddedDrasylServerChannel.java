@@ -29,6 +29,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
@@ -63,7 +64,7 @@ import static org.drasyl.channel.Null.NULL;
 /**
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
  */
-public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements DrasylServerChannel {
+public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements ServerChannel {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static final
     Optional<Object> NULL_MESSAGE = Optional.empty();

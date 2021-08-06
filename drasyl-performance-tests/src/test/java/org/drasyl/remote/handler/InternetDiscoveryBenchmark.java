@@ -34,16 +34,15 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelProgressivePromise;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
+import io.netty.channel.ServerChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
@@ -123,13 +122,12 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
 
     private static class MyHandlerContext extends MigrationHandlerContext {
         private final DrasylConfig config;
-        private final Identity identity;
 
         public MyHandlerContext() {
             super(new ChannelHandlerContext() {
                 @Override
                 public Channel channel() {
-                    return new DrasylServerChannel() {
+                    return new ServerChannel() {
                         @Override
                         public int compareTo(final Channel o) {
                             return 0;
@@ -350,16 +348,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
                         public ChannelPromise voidPromise() {
                             return null;
                         }
-
-                        @Override
-                        public Serialization inboundSerialization() {
-                            return null;
-                        }
-
-                        @Override
-                        public Serialization outboundSerialization() {
-                            return null;
-                        }
                     };
                 }
 
@@ -572,7 +560,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
                     .remotePingTimeout(ofDays(1))
                     .remotePingCommunicationTimeout(ofDays(1))
                     .build();
-            identity = IdentityTestUtil.ID_1;
         }
 
         @Override
