@@ -169,7 +169,7 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
             }
         }
         else {
-            throw new RuntimeException("not implemented yet"); // NOSONAR
+            ctx.writeAndFlush(msg, promise);
         }
     }
 
