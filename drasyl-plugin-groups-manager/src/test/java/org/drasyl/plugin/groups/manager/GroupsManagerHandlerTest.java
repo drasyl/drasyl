@@ -21,13 +21,13 @@
  */
 package org.drasyl.plugin.groups.manager;
 
+import io.netty.channel.ChannelPipeline;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationHandlerContext;
-import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -92,7 +92,7 @@ class GroupsManagerHandlerTest {
     @Mock
     private IdentityPublicKey publicKey;
     @Mock
-    private MigrationPipeline pipeline;
+    private ChannelPipeline pipeline;
     @Mock
     private Future staleTask;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -140,12 +140,10 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             when(databaseAdapter.deleteStaleMemberships()).thenReturn(memberships);
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
-            when(ctx.drasylPipeline()).thenReturn(pipeline);
-            when(pipeline.processOutbound(any(), any())).thenReturn(new CompletableFuture<>());
 
             handler.staleTask(ctx);
 
-            verify(pipeline, times(2)).processOutbound(publicKey, new MemberLeftMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())));
+            verify(ctx, times(2)).passOutbound(eq(publicKey), eq(new MemberLeftMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName()))), any(CompletableFuture.class));
         }
     }
 

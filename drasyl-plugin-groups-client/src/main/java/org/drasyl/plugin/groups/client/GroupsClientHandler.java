@@ -106,7 +106,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
             final Group group = entry.getKey();
             final GroupUri groupURI = entry.getValue();
             try {
-                ctx.drasylPipeline().processOutbound(groupURI.getManager(), new GroupLeaveMessage(group)).get();
+                ctx.passOutbound(groupURI.getManager(), new GroupLeaveMessage(group), new CompletableFuture<>()).get();
             }
             catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -159,7 +159,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                                        final MemberJoinedMessage msg,
                                        final CompletableFuture<Void> future) {
         FutureCombiner.getInstance()
-                .add(ctx.drasylPipeline().processInbound(GroupMemberJoinedEvent.of(msg.getMember(), msg.getGroup())))
+                .add(ctx.passEvent(GroupMemberJoinedEvent.of(msg.getMember(), msg.getGroup()), new CompletableFuture<>()))
                 .combine(future);
     }
 
@@ -182,8 +182,8 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         }
 
         FutureCombiner.getInstance()
-                .add(ctx.drasylPipeline().processInbound(GroupJoinFailedEvent.of(group, msg.getReason(),
-                        () -> joinGroup(ctx, groups.get(group), false))))
+                .add(ctx.passEvent(GroupJoinFailedEvent.of(group, msg.getReason(),
+                        () -> joinGroup(ctx, groups.get(group), false)), new CompletableFuture<>()))
                 .combine(future);
     }
 
@@ -207,12 +207,12 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
             }
 
             FutureCombiner.getInstance()
-                    .add(ctx.drasylPipeline().processInbound(GroupLeftEvent.of(group, () -> joinGroup(ctx, groups.get(group), false))))
+                    .add(ctx.passEvent(GroupLeftEvent.of(group, () -> joinGroup(ctx, groups.get(group), false)), new CompletableFuture<>()))
                     .combine(future);
         }
         else {
             FutureCombiner.getInstance()
-                    .add(ctx.drasylPipeline().processInbound(GroupMemberLeftEvent.of(msg.getMember(), group)))
+                    .add(ctx.passEvent(GroupMemberLeftEvent.of(msg.getMember(), group), new CompletableFuture<>()))
                     .combine(future);
         }
     }
@@ -243,11 +243,11 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                 joinGroup(ctx, groups.get(group), true), timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
 
         FutureCombiner.getInstance()
-                .add(ctx.drasylPipeline().processInbound(
+                .add(ctx.passEvent(
                         GroupJoinedEvent.of(
                                 group,
                                 msg.getMembers(),
-                                () -> ctx.drasylPipeline().processOutbound(sender, new GroupLeaveMessage(group)))))
+                                () -> ctx.passOutbound(sender, new GroupLeaveMessage(group), new CompletableFuture<>())), new CompletableFuture<>()))
                 .combine(future);
     }
 
@@ -264,7 +264,7 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        ctx.drasylPipeline().processOutbound(groupManager, new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew));
+        ctx.passOutbound(groupManager, new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), new CompletableFuture<>());
 
         // Add re-try task
         if (!renewTasks.containsKey(group.getGroup())) {

@@ -94,7 +94,7 @@ class SimpleDuplexHandlerTest {
                                                final byte[] msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.drasylPipeline().processInbound(identity.getIdentityPublicKey(), msg);
+                    ctx.passInbound(identity.getIdentityPublicKey(), msg, new CompletableFuture<>());
                 }
             };
 
@@ -138,7 +138,7 @@ class SimpleDuplexHandlerTest {
                                                final MyMessage msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.drasylPipeline().processInbound(msg.getSender(), msg);
+                    ctx.passInbound(msg.getSender(), msg, new CompletableFuture<>());
                 }
             };
 
@@ -187,7 +187,7 @@ class SimpleDuplexHandlerTest {
                                               final byte[] msg,
                                               final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
-                    ctx.drasylPipeline().processOutbound(sender, msg);
+                    ctx.passOutbound(sender, msg, new CompletableFuture<>());
                 }
             };
 
@@ -236,7 +236,7 @@ class SimpleDuplexHandlerTest {
                                               final List<?> msg,
                                               final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
-                    ctx.drasylPipeline().processOutbound(sender, msg);
+                    ctx.passOutbound(sender, msg, new CompletableFuture<>());
                 }
             };
 

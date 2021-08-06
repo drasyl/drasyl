@@ -42,7 +42,6 @@ import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.MigrationHandlerContext;
-import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
@@ -594,8 +593,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
             return null;
         }
 
-        @Override
-        public MigrationPipeline drasylPipeline() {
+        public ChannelPipeline drasylPipeline() {
             return null;
         }
     }

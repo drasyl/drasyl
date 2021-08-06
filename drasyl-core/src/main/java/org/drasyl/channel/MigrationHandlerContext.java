@@ -299,8 +299,4 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
 
         return future;
     }
-
-    public MigrationPipeline drasylPipeline() {
-        return new MigrationPipeline(pipeline());
-    }
 }

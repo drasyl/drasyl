@@ -41,7 +41,6 @@ import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MigrationHandlerContext;
-import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.Handler;
@@ -576,8 +575,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
             return null;
         }
 
-        @Override
-        public MigrationPipeline drasylPipeline() {
+        public ChannelPipeline drasylPipeline() {
             return null;
         }
     }
