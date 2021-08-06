@@ -29,13 +29,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelProgressivePromise;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.ServerChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
@@ -45,11 +46,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public class MigrationHandlerContext implements ChannelHandlerContext {
     private final ChannelHandlerContext ctx;
-    private final ServerChannel channel;
 
     public MigrationHandlerContext(final ChannelHandlerContext ctx) {
         this.ctx = ctx;
-        this.channel = (ServerChannel) ctx.channel();
     }
 
     @Override
@@ -269,9 +268,7 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
         final MigrationInboundMessage<?, ?> migrationMsg = new MigrationInboundMessage<>(msg, sender, future);
-
         fireChannelRead(migrationMsg);
-
         return future;
     }
 
@@ -287,16 +284,7 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
                                                 final Object msg,
                                                 final CompletableFuture<Void> future) {
         final MigrationOutboundMessage<?, ?> migrationMsg = new MigrationOutboundMessage<>(msg, recipient);
-
-        writeAndFlush(migrationMsg).addListener(f -> {
-            if (f.isSuccess()) {
-                future.complete(null);
-            }
-            else {
-                future.completeExceptionally(f.cause());
-            }
-        });
-
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(writeAndFlush(migrationMsg))).combine(future);
         return future;
     }
 }
