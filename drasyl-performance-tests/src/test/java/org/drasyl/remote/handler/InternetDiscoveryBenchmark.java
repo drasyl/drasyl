@@ -47,7 +47,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.handler.InternetDiscovery.Peer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.Nonce;
@@ -604,11 +603,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
 
         @Override
         public MigrationPipeline drasylPipeline() {
-            return null;
-        }
-
-        @Override
-        public Serialization inboundSerialization() {
             return null;
         }
     }

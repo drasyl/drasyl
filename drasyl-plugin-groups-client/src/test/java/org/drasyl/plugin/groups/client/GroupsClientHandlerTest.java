@@ -61,6 +61,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -98,7 +99,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldStartHandler(@Mock final Serialization inboundSerialization,
                                 @Mock final Serialization outboundSerialization) {
-            when(ctx.inboundSerialization()).thenReturn(inboundSerialization);
+            when(ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(inboundSerialization);
             when(ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(outboundSerialization);
 
             final GroupsClientHandler handler = new GroupsClientHandler(Set.of());

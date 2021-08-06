@@ -35,6 +35,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.List;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 
 /**
@@ -56,7 +57,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ApplicationMe
                           final IdentityPublicKey sender,
                           final ApplicationMessage message,
                           final List<Object> out) throws Exception {
-        final Serializer serializer = ctx.inboundSerialization().findSerializerFor(message.getType());
+        final Serializer serializer = ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(message.getType());
 
         if (serializer != null) {
             final Object o = serializer.fromByteArray(message.getPayloadAsByteArray(), message.getType());

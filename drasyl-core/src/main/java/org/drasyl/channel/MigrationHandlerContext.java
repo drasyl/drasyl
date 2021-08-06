@@ -37,13 +37,11 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.serialization.Serialization;
 
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
 
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
@@ -311,9 +309,5 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
 
     public MigrationPipeline drasylPipeline() {
         return new MigrationPipeline(pipeline());
-    }
-
-    public Serialization inboundSerialization() {
-        return attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 }

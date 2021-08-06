@@ -46,7 +46,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -584,11 +583,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
 
         @Override
         public MigrationPipeline drasylPipeline() {
-            return null;
-        }
-
-        @Override
-        public Serialization inboundSerialization() {
             return null;
         }
     }
