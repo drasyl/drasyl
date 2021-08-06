@@ -38,6 +38,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
@@ -76,7 +77,7 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
                                    final IdentityPublicKey recipient,
                                    final ApplicationMessage envelope,
                                    final CompletableFuture<Void> future) {
-        final InetSocketAddressWrapper staticAddress = ctx.config().getRemoteStaticRoutes().get(recipient);
+        final InetSocketAddressWrapper staticAddress = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
         if (staticAddress != null) {
             LOG.trace("Send message `{}` via static route {}.", () -> envelope, () -> staticAddress);
             ctx.passOutbound(staticAddress, envelope, future);
@@ -88,10 +89,10 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
     }
 
     private static synchronized void populateRoutes(final MigrationHandlerContext ctx) {
-        ctx.config().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path)));
+        ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path)));
     }
 
     private static synchronized void clearRoutes(final MigrationHandlerContext ctx) {
-        ctx.config().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path));
+        ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path));
     }
 }

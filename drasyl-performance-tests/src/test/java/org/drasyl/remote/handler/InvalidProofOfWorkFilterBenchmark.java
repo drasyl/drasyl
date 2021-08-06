@@ -577,11 +577,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public DrasylConfig config() {
-            return config;
-        }
-
-        @Override
         public MigrationPipeline drasylPipeline() {
             return null;
         }

@@ -597,11 +597,6 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public DrasylConfig config() {
-            return config;
-        }
-
-        @Override
         public MigrationPipeline drasylPipeline() {
             return null;
         }

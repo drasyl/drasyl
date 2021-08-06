@@ -30,6 +30,8 @@ import org.drasyl.remote.protocol.RemoteMessage;
 
 import java.util.List;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+
 /**
  * This handler ensures that {@link RemoteMessage}s do not infinitely circulate in the network. It
  * increments the hop counter of each outgoing message. If the limit of hops is reached, the message
@@ -49,7 +51,7 @@ public final class HopCountGuard extends MessageToMessageEncoder<RemoteMessage, 
     protected void encode(final MigrationHandlerContext ctx,
                           final Address recipient,
                           final RemoteMessage msg, final List<Object> out) throws Exception {
-        if (msg.getHopCount().getByte() < ctx.config().getRemoteMessageHopLimit()) {
+        if (msg.getHopCount().getByte() < ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageHopLimit()) {
             out.add(msg.incrementHopCount());
         }
         else {

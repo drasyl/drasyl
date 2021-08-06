@@ -41,7 +41,6 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationPipeline;
 import org.drasyl.event.Event;
@@ -592,11 +591,6 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
         public CompletableFuture<Void> passOutbound(final Address recipient,
                                                     final Object msg,
                                                     final CompletableFuture<Void> future) {
-            return null;
-        }
-
-        @Override
-        public DrasylConfig config() {
             return null;
         }
 

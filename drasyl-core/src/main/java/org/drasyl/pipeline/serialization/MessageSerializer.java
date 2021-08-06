@@ -34,6 +34,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
@@ -85,7 +86,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ApplicationMe
         final Serializer serializer = ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(type);
 
         if (serializer != null) {
-            final ApplicationMessage message = ApplicationMessage.of(ctx.config().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipient, type, ByteString.copyFrom(serializer.toByteArray(o)));
+            final ApplicationMessage message = ApplicationMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipient, type, ByteString.copyFrom(serializer.toByteArray(o)));
             out.add(message);
             LOG.trace("Message has been serialized to `{}`", () -> message);
         }

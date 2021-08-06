@@ -31,6 +31,8 @@ import org.drasyl.remote.protocol.RemoteMessage;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+
 /**
  * This handler filters out all messages received from other networks.
  */
@@ -48,7 +50,7 @@ public final class OtherNetworkFilter extends InboundMessageFilter<RemoteMessage
     protected boolean accept(final MigrationHandlerContext ctx,
                              final Address sender,
                              final RemoteMessage msg) throws Exception {
-        return msg instanceof ChunkMessage || ctx.config().getNetworkId() == msg.getNetworkId();
+        return msg instanceof ChunkMessage || ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId() == msg.getNetworkId();
     }
 
     @SuppressWarnings("java:S112")

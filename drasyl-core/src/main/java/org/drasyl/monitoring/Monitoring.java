@@ -47,6 +47,7 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
@@ -76,8 +77,8 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
 
                     // add common tags
                     final String hostTag;
-                    if (!ctx.config().getMonitoringHostTag().isEmpty()) {
-                        hostTag = ctx.config().getMonitoringHostTag();
+                    if (!ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringHostTag().isEmpty()) {
+                        hostTag = ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringHostTag();
                     }
                     else {
                         hostTag = ofNullable(NetworkUtil.getLocalHostName()).orElse("");
@@ -174,23 +175,23 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
         @Override
         @NonNull
         public String uri() {
-            return ctx.config().getMonitoringInfluxUri().toString();
+            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxUri().toString();
         }
 
         @Override
         public String userName() {
-            return ctx.config().getMonitoringInfluxUser();
+            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxUser();
         }
 
         @Override
         public String password() {
-            return ctx.config().getMonitoringInfluxPassword().toUnmaskedString();
+            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxPassword().toUnmaskedString();
         }
 
         @Override
         @NonNull
         public String db() {
-            return ctx.config().getMonitoringInfluxDatabase();
+            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxDatabase();
         }
 
         @Override
@@ -201,7 +202,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
         @Override
         @NonNull
         public Duration step() {
-            return ctx.config().getMonitoringInfluxReportingFrequency();
+            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxReportingFrequency();
         }
 
         @Override

@@ -67,6 +67,7 @@ import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -256,6 +257,7 @@ class InternetDiscoveryTest {
                                             @Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddressWrapper address,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(peer.getAddress()).thenReturn(address);
 
@@ -273,6 +275,7 @@ class InternetDiscoveryTest {
                                         @Mock final Endpoint superPeerEndpoint) {
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(peer.getAddress()).thenReturn(address);
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(config);
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
             when(superPeers.contains(publicKey)).thenReturn(true);
 
@@ -287,6 +290,7 @@ class InternetDiscoveryTest {
                                              @Mock final IdentityPublicKey publicKey,
                                              @Mock final InetSocketAddressWrapper address,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(peer.getAddress()).thenReturn(address);
 
@@ -302,8 +306,9 @@ class InternetDiscoveryTest {
             final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
-            when(ctx.config().isRemoteSuperPeerEnabled()).thenReturn(true);
-            when(ctx.config().getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()).thenReturn(true);
+            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
             when(superPeerEndpoint.getHost()).thenReturn("127.0.0.1");
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(myPublicKey);
@@ -318,6 +323,7 @@ class InternetDiscoveryTest {
         @Test
         void shouldPingPeersWithRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
@@ -335,6 +341,7 @@ class InternetDiscoveryTest {
         @Test
         void shouldNotPingPeersWithoutRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
                                                           @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
 

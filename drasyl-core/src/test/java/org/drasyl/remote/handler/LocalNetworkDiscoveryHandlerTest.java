@@ -53,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
@@ -144,6 +145,8 @@ class LocalNetworkDiscoveryTest {
     class StartHeartbeat {
         @Test
         void shouldScheduleHeartbeat(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, null));
 
             handler.startHeartbeat(ctx);
@@ -163,6 +166,7 @@ class LocalNetworkDiscoveryTest {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
             when(ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             when(peer.isStale(any())).thenReturn(true);
 
             final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
@@ -319,7 +323,8 @@ class LocalNetworkDiscoveryTest {
             @Test
             void shouldReturnCorrectValue(@Mock final InetSocketAddressWrapper address,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
-                when(ctx.config().getRemotePingTimeout()).thenReturn(ofSeconds(60));
+                when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+                when(ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout()).thenReturn(ofSeconds(60));
 
                 assertFalse(new Peer(address, System.currentTimeMillis()).isStale(ctx));
                 assertTrue(new Peer(address, 1337L).isStale(ctx));

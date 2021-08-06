@@ -56,6 +56,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
@@ -138,7 +139,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         if (channel == null) {
             LOG.debug("Start Server...");
             final int bindPort;
-            if (ctx.config().getRemoteBindPort() == -1) {
+            if (ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindPort() == -1) {
                 /*
                  derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
                  own identity. this is done because we also expose this port via
@@ -151,7 +152,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                 bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
             }
             else {
-                bindPort = ctx.config().getRemoteBindPort();
+                bindPort = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindPort();
             }
             final ChannelFuture channelFuture = bootstrap
                     .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
@@ -162,7 +163,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                             ctx.passInbound(new InetSocketAddressWrapper(packet.sender()), packet.content().retain(), new CompletableFuture<>());
                         }
                     })
-                    .bind(ctx.config().getRemoteBindHost(), bindPort);
+                    .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost(), bindPort);
             channelFuture.awaitUninterruptibly();
 
             if (channelFuture.isSuccess()) {
@@ -176,7 +177,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             }
             else {
                 // server start failed
-                future.completeExceptionally(new Exception("Unable to bind server to address udp://" + ctx.config().getRemoteBindHost() + ":" + bindPort, channelFuture.cause()));
+                future.completeExceptionally(new Exception("Unable to bind server to address udp://" + ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost() + ":" + bindPort, channelFuture.cause()));
             }
         }
         else {

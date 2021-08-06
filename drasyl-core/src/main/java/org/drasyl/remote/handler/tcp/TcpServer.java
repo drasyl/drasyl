@@ -54,6 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.util.NettyUtil.getBestServerSocketChannel;
 
@@ -108,7 +109,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             LOG.debug("Start Server...");
             final ChannelFuture channelFuture = bootstrap
                     .childHandler(new TcpServerChannelInitializer(clientChannels, ctx))
-                    .bind(ctx.config().getRemoteTcpFallbackServerBindHost(), ctx.config().getRemoteTcpFallbackServerBindPort());
+                    .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindHost(), ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindPort());
             channelFuture.awaitUninterruptibly();
 
             if (channelFuture.isSuccess()) {
@@ -124,7 +125,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             else {
                 // server start failed
                 //noinspection unchecked
-                LOG.warn("Unable to bind server to address tcp://{}:{}", ctx.config()::getRemoteBindHost, ctx.config()::getRemoteTcpFallbackServerBindPort, channelFuture::cause);
+                LOG.warn("Unable to bind server to address tcp://{}:{}", ctx.attr(CONFIG_ATTR_KEY).get()::getRemoteBindHost, ctx.attr(CONFIG_ATTR_KEY).get()::getRemoteTcpFallbackServerBindPort, channelFuture::cause);
             }
         }
 
@@ -198,7 +199,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
 
         @Override
         protected void initChannel(final Channel ch) {
-            ch.pipeline().addLast(new IdleStateHandler(ctx.config().getRemotePingTimeout().toMillis(), 0, 0, MILLISECONDS));
+            ch.pipeline().addLast(new IdleStateHandler(ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout().toMillis(), 0, 0, MILLISECONDS));
             ch.pipeline().addLast(new TcpServerHandler(clients, ctx));
         }
     }

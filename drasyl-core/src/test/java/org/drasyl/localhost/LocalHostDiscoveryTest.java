@@ -67,6 +67,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -122,11 +123,12 @@ class LocalHostDiscoveryTest {
                 future.complete(null);
                 return future;
             });
-            when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().mkdirs()).thenReturn(true);
-            when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().isDirectory()).thenReturn(true);
-            when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canRead()).thenReturn(true);
-            when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canWrite()).thenReturn(true);
-            when(ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().mkdirs()).thenReturn(true);
+            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().isDirectory()).thenReturn(true);
+            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canRead()).thenReturn(true);
+            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canWrite()).thenReturn(true);
+            when(ctx.attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
@@ -179,9 +181,10 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
-            when(ctx.config().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
-            when(ctx.config().getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
-            when(ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
+            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
+            when(ctx.attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
@@ -230,7 +233,8 @@ class LocalHostDiscoveryTest {
                 return future;
             });
 
-            final DrasylConfig config = ctx.config(); // mockito work-around
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            final DrasylConfig config = ctx.attr(CONFIG_ATTR_KEY).get(); // mockito work-around
             final Path path2 = config.getRemoteLocalHostDiscoveryPath();
 
             doReturn(leaseTime).when(config).getRemoteLocalHostDiscoveryLeaseTime();
@@ -349,8 +353,9 @@ class LocalHostDiscoveryTest {
             final IdentityPublicKey publicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             routes.put(publicKey, address);
 
-            when(ctx.config().getRemoteLocalHostDiscoveryPath()).thenReturn(dir);
-            when(ctx.config().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(ofMinutes(5));
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath()).thenReturn(dir);
+            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(ofMinutes(5));
             final Path path = Paths.get(dir.toString(), "0", "02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b.json");
             Files.createDirectory(path.getParent());
             Files.writeString(path, "[\"192.168.188.42:12345\",\"192.168.188.23:12345\"]", StandardOpenOption.CREATE);

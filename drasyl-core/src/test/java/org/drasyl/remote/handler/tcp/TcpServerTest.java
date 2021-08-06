@@ -55,10 +55,12 @@ import java.util.concurrent.CompletionException;
 
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -205,6 +207,8 @@ class TcpServerTest {
 
         @Test
         void shouldAddCorrectHandlersToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Channel ch) {
+            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+
             new TcpServerChannelInitializer(clients, ctx).initChannel(ch);
 
             verify(ch.pipeline()).addLast(any(IdleStateHandler.class));

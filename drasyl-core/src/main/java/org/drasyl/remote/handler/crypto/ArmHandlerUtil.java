@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 /**
@@ -121,7 +122,7 @@ public final class ArmHandlerUtil {
             // encrypt message with long time key
             return ArmHandlerUtil.sendEncrypted(cryptoInstance, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipientsAddress,
                     KeyExchangeAcknowledgementMessage.of(
-                            ctx.config().getNetworkId(),
+                            ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(),
                             ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
                             ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
                             recipientsKey,
@@ -157,7 +158,7 @@ public final class ArmHandlerUtil {
                                           final Address recipient,
                                           final IdentityPublicKey recipientsKey) {
         final FullReadMessage<?> msg = KeyExchangeMessage.of(
-                ctx.config().getNetworkId(),
+                ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(),
                 ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
                 ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
                 recipientsKey,

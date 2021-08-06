@@ -62,6 +62,7 @@ import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
@@ -158,7 +159,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
             LOG.warn("Discovery directory `{}` not accessible.", discoveryPath::toAbsolutePath);
         }
         else {
-            if (ctx.config().isRemoteLocalHostDiscoveryWatchEnabled()) {
+            if (ctx.attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()) {
                 tryWatchDirectory(ctx, discoveryPath);
             }
             ctx.executor().execute(() -> scan(ctx));
@@ -233,19 +234,19 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
                                             final int port) {
         // get own address(es)
         final Set<InetAddress> addresses;
-        if (ctx.config().getRemoteBindHost().isAnyLocalAddress()) {
+        if (ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost().isAnyLocalAddress()) {
             // use all available addresses
             addresses = NetworkUtil.getAddresses();
         }
         else {
             // use given host
-            addresses = Set.of(ctx.config().getRemoteBindHost());
+            addresses = Set.of(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost());
         }
         final Set<InetSocketAddress> socketAddresses = addresses.stream().map(a -> new InetSocketAddress(a, port)).collect(Collectors.toSet());
 
         final Duration refreshInterval;
-        if (ctx.config().getRemoteLocalHostDiscoveryLeaseTime().compareTo(REFRESH_INTERVAL_SAFETY_MARGIN) > 0) {
-            refreshInterval = ctx.config().getRemoteLocalHostDiscoveryLeaseTime().minus(REFRESH_INTERVAL_SAFETY_MARGIN);
+        if (ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().compareTo(REFRESH_INTERVAL_SAFETY_MARGIN) > 0) {
+            refreshInterval = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().minus(REFRESH_INTERVAL_SAFETY_MARGIN);
         }
         else {
             refreshInterval = ofSeconds(1);
@@ -270,7 +271,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
         final String ownPublicKeyString = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString();
-        final long maxAge = System.currentTimeMillis() - ctx.config().getRemoteLocalHostDiscoveryLeaseTime().toMillis();
+        final long maxAge = System.currentTimeMillis() - ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
         if (files != null) {
             final Map<IdentityPublicKey, InetSocketAddress> newRoutes = new HashMap<>();
@@ -341,6 +342,6 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     }
 
     private static Path discoveryPath(final MigrationHandlerContext ctx) {
-        return ctx.config().getRemoteLocalHostDiscoveryPath().resolve(String.valueOf(ctx.config().getNetworkId()));
+        return ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(String.valueOf(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId()));
     }
 }

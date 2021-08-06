@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.util.NettyUtil.getBestSocketChannel;
 
 /**
@@ -190,7 +191,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
         if (superPeerAddresses.contains(recipient)) {
             final long currentTimeMillis = System.currentTimeMillis();
             noResponseFromSuperPeerSince.compareAndSet(0, currentTimeMillis);
-            if (noResponseFromSuperPeerSince.get() < currentTimeMillis - ctx.config().getRemoteTcpFallbackClientTimeout().toMillis()) {
+            if (noResponseFromSuperPeerSince.get() < currentTimeMillis - ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientTimeout().toMillis()) {
                 // no response from super peer(s) for a too long duration -> establish fallback connection!
                 startClient(ctx);
             }
@@ -211,18 +212,18 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
 
             superPeerChannel = bootstrap
                     .handler(new TcpClientHandler(ctx))
-                    .connect(ctx.config().getRemoteTcpFallbackClientAddress());
+                    .connect(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
             superPeerChannel.addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
                     final Channel channel = future.channel();
-                    LOG.debug("TCP connection to `{}` established.", ctx.config().getRemoteTcpFallbackClientAddress());
+                    LOG.debug("TCP connection to `{}` established.", ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
                     channel.closeFuture().addListener(future1 -> {
-                        LOG.debug("TCP connection to `{}` closed.", ctx.config().getRemoteTcpFallbackClientAddress());
+                        LOG.debug("TCP connection to `{}` closed.", ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
                         superPeerChannel = null;
                     });
                 }
                 else {
-                    LOG.debug("Unable to establish TCP connection to `{}`:", () -> ctx.config().getRemoteTcpFallbackClientAddress(), future::cause);
+                    LOG.debug("Unable to establish TCP connection to `{}`:", () -> ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress(), future::cause);
                     superPeerChannel = null;
                 }
             });

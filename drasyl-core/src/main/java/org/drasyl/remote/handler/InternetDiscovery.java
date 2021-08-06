@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.util.RandomUtil.randomLong;
@@ -143,7 +144,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     synchronized void startHeartbeat(final MigrationHandlerContext ctx) {
         if (heartbeatDisposable == null) {
             LOG.debug("Start heartbeat scheduler");
-            final long pingInterval = ctx.config().getRemotePingInterval().toMillis();
+            final long pingInterval = ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingInterval().toMillis();
             heartbeatDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
         }
     }
@@ -175,7 +176,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     private void removeStalePeers(final MigrationHandlerContext ctx) {
         // check lastContactTimes
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            if (!peer.hasControlTraffic(ctx.config())) {
+            if (!peer.hasControlTraffic(ctx.attr(CONFIG_ATTR_KEY).get())) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundControlTrafficTime());
                 if (superPeers.contains(publicKey)) {
                     ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removeSuperPeerAndPath(ctx, publicKey, path);
@@ -195,8 +196,8 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
      * @param ctx handler's context
      */
     private void pingSuperPeers(final MigrationHandlerContext ctx) {
-        if (ctx.config().isRemoteSuperPeerEnabled()) {
-            for (final Endpoint endpoint : ctx.config().getRemoteSuperPeerEndpoints()) {
+        if (ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
+            for (final Endpoint endpoint : ctx.attr(CONFIG_ATTR_KEY).get().getRemoteSuperPeerEndpoints()) {
                 final InetSocketAddressWrapper address = new InetSocketAddressWrapper(endpoint.getHost(), endpoint.getPort());
                 sendPing(ctx, endpoint.getIdentityPublicKey(), address, new CompletableFuture<>()).exceptionally(e -> {
                     //noinspection unchecked
@@ -217,7 +218,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         for (final IdentityPublicKey publicKey : new HashSet<>(directConnectionPeers)) {
             final Peer peer = peers.get(publicKey);
             final InetSocketAddressWrapper address = peer.getAddress();
-            if (address != null && peer.hasApplicationTraffic(ctx.config())) {
+            if (address != null && peer.hasApplicationTraffic(ctx.attr(CONFIG_ATTR_KEY).get())) {
                 sendPing(ctx, publicKey, address, new CompletableFuture<>()).exceptionally(e -> {
                     //noinspection unchecked
                     LOG.warn("Unable to send ping for peer `{}` to `{}`", () -> publicKey, () -> address, () -> e);
@@ -294,7 +295,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             superPeerPeer = null;
         }
 
-        if (recipientPeer != null && recipientPeer.getAddress() != null && recipientPeer.isReachable(ctx.config())) {
+        if (recipientPeer != null && recipientPeer.getAddress() != null && recipientPeer.isReachable(ctx.attr(CONFIG_ATTR_KEY).get())) {
             final InetSocketAddressWrapper recipientSocketAddress = recipientPeer.getAddress();
             final Peer senderPeer = peers.get(msg.getSender());
 
@@ -343,7 +344,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
                                    final InetSocketAddressWrapper recipient,
                                    final InetSocketAddressWrapper sender) {
         // send recipient's information to sender
-        final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.config().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), senderKey, recipientKey, recipient);
+        final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
         ctx.passOutbound(sender, senderRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             //noinspection unchecked
@@ -352,7 +353,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         });
 
         // send sender's information to recipient
-        final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.config().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipientKey, senderKey, sender);
+        final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
         ctx.passOutbound(recipient, recipientRendezvousEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             //noinspection unchecked
@@ -383,7 +384,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient()) && msg instanceof FullReadMessage) {
                 handleMessage(ctx, (InetSocketAddressWrapper) sender, (FullReadMessage<?>) msg, future);
             }
-            else if (!ctx.config().isRemoteSuperPeerEnabled()) {
+            else if (!ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
                 if (!processMessage(ctx, msg.getRecipient(), msg, future)) {
                     // passthrough message
                     ctx.passInbound(sender, msg, future);
@@ -443,7 +444,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
 
         // reply with pong
-        final int networkId = ctx.config().getNetworkId();
+        final int networkId = ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId();
         final IdentityPublicKey myPublicKey = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey();
         final ProofOfWork myProofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final AcknowledgementMessage responseEnvelope = AcknowledgementMessage.of(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
@@ -536,7 +537,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
                                              final IdentityPublicKey recipient,
                                              final InetSocketAddressWrapper recipientAddress,
                                              final CompletableFuture<Void> future) {
-        final int networkId = ctx.config().getNetworkId();
+        final int networkId = ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId();
         final IdentityPublicKey sender = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey();
         final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
 

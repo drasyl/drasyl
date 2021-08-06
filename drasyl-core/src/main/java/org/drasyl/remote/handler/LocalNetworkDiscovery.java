@@ -44,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
@@ -102,7 +103,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     synchronized void startHeartbeat(final MigrationHandlerContext ctx) {
         if (pingDisposable == null) {
             LOG.debug("Start Network Network Discovery...");
-            final long pingInterval = ctx.config().getRemotePingInterval().toMillis();
+            final long pingInterval = ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingInterval().toMillis();
             pingDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
             LOG.debug("Network Discovery started.");
         }
@@ -185,7 +186,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     }
 
     private static void pingLocalNetworkNodes(final MigrationHandlerContext ctx) {
-        final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(ctx.config().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork());
+        final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork());
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
         ctx.passOutbound(MULTICAST_ADDRESS, messageEnvelope, new CompletableFuture<>()).exceptionally(e -> {
             LOG.warn("Unable to send discovery message to multicast group `{}`", () -> MULTICAST_ADDRESS, () -> e);
@@ -216,7 +217,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         }
 
         public boolean isStale(final MigrationHandlerContext ctx) {
-            return lastInboundPingTime < System.currentTimeMillis() - ctx.config().getRemotePingTimeout().toMillis();
+            return lastInboundPingTime < System.currentTimeMillis() - ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout().toMillis();
         }
 
         public long getLastInboundPingTime() {

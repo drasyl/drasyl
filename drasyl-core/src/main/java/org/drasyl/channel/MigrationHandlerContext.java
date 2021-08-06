@@ -33,15 +33,12 @@ import io.netty.channel.ServerChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
-import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.address.Address;
 
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
-
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
@@ -301,10 +298,6 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
         });
 
         return future;
-    }
-
-    public DrasylConfig config() {
-        return attr(CONFIG_ATTR_KEY).get();
     }
 
     public MigrationPipeline drasylPipeline() {
