@@ -147,25 +147,15 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
         if (msg instanceof MigrationOutboundMessage) {
             final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
             final CompletableFuture<Void> future = new CompletableFuture<>();
-            future.whenComplete((unused, throwable) -> {
-                if (throwable == null) {
-                    promise.setSuccess();
-                }
-                else {
-                    promise.setFailure(throwable);
-                }
-            });
-            Object payload = migrationMsg.message();
-            if (payload == NULL) {
-                payload = null;
-            }
+            FutureUtil.combine(future, promise);
+            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
             try {
                 onOutbound(ctx, migrationMsg.address(), payload, future);
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);
                 ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(msg);
+                ReferenceCountUtil.safeRelease(migrationMsg.message());
             }
         }
         else {
@@ -202,21 +192,18 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof MigrationInboundMessage) {
             final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
-            Object payload = migrationMsg.message();
-            if (payload == NULL) {
-                payload = null;
-            }
+            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
             try {
                 onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
             }
             catch (final Exception e) {
                 migrationMsg.future().completeExceptionally(e);
                 ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(msg);
+                ReferenceCountUtil.safeRelease(migrationMsg.message());
             }
         }
         else {
-            throw new RuntimeException("not implemented yet"); // NOSONAR
+            ctx.fireChannelRead(msg);
         }
     }
 
