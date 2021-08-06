@@ -307,7 +307,7 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
     }
 
     public DrasylConfig config() {
-        return channel.attr(CONFIG_ATTR_KEY).get();
+        return attr(CONFIG_ATTR_KEY).get();
     }
 
     public MigrationPipeline drasylPipeline() {
@@ -315,10 +315,10 @@ public class MigrationHandlerContext implements ChannelHandlerContext {
     }
 
     public Serialization inboundSerialization() {
-        return channel.attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
+        return attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 
     public Serialization outboundSerialization() {
-        return channel.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get();
+        return attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get();
     }
 }
