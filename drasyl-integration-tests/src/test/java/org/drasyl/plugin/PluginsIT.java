@@ -23,6 +23,7 @@ package org.drasyl.plugin;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.DrasylConfig;
@@ -30,7 +31,6 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -109,7 +109,7 @@ class PluginsIT {
         public void onAfterStart(final PluginEnvironment environment) {
             environment.getPipeline().addFirst("TestHandler", new HandlerAdapter() {
                 @Override
-                public void onAdded(final MigrationHandlerContext ctx) {
+                public void onAdded(final ChannelHandlerContext ctx) {
                     final CompletableFuture<Void> future = new CompletableFuture<>();
                     ctx.fireUserEventTriggered(new MigrationEvent(event1, future));
                 }

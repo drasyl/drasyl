@@ -23,7 +23,7 @@ package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
@@ -46,7 +46,7 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Byt
     }
 
     @Override
-    protected void decode(final MigrationHandlerContext ctx,
+    protected void decode(final ChannelHandlerContext ctx,
                           final InetSocketAddressWrapper sender,
                           final ByteBuf msg,
                           final List<Object> out) throws Exception {
@@ -54,7 +54,7 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Byt
     }
 
     @Override
-    protected void encode(final MigrationHandlerContext ctx,
+    protected void encode(final ChannelHandlerContext ctx,
                           final InetSocketAddressWrapper recipient,
                           final RemoteMessage msg,
                           final List<Object> out) throws Exception {

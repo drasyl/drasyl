@@ -22,9 +22,9 @@
 package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -72,7 +72,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
@@ -92,7 +92,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    protected void matchedInbound(final MigrationHandlerContext ctx,
+    protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
                                   final ByteBuf msg,
                                   final CompletableFuture<Void> future) {
@@ -106,7 +106,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
         }
     }
 
-    private void cycleNextMethod(final MigrationHandlerContext ctx, final NodeUpEvent event) {
+    private void cycleNextMethod(final ChannelHandlerContext ctx, final NodeUpEvent event) {
         final int oldMethodPointer = currentMethodPointer;
         currentMethodPointer = (currentMethodPointer + 1) % methods.size();
         if (currentMethodPointer == 0) {

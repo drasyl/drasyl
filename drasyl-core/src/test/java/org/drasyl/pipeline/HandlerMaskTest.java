@@ -21,7 +21,7 @@
  */
 package org.drasyl.pipeline;
 
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -52,32 +52,32 @@ class HandlerMaskTest {
     class Skippable {
         @Test
         void shouldReturnFalseForAdded() {
-            assertFalse(HandlerMask.isSkippable(HandlerAdapter.class, "onAdded", MigrationHandlerContext.class));
+            assertFalse(HandlerMask.isSkippable(HandlerAdapter.class, "onAdded", ChannelHandlerContext.class));
         }
 
         @Test
         void shouldReturnFalseForRemoved() {
-            assertFalse(HandlerMask.isSkippable(HandlerAdapter.class, "onRemoved", MigrationHandlerContext.class));
+            assertFalse(HandlerMask.isSkippable(HandlerAdapter.class, "onRemoved", ChannelHandlerContext.class));
         }
 
         @Test
         void shouldReturnTrueForWrite() {
-            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onOutbound", MigrationHandlerContext.class, Address.class, Object.class, CompletableFuture.class));
+            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onOutbound", ChannelHandlerContext.class, Address.class, Object.class, CompletableFuture.class));
         }
 
         @Test
         void shouldReturnTrueForRead() {
-            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onInbound", MigrationHandlerContext.class, Address.class, Object.class, CompletableFuture.class));
+            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onInbound", ChannelHandlerContext.class, Address.class, Object.class, CompletableFuture.class));
         }
 
         @Test
         void shouldReturnTrueForEventTriggered() {
-            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onEvent", MigrationHandlerContext.class, Event.class, CompletableFuture.class));
+            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onEvent", ChannelHandlerContext.class, Event.class, CompletableFuture.class));
         }
 
         @Test
         void shouldReturnTrueForExceptionCaught() {
-            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onException", MigrationHandlerContext.class, Exception.class));
+            assertTrue(HandlerMask.isSkippable(HandlerAdapter.class, "onException", ChannelHandlerContext.class, Exception.class));
         }
 
         @Test

@@ -31,7 +31,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -91,7 +90,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
@@ -106,7 +105,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
     }
 
-    private synchronized void startServer(final MigrationHandlerContext ctx,
+    private synchronized void startServer(final ChannelHandlerContext ctx,
                                           final NodeUpEvent event,
                                           final CompletableFuture<Void> future) {
         if (serverChannel == null) {
@@ -137,7 +136,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
-    private synchronized void stopServer(final MigrationHandlerContext ctx,
+    private synchronized void stopServer(final ChannelHandlerContext ctx,
                                          final Event event,
                                          final CompletableFuture<Void> future) {
         if (serverChannel != null) {
@@ -167,7 +166,7 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final ByteBuf msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -193,10 +192,10 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
 
     static class TcpServerChannelInitializer extends ChannelInitializer<Channel> {
         private final Map<SocketAddress, Channel> clients;
-        private final MigrationHandlerContext ctx;
+        private final ChannelHandlerContext ctx;
 
         public TcpServerChannelInitializer(final Map<SocketAddress, Channel> clients,
-                                           final MigrationHandlerContext ctx) {
+                                           final ChannelHandlerContext ctx) {
             this.clients = requireNonNull(clients);
             this.ctx = requireNonNull(ctx);
         }
@@ -214,10 +213,10 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
      */
     static class TcpServerHandler extends SimpleChannelInboundHandler<ByteBuf> {
         private final Map<SocketAddress, Channel> clients;
-        private final MigrationHandlerContext ctx;
+        private final ChannelHandlerContext ctx;
 
         public TcpServerHandler(final Map<SocketAddress, Channel> clients,
-                                final MigrationHandlerContext ctx) {
+                                final ChannelHandlerContext ctx) {
             this.clients = requireNonNull(clients);
             this.ctx = requireNonNull(ctx);
         }

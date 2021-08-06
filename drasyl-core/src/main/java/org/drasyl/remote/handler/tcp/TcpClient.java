@@ -30,7 +30,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -99,7 +98,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
@@ -137,7 +136,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     }
 
     @Override
-    protected void matchedInbound(final MigrationHandlerContext ctx,
+    protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
                                   final ByteBuf msg,
                                   final CompletableFuture<Void> future) throws Exception {
@@ -165,7 +164,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     }
 
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final ByteBuf msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -193,7 +192,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
      * received from a super peer and then tries to establish a fallback TCP connection if
      * necessary.
      */
-    private CompletableFuture<Void> checkForUnreachableSuperPeers(final MigrationHandlerContext ctx,
+    private CompletableFuture<Void> checkForUnreachableSuperPeers(final ChannelHandlerContext ctx,
                                                                   final InetSocketAddressWrapper recipient) {
         // message to super peer?
         if (superPeerAddresses.contains(recipient)) {
@@ -209,7 +208,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     }
 
     @SuppressWarnings({ "java:S1905", "java:S3824" })
-    private synchronized void startClient(final MigrationHandlerContext ctx) {
+    private synchronized void startClient(final ChannelHandlerContext ctx) {
         if (superPeerChannel == null) {
             final long currentTime = System.currentTimeMillis();
             LOG.debug("No response from any super peer since {}ms. UDP traffic" +
@@ -242,10 +241,10 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
      * This handler passes all receiving messages to the pipeline.
      */
     static class TcpClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
-        private final MigrationHandlerContext ctx;
+        private final ChannelHandlerContext ctx;
 
         public TcpClientHandler(
-                final MigrationHandlerContext ctx) {
+                final ChannelHandlerContext ctx) {
             this.ctx = requireNonNull(ctx);
         }
 

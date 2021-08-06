@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -48,7 +47,7 @@ public class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void onAdded(final MigrationHandlerContext ctx) {
+    public void onAdded(final ChannelHandlerContext ctx) {
         // Do nothing
     }
 
@@ -56,13 +55,13 @@ public class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void onRemoved(final MigrationHandlerContext ctx) {
+    public void onRemoved(final ChannelHandlerContext ctx) {
         // Do nothing
     }
 
     @Skip
     @Override
-    public void onInbound(final MigrationHandlerContext ctx,
+    public void onInbound(final ChannelHandlerContext ctx,
                           final Address sender,
                           final Object msg,
                           final CompletableFuture<Void> future) throws Exception {
@@ -71,7 +70,7 @@ public class HandlerAdapter implements Handler {
 
     @Skip
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
@@ -79,13 +78,13 @@ public class HandlerAdapter implements Handler {
 
     @Skip
     @Override
-    public void onException(final MigrationHandlerContext ctx, final Exception cause) {
+    public void onException(final ChannelHandlerContext ctx, final Exception cause) {
         ctx.fireExceptionCaught(cause);
     }
 
     @Skip
     @Override
-    public void onOutbound(final MigrationHandlerContext ctx,
+    public void onOutbound(final ChannelHandlerContext ctx,
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) throws Exception {
@@ -132,14 +131,12 @@ public class HandlerAdapter implements Handler {
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
-        final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
-        onAdded(handlerCtx);
+        onAdded(ctx);
     }
 
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) {
-        final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
-        onRemoved(handlerCtx);
+        onRemoved(ctx);
     }
 
     @Override
@@ -154,7 +151,6 @@ public class HandlerAdapter implements Handler {
                       final ChannelPromise promise) {
         if (msg instanceof MigrationOutboundMessage) {
             final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
-            final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
             final CompletableFuture<Void> future = new CompletableFuture<>();
             future.whenComplete((unused, throwable) -> {
                 if (throwable == null) {
@@ -169,11 +165,11 @@ public class HandlerAdapter implements Handler {
                 payload = null;
             }
             try {
-                onOutbound(handlerCtx, migrationMsg.address(), payload, future);
+                onOutbound(ctx, migrationMsg.address(), payload, future);
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);
-                handlerCtx.fireExceptionCaught(e);
+                ctx.fireExceptionCaught(e);
                 ReferenceCountUtil.safeRelease(msg);
             }
         }
@@ -211,17 +207,16 @@ public class HandlerAdapter implements Handler {
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof MigrationInboundMessage) {
             final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
-            final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
             Object payload = migrationMsg.message();
             if (payload == NULL) {
                 payload = null;
             }
             try {
-                onInbound(handlerCtx, migrationMsg.address(), payload, migrationMsg.future());
+                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
             }
             catch (final Exception e) {
                 migrationMsg.future().completeExceptionally(e);
-                handlerCtx.fireExceptionCaught(e);
+                ctx.fireExceptionCaught(e);
                 ReferenceCountUtil.safeRelease(msg);
             }
         }
@@ -239,8 +234,7 @@ public class HandlerAdapter implements Handler {
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
         if (evt instanceof MigrationEvent) {
-            final MigrationHandlerContext handlerCtx = new MigrationHandlerContext(ctx);
-            onEvent(handlerCtx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
+            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
         }
         else {
             ctx.fireUserEventTriggered(evt);

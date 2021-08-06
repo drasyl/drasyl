@@ -23,11 +23,11 @@ package org.drasyl.remote.handler;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
+import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -256,7 +256,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldNotRemoveLivingSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+        void shouldNotRemoveLivingSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                             @Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddressWrapper address,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
@@ -271,7 +271,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldRemoveDeadSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+        void shouldRemoveDeadSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                         @Mock final IdentityPublicKey publicKey,
                                         @Mock final InetSocketAddressWrapper address,
                                         @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
@@ -289,7 +289,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldRemoveDeadChildrenOrPeers(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+        void shouldRemoveDeadChildrenOrPeers(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                              @Mock final IdentityPublicKey publicKey,
                                              @Mock final InetSocketAddressWrapper address,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
@@ -304,7 +304,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldPingSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+        void shouldPingSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                   @Mock final Endpoint superPeerEndpoint) {
             final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
@@ -324,7 +324,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldPingPeersWithRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+        void shouldPingPeersWithRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
@@ -342,7 +342,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldNotPingPeersWithoutRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+        void shouldNotPingPeersWithoutRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                           @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));

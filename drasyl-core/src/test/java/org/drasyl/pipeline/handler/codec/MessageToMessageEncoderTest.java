@@ -21,10 +21,10 @@
  */
 package org.drasyl.pipeline.handler.codec;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -54,7 +54,7 @@ class MessageToMessageEncoderTest {
     void shouldCompleteExceptionallyOnException(@Mock final Address recipient) {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new MessageToMessageEncoder<>() {
             @Override
-            protected void encode(final MigrationHandlerContext ctx,
+            protected void encode(final ChannelHandlerContext ctx,
                                   final Address recipient,
                                   final Object msg, final List<Object> out) throws Exception {
                 throw new Exception();
@@ -72,7 +72,7 @@ class MessageToMessageEncoderTest {
     void shouldCompleteExceptionallyOnEmptyEncodingResult(@Mock final Address recipient) {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new MessageToMessageEncoder<>() {
             @Override
-            protected void encode(final MigrationHandlerContext ctx,
+            protected void encode(final ChannelHandlerContext ctx,
                                   final Address recipient,
                                   final Object msg, final List<Object> out) {
                 // do nothing
@@ -90,7 +90,7 @@ class MessageToMessageEncoderTest {
     void shouldPassEncodedResult(@Mock final Address recipient) {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new MessageToMessageEncoder<>() {
             @Override
-            protected void encode(final MigrationHandlerContext ctx,
+            protected void encode(final ChannelHandlerContext ctx,
                                   final Address recipient,
                                   final Object msg, final List<Object> out) {
                 out.add("Hallo Welt");
@@ -116,7 +116,7 @@ class MessageToMessageEncoderTest {
             private boolean firstWritten;
 
             @Override
-            protected void matchedOutbound(final MigrationHandlerContext ctx,
+            protected void matchedOutbound(final ChannelHandlerContext ctx,
                                            final Address recipient,
                                            final Object msg,
                                            final CompletableFuture<Void> future) {
@@ -130,7 +130,7 @@ class MessageToMessageEncoderTest {
             }
         }, new MessageToMessageEncoder<>() {
             @Override
-            protected void encode(final MigrationHandlerContext ctx,
+            protected void encode(final ChannelHandlerContext ctx,
                                   final Address recipient,
                                   final Object msg, final List<Object> out) {
                 out.add(new Object());

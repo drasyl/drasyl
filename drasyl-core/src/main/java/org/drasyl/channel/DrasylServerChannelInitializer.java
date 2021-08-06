@@ -144,7 +144,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleInboundHandler<UnarmedMessage, Address>() {
                 @Override
-                protected void matchedInbound(final MigrationHandlerContext ctx,
+                protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
                                               final UnarmedMessage msg,
                                               final CompletableFuture<Void> future) throws Exception {

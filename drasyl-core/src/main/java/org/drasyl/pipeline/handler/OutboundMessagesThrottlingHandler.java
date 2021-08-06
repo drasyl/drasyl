@@ -21,7 +21,7 @@
  */
 package org.drasyl.pipeline.handler;
 
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -59,7 +59,7 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
     }
 
     @Override
-    public void onOutbound(final MigrationHandlerContext ctx,
+    public void onOutbound(final ChannelHandlerContext ctx,
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) {
@@ -79,7 +79,7 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
             queueConsumer = new AtomicBoolean(false);
         }
 
-        public synchronized void add(final MigrationHandlerContext ctx, final Runnable value) {
+        public synchronized void add(final ChannelHandlerContext ctx, final Runnable value) {
             queue.add(value);
             LOG.trace("New message has been enqueued. Messages in queue: {}", queue::size);
             if (queueConsumer.compareAndSet(false, true)) {

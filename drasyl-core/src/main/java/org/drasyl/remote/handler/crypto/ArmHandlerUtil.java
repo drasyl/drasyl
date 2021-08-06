@@ -22,7 +22,7 @@
 package org.drasyl.remote.handler.crypto;
 
 import com.goterl.lazysodium.utils.SessionPair;
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -72,7 +72,7 @@ public final class ArmHandlerUtil {
     public static CompletableFuture<Void> sendEncrypted(final Crypto cryptoInstance,
                                                         final SessionPair agreementPair,
                                                         final AgreementId agreementId,
-                                                        final MigrationHandlerContext ctx,
+                                                        final ChannelHandlerContext ctx,
                                                         final Address recipient,
                                                         final FullReadMessage<?> msg,
                                                         final CompletableFuture<Void> future) {
@@ -114,7 +114,7 @@ public final class ArmHandlerUtil {
      * @return the future for the acknowledgement message
      */
     public static CompletableFuture<Void> sendAck(final Crypto cryptoInstance,
-                                                  final MigrationHandlerContext ctx,
+                                                  final ChannelHandlerContext ctx,
                                                   final Address recipientsAddress,
                                                   final IdentityPublicKey recipientsKey,
                                                   final Session session) {
@@ -156,7 +156,7 @@ public final class ArmHandlerUtil {
      * @param recipientsKey  the public key of the recipient
      */
     public static void sendKeyExchangeMsg(final Crypto cryptoInstance,
-                                          final MigrationHandlerContext ctx,
+                                          final ChannelHandlerContext ctx,
                                           final Session session,
                                           final Agreement agreement,
                                           final Address recipient,

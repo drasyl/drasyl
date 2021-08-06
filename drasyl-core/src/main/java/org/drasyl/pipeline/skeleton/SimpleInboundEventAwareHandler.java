@@ -21,9 +21,9 @@
  */
 package org.drasyl.pipeline.skeleton;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -90,7 +90,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
     }
 
     @Override
-    public void onInbound(final MigrationHandlerContext ctx,
+    public void onInbound(final ChannelHandlerContext ctx,
                           final Address sender,
                           final Object msg,
                           final CompletableFuture<Void> future) throws Exception {
@@ -105,7 +105,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (acceptEvent(event)) {
@@ -132,7 +132,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
      * @param event  the event
      * @param future the future of the message
      */
-    protected abstract void matchedEvent(MigrationHandlerContext ctx,
+    protected abstract void matchedEvent(ChannelHandlerContext ctx,
                                          E event,
                                          CompletableFuture<Void> future);
 
@@ -153,7 +153,7 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> ex
      * @param future the future of the message
      */
     @SuppressWarnings("java:S112")
-    protected abstract void matchedInbound(MigrationHandlerContext ctx,
+    protected abstract void matchedInbound(ChannelHandlerContext ctx,
                                            A sender,
                                            I msg,
                                            CompletableFuture<Void> future) throws Exception;

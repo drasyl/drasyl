@@ -21,11 +21,11 @@
  */
 package org.drasyl.plugin.groups.client;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -73,7 +73,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class GroupsClientHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private MigrationHandlerContext ctx;
+    private ChannelHandlerContext ctx;
     @Mock
     private HashMap<Group, Future> renewTasks;
     @Mock

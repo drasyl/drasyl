@@ -21,8 +21,8 @@
  */
 package org.drasyl.intravm;
 
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -59,21 +59,21 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
     public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
-    private final Map<Pair<Integer, IdentityPublicKey>, MigrationHandlerContext> discoveries;
+    private final Map<Pair<Integer, IdentityPublicKey>, ChannelHandlerContext> discoveries;
     private final ReadWriteLock lock;
 
     IntraVmDiscovery() {
         this(new HashMap<>(), new ReentrantReadWriteLock(true));
     }
 
-    IntraVmDiscovery(final Map<Pair<Integer, IdentityPublicKey>, MigrationHandlerContext> discoveries,
+    IntraVmDiscovery(final Map<Pair<Integer, IdentityPublicKey>, ChannelHandlerContext> discoveries,
                      final ReadWriteLock lock) {
         this.discoveries = discoveries;
         this.lock = lock;
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         final FutureCombiner combiner = FutureCombiner.getInstance();
@@ -93,11 +93,11 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
     }
 
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
-        final MigrationHandlerContext discoveree = discoveries.get(Pair.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), recipient));
+        final ChannelHandlerContext discoveree = discoveries.get(Pair.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), recipient));
 
         if (discoveree == null) {
             // passthrough message
@@ -108,7 +108,7 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
         }
     }
 
-    private synchronized CompletableFuture<Void> startDiscovery(final MigrationHandlerContext myCtx) {
+    private synchronized CompletableFuture<Void> startDiscovery(final ChannelHandlerContext myCtx) {
         try {
             lock.writeLock().lock();
             LOG.debug("Start Intra VM Discovery...");
@@ -136,7 +136,7 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
         }
     }
 
-    private synchronized CompletableFuture<Void> stopDiscovery(final MigrationHandlerContext ctx) {
+    private synchronized CompletableFuture<Void> stopDiscovery(final ChannelHandlerContext ctx) {
         try {
             lock.writeLock().lock();
             LOG.debug("Stop Intra VM Discovery...");

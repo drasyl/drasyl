@@ -32,7 +32,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -120,7 +119,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
@@ -136,7 +135,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    private synchronized void startServer(final MigrationHandlerContext ctx,
+    private synchronized void startServer(final ChannelHandlerContext ctx,
                                           final Event event,
                                           final CompletableFuture<Void> future) {
         if (channel == null) {
@@ -189,7 +188,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
     }
 
-    private synchronized void stopServer(final MigrationHandlerContext ctx,
+    private synchronized void stopServer(final ChannelHandlerContext ctx,
                                          final Event event,
                                          final CompletableFuture<Void> future) {
         if (channel != null) {
@@ -220,7 +219,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final ByteBuf msg,
                                    final CompletableFuture<Void> future) {

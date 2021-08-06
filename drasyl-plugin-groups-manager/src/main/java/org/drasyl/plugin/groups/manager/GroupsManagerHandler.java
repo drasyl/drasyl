@@ -21,8 +21,8 @@
  */
 package org.drasyl.plugin.groups.manager;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
@@ -74,7 +74,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     }
 
     @Override
-    public void onAdded(final MigrationHandlerContext ctx) {
+    public void onAdded(final ChannelHandlerContext ctx) {
         ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
         ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
 
@@ -87,7 +87,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      *
      * @param ctx the handler context
      */
-    void staleTask(final MigrationHandlerContext ctx) {
+    void staleTask(final ChannelHandlerContext ctx) {
         try {
             for (final Membership member : database.deleteStaleMemberships()) {
                 final MemberLeftMessage leftMessage = new MemberLeftMessage(
@@ -105,7 +105,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     }
 
     @Override
-    public void onRemoved(final MigrationHandlerContext ctx) {
+    public void onRemoved(final ChannelHandlerContext ctx) {
         if (staleTask != null) {
             staleTask.cancel(false);
         }
@@ -118,7 +118,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      * @param group the group that should be notified
      * @param msg   the message that should send to all members of the given {@code group}
      */
-    private void notifyMembers(final MigrationHandlerContext ctx,
+    private void notifyMembers(final ChannelHandlerContext ctx,
                                final String group,
                                final GroupsPluginMessage msg,
                                final CompletableFuture<Void> future) throws DatabaseException {
@@ -141,7 +141,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     }
 
     @Override
-    protected void matchedInbound(final MigrationHandlerContext ctx,
+    protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final IdentityPublicKey sender,
                                   final GroupsClientMessage msg,
                                   final CompletableFuture<Void> future) {
@@ -161,7 +161,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      * @param msg    the join request message
      * @param future the message future
      */
-    private void handleJoinRequest(final MigrationHandlerContext ctx,
+    private void handleJoinRequest(final ChannelHandlerContext ctx,
                                    final IdentityPublicKey sender,
                                    final GroupJoinMessage msg,
                                    final CompletableFuture<Void> future) {
@@ -202,7 +202,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      * @param msg    the leave request
      * @param future the message future
      */
-    private void handleLeaveRequest(final MigrationHandlerContext ctx,
+    private void handleLeaveRequest(final ChannelHandlerContext ctx,
                                     final IdentityPublicKey sender,
                                     final GroupLeaveMessage msg,
                                     final CompletableFuture<Void> future) {
@@ -235,7 +235,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      * @param future  the message future
      * @param isRenew if this is a renew
      */
-    private void doJoin(final MigrationHandlerContext ctx,
+    private void doJoin(final ChannelHandlerContext ctx,
                         final IdentityPublicKey sender,
                         final Group group,
                         final CompletableFuture<Void> future,

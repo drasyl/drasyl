@@ -21,11 +21,11 @@
  */
 package org.drasyl.pipeline.skeleton;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -80,13 +80,13 @@ class SimpleDuplexHandlerTest {
 
             final SimpleDuplexHandler<Object, byte[], IdentityPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
-                protected void matchedEvent(final MigrationHandlerContext ctx, final Event event,
+                protected void matchedEvent(final ChannelHandlerContext ctx, final Event event,
                                             final CompletableFuture<Void> future) {
                     ctx.fireUserEventTriggered(new MigrationEvent(event, future));
                 }
 
                 @Override
-                protected void matchedInbound(final MigrationHandlerContext ctx,
+                protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final IdentityPublicKey sender,
                                               final Object msg,
                                               final CompletableFuture<Void> future) {
@@ -94,7 +94,7 @@ class SimpleDuplexHandlerTest {
                 }
 
                 @Override
-                protected void matchedOutbound(final MigrationHandlerContext ctx,
+                protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final IdentityPublicKey recipient,
                                                final byte[] msg,
                                                final CompletableFuture<Void> future) {
@@ -123,14 +123,14 @@ class SimpleDuplexHandlerTest {
         void shouldPassthroughsNotMatchingMessage(@Mock final IdentityPublicKey recipient) {
             final SimpleDuplexEventAwareHandler<Object, Event, MyMessage, IdentityPublicKey> handler = new SimpleDuplexEventAwareHandler<>(Object.class, Event.class, MyMessage.class, IdentityPublicKey.class) {
                 @Override
-                protected void matchedEvent(final MigrationHandlerContext ctx,
+                protected void matchedEvent(final ChannelHandlerContext ctx,
                                             final Event event,
                                             final CompletableFuture<Void> future) {
                     ctx.fireUserEventTriggered(new MigrationEvent(event, future));
                 }
 
                 @Override
-                protected void matchedInbound(final MigrationHandlerContext ctx,
+                protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final IdentityPublicKey sender,
                                               final Object msg,
                                               final CompletableFuture<Void> future) {
@@ -138,7 +138,7 @@ class SimpleDuplexHandlerTest {
                 }
 
                 @Override
-                protected void matchedOutbound(final MigrationHandlerContext ctx,
+                protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final IdentityPublicKey recipient,
                                                final MyMessage msg,
                                                final CompletableFuture<Void> future) {
@@ -172,7 +172,7 @@ class SimpleDuplexHandlerTest {
         void shouldTriggerOnMatchedMessage(@Mock final IdentityPublicKey sender) {
             final SimpleDuplexEventAwareHandler<byte[], Event, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
-                protected void matchedOutbound(final MigrationHandlerContext ctx,
+                protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
@@ -180,14 +180,14 @@ class SimpleDuplexHandlerTest {
                 }
 
                 @Override
-                protected void matchedEvent(final MigrationHandlerContext ctx,
+                protected void matchedEvent(final ChannelHandlerContext ctx,
                                             final Event event,
                                             final CompletableFuture<Void> future) {
                     super.onEvent(ctx, event, future);
                 }
 
                 @Override
-                protected void matchedInbound(final MigrationHandlerContext ctx,
+                protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
                                               final byte[] msg,
                                               final CompletableFuture<Void> future) {
@@ -221,7 +221,7 @@ class SimpleDuplexHandlerTest {
                                                   @Mock final IdentityPublicKey sender) {
             final SimpleDuplexHandler<List<?>, Object, Address> handler = new SimpleDuplexHandler<>() {
                 @Override
-                protected void matchedOutbound(final MigrationHandlerContext ctx,
+                protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
@@ -229,14 +229,14 @@ class SimpleDuplexHandlerTest {
                 }
 
                 @Override
-                protected void matchedEvent(final MigrationHandlerContext ctx,
+                protected void matchedEvent(final ChannelHandlerContext ctx,
                                             final Event event,
                                             final CompletableFuture<Void> future) {
                     ctx.fireUserEventTriggered(new MigrationEvent(event, future));
                 }
 
                 @Override
-                protected void matchedInbound(final MigrationHandlerContext ctx,
+                protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
                                               final List<?> msg,
                                               final CompletableFuture<Void> future) {
@@ -270,7 +270,7 @@ class SimpleDuplexHandlerTest {
         void shouldTriggerOnMatchedEvent(@Mock final NodeUpEvent event) throws InterruptedException {
             final SimpleDuplexEventAwareHandler<RemoteMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>(RemoteMessage.class, NodeUpEvent.class, Object.class, IdentityPublicKey.class) {
                 @Override
-                protected void matchedOutbound(final MigrationHandlerContext ctx,
+                protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
@@ -278,14 +278,14 @@ class SimpleDuplexHandlerTest {
                 }
 
                 @Override
-                protected void matchedEvent(final MigrationHandlerContext ctx,
+                protected void matchedEvent(final ChannelHandlerContext ctx,
                                             final NodeUpEvent event,
                                             final CompletableFuture<Void> future) {
                     // Do nothing
                 }
 
                 @Override
-                protected void matchedInbound(final MigrationHandlerContext ctx,
+                protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
                                               final RemoteMessage msg,
                                               final CompletableFuture<Void> future) {
@@ -311,7 +311,7 @@ class SimpleDuplexHandlerTest {
         void shouldPassthroughsNotMatchingEvents(@Mock final Event event) {
             final SimpleDuplexEventAwareHandler<MyMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
-                protected void matchedOutbound(final MigrationHandlerContext ctx,
+                protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
@@ -319,14 +319,14 @@ class SimpleDuplexHandlerTest {
                 }
 
                 @Override
-                protected void matchedEvent(final MigrationHandlerContext ctx,
+                protected void matchedEvent(final ChannelHandlerContext ctx,
                                             final NodeUpEvent event,
                                             final CompletableFuture<Void> future) {
                     // Do nothing
                 }
 
                 @Override
-                protected void matchedInbound(final MigrationHandlerContext ctx,
+                protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
                                               final MyMessage msg,
                                               final CompletableFuture<Void> future) {

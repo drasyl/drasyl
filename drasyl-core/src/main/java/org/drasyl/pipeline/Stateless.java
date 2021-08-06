@@ -21,7 +21,7 @@
  */
 package org.drasyl.pipeline;
 
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
 /**
  * Indicates that the annotated handler class is stateless and can safely be shared among multiple
  * instances. This means especially that the annotated handler does not manipulate any variable in
- * the {@link Handler#onAdded(MigrationHandlerContext)} or {@link Handler#onRemoved(MigrationHandlerContext)}
+ * the {@link Handler#onAdded(ChannelHandlerContext)} or {@link Handler#onRemoved(ChannelHandlerContext)}
  * methods.
  */
 @Target(ElementType.TYPE)

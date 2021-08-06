@@ -23,7 +23,7 @@ package org.drasyl.pipeline.handler.codec;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -67,7 +67,7 @@ public abstract class MessageToByteEncoder<O, A extends Address> extends SimpleO
     }
 
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final A recipient,
                                    final O msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -114,7 +114,7 @@ public abstract class MessageToByteEncoder<O, A extends Address> extends SimpleO
      * @throws Exception is thrown if an error occurs
      */
     @SuppressWarnings("java:S112")
-    protected abstract void encode(final MigrationHandlerContext ctx,
+    protected abstract void encode(final ChannelHandlerContext ctx,
                                    final A recipient,
                                    final O msg,
                                    final ByteBuf out) throws Exception;

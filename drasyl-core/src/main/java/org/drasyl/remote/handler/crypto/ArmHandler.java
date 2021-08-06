@@ -23,8 +23,8 @@ package org.drasyl.remote.handler.crypto;
 
 import com.google.common.cache.CacheBuilder;
 import com.goterl.lazysodium.utils.SessionPair;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -114,7 +114,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
     }
 
     @Override
-    protected void filteredOutbound(final MigrationHandlerContext ctx,
+    protected void filteredOutbound(final ChannelHandlerContext ctx,
                                     final Address recipient,
                                     final FullReadMessage<?> msg,
                                     final CompletableFuture<Void> future) {
@@ -144,7 +144,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
     }
 
     @Override
-    protected void filteredInbound(final MigrationHandlerContext ctx,
+    protected void filteredInbound(final ChannelHandlerContext ctx,
                                    final Address sender,
                                    final ArmedMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -222,7 +222,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param recipientsKey the recipients key
      * @return corresponding {@link Session}
      */
-    private Session getSession(final MigrationHandlerContext ctx,
+    private Session getSession(final ChannelHandlerContext ctx,
                                final IdentityPublicKey recipientsKey) {
         return sessions.computeIfAbsent(recipientsKey, k -> {
             try {
@@ -252,7 +252,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      */
     private Agreement computeOnEmptyOrStaleAgreement(final Session session,
                                                      final IdentityPublicKey recipientsKey,
-                                                     final MigrationHandlerContext ctx) {
+                                                     final ChannelHandlerContext ctx) {
         return session.getCurrentActiveAgreement()
                 // remove stale agreement
                 .computeOnCondition(a -> a != null && a.isStale(), agreement -> {
@@ -273,7 +273,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param recipientPublicKey the recipient's public key
      */
     private void doKeyExchange(final Session session,
-                               final MigrationHandlerContext ctx,
+                               final ChannelHandlerContext ctx,
                                final Address recipient,
                                final IdentityPublicKey recipientPublicKey) {
         final Agreement agreement = computeOnEmptyOrStaleAgreement(session, recipientPublicKey, ctx);
@@ -297,7 +297,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param session             the corresponding session
      * @param recipientsPublicKey the public key of the recipient
      */
-    private void receivedAcknowledgement(final MigrationHandlerContext ctx,
+    private void receivedAcknowledgement(final ChannelHandlerContext ctx,
                                          final AgreementId id,
                                          final Session session,
                                          final IdentityPublicKey recipientsPublicKey) {
@@ -327,7 +327,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param session      the corresponding session
      * @param future       the future to fulfill
      */
-    private void receivedKeyExchangeMessage(final MigrationHandlerContext ctx,
+    private void receivedKeyExchangeMessage(final ChannelHandlerContext ctx,
                                             final Address sender,
                                             final KeyExchangeMessage plaintextMsg,
                                             final Session session,
@@ -373,7 +373,7 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
      * @param recipient     the recipient of the agreement
      * @param recipientsKey the public key of the recipient
      */
-    private void checkForRenewAgreement(final MigrationHandlerContext ctx,
+    private void checkForRenewAgreement(final ChannelHandlerContext ctx,
                                         final Session session,
                                         final Address recipient,
                                         final IdentityPublicKey recipientsKey) {

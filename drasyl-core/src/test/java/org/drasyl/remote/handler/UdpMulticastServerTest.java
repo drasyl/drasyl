@@ -31,7 +31,6 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
@@ -75,7 +74,7 @@ class UdpMulticastServerTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    private Map<IdentityPublicKey, MigrationHandlerContext> nodes;
+    private Map<IdentityPublicKey, ChannelHandlerContext> nodes;
 
     @Nested
     class StartServer {
@@ -134,7 +133,7 @@ class UdpMulticastServerTest {
                                                      @Mock final ChannelHandlerContext channelCtx,
                                                      @Mock final ByteBuf message,
                                                      @Mock final IdentityPublicKey publicKey,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             when(bootstrap.handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
@@ -142,7 +141,7 @@ class UdpMulticastServerTest {
                 return bootstrap;
             });
 
-            final HashMap<IdentityPublicKey, MigrationHandlerContext> nodes = new HashMap<>(Map.of(publicKey, ctx));
+            final HashMap<IdentityPublicKey, ChannelHandlerContext> nodes = new HashMap<>(Map.of(publicKey, ctx));
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {

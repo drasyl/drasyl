@@ -21,11 +21,11 @@
  */
 package org.drasyl.pipeline.skeleton;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @ExtendWith(MockitoExtension.class)
 class HandlerAdapterTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private MigrationHandlerContext ctx;
+    private ChannelHandlerContext ctx;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
@@ -66,12 +66,12 @@ class HandlerAdapterTest {
     void shouldDoNothing() {
         final HandlerAdapter adapter = new HandlerAdapter() {
             @Override
-            public void onAdded(final MigrationHandlerContext ctx) {
+            public void onAdded(final ChannelHandlerContext ctx) {
                 super.onAdded(ctx);
             }
 
             @Override
-            public void onRemoved(final MigrationHandlerContext ctx) {
+            public void onRemoved(final ChannelHandlerContext ctx) {
                 super.onRemoved(ctx);
             }
         };

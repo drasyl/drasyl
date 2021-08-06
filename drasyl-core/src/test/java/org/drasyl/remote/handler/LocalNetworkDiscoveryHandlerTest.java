@@ -21,11 +21,11 @@
  */
 package org.drasyl.remote.handler;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -147,7 +147,7 @@ class LocalNetworkDiscoveryTest {
     @Nested
     class StartHeartbeat {
         @Test
-        void shouldScheduleHeartbeat(@Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+        void shouldScheduleHeartbeat(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
 
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, null));
@@ -164,7 +164,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldRemoveStalePeersAndPingLocalNetworkPeers(@Mock final IdentityPublicKey publicKey,
                                                             @Mock final Peer peer,
-                                                            @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
@@ -200,7 +200,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldClearRoutes(@Mock final IdentityPublicKey publicKey,
                                @Mock final Peer peer,
-                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+                               @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
@@ -215,7 +215,7 @@ class LocalNetworkDiscoveryTest {
     class InboundMessageHandling {
         @Test
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddressWrapper sender,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                    @Mock final Peer peer) {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
@@ -231,7 +231,7 @@ class LocalNetworkDiscoveryTest {
 
         @Test
         void shouldIgnoreInboundPingFromItself(@Mock final InetSocketAddressWrapper sender,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
@@ -325,7 +325,7 @@ class LocalNetworkDiscoveryTest {
         class IsStale {
             @Test
             void shouldReturnCorrectValue(@Mock final InetSocketAddressWrapper address,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx) {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
                 when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
                 when(ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout()).thenReturn(ofSeconds(60));
 

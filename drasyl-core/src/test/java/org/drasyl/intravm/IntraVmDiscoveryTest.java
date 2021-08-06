@@ -21,10 +21,10 @@
  */
 package org.drasyl.intravm;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -58,7 +58,7 @@ class IntraVmDiscoveryTest {
     private Identity identity;
     @Mock
     private PeersManager peersManager;
-    private final Map<Pair<Integer, IdentityPublicKey>, MigrationHandlerContext> discoveries = new HashMap<>();
+    private final Map<Pair<Integer, IdentityPublicKey>, ChannelHandlerContext> discoveries = new HashMap<>();
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ReadWriteLock lock;
 
@@ -83,7 +83,7 @@ class IntraVmDiscoveryTest {
     class StopDiscovery {
         @Test
         void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
-                                                              @Mock final MigrationHandlerContext ctx) {
+                                                              @Mock final ChannelHandlerContext ctx) {
             discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
@@ -99,7 +99,7 @@ class IntraVmDiscoveryTest {
 
         @Test
         void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event,
-                                                @Mock final MigrationHandlerContext ctx) {
+                                                @Mock final ChannelHandlerContext ctx) {
             discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
@@ -120,7 +120,7 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldSendOutgoingMessageToKnownRecipient(@Mock final IdentityPublicKey recipient,
                                                        @Mock(answer = RETURNS_DEEP_STUBS) final Object message,
-                                                       @Mock final MigrationHandlerContext ctx) {
+                                                       @Mock final ChannelHandlerContext ctx) {
             discoveries.put(Pair.of(0, recipient), ctx);
             when(ctx.fireChannelRead(any())).thenAnswer(invocation -> {
                 @SuppressWarnings("unchecked") final MigrationInboundMessage msg = invocation.getArgument(0, MigrationInboundMessage.class);

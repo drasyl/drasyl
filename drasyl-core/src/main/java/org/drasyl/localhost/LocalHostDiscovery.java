@@ -22,9 +22,9 @@
 package org.drasyl.localhost;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -117,7 +117,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         final FutureCombiner combiner = FutureCombiner.getInstance();
@@ -137,7 +137,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     }
 
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final IdentityPublicKey recipient,
                                    final ApplicationMessage message,
                                    final CompletableFuture<Void> future) {
@@ -152,7 +152,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         }
     }
 
-    private synchronized CompletableFuture<Void> startDiscovery(final MigrationHandlerContext ctx,
+    private synchronized CompletableFuture<Void> startDiscovery(final ChannelHandlerContext ctx,
                                                                 final int port) {
         LOG.debug("Start Local Host Discovery...");
         final Path discoveryPath = discoveryPath(ctx);
@@ -176,7 +176,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         return completedFuture(null);
     }
 
-    private synchronized CompletableFuture<Void> stopDiscovery(final MigrationHandlerContext ctx) {
+    private synchronized CompletableFuture<Void> stopDiscovery(final ChannelHandlerContext ctx) {
         LOG.debug("Stop Local Host Discovery...");
 
         if (watchDisposable != null) {
@@ -208,7 +208,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
      * Tries to monitor {@code discoveryPath} so that any changes are automatically reported. If
      * this is not possible, we have to fall back to periodical polling.
      */
-    private void tryWatchDirectory(final MigrationHandlerContext ctx, final Path discoveryPath) {
+    private void tryWatchDirectory(final ChannelHandlerContext ctx, final Path discoveryPath) {
         try {
             final File directory = discoveryPath.toFile();
             final FileSystem fileSystem = discoveryPath.getFileSystem();
@@ -235,7 +235,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
     /**
      * Writes periodically the actual own information to {@link #discoveryPath}.
      */
-    private void keepOwnInformationUpToDate(final MigrationHandlerContext ctx,
+    private void keepOwnInformationUpToDate(final ChannelHandlerContext ctx,
                                             final Path filePath,
                                             final int port) {
         // get own address(es)
@@ -273,7 +273,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
      * @param ctx handler's context
      */
     @SuppressWarnings("java:S134")
-    synchronized void scan(final MigrationHandlerContext ctx) {
+    synchronized void scan(final ChannelHandlerContext ctx) {
         final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
         final String ownPublicKeyString = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString();
@@ -305,7 +305,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         }
     }
 
-    private void updateRoutes(final MigrationHandlerContext ctx,
+    private void updateRoutes(final ChannelHandlerContext ctx,
                               final Map<IdentityPublicKey, InetSocketAddress> newRoutes) {
         // remove outdated routes
         for (final Iterator<IdentityPublicKey> i = routes.keySet().iterator();
@@ -347,7 +347,7 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
         }
     }
 
-    private static Path discoveryPath(final MigrationHandlerContext ctx) {
+    private static Path discoveryPath(final ChannelHandlerContext ctx) {
         return ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(String.valueOf(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId()));
     }
 }

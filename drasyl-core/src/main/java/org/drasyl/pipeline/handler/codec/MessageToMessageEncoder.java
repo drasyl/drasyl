@@ -21,8 +21,8 @@
  */
 package org.drasyl.pipeline.handler.codec;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -57,7 +57,7 @@ import java.util.concurrent.CompletableFuture;
 public abstract class MessageToMessageEncoder<O, A extends Address> extends SimpleOutboundHandler<O, A> {
     @SuppressWarnings({ "java:S112", "java:S2221" })
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final A recipient,
                                    final O msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -110,7 +110,7 @@ public abstract class MessageToMessageEncoder<O, A extends Address> extends Simp
      * @throws Exception is thrown if an error occurs
      */
     @SuppressWarnings("java:S112")
-    protected abstract void encode(final MigrationHandlerContext ctx,
+    protected abstract void encode(final ChannelHandlerContext ctx,
                                    final A recipient,
                                    final O msg,
                                    final List<Object> out) throws Exception;

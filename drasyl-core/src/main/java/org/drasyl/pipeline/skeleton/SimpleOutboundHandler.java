@@ -21,8 +21,8 @@
  */
 package org.drasyl.pipeline.skeleton;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Handler;
@@ -76,7 +76,7 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Addres
     }
 
     @Override
-    public void onOutbound(final MigrationHandlerContext ctx,
+    public void onOutbound(final ChannelHandlerContext ctx,
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) throws Exception {
@@ -107,7 +107,7 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Addres
      * @param future    a future for the message
      */
     @SuppressWarnings("java:S112")
-    protected abstract void matchedOutbound(MigrationHandlerContext ctx,
+    protected abstract void matchedOutbound(ChannelHandlerContext ctx,
                                             A recipient,
                                             O msg,
                                             CompletableFuture<Void> future) throws Exception;

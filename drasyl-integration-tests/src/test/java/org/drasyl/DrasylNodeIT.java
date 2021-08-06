@@ -22,8 +22,8 @@
 package org.drasyl;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOfflineEvent;
@@ -594,14 +594,14 @@ class DrasylNodeIT {
                 client = new EmbeddedNode(config).started();
                 client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new OutboundMessageFilter<ByteBuf, Address>() {
                     @Override
-                    protected boolean accept(final MigrationHandlerContext ctx,
+                    protected boolean accept(final ChannelHandlerContext ctx,
                                              final Address sender,
                                              final ByteBuf msg) {
                         return false; // drop all messages
                     }
 
                     @Override
-                    protected void messageRejected(final MigrationHandlerContext ctx,
+                    protected void messageRejected(final ChannelHandlerContext ctx,
                                                    final Address sender,
                                                    final ByteBuf msg,
                                                    final CompletableFuture<Void> future) {

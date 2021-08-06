@@ -21,7 +21,7 @@
  */
 package org.drasyl.pipeline.skeleton;
 
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
@@ -61,7 +61,7 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
     }
 
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final A recipient,
                                    final O msg,
                                    final CompletableFuture<Void> future) throws Exception {
@@ -88,13 +88,13 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
      * @param future    the future to complete
      * @throws Exception if any error occurs
      */
-    protected abstract void filteredOutbound(final MigrationHandlerContext ctx,
+    protected abstract void filteredOutbound(final ChannelHandlerContext ctx,
                                              final A recipient,
                                              final O msg,
                                              final CompletableFuture<Void> future) throws Exception;
 
     @Override
-    protected void matchedInbound(final MigrationHandlerContext ctx,
+    protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final A sender,
                                   final I msg,
                                   final CompletableFuture<Void> future) throws Exception {
@@ -116,7 +116,7 @@ public abstract class SimpleDuplexRemoteMessageSkipLoopbackHandler<I extends Rem
      * @param future the future to complete
      * @throws Exception if any error occurs
      */
-    protected abstract void filteredInbound(final MigrationHandlerContext ctx,
+    protected abstract void filteredInbound(final ChannelHandlerContext ctx,
                                             final A sender,
                                             final I msg,
                                             final CompletableFuture<Void> future) throws Exception;

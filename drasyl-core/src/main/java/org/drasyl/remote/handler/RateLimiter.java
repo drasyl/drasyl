@@ -22,7 +22,7 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.cache.CacheBuilder;
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
@@ -73,7 +73,7 @@ public class RateLimiter extends InboundMessageFilter<FullReadMessage<?>, Addres
     }
 
     @Override
-    protected boolean accept(final MigrationHandlerContext ctx,
+    protected boolean accept(final ChannelHandlerContext ctx,
                              final Address sender,
                              final FullReadMessage<?> msg) throws Exception {
         return !ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient()) || rateLimitGate(msg);
@@ -81,7 +81,7 @@ public class RateLimiter extends InboundMessageFilter<FullReadMessage<?>, Addres
 
     @SuppressWarnings("java:S112")
     @Override
-    protected void messageRejected(final MigrationHandlerContext ctx,
+    protected void messageRejected(final ChannelHandlerContext ctx,
                                    final Address sender,
                                    final FullReadMessage<?> msg,
                                    final CompletableFuture<Void> future) throws Exception {

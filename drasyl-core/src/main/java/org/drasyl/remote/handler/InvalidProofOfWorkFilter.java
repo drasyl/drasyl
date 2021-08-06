@@ -22,7 +22,7 @@
 package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandler;
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
@@ -47,7 +47,7 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteM
     }
 
     @Override
-    protected boolean accept(final MigrationHandlerContext ctx,
+    protected boolean accept(final ChannelHandlerContext ctx,
                              final Address sender,
                              final RemoteMessage msg) throws Exception {
         return !ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient()) || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
@@ -55,7 +55,7 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteM
 
     @SuppressWarnings("java:S112")
     @Override
-    protected void messageRejected(final MigrationHandlerContext ctx,
+    protected void messageRejected(final ChannelHandlerContext ctx,
                                    final Address sender,
                                    final RemoteMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {

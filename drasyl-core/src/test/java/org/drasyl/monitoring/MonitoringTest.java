@@ -23,10 +23,10 @@ package org.drasyl.monitoring;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -61,7 +61,7 @@ class MonitoringTest {
     private PeersManager peersManager;
     private final Map<String, Counter> counters = new HashMap<>();
     @Mock
-    private Function<MigrationHandlerContext, MeterRegistry> registrySupplier;
+    private Function<ChannelHandlerContext, MeterRegistry> registrySupplier;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private MeterRegistry registry;
 

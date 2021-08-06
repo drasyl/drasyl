@@ -22,10 +22,10 @@
 package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -83,7 +83,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     handler,
                     new SimpleInboundHandler<ByteBuf, Address>() {
                         @Override
-                        protected void matchedInbound(final MigrationHandlerContext ctx,
+                        protected void matchedInbound(final ChannelHandlerContext ctx,
                                                       final Address sender,
                                                       final ByteBuf msg,
                                                       final CompletableFuture<Void> future) {

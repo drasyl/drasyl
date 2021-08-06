@@ -23,7 +23,7 @@ package org.drasyl.pipeline.serialization;
 
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandler;
-import org.drasyl.channel.MigrationHandlerContext;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
@@ -54,7 +54,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ApplicationMe
     }
 
     @Override
-    protected void decode(final MigrationHandlerContext ctx,
+    protected void decode(final ChannelHandlerContext ctx,
                           final IdentityPublicKey sender,
                           final ApplicationMessage message,
                           final List<Object> out) throws Exception {
@@ -71,7 +71,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ApplicationMe
     }
 
     @Override
-    protected void encode(final MigrationHandlerContext ctx,
+    protected void encode(final ChannelHandlerContext ctx,
                           final IdentityPublicKey recipient,
                           final Object o,
                           final List<Object> out) throws Exception {

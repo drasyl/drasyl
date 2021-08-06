@@ -24,8 +24,8 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.Address;
@@ -113,7 +113,7 @@ public class PcpPortMapping implements PortMapping {
     }
 
     @Override
-    public void start(final MigrationHandlerContext ctx,
+    public void start(final ChannelHandlerContext ctx,
                       final NodeUpEvent event,
                       final Runnable onFailure) {
         this.onFailure = onFailure;
@@ -133,7 +133,7 @@ public class PcpPortMapping implements PortMapping {
     }
 
     @Override
-    public void stop(final MigrationHandlerContext ctx) {
+    public void stop(final ChannelHandlerContext ctx) {
         unmapPort(ctx);
     }
 
@@ -144,7 +144,7 @@ public class PcpPortMapping implements PortMapping {
     }
 
     @Override
-    public void handleMessage(final MigrationHandlerContext ctx,
+    public void handleMessage(final ChannelHandlerContext ctx,
                               final InetSocketAddressWrapper sender,
                               final ByteBuf msg) {
         try (final DataInputStream in = new DataInputStream(new ByteBufInputStream(msg))) {
@@ -165,7 +165,7 @@ public class PcpPortMapping implements PortMapping {
         }
     }
 
-    private synchronized void mapPort(final MigrationHandlerContext ctx) {
+    private synchronized void mapPort(final ChannelHandlerContext ctx) {
         timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
             if (refreshTask == null) {
@@ -188,7 +188,7 @@ public class PcpPortMapping implements PortMapping {
         }
     }
 
-    private synchronized void unmapPort(final MigrationHandlerContext ctx) {
+    private synchronized void unmapPort(final ChannelHandlerContext ctx) {
         if (timeoutGuard != null) {
             timeoutGuard.cancel(false);
         }
@@ -217,7 +217,7 @@ public class PcpPortMapping implements PortMapping {
     }
 
     @SuppressWarnings({ "SameParameterValue", "java:S107" })
-    private void requestMapping(final MigrationHandlerContext ctx,
+    private void requestMapping(final ChannelHandlerContext ctx,
                                 final Duration lifetime,
                                 final InetAddress clientAddress,
                                 final byte[] nonce,
@@ -239,7 +239,7 @@ public class PcpPortMapping implements PortMapping {
         });
     }
 
-    private synchronized void handleMapping(final MigrationHandlerContext ctx,
+    private synchronized void handleMapping(final ChannelHandlerContext ctx,
                                             final MappingResponseMessage message) {
         if (mappingRequested.get() > 0) {
             final int openRequests = mappingRequested.decrementAndGet();

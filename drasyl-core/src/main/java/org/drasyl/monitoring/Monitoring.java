@@ -27,9 +27,9 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -63,11 +63,11 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
 public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(Monitoring.class);
     private final Map<String, Counter> counters;
-    private final Function<MigrationHandlerContext, MeterRegistry> registrySupplier;
+    private final Function<ChannelHandlerContext, MeterRegistry> registrySupplier;
     private MeterRegistry registry;
 
     Monitoring(final Map<String, Counter> counters,
-               final Function<MigrationHandlerContext, MeterRegistry> registrySupplier,
+               final Function<ChannelHandlerContext, MeterRegistry> registrySupplier,
                final MeterRegistry registry) {
         this.counters = requireNonNull(counters);
         this.registrySupplier = requireNonNull(registrySupplier);
@@ -106,7 +106,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.events", event));
@@ -123,7 +123,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     }
 
     @Override
-    protected void matchedInbound(final MigrationHandlerContext ctx,
+    protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
                                   final Object msg,
                                   final CompletableFuture<Void> future) {
@@ -134,7 +134,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     }
 
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
@@ -144,7 +144,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
     }
 
-    synchronized void startMonitoring(final MigrationHandlerContext ctx) {
+    synchronized void startMonitoring(final ChannelHandlerContext ctx) {
         if (registry == null) {
             LOG.debug("Start Monitoring...");
             registry = registrySupplier.apply(ctx);
@@ -171,9 +171,9 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
 
     @SuppressWarnings("java:S2972")
     private static class MyInfluxConfig implements InfluxConfig {
-        private final MigrationHandlerContext ctx;
+        private final ChannelHandlerContext ctx;
 
-        public MyInfluxConfig(final MigrationHandlerContext ctx) {
+        public MyInfluxConfig(final ChannelHandlerContext ctx) {
             this.ctx = requireNonNull(ctx);
         }
 

@@ -28,7 +28,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -113,7 +112,7 @@ class LocalHostDiscoveryTest {
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void shouldStartDiscoveryOnNodeUpEvent(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.executor()).thenReturn(executor);
@@ -166,7 +165,7 @@ class LocalHostDiscoveryTest {
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.executor()).thenReturn(executor);
@@ -204,7 +203,7 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
-                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) throws IOException {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.executor()).thenReturn(executor);
@@ -346,7 +345,7 @@ class LocalHostDiscoveryTest {
     class Scan {
         @Test
         void shouldScanDirectory(@TempDir final Path dir,
-                                 @Mock(answer = RETURNS_DEEP_STUBS) final MigrationHandlerContext ctx,
+                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                  @Mock final InetSocketAddressWrapper address) throws IOException {
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));

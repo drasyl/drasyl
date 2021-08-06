@@ -21,13 +21,13 @@
  */
 package org.drasyl.plugin.groups.manager;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -87,7 +87,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class GroupsManagerHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private MigrationHandlerContext ctx;
+    private ChannelHandlerContext ctx;
     @Mock
     private DatabaseAdapter databaseAdapter;
     @Mock

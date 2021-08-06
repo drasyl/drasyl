@@ -30,7 +30,6 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -70,7 +69,7 @@ public class UdpMulticastServer extends HandlerAdapter {
     public static final NetworkInterface MULTICAST_INTERFACE;
     private static final String MULTICAST_BIND_HOST;
     private static UdpMulticastServer instance;
-    private final Map<IdentityPublicKey, MigrationHandlerContext> nodes;
+    private final Map<IdentityPublicKey, ChannelHandlerContext> nodes;
     private final Bootstrap bootstrap;
     private DatagramChannel channel;
 
@@ -102,7 +101,7 @@ public class UdpMulticastServer extends HandlerAdapter {
         MULTICAST_INTERFACE = multicastInterface;
     }
 
-    UdpMulticastServer(final Map<IdentityPublicKey, MigrationHandlerContext> nodes,
+    UdpMulticastServer(final Map<IdentityPublicKey, ChannelHandlerContext> nodes,
                        final Bootstrap bootstrap, final DatagramChannel channel) {
         this.nodes = nodes;
         this.bootstrap = bootstrap;
@@ -118,7 +117,7 @@ public class UdpMulticastServer extends HandlerAdapter {
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUpEvent) {
@@ -132,7 +131,7 @@ public class UdpMulticastServer extends HandlerAdapter {
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
-    private synchronized void startServer(final MigrationHandlerContext ctx) {
+    private synchronized void startServer(final ChannelHandlerContext ctx) {
         if (MULTICAST_INTERFACE == null) {
             LOG.warn("No default network interface could be identified. Therefore the server cannot be started. You can manually specify an interface by using the Java System Property `{}`.", () -> MULTICAST_INTERFACE_PROPERTY);
             return;
@@ -185,7 +184,7 @@ public class UdpMulticastServer extends HandlerAdapter {
         }
     }
 
-    private synchronized void stopServer(final MigrationHandlerContext ctx) {
+    private synchronized void stopServer(final ChannelHandlerContext ctx) {
         nodes.remove(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey());
 
         if (channel != null) {

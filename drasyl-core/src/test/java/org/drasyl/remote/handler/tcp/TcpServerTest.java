@@ -31,7 +31,6 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -204,7 +203,7 @@ class TcpServerTest {
         @Mock
         private Map<SocketAddress, Channel> clients;
         @Mock(answer = RETURNS_DEEP_STUBS)
-        private MigrationHandlerContext ctx;
+        private ChannelHandlerContext ctx;
 
         @Test
         void shouldAddCorrectHandlersToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Channel ch) {
@@ -222,7 +221,7 @@ class TcpServerTest {
         @Mock
         private Map<SocketAddress, Channel> clients;
         @Mock(answer = RETURNS_DEEP_STUBS)
-        private MigrationHandlerContext ctx;
+        private ChannelHandlerContext ctx;
 
         @Test
         void shouldAddClientOnNewConnection(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {

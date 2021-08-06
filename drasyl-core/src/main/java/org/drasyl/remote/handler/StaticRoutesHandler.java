@@ -23,8 +23,8 @@ package org.drasyl.remote.handler;
 
 import com.typesafe.config.Config;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationHandlerContext;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -62,7 +62,7 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
     }
 
     @Override
-    public void onEvent(final MigrationHandlerContext ctx,
+    public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
@@ -78,7 +78,7 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
     }
 
     @Override
-    protected void matchedOutbound(final MigrationHandlerContext ctx,
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final IdentityPublicKey recipient,
                                    final ApplicationMessage envelope,
                                    final CompletableFuture<Void> future) {
@@ -93,11 +93,11 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
         }
     }
 
-    private static synchronized void populateRoutes(final MigrationHandlerContext ctx) {
+    private static synchronized void populateRoutes(final ChannelHandlerContext ctx) {
         ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path)));
     }
 
-    private static synchronized void clearRoutes(final MigrationHandlerContext ctx) {
+    private static synchronized void clearRoutes(final ChannelHandlerContext ctx) {
         ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path));
     }
 }
