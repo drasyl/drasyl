@@ -370,7 +370,7 @@ public class MigrationPipeline implements ChannelPipeline {
 
     @Override
     public ChannelPromise newPromise() {
-        return null;
+        return channelPipeline.newPromise();
     }
 
     @Override
@@ -412,7 +412,7 @@ public class MigrationPipeline implements ChannelPipeline {
     }
 
     public CompletableFuture<Void> processOutbound(final Address recipient, final Object msg) {
-        final ChannelPromise promise = channelPipeline.newPromise();
+        final ChannelPromise promise = newPromise();
         writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);
         return FutureUtil.toFuture(promise);
     }
