@@ -23,10 +23,12 @@ package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationEvent;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -77,5 +79,14 @@ public abstract class SimpleInboundHandler<I, A extends Address> extends SimpleI
                                 final Event event,
                                 final CompletableFuture<Void> future) {
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+    }
+
+    @SuppressWarnings("java:S112")
+    @Skip
+    public void onOutbound(final ChannelHandlerContext ctx,
+                           final Address recipient,
+                           final Object msg,
+                           final CompletableFuture<Void> future) throws Exception {
+        FutureUtil.combine(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)), future);
     }
 }

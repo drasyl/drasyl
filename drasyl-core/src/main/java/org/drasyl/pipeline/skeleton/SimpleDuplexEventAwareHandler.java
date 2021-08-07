@@ -22,20 +22,26 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandler;
+import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 
+import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
+
+import static org.drasyl.channel.Null.NULL;
 
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages and
  * events.
  */
 @SuppressWarnings({ "common-java:DuplicatedBlocks", "java:S118" })
-public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> extends SimpleInboundEventAwareHandler<I, E, A> {
+public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> extends SimpleInboundEventAwareHandler<I, E, A> implements ChannelOutboundHandler {
     private final TypeParameterMatcher outboundMessageMatcher;
 
     protected SimpleDuplexEventAwareHandler() {
@@ -50,7 +56,8 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
         outboundMessageMatcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
-    @Override
+    @org.drasyl.pipeline.Skip
+    @SuppressWarnings("java:S112")
     public void onOutbound(final ChannelHandlerContext ctx,
                            final Address recipient,
                            final Object msg,
@@ -86,4 +93,70 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
                                             A recipient,
                                             O msg,
                                             CompletableFuture<Void> future) throws Exception;
+
+    @Override
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
+        if (msg instanceof MigrationOutboundMessage) {
+            final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            FutureUtil.combine(future, promise);
+            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
+            try {
+                onOutbound(ctx, migrationMsg.address(), payload, future);
+            }
+            catch (final Exception e) {
+                future.completeExceptionally(e);
+                ctx.fireExceptionCaught(e);
+                ReferenceCountUtil.safeRelease(migrationMsg.message());
+            }
+        }
+        else {
+            ctx.write(msg, promise);
+        }
+    }
+
+    @Override
+    public void bind(final ChannelHandlerContext ctx,
+                     final SocketAddress localAddress,
+                     final ChannelPromise promise) throws Exception {
+        ctx.bind(localAddress, promise);
+    }
+
+    @Override
+    public void connect(final ChannelHandlerContext ctx,
+                        final SocketAddress remoteAddress,
+                        final SocketAddress localAddress,
+                        final ChannelPromise promise) throws Exception {
+        ctx.connect(remoteAddress, localAddress, promise);
+    }
+
+    @Override
+    public void disconnect(final ChannelHandlerContext ctx,
+                           final ChannelPromise promise) {
+        ctx.disconnect(promise);
+    }
+
+    @Override
+    public void close(final ChannelHandlerContext ctx,
+                      final ChannelPromise promise) throws Exception {
+        ctx.close(promise);
+    }
+
+    @Override
+    public void deregister(final ChannelHandlerContext ctx,
+                           final ChannelPromise promise) throws Exception {
+        ctx.deregister(promise);
+    }
+
+    @Override
+    public void read(final ChannelHandlerContext ctx) throws Exception {
+        ctx.read();
+    }
+
+    @Override
+    public void flush(final ChannelHandlerContext ctx) {
+        ctx.flush();
+    }
 }

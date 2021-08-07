@@ -22,20 +22,16 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.util.FutureUtil;
 
-import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.channel.Null.NULL;
@@ -68,7 +64,7 @@ import static org.drasyl.channel.Null.NULL;
  * </pre>
  */
 @SuppressWarnings("java:S118")
-public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> implements io.netty.channel.ChannelOutboundHandler, io.netty.channel.ChannelInboundHandler {
+public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> implements ChannelInboundHandler {
     private final TypeParameterMatcher matcherMessage;
     private final TypeParameterMatcher matcherEvent;
     private final TypeParameterMatcher matcherAddress;
@@ -195,29 +191,6 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> im
     }
 
     @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (msg instanceof MigrationOutboundMessage) {
-            final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            FutureUtil.combine(future, promise);
-            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
-            try {
-                onOutbound(ctx, migrationMsg.address(), payload, future);
-            }
-            catch (final Exception e) {
-                future.completeExceptionally(e);
-                ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(migrationMsg.message());
-            }
-        }
-        else {
-            ctx.write(msg, promise);
-        }
-    }
-
-    @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         onAdded(ctx);
     }
@@ -225,15 +198,6 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> im
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) {
         onRemoved(ctx);
-    }
-
-    @SuppressWarnings("java:S112")
-    @Skip
-    public void onOutbound(final ChannelHandlerContext ctx,
-                           final Address recipient,
-                           final Object msg,
-                           final CompletableFuture<Void> future) throws Exception {
-        FutureUtil.combine(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)), future);
     }
 
     /**
@@ -262,52 +226,9 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> im
     }
 
     @Override
-    public void bind(final ChannelHandlerContext ctx,
-                     final SocketAddress localAddress,
-                     final ChannelPromise promise) throws Exception {
-        ctx.bind(localAddress, promise);
-    }
-
-    @Override
-    public void connect(final ChannelHandlerContext ctx,
-                        final SocketAddress remoteAddress,
-                        final SocketAddress localAddress,
-                        final ChannelPromise promise) throws Exception {
-        ctx.connect(remoteAddress, localAddress, promise);
-    }
-
-    @Override
-    public void disconnect(final ChannelHandlerContext ctx,
-                           final ChannelPromise promise) {
-        ctx.disconnect(promise);
-    }
-
-    @Override
-    public void close(final ChannelHandlerContext ctx,
-                      final ChannelPromise promise) throws Exception {
-        ctx.close(promise);
-    }
-
-    @Override
-    public void deregister(final ChannelHandlerContext ctx,
-                           final ChannelPromise promise) throws Exception {
-        ctx.deregister(promise);
-    }
-
-    @Override
-    public void read(final ChannelHandlerContext ctx) throws Exception {
-        ctx.read();
-    }
-
-    @Override
     public void exceptionCaught(final ChannelHandlerContext ctx,
                                 final Throwable cause) {
         ctx.fireExceptionCaught(cause);
-    }
-
-    @Override
-    public void flush(final ChannelHandlerContext ctx) {
-        ctx.flush();
     }
 
     @Override
