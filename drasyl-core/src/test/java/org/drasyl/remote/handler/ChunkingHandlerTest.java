@@ -24,6 +24,7 @@ package org.drasyl.remote.handler;
 import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelInboundHandler;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -38,7 +39,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.BodyChunkMessage;
@@ -94,7 +94,7 @@ class ChunkingHandlerTest {
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
                 when(identity.getIdentityPublicKey()).thenReturn(ID_2.getIdentityPublicKey());
 
-                final HandlerAdapter handler = new ChunkingHandler();
+                final ChannelInboundHandler handler = new ChunkingHandler();
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
                     final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
@@ -117,7 +117,7 @@ class ChunkingHandlerTest {
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
                 when(identity.getIdentityPublicKey()).thenReturn(ID_2.getIdentityPublicKey());
 
-                final HandlerAdapter handler = new ChunkingHandler();
+                final ChannelInboundHandler handler = new ChunkingHandler();
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
                     final TestObserver<UnarmedMessage> inboundMessages = pipeline.drasylInboundMessages(UnarmedMessage.class).test();
@@ -151,7 +151,7 @@ class ChunkingHandlerTest {
                 final Nonce nonce = randomNonce();
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
-                final HandlerAdapter handler = new ChunkingHandler();
+                final ChannelInboundHandler handler = new ChunkingHandler();
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
                     final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
@@ -199,7 +199,7 @@ class ChunkingHandlerTest {
                 final IdentityPublicKey sender = ID_1.getIdentityPublicKey();
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 
-                final HandlerAdapter handler = new ChunkingHandler();
+                final ChannelInboundHandler handler = new ChunkingHandler();
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
@@ -222,7 +222,7 @@ class ChunkingHandlerTest {
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
                 final Nonce nonce = randomNonce();
 
-                final HandlerAdapter handler = new ChunkingHandler();
+                final ChannelInboundHandler handler = new ChunkingHandler();
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
                     final TestObserver<ChunkMessage> inboundMessages = pipeline.drasylInboundMessages(ChunkMessage.class).test();
@@ -265,7 +265,7 @@ class ChunkingHandlerTest {
                 when(identity.getIdentityPublicKey()).thenReturn(sender);
 
                 final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
-                final HandlerAdapter handler = new ChunkingHandler();
+                final ChannelInboundHandler handler = new ChunkingHandler();
                 final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]))
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
@@ -292,7 +292,7 @@ class ChunkingHandlerTest {
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
                 when(identity.getIdentityPublicKey()).thenReturn(sender);
 
-                final HandlerAdapter handler = new ChunkingHandler();
+                final ChannelInboundHandler handler = new ChunkingHandler();
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMaxContentLength]));
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
@@ -319,7 +319,7 @@ class ChunkingHandlerTest {
                 final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
                 final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, byte[].class.getName(), ByteString.copyFrom(randomBytes(remoteMessageMtu * 2)))
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
-                final HandlerAdapter handler = new ChunkingHandler();
+                final ChannelInboundHandler handler = new ChunkingHandler();
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
                     final TestObserver<ChunkMessage> outboundMessages = pipeline.drasylOutboundMessages(ChunkMessage.class).test();
@@ -345,7 +345,7 @@ class ChunkingHandlerTest {
                 final IdentityPublicKey sender = ID_1.getIdentityPublicKey();
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 
-                final HandlerAdapter handler = new ChunkingHandler();
+                final ChannelInboundHandler handler = new ChunkingHandler();
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {

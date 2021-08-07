@@ -22,6 +22,7 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -46,7 +47,7 @@ class SimpleDuplexRemoteMessageSkipLoopbackHandlerTest {
     @Mock
     private PeersManager peersManager;
     private DrasylConfig config;
-    private HandlerAdapter handler;
+    private ChannelInboundHandler handler;
     private Nonce nonce;
 
     @BeforeEach
