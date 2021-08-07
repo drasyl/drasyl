@@ -72,12 +72,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> implements Ch
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
-    protected void matchedEvent(final ChannelHandlerContext ctx,
-                                final Event event,
-                                final CompletableFuture<Void> future) {
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
         // NOOP

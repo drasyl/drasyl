@@ -83,12 +83,6 @@ public abstract class SimpleInboundHandler<I, A extends Address> implements Chan
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
-    protected void matchedEvent(final ChannelHandlerContext ctx,
-                                final Event event,
-                                final CompletableFuture<Void> future) {
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) {
         // NOOP

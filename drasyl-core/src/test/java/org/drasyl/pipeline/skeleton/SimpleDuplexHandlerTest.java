@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -78,12 +77,6 @@ class SimpleDuplexHandlerTest {
 
             final SimpleDuplexHandler<Object, byte[], IdentityPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
-                protected void matchedEvent(final ChannelHandlerContext ctx, final Event event,
-                                            final CompletableFuture<Void> future) {
-                    ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-                }
-
-                @Override
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final IdentityPublicKey sender,
                                               final Object msg,
@@ -120,13 +113,6 @@ class SimpleDuplexHandlerTest {
         @Test
         void shouldPassthroughsNotMatchingMessage(@Mock final IdentityPublicKey recipient) {
             final SimpleDuplexHandler<Object, MyMessage, IdentityPublicKey> handler = new SimpleDuplexHandler<>(Object.class, MyMessage.class, IdentityPublicKey.class) {
-                @Override
-                protected void matchedEvent(final ChannelHandlerContext ctx,
-                                            final Event event,
-                                            final CompletableFuture<Void> future) {
-                    ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-                }
-
                 @Override
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final IdentityPublicKey sender,
@@ -178,13 +164,6 @@ class SimpleDuplexHandlerTest {
                 }
 
                 @Override
-                protected void matchedEvent(final ChannelHandlerContext ctx,
-                                            final Event event,
-                                            final CompletableFuture<Void> future) {
-                    super.onEvent(ctx, event, future);
-                }
-
-                @Override
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
                                               final byte[] msg,
@@ -224,13 +203,6 @@ class SimpleDuplexHandlerTest {
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
                     FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
-                }
-
-                @Override
-                protected void matchedEvent(final ChannelHandlerContext ctx,
-                                            final Event event,
-                                            final CompletableFuture<Void> future) {
-                    ctx.fireUserEventTriggered(new MigrationEvent(event, future));
                 }
 
                 @Override

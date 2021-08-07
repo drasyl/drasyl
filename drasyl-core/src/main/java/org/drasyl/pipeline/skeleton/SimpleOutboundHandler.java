@@ -73,18 +73,6 @@ public abstract class SimpleOutboundHandler<O, A extends Address> implements io.
         matcherAddress = TypeParameterMatcher.find(this, SimpleOutboundHandler.class, "A");
     }
 
-    /**
-     * Create a new instance
-     *
-     * @param outboundMessageType the type of messages to match
-     * @param addressType         the type of the address to match
-     */
-    protected SimpleOutboundHandler(final Class<? extends O> outboundMessageType,
-                                    final Class<? extends A> addressType) {
-        matcherMessage = TypeParameterMatcher.get(outboundMessageType);
-        matcherAddress = TypeParameterMatcher.get(addressType);
-    }
-
     @Skip
     @SuppressWarnings("java:S112")
     public void onOutbound(final ChannelHandlerContext ctx,
