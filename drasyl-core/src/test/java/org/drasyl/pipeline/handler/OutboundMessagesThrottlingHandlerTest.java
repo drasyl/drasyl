@@ -22,7 +22,7 @@
 package org.drasyl.pipeline.handler;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelOutboundHandler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -53,7 +53,7 @@ class OutboundMessagesThrottlingHandlerTest {
     @Test
     void shouldThrottleOutboundMessages(@Mock final Address recipient,
                                         @Mock final ByteBuf msg) {
-        final ChannelInboundHandler handler = new OutboundMessagesThrottlingHandler(10);
+        final ChannelOutboundHandler handler = new OutboundMessagesThrottlingHandler(10);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             final TestObserver<Object> inboundMessages = pipeline.drasylOutboundMessages().test();

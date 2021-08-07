@@ -22,15 +22,10 @@
 package org.drasyl.pipeline.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.pipeline.Skip;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.TokenBucket;
@@ -53,7 +48,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * messages are then asynchronously dequeued with the given rate limit and finally re-added to the
  * pipeline.
  */
-public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
+public class OutboundMessagesThrottlingHandler extends ChannelOutboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(OutboundMessagesThrottlingHandler.class);
     private final RateLimitedQueue queue;
 
@@ -63,15 +58,6 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
 
     public OutboundMessagesThrottlingHandler(final long maxEventsPerSecond) {
         this(new RateLimitedQueue(maxEventsPerSecond));
-    }
-
-    @Skip
-    @SuppressWarnings("java:S112")
-    public void onOutbound(final ChannelHandlerContext ctx,
-                           final Address recipient,
-                           final Object msg,
-                           final CompletableFuture<Void> future) {
-        queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future));
     }
 
     @Override
@@ -84,7 +70,7 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
             FutureUtil.combine(future, promise);
             final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
             try {
-                onOutbound(ctx, migrationMsg.address(), payload, future);
+                queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(payload, migrationMsg.address())))).combine(future));
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);
@@ -94,57 +80,6 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
         }
         else {
             ctx.write(msg, promise);
-        }
-    }
-
-    @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) {
-        onAdded(ctx);
-    }
-
-    @Override
-    public void handlerRemoved(final ChannelHandlerContext ctx) {
-        onRemoved(ctx);
-    }
-
-    @SuppressWarnings("java:S112")
-    @Skip
-    public void onInbound(final ChannelHandlerContext ctx,
-                          final Address sender,
-                          final Object msg,
-                          final CompletableFuture<Void> future) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
-    }
-
-    @Skip
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
-    /**
-     * Do nothing by default, sub-classes may override this method.
-     */
-    public void onAdded(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
-    /**
-     * Do nothing by default, sub-classes may override this method.
-     */
-    public void onRemoved(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
-    @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
         }
     }
 
