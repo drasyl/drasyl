@@ -191,30 +191,6 @@ public abstract class SimpleInboundEventAwareHandler<I, E, A extends Address> im
     }
 
     @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) {
-        onAdded(ctx);
-    }
-
-    @Override
-    public void handlerRemoved(final ChannelHandlerContext ctx) {
-        onRemoved(ctx);
-    }
-
-    /**
-     * Do nothing by default, sub-classes may override this method.
-     */
-    public void onAdded(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
-    /**
-     * Do nothing by default, sub-classes may override this method.
-     */
-    public void onRemoved(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
-    @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
         if (evt instanceof MigrationEvent) {

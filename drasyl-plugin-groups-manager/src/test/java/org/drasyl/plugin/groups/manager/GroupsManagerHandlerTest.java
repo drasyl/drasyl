@@ -128,7 +128,7 @@ class GroupsManagerHandlerTest {
 
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
 
-            handler.onAdded(ctx);
+            handler.handlerAdded(ctx);
 
             verify(inboundSerialization).addSerializer(eq(GroupsClientMessage.class), any(JacksonJsonSerializer.class));
             verify(outboundSerialization).addSerializer(eq(GroupsServerMessage.class), any(JacksonJsonSerializer.class));
@@ -158,7 +158,7 @@ class GroupsManagerHandlerTest {
         void shouldDisposeStaleTask() {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, staleTask);
 
-            handler.onRemoved(ctx);
+            handler.handlerRemoved(ctx);
 
             verify(staleTask).cancel(false);
         }

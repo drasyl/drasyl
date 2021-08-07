@@ -73,15 +73,6 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
         this(database, null);
     }
 
-    @Override
-    public void onAdded(final ChannelHandlerContext ctx) {
-        ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
-        ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
-
-        // Register stale task timer
-        staleTask = ctx.executor().scheduleAtFixedRate(() -> staleTask(ctx), 1L, 1L, MINUTES);
-    }
-
     /**
      * Deletes the stale memberships.
      *
@@ -101,13 +92,6 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
         }
         catch (final DatabaseException e) {
             LOG.warn("Error occurred during deletion of stale memberships: ", e);
-        }
-    }
-
-    @Override
-    public void onRemoved(final ChannelHandlerContext ctx) {
-        if (staleTask != null) {
-            staleTask.cancel(false);
         }
     }
 
@@ -269,6 +253,22 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
             future.completeExceptionally(e);
 
             LOG.debug("Error occurred during join: ", e);
+        }
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
+        ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
+
+        // Register stale task timer
+        staleTask = ctx.executor().scheduleAtFixedRate(() -> staleTask(ctx), 1L, 1L, MINUTES);
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        if (staleTask != null) {
+            staleTask.cancel(false);
         }
     }
 }

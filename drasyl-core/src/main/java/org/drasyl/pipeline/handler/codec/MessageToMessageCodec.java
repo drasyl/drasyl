@@ -130,4 +130,14 @@ public abstract class MessageToMessageCodec<I, O, A extends Address> extends Sim
                                    final A recipient,
                                    final O msg,
                                    final List<Object> out) throws Exception;
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        // NOOP
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
+        // NOOP
+    }
 }

@@ -159,4 +159,14 @@ public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> 
     public void flush(final ChannelHandlerContext ctx) {
         ctx.flush();
     }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        // NOOP
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
+        // NOOP
+    }
 }

@@ -87,43 +87,6 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
     }
 
     @Override
-    public void onAdded(final ChannelHandlerContext ctx) {
-        ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
-        ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
-    }
-
-    @Override
-    public void onRemoved(final ChannelHandlerContext ctx) {
-        // Stop all renew tasks
-        for (final Future renewTask : renewTasks.values()) {
-            renewTask.cancel(false);
-        }
-        renewTasks.clear();
-
-        /*
-         * Leave all groups.
-         * This should be a blocking operation, so drasyl is not shutting down the communication
-         * channel before the leave messages are sent.
-         */
-        for (final Entry<Group, GroupUri> entry : groups.entrySet()) {
-            final Group group = entry.getKey();
-            final GroupUri groupURI = entry.getValue();
-            try {
-                final CompletableFuture<Void> future = new CompletableFuture<>();
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupLeaveMessage(group), (Address) groupURI.getManager())))).combine(future);
-                future.get();
-            }
-            catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-                LOG.warn("Exception occurred during de-registration from group `{}`: ", group.getName(), e);
-            }
-            catch (final ExecutionException e) {
-                LOG.warn("Exception occurred during de-registration from group `{}`: ", group.getName(), e);
-            }
-        }
-    }
-
-    @Override
     protected void matchedEvent(final ChannelHandlerContext ctx,
                                 final NodeUpEvent event,
                                 final CompletableFuture<Void> future) {
@@ -150,6 +113,43 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
         }
         else if (msg instanceof GroupJoinFailedMessage) {
             onJoinFailed(ctx, (GroupJoinFailedMessage) msg, future);
+        }
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
+        ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        // Stop all renew tasks
+        for (final Future renewTask : renewTasks.values()) {
+            renewTask.cancel(false);
+        }
+        renewTasks.clear();
+
+        /*
+         * Leave all groups.
+         * This should be a blocking operation, so drasyl is not shutting down the communication
+         * channel before the leave messages are sent.
+         */
+        for (final Entry<Group, GroupUri> entry : groups.entrySet()) {
+            final Group group = entry.getKey();
+            final GroupUri groupURI = entry.getValue();
+            try {
+                final CompletableFuture<Void> future = new CompletableFuture<>();
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupLeaveMessage(group), (Address) groupURI.getManager())))).combine(future);
+                future.get();
+            }
+            catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                LOG.warn("Exception occurred during de-registration from group `{}`: ", group.getName(), e);
+            }
+            catch (final ExecutionException e) {
+                LOG.warn("Exception occurred during de-registration from group `{}`: ", group.getName(), e);
+            }
         }
     }
 

@@ -58,4 +58,14 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Simpl
                                 final CompletableFuture<Void> future) {
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        // NOOP
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
+        // NOOP
+    }
 }
