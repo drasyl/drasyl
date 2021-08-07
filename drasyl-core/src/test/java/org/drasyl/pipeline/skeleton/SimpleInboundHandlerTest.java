@@ -26,7 +26,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.HandlerMask;
@@ -54,7 +53,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldTriggerOnMatchedMessage(@Mock final Address sender) {
-        final SimpleInboundEventAwareHandler<byte[], Event, Address> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundHandler<byte[], Address> handler = new SimpleInboundHandler<>() {
             @Override
             protected void matchedInbound(final ChannelHandlerContext ctx,
                                           final Address sender,
@@ -116,6 +115,6 @@ class SimpleInboundHandlerTest {
         final int mask = HandlerMask.ON_INBOUND_MASK
                 | HandlerMask.ON_EVENT_MASK;
 
-        assertEquals(mask, HandlerMask.mask(SimpleInboundEventAwareHandler.class));
+        assertEquals(mask, HandlerMask.mask(SimpleInboundHandler.class));
     }
 }
