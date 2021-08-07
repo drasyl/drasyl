@@ -22,14 +22,23 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
+import org.drasyl.channel.MigrationEvent;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
+import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 
+import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
+
+import static org.drasyl.channel.Null.NULL;
 
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages.
@@ -51,8 +60,9 @@ import java.util.concurrent.CompletableFuture;
  * </pre>
  */
 @SuppressWarnings("java:S118")
-public abstract class SimpleOutboundHandler<O, A extends Address> extends AddressHandlerAdapter<A> {
+public abstract class SimpleOutboundHandler<O, A extends Address> implements io.netty.channel.ChannelOutboundHandler, io.netty.channel.ChannelInboundHandler {
     private final TypeParameterMatcher matcherMessage;
+    private final TypeParameterMatcher matcherAddress;
 
     /**
      * Create a new instance which will try to detect the types to match out of the type parameter
@@ -60,6 +70,7 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Addres
      */
     protected SimpleOutboundHandler() {
         matcherMessage = TypeParameterMatcher.find(this, SimpleOutboundHandler.class, "O");
+        matcherAddress = TypeParameterMatcher.find(this, SimpleOutboundHandler.class, "A");
     }
 
     /**
@@ -70,11 +81,12 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Addres
      */
     protected SimpleOutboundHandler(final Class<? extends O> outboundMessageType,
                                     final Class<? extends A> addressType) {
-        super(addressType);
         matcherMessage = TypeParameterMatcher.get(outboundMessageType);
+        matcherAddress = TypeParameterMatcher.get(addressType);
     }
 
-    @Override
+    @Skip
+    @SuppressWarnings("java:S112")
     public void onOutbound(final ChannelHandlerContext ctx,
                            final Address recipient,
                            final Object msg,
@@ -110,4 +122,183 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Addres
                                             A recipient,
                                             O msg,
                                             CompletableFuture<Void> future) throws Exception;
+
+    /**
+     * Returns {@code true} if the given address should be handled, {@code false} otherwise.
+     */
+    protected boolean acceptAddress(final Address address) {
+        return matcherAddress.match(address);
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof MigrationInboundMessage) {
+            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
+            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
+            try {
+                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
+            }
+            catch (final Exception e) {
+                migrationMsg.future().completeExceptionally(e);
+                ctx.fireExceptionCaught(e);
+                ReferenceCountUtil.safeRelease(migrationMsg.message());
+            }
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
+    }
+
+    @Override
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
+        if (msg instanceof MigrationOutboundMessage) {
+            final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            FutureUtil.combine(future, promise);
+            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
+            try {
+                onOutbound(ctx, migrationMsg.address(), payload, future);
+            }
+            catch (final Exception e) {
+                future.completeExceptionally(e);
+                ctx.fireExceptionCaught(e);
+                ReferenceCountUtil.safeRelease(migrationMsg.message());
+            }
+        }
+        else {
+            ctx.write(msg, promise);
+        }
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        onAdded(ctx);
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        onRemoved(ctx);
+    }
+
+    @SuppressWarnings("java:S112")
+    @Skip
+    public void onInbound(final ChannelHandlerContext ctx,
+                          final Address sender,
+                          final Object msg,
+                          final CompletableFuture<Void> future) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+    }
+
+    @Skip
+    public void onEvent(final ChannelHandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+    }
+
+    /**
+     * Do nothing by default, sub-classes may override this method.
+     */
+    public void onAdded(final ChannelHandlerContext ctx) {
+        // NOOP
+    }
+
+    /**
+     * Do nothing by default, sub-classes may override this method.
+     */
+    public void onRemoved(final ChannelHandlerContext ctx) {
+        // NOOP
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
+        }
+    }
+
+    @Override
+    public void bind(final ChannelHandlerContext ctx,
+                     final SocketAddress localAddress,
+                     final ChannelPromise promise) throws Exception {
+        ctx.bind(localAddress, promise);
+    }
+
+    @Override
+    public void connect(final ChannelHandlerContext ctx,
+                        final SocketAddress remoteAddress,
+                        final SocketAddress localAddress,
+                        final ChannelPromise promise) throws Exception {
+        ctx.connect(remoteAddress, localAddress, promise);
+    }
+
+    @Override
+    public void disconnect(final ChannelHandlerContext ctx,
+                           final ChannelPromise promise) {
+        ctx.disconnect(promise);
+    }
+
+    @Override
+    public void close(final ChannelHandlerContext ctx,
+                      final ChannelPromise promise) throws Exception {
+        ctx.close(promise);
+    }
+
+    @Override
+    public void deregister(final ChannelHandlerContext ctx,
+                           final ChannelPromise promise) throws Exception {
+        ctx.deregister(promise);
+    }
+
+    @Override
+    public void read(final ChannelHandlerContext ctx) throws Exception {
+        ctx.read();
+    }
+
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx,
+                                final Throwable cause) {
+        ctx.fireExceptionCaught(cause);
+    }
+
+    @Override
+    public void flush(final ChannelHandlerContext ctx) {
+        ctx.flush();
+    }
+
+    @Override
+    public void channelRegistered(final ChannelHandlerContext ctx) {
+        ctx.fireChannelRegistered();
+    }
+
+    @Override
+    public void channelUnregistered(final ChannelHandlerContext ctx) {
+        ctx.fireChannelUnregistered();
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
+    }
+
+    @Override
+    public void channelReadComplete(final ChannelHandlerContext ctx) {
+        ctx.fireChannelReadComplete();
+    }
+
+    @Override
+    public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
+        ctx.fireChannelWritabilityChanged();
+    }
 }
