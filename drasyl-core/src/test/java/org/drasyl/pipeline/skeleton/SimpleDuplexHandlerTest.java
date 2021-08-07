@@ -30,7 +30,6 @@ import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
@@ -50,7 +49,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
@@ -121,7 +119,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingMessage(@Mock final IdentityPublicKey recipient) {
-            final SimpleDuplexEventAwareHandler<Object, Event, MyMessage, IdentityPublicKey> handler = new SimpleDuplexEventAwareHandler<>(Object.class, Event.class, MyMessage.class, IdentityPublicKey.class) {
+            final SimpleDuplexHandler<Object, MyMessage, IdentityPublicKey> handler = new SimpleDuplexHandler<>(Object.class, MyMessage.class, IdentityPublicKey.class) {
                 @Override
                 protected void matchedEvent(final ChannelHandlerContext ctx,
                                             final Event event,
@@ -170,7 +168,7 @@ class SimpleDuplexHandlerTest {
     class InboundTest {
         @Test
         void shouldTriggerOnMatchedMessage(@Mock final IdentityPublicKey sender) {
-            final SimpleDuplexEventAwareHandler<byte[], Event, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
+            final SimpleDuplexHandler<byte[], Object, Address> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final Address recipient,
@@ -267,89 +265,6 @@ class SimpleDuplexHandlerTest {
         }
 
         @Test
-        void shouldTriggerOnMatchedEvent(@Mock final NodeUpEvent event) throws InterruptedException {
-            final SimpleDuplexEventAwareHandler<RemoteMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>(RemoteMessage.class, NodeUpEvent.class, Object.class, IdentityPublicKey.class) {
-                @Override
-                protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                               final Address recipient,
-                                               final Object msg,
-                                               final CompletableFuture<Void> future) {
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
-                }
-
-                @Override
-                protected void matchedEvent(final ChannelHandlerContext ctx,
-                                            final NodeUpEvent event,
-                                            final CompletableFuture<Void> future) {
-                    // Do nothing
-                }
-
-                @Override
-                protected void matchedInbound(final ChannelHandlerContext ctx,
-                                              final Address sender,
-                                              final RemoteMessage msg,
-                                              final CompletableFuture<Void> future) {
-                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
-                }
-            };
-
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
-
-                pipeline.processInbound(event);
-
-                eventTestObserver.await(1, TimeUnit.SECONDS);
-                eventTestObserver.assertNoValues();
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldPassthroughsNotMatchingEvents(@Mock final Event event) {
-            final SimpleDuplexEventAwareHandler<MyMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
-                @Override
-                protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                               final Address recipient,
-                                               final Object msg,
-                                               final CompletableFuture<Void> future) {
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
-                }
-
-                @Override
-                protected void matchedEvent(final ChannelHandlerContext ctx,
-                                            final NodeUpEvent event,
-                                            final CompletableFuture<Void> future) {
-                    // Do nothing
-                }
-
-                @Override
-                protected void matchedInbound(final ChannelHandlerContext ctx,
-                                              final Address sender,
-                                              final MyMessage msg,
-                                              final CompletableFuture<Void> future) {
-                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
-                }
-            };
-
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
-
-                pipeline.processInbound(event);
-
-                eventTestObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(event);
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
         void shouldReturnCorrectHandlerMask() {
             final int mask = HandlerMask.ALL
                     & ~HandlerMask.ON_EXCEPTION_MASK
@@ -363,7 +278,7 @@ class SimpleDuplexHandlerTest {
             final int mask = HandlerMask.ALL
                     & ~HandlerMask.ON_EXCEPTION_MASK;
 
-            assertEquals(mask, HandlerMask.mask(SimpleDuplexEventAwareHandler.class));
+            assertEquals(mask, HandlerMask.mask(SimpleDuplexHandler.class));
         }
     }
 
