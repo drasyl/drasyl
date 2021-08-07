@@ -40,7 +40,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureCombiner;
@@ -67,7 +67,7 @@ import static org.drasyl.util.NettyUtil.getBestServerSocketChannel;
  * <p>
  * This server is only used if the node act as a super peer.
  */
-public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressWrapper> {
+public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAddressWrapper> {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     private final ServerBootstrap bootstrap;
     private final Map<SocketAddress, Channel> clientChannels;
@@ -188,6 +188,14 @@ public class TcpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             // message is not addressed to any of our clients. passthrough message
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient)))).combine(future);
         }
+    }
+
+    @Override
+    protected void matchedInbound(final ChannelHandlerContext ctx,
+                                  final InetSocketAddressWrapper sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
     }
 
     static class TcpServerChannelInitializer extends ChannelInitializer<Channel> {

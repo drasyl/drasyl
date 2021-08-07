@@ -25,6 +25,7 @@ import com.typesafe.config.Config;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationEvent;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -34,7 +35,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
@@ -52,7 +53,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
  */
 @ChannelHandler.Sharable
 @Stateless
-public final class StaticRoutesHandler extends SimpleOutboundHandler<ApplicationMessage, IdentityPublicKey> {
+public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, ApplicationMessage, IdentityPublicKey> {
     public static final StaticRoutesHandler INSTANCE = new StaticRoutesHandler();
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
@@ -91,6 +92,14 @@ public final class StaticRoutesHandler extends SimpleOutboundHandler<Application
             // passthrough message
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) envelope, (Address) recipient)))).combine(future);
         }
+    }
+
+    @Override
+    protected void matchedInbound(final ChannelHandlerContext ctx,
+                                  final IdentityPublicKey sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
     }
 
     private static synchronized void populateRoutes(final ChannelHandlerContext ctx) {

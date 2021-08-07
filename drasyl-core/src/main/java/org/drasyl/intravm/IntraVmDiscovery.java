@@ -31,7 +31,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.Pair;
@@ -55,7 +55,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
  * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java
  */
 @SuppressWarnings({ "java:S110" })
-public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
+public class IntraVmDiscovery extends SimpleDuplexHandler<Object, Object, Address> {
     public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
@@ -106,6 +106,14 @@ public class IntraVmDiscovery extends SimpleOutboundHandler<Object, Address> {
         else {
             discoveree.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), future));
         }
+    }
+
+    @Override
+    protected void matchedInbound(final ChannelHandlerContext ctx,
+                                  final Address sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
     }
 
     private synchronized CompletableFuture<Void> startDiscovery(final ChannelHandlerContext myCtx) {

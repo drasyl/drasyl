@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationEvent;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
@@ -33,7 +34,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
@@ -84,7 +85,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</a>
  */
 @SuppressWarnings("java:S1192")
-public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage, IdentityPublicKey> {
+public class LocalHostDiscovery extends SimpleDuplexHandler<Object, ApplicationMessage, IdentityPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
     private static final Object path = LocalHostDiscovery.class;
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
@@ -150,6 +151,14 @@ public class LocalHostDiscovery extends SimpleOutboundHandler<ApplicationMessage
             // passthrough message
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient)))).combine(future);
         }
+    }
+
+    @Override
+    protected void matchedInbound(final ChannelHandlerContext ctx,
+                                  final IdentityPublicKey sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
     }
 
     private synchronized CompletableFuture<Void> startDiscovery(final ChannelHandlerContext ctx,

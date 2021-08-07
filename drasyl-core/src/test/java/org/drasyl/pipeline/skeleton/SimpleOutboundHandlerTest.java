@@ -29,7 +29,6 @@ import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
@@ -40,7 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
@@ -102,10 +100,5 @@ class SimpleOutboundHandlerTest {
         finally {
             pipeline.drasylClose();
         }
-    }
-
-    @Test
-    void shouldReturnCorrectHandlerMask() {
-        assertEquals(HandlerMask.ON_OUTBOUND_MASK, HandlerMask.mask(SimpleOutboundHandler.class));
     }
 }

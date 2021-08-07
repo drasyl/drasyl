@@ -60,7 +60,7 @@ import static org.drasyl.channel.Null.NULL;
  * </pre>
  */
 @SuppressWarnings("java:S118")
-public abstract class SimpleOutboundHandler<O, A extends Address> implements io.netty.channel.ChannelOutboundHandler, io.netty.channel.ChannelInboundHandler {
+public abstract class SimpleOutboundHandler<O, A extends Address> implements io.netty.channel.ChannelOutboundHandler {
     private final TypeParameterMatcher matcherMessage;
     private final TypeParameterMatcher matcherAddress;
 
@@ -131,25 +131,6 @@ public abstract class SimpleOutboundHandler<O, A extends Address> implements io.
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof MigrationInboundMessage) {
-            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
-            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
-            try {
-                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
-            }
-            catch (final Exception e) {
-                migrationMsg.future().completeExceptionally(e);
-                ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(migrationMsg.message());
-            }
-        }
-        else {
-            ctx.fireChannelRead(msg);
-        }
-    }
-
-    @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
@@ -213,17 +194,6 @@ public abstract class SimpleOutboundHandler<O, A extends Address> implements io.
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
-    }
-
-    @Override
     public void bind(final ChannelHandlerContext ctx,
                      final SocketAddress localAddress,
                      final ChannelPromise promise) throws Exception {
@@ -270,35 +240,5 @@ public abstract class SimpleOutboundHandler<O, A extends Address> implements io.
     @Override
     public void flush(final ChannelHandlerContext ctx) {
         ctx.flush();
-    }
-
-    @Override
-    public void channelRegistered(final ChannelHandlerContext ctx) {
-        ctx.fireChannelRegistered();
-    }
-
-    @Override
-    public void channelUnregistered(final ChannelHandlerContext ctx) {
-        ctx.fireChannelUnregistered();
-    }
-
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelInactive();
-    }
-
-    @Override
-    public void channelReadComplete(final ChannelHandlerContext ctx) {
-        ctx.fireChannelReadComplete();
-    }
-
-    @Override
-    public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
-        ctx.fireChannelWritabilityChanged();
     }
 }

@@ -42,7 +42,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
@@ -68,7 +68,7 @@ import static org.drasyl.util.network.NetworkUtil.getAddresses;
  * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the
  * {@link org.drasyl.pipeline.Pipeline}.
  */
-public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressWrapper> {
+public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAddressWrapper> {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private static final short MIN_DERIVED_PORT = 22528;
     private final Bootstrap bootstrap;
@@ -234,5 +234,13 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             ReferenceCountUtil.safeRelease(msg);
             future.completeExceptionally(new Exception("UDP channel is not present or is not writable."));
         }
+    }
+
+    @Override
+    protected void matchedInbound(final ChannelHandlerContext ctx,
+                                  final InetSocketAddressWrapper sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
     }
 }
