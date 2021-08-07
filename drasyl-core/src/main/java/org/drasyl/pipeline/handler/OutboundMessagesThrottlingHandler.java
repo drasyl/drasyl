@@ -107,11 +107,6 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
         onRemoved(ctx);
     }
 
-    @Skip
-    public void onException(final ChannelHandlerContext ctx, final Exception cause) {
-        ctx.fireExceptionCaught(cause);
-    }
-
     @SuppressWarnings("java:S112")
     @Skip
     public void onInbound(final ChannelHandlerContext ctx,
@@ -140,6 +135,17 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
      */
     public void onRemoved(final ChannelHandlerContext ctx) {
         // NOOP
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
+        }
     }
 
     public static class RateLimitedQueue {

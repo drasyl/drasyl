@@ -113,6 +113,17 @@ class PluginsIT {
         @Override
         public void onAfterStart(final PluginEnvironment environment) {
             environment.getPipeline().addFirst("TestHandler", new HandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx,
+                                               final Object evt) {
+                    if (evt instanceof MigrationEvent) {
+                        onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
+                    }
+                    else {
+                        ctx.fireUserEventTriggered(evt);
+                    }
+                }
+
                 /**
                  * Do nothing by default, sub-classes may override this method.
                  */
@@ -143,11 +154,6 @@ class PluginsIT {
                                       final Object msg,
                                       final CompletableFuture<Void> future) throws Exception {
                     ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
-                }
-
-                @Skip
-                public void onException(final ChannelHandlerContext ctx, final Exception cause) {
-                    ctx.fireExceptionCaught(cause);
                 }
 
                 @Override

@@ -25,48 +25,13 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelPromise;
-import org.drasyl.channel.MigrationEvent;
-import org.drasyl.event.Event;
-import org.drasyl.pipeline.Skip;
-import org.drasyl.pipeline.address.Address;
 
 import java.net.SocketAddress;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Skeleton implementation of a {@link HandlerAdapter}.
  */
 public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHandler {
-    @SuppressWarnings("java:S112")
-    @Skip
-    public void onInbound(final ChannelHandlerContext ctx,
-                          final Address sender,
-                          final Object msg,
-                          final CompletableFuture<Void> future) throws Exception {
-        // NOOP
-    }
-
-    @Skip
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        // NOOP
-    }
-
-    @Skip
-    public void onException(final ChannelHandlerContext ctx, final Exception cause) {
-        // NOOP
-    }
-
-    @SuppressWarnings("java:S112")
-    @Skip
-    public void onOutbound(final ChannelHandlerContext ctx,
-                           final Address recipient,
-                           final Object msg,
-                           final CompletableFuture<Void> future) throws Exception {
-        // NOOP
-    }
-
     @Override
     public void bind(final ChannelHandlerContext ctx,
                      final SocketAddress localAddress,
@@ -166,12 +131,7 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+        ctx.fireUserEventTriggered(evt);
     }
 
     @Override
