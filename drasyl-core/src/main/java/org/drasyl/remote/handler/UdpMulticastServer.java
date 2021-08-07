@@ -32,15 +32,18 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.EventLoopGroupUtil;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -118,7 +121,7 @@ public class UdpMulticastServer extends HandlerAdapter {
         );
     }
 
-    @Override
+    @Skip
     public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
@@ -218,6 +221,39 @@ public class UdpMulticastServer extends HandlerAdapter {
         else {
             ctx.fireChannelRead(msg);
         }
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        onAdded(ctx);
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        onRemoved(ctx);
+    }
+
+    @Skip
+    public void onException(final ChannelHandlerContext ctx, final Exception cause) {
+        ctx.fireExceptionCaught(cause);
+    }
+
+    @SuppressWarnings("java:S112")
+    @Skip
+    public void onInbound(final ChannelHandlerContext ctx,
+                          final Address sender,
+                          final Object msg,
+                          final CompletableFuture<Void> future) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+    }
+
+    @SuppressWarnings("java:S112")
+    @Skip
+    public void onOutbound(final ChannelHandlerContext ctx,
+                           final Address recipient,
+                           final Object msg,
+                           final CompletableFuture<Void> future) throws Exception {
+        FutureUtil.combine(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)), future);
     }
 
     public static synchronized UdpMulticastServer getInstance() {

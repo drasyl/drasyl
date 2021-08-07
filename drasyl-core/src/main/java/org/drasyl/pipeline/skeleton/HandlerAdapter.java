@@ -26,13 +26,9 @@ import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
@@ -45,12 +41,14 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
      * Do nothing by default, sub-classes may override this method.
      */
     public void onAdded(final ChannelHandlerContext ctx) {
+        // NOOP
     }
 
     /**
      * Do nothing by default, sub-classes may override this method.
      */
     public void onRemoved(final ChannelHandlerContext ctx) {
+        // NOOP
     }
 
     @SuppressWarnings("java:S112")
@@ -59,19 +57,19 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
                           final Address sender,
                           final Object msg,
                           final CompletableFuture<Void> future) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+        // NOOP
     }
 
     @Skip
     public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+        // NOOP
     }
 
     @Skip
     public void onException(final ChannelHandlerContext ctx, final Exception cause) {
-        ctx.fireExceptionCaught(cause);
+        // NOOP
     }
 
     @SuppressWarnings("java:S112")
@@ -80,7 +78,7 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) throws Exception {
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
+        // NOOP
     }
 
     @Override
@@ -123,12 +121,12 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
-        onAdded(ctx);
+        // NOOP
     }
 
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) {
-        onRemoved(ctx);
+        // NOOP
     }
 
     @Override

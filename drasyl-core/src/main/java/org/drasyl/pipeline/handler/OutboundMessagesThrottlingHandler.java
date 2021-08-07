@@ -24,7 +24,11 @@ package org.drasyl.pipeline.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.channel.MigrationEvent;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
+import org.drasyl.event.Event;
+import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.FutureCombiner;
@@ -61,7 +65,8 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
         this(new RateLimitedQueue(maxEventsPerSecond));
     }
 
-    @Override
+    @Skip
+    @SuppressWarnings("java:S112")
     public void onOutbound(final ChannelHandlerContext ctx,
                            final Address recipient,
                            final Object msg,
@@ -90,6 +95,37 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
         else {
             ctx.write(msg, promise);
         }
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        onAdded(ctx);
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        onRemoved(ctx);
+    }
+
+    @Skip
+    public void onException(final ChannelHandlerContext ctx, final Exception cause) {
+        ctx.fireExceptionCaught(cause);
+    }
+
+    @SuppressWarnings("java:S112")
+    @Skip
+    public void onInbound(final ChannelHandlerContext ctx,
+                          final Address sender,
+                          final Object msg,
+                          final CompletableFuture<Void> future) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+    }
+
+    @Skip
+    public void onEvent(final ChannelHandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
+        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     public static class RateLimitedQueue {

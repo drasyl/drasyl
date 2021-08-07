@@ -31,10 +31,15 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.MigrationEvent;
+import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.Skip;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,6 +113,46 @@ class PluginsIT {
         @Override
         public void onAfterStart(final PluginEnvironment environment) {
             environment.getPipeline().addFirst("TestHandler", new HandlerAdapter() {
+                @SuppressWarnings("java:S112")
+                @Skip
+                public void onOutbound(final ChannelHandlerContext ctx,
+                                       final Address recipient,
+                                       final Object msg,
+                                       final CompletableFuture<Void> future) throws Exception {
+                    FutureUtil.combine(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)), future);
+                }
+
+                @Skip
+                public void onEvent(final ChannelHandlerContext ctx,
+                                    final Event event,
+                                    final CompletableFuture<Void> future) {
+                    ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+                }
+
+                @SuppressWarnings("java:S112")
+                @Skip
+                public void onInbound(final ChannelHandlerContext ctx,
+                                      final Address sender,
+                                      final Object msg,
+                                      final CompletableFuture<Void> future) throws Exception {
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+                }
+
+                @Skip
+                public void onException(final ChannelHandlerContext ctx, final Exception cause) {
+                    ctx.fireExceptionCaught(cause);
+                }
+
+                @Override
+                public void handlerRemoved(final ChannelHandlerContext ctx) {
+                    onRemoved(ctx);
+                }
+
+                @Override
+                public void handlerAdded(final ChannelHandlerContext ctx) {
+                    onAdded(ctx);
+                }
+
                 @Override
                 public void onAdded(final ChannelHandlerContext ctx) {
                     final CompletableFuture<Void> future = new CompletableFuture<>();
