@@ -28,6 +28,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -54,6 +55,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static org.drasyl.channel.Null.NULL;
 
 /**
  * Starts an UDP server which joins a multicast group and together with the {@link
@@ -196,6 +198,25 @@ public class UdpMulticastServer extends HandlerAdapter {
             channel.close().awaitUninterruptibly();
             channel = null;
             LOG.debug("Server stopped");
+        }
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof MigrationInboundMessage) {
+            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
+            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
+            try {
+                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
+            }
+            catch (final Exception e) {
+                migrationMsg.future().completeExceptionally(e);
+                ctx.fireExceptionCaught(e);
+                ReferenceCountUtil.safeRelease(migrationMsg.message());
+            }
+        }
+        else {
+            ctx.fireChannelRead(msg);
         }
     }
 

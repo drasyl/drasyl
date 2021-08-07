@@ -22,6 +22,8 @@
 package org.drasyl.pipeline.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ReferenceCountUtil;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -38,6 +40,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.Null.NULL;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
@@ -64,6 +67,25 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
                            final Object msg,
                            final CompletableFuture<Void> future) {
         queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future));
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof MigrationInboundMessage) {
+            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
+            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
+            try {
+                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
+            }
+            catch (final Exception e) {
+                migrationMsg.future().completeExceptionally(e);
+                ctx.fireExceptionCaught(e);
+                ReferenceCountUtil.safeRelease(migrationMsg.message());
+            }
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
     }
 
     public static class RateLimitedQueue {

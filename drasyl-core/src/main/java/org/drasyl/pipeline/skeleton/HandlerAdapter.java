@@ -190,21 +190,7 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof MigrationInboundMessage) {
-            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
-            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
-            try {
-                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
-            }
-            catch (final Exception e) {
-                migrationMsg.future().completeExceptionally(e);
-                ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(migrationMsg.message());
-            }
-        }
-        else {
-            ctx.fireChannelRead(msg);
-        }
+        ctx.fireChannelRead(msg);
     }
 
     @Override

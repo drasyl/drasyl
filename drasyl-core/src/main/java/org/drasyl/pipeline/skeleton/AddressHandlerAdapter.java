@@ -21,8 +21,13 @@
  */
 package org.drasyl.pipeline.skeleton;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ReferenceCountUtil;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.TypeParameterMatcher;
+
+import static org.drasyl.channel.Null.NULL;
 
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of address.
@@ -55,5 +60,24 @@ public abstract class AddressHandlerAdapter<A> extends HandlerAdapter {
      */
     protected boolean acceptAddress(final Address address) {
         return matcherAddress.match(address);
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof MigrationInboundMessage) {
+            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
+            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
+            try {
+                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
+            }
+            catch (final Exception e) {
+                migrationMsg.future().completeExceptionally(e);
+                ctx.fireExceptionCaught(e);
+                ReferenceCountUtil.safeRelease(migrationMsg.message());
+            }
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
     }
 }
