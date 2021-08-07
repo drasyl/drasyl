@@ -25,11 +25,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationOutboundMessage;
+import org.drasyl.event.Event;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleInboundEventAwareHandler;
+import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.event.GroupLeftEvent;
@@ -64,7 +65,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 
-public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsServerMessage, NodeUpEvent, Address> {
+public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessage, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
     private static final Duration RETRY_DELAY = Duration.ofSeconds(10);
     private static final Duration FIRST_JOIN_DELAY = Duration.ofSeconds(5);
@@ -86,15 +87,20 @@ public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsSe
                 new ConcurrentHashMap<>(), FIRST_JOIN_DELAY);
     }
 
-    @Override
-    protected void matchedEvent(final ChannelHandlerContext ctx,
-                                final NodeUpEvent event,
-                                final CompletableFuture<Void> future) {
-        // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
-        ctx.executor().schedule(() -> groups.values().forEach(group ->
-                joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
+    @org.drasyl.pipeline.Skip
+    public void onEvent(final ChannelHandlerContext ctx,
+                        final Event event,
+                        final CompletableFuture<Void> future) {
+        if (event instanceof NodeUpEvent) {
+            // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
+            ctx.executor().schedule(() -> groups.values().forEach(group ->
+                    joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
 
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+        }
+        else {
+            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+        }
     }
 
     @Override
