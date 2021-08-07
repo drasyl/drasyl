@@ -22,7 +22,7 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationEvent;
@@ -55,13 +55,14 @@ import static org.drasyl.channel.Null.NULL;
  * </pre>
  */
 @SuppressWarnings("java:S118")
-public abstract class SimpleInboundHandler<I, A extends Address> implements ChannelInboundHandler {
+public abstract class SimpleInboundHandler<MI, MA extends Address> extends SimpleChannelInboundHandler<MigrationInboundMessage<MI, MA>> {
     private final TypeParameterMatcher matcherMessage;
     private final TypeParameterMatcher matcherAddress;
 
     protected SimpleInboundHandler() {
-        this.matcherMessage = TypeParameterMatcher.find(this, SimpleInboundHandler.class, "I");
-        this.matcherAddress = TypeParameterMatcher.find(this, SimpleInboundHandler.class, "A");
+        super(false);
+        this.matcherMessage = TypeParameterMatcher.find(this, SimpleInboundHandler.class, "MI");
+        this.matcherAddress = TypeParameterMatcher.find(this, SimpleInboundHandler.class, "MA");
     }
 
     /**
@@ -70,8 +71,9 @@ public abstract class SimpleInboundHandler<I, A extends Address> implements Chan
      * @param inboundMessageType the type of messages to match
      * @param addressType        the type of the address to match
      */
-    protected SimpleInboundHandler(final Class<? extends I> inboundMessageType,
-                                   final Class<? extends A> addressType) {
+    protected SimpleInboundHandler(final Class<? extends MI> inboundMessageType,
+                                   final Class<? extends MA> addressType) {
+        super(false);
         this.matcherMessage = TypeParameterMatcher.get(inboundMessageType);
         this.matcherAddress = TypeParameterMatcher.get(addressType);
     }
@@ -83,16 +85,6 @@ public abstract class SimpleInboundHandler<I, A extends Address> implements Chan
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
-    @Override
-    public void handlerRemoved(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
-    @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
     @Skip
     @SuppressWarnings("java:S112")
     public void onInbound(final ChannelHandlerContext ctx,
@@ -100,8 +92,8 @@ public abstract class SimpleInboundHandler<I, A extends Address> implements Chan
                           final Object msg,
                           final CompletableFuture<Void> future) throws Exception {
         if (acceptInbound(msg) && acceptAddress(sender)) {
-            @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
-            @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
+            @SuppressWarnings("unchecked") final MI castedMsg = (MI) msg;
+            @SuppressWarnings("unchecked") final MA castedAddress = (MA) sender;
             matchedInbound(ctx, castedAddress, castedMsg, future);
         }
         else {
@@ -118,7 +110,7 @@ public abstract class SimpleInboundHandler<I, A extends Address> implements Chan
     }
 
     /**
-     * Is called for each message of type {@link I}.
+     * Is called for each message of type {@link MI}.
      *
      * @param ctx    handler context
      * @param sender the sender of the message
@@ -127,8 +119,8 @@ public abstract class SimpleInboundHandler<I, A extends Address> implements Chan
      */
     @SuppressWarnings("java:S112")
     protected abstract void matchedInbound(ChannelHandlerContext ctx,
-                                           A sender,
-                                           I msg,
+                                           MA sender,
+                                           MI msg,
                                            CompletableFuture<Void> future) throws Exception;
 
     /**
@@ -139,21 +131,16 @@ public abstract class SimpleInboundHandler<I, A extends Address> implements Chan
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof MigrationInboundMessage) {
-            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
-            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
-            try {
-                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
-            }
-            catch (final Exception e) {
-                migrationMsg.future().completeExceptionally(e);
-                ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(migrationMsg.message());
-            }
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final MigrationInboundMessage<MI, MA> msg) {
+        final Object payload = msg.message() == NULL ? null : msg.message();
+        try {
+            onInbound(ctx, msg.address(), payload, msg.future());
         }
-        else {
-            ctx.fireChannelRead(msg);
+        catch (final Exception e) {
+            msg.future().completeExceptionally(e);
+            ctx.fireExceptionCaught(e);
+            ReferenceCountUtil.safeRelease(msg.message());
         }
     }
 
@@ -166,41 +153,5 @@ public abstract class SimpleInboundHandler<I, A extends Address> implements Chan
         else {
             ctx.fireUserEventTriggered(evt);
         }
-    }
-
-    @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx,
-                                final Throwable cause) {
-        ctx.fireExceptionCaught(cause);
-    }
-
-    @Override
-    public void channelRegistered(final ChannelHandlerContext ctx) {
-        ctx.fireChannelRegistered();
-    }
-
-    @Override
-    public void channelUnregistered(final ChannelHandlerContext ctx) {
-        ctx.fireChannelUnregistered();
-    }
-
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelInactive();
-    }
-
-    @Override
-    public void channelReadComplete(final ChannelHandlerContext ctx) {
-        ctx.fireChannelReadComplete();
-    }
-
-    @Override
-    public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
-        ctx.fireChannelWritabilityChanged();
     }
 }
