@@ -37,20 +37,6 @@ import java.util.concurrent.CompletableFuture;
  * Skeleton implementation of a {@link HandlerAdapter}.
  */
 public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHandler {
-    /**
-     * Do nothing by default, sub-classes may override this method.
-     */
-    public void onAdded(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
-    /**
-     * Do nothing by default, sub-classes may override this method.
-     */
-    public void onRemoved(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
     @SuppressWarnings("java:S112")
     @Skip
     public void onInbound(final ChannelHandlerContext ctx,

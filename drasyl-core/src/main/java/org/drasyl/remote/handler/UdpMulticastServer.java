@@ -256,6 +256,20 @@ public class UdpMulticastServer extends HandlerAdapter {
         FutureUtil.combine(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)), future);
     }
 
+    /**
+     * Do nothing by default, sub-classes may override this method.
+     */
+    public void onAdded(final ChannelHandlerContext ctx) {
+        // NOOP
+    }
+
+    /**
+     * Do nothing by default, sub-classes may override this method.
+     */
+    public void onRemoved(final ChannelHandlerContext ctx) {
+        // NOOP
+    }
+
     public static synchronized UdpMulticastServer getInstance() {
         if (instance == null) {
             instance = new UdpMulticastServer();

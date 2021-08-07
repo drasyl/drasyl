@@ -128,6 +128,20 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
+    /**
+     * Do nothing by default, sub-classes may override this method.
+     */
+    public void onAdded(final ChannelHandlerContext ctx) {
+        // NOOP
+    }
+
+    /**
+     * Do nothing by default, sub-classes may override this method.
+     */
+    public void onRemoved(final ChannelHandlerContext ctx) {
+        // NOOP
+    }
+
     public static class RateLimitedQueue {
         public final Queue<Runnable> queue;
         public final TokenBucket tokenBucket;

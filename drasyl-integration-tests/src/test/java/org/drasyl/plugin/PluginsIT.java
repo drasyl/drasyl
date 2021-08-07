@@ -113,6 +113,13 @@ class PluginsIT {
         @Override
         public void onAfterStart(final PluginEnvironment environment) {
             environment.getPipeline().addFirst("TestHandler", new HandlerAdapter() {
+                /**
+                 * Do nothing by default, sub-classes may override this method.
+                 */
+                public void onRemoved(final ChannelHandlerContext ctx) {
+                    // NOOP
+                }
+
                 @SuppressWarnings("java:S112")
                 @Skip
                 public void onOutbound(final ChannelHandlerContext ctx,
@@ -153,7 +160,6 @@ class PluginsIT {
                     onAdded(ctx);
                 }
 
-                @Override
                 public void onAdded(final ChannelHandlerContext ctx) {
                     final CompletableFuture<Void> future = new CompletableFuture<>();
                     ctx.fireUserEventTriggered(new MigrationEvent(event1, future));
