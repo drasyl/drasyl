@@ -22,6 +22,7 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationEvent;
@@ -54,7 +55,7 @@ import static org.drasyl.channel.Null.NULL;
  * </pre>
  */
 @SuppressWarnings("java:S118")
-public abstract class SimpleInboundHandler<I, A extends Address> implements io.netty.channel.ChannelInboundHandler {
+public abstract class SimpleInboundHandler<I, A extends Address> implements ChannelInboundHandler {
     private final TypeParameterMatcher matcherMessage;
     private final TypeParameterMatcher matcherAddress;
 

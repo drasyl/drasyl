@@ -26,6 +26,7 @@ import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.LongTimeEncryptionEvent;
@@ -34,13 +35,14 @@ import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleDuplexRemoteMessageSkipLoopbackHandler;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.ArmedMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
 import org.drasyl.remote.protocol.KeyExchangeMessage;
 import org.drasyl.util.ConcurrentReference;
 import org.drasyl.util.FutureCombiner;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -60,7 +62,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
  * addressed from or to us. Messages that could not be (dis-)armed are dropped.
  */
 @SuppressWarnings({ "java:S110" })
-public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<ArmedMessage, FullReadMessage<?>, Address> {
+public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessage<?>, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(ArmHandler.class);
     private final Map<IdentityPublicKey, Session> sessions;
     private final Crypto crypto;
@@ -113,7 +115,6 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
                 .asMap(), Crypto.INSTANCE, maxAgreements, expireAfter, retryInterval);
     }
 
-    @Override
     protected void filteredOutbound(final ChannelHandlerContext ctx,
                                     final Address recipient,
                                     final FullReadMessage<?> msg,
@@ -143,7 +144,6 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
         }
     }
 
-    @Override
     protected void filteredInbound(final ChannelHandlerContext ctx,
                                    final Address sender,
                                    final ArmedMessage msg,
@@ -394,5 +394,38 @@ public class ArmHandler extends SimpleDuplexRemoteMessageSkipLoopbackHandler<Arm
             LOG.trace("[{} => {}] Send key exchange message, do to renewable", () -> ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
             ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, inactiveAgreement, recipient, recipientsKey);
         }
+    }
+
+    @Override
+    protected void matchedOutbound(final ChannelHandlerContext ctx,
+                                   final Address recipient,
+                                   final FullReadMessage<?> msg,
+                                   final CompletableFuture<Void> future) throws Exception {
+        if (msg.getRecipient() == null) {
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, recipient)))).combine(future);
+            return;
+        }
+
+        if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())
+                || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())) {
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, recipient)))).combine(future);
+            return;
+        }
+
+        filteredOutbound(ctx, recipient, msg, future);
+    }
+
+    @Override
+    protected void matchedInbound(final ChannelHandlerContext ctx,
+                                  final Address sender,
+                                  final ArmedMessage msg,
+                                  final CompletableFuture<Void> future) throws Exception {
+        if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())
+                || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())) {
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
+            return;
+        }
+
+        filteredInbound(ctx, sender, msg, future);
     }
 }
