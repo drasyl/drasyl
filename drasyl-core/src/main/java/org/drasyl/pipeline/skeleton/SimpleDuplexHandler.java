@@ -22,10 +22,13 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationEvent;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.Skip;
@@ -43,29 +46,32 @@ import static org.drasyl.channel.Null.NULL;
  * events.
  */
 @SuppressWarnings({ "common-java:DuplicatedBlocks", "java:S118" })
-public abstract class SimpleDuplexHandler<I, O, A extends Address> extends SimpleInboundEventAwareHandler<I, Event, A> implements io.netty.channel.ChannelOutboundHandler {
+public abstract class SimpleDuplexHandler<I, O, A extends Address> implements ChannelOutboundHandler, ChannelInboundHandler {
     private final TypeParameterMatcher outboundMessageMatcher;
+    private final TypeParameterMatcher matcherMessage;
+    private final TypeParameterMatcher matcherAddress;
 
     protected SimpleDuplexHandler() {
+        this.matcherMessage = TypeParameterMatcher.find(this, SimpleDuplexHandler.class, "I");
+        this.matcherAddress = TypeParameterMatcher.find(this, SimpleDuplexHandler.class, "A");
         this.outboundMessageMatcher = TypeParameterMatcher.find(this, SimpleDuplexHandler.class, "O");
     }
 
     protected SimpleDuplexHandler(final Class<? extends I> inboundMessageType,
                                   final Class<? extends O> outboundMessageType,
                                   final Class<? extends A> addressType) {
-        super(inboundMessageType, Event.class, addressType);
+        this.matcherMessage = TypeParameterMatcher.get(inboundMessageType);
+        this.matcherAddress = TypeParameterMatcher.get(addressType);
         this.outboundMessageMatcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
     @Skip
-    @Override
     public void onEvent(final ChannelHandlerContext ctx,
                         final Event event,
                         final CompletableFuture<Void> future) {
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
-    @Override
     protected void matchedEvent(final ChannelHandlerContext ctx,
                                 final Event event,
                                 final CompletableFuture<Void> future) {
@@ -184,5 +190,116 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Simpl
     @Override
     public void flush(final ChannelHandlerContext ctx) {
         ctx.flush();
+    }
+
+    @Skip
+    @SuppressWarnings("java:S112")
+    public void onInbound(final ChannelHandlerContext ctx,
+                          final Address sender,
+                          final Object msg,
+                          final CompletableFuture<Void> future) throws Exception {
+        if (acceptInbound(msg) && acceptAddress(sender)) {
+            @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
+            @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
+            matchedInbound(ctx, castedAddress, castedMsg, future);
+        }
+        else {
+            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+        }
+    }
+
+    /**
+     * Returns {@code true} if the given message should be handled. If {@code false} it will be
+     * passed to the next {@link Handler} in the {@link Pipeline}.
+     */
+    protected boolean acceptInbound(final Object msg) {
+        return matcherMessage.match(msg);
+    }
+
+    /**
+     * Is called for each message of type {@link I}.
+     *
+     * @param ctx    handler context
+     * @param sender the sender of the message
+     * @param msg    the message
+     * @param future the future of the message
+     */
+    @SuppressWarnings("java:S112")
+    protected abstract void matchedInbound(ChannelHandlerContext ctx,
+                                           A sender,
+                                           I msg,
+                                           CompletableFuture<Void> future) throws Exception;
+
+    /**
+     * Returns {@code true} if the given address should be handled, {@code false} otherwise.
+     */
+    protected boolean acceptAddress(final Address address) {
+        return matcherAddress.match(address);
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof MigrationInboundMessage) {
+            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
+            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
+            try {
+                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
+            }
+            catch (final Exception e) {
+                migrationMsg.future().completeExceptionally(e);
+                ctx.fireExceptionCaught(e);
+                ReferenceCountUtil.safeRelease(migrationMsg.message());
+            }
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
+        }
+    }
+
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx,
+                                final Throwable cause) {
+        ctx.fireExceptionCaught(cause);
+    }
+
+    @Override
+    public void channelRegistered(final ChannelHandlerContext ctx) {
+        ctx.fireChannelRegistered();
+    }
+
+    @Override
+    public void channelUnregistered(final ChannelHandlerContext ctx) {
+        ctx.fireChannelUnregistered();
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
+    }
+
+    @Override
+    public void channelReadComplete(final ChannelHandlerContext ctx) {
+        ctx.fireChannelReadComplete();
+    }
+
+    @Override
+    public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
+        ctx.fireChannelWritabilityChanged();
     }
 }
