@@ -21,6 +21,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.netty.channel.ChannelHandlerAdapter;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -32,7 +33,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
-import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,8 +86,10 @@ class DefaultEmbeddedPipelineTest {
                 config,
                 identity,
                 peersManager,
-                new HandlerAdapter(),
-                new HandlerAdapter()
+                new ChannelHandlerAdapter() {
+                },
+                new ChannelHandlerAdapter() {
+                }
         );
         try {
             final TestObserver<Object> inboundMessageTestObserver = pipeline.drasylInboundMessages().test();

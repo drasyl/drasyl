@@ -23,6 +23,7 @@ package org.drasyl.plugin;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -31,15 +32,9 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.pipeline.Skip;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.HandlerAdapter;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -112,61 +107,9 @@ class PluginsIT {
 
         @Override
         public void onAfterStart(final PluginEnvironment environment) {
-            environment.getPipeline().addFirst("TestHandler", new HandlerAdapter() {
-                @Override
-                public void userEventTriggered(final ChannelHandlerContext ctx,
-                                               final Object evt) {
-                    if (evt instanceof MigrationEvent) {
-                        onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
-                    }
-                    else {
-                        ctx.fireUserEventTriggered(evt);
-                    }
-                }
-
-                /**
-                 * Do nothing by default, sub-classes may override this method.
-                 */
-                public void onRemoved(final ChannelHandlerContext ctx) {
-                    // NOOP
-                }
-
-                @SuppressWarnings("java:S112")
-                @Skip
-                public void onOutbound(final ChannelHandlerContext ctx,
-                                       final Address recipient,
-                                       final Object msg,
-                                       final CompletableFuture<Void> future) throws Exception {
-                    FutureUtil.combine(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)), future);
-                }
-
-                @Skip
-                public void onEvent(final ChannelHandlerContext ctx,
-                                    final Event event,
-                                    final CompletableFuture<Void> future) {
-                    ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-                }
-
-                @SuppressWarnings("java:S112")
-                @Skip
-                public void onInbound(final ChannelHandlerContext ctx,
-                                      final Address sender,
-                                      final Object msg,
-                                      final CompletableFuture<Void> future) throws Exception {
-                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
-                }
-
-                @Override
-                public void handlerRemoved(final ChannelHandlerContext ctx) {
-                    onRemoved(ctx);
-                }
-
+            environment.getPipeline().addFirst("TestHandler", new ChannelHandlerAdapter() {
                 @Override
                 public void handlerAdded(final ChannelHandlerContext ctx) {
-                    onAdded(ctx);
-                }
-
-                public void onAdded(final ChannelHandlerContext ctx) {
                     final CompletableFuture<Void> future = new CompletableFuture<>();
                     ctx.fireUserEventTriggered(new MigrationEvent(event1, future));
                 }
