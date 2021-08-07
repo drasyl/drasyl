@@ -24,6 +24,7 @@ package org.drasyl.remote.handler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
@@ -32,18 +33,14 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -67,7 +64,7 @@ import static org.drasyl.channel.Null.NULL;
  * @see LocalNetworkDiscovery
  */
 @SuppressWarnings({ "java:S112", "java:S2974" })
-public class UdpMulticastServer extends HandlerAdapter {
+public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     private static final String MULTICAST_INTERFACE_PROPERTY = "org.drasyl.remote.multicast.interface";
     private static final Logger LOG = LoggerFactory.getLogger(UdpMulticastServer.class);
     public static final InetSocketAddressWrapper MULTICAST_ADDRESS;
@@ -119,21 +116,6 @@ public class UdpMulticastServer extends HandlerAdapter {
                 new Bootstrap().group(EventLoopGroupUtil.getInstanceNio()).channel(NioDatagramChannel.class),
                 null
         );
-    }
-
-    @Skip
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent) {
-            startServer(ctx);
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopServer(ctx);
-        }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     private synchronized void startServer(final ChannelHandlerContext ctx) {
@@ -210,7 +192,7 @@ public class UdpMulticastServer extends HandlerAdapter {
             final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
             final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
             try {
-                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
+                ctx.fireChannelRead(new MigrationInboundMessage<>(payload, migrationMsg.address(), migrationMsg.future()));
             }
             catch (final Exception e) {
                 migrationMsg.future().completeExceptionally(e);
@@ -224,52 +206,19 @@ public class UdpMulticastServer extends HandlerAdapter {
     }
 
     @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) {
-        onAdded(ctx);
-    }
-
-    @Override
-    public void handlerRemoved(final ChannelHandlerContext ctx) {
-        onRemoved(ctx);
-    }
-
-    @SuppressWarnings("java:S112")
-    @Skip
-    public void onInbound(final ChannelHandlerContext ctx,
-                          final Address sender,
-                          final Object msg,
-                          final CompletableFuture<Void> future) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
-    }
-
-    @SuppressWarnings("java:S112")
-    @Skip
-    public void onOutbound(final ChannelHandlerContext ctx,
-                           final Address recipient,
-                           final Object msg,
-                           final CompletableFuture<Void> future) throws Exception {
-        FutureUtil.combine(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)), future);
-    }
-
-    /**
-     * Do nothing by default, sub-classes may override this method.
-     */
-    public void onAdded(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
-    /**
-     * Do nothing by default, sub-classes may override this method.
-     */
-    public void onRemoved(final ChannelHandlerContext ctx) {
-        // NOOP
-    }
-
-    @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
         if (evt instanceof MigrationEvent) {
-            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
+            final Event event = ((MigrationEvent) evt).event();
+            if (event instanceof NodeUpEvent) {
+                startServer(ctx);
+            }
+            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                stopServer(ctx);
+            }
+
+            // passthrough event
+            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
         }
         else {
             ctx.fireUserEventTriggered(evt);
