@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
@@ -37,8 +36,6 @@ import org.drasyl.util.FutureUtil;
 
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
-
-import static org.drasyl.channel.Null.NULL;
 
 /**
  * Skeleton implementation of a {@link HandlerAdapter}.
@@ -144,23 +141,7 @@ public class HandlerAdapter implements ChannelOutboundHandler, ChannelInboundHan
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof MigrationOutboundMessage) {
-            final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            FutureUtil.combine(future, promise);
-            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
-            try {
-                onOutbound(ctx, migrationMsg.address(), payload, future);
-            }
-            catch (final Exception e) {
-                future.completeExceptionally(e);
-                ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(migrationMsg.message());
-            }
-        }
-        else {
-            ctx.writeAndFlush(msg, promise);
-        }
+        ctx.write(msg, promise);
     }
 
     @Override

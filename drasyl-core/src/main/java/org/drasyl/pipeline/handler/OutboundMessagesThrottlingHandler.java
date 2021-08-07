@@ -22,8 +22,8 @@
 package org.drasyl.pipeline.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -70,21 +70,25 @@ public class OutboundMessagesThrottlingHandler extends HandlerAdapter {
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof MigrationInboundMessage) {
-            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
+        if (msg instanceof MigrationOutboundMessage) {
+            final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            FutureUtil.combine(future, promise);
             final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
             try {
-                onInbound(ctx, migrationMsg.address(), payload, migrationMsg.future());
+                onOutbound(ctx, migrationMsg.address(), payload, future);
             }
             catch (final Exception e) {
-                migrationMsg.future().completeExceptionally(e);
+                future.completeExceptionally(e);
                 ctx.fireExceptionCaught(e);
                 ReferenceCountUtil.safeRelease(migrationMsg.message());
             }
         }
         else {
-            ctx.fireChannelRead(msg);
+            ctx.write(msg, promise);
         }
     }
 
