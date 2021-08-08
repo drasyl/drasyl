@@ -26,10 +26,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
@@ -61,13 +59,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
         this.matcherMessage = TypeParameterMatcher.get(inboundMessageType);
         this.matcherAddress = TypeParameterMatcher.get(addressType);
         this.outboundMessageMatcher = TypeParameterMatcher.get(outboundMessageType);
-    }
-
-    @Skip
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Skip
@@ -192,17 +183,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
         }
         else {
             ctx.fireChannelRead(msg);
-        }
-    }
-
-    @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
         }
     }
 }

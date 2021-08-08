@@ -118,26 +118,6 @@ public class LocalHostDiscovery extends SimpleDuplexHandler<Object, ApplicationM
     }
 
     @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        final FutureCombiner combiner = FutureCombiner.getInstance();
-
-        if (event instanceof NodeUpEvent) {
-            combiner.add(startDiscovery(ctx, ((NodeUpEvent) event).getNode().getPort()));
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            combiner.add(stopDiscovery(ctx));
-        }
-
-        // passthrough event
-        final CompletableFuture<Void> future1 = new CompletableFuture<>();
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future1));
-        combiner.add(future1)
-                .combine(future);
-    }
-
-    @Override
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final IdentityPublicKey recipient,
                                    final ApplicationMessage message,
@@ -353,6 +333,31 @@ public class LocalHostDiscovery extends SimpleDuplexHandler<Object, ApplicationM
         }
         catch (final IOException e) {
             LOG.warn("Unable to write peer information to `{}`: {}", filePath::toAbsolutePath, e::getMessage);
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            final FutureCombiner combiner = FutureCombiner.getInstance();
+
+            if (event instanceof NodeUpEvent) {
+                combiner.add(startDiscovery(ctx, ((NodeUpEvent) event).getNode().getPort()));
+            }
+            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                combiner.add(stopDiscovery(ctx));
+            }
+
+            // passthrough event
+            final CompletableFuture<Void> future1 = new CompletableFuture<>();
+            ctx.fireUserEventTriggered(new MigrationEvent(event, future1));
+            combiner.add(future1)
+                    .combine(((MigrationEvent) evt).future());
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
         }
     }
 

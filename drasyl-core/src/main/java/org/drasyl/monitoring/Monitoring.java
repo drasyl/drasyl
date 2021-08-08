@@ -106,23 +106,6 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     }
 
     @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.events", event));
-
-        if (event instanceof NodeUpEvent) {
-            startMonitoring(ctx);
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopMonitoring();
-        }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
-    @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
                                   final Object msg,
@@ -166,6 +149,28 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
         if (registry != null) {
             final Counter counter = counters.computeIfAbsent(o.getClass().getSimpleName(), clazz -> Counter.builder(metric).tag("clazz", clazz).register(registry));
             counter.increment();
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.events", event));
+
+            if (event instanceof NodeUpEvent) {
+                startMonitoring(ctx);
+            }
+            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                stopMonitoring();
+            }
+
+            // passthrough event
+            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
         }
     }
 

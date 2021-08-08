@@ -87,24 +87,6 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         this(new ConcurrentHashMap<>(), null);
     }
 
-    @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (MULTICAST_INTERFACE != null) {
-            if (event instanceof NodeUpEvent) {
-                startHeartbeat(ctx);
-            }
-            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                stopHeartbeat();
-                clearRoutes(ctx);
-            }
-        }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
     synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
         if (pingDisposable == null) {
             LOG.debug("Start Network Network Discovery...");
@@ -187,6 +169,29 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         }
         else {
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, recipient)))).combine(future);
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            if (MULTICAST_INTERFACE != null) {
+                if (event instanceof NodeUpEvent) {
+                    startHeartbeat(ctx);
+                }
+                else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                    stopHeartbeat();
+                    clearRoutes(ctx);
+                }
+            }
+
+            // passthrough event
+            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
         }
     }
 

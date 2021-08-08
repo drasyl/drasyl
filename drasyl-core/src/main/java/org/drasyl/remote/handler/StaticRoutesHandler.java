@@ -63,22 +63,6 @@ public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, Appli
     }
 
     @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            clearRoutes(ctx);
-        }
-
-        if (event instanceof NodeUpEvent) {
-            populateRoutes(ctx);
-        }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
-    @Override
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final IdentityPublicKey recipient,
                                    final ApplicationMessage envelope,
@@ -100,6 +84,27 @@ public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, Appli
                                   final Object msg,
                                   final CompletableFuture<Void> future) throws Exception {
         ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                clearRoutes(ctx);
+            }
+
+            if (event instanceof NodeUpEvent) {
+                populateRoutes(ctx);
+            }
+
+            // passthrough event
+            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
+        }
     }
 
     private static synchronized void populateRoutes(final ChannelHandlerContext ctx) {

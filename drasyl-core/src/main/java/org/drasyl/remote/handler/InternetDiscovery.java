@@ -128,24 +128,6 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         this.bestSuperPeer = bestSuperPeer;
     }
 
-    @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent) {
-            startHeartbeat(ctx);
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopHeartbeat();
-            openPingsCache.clear();
-            uniteAttemptsCache.clear();
-            removeAllPeers(ctx);
-        }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
     synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
         if (heartbeatDisposable == null) {
             LOG.debug("Start heartbeat scheduler");
@@ -330,6 +312,29 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
         else {
             return false;
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            if (event instanceof NodeUpEvent) {
+                startHeartbeat(ctx);
+            }
+            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                stopHeartbeat();
+                openPingsCache.clear();
+                uniteAttemptsCache.clear();
+                removeAllPeers(ctx);
+            }
+
+            // passthrough event
+            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
         }
     }
 

@@ -134,7 +134,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
             final CompletableFuture<Void> future = new CompletableFuture<>();
-            handler.onEvent(ctx, event, future);
+            handler.userEventTriggered(ctx, new MigrationEvent(event, future));
             future.join();
 
             verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
@@ -189,7 +189,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
             final CompletableFuture<Void> future = new CompletableFuture<>();
-            handler.onEvent(ctx, event, future);
+            handler.userEventTriggered(ctx, new MigrationEvent(event, future));
             future.join();
 
             verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
@@ -245,7 +245,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
             final CompletableFuture<Void> future = new CompletableFuture<>();
-            handler.onEvent(ctx, event, future);
+            handler.userEventTriggered(ctx, new MigrationEvent(event, future));
             future.join();
 
             verify(watchService).poll();

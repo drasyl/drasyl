@@ -116,21 +116,6 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
         this((address, msg) -> false, (address, msg) -> false, Schedulers.single());
     }
 
-    @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent && disposable == null) {
-            start();
-        }
-        else if ((event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) && disposable != null) {
-            stop();
-        }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
     private void start() {
         final long startTime = System.currentTimeMillis();
         final AtomicLong intervalTime = new AtomicLong(startTime);
@@ -184,6 +169,26 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
         }
         else {
             ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            if (event instanceof NodeUpEvent && disposable == null) {
+                start();
+            }
+            else if ((event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) && disposable != null) {
+                stop();
+            }
+
+            // passthrough event
+            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
         }
     }
 }

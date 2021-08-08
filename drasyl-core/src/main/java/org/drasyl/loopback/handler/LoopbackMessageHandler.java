@@ -23,16 +23,11 @@ package org.drasyl.loopback.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 
@@ -46,8 +41,8 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
  */
 @ChannelHandler.Sharable
 @Stateless
-public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Address> {
-    private boolean started;
+public class LoopbackMessageHandler extends SimpleDuplexHandler<Object, Object, Address> {
+    private final boolean started;
 
     LoopbackMessageHandler(final boolean started) {
         this.started = started;
@@ -55,21 +50,6 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Addres
 
     public LoopbackMessageHandler() {
         this(false);
-    }
-
-    @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent) {
-            started = true;
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            started = false;
-        }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Override
@@ -83,5 +63,13 @@ public class LoopbackMessageHandler extends SimpleOutboundHandler<Object, Addres
         else {
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
         }
+    }
+
+    @Override
+    protected void matchedInbound(final ChannelHandlerContext ctx,
+                                  final Address sender,
+                                  final Object msg,
+                                  final CompletableFuture<Void> future) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
     }
 }

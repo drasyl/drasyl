@@ -90,6 +90,28 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
         );
     }
 
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            final CompletableFuture<Void> future = ((MigrationEvent) evt).future();
+            if (event instanceof NodeUpEvent) {
+                startServer(ctx, event, future);
+            }
+            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                stopServer(ctx, event, future);
+            }
+            else {
+                // passthrough event
+                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+            }
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
+        }
+    }
+
     static Set<Endpoint> determineActualEndpoints(final Identity identity,
                                                   final DrasylConfig config,
                                                   final InetSocketAddress listenAddress) {
@@ -116,22 +138,6 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
         return addresses.stream()
                 .map(address -> Endpoint.of(address.getHostAddress(), listenAddress.getPort(), identity.getIdentityPublicKey()))
                 .collect(Collectors.toSet());
-    }
-
-    @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent) {
-            startServer(ctx, event, future);
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopServer(ctx, event, future);
-        }
-        else {
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-        }
     }
 
     @SuppressWarnings("UnstableApiUsage")

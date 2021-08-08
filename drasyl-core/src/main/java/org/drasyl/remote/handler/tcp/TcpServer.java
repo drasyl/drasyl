@@ -89,22 +89,6 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
         this.serverChannel = serverChannel;
     }
 
-    @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent) {
-            startServer(ctx, (NodeUpEvent) event, future);
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            stopServer(ctx, event, future);
-        }
-        else {
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-        }
-    }
-
     private synchronized void startServer(final ChannelHandlerContext ctx,
                                           final NodeUpEvent event,
                                           final CompletableFuture<Void> future) {
@@ -196,6 +180,28 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
                                   final Object msg,
                                   final CompletableFuture<Void> future) throws Exception {
         ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            final CompletableFuture<Void> future = ((MigrationEvent) evt).future();
+            if (event instanceof NodeUpEvent) {
+                startServer(ctx, (NodeUpEvent) event, future);
+            }
+            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                stopServer(ctx, event, future);
+            }
+            else {
+                // passthrough event
+                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+            }
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
+        }
     }
 
     static class TcpServerChannelInitializer extends ChannelInitializer<Channel> {

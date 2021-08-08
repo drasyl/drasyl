@@ -97,33 +97,6 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
         );
     }
 
-    @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            // the TCP client should be shut down last, so that the other handlers have a chance to
-            // send a "goodbye" message.
-            final CompletableFuture<Void> otherHandlersFuture = new CompletableFuture<>();
-            otherHandlersFuture.whenComplete((result, e) -> {
-                // stop client
-                stopClient();
-
-                if (e == null) {
-                    future.complete(result);
-                }
-                else {
-                    future.completeExceptionally(e);
-                }
-            });
-            ctx.fireUserEventTriggered(new MigrationEvent(event, otherHandlersFuture));
-        }
-        else {
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-        }
-    }
-
     private synchronized void stopClient() {
         if (superPeerChannel != null) {
             superPeerChannel.cancel(true);
@@ -234,6 +207,39 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
                     superPeerChannel = null;
                 }
             });
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            final CompletableFuture<Void> future = ((MigrationEvent) evt).future();
+            if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                // the TCP client should be shut down last, so that the other handlers have a chance to
+                // send a "goodbye" message.
+                final CompletableFuture<Void> otherHandlersFuture = new CompletableFuture<>();
+                otherHandlersFuture.whenComplete((result, e) -> {
+                    // stop client
+                    stopClient();
+
+                    if (e == null) {
+                        future.complete(result);
+                    }
+                    else {
+                        future.completeExceptionally(e);
+                    }
+                });
+                ctx.fireUserEventTriggered(new MigrationEvent(event, otherHandlersFuture));
+            }
+            else {
+                // passthrough event
+                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+            }
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
         }
     }
 

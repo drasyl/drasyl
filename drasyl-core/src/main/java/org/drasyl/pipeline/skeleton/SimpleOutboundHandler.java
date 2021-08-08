@@ -26,10 +26,7 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.channel.MigrationEvent;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
@@ -139,21 +136,5 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Channe
         else {
             ctx.write(msg, promise);
         }
-    }
-
-    @SuppressWarnings("java:S112")
-    @Skip
-    public void onInbound(final ChannelHandlerContext ctx,
-                          final Address sender,
-                          final Object msg,
-                          final CompletableFuture<Void> future) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
-    }
-
-    @Skip
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 }
