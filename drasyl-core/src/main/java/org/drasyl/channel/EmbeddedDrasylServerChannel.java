@@ -262,7 +262,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
             msg = NULL;
         }
         pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);
-        writeAndFlush(msg);
         return FutureUtil.toFuture(promise);
     }
 
