@@ -26,9 +26,11 @@ import com.google.protobuf.ByteString;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.serialization.StringSerializer;
@@ -70,7 +72,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(address, message);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) address));
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -92,7 +94,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(address, message);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) address));
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -110,7 +112,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(address, message);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) address));
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -128,7 +130,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, message);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender));
 
                 inboundMessages.assertNoValues();
             }
@@ -148,7 +150,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, message);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender));
 
                 inboundMessages.assertNoValues();
             }

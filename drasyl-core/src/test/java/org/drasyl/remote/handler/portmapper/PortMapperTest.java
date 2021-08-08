@@ -25,9 +25,11 @@ import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.UdpServer;
 import org.junit.jupiter.api.Nested;
@@ -110,7 +112,7 @@ class PortMapperTest {
             try {
                 inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
 
                 inboundMessages.assertEmpty();
             }
@@ -131,7 +133,7 @@ class PortMapperTest {
             try {
                 inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);

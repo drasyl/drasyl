@@ -24,6 +24,7 @@ package org.drasyl.remote.handler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -71,7 +72,7 @@ class OtherNetworkFilterTest {
         try {
             final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-            pipeline.processInbound(message.getSender(), message);
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) message.getSender()));
 
             inboundMessages.assertNoValues();
         }
@@ -90,7 +91,7 @@ class OtherNetworkFilterTest {
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-            pipeline.processInbound(sender, message);
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, sender));
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1)

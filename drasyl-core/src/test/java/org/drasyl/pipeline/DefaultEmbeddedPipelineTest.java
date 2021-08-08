@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerAdapter;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -64,7 +65,7 @@ class DefaultEmbeddedPipelineTest {
             final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            pipeline.processInbound(sender, msg);
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
 
             inboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)

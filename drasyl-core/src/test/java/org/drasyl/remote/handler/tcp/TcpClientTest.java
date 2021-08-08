@@ -30,6 +30,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -103,7 +104,7 @@ public class TcpClientTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -127,7 +128,7 @@ public class TcpClientTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)

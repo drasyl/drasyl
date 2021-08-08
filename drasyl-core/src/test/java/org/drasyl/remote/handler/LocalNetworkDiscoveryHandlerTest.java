@@ -26,6 +26,7 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -236,7 +237,7 @@ class LocalNetworkDiscoveryTest {
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                pipeline.processInbound(sender, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)

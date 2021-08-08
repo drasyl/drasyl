@@ -28,12 +28,14 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
@@ -197,7 +199,7 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 RxJavaTestUtil.assertValues(testObserver.awaitCount(2),
@@ -219,7 +221,7 @@ class GroupsManagerHandlerTest {
 
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(null);
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 testObserver.awaitCount(1)
@@ -243,7 +245,7 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(false);
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 testObserver.awaitCount(1).assertValueCount(1);
@@ -267,7 +269,7 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 testObserver.awaitCount(1).assertValueCount(1);
@@ -290,7 +292,7 @@ class GroupsManagerHandlerTest {
 
                 when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 testObserver.assertNoValues();
@@ -313,7 +315,7 @@ class GroupsManagerHandlerTest {
                 final TestObserver<GroupsServerMessage> outboundMessages = pipeline.drasylOutboundMessages(GroupsServerMessage.class).test();
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 outboundMessages
@@ -339,7 +341,7 @@ class GroupsManagerHandlerTest {
 
                 doThrow(DatabaseException.class).when(databaseAdapter).removeGroupMember(any(), anyString());
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
 
                 pipeline.runPendingTasks();
                 outboundMessages.assertNoValues();

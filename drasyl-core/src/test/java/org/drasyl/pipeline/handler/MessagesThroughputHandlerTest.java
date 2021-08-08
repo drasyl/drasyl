@@ -27,6 +27,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -125,7 +126,7 @@ class MessagesThroughputHandlerTest {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.processInbound(address, new Object());
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(new Object(), address));
         }
         finally {
             pipeline.drasylClose();
@@ -160,7 +161,7 @@ class MessagesThroughputHandlerTest {
         try {
             observable = pipeline.drasylInboundMessages().test();
 
-            pipeline.processInbound(address, new Object());
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(new Object(), address));
 
             observable.assertEmpty();
         }

@@ -26,6 +26,7 @@ import com.goterl.lazysodium.utils.SessionPair;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -35,6 +36,7 @@ import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.ArmedMessage;
@@ -357,7 +359,7 @@ class ArmHandlerTest {
                                 body)
                         .setAgreementId(agreementId);
 
-                pipeline.processInbound(receiveAddress, msg.arm(Crypto.INSTANCE, sessionPairSender));
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg.arm(Crypto.INSTANCE, sessionPairSender), (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertNoValues();
@@ -390,7 +392,7 @@ class ArmHandlerTest {
                                 body)
                         .setAgreementId(agreementId);
 
-                pipeline.processInbound(receiveAddress, msg.arm(Crypto.INSTANCE, sessionPairSender));
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg.arm(Crypto.INSTANCE, sessionPairSender), (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -433,7 +435,7 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
@@ -481,7 +483,7 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId2)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
@@ -520,7 +522,7 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -561,7 +563,7 @@ class ArmHandlerTest {
                 assertFalse(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(0, session.getInitializedAgreements().size());
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
                 pipeline.runPendingTasks();
 
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
@@ -607,7 +609,7 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
                 pipeline.runPendingTasks();
 
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
@@ -702,7 +704,7 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer
                         .awaitCount(2)
@@ -780,7 +782,7 @@ class ArmHandlerTest {
                 doReturn(concurrentAgreement).when(session).getCurrentActiveAgreement();
                 doReturn(Optional.of(agreement)).when(concurrentAgreement).computeOnCondition(any(), any());
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 outObserver.assertNoValues();
                 inObserver.assertValueCount(1);
@@ -803,7 +805,7 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -825,7 +827,7 @@ class ArmHandlerTest {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -856,7 +858,7 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -887,7 +889,7 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMsg).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -918,7 +920,7 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -956,7 +958,7 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -997,7 +999,7 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.processInbound(receiveAddress, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)

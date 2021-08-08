@@ -178,7 +178,7 @@ class SimpleDuplexHandlerTest {
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 final byte[] msg = new byte[]{};
-                pipeline.processInbound(sender, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
 
                 outboundMessageTestObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -219,7 +219,7 @@ class SimpleDuplexHandlerTest {
                 final TestObserver<RemoteMessage> outboundMessageTestObserver = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-                pipeline.processInbound(sender, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
 
                 inboundMessageTestObserver.awaitCount(1)
                         .assertValueCount(1)

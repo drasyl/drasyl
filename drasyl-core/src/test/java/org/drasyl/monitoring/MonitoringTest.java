@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -128,7 +129,7 @@ class MonitoringTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, message);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, sender));
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);

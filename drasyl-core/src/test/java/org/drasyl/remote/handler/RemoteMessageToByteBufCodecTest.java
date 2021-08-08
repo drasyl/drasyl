@@ -28,6 +28,7 @@ import io.netty.channel.ChannelInboundHandler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -87,7 +88,7 @@ class RemoteMessageToByteBufCodecTest {
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
-                pipeline.processInbound(sender, byteBuf);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) byteBuf, (Address) sender));
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);

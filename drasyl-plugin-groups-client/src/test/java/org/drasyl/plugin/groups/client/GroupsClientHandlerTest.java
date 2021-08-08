@@ -26,6 +26,7 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -33,6 +34,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
@@ -210,7 +212,7 @@ class GroupsClientHandlerTest {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -229,7 +231,7 @@ class GroupsClientHandlerTest {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -250,7 +252,7 @@ class GroupsClientHandlerTest {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -274,7 +276,7 @@ class GroupsClientHandlerTest {
                 when(groups.get(any())).thenReturn(uri);
                 when(uri.getTimeout()).thenReturn(Duration.ofMinutes(10));
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -295,7 +297,7 @@ class GroupsClientHandlerTest {
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
                 final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
 
-                pipeline.processInbound(publicKey, msg);
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)

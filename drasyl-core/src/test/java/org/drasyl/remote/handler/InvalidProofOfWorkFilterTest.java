@@ -24,6 +24,7 @@ package org.drasyl.remote.handler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
@@ -69,7 +70,7 @@ class InvalidProofOfWorkFilterTest {
         try {
             final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-            pipeline.processInbound(message.getSender(), message);
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) message.getSender()));
 
             inboundMessages.assertNoValues();
         }
@@ -86,7 +87,7 @@ class InvalidProofOfWorkFilterTest {
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-            pipeline.processInbound(message.getSender(), message);
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) message.getSender()));
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -103,7 +104,7 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_3, peersManager, handler);
         try {
-            pipeline.processInbound(message.getSender(), message);
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) message.getSender()));
 
             verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
         }

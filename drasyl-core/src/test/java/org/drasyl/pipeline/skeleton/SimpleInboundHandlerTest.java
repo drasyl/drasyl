@@ -65,7 +65,7 @@ class SimpleInboundHandlerTest {
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
 
-            pipeline.processInbound(sender, "Hallo Welt".getBytes());
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) "Hallo Welt".getBytes(), sender));
 
             inboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
@@ -92,7 +92,7 @@ class SimpleInboundHandlerTest {
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
 
-            pipeline.processInbound(sender, 1337);
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) 1337, sender));
 
             inboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)

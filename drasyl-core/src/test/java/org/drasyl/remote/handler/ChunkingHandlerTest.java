@@ -29,6 +29,7 @@ import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.Identity;
@@ -101,7 +102,7 @@ class ChunkingHandlerTest {
 
                     final ByteBuf bytes = Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]);
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes);
-                    pipeline.processInbound(senderAddress, headChunk);
+                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) headChunk, (Address) senderAddress));
 
                     inboundMessages.assertNoValues();
                 }
@@ -126,10 +127,10 @@ class ChunkingHandlerTest {
                     message.writeTo(bytes);
 
                     final BodyChunkMessage bodyChunk = BodyChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(1), bytes.slice(remoteMessageMtu / 2, remoteMessageMtu / 2));
-                    pipeline.processInbound(senderAddress, bodyChunk);
+                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) bodyChunk, (Address) senderAddress));
 
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(bodyChunk.getNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes.slice(0, remoteMessageMtu / 2));
-                    pipeline.processInbound(senderAddress, headChunk);
+                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) headChunk, (Address) senderAddress));
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -178,11 +179,11 @@ class ChunkingHandlerTest {
                     final ByteBuf chunkPayload = Unpooled.wrappedBuffer(bytes);
 
                     final PartialReadMessage chunk = PartialReadMessage.of(chunkHeader, chunkPayload);
-                    pipeline.processInbound(senderAddress, chunk);
+                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) chunk, (Address) senderAddress));
 
                     final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload);
 
-                    pipeline.processInbound(senderAddress, headChunk);
+                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) headChunk, (Address) senderAddress));
 
                     inboundMessages.assertNoValues();
                 }
@@ -205,7 +206,7 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                    pipeline.processInbound(sender, msg);
+                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -237,7 +238,7 @@ class ChunkingHandlerTest {
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
                     try (final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload)) {
-                        pipeline.processInbound(sender, headChunk);
+                        pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) headChunk, (Address) sender));
 
                         inboundMessages.awaitCount(1)
                                 .assertValueCount(1);
