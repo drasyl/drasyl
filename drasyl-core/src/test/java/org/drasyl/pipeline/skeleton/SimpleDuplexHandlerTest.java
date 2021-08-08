@@ -32,7 +32,6 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
@@ -49,7 +48,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -234,23 +232,6 @@ class SimpleDuplexHandlerTest {
             finally {
                 pipeline.drasylClose();
             }
-        }
-
-        @Test
-        void shouldReturnCorrectHandlerMask() {
-            final int mask = HandlerMask.ALL
-                    & ~HandlerMask.ON_EXCEPTION_MASK
-                    & ~HandlerMask.ON_EVENT_MASK;
-
-            assertEquals(mask, HandlerMask.mask(SimpleDuplexHandler.class));
-        }
-
-        @Test
-        void shouldReturnCorrectHandlerMaskForEventAwareHandler() {
-            final int mask = HandlerMask.ALL
-                    & ~HandlerMask.ON_EXCEPTION_MASK;
-
-            assertEquals(mask, HandlerMask.mask(SimpleDuplexHandler.class));
         }
     }
 

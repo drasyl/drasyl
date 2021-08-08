@@ -21,6 +21,7 @@
  */
 package org.drasyl.intravm;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -54,6 +55,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
  * <p>
  * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java
  */
+@ChannelHandler.Sharable
 @SuppressWarnings({ "java:S110" })
 public class IntraVmDiscovery extends SimpleDuplexHandler<Object, Object, Address> {
     public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
