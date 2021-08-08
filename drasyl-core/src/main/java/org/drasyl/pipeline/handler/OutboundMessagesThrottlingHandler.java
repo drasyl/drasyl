@@ -39,7 +39,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.Null.NULL;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
@@ -68,9 +67,8 @@ public class OutboundMessagesThrottlingHandler extends ChannelOutboundHandlerAda
             final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
             final CompletableFuture<Void> future = new CompletableFuture<>();
             FutureUtil.combine(future, promise);
-            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
             try {
-                queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(payload, migrationMsg.address())))).combine(future));
+                queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(migrationMsg.message(), migrationMsg.address())))).combine(future));
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);

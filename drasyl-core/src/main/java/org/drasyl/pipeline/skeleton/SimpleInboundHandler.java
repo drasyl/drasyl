@@ -32,8 +32,6 @@ import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.channel.Null.NULL;
-
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of inbound messages.
  * <p>
@@ -124,9 +122,8 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final MigrationInboundMessage<MI, MA> msg) {
-        final Object payload = msg.message() == NULL ? null : msg.message();
         try {
-            onInbound(ctx, msg.address(), payload, msg.future());
+            onInbound(ctx, msg.address(), msg.message(), msg.future());
         }
         catch (final Exception e) {
             msg.future().completeExceptionally(e);

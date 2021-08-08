@@ -51,7 +51,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-import static org.drasyl.channel.Null.NULL;
 
 /**
  * Starts an UDP server which joins a multicast group and together with the {@link
@@ -187,9 +186,8 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof MigrationInboundMessage) {
             final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
-            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
             try {
-                ctx.fireChannelRead(new MigrationInboundMessage<>(payload, migrationMsg.address(), migrationMsg.future()));
+                ctx.fireChannelRead(new MigrationInboundMessage<>(migrationMsg.message(), migrationMsg.address(), migrationMsg.future()));
             }
             catch (final Exception e) {
                 migrationMsg.future().completeExceptionally(e);

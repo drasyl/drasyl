@@ -57,7 +57,6 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
-import static org.drasyl.channel.Null.NULL;
 
 /**
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
@@ -96,15 +95,11 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
                                     final Object msg) throws Exception {
                 if (msg instanceof MigrationInboundMessage) {
                     final MigrationInboundMessage<?, ?> m = (MigrationInboundMessage<?, ?>) msg;
-                    Object message = m.message();
-                    if (message == NULL) {
-                        message = null;
-                    }
                     if (m.address() instanceof IdentityPublicKey) {
                         final IdentityPublicKey senderAddress = (IdentityPublicKey) m.address();
-                        inboundEvents.onNext(MessageEvent.of(senderAddress, message));
+                        inboundEvents.onNext(MessageEvent.of(senderAddress, m.message()));
                     }
-                    inboundMessages.onNext(new DefaultAddressedEnvelope<>(m.address(), null, message));
+                    inboundMessages.onNext(new DefaultAddressedEnvelope<>(m.address(), null, m.message()));
 
                     m.future().complete(null);
                 }
@@ -135,11 +130,7 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
                               final ChannelPromise promise) throws Exception {
                 if (msg instanceof MigrationOutboundMessage) {
                     final MigrationOutboundMessage<?, ?> m = (MigrationOutboundMessage<?, ?>) msg;
-                    Object message = m.message();
-                    if (message == NULL) {
-                        message = null;
-                    }
-                    outboundMessages.onNext(new DefaultAddressedEnvelope<>(null, m.address(), message));
+                    outboundMessages.onNext(new DefaultAddressedEnvelope<>(null, m.address(), m.message()));
                     promise.setSuccess();
                 }
                 else {
@@ -254,11 +245,8 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
         runPendingTasks();
     }
 
-    public ChannelPromise processOutbound(final Address recipient, Object msg) {
+    public ChannelPromise processOutbound(final Address recipient, final Object msg) {
         final ChannelPromise promise = newPromise();
-        if (msg == null) {
-            msg = NULL;
-        }
         pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);
         return promise;
     }

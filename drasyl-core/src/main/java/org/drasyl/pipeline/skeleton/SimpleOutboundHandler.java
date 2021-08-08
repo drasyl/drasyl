@@ -35,8 +35,6 @@ import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.channel.Null.NULL;
-
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages.
  * <p>
@@ -123,9 +121,8 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Channe
             final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
             final CompletableFuture<Void> future = new CompletableFuture<>();
             FutureUtil.combine(future, promise);
-            final Object payload = migrationMsg.message() == NULL ? null : migrationMsg.message();
             try {
-                onOutbound(ctx, migrationMsg.address(), payload, future);
+                onOutbound(ctx, migrationMsg.address(), migrationMsg.message(), future);
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);
