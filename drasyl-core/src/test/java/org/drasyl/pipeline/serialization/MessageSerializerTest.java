@@ -32,6 +32,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.serialization.StringSerializer;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -170,7 +171,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
-                pipeline.processOutbound(identity.getIdentityPublicKey(), "Hello World").join();
+                FutureUtil.toFuture(pipeline.processOutbound(identity.getIdentityPublicKey(), "Hello World")).join();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);
@@ -193,7 +194,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
-                pipeline.processOutbound(identity.getIdentityPublicKey(), message).join();
+                FutureUtil.toFuture(pipeline.processOutbound(identity.getIdentityPublicKey(), message)).join();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);
@@ -210,7 +211,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
+                assertThrows(ExecutionException.class, () -> FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).get());
 
                 outboundMessages
                         .assertNoValues();
@@ -231,7 +232,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
+                assertThrows(ExecutionException.class, () -> FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).get());
 
                 outboundMessages.assertNoValues();
             }
@@ -249,7 +250,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
-                pipeline.processOutbound(identity.getIdentityPublicKey(), null);
+                FutureUtil.toFuture(pipeline.processOutbound(identity.getIdentityPublicKey(), null));
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);

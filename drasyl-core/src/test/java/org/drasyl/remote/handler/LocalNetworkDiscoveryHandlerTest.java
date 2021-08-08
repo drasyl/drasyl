@@ -39,6 +39,7 @@ import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.handler.LocalNetworkDiscovery.Peer;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -259,7 +260,7 @@ class LocalNetworkDiscoveryTest {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-        pipeline.processOutbound(recipient, message).join();
+        FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
         outboundMessages.awaitCount(1)
                 .assertValueCount(1)
@@ -274,7 +275,7 @@ class LocalNetworkDiscoveryTest {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-        pipeline.processOutbound(recipient, message).join();
+        FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
         outboundMessages.awaitCount(1)
                 .assertValueCount(1)

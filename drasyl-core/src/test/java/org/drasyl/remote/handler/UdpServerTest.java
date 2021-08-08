@@ -36,6 +36,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -152,7 +153,7 @@ class UdpServerTest {
             final UdpServer handler = new UdpServer(bootstrap, channel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processOutbound(recipient, msg).join();
+                FutureUtil.toFuture(pipeline.processOutbound(recipient, msg)).join();
 
                 verify(channel, times(3)).writeAndFlush(any());
             }

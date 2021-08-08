@@ -38,6 +38,7 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerChannelInitializer;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerHandler;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -133,7 +134,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processOutbound(recipient, msg).join();
+                FutureUtil.toFuture(pipeline.processOutbound(recipient, msg)).join();
 
                 verify(client).writeAndFlush(any());
             }
@@ -152,7 +153,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                assertThrows(CompletionException.class, pipeline.processOutbound(recipient, msg)::join);
+                assertThrows(CompletionException.class, FutureUtil.toFuture(pipeline.processOutbound(recipient, msg))::join);
             }
             finally {
                 pipeline.drasylClose();
@@ -167,7 +168,7 @@ class TcpServerTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                pipeline.processOutbound(recipient, msg).join();
+                FutureUtil.toFuture(pipeline.processOutbound(recipient, msg)).join();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);

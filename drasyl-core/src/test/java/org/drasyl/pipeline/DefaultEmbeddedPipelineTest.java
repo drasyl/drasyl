@@ -34,6 +34,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -97,7 +98,7 @@ class DefaultEmbeddedPipelineTest {
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final byte[] msg = new byte[]{};
-            pipeline.processOutbound(recipient, msg);
+            FutureUtil.toFuture(pipeline.processOutbound(recipient, msg));
 
             outboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)

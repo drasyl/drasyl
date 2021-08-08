@@ -44,7 +44,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.pipeline.serialization.Serialization;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.TypeReference;
@@ -52,7 +51,6 @@ import org.drasyl.util.TypeReference;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
@@ -256,13 +254,13 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
         runPendingTasks();
     }
 
-    public CompletableFuture<Void> processOutbound(final Address recipient, Object msg) {
+    public ChannelPromise processOutbound(final Address recipient, Object msg) {
         final ChannelPromise promise = newPromise();
         if (msg == null) {
             msg = NULL;
         }
         pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);
-        return FutureUtil.toFuture(promise);
+        return promise;
     }
 
     public PeersManager peersManager() {

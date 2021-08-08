@@ -41,6 +41,7 @@ import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -108,7 +109,7 @@ class RemoteMessageToByteBufCodecTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
-                pipeline.processOutbound(recipient, message).join();
+                FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
@@ -132,7 +133,7 @@ class RemoteMessageToByteBufCodecTest {
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, messageEnvelope).get());
+                assertThrows(ExecutionException.class, () -> FutureUtil.toFuture(pipeline.processOutbound(recipient, messageEnvelope)).get());
             }
             finally {
                 pipeline.drasylClose();

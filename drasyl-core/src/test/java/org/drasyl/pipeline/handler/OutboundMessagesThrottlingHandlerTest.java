@@ -29,6 +29,7 @@ import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -60,7 +61,7 @@ class OutboundMessagesThrottlingHandlerTest {
 
             final CompletableFuture<Void>[] futures = new CompletableFuture[10];
             for (int i = 0; i < 10; i++) {
-                futures[i] = pipeline.processOutbound(recipient, msg);
+                futures[i] = FutureUtil.toFuture(pipeline.processOutbound(recipient, msg));
             }
 
             assertThat(inboundMessages.values().size(), lessThanOrEqualTo(10));

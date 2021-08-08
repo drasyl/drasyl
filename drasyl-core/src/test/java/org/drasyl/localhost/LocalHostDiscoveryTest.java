@@ -37,6 +37,7 @@ import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -267,7 +268,7 @@ class LocalHostDiscoveryTest {
             try {
                 final TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
-                pipeline.processOutbound(recipient, message).join();
+                FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);
@@ -285,7 +286,7 @@ class LocalHostDiscoveryTest {
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                pipeline.processOutbound(recipient, message).join();
+                FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)

@@ -29,6 +29,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -61,7 +62,7 @@ class MessageToMessageEncoderTest {
             }
         });
         try {
-            assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, new Object()).get());
+            assertThrows(ExecutionException.class, () -> FutureUtil.toFuture(pipeline.processOutbound(recipient, new Object())).get());
         }
         finally {
             pipeline.drasylClose();
@@ -79,7 +80,7 @@ class MessageToMessageEncoderTest {
             }
         });
         try {
-            assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, new Object()).get());
+            assertThrows(ExecutionException.class, () -> FutureUtil.toFuture(pipeline.processOutbound(recipient, new Object())).get());
         }
         finally {
             pipeline.drasylClose();
@@ -99,7 +100,7 @@ class MessageToMessageEncoderTest {
         try {
             final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-            pipeline.processOutbound(recipient, new Object());
+            FutureUtil.toFuture(pipeline.processOutbound(recipient, new Object()));
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -138,7 +139,7 @@ class MessageToMessageEncoderTest {
             }
         });
         try {
-            assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, new Object()).get());
+            assertThrows(ExecutionException.class, () -> FutureUtil.toFuture(pipeline.processOutbound(recipient, new Object())).get());
         }
         finally {
             pipeline.drasylClose();

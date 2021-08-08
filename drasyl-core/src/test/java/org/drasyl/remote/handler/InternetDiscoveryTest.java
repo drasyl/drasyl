@@ -47,6 +47,7 @@ import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.remote.protocol.UniteMessage;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -486,7 +487,7 @@ class InternetDiscoveryTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipient, message).join();
+                    FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
                     outboundMessages.awaitCount(1)
                             .assertValue(new DefaultAddressedEnvelope<>(null, recipientSocketAddress, message));
@@ -510,7 +511,7 @@ class InternetDiscoveryTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipient, message).join();
+                    FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
                     outboundMessages.awaitCount(1)
                             .assertValue(new DefaultAddressedEnvelope<>(null, superPeerSocketAddress, message));
@@ -532,7 +533,7 @@ class InternetDiscoveryTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipient, message).join();
+                    FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -555,7 +556,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(recipient, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.processOutbound(recipient, message).join();
+                    FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
                     verify(peer).applicationTrafficOccurred();
                 }

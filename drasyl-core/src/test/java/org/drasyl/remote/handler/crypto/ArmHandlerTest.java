@@ -45,6 +45,7 @@ import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
 import org.drasyl.remote.protocol.KeyExchangeMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.ConcurrentReference;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -128,7 +129,7 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, applicationMessage);
+                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, applicationMessage));
 
                 outboundMessages.awaitCount(2)
                         .assertValueCount(2)
@@ -162,7 +163,7 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
+                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -189,7 +190,7 @@ class ArmHandlerTest {
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork());
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
+                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -220,7 +221,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
+                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -266,7 +267,7 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
+                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -300,7 +301,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
+                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
 
                 observer.awaitCount(2)
                         .assertValueCount(2)
@@ -332,7 +333,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
+                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
 
                 observer.awaitCount(1)
                         .assertValueCount(1);
@@ -669,7 +670,7 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
+                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
 
                 future.join();
                 observer.assertValue(armedMsg);
@@ -753,7 +754,7 @@ class ArmHandlerTest {
                 doReturn(true).when(agreement).isInitialized();
                 doReturn(false).when(agreement).isRenewable();
 
-                final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
+                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
 
                 future.join();
                 observer.assertValue(armedMsg);

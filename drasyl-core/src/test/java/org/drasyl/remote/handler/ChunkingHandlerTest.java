@@ -50,6 +50,7 @@ import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.UnarmedMessage;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.UnsignedShort;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -271,7 +272,7 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipientAddress, msg).join();
+                    FutureUtil.toFuture(pipeline.processOutbound(recipientAddress, msg)).join();
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -297,7 +298,7 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                    assertThrows(ExecutionException.class, pipeline.processOutbound(address, msg)::get);
+                    assertThrows(ExecutionException.class, FutureUtil.toFuture(pipeline.processOutbound(address, msg))::get);
                     outboundMessages.assertNoValues();
                 }
                 finally {
@@ -323,7 +324,7 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<ChunkMessage> outboundMessages = pipeline.drasylOutboundMessages(ChunkMessage.class).test();
 
-                    pipeline.processOutbound(address, msg).join();
+                    FutureUtil.toFuture(pipeline.processOutbound(address, msg)).join();
 
                     outboundMessages.awaitCount(3)
                             .assertValueCount(3)
@@ -350,7 +351,7 @@ class ChunkingHandlerTest {
                 try {
                     final @NonNull TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipientAddress, msg).join();
+                    FutureUtil.toFuture(pipeline.processOutbound(recipientAddress, msg)).join();
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)

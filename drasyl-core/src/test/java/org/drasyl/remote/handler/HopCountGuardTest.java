@@ -37,6 +37,7 @@ import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.HopCount;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,7 +85,7 @@ class HopCountGuardTest {
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-            pipeline.processOutbound(recipient, message).join();
+            FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -106,7 +107,7 @@ class HopCountGuardTest {
         try {
             final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-            assertThrows(CompletionException.class, pipeline.processOutbound(message.getSender(), message)::join);
+            assertThrows(CompletionException.class, FutureUtil.toFuture(pipeline.processOutbound(message.getSender(), message))::join);
 
             outboundMessages.assertNoValues();
         }
