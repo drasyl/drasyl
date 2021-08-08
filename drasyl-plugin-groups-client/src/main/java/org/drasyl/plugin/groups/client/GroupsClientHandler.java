@@ -87,22 +87,6 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
                 new ConcurrentHashMap<>(), FIRST_JOIN_DELAY);
     }
 
-    @org.drasyl.pipeline.Skip
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent) {
-            // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
-            ctx.executor().schedule(() -> groups.values().forEach(group ->
-                    joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
-
-            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-        }
-        else {
-            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-        }
-    }
-
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
@@ -156,6 +140,28 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
             catch (final ExecutionException e) {
                 LOG.warn("Exception occurred during de-registration from group `{}`: ", group.getName(), e);
             }
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            final CompletableFuture<Void> future = ((MigrationEvent) evt).future();
+            if (event instanceof NodeUpEvent) {
+                // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
+                ctx.executor().schedule(() -> groups.values().forEach(group ->
+                        joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
+
+                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+            }
+            else {
+                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+            }
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
         }
     }
 

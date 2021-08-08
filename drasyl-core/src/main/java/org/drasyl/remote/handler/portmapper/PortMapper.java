@@ -72,26 +72,6 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        if (event instanceof NodeUpEvent) {
-            LOG.debug("Try to map port with method `{}`.", () -> methods.get(currentMethodPointer));
-            methods.get(currentMethodPointer).start(ctx, (NodeUpEvent) event, () -> cycleNextMethod(ctx, (NodeUpEvent) event));
-        }
-        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-            if (retryTask != null) {
-                retryTask.cancel(false);
-                retryTask = null;
-            }
-            methods.get(currentMethodPointer).stop(ctx);
-        }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
-    @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
                                   final ByteBuf msg,
@@ -120,6 +100,31 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
         else {
             LOG.debug("Method `{}` was unable to create mapping. Let's give next method `{}` a try.", () -> methods.get(oldMethodPointer), () -> methods.get(currentMethodPointer));
             methods.get(currentMethodPointer).start(ctx, event, () -> cycleNextMethod(ctx, event));
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) {
+        if (evt instanceof MigrationEvent) {
+            final Event event = ((MigrationEvent) evt).event();
+            if (event instanceof NodeUpEvent) {
+                LOG.debug("Try to map port with method `{}`.", () -> methods.get(currentMethodPointer));
+                methods.get(currentMethodPointer).start(ctx, (NodeUpEvent) event, () -> cycleNextMethod(ctx, (NodeUpEvent) event));
+            }
+            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+                if (retryTask != null) {
+                    retryTask.cancel(false);
+                    retryTask = null;
+                }
+                methods.get(currentMethodPointer).stop(ctx);
+            }
+
+            // passthrough event
+            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
+        }
+        else {
+            ctx.fireUserEventTriggered(evt);
         }
     }
 }

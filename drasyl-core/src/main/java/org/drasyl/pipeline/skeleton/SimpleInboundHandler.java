@@ -25,9 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
@@ -76,13 +74,6 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
         super(false);
         this.matcherMessage = TypeParameterMatcher.get(inboundMessageType);
         this.matcherAddress = TypeParameterMatcher.get(addressType);
-    }
-
-    @Skip
-    public void onEvent(final ChannelHandlerContext ctx,
-                        final Event event,
-                        final CompletableFuture<Void> future) {
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
     }
 
     @Skip
@@ -141,17 +132,6 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
             msg.future().completeExceptionally(e);
             ctx.fireExceptionCaught(e);
             ReferenceCountUtil.safeRelease(msg.message());
-        }
-    }
-
-    @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            onEvent(ctx, ((MigrationEvent) evt).event(), ((MigrationEvent) evt).future());
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
         }
     }
 }
