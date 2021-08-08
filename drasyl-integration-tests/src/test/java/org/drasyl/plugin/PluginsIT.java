@@ -44,7 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 @ExtendWith(MockitoExtension.class)
 class PluginsIT {
@@ -110,8 +109,7 @@ class PluginsIT {
             environment.getPipeline().addFirst("TestHandler", new ChannelHandlerAdapter() {
                 @Override
                 public void handlerAdded(final ChannelHandlerContext ctx) {
-                    final CompletableFuture<Void> future = new CompletableFuture<>();
-                    ctx.fireUserEventTriggered(new MigrationEvent(event1, future));
+                    ctx.fireUserEventTriggered(new MigrationEvent(event1));
                 }
             });
             environment.getPipeline().fireUserEventTriggered(new MigrationEvent(event2));

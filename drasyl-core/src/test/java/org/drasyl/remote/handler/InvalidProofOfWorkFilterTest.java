@@ -39,10 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
-import java.util.concurrent.CompletionException;
-
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -72,7 +69,7 @@ class InvalidProofOfWorkFilterTest {
         try {
             final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-            assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
+            pipeline.processInbound(message.getSender(), message);
 
             inboundMessages.assertNoValues();
         }
@@ -89,7 +86,7 @@ class InvalidProofOfWorkFilterTest {
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-            pipeline.processInbound(message.getSender(), message).join();
+            pipeline.processInbound(message.getSender(), message);
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -106,7 +103,7 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_3, peersManager, handler);
         try {
-            pipeline.processInbound(message.getSender(), message).join();
+            pipeline.processInbound(message.getSender(), message);
 
             verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
         }

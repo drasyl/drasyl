@@ -110,7 +110,7 @@ class PortMapperTest {
             try {
                 inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, msg).join();
+                pipeline.processInbound(sender, msg);
 
                 inboundMessages.assertEmpty();
             }
@@ -131,7 +131,7 @@ class PortMapperTest {
             try {
                 inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, msg).join();
+                pipeline.processInbound(sender, msg);
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);

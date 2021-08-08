@@ -43,6 +43,11 @@ public class MigrationInboundMessage<T, A extends Address> {
         this.future = requireNonNull(future);
     }
 
+    public MigrationInboundMessage(final T message,
+                                   final A address) {
+        this(message, address, new CompletableFuture<>());
+    }
+
     public T message() {
         return message;
     }

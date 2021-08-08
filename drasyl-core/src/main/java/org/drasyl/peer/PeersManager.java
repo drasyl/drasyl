@@ -36,7 +36,6 @@ import org.drasyl.util.SetUtil;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -239,7 +238,7 @@ public class PeersManager {
             // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                ctx.fireUserEventTriggered(new MigrationEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerDirectEvent.of(Peer.of(publicKey))));
             }
 
             // role (children peer)
@@ -261,7 +260,7 @@ public class PeersManager {
 
             // path
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                ctx.fireUserEventTriggered(new MigrationEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerRelayEvent.of(Peer.of(publicKey))));
             }
 
             // role (children)

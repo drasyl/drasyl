@@ -236,7 +236,7 @@ class LocalNetworkDiscoveryTest {
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                pipeline.processInbound(sender, msg).join();
+                pipeline.processInbound(sender, msg);
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)

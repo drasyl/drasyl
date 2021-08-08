@@ -63,7 +63,6 @@ import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -101,9 +100,8 @@ class ChunkingHandlerTest {
 
                     final ByteBuf bytes = Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]);
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes);
-                    pipeline.processInbound(senderAddress, headChunk).join();
+                    pipeline.processInbound(senderAddress, headChunk);
 
-                    inboundMessages.await(1, SECONDS);
                     inboundMessages.assertNoValues();
                 }
                 finally {
@@ -127,10 +125,10 @@ class ChunkingHandlerTest {
                     message.writeTo(bytes);
 
                     final BodyChunkMessage bodyChunk = BodyChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(1), bytes.slice(remoteMessageMtu / 2, remoteMessageMtu / 2));
-                    pipeline.processInbound(senderAddress, bodyChunk).join();
+                    pipeline.processInbound(senderAddress, bodyChunk);
 
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(bodyChunk.getNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes.slice(0, remoteMessageMtu / 2));
-                    pipeline.processInbound(senderAddress, headChunk).join();
+                    pipeline.processInbound(senderAddress, headChunk);
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -142,7 +140,7 @@ class ChunkingHandlerTest {
             }
 
             @Test
-            void shouldCompleteExceptionallyWhenChunkedMessageExceedMaxSize(@Mock final InetSocketAddressWrapper senderAddress) throws InterruptedException {
+            void shouldCompleteExceptionallyWhenChunkedMessageExceedMaxSize(@Mock final InetSocketAddressWrapper senderAddress) {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
@@ -179,11 +177,12 @@ class ChunkingHandlerTest {
                     final ByteBuf chunkPayload = Unpooled.wrappedBuffer(bytes);
 
                     final PartialReadMessage chunk = PartialReadMessage.of(chunkHeader, chunkPayload);
-                    pipeline.processInbound(senderAddress, chunk).join();
+                    pipeline.processInbound(senderAddress, chunk);
 
                     final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload);
-                    assertThrows(ExecutionException.class, () -> pipeline.processInbound(senderAddress, headChunk).get());
-                    inboundMessages.await(1, SECONDS);
+
+                    pipeline.processInbound(senderAddress, headChunk);
+
                     inboundMessages.assertNoValues();
                 }
                 finally {
@@ -205,7 +204,7 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                    pipeline.processInbound(sender, msg).join();
+                    pipeline.processInbound(sender, msg);
 
                     inboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -237,7 +236,7 @@ class ChunkingHandlerTest {
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
                     try (final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload)) {
-                        pipeline.processInbound(sender, headChunk).join();
+                        pipeline.processInbound(sender, headChunk);
 
                         inboundMessages.awaitCount(1)
                                 .assertValueCount(1);

@@ -39,9 +39,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.concurrent.CompletionException;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
@@ -74,7 +71,7 @@ class OtherNetworkFilterTest {
         try {
             final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-            assertThrows(CompletionException.class, pipeline.processInbound(message.getSender(), message)::join);
+            pipeline.processInbound(message.getSender(), message);
 
             inboundMessages.assertNoValues();
         }
@@ -93,7 +90,7 @@ class OtherNetworkFilterTest {
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-            pipeline.processInbound(sender, message).join();
+            pipeline.processInbound(sender, message);
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1)

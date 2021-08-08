@@ -101,6 +101,16 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
     protected void initChannel(final Channel ch) {
         final DrasylConfig config = ch.attr(CONFIG_ATTR_KEY).get();
 
+        ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void exceptionCaught(final ChannelHandlerContext ctx,
+                                        final Throwable e) throws Exception {
+                LOG.warn("drasyl node faced error and will shut down:", e);
+                ctx.pipeline().fireUserEventTriggered(new MigrationEvent(NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e)));
+                ch.close();
+            }
+        });
+
         ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 
         // convert outbound messages addresses to us to inbound messages
@@ -233,28 +243,15 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
      * NodeNormalTerminationEvent}, {@link NodeUnrecoverableErrorEvent}).
      */
     private static class NodeLifecycleEvents extends ChannelInboundHandlerAdapter {
+        private boolean errorOccurred;
+
         @Override
         public void channelActive(final ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
 
             LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
-            final CompletableFuture<Void> f1 = new CompletableFuture<>();
-            ctx.fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())), f1));
-            f1.whenComplete((result, e) -> {
-                if (e == null) {
-                    LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
-                }
-                else {
-                    LOG.warn("Could not start drasyl node:", e);
-                    final CompletableFuture<Void> f2 = new CompletableFuture<>();
-                    ctx.fireUserEventTriggered(new MigrationEvent(NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e), f2));
-                    f2.whenComplete((result2, e2) -> {
-                        if (e2 != null) {
-                            LOG.error("drasyl node faced error `{}` on startup, which caused it to shut down all already started components. This again resulted in an error: {}", e.getMessage(), e2.getMessage());
-                        }
-                    });
-                }
-            });
+            ctx.fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()))));
+            LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
         }
 
         @Override
@@ -262,21 +259,21 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             super.channelInactive(ctx);
 
             LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
-            final CompletableFuture<Void> f1 = new CompletableFuture<>();
-            ctx.fireUserEventTriggered(new MigrationEvent(NodeDownEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())), f1));
-            f1.whenComplete((result, e) -> {
-                if (e != null) {
-                    LOG.error("drasyl node faced error on shutdown (NodeDownEvent):", e);
-                }
-                final CompletableFuture<Void> f2 = new CompletableFuture<>();
-                ctx.fireUserEventTriggered(new MigrationEvent(NodeNormalTerminationEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())), f2));
-                f2.whenComplete((result2, e2) -> {
-                    if (e2 != null) {
-                        LOG.error("drasyl node faced error on shutdown (NodeNormalTerminationEvent):", e2);
-                    }
-                    LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
-                });
-            });
+            if (!errorOccurred) {
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeDownEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()))));
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeNormalTerminationEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()))));
+                LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
+            }
+        }
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                       final Object evt) throws Exception {
+            if (evt instanceof NodeUnrecoverableErrorEvent) {
+                errorOccurred = true;
+            }
+
+            super.userEventTriggered(ctx, evt);
         }
     }
 }

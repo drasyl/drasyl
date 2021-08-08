@@ -58,7 +58,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
@@ -181,7 +180,7 @@ class GroupsClientHandlerTest {
                 when(uri.getCredentials()).thenReturn(credentials);
                 when(identity.getProofOfWork()).thenReturn(proofOfWork);
 
-                pipeline.processInbound(event).join();
+                pipeline.processInbound(event);
 
                 await().untilAsserted(() -> {
                     pipeline.runPendingTasks();
@@ -211,13 +210,11 @@ class GroupsClientHandlerTest {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
 
-                future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(GroupMemberJoinedEvent.of(publicKey, group));
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -232,13 +229,11 @@ class GroupsClientHandlerTest {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
 
-                future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(GroupMemberLeftEvent.of(publicKey, group));
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -255,14 +250,12 @@ class GroupsClientHandlerTest {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
 
-                future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(GroupLeftEvent.of(group, () -> {
                         }));
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -281,14 +274,12 @@ class GroupsClientHandlerTest {
                 when(groups.get(any())).thenReturn(uri);
                 when(uri.getTimeout()).thenReturn(Duration.ofMinutes(10));
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
 
-                future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(GroupJoinedEvent.of(group, Set.of(publicKey), () -> {
                         }));
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -304,15 +295,12 @@ class GroupsClientHandlerTest {
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
                 final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
 
-                future.join();
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(GroupJoinFailedEvent.of(group, error, () -> {
                         }));
-
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();

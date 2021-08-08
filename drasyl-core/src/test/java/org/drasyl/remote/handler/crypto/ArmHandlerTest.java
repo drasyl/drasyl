@@ -62,14 +62,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.awaitility.Awaitility.await;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -123,12 +120,12 @@ class ArmHandlerTest {
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> applicationMessage = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body.getClass().getName(),
-                        body).
+                                networkId,
+                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_1.getProofOfWork(),
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                body.getClass().getName(),
+                                body).
                         setAgreementId(agreementId);
 
                 final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, applicationMessage);
@@ -157,12 +154,12 @@ class ArmHandlerTest {
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_3.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_3.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body.getClass().getName(),
-                        body).
+                                networkId,
+                                IdentityTestUtil.ID_3.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_3.getProofOfWork(),
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                body.getClass().getName(),
+                                body).
                         setAgreementId(agreementId);
 
                 final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
@@ -261,12 +258,12 @@ class ArmHandlerTest {
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body.getClass().getName(),
-                        body).
+                                networkId,
+                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_1.getProofOfWork(),
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                body.getClass().getName(),
+                                body).
                         setAgreementId(agreementId);
 
                 final CompletableFuture<Void> future = pipeline.processOutbound(receiveAddress, msg);
@@ -360,19 +357,18 @@ class ArmHandlerTest {
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body.getClass().getName(),
-                        body)
+                                networkId,
+                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_1.getProofOfWork(),
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                body.getClass().getName(),
+                                body)
                         .setAgreementId(agreementId);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg.arm(Crypto.INSTANCE, sessionPairSender));
+                pipeline.processInbound(receiveAddress, msg.arm(Crypto.INSTANCE, sessionPairSender));
 
                 observer.awaitCount(1)
                         .assertNoValues();
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -394,20 +390,19 @@ class ArmHandlerTest {
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_2.getProofOfWork(),
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        body.getClass().getName(),
-                        body)
+                                networkId,
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_2.getProofOfWork(),
+                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
+                                body.getClass().getName(),
+                                body)
                         .setAgreementId(agreementId);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg.arm(Crypto.INSTANCE, sessionPairSender));
+                pipeline.processInbound(receiveAddress, msg.arm(Crypto.INSTANCE, sessionPairSender));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(m -> m.disarmAndRelease(Crypto.INSTANCE, sessionPairReceiver) instanceof KeyExchangeMessage);
-                assertTrue(future.isCompletedExceptionally());
             }
             finally {
                 pipeline.drasylClose();
@@ -439,17 +434,15 @@ class ArmHandlerTest {
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
                 final ArmedMessage msg = KeyExchangeAcknowledgementMessage.of(networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        agreementId2)
+                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_1.getProofOfWork(),
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                agreementId2)
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                future.join();
-                assertTrue(future.isDone());
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
                 assertTrue(session.getInitializedAgreements().containsKey(agreementId2));
@@ -487,19 +480,17 @@ class ArmHandlerTest {
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final RemoteMessage msg = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body.getClass().getName(),
-                        body)
+                                networkId,
+                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_1.getProofOfWork(),
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                body.getClass().getName(),
+                                body)
                         .setAgreementId(agreementId2)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                future.join();
-                assertTrue(future.isDone());
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
                 assertTrue(session.getInitializedAgreements().containsKey(agreementId2));
@@ -528,18 +519,17 @@ class ArmHandlerTest {
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final RemoteMessage msg = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body.getClass().getName(),
-                        body)
+                                networkId,
+                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_1.getProofOfWork(),
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                body.getClass().getName(),
+                                body)
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                assertThrows(CompletionException.class, future::join);
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(v -> v.disarm(Crypto.INSTANCE, sessionPairSender) instanceof KeyExchangeMessage);
@@ -569,22 +559,19 @@ class ArmHandlerTest {
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
                 final RemoteMessage msg = KeyExchangeMessage.of(networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        keyPair.getPublicKey())
+                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_1.getProofOfWork(),
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                keyPair.getPublicKey())
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
                 assertFalse(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(0, session.getInitializedAgreements().size());
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
+                pipeline.runPendingTasks();
 
-                await().until(() -> {
-                    pipeline.runPendingTasks();
-                    return future.isDone();
-                });
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(0, session.getInitializedAgreements().size());
                 observerEvents.assertNoValues();
@@ -621,19 +608,16 @@ class ArmHandlerTest {
                 final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyPair = Crypto.INSTANCE.generateEphemeralKeyPair();
 
                 final RemoteMessage msg = KeyExchangeMessage.of(networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        keyPair.getPublicKey())
+                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
+                                IdentityTestUtil.ID_1.getProofOfWork(),
+                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
+                                keyPair.getPublicKey())
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
+                pipeline.runPendingTasks();
 
-                await().until(() -> {
-                    pipeline.runPendingTasks();
-                    return future.isDone();
-                });
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(keyPair.getPublicKey(), session.getCurrentInactiveAgreement().getValue().get().getRecipientsKeyAgreementKey().get());
                 observerEvents.assertNoValues();
@@ -806,9 +790,8 @@ class ArmHandlerTest {
                 doReturn(concurrentAgreement).when(session).getCurrentActiveAgreement();
                 doReturn(Optional.of(agreement)).when(concurrentAgreement).computeOnCondition(any(), any());
 
-                final CompletableFuture<Void> future = pipeline.processInbound(receiveAddress, msg);
+                pipeline.processInbound(receiveAddress, msg);
 
-                future.join();
                 outObserver.assertNoValues();
                 inObserver.assertValueCount(1);
             }

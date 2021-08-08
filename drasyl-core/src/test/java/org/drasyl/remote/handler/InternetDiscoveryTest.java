@@ -62,10 +62,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
@@ -75,7 +73,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -115,7 +112,7 @@ class InternetDiscoveryTest {
         try {
             final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
 
-            pipeline.processInbound(event).join();
+            pipeline.processInbound(event);
 
             inboundEvents.awaitCount(1)
                     .assertValueCount(1)
@@ -198,7 +195,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(address, acknowledgementMessage).join();
+                pipeline.processInbound(address, acknowledgementMessage);
 
                 verify(peersManager).addPath(any(), any(), any());
             }
@@ -221,7 +218,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(address, acknowledgementMessage).join();
+                pipeline.processInbound(address, acknowledgementMessage);
 
                 verify(peersManager).addPathAndSuperPeer(any(), any(), any());
             }
@@ -349,7 +346,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(uniteMessage.getPublicKey(), peer)), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(address, uniteMessage).join();
+                pipeline.processInbound(address, uniteMessage);
 
                 verify(rendezvousPeers).add(any());
             }
@@ -381,7 +378,7 @@ class InternetDiscoveryTest {
             try {
                 final TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
-                pipeline.processInbound(sender, message).join();
+                pipeline.processInbound(sender, message);
 
                 outboundMessages.awaitCount(3)
                         .assertValueCount(3)
@@ -411,7 +408,7 @@ class InternetDiscoveryTest {
                 try {
                     final @NonNull TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
-                    pipeline.processInbound(sender, message).join();
+                    pipeline.processInbound(sender, message);
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -426,7 +423,7 @@ class InternetDiscoveryTest {
             void shouldCompleteExceptionallyOnInvalidMessage(@Mock final InetSocketAddressWrapper sender,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey recipient) throws InterruptedException {
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey recipient) {
                 when(message.getRecipient()).thenThrow(IllegalArgumentException.class);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
@@ -434,8 +431,8 @@ class InternetDiscoveryTest {
                 try {
                     final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                    assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
-                    outboundMessages.await(1, SECONDS);
+                    pipeline.processInbound(sender, message);
+
                     outboundMessages.assertNoValues();
                 }
                 finally {
@@ -459,7 +456,7 @@ class InternetDiscoveryTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
 
-                    pipeline.processInbound(address, applicationMessage).join();
+                    pipeline.processInbound(address, applicationMessage);
 
                     verify(peer).applicationTrafficOccurred();
                     inboundMessages.awaitCount(1)

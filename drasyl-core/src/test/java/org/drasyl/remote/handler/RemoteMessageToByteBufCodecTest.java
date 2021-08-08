@@ -88,7 +88,7 @@ class RemoteMessageToByteBufCodecTest {
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
-                pipeline.processInbound(sender, byteBuf).join();
+                pipeline.processInbound(sender, byteBuf);
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);

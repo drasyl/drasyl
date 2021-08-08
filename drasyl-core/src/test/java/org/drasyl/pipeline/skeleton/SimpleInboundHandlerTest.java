@@ -92,7 +92,7 @@ class SimpleInboundHandlerTest {
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
 
-            pipeline.processInbound(sender, 1337).join();
+            pipeline.processInbound(sender, 1337);
 
             inboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)

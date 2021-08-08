@@ -98,7 +98,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                         }
                     });
 
-            pipeline.processInbound(NodeUpEvent.of(Node.of(identity2))).join();
+            pipeline.processInbound(NodeUpEvent.of(Node.of(identity2)));
             final NodeUpEvent event = (NodeUpEvent) pipeline.inboundEvents().filter(e -> e instanceof NodeUpEvent).blockingFirst();
 
             port = event.getNode().getPort();
@@ -111,7 +111,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
     @TearDown
     public void teardown() {
-        pipeline.processInbound(NodeDownEvent.of(Node.of(identity2))).join();
+        pipeline.processInbound(NodeDownEvent.of(Node.of(identity2)));
     }
 
     @State(Scope.Thread)

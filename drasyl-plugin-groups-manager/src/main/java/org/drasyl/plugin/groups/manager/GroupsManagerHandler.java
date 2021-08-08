@@ -249,7 +249,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
             }
         }
         catch (final DatabaseException e) {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), (Address) sender)))).combine(new CompletableFuture<Void>());
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), (Address) sender)))).combine(new CompletableFuture<>());
             future.completeExceptionally(e);
 
             LOG.debug("Error occurred during join: ", e);

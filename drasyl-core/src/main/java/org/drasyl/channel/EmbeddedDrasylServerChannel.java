@@ -247,18 +247,13 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
         close();
     }
 
-    public CompletableFuture<Void> processInbound(final Address sender, final Object msg) {
-        final ChannelPromise promise = newPromise();
-        final CompletableFuture<Void> future = FutureUtil.toFuture(promise);
-        pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
-        return future;
+    public void processInbound(final Address sender, final Object msg) {
+        pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
     }
 
-    public CompletableFuture<Void> processInbound(final Event event) {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        pipeline().fireUserEventTriggered(new MigrationEvent(event, future));
+    public void processInbound(final Event event) {
+        pipeline().fireUserEventTriggered(new MigrationEvent(event));
         runPendingTasks();
-        return future;
     }
 
     public CompletableFuture<Void> processOutbound(final Address recipient, Object msg) {

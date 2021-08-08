@@ -125,8 +125,7 @@ class MessagesThroughputHandlerTest {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-
-            pipeline.processInbound(address, new Object()).join();
+            pipeline.processInbound(address, new Object());
         }
         finally {
             pipeline.drasylClose();
@@ -144,7 +143,7 @@ class MessagesThroughputHandlerTest {
         try {
             observable = pipeline.drasylOutboundMessages().test();
 
-            pipeline.processOutbound(address, new Object()).join();
+            pipeline.processOutbound(address, new Object());
 
             observable.assertEmpty();
         }
@@ -161,7 +160,7 @@ class MessagesThroughputHandlerTest {
         try {
             observable = pipeline.drasylInboundMessages().test();
 
-            pipeline.processInbound(address, new Object()).join();
+            pipeline.processInbound(address, new Object());
 
             observable.assertEmpty();
         }

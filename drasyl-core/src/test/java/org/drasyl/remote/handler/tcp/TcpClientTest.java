@@ -127,7 +127,7 @@ public class TcpClientTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, msg).join();
+                pipeline.processInbound(sender, msg);
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)

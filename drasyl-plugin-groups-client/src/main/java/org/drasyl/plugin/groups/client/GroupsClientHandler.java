@@ -148,21 +148,14 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
                                    final Object evt) {
         if (evt instanceof MigrationEvent) {
             final Event event = ((MigrationEvent) evt).event();
-            final CompletableFuture<Void> future = ((MigrationEvent) evt).future();
             if (event instanceof NodeUpEvent) {
                 // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
                 ctx.executor().schedule(() -> groups.values().forEach(group ->
                         joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
+            }
+        }
 
-                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-            }
-            else {
-                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-            }
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+        ctx.fireUserEventTriggered(evt);
     }
 
     /**

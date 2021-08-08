@@ -62,17 +62,14 @@ import test.util.RxJavaTestUtil;
 
 import java.time.Duration;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.awaitility.Awaitility.await;
 import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyByte;
@@ -200,17 +197,12 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
-
-                await().until(() -> {
-                    pipeline.runPendingTasks();
-                    return future.isDone();
-                });
+                pipeline.processInbound(publicKey, msg);
+                pipeline.runPendingTasks();
 
                 RxJavaTestUtil.assertValues(testObserver.awaitCount(2),
                         new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)),
                         new MemberJoinedMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())));
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -227,17 +219,13 @@ class GroupsManagerHandlerTest {
 
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(null);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
+                pipeline.runPendingTasks();
 
-                await().until(() -> {
-                    pipeline.runPendingTasks();
-                    return future.isCompletedExceptionally();
-                });
                 testObserver.awaitCount(1)
                         .assertValueCount(1)
                         .assertValues(
                                 new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND));
-                assertTrue(future.isCompletedExceptionally());
             }
             finally {
                 pipeline.drasylClose();
@@ -255,16 +243,12 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(false);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
+                pipeline.runPendingTasks();
 
-                await().until(() -> {
-                    pipeline.runPendingTasks();
-                    return future.isCompletedExceptionally();
-                });
                 testObserver.awaitCount(1).assertValueCount(1);
                 testObserver.assertValues(
                         new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK));
-                assertTrue(future.isCompletedExceptionally());
             }
             finally {
                 pipeline.drasylClose();
@@ -283,16 +267,12 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
+                pipeline.runPendingTasks();
 
-                await().until(() -> {
-                    pipeline.runPendingTasks();
-                    return future.isCompletedExceptionally();
-                });
                 testObserver.awaitCount(1).assertValueCount(1);
                 testObserver.assertValues(
                         new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN));
-                assertTrue(future.isCompletedExceptionally());
             }
             finally {
                 pipeline.drasylClose();
@@ -305,16 +285,15 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
+                final TestObserver<GroupsServerMessage> testObserver = pipeline.drasylOutboundMessages(GroupsServerMessage.class).test();
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
                 when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
+                pipeline.runPendingTasks();
 
-                await().until(() -> {
-                    pipeline.runPendingTasks();
-                    return future.isCompletedExceptionally();
-                });
+                testObserver.assertNoValues();
             }
             finally {
                 pipeline.drasylClose();
@@ -334,12 +313,8 @@ class GroupsManagerHandlerTest {
                 final TestObserver<GroupsServerMessage> outboundMessages = pipeline.drasylOutboundMessages(GroupsServerMessage.class).test();
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
-
-                await().until(() -> {
-                    pipeline.runPendingTasks();
-                    return future.isDone();
-                });
+                pipeline.processInbound(publicKey, msg);
+                pipeline.runPendingTasks();
 
                 outboundMessages
                         .awaitCount(2)
@@ -359,18 +334,15 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<GroupsServerMessage> testObserver = pipeline.drasylOutboundMessages(GroupsServerMessage.class).test();
+                final TestObserver<GroupsServerMessage> outboundMessages = pipeline.drasylOutboundMessages(GroupsServerMessage.class).test();
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
                 doThrow(DatabaseException.class).when(databaseAdapter).removeGroupMember(any(), anyString());
 
-                final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+                pipeline.processInbound(publicKey, msg);
 
-                testObserver.assertNoValues();
-                await().until(() -> {
-                    pipeline.runPendingTasks();
-                    return future.isCompletedExceptionally();
-                });
+                pipeline.runPendingTasks();
+                outboundMessages.assertNoValues();
             }
             finally {
                 pipeline.drasylClose();

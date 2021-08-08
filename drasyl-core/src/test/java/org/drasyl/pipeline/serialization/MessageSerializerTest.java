@@ -42,7 +42,6 @@ import test.util.IdentityTestUtil;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.channel.EmbeddedDrasylServerChannel.NULL_MESSAGE;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -70,7 +69,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(address, message).join();
+                pipeline.processInbound(address, message);
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -92,7 +91,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(address, message).join();
+                pipeline.processInbound(address, message);
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -110,7 +109,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(address, message).join();
+                pipeline.processInbound(address, message);
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -128,8 +127,8 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
-                inboundMessages.await(1, SECONDS);
+                pipeline.processInbound(sender, message);
+
                 inboundMessages.assertNoValues();
             }
             finally {
@@ -148,8 +147,8 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, message).get());
-                inboundMessages.await(1, SECONDS);
+                pipeline.processInbound(sender, message);
+
                 inboundMessages.assertNoValues();
             }
             finally {
@@ -206,14 +205,15 @@ class MessageSerializerTest {
 
         @Test
         void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final IdentityPublicKey recipient,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Object message) throws InterruptedException {
+                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
-                outboundMessages.await(1, SECONDS);
-                outboundMessages.assertNoValues();
+
+                outboundMessages
+                        .assertNoValues();
             }
             finally {
                 pipeline.drasylClose();
@@ -232,7 +232,7 @@ class MessageSerializerTest {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
                 assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
-                outboundMessages.await(1, SECONDS);
+
                 outboundMessages.assertNoValues();
             }
             finally {
