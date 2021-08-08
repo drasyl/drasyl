@@ -27,7 +27,6 @@ import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -52,7 +51,7 @@ class LoopbackMessageHandlerTest {
         try {
             final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-            FutureUtil.toFuture(pipeline.processOutbound(recipient, message));
+            pipeline.processOutbound(recipient, message);
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1);
@@ -71,7 +70,7 @@ class LoopbackMessageHandlerTest {
         try {
             final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-            FutureUtil.toFuture(pipeline.processOutbound(recipient, message));
+            pipeline.processOutbound(recipient, message);
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1);

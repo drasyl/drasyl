@@ -272,7 +272,7 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    FutureUtil.toFuture(pipeline.processOutbound(recipientAddress, msg)).join();
+                    pipeline.processOutbound(recipientAddress, msg);
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -324,7 +324,7 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<ChunkMessage> outboundMessages = pipeline.drasylOutboundMessages(ChunkMessage.class).test();
 
-                    FutureUtil.toFuture(pipeline.processOutbound(address, msg)).join();
+                    pipeline.processOutbound(address, msg);
 
                     outboundMessages.awaitCount(3)
                             .assertValueCount(3)
@@ -351,7 +351,7 @@ class ChunkingHandlerTest {
                 try {
                     final @NonNull TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    FutureUtil.toFuture(pipeline.processOutbound(recipientAddress, msg)).join();
+                    pipeline.processOutbound(recipientAddress, msg);
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)

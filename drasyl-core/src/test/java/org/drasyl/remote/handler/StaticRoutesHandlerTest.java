@@ -32,7 +32,6 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.ApplicationMessage;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -95,7 +94,7 @@ class StaticRoutesHandlerTest {
         try {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-            FutureUtil.toFuture(pipeline.processOutbound(publicKey, message)).join();
+            pipeline.processOutbound(publicKey, message);
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -116,7 +115,7 @@ class StaticRoutesHandlerTest {
         try {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-            FutureUtil.toFuture(pipeline.processOutbound(publicKey, message)).join();
+            pipeline.processOutbound(publicKey, message);
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)

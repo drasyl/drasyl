@@ -96,7 +96,7 @@ class SimpleDuplexHandlerTest {
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
                 final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, payload));
+                pipeline.processOutbound(recipient, payload);
 
                 inboundMessageTestObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -135,7 +135,7 @@ class SimpleDuplexHandlerTest {
                 final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
 
                 final byte[] payload = new byte[]{};
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, payload));
+                pipeline.processOutbound(recipient, payload);
 
                 outboundMessageTestObserver.awaitCount(1)
                         .assertValueCount(1)

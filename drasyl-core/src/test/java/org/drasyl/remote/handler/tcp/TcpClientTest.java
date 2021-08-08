@@ -35,7 +35,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.tcp.TcpClient.TcpClientHandler;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -151,7 +150,7 @@ public class TcpClientTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, msg)).join();
+                pipeline.processOutbound(recipient, msg);
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -176,7 +175,7 @@ public class TcpClientTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, msg)).join();
+                pipeline.processOutbound(recipient, msg);
 
                 verify(superPeerChannel.channel()).writeAndFlush(msg);
                 outboundMessages.assertEmpty();
@@ -204,7 +203,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, msg)).join();
+                pipeline.processOutbound(recipient, msg);
 
                 verify(bootstrap.handler(any())).connect(any(InetSocketAddress.class));
                 verify(superPeerChannel).addListener(any());

@@ -171,7 +171,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
-                FutureUtil.toFuture(pipeline.processOutbound(identity.getIdentityPublicKey(), "Hello World")).join();
+                pipeline.processOutbound(identity.getIdentityPublicKey(), "Hello World");
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);
@@ -194,7 +194,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
-                FutureUtil.toFuture(pipeline.processOutbound(identity.getIdentityPublicKey(), message)).join();
+                pipeline.processOutbound(identity.getIdentityPublicKey(), message);
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);

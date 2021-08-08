@@ -100,7 +100,7 @@ class MessageToMessageEncoderTest {
         try {
             final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-            FutureUtil.toFuture(pipeline.processOutbound(recipient, new Object()));
+            pipeline.processOutbound(recipient, new Object());
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)

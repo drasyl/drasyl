@@ -45,7 +45,6 @@ import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
 import org.drasyl.remote.protocol.KeyExchangeMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.ConcurrentReference;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.TypeReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -62,7 +61,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.drasyl.util.RandomUtil.randomBytes;
@@ -129,13 +127,12 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, applicationMessage));
+                pipeline.processOutbound(receiveAddress, applicationMessage);
 
                 outboundMessages.awaitCount(2)
                         .assertValueCount(2)
                         .assertValueAt(0, m -> m.disarm(Crypto.INSTANCE, sessionPairReceiver).equals(applicationMessage))
                         .assertValueAt(1, m -> m.disarm(Crypto.INSTANCE, sessionPairReceiver) instanceof KeyExchangeMessage);
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -163,12 +160,11 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
+                pipeline.processOutbound(receiveAddress, msg);
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(msg);
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -190,12 +186,11 @@ class ArmHandlerTest {
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork());
 
-                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
+                pipeline.processOutbound(receiveAddress, msg);
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(msg);
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -221,12 +216,11 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
+                pipeline.processOutbound(receiveAddress, msg);
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(msg);
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -267,12 +261,11 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
+                pipeline.processOutbound(receiveAddress, msg);
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
                         .assertValue(v -> msg.equals(v.disarm(Crypto.INSTANCE, sessionPairReceiver)));
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -301,13 +294,12 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
+                pipeline.processOutbound(receiveAddress, msg);
 
                 observer.awaitCount(2)
                         .assertValueCount(2)
                         .assertValueAt(0, m -> m.disarm(Crypto.INSTANCE, sessionPairReceiver) instanceof ApplicationMessage)
                         .assertValueAt(1, m -> m.disarm(Crypto.INSTANCE, sessionPairReceiver) instanceof KeyExchangeMessage);
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -333,11 +325,10 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
+                pipeline.processOutbound(receiveAddress, msg);
 
                 observer.awaitCount(1)
                         .assertValueCount(1);
-                assertTrue(future.isDone());
             }
             finally {
                 pipeline.drasylClose();
@@ -670,9 +661,8 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
+                pipeline.processOutbound(receiveAddress, msg);
 
-                future.join();
                 observer.assertValue(armedMsg);
             }
             finally {
@@ -754,9 +744,8 @@ class ArmHandlerTest {
                 doReturn(true).when(agreement).isInitialized();
                 doReturn(false).when(agreement).isRenewable();
 
-                final CompletableFuture<Void> future = FutureUtil.toFuture(pipeline.processOutbound(receiveAddress, msg));
+                pipeline.processOutbound(receiveAddress, msg);
 
-                future.join();
                 observer.assertValue(armedMsg);
             }
             finally {

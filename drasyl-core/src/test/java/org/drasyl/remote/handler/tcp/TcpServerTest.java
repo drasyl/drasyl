@@ -38,7 +38,6 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerChannelInitializer;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerHandler;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,11 +49,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
-import java.util.concurrent.CompletionException;
 
 import static java.net.InetSocketAddress.createUnresolved;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -134,7 +132,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, msg)).join();
+                pipeline.processOutbound(recipient, msg);
 
                 verify(client).writeAndFlush(any());
             }
@@ -153,7 +151,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                assertThrows(CompletionException.class, FutureUtil.toFuture(pipeline.processOutbound(recipient, msg))::join);
+                assertFalse(pipeline.processOutbound(recipient, msg).isSuccess());
             }
             finally {
                 pipeline.drasylClose();
@@ -168,7 +166,7 @@ class TcpServerTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, msg)).join();
+                pipeline.processOutbound(recipient, msg);
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);

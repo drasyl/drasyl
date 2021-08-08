@@ -34,7 +34,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.RemoteMessage;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -147,7 +146,7 @@ class MonitoringTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, message));
+                pipeline.processOutbound(recipient, message);
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);

@@ -30,7 +30,6 @@ import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -111,7 +110,7 @@ class MessagesThroughputHandlerTest {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            FutureUtil.toFuture(pipeline.processOutbound(address, new Object())).join();
+            pipeline.processOutbound(address, new Object());
 
             verify(outboundMessages).increment();
             verify(inboundMessages, never()).increment();
@@ -144,7 +143,7 @@ class MessagesThroughputHandlerTest {
         try {
             observable = pipeline.drasylOutboundMessages().test();
 
-            FutureUtil.toFuture(pipeline.processOutbound(address, new Object()));
+            pipeline.processOutbound(address, new Object());
 
             observable.assertEmpty();
         }

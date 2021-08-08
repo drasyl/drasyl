@@ -29,7 +29,6 @@ import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -111,7 +110,7 @@ class IntraVmDiscoveryTest {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
+                pipeline.processOutbound(recipient, message);
 
                 verify(ctx).fireChannelRead(any());
             }
@@ -128,7 +127,7 @@ class IntraVmDiscoveryTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
+                pipeline.processOutbound(recipient, message);
 
                 outboundMessages.assertValueCount(1);
             }
