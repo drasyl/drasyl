@@ -27,6 +27,7 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -267,7 +268,7 @@ class LocalHostDiscoveryTest {
             try {
                 final TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
 
-                pipeline.processOutbound(recipient, message);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);
@@ -285,7 +286,7 @@ class LocalHostDiscoveryTest {
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                pipeline.processOutbound(recipient, message);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)

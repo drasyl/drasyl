@@ -29,6 +29,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -148,7 +149,7 @@ class MonitoringTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                pipeline.processOutbound(recipient, message);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, recipient));
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);

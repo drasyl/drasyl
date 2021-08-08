@@ -66,7 +66,7 @@ class SimpleOutboundHandlerTest {
         try {
             final TestObserver<String> outboundMessageTestObserver = pipeline.drasylOutboundMessages(String.class).test();
 
-            pipeline.processOutbound(recipient, "Hallo Welt".getBytes());
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) "Hallo Welt".getBytes(), recipient));
 
             outboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)
@@ -93,7 +93,7 @@ class SimpleOutboundHandlerTest {
         try {
             final TestObserver<String> outboundMessageTestObserver = pipeline.drasylOutboundMessages(String.class).test();
 
-            pipeline.processOutbound(recipient, 1337);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) 1337, (Address) recipient));
 
             outboundMessageTestObserver.assertNoValues();
         }

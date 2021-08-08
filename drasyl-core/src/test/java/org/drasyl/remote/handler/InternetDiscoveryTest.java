@@ -488,7 +488,7 @@ class InternetDiscoveryTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipient, message);
+                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
                     outboundMessages.awaitCount(1)
                             .assertValue(new DefaultAddressedEnvelope<>(null, recipientSocketAddress, message));
@@ -512,7 +512,7 @@ class InternetDiscoveryTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipient, message);
+                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
                     outboundMessages.awaitCount(1)
                             .assertValue(new DefaultAddressedEnvelope<>(null, superPeerSocketAddress, message));
@@ -534,7 +534,7 @@ class InternetDiscoveryTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipient, message);
+                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -557,7 +557,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(recipient, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.processOutbound(recipient, message);
+                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
                     verify(peer).applicationTrafficOccurred();
                 }

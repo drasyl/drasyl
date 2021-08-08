@@ -26,9 +26,11 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -110,7 +112,7 @@ class IntraVmDiscoveryTest {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processOutbound(recipient, message);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, (Address) recipient));
 
                 verify(ctx).fireChannelRead(any());
             }
@@ -127,7 +129,7 @@ class IntraVmDiscoveryTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                pipeline.processOutbound(recipient, message);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, (Address) recipient));
 
                 outboundMessages.assertValueCount(1);
             }

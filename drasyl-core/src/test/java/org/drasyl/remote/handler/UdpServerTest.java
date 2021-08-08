@@ -32,9 +32,11 @@ import io.netty.channel.socket.DatagramPacket;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -152,7 +154,7 @@ class UdpServerTest {
             final UdpServer handler = new UdpServer(bootstrap, channel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processOutbound(recipient, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
 
                 verify(channel, times(3)).writeAndFlush(any());
             }

@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -94,7 +95,7 @@ class StaticRoutesHandlerTest {
         try {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-            pipeline.processOutbound(publicKey, message);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) publicKey));
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -115,7 +116,7 @@ class StaticRoutesHandlerTest {
         try {
             outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-            pipeline.processOutbound(publicKey, message);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) publicKey));
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)

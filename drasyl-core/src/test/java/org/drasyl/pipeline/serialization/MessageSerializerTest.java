@@ -23,10 +23,12 @@ package org.drasyl.pipeline.serialization;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
+import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
@@ -34,7 +36,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.serialization.StringSerializer;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,10 +44,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 import static org.drasyl.channel.EmbeddedDrasylServerChannel.NULL_MESSAGE;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -173,7 +173,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
-                pipeline.processOutbound(identity.getIdentityPublicKey(), "Hello World");
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) "Hello World", (Address) identity.getIdentityPublicKey()));
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);
@@ -196,7 +196,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
-                pipeline.processOutbound(identity.getIdentityPublicKey(), message);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, (Address) identity.getIdentityPublicKey()));
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);
@@ -213,7 +213,9 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                assertThrows(ExecutionException.class, () -> FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).get());
+                final ChannelPromise promise = pipeline.newPromise();
+                pipeline.processOutbound(recipient, message, promise);
+                assertFalse(promise.isSuccess());
 
                 outboundMessages
                         .assertNoValues();
@@ -234,7 +236,9 @@ class MessageSerializerTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                assertThrows(ExecutionException.class, () -> FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).get());
+                final ChannelPromise promise = pipeline.newPromise();
+                pipeline.processOutbound(recipient, message, promise);
+                assertFalse(promise.isSuccess());
 
                 outboundMessages.assertNoValues();
             }
@@ -252,7 +256,7 @@ class MessageSerializerTest {
             try {
                 final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
 
-                FutureUtil.toFuture(pipeline.processOutbound(identity.getIdentityPublicKey(), null));
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(null, (Address) identity.getIdentityPublicKey()));
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);

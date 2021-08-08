@@ -26,6 +26,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -98,7 +99,7 @@ class DefaultEmbeddedPipelineTest {
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final byte[] msg = new byte[]{};
-            pipeline.processOutbound(recipient, msg);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
 
             outboundMessageTestObserver.awaitCount(1)
                     .assertValueCount(1)

@@ -27,6 +27,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -129,7 +130,7 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.processOutbound(receiveAddress, applicationMessage);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) applicationMessage, (Address) receiveAddress));
 
                 outboundMessages.awaitCount(2)
                         .assertValueCount(2)
@@ -162,7 +163,7 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.processOutbound(receiveAddress, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -188,7 +189,7 @@ class ArmHandlerTest {
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork());
 
-                pipeline.processOutbound(receiveAddress, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -218,7 +219,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.processOutbound(receiveAddress, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -263,7 +264,7 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.processOutbound(receiveAddress, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1)
@@ -296,7 +297,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.processOutbound(receiveAddress, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(2)
                         .assertValueCount(2)
@@ -327,7 +328,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.processOutbound(receiveAddress, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.awaitCount(1)
                         .assertValueCount(1);
@@ -663,7 +664,7 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                pipeline.processOutbound(receiveAddress, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.assertValue(armedMsg);
             }
@@ -746,7 +747,7 @@ class ArmHandlerTest {
                 doReturn(true).when(agreement).isInitialized();
                 doReturn(false).when(agreement).isRenewable();
 
-                pipeline.processOutbound(receiveAddress, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
 
                 observer.assertValue(armedMsg);
             }

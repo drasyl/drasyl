@@ -236,8 +236,9 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
         close();
     }
 
-    public ChannelPromise processOutbound(final Address recipient, final Object msg) {
-        final ChannelPromise promise = newPromise();
+    public ChannelPromise processOutbound(final Address recipient,
+                                          final Object msg,
+                                          final ChannelPromise promise) {
         pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);
         return promise;
     }

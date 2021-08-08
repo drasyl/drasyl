@@ -25,11 +25,13 @@ import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.Identity;
@@ -51,7 +53,6 @@ import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.UnarmedMessage;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.UnsignedShort;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -61,13 +62,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.util.RandomUtil.randomBytes;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 import static test.util.IdentityTestUtil.ID_1;
@@ -273,7 +273,7 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipientAddress, msg);
+                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipientAddress));
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)
@@ -299,7 +299,10 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                    assertThrows(ExecutionException.class, FutureUtil.toFuture(pipeline.processOutbound(address, msg))::get);
+                    final ChannelPromise promise = pipeline.newPromise();
+                    pipeline.processOutbound(address, msg, promise);
+                    assertFalse(promise.isSuccess());
+
                     outboundMessages.assertNoValues();
                 }
                 finally {
@@ -325,7 +328,7 @@ class ChunkingHandlerTest {
                 try {
                     final TestObserver<ChunkMessage> outboundMessages = pipeline.drasylOutboundMessages(ChunkMessage.class).test();
 
-                    pipeline.processOutbound(address, msg);
+                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) address));
 
                     outboundMessages.awaitCount(3)
                             .assertValueCount(3)
@@ -352,7 +355,7 @@ class ChunkingHandlerTest {
                 try {
                     final @NonNull TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-                    pipeline.processOutbound(recipientAddress, msg);
+                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipientAddress));
 
                     outboundMessages.awaitCount(1)
                             .assertValueCount(1)

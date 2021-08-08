@@ -21,9 +21,11 @@
  */
 package org.drasyl.remote.handler;
 
+import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -37,7 +39,6 @@ import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.HopCount;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.RemoteMessage;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,11 +46,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
-import java.util.concurrent.CompletionException;
-
 import static org.drasyl.remote.protocol.HopCount.MAX_HOP_COUNT;
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
@@ -85,7 +84,7 @@ class HopCountGuardTest {
         try {
             final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-            FutureUtil.toFuture(pipeline.processOutbound(recipient, message)).join();
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1)
@@ -107,7 +106,9 @@ class HopCountGuardTest {
         try {
             final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-            assertThrows(CompletionException.class, FutureUtil.toFuture(pipeline.processOutbound(message.getSender(), message))::join);
+            final ChannelPromise promise = pipeline.newPromise();
+            pipeline.processOutbound(message.getSender(), message, promise);
+            assertFalse(promise.isSuccess());
 
             outboundMessages.assertNoValues();
         }

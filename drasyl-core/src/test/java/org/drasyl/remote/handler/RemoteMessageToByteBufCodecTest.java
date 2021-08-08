@@ -25,10 +25,12 @@ import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -108,7 +110,7 @@ class RemoteMessageToByteBufCodecTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
-                pipeline.processOutbound(recipient, message);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
@@ -132,8 +134,9 @@ class RemoteMessageToByteBufCodecTest {
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-
-                assertFalse(pipeline.processOutbound(recipient, messageEnvelope).isSuccess());
+                final ChannelPromise promise = pipeline.newPromise();
+                pipeline.processOutbound(recipient, messageEnvelope, promise);
+                assertFalse(promise.isSuccess());
             }
             finally {
                 pipeline.drasylClose();

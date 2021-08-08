@@ -260,7 +260,7 @@ class LocalNetworkDiscoveryTest {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-        pipeline.processOutbound(recipient, message);
+        pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
         outboundMessages.awaitCount(1)
                 .assertValueCount(1)
@@ -275,7 +275,7 @@ class LocalNetworkDiscoveryTest {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-        pipeline.processOutbound(recipient, message);
+        pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
         outboundMessages.awaitCount(1)
                 .assertValueCount(1)

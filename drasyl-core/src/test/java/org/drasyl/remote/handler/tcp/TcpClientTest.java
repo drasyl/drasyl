@@ -31,6 +31,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -151,7 +152,7 @@ public class TcpClientTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                pipeline.processOutbound(recipient, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1)
@@ -176,7 +177,7 @@ public class TcpClientTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                pipeline.processOutbound(recipient, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
 
                 verify(superPeerChannel.channel()).writeAndFlush(msg);
                 outboundMessages.assertEmpty();
@@ -204,7 +205,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processOutbound(recipient, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
 
                 verify(bootstrap.handler(any())).connect(any(InetSocketAddress.class));
                 verify(superPeerChannel).addListener(any());

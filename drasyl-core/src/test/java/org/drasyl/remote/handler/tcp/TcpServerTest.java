@@ -26,14 +26,17 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerChannelInitializer;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerHandler;
@@ -132,7 +135,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processOutbound(recipient, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
 
                 verify(client).writeAndFlush(any());
             }
@@ -151,7 +154,9 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                assertFalse(pipeline.processOutbound(recipient, msg).isSuccess());
+                final ChannelPromise promise = pipeline.newPromise();
+                pipeline.processOutbound(recipient, msg, promise);
+                assertFalse(promise.isSuccess());
             }
             finally {
                 pipeline.drasylClose();
@@ -166,7 +171,7 @@ class TcpServerTest {
             try {
                 final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-                pipeline.processOutbound(recipient, msg);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
 
                 outboundMessages.awaitCount(1)
                         .assertValueCount(1);

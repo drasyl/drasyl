@@ -24,9 +24,11 @@ package org.drasyl.loopback.handler;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -51,7 +53,7 @@ class LoopbackMessageHandlerTest {
         try {
             final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
 
-            pipeline.processOutbound(recipient, message);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, (Address) recipient));
 
             outboundMessages.awaitCount(1)
                     .assertValueCount(1);
@@ -70,7 +72,7 @@ class LoopbackMessageHandlerTest {
         try {
             final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-            pipeline.processOutbound(recipient, message);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, (Address) recipient));
 
             inboundMessages.awaitCount(1)
                     .assertValueCount(1);

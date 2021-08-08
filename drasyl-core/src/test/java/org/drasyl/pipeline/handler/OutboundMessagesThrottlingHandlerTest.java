@@ -23,9 +23,11 @@ package org.drasyl.pipeline.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelOutboundHandler;
+import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -61,7 +63,9 @@ class OutboundMessagesThrottlingHandlerTest {
 
             final CompletableFuture<Void>[] futures = new CompletableFuture[10];
             for (int i = 0; i < 10; i++) {
-                futures[i] = FutureUtil.toFuture(pipeline.processOutbound(recipient, msg));
+                final ChannelPromise promise = pipeline.newPromise();
+                futures[i] = FutureUtil.toFuture(promise);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, recipient), promise);
             }
 
             assertThat(inboundMessages.values().size(), lessThanOrEqualTo(10));
