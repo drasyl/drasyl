@@ -251,22 +251,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
         return promise;
     }
 
-    public PeersManager peersManager() {
-        return attr(PEERS_MANAGER_ATTR_KEY).get();
-    }
-
-    public Serialization inboundSerialization() {
-        return attr(INBOUND_SERIALIZATION_ATTR_KEY).get();
-    }
-
-    public Serialization outboundSerialization() {
-        return attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get();
-    }
-
-    public Identity identity() {
-        return attr(IDENTITY_ATTR_KEY).get();
-    }
-
     private static boolean isInstance(final Type type, final Object obj) {
         if (type instanceof Class<?>) {
             return ((Class<?>) type).isInstance(obj);
