@@ -21,9 +21,8 @@
  */
 package org.drasyl.pipeline.skeleton;
 
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
@@ -36,7 +35,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 
-import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.channel.Null.NULL;
@@ -46,7 +44,7 @@ import static org.drasyl.channel.Null.NULL;
  * events.
  */
 @SuppressWarnings({ "common-java:DuplicatedBlocks", "java:S118" })
-public abstract class SimpleDuplexHandler<I, O, A extends Address> implements ChannelOutboundHandler, ChannelInboundHandler {
+public abstract class SimpleDuplexHandler<I, O, A extends Address> extends ChannelDuplexHandler {
     private final TypeParameterMatcher outboundMessageMatcher;
     private final TypeParameterMatcher matcherMessage;
     private final TypeParameterMatcher matcherAddress;
@@ -70,16 +68,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> implements Ch
                         final Event event,
                         final CompletableFuture<Void> future) {
         ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-    }
-
-    @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
-        // NOOP
-    }
-
-    @Override
-    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
-        // NOOP
     }
 
     @Skip
@@ -141,49 +129,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> implements Ch
         else {
             ctx.write(msg, promise);
         }
-    }
-
-    @Override
-    public void bind(final ChannelHandlerContext ctx,
-                     final SocketAddress localAddress,
-                     final ChannelPromise promise) throws Exception {
-        ctx.bind(localAddress, promise);
-    }
-
-    @Override
-    public void connect(final ChannelHandlerContext ctx,
-                        final SocketAddress remoteAddress,
-                        final SocketAddress localAddress,
-                        final ChannelPromise promise) throws Exception {
-        ctx.connect(remoteAddress, localAddress, promise);
-    }
-
-    @Override
-    public void disconnect(final ChannelHandlerContext ctx,
-                           final ChannelPromise promise) {
-        ctx.disconnect(promise);
-    }
-
-    @Override
-    public void close(final ChannelHandlerContext ctx,
-                      final ChannelPromise promise) throws Exception {
-        ctx.close(promise);
-    }
-
-    @Override
-    public void deregister(final ChannelHandlerContext ctx,
-                           final ChannelPromise promise) throws Exception {
-        ctx.deregister(promise);
-    }
-
-    @Override
-    public void read(final ChannelHandlerContext ctx) throws Exception {
-        ctx.read();
-    }
-
-    @Override
-    public void flush(final ChannelHandlerContext ctx) {
-        ctx.flush();
     }
 
     @Skip
@@ -259,41 +204,5 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> implements Ch
         else {
             ctx.fireUserEventTriggered(evt);
         }
-    }
-
-    @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx,
-                                final Throwable cause) {
-        ctx.fireExceptionCaught(cause);
-    }
-
-    @Override
-    public void channelRegistered(final ChannelHandlerContext ctx) {
-        ctx.fireChannelRegistered();
-    }
-
-    @Override
-    public void channelUnregistered(final ChannelHandlerContext ctx) {
-        ctx.fireChannelUnregistered();
-    }
-
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelInactive();
-    }
-
-    @Override
-    public void channelReadComplete(final ChannelHandlerContext ctx) {
-        ctx.fireChannelReadComplete();
-    }
-
-    @Override
-    public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
-        ctx.fireChannelWritabilityChanged();
     }
 }
