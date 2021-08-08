@@ -27,9 +27,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -75,7 +72,7 @@ class MessagesThroughputHandlerTest {
     Disposable disposable;
 
     @Test
-    void shouldPrintThroughput(@Mock final NodeUpEvent nodeUp) {
+    void shouldPrintThroughputOnChannelActive() {
         when(scheduler.schedulePeriodicallyDirect(any(), eq(0L), eq(1_000L), eq(MILLISECONDS))).then(invocation -> {
             final Runnable runnable = invocation.getArgument(0, Runnable.class);
             runnable.run();
@@ -85,7 +82,7 @@ class MessagesThroughputHandlerTest {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.processInbound(nodeUp).join();
+            pipeline.pipeline().fireChannelActive();
 
             verify(printStream).printf(anyString(), any(), any(), any(), any());
         }
@@ -95,25 +92,11 @@ class MessagesThroughputHandlerTest {
     }
 
     @Test
-    void shouldStopTaskOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
+    void shouldStopTaskOnChannelInactive() {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, disposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.processInbound(event).join();
-
-            verify(disposable).dispose();
-        }
-        finally {
-            pipeline.drasylClose();
-        }
-    }
-
-    @Test
-    void shouldStopTaskOnNodeDownEvent(@Mock final NodeDownEvent event) {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, disposable);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-        try {
-            pipeline.processInbound(event).join();
+            pipeline.pipeline().fireChannelInactive();
 
             verify(disposable).dispose();
         }

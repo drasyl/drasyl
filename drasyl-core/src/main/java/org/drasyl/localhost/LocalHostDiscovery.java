@@ -24,17 +24,13 @@ package org.drasyl.localhost;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
+import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
@@ -337,28 +333,20 @@ public class LocalHostDiscovery extends SimpleDuplexHandler<Object, ApplicationM
     }
 
     @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        stopDiscovery(ctx);
+
+        super.channelInactive(ctx);
+    }
+
+    @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            final FutureCombiner combiner = FutureCombiner.getInstance();
-
-            if (event instanceof NodeUpEvent) {
-                combiner.add(startDiscovery(ctx, ((NodeUpEvent) event).getNode().getPort()));
-            }
-            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                combiner.add(stopDiscovery(ctx));
-            }
-
-            // passthrough event
-            final CompletableFuture<Void> future1 = new CompletableFuture<>();
-            ctx.fireUserEventTriggered(new MigrationEvent(event, future1));
-            combiner.add(future1)
-                    .combine(((MigrationEvent) evt).future());
+        if (evt instanceof UdpServer.Port) {
+            startDiscovery(ctx, ((UdpServer.Port) evt).getPort());
         }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+
+        ctx.fireUserEventTriggered(evt);
     }
 
     private static Path discoveryPath(final ChannelHandlerContext ctx) {

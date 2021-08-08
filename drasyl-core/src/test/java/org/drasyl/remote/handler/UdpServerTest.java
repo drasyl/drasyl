@@ -32,9 +32,6 @@ import io.netty.channel.socket.DatagramPacket;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
@@ -77,8 +74,7 @@ class UdpServerTest {
     @Nested
     class StartServer {
         @Test
-        void shouldStartServerOnNodeUpEvent(@Mock final NodeUpEvent event,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
+        void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(bootstrap.handler(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
@@ -87,7 +83,7 @@ class UdpServerTest {
             final UdpServer handler = new UdpServer(bootstrap, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelActive();
 
                 verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
             }
@@ -128,29 +124,13 @@ class UdpServerTest {
     @Nested
     class StopServer {
         @Test
-        void shouldStopServerOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
+        void shouldStopServerOnChannelInactive() {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
-
-                verify(channel).close();
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldStopServerOnNodeDownEvent(@Mock final NodeDownEvent event) {
-            when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
-
-            final UdpServer handler = new UdpServer(bootstrap, channel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelInactive();
 
                 verify(channel).close();
             }
@@ -183,8 +163,7 @@ class UdpServerTest {
 
         @Test
         @SuppressWarnings("unchecked")
-        void shouldPassIngoingMessagesToPipeline(@Mock final NodeUpEvent event,
-                                                 @Mock final ChannelHandlerContext channelCtx,
+        void shouldPassIngoingMessagesToPipeline(@Mock final ChannelHandlerContext channelCtx,
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
                                                  @Mock final ByteBuf message) {
             when(bootstrap.handler(any())).then((Answer<Bootstrap>) invocation -> {
@@ -204,7 +183,7 @@ class UdpServerTest {
             try {
                 final TestObserver<ByteBuf> inboundMessages = pipeline.drasylInboundMessages(ByteBuf.class).test();
 
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelActive();
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1);

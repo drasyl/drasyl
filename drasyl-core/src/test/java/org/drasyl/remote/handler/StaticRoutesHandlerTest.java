@@ -25,9 +25,6 @@ import com.google.common.collect.ImmutableMap;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -55,14 +52,13 @@ class StaticRoutesHandlerTest {
     private PeersManager peersManager;
 
     @Test
-    void shouldPopulateRoutesOnNodeUpEvent(@Mock final NodeUpEvent event,
-                                           @Mock final IdentityPublicKey publicKey) {
+    void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
         final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
-            pipeline.processInbound(event).join();
+            pipeline.pipeline().fireChannelActive();
 
             verify(peersManager).addPath(any(), eq(publicKey), any());
         }
@@ -72,31 +68,13 @@ class StaticRoutesHandlerTest {
     }
 
     @Test
-    void shouldClearRoutesOnNodeDownEvent(@Mock final NodeDownEvent event,
-                                          @Mock final IdentityPublicKey publicKey,
-                                          @Mock final InetSocketAddressWrapper address) {
+    void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
+                                            @Mock final InetSocketAddressWrapper address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
-            pipeline.processInbound(event).join();
-
-            verify(peersManager).removePath(any(), eq(publicKey), any());
-        }
-        finally {
-            pipeline.drasylClose();
-        }
-    }
-
-    @Test
-    void shouldClearRoutesOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
-                                                        @Mock final IdentityPublicKey publicKey,
-                                                        @Mock final InetSocketAddressWrapper address) {
-        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
-
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
-        try {
-            pipeline.processInbound(event).join();
+            pipeline.pipeline().fireChannelInactive();
 
             verify(peersManager).removePath(any(), eq(publicKey), any());
         }

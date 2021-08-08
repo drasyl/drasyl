@@ -32,9 +32,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -82,8 +79,7 @@ class TcpServerTest {
     @Nested
     class StartServer {
         @Test
-        void shouldStartServerOnNodeUpEvent(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
+        void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(bootstrap.childHandler(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
@@ -91,7 +87,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelActive();
 
                 verify(bootstrap.childHandler(any())).bind(any(InetAddress.class), anyInt());
             }
@@ -104,29 +100,13 @@ class TcpServerTest {
     @Nested
     class StopServer {
         @Test
-        void shouldStopServerOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
+        void shouldStopServerOnChannelInactive() {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
-
-                verify(serverChannel).close();
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldStopServerOnNodeDownEvent(@Mock final NodeDownEvent event) {
-            when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
-
-            final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelInactive();
 
                 verify(serverChannel).close();
             }

@@ -23,13 +23,8 @@ package org.drasyl.intravm;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -45,7 +40,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
@@ -98,7 +92,7 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<Object, Object, Addres
         ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
     }
 
-    private synchronized CompletableFuture<Void> startDiscovery(final ChannelHandlerContext myCtx) {
+    private void startDiscovery(final ChannelHandlerContext myCtx) {
         try {
             lock.writeLock().lock();
             LOG.debug("Start Intra VM Discovery...");
@@ -118,15 +112,13 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<Object, Object, Addres
             );
 
             LOG.debug("Intra VM Discovery started.");
-
-            return completedFuture(null);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    private synchronized CompletableFuture<Void> stopDiscovery(final ChannelHandlerContext ctx) {
+    private void stopDiscovery(final ChannelHandlerContext ctx) {
         try {
             lock.writeLock().lock();
             LOG.debug("Stop Intra VM Discovery...");
@@ -143,8 +135,6 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<Object, Object, Addres
             });
 
             LOG.debug("Intra VM Discovery stopped.");
-
-            return completedFuture(null);
         }
         finally {
             lock.writeLock().unlock();
@@ -152,27 +142,16 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<Object, Object, Addres
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            final FutureCombiner combiner = FutureCombiner.getInstance();
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        startDiscovery(ctx);
 
-            if (event instanceof NodeUpEvent) {
-                combiner.add(startDiscovery(ctx));
-            }
-            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                combiner.add(stopDiscovery(ctx));
-            }
+        super.channelActive(ctx);
+    }
 
-            // passthrough event
-            final CompletableFuture<Void> future1 = new CompletableFuture<>();
-            ctx.fireUserEventTriggered(new MigrationEvent(event, future1));
-            combiner.add(future1)
-                    .combine(((MigrationEvent) evt).future());
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        stopDiscovery(ctx);
+
+        super.channelInactive(ctx);
     }
 }

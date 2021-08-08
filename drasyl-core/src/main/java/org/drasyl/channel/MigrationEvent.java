@@ -40,6 +40,10 @@ public class MigrationEvent {
         this.future = requireNonNull(future);
     }
 
+    public MigrationEvent(final Event event) {
+        this(event, new CompletableFuture<>());
+    }
+
     public Event event() {
         return event;
     }

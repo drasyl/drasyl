@@ -493,15 +493,15 @@ public abstract class DrasylNode {
                             e.future().completeExceptionally(ex);
                         }
                     }
+                    else if (evt instanceof Event) {
+                        onEvent((Event) evt);
+                    }
                     else if (evt instanceof Resolve) {
                         final Resolve e = (Resolve) evt;
                         final IdentityPublicKey recipient = (IdentityPublicKey) e.recipient();
                         final CompletableFuture<Channel> future = e.future();
                         final Channel resolvedChannel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
                         resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
-                    }
-                    else {
-                        ctx.fireUserEventTriggered(ctx);
                     }
                 }
             });

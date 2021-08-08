@@ -31,6 +31,8 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.remote.handler.UdpServer;
+import org.drasyl.remote.handler.tcp.TcpServer;
 
 import java.io.Closeable;
 import java.util.Arrays;
@@ -58,9 +60,11 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
             events.onError(((NodeUnrecoverableErrorEvent) event).getError());
         }
         else {
-            if (event instanceof NodeUpEvent) {
-                port = ((NodeUpEvent) event).getNode().getPort();
-                tcpFallbackPort = ((NodeUpEvent) event).getNode().getTcpFallbackPort();
+            if (event instanceof UdpServer.Port) {
+                port = ((UdpServer.Port) event).getPort();
+            }
+            else if (event instanceof TcpServer.Port) {
+                tcpFallbackPort = ((TcpServer.Port) event).getPort();
             }
 
             events.onNext(event);

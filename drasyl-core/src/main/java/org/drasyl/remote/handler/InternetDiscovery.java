@@ -25,13 +25,8 @@ import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
@@ -316,26 +311,20 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            if (event instanceof NodeUpEvent) {
-                startHeartbeat(ctx);
-            }
-            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                stopHeartbeat();
-                openPingsCache.clear();
-                uniteAttemptsCache.clear();
-                removeAllPeers(ctx);
-            }
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        startHeartbeat(ctx);
 
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+        super.channelActive(ctx);
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        stopHeartbeat();
+        openPingsCache.clear();
+        uniteAttemptsCache.clear();
+        removeAllPeers(ctx);
+
+        super.channelInactive(ctx);
     }
 
     /**

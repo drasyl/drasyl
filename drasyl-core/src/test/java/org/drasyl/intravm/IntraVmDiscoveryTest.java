@@ -26,9 +26,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
@@ -65,11 +62,11 @@ class IntraVmDiscoveryTest {
     @Nested
     class StartDiscovery {
         @Test
-        void shouldStartDiscoveryOnNodeUpEvent(@Mock final NodeUpEvent event) {
+        void shouldStartDiscoveryOnChannelActive() {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelActive();
 
                 assertThat(discoveries, aMapWithSize(1));
             }
@@ -82,30 +79,12 @@ class IntraVmDiscoveryTest {
     @Nested
     class StopDiscovery {
         @Test
-        void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
-                                                              @Mock final ChannelHandlerContext ctx) {
+        void shouldStopDiscoveryOnChannelInactive(@Mock final ChannelHandlerContext ctx) {
             discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
-
-                assertThat(discoveries, aMapWithSize(0));
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event,
-                                                @Mock final ChannelHandlerContext ctx) {
-            discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
-
-            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelInactive();
 
                 assertThat(discoveries, aMapWithSize(0));
             }

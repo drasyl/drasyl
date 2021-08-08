@@ -23,13 +23,8 @@ package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -53,7 +48,6 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
-import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_INTERFACE;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
@@ -173,26 +167,18 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            if (MULTICAST_INTERFACE != null) {
-                if (event instanceof NodeUpEvent) {
-                    startHeartbeat(ctx);
-                }
-                else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                    stopHeartbeat();
-                    clearRoutes(ctx);
-                }
-            }
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        startHeartbeat(ctx);
 
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+        super.channelActive(ctx);
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        stopHeartbeat();
+        clearRoutes(ctx);
+
+        super.channelInactive(ctx);
     }
 
     private static void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {

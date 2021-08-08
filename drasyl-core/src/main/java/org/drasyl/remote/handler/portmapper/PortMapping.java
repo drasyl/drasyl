@@ -23,7 +23,6 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 
 /**
@@ -33,12 +32,11 @@ public interface PortMapping {
     /**
      * Tells the method to create a port forwarding and renew it independently. If no forwarding can
      * be created, {@code onFailure} must be called once.
-     *
-     * @param ctx       the handler context
-     * @param event     the node up event
+     *  @param ctx       the handler context
+     * @param port     the {@link org.drasyl.remote.handler.UdpServer.Port} port
      * @param onFailure will be called once on failure
      */
-    void start(ChannelHandlerContext ctx, NodeUpEvent event, Runnable onFailure);
+    void start(ChannelHandlerContext ctx, int port, Runnable onFailure);
 
     /**
      * Shall remove any existing port forwarding again.

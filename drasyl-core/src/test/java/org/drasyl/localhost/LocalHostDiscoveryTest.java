@@ -27,10 +27,6 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationEvent;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -39,6 +35,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
+import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.junit.jupiter.api.Nested;
@@ -48,7 +45,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,7 +57,6 @@ import java.nio.file.WatchService;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -111,19 +106,15 @@ class LocalHostDiscoveryTest {
         @SuppressWarnings("unchecked")
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
-        void shouldStartDiscoveryOnNodeUpEvent(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+        void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
+                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                             @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.executor()).thenReturn(executor);
             doAnswer(invocation2 -> {
                 invocation2.getArgument(0, Runnable.class).run();
                 return null;
             }).when(executor).execute(any());
-            when(ctx.fireUserEventTriggered(any())).then((Answer<ChannelHandlerContext>) invocation -> {
-                invocation.getArgument(0, MigrationEvent.class).future().complete(null);
-                return null;
-            });
             when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().mkdirs()).thenReturn(true);
             when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().isDirectory()).thenReturn(true);
@@ -133,15 +124,13 @@ class LocalHostDiscoveryTest {
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            handler.userEventTriggered(ctx, new MigrationEvent(event, future));
-            future.join();
+            handler.userEventTriggered(ctx, event);
 
             verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
         }
 
         @Test
-        void shouldTryToRegisterAWatchService(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event) throws IOException {
+        void shouldTryToRegisterAWatchService(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event) throws IOException {
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
@@ -152,7 +141,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireUserEventTriggered(event);
 
                 verify(discoveryPath).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
             }
@@ -164,7 +153,7 @@ class LocalHostDiscoveryTest {
         @SuppressWarnings("unchecked")
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
-        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
+        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
@@ -173,10 +162,6 @@ class LocalHostDiscoveryTest {
                 invocation1.getArgument(0, Runnable.class).run();
                 return null;
             }).when(executor).execute(any());
-            when(ctx.fireUserEventTriggered(any())).then((Answer<ChannelHandlerContext>) invocation -> {
-                invocation.getArgument(0, MigrationEvent.class).future().complete(null);
-                return null;
-            });
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
@@ -188,9 +173,7 @@ class LocalHostDiscoveryTest {
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            handler.userEventTriggered(ctx, new MigrationEvent(event, future));
-            future.join();
+            handler.userEventTriggered(ctx, event);
 
             verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
             verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
@@ -200,7 +183,7 @@ class LocalHostDiscoveryTest {
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@TempDir final Path dir,
-                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
+                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
@@ -227,10 +210,6 @@ class LocalHostDiscoveryTest {
                 invocation.getArgument(0, Runnable.class).run();
                 return null;
             });
-            when(ctx.fireUserEventTriggered(any())).then((Answer<ChannelHandlerContext>) invocation -> {
-                invocation.getArgument(0, MigrationEvent.class).future().complete(null);
-                return null;
-            });
 
             when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             final DrasylConfig config = ctx.attr(CONFIG_ATTR_KEY).get(); // mockito work-around
@@ -244,9 +223,7 @@ class LocalHostDiscoveryTest {
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            handler.userEventTriggered(ctx, new MigrationEvent(event, future));
-            future.join();
+            handler.userEventTriggered(ctx, event);
 
             verify(watchService).poll();
             verify(jacksonWriter).accept(eq(path.toFile()), any());
@@ -256,35 +233,14 @@ class LocalHostDiscoveryTest {
     @Nested
     class StopDiscovery {
         @Test
-        void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
-                                                              @Mock final IdentityPublicKey publicKey,
-                                                              @Mock final InetSocketAddressWrapper address) {
+        void shouldStopDiscoveryOnChannelInactive(@Mock final IdentityPublicKey publicKey,
+                                                  @Mock final InetSocketAddressWrapper address) {
             routes.put(publicKey, address);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
-
-                verify(watchDisposable).cancel(false);
-                verify(postDisposable).cancel(false);
-                assertTrue(routes.isEmpty());
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event,
-                                                @Mock final IdentityPublicKey publicKey,
-                                                @Mock final InetSocketAddressWrapper address) {
-            routes.put(publicKey, address);
-
-            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelInactive();
 
                 verify(watchDisposable).cancel(false);
                 verify(postDisposable).cancel(false);

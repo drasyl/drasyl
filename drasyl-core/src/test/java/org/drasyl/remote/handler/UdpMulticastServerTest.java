@@ -31,8 +31,6 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.Endpoint;
@@ -79,9 +77,8 @@ class UdpMulticastServerTest {
     @Nested
     class StartServer {
         @Test
-        void shouldStartServerOnNodeUpEvent(@Mock final NodeUpEvent event,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel datagramChannel) {
+        void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel datagramChannel) {
             when(bootstrap.handler(any()).bind(anyString(), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel()).thenReturn(datagramChannel);
@@ -92,7 +89,7 @@ class UdpMulticastServerTest {
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelActive();
 
                 verify(nodes).put(eq(identity.getIdentityPublicKey()), any());
                 verify(bootstrap.handler(any())).bind(anyString(), anyInt());
@@ -107,13 +104,13 @@ class UdpMulticastServerTest {
     @Nested
     class StopServer {
         @Test
-        void shouldStopServerOnNodeDownEvent(@Mock final NodeDownEvent event) {
+        void shouldStopServerOnChannelInactive() {
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127")));
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, channel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelInactive();
 
                 verify(nodes).remove(identity.getIdentityPublicKey());
                 verify(channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE)).awaitUninterruptibly();
@@ -129,8 +126,7 @@ class UdpMulticastServerTest {
     class MessagePassing {
         @Test
         @SuppressWarnings("unchecked")
-        void shouldPassIngoingMessagesToAllPipelines(@Mock final NodeUpEvent event,
-                                                     @Mock final ChannelHandlerContext channelCtx,
+        void shouldPassIngoingMessagesToAllPipelines(@Mock final ChannelHandlerContext channelCtx,
                                                      @Mock final ByteBuf message,
                                                      @Mock final IdentityPublicKey publicKey,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
@@ -145,7 +141,7 @@ class UdpMulticastServerTest {
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelActive();
 
                 verify(ctx).fireChannelRead(any());
             }

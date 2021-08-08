@@ -27,7 +27,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
@@ -98,13 +97,14 @@ class LocalNetworkDiscoveryTest {
         }
 
         @Test
-        void shouldStartHeartbeatingOnNodeUpEvent(@Mock final NodeUpEvent event) {
+        void shouldStartHeartbeatingOnChannelActive(@Mock final NodeUpEvent event) {
             when(config.getRemotePingInterval()).thenReturn(ofSeconds(1));
 
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, null));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelActive();
+
                 verify(handler).startHeartbeat(any());
                 handler.stopHeartbeat(); // we must stop, otherwise this handler goes crazy cause to the PT0S ping interval
             }
@@ -114,26 +114,11 @@ class LocalNetworkDiscoveryTest {
         }
 
         @Test
-        void shouldStopHeartbeatingAndClearRoutesOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
+        void shouldStopHeartbeatingAndClearRoutesOnChannelInactive(@Mock final NodeUnrecoverableErrorEvent event) {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, pingDisposable));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
-
-                verify(handler).stopHeartbeat();
-                verify(handler).clearRoutes(any());
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldStopHeartbeatingAndClearRoutesOnNodeDownEvent(@Mock final NodeDownEvent event) {
-            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, pingDisposable));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelInactive();
 
                 verify(handler).stopHeartbeat();
                 verify(handler).clearRoutes(any());

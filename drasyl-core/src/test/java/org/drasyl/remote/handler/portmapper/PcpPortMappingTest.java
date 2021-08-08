@@ -28,7 +28,6 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.annotations.NonNull;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -61,7 +60,6 @@ public class PcpPortMappingTest {
     class Start {
         @Test
         void shouldRequestMapping(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                  @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                   @Mock(answer = RETURNS_DEEP_STUBS) final Runnable onFailure,
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                   @Mock final Supplier<Set<InetAddress>> interfaceSupplier) throws UnknownHostException {
@@ -70,7 +68,7 @@ public class PcpPortMappingTest {
             when(defaultGatewaySupplier.get()).thenReturn(InetAddress.getByName("38.12.1.15"));
             when(interfaceSupplier.get()).thenReturn(Set.of(InetAddress.getByName("38.12.1.15")));
 
-            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier).start(ctx, event, onFailure);
+            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier).start(ctx, 12345, onFailure);
 
             verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
         }

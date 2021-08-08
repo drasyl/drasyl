@@ -25,13 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.FutureCombiner;
@@ -173,22 +168,16 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            if (event instanceof NodeUpEvent && disposable == null) {
-                start();
-            }
-            else if ((event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) && disposable != null) {
-                stop();
-            }
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        start();
 
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+        super.channelActive(ctx);
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        stop();
+
+        super.channelInactive(ctx);
     }
 }

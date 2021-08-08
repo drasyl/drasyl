@@ -27,8 +27,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Node;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.FutureCombiner;
@@ -55,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.remote.handler.portmapper.PortMapper.MAPPING_LIFETIME;
 import static org.drasyl.util.protocol.UpnpIgdUtil.SSDP_MULTICAST_ADDRESS;
 
@@ -116,12 +115,11 @@ public class UpnpIgdPortMapping implements PortMapping {
 
     @Override
     public void start(final ChannelHandlerContext ctx,
-                      final NodeUpEvent event,
+                      final int port,
                       final Runnable onFailure) {
         this.onFailure = onFailure;
-        final Node node = event.getNode();
-        port = node.getPort();
-        description = "drasyl" + node.getIdentity().getIdentityPublicKey().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
+        this.port = port;
+        description = "drasyl" + ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
         mapPort(ctx);
     }
 

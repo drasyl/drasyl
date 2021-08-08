@@ -29,7 +29,7 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.annotations.NonNull;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.event.NodeUpEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.protocol.UpnpIgdUtil;
 import org.drasyl.util.protocol.UpnpIgdUtil.Service;
 import org.junit.jupiter.api.Nested;
@@ -46,12 +46,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.util.protocol.UpnpIgdUtil.SSDP_MULTICAST_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -68,9 +70,10 @@ public class UpnpIgdPortMappingTest {
                                       @Mock final Future refreshTask,
                                       @Mock final Service upnpService,
                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                      @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                       @Mock final Runnable onFailure) {
-            new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
+            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+
+            new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
             verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
         }
@@ -84,7 +87,6 @@ public class UpnpIgdPortMappingTest {
                                                                 @Mock final Future refreshTask,
                                                                 @Mock final Service upnpService,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                 @Mock final Runnable onFailure) throws InterruptedException {
                 final Set<URI> ssdpServices = new HashSet<>();
                 when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
@@ -95,8 +97,9 @@ public class UpnpIgdPortMappingTest {
                     return null;
                 });
                 when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
+                when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
-                new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
+                new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                 verify(ctx.executor()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
             }
@@ -108,8 +111,8 @@ public class UpnpIgdPortMappingTest {
                                                                    @Mock final Future refreshTask,
                                                                    @Mock final Service upnpService,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
-                                                                   @Mock final Runnable onFailure) throws InterruptedException {
+                                                                   @Mock final Runnable onFailure,
+                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) throws InterruptedException {
                 final Set<URI> ssdpServices = new HashSet<>();
                 when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
                 when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
@@ -120,9 +123,10 @@ public class UpnpIgdPortMappingTest {
                 });
                 when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                 when(upnpIgdUtil.getSpecificPortMappingEntry(any(), any(), any()).getDescription()).thenReturn("drasyl1234567890");
-                when(event.getNode().getIdentity().getIdentityPublicKey().toString()).thenReturn("1234567890");
+                when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(identity);
+                when(identity.getIdentityPublicKey().toString()).thenReturn("1234567890");
 
-                new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
+                new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                 verify(ctx.executor()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
             }
@@ -136,7 +140,6 @@ public class UpnpIgdPortMappingTest {
                                                                 @Mock final Future refreshTask,
                                                                 @Mock final Service upnpService,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                 @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
@@ -147,8 +150,9 @@ public class UpnpIgdPortMappingTest {
                         return null;
                     });
                     when(upnpIgdUtil.getUpnpService(any())).thenReturn(null);
+                    when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
-                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
+                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                     verify(ctx.executor(), never()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
@@ -160,7 +164,6 @@ public class UpnpIgdPortMappingTest {
                                                             @Mock final Future refreshTask,
                                                             @Mock final Service upnpService,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                            @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                             @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
@@ -171,8 +174,9 @@ public class UpnpIgdPortMappingTest {
                         return null;
                     });
                     when(upnpIgdUtil.getStatusInfo(any(), any())).thenReturn(null);
+                    when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
-                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
+                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                     verify(ctx.executor(), never()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
@@ -184,7 +188,6 @@ public class UpnpIgdPortMappingTest {
                                                                  @Mock final Future refreshTask,
                                                                  @Mock final Service upnpService,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                                  @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
@@ -196,8 +199,9 @@ public class UpnpIgdPortMappingTest {
                     });
                     when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                     when(upnpIgdUtil.getExternalIpAddress(any(), any())).thenReturn(null);
+                    when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
-                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
+                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                     verify(ctx.executor(), never()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
@@ -209,7 +213,6 @@ public class UpnpIgdPortMappingTest {
                                                       @Mock final Future refreshTask,
                                                       @Mock final Service upnpService,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                      @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                                       @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
@@ -221,8 +224,9 @@ public class UpnpIgdPortMappingTest {
                     });
                     when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                     when(upnpIgdUtil.addPortMapping(any(), any(), any(), any(), any())).thenReturn(null);
+                    when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
-                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, event, onFailure);
+                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                     verify(ctx.executor(), never()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
                 }

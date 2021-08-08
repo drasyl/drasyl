@@ -114,7 +114,7 @@ class PluginsIT {
                     ctx.fireUserEventTriggered(new MigrationEvent(event1, future));
                 }
             });
-            environment.getPipeline().fireUserEventTriggered(new MigrationEvent(event2, new CompletableFuture<>()));
+            environment.getPipeline().fireUserEventTriggered(new MigrationEvent(event2));
         }
     }
 }

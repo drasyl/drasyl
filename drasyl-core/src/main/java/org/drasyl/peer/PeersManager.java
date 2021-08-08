@@ -152,7 +152,7 @@ public class PeersManager {
 
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                ctx.fireUserEventTriggered(new MigrationEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerDirectEvent.of(Peer.of(publicKey))));
             }
         }
         finally {
@@ -170,7 +170,7 @@ public class PeersManager {
             lock.writeLock().lock();
 
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                ctx.fireUserEventTriggered(new MigrationEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerRelayEvent.of(Peer.of(publicKey))));
             }
         }
         finally {
@@ -190,13 +190,13 @@ public class PeersManager {
             // path
             final boolean firstPath = paths.get(publicKey).isEmpty();
             if (paths.put(publicKey, path) && firstPath) {
-                ctx.fireUserEventTriggered(new MigrationEvent(PeerDirectEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerDirectEvent.of(Peer.of(publicKey))));
             }
 
             // role (super peer)
             final boolean firstSuperPeer = superPeers.isEmpty();
             if (superPeers.add(publicKey) && firstSuperPeer) {
-                ctx.fireUserEventTriggered(new MigrationEvent(NodeOnlineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())), new CompletableFuture<Void>()));
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeOnlineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get()))));
             }
         }
         finally {
@@ -214,12 +214,12 @@ public class PeersManager {
 
             // role (super peer)
             if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-                ctx.fireUserEventTriggered(new MigrationEvent(NodeOfflineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())), new CompletableFuture<Void>()));
+                ctx.fireUserEventTriggered(new MigrationEvent(NodeOfflineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get()))));
             }
 
             // path
             if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-                ctx.fireUserEventTriggered(new MigrationEvent(PeerRelayEvent.of(Peer.of(publicKey)), new CompletableFuture<Void>()));
+                ctx.fireUserEventTriggered(new MigrationEvent(PeerRelayEvent.of(Peer.of(publicKey))));
             }
         }
         finally {

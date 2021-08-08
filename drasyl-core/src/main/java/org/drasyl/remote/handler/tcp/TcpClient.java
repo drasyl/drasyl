@@ -29,12 +29,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -211,36 +207,11 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            final CompletableFuture<Void> future = ((MigrationEvent) evt).future();
-            if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                // the TCP client should be shut down last, so that the other handlers have a chance to
-                // send a "goodbye" message.
-                final CompletableFuture<Void> otherHandlersFuture = new CompletableFuture<>();
-                otherHandlersFuture.whenComplete((result, e) -> {
-                    // stop client
-                    stopClient();
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
 
-                    if (e == null) {
-                        future.complete(result);
-                    }
-                    else {
-                        future.completeExceptionally(e);
-                    }
-                });
-                ctx.fireUserEventTriggered(new MigrationEvent(event, otherHandlersFuture));
-            }
-            else {
-                // passthrough event
-                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-            }
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+        // stop client
+        stopClient();
     }
 
     /**

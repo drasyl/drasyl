@@ -27,7 +27,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.FutureCombiner;
@@ -107,10 +106,10 @@ public class NatPmpPortMapping implements PortMapping {
 
     @Override
     public void start(final ChannelHandlerContext ctx,
-                      final NodeUpEvent event,
+                      final int port,
                       final Runnable onFailure) {
         this.onFailure = onFailure;
-        port = event.getNode().getPort();
+        this.port = port;
         mapPort(ctx);
     }
 

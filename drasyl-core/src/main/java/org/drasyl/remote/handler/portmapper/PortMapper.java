@@ -24,15 +24,11 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
+import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -86,7 +82,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
         }
     }
 
-    private void cycleNextMethod(final ChannelHandlerContext ctx, final NodeUpEvent event) {
+    private void cycleNextMethod(final ChannelHandlerContext ctx, final int port) {
         final int oldMethodPointer = currentMethodPointer;
         currentMethodPointer = (currentMethodPointer + 1) % methods.size();
         if (currentMethodPointer == 0) {
@@ -94,37 +90,34 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
             LOG.debug("Method `{}` was unable to create mapping. All methods have failed. Wait {}s and then give next method `{}` a try.", () -> methods.get(oldMethodPointer), RETRY_DELAY::toSeconds, () -> methods.get(currentMethodPointer));
             retryTask = ctx.executor().schedule(() -> {
                 LOG.debug("Try to map port with method `{}`.", () -> methods.get(currentMethodPointer));
-                methods.get(currentMethodPointer).start(ctx, event, () -> cycleNextMethod(ctx, event));
+                methods.get(currentMethodPointer).start(ctx, port, () -> cycleNextMethod(ctx, port));
             }, RETRY_DELAY.toMillis(), MILLISECONDS);
         }
         else {
             LOG.debug("Method `{}` was unable to create mapping. Let's give next method `{}` a try.", () -> methods.get(oldMethodPointer), () -> methods.get(currentMethodPointer));
-            methods.get(currentMethodPointer).start(ctx, event, () -> cycleNextMethod(ctx, event));
+            methods.get(currentMethodPointer).start(ctx, port, () -> cycleNextMethod(ctx, port));
         }
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        if (retryTask != null) {
+            retryTask.cancel(false);
+            retryTask = null;
+        }
+        methods.get(currentMethodPointer).stop(ctx);
+
+        super.channelInactive(ctx);
     }
 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            if (event instanceof NodeUpEvent) {
-                LOG.debug("Try to map port with method `{}`.", () -> methods.get(currentMethodPointer));
-                methods.get(currentMethodPointer).start(ctx, (NodeUpEvent) event, () -> cycleNextMethod(ctx, (NodeUpEvent) event));
-            }
-            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                if (retryTask != null) {
-                    retryTask.cancel(false);
-                    retryTask = null;
-                }
-                methods.get(currentMethodPointer).stop(ctx);
-            }
+        if (evt instanceof UdpServer.Port) {
+            LOG.debug("Try to map port with method `{}`.", () -> methods.get(currentMethodPointer));
+            methods.get(currentMethodPointer).start(ctx, ((UdpServer.Port) evt).getPort(), () -> cycleNextMethod(ctx, ((UdpServer.Port) evt).getPort()));
+        }
 
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+        ctx.fireUserEventTriggered(evt);
     }
 }

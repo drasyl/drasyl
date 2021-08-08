@@ -31,13 +31,8 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
-import org.drasyl.event.Node;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.Address;
@@ -61,6 +56,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 import static org.drasyl.util.network.NetworkUtil.getAddresses;
 
@@ -91,25 +87,17 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            final CompletableFuture<Void> future = ((MigrationEvent) evt).future();
-            if (event instanceof NodeUpEvent) {
-                startServer(ctx, event, future);
-            }
-            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                stopServer(ctx, event, future);
-            }
-            else {
-                // passthrough event
-                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-            }
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        startServer(ctx);
+
+        super.channelActive(ctx);
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+
+        stopServer();
     }
 
     static Set<Endpoint> determineActualEndpoints(final Identity identity,
@@ -141,13 +129,10 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    private synchronized void startServer(final ChannelHandlerContext ctx,
-                                          final Event event,
-                                          final CompletableFuture<Void> future) {
-        if (channel == null) {
-            LOG.debug("Start Server...");
-            final int bindPort;
-            if (ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindPort() == -1) {
+    private void startServer(final ChannelHandlerContext ctx) throws Exception {
+        LOG.debug("Start Server...");
+        final int bindPort;
+        if (ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindPort() == -1) {
                 /*
                  derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
                  own identity. this is done because we also expose this port via
@@ -156,72 +141,46 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
                  a completely random port would have the disadvantage that every time the node is
                  started it would use a new port and this would make discovery more difficult
                 */
-                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toByteArray()).asBytes()).getValue();
-                bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
-            }
-            else {
-                bindPort = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindPort();
-            }
-            final ChannelFuture channelFuture = bootstrap
-                    .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
-                        @Override
-                        protected void channelRead0(final ChannelHandlerContext channelCtx,
-                                                    final DatagramPacket packet) {
-                            LOG.trace("Datagram received {}", packet);
-                            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) packet.content().retain(), (Address) new InetSocketAddressWrapper(packet.sender()), new CompletableFuture<Void>()));
-                        }
-                    })
-                    .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost(), bindPort);
-            channelFuture.awaitUninterruptibly();
-
-            if (channelFuture.isSuccess()) {
-                // server successfully started
-                this.channel = channelFuture.channel();
-                final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-                LOG.info("Server started and listening at udp:/{}", socketAddress);
-
-                // consume NodeUpEvent and publish NodeUpEvent with port
-                ctx.fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get(), socketAddress.getPort())), future));
-            }
-            else {
-                // server start failed
-                future.completeExceptionally(new Exception("Unable to bind server to address udp://" + ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost() + ":" + bindPort, channelFuture.cause()));
-            }
+            final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toByteArray()).asBytes()).getValue();
+            bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
         }
         else {
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+            bindPort = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindPort();
+        }
+        final ChannelFuture channelFuture = bootstrap
+                .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
+                    @Override
+                    protected void channelRead0(final ChannelHandlerContext channelCtx,
+                                                final DatagramPacket packet) {
+                        LOG.trace("Datagram received {}", packet);
+                        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) packet.content().retain(), (Address) new InetSocketAddressWrapper(packet.sender()), new CompletableFuture<>()));
+                    }
+                })
+                .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost(), bindPort);
+        channelFuture.awaitUninterruptibly();
+
+        if (channelFuture.isSuccess()) {
+            // server successfully started
+            this.channel = channelFuture.channel();
+            final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+            LOG.info("Server started and listening at udp:/{}", socketAddress);
+
+            // consume NodeUpEvent and publish NodeUpEvent with port
+            ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
+        }
+        else {
+            // server start failed
+            throw new Exception("Unable to bind server to address udp://" + ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost() + ":" + bindPort, channelFuture.cause());
         }
     }
 
-    private synchronized void stopServer(final ChannelHandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        if (channel != null) {
-            // the UDP server should be shut down last, so that the other handlers have a chance to
-            // send a "goodbye" message.
-            final CompletableFuture<Void> otherHandlersFuture = new CompletableFuture<>();
-            otherHandlersFuture.whenComplete((result, e) -> {
-                final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-                LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
-                // shutdown server
-                channel.close().awaitUninterruptibly();
-                channel = null;
-                LOG.debug("Server stopped");
-
-                if (e == null) {
-                    future.complete(result);
-                }
-                else {
-                    future.completeExceptionally(e);
-                }
-            });
-            ctx.fireUserEventTriggered(new MigrationEvent(event, otherHandlersFuture));
-        }
-        else {
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-        }
+    private void stopServer() {
+        final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+        LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
+        // shutdown server
+        channel.close().awaitUninterruptibly();
+        channel = null;
+        LOG.debug("Server stopped");
     }
 
     @Override
@@ -248,5 +207,17 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
                                   final Object msg,
                                   final CompletableFuture<Void> future) throws Exception {
         ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+    }
+
+    public class Port implements Event {
+        private final int port;
+
+        public Port(final int port) {
+            this.port = requireNonNegative(port, "port must be non-negative");
+        }
+
+        public int getPort() {
+            return port;
+        }
     }
 }

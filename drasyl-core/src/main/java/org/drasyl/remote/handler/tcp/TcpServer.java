@@ -30,14 +30,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
-import org.drasyl.event.Node;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -58,8 +53,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.util.NettyUtil.getBestServerSocketChannel;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
  * Starts a TCP-based server, allowing clients in very restrictive networks that do not allow
@@ -89,64 +84,36 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
         this.serverChannel = serverChannel;
     }
 
-    private synchronized void startServer(final ChannelHandlerContext ctx,
-                                          final NodeUpEvent event,
-                                          final CompletableFuture<Void> future) {
-        if (serverChannel == null) {
-            LOG.debug("Start Server...");
-            final ChannelFuture channelFuture = bootstrap
-                    .childHandler(new TcpServerChannelInitializer(clientChannels, ctx))
-                    .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindHost(), ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindPort());
-            channelFuture.awaitUninterruptibly();
+    private synchronized void startServer(final ChannelHandlerContext ctx) {
+        LOG.debug("Start Server...");
+        final ChannelFuture channelFuture = bootstrap
+                .childHandler(new TcpServerChannelInitializer(clientChannels, ctx))
+                .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindHost(), ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindPort());
+        channelFuture.awaitUninterruptibly();
 
-            if (channelFuture.isSuccess()) {
-                // server successfully started
-                this.serverChannel = channelFuture.channel();
-                final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
-                LOG.debug("Server started and listening at tcp:/{}", socketAddress);
+        if (channelFuture.isSuccess()) {
+            // server successfully started
+            this.serverChannel = channelFuture.channel();
+            final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
+            LOG.debug("Server started and listening at tcp:/{}", socketAddress);
 
-                // consume NodeUpEvent and publish NodeUpEvent with port
-                ctx.fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get(), event.getNode().getPort(), socketAddress.getPort())), future));
-                return;
-            }
-            else {
-                // server start failed
-                //noinspection unchecked
-                LOG.warn("Unable to bind server to address tcp://{}:{}", ctx.attr(CONFIG_ATTR_KEY).get()::getRemoteBindHost, ctx.attr(CONFIG_ATTR_KEY).get()::getRemoteTcpFallbackServerBindPort, channelFuture::cause);
-            }
+            // consume NodeUpEvent and publish NodeUpEvent with port
+            ctx.fireUserEventTriggered(new TcpServer.Port(socketAddress.getPort()));
         }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+        else {
+            // server start failed
+            //noinspection unchecked
+            LOG.warn("Unable to bind server to address tcp://{}:{}", ctx.attr(CONFIG_ATTR_KEY).get()::getRemoteBindHost, ctx.attr(CONFIG_ATTR_KEY).get()::getRemoteTcpFallbackServerBindPort, channelFuture::cause);
+        }
     }
 
-    private synchronized void stopServer(final ChannelHandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        if (serverChannel != null) {
-            // the TCP server should be shut down last, so that the other handlers have a chance to
-            // send a "goodbye" message.
-            final CompletableFuture<Void> otherHandlersFuture = new CompletableFuture<>();
-            otherHandlersFuture.whenComplete((result, e) -> {
-                final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
-                LOG.debug("Stop Server listening at tcp:/{}...", socketAddress);
-                // shutdown server
-                serverChannel.close().awaitUninterruptibly();
-                serverChannel = null;
-                LOG.debug("Server stopped");
-
-                if (e == null) {
-                    future.complete(result);
-                }
-                else {
-                    future.completeExceptionally(e);
-                }
-            });
-            ctx.fireUserEventTriggered(new MigrationEvent(event, otherHandlersFuture));
-        }
-
-        // passthrough event
-        ctx.fireUserEventTriggered(new MigrationEvent(event, future));
+    private synchronized void stopServer() {
+        final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
+        LOG.debug("Stop Server listening at tcp:/{}...", socketAddress);
+        // shutdown server
+        serverChannel.close().awaitUninterruptibly();
+        serverChannel = null;
+        LOG.debug("Server stopped");
     }
 
     @Override
@@ -183,25 +150,17 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            final CompletableFuture<Void> future = ((MigrationEvent) evt).future();
-            if (event instanceof NodeUpEvent) {
-                startServer(ctx, (NodeUpEvent) event, future);
-            }
-            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                stopServer(ctx, event, future);
-            }
-            else {
-                // passthrough event
-                ctx.fireUserEventTriggered(new MigrationEvent(event, future));
-            }
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        startServer(ctx);
+
+        super.channelActive(ctx);
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+
+        stopServer();
     }
 
     static class TcpServerChannelInitializer extends ChannelInitializer<Channel> {
@@ -275,6 +234,18 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
                 }
                 return null;
             });
+        }
+    }
+
+    public class Port implements Event {
+        private final int port;
+
+        public Port(final int port) {
+            this.port = requireNonNegative(port, "port must be non-negative");
+        }
+
+        public int getPort() {
+            return port;
         }
     }
 }

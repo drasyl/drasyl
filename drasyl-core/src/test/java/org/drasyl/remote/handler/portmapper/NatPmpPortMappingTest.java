@@ -28,7 +28,6 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.annotations.NonNull;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,13 +56,12 @@ class NatPmpPortMappingTest {
     class Start {
         @Test
         void shouldRequestExternalMessage(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final NodeUpEvent event,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Runnable onFailure,
                                           @Mock final Supplier<InetAddress> defaultGatewaySupplier) throws UnknownHostException {
             when(defaultGatewaySupplier.get()).thenReturn(InetAddress.getByName("38.12.1.15"));
             final AtomicBoolean externalAddressRequested = new AtomicBoolean();
             final AtomicBoolean mappingRequested = new AtomicBoolean();
-            new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, null, null, null, null, onFailure, defaultGatewaySupplier).start(ctx, event, onFailure);
+            new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, null, null, null, null, onFailure, defaultGatewaySupplier).start(ctx, 12345, onFailure);
 
             verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
             assertTrue(externalAddressRequested.get());

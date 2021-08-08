@@ -32,12 +32,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -208,23 +203,17 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            if (event instanceof NodeUpEvent) {
-                startServer(ctx);
-            }
-            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                stopServer(ctx);
-            }
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        startServer(ctx);
 
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+        super.channelActive(ctx);
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        stopServer(ctx);
+
+        super.channelInactive(ctx);
     }
 
     public static synchronized UdpMulticastServer getInstance() {

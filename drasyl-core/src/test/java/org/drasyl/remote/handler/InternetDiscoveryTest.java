@@ -30,10 +30,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.Endpoint;
@@ -132,13 +129,13 @@ class InternetDiscoveryTest {
     @Nested
     class DoHeartbeat {
         @Test
-        void shouldStartHeartbeatingOnNodeUpEvent(@Mock final NodeUpEvent event) {
+        void shouldStartHeartbeatingOnChannelActive() {
             when(config.getRemotePingInterval()).thenReturn(ofSeconds(5));
 
             final InternetDiscovery handler = spy(new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelActive();
 
                 verify(handler).startHeartbeat(any());
             }
@@ -148,35 +145,13 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldStopHeartbeatingOnNodeUnrecoverableErrorEvent(@Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
-                                                                 @Mock final NodeUnrecoverableErrorEvent event) {
+        void shouldStopHeartbeatingOnChannelInactive(@Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final InternetDiscovery handler = spy(new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
-
-                verify(handler).stopHeartbeat();
-                verify(openPingsCache).clear();
-                verify(uniteAttemptsCache).clear();
-                verify(rendezvousPeers).remove(publicKey);
-                assertTrue(peers.isEmpty());
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldStopHeartbeatingOnNodeDownEvent(@Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
-                                                   @Mock final NodeDownEvent event) {
-            final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
-            final InternetDiscovery handler = spy(new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelInactive();
 
                 verify(handler).stopHeartbeat();
                 verify(openPingsCache).clear();

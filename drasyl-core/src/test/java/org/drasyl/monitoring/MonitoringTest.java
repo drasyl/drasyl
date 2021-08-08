@@ -28,7 +28,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
@@ -68,14 +67,14 @@ class MonitoringTest {
     @Nested
     class StartMonitoring {
         @Test
-        void shouldStartDiscoveryOnNodeUpEvent(@Mock final NodeUpEvent event,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final MeterRegistry registry) {
+        void shouldStartDiscoveryOnChannelActive(@Mock final NodeUpEvent event,
+                                                 @Mock(answer = RETURNS_DEEP_STUBS) final MeterRegistry registry) {
             when(registrySupplier.apply(any())).thenReturn(registry);
 
             final Monitoring handler = new Monitoring(counters, registrySupplier, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelActive();
 
                 verify(registrySupplier).apply(any());
             }
@@ -88,25 +87,11 @@ class MonitoringTest {
     @Nested
     class StopDiscovery {
         @Test
-        void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
+        void shouldStopDiscoveryOnChannelInactive(@Mock final NodeUnrecoverableErrorEvent event) {
             final Monitoring handler = new Monitoring(counters, registrySupplier, registry);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
-
-                verify(registry).close();
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event) {
-            final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelInactive();
 
                 verify(registry).close();
             }

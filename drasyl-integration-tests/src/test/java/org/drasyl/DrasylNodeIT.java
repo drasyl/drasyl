@@ -207,25 +207,17 @@ class DrasylNodeIT {
                         IdentityTestUtil.ID_3.getIdentityPublicKey().toString());
                 for (final String recipient : identities) {
                     superPeer.send(recipient, "Hallo Welt");
-                    client1.send(recipient, "Hallo Welt");
-                    client2.send(recipient, "Hallo Welt");
                 }
 
                 //
                 // verify
                 //
                 superPeerMessages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()));
                 client1Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()));
                 client2Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()));
             }
 
             @Test

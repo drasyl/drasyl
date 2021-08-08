@@ -22,17 +22,14 @@
 package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.remote.handler.UdpServer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +41,7 @@ import java.util.List;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
@@ -61,21 +59,17 @@ class PortMapperTest {
     @Nested
     class EventHandling {
         @Test
-        void shouldStartFirstMethodOnNodeUpEvent(@Mock final PortMapping method,
-                                                 @Mock final NodeUpEvent event) {
+        void shouldStartFirstMethodOnPortEvent(@Mock final PortMapping method,
+                                               @Mock final UdpServer.Port event) {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Event> inboundEvents;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                inboundEvents = pipeline.inboundEvents().test();
+                pipeline.pipeline().fireUserEventTriggered(event);
 
-                pipeline.processInbound(event).join();
-
-                inboundEvents.awaitCount(1)
-                        .assertValueCount(1);
-                verify(method).start(any(), any(), any());
+                verify(method).start(any(), anyInt(), any());
             }
             finally {
                 pipeline.drasylClose();
@@ -83,45 +77,16 @@ class PortMapperTest {
         }
 
         @Test
-        void shouldStopCurrentMethodOnNodeDownEvent(@Mock final PortMapping method,
-                                                    @Mock final NodeDownEvent event) {
+        void shouldStopCurrentMethodOnChannalInactive(@Mock final PortMapping method) {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final TestObserver<Event> inboundEvents;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                inboundEvents = pipeline.inboundEvents().test();
+                pipeline.pipeline().fireChannelInactive();
 
-                pipeline.processInbound(event).join();
-
-                inboundEvents.awaitCount(1)
-                        .assertValueCount(1);
                 verify(method).stop(any());
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldStopCurrentMethodOnNodeUnrecoverableErrorEvent(@Mock final PortMapping method,
-                                                                  @Mock final NodeUnrecoverableErrorEvent event,
-                                                                  @Mock final Future retryTask) {
-            final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
-
-            final PortMapper handler = new PortMapper(methods, 0, retryTask);
-            final TestObserver<Event> inboundEvents;
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                inboundEvents = pipeline.inboundEvents().test();
-
-                pipeline.processInbound(event).join();
-
-                inboundEvents.awaitCount(1)
-                        .assertValueCount(1);
-                verify(method).stop(any());
-                verify(retryTask).cancel(false);
             }
             finally {
                 pipeline.drasylClose();
@@ -182,21 +147,21 @@ class PortMapperTest {
         @Test
         void shouldCycleToNextMethodOnFailure(@Mock final PortMapping method1,
                                               @Mock final PortMapping method2,
-                                              @Mock final NodeUpEvent event) {
+                                              @Mock final UdpServer.Port event) {
             doAnswer(invocation -> {
                 final Runnable onFailure = invocation.getArgument(2, Runnable.class);
                 onFailure.run();
                 return null;
-            }).when(method1).start(any(), any(), any());
+            }).when(method1).start(any(), anyInt(), any());
 
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method1, method2));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireUserEventTriggered(event);
 
-                verify(method2).start(any(), any(), any());
+                verify(method2).start(any(), anyInt(), any());
             }
             finally {
                 pipeline.drasylClose();

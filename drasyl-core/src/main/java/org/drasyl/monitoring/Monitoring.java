@@ -29,13 +29,8 @@ import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.FutureCombiner;
@@ -153,25 +148,24 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     }
 
     @Override
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        startMonitoring(ctx);
+
+        super.channelActive(ctx);
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+
+        stopMonitoring();
+    }
+
+    @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.events", event));
-
-            if (event instanceof NodeUpEvent) {
-                startMonitoring(ctx);
-            }
-            else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                stopMonitoring();
-            }
-
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+        ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.events", evt));
+        ctx.fireUserEventTriggered(evt);
     }
 
     @SuppressWarnings("java:S2972")

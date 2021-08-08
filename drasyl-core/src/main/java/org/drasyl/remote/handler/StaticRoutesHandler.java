@@ -24,13 +24,8 @@ package org.drasyl.remote.handler;
 import com.typesafe.config.Config;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
@@ -87,24 +82,17 @@ public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, Appli
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
-                clearRoutes(ctx);
-            }
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+        populateRoutes(ctx);
 
-            if (event instanceof NodeUpEvent) {
-                populateRoutes(ctx);
-            }
+        super.channelActive(ctx);
+    }
 
-            // passthrough event
-            ctx.fireUserEventTriggered(new MigrationEvent(event, ((MigrationEvent) evt).future()));
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        clearRoutes(ctx);
+
+        super.channelInactive(ctx);
     }
 
     private static synchronized void populateRoutes(final ChannelHandlerContext ctx) {

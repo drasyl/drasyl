@@ -30,8 +30,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -80,29 +78,13 @@ public class TcpClientTest {
     @Nested
     class StopServer {
         @Test
-        void shouldStopClientOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
+        void shouldStopClientOnChannelInactive() {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.processInbound(event).join();
-
-                verify(superPeerChannel.channel()).close();
-            }
-            finally {
-                pipeline.drasylClose();
-            }
-        }
-
-        @Test
-        void shouldStopClientOnNodeDownEvent(@Mock final NodeDownEvent event) {
-            when(superPeerChannel.isSuccess()).thenReturn(true);
-
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-            try {
-                pipeline.processInbound(event).join();
+                pipeline.pipeline().fireChannelInactive();
 
                 verify(superPeerChannel.channel()).close();
             }
@@ -121,7 +103,7 @@ public class TcpClientTest {
             try {
                 final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
 
-                pipeline.processInbound(sender, msg).join();
+                pipeline.processInbound(sender, msg);
 
                 inboundMessages.awaitCount(1)
                         .assertValueCount(1)
