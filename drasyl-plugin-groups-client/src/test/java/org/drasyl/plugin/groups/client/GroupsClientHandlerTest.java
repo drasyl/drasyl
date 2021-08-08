@@ -26,6 +26,7 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
@@ -157,7 +158,7 @@ class GroupsClientHandlerTest {
             try {
                 final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
-                pipeline.processInbound(event);
+                pipeline.pipeline().fireUserEventTriggered(new MigrationEvent(event));
 
                 testObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -182,7 +183,7 @@ class GroupsClientHandlerTest {
                 when(uri.getCredentials()).thenReturn(credentials);
                 when(identity.getProofOfWork()).thenReturn(proofOfWork);
 
-                pipeline.processInbound(event);
+                pipeline.pipeline().fireUserEventTriggered(new MigrationEvent(event));
 
                 await().untilAsserted(() -> {
                     pipeline.runPendingTasks();

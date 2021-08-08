@@ -236,11 +236,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
         close();
     }
 
-    public void processInbound(final Event event) {
-        pipeline().fireUserEventTriggered(new MigrationEvent(event));
-        runPendingTasks();
-    }
-
     public ChannelPromise processOutbound(final Address recipient, final Object msg) {
         final ChannelPromise promise = newPromise();
         pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);

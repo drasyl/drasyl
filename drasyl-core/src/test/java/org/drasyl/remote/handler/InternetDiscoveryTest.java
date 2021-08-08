@@ -28,6 +28,7 @@ import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -113,7 +114,7 @@ class InternetDiscoveryTest {
         try {
             final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
 
-            pipeline.processInbound(event);
+            pipeline.pipeline().fireUserEventTriggered(new MigrationEvent(event));
 
             inboundEvents.awaitCount(1)
                     .assertValueCount(1)
