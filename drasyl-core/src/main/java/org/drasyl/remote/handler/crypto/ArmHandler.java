@@ -417,14 +417,13 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
-                                  final ArmedMessage msg,
-                                  final CompletableFuture<Void> future) throws Exception {
+                                  final ArmedMessage msg) throws Exception {
         if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())
                 || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())) {
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender));
             return;
         }
 
-        filteredInbound(ctx, sender, msg, future);
+        filteredInbound(ctx, sender, msg, new CompletableFuture<>());
     }
 }

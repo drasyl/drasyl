@@ -28,8 +28,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.util.ReferenceCountUtil;
 
-import java.util.concurrent.CompletableFuture;
-
 /**
  * This class provides the functionality to either accept or reject new inbound messages.
  * <p>
@@ -48,16 +46,14 @@ public abstract class InboundMessageFilter<I, A extends Address> extends SimpleI
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final A sender,
-                                  final I msg,
-                                  final CompletableFuture<Void> future) throws Exception {
+                                  final I msg) throws Exception {
         try {
             if (accept(ctx, sender, msg)) {
-                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future));
+                ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
             }
             else {
                 messageRejected(ctx, sender, msg);
                 ReferenceCountUtil.safeRelease(msg);
-                future.complete(null);
             }
         }
         catch (final InboundFilterException e) {

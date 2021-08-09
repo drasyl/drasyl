@@ -84,9 +84,8 @@ public abstract class MessageToMessageCodec<I, O, A extends Address> extends Sim
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final A sender,
-                                  final I msg,
-                                  final CompletableFuture<Void> future) throws Exception {
-        decoder.matchedInbound(ctx, sender, msg, future);
+                                  final I msg) throws Exception {
+        decoder.matchedInbound(ctx, sender, msg);
     }
 
     @Override

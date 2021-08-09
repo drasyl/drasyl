@@ -77,9 +77,8 @@ class SimpleDuplexHandlerTest {
                 @Override
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final IdentityPublicKey sender,
-                                              final Object msg,
-                                              final CompletableFuture<Void> future) {
-                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) sender, future));
+                                              final Object msg) {
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) sender));
                 }
 
                 @Override
@@ -110,9 +109,8 @@ class SimpleDuplexHandlerTest {
                 @Override
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final IdentityPublicKey sender,
-                                              final Object msg,
-                                              final CompletableFuture<Void> future) {
-                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) sender, future));
+                                              final Object msg) {
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) sender));
                 }
 
                 @Override
@@ -121,7 +119,7 @@ class SimpleDuplexHandlerTest {
                                                final MyMessage msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) msg.getSender(), new CompletableFuture<Void>()));
+                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) msg.getSender()));
                 }
             };
 
@@ -155,10 +153,9 @@ class SimpleDuplexHandlerTest {
                 @Override
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
-                                              final byte[] msg,
-                                              final CompletableFuture<Void> future) {
+                                              final byte[] msg) {
                     // Emit this message as outbound message to test
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, sender)))).combine(new CompletableFuture<Void>());
+                    ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, sender));
                 }
             };
 
@@ -193,10 +190,9 @@ class SimpleDuplexHandlerTest {
                 @Override
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
-                                              final List<?> msg,
-                                              final CompletableFuture<Void> future) {
+                                              final List<?> msg) {
                     // Emit this message as outbound message to test
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, sender)))).combine(new CompletableFuture<Void>());
+                    ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, sender));
                 }
             };
 

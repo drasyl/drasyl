@@ -103,12 +103,11 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
-                                  final Object msg,
-                                  final CompletableFuture<Void> future) {
+                                  final Object msg) {
         ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
 
         // passthrough message
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
     }
 
     @Override

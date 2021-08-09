@@ -88,13 +88,12 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
-                                  final GroupsServerMessage msg,
-                                  final CompletableFuture<Void> future) {
+                                  final GroupsServerMessage msg) {
         if (msg instanceof MemberJoinedMessage) {
             onMemberJoined(ctx, (MemberJoinedMessage) msg);
         }
         else if (msg instanceof MemberLeftMessage) {
-            onMemberLeft(ctx, (MemberLeftMessage) msg, future);
+            onMemberLeft(ctx, (MemberLeftMessage) msg);
         }
         else if (msg instanceof GroupWelcomeMessage) {
             onWelcome(ctx, sender, (GroupWelcomeMessage) msg);
@@ -187,13 +186,11 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
     /**
      * Will be executed on {@link MemberLeftMessage}.
      *
-     * @param ctx    the handling context
-     * @param msg    the member left message
-     * @param future the message future
+     * @param ctx the handling context
+     * @param msg the member left message
      */
     private void onMemberLeft(final ChannelHandlerContext ctx,
-                              final MemberLeftMessage msg,
-                              final CompletableFuture<Void> future) {
+                              final MemberLeftMessage msg) {
         final Group group = msg.getGroup();
 
         if (msg.getMember().equals(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey())) {

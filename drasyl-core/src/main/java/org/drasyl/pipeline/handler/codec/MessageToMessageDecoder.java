@@ -60,8 +60,7 @@ public abstract class MessageToMessageDecoder<I, A extends Address> extends Simp
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final A sender,
-                                  final I msg,
-                                  final CompletableFuture<Void> future) throws Exception {
+                                  final I msg) throws Exception {
         final List<Object> out = new ArrayList<>();
         try {
             try {
@@ -77,7 +76,7 @@ public abstract class MessageToMessageDecoder<I, A extends Address> extends Simp
 
             final int size = out.size();
             if (size == 1) {
-                ctx.fireChannelRead(new MigrationInboundMessage<>(out.get(0), (Address) sender, future));
+                ctx.fireChannelRead(new MigrationInboundMessage<>(out.get(0), (Address) sender));
             }
             else {
                 final FutureCombiner combiner = FutureCombiner.getInstance();
@@ -88,7 +87,7 @@ public abstract class MessageToMessageDecoder<I, A extends Address> extends Simp
                     combiner.add(future1);
                 }
 
-                combiner.combine(future);
+                combiner.combine(new CompletableFuture<>());
             }
         }
         catch (final DecoderException e) {

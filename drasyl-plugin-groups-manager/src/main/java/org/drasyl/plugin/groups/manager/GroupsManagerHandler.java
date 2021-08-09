@@ -127,13 +127,12 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final IdentityPublicKey sender,
-                                  final GroupsClientMessage msg,
-                                  final CompletableFuture<Void> future) {
+                                  final GroupsClientMessage msg) {
         if (msg instanceof GroupJoinMessage) {
-            ctx.executor().execute(() -> handleJoinRequest(ctx, sender, (GroupJoinMessage) msg, future));
+            ctx.executor().execute(() -> handleJoinRequest(ctx, sender, (GroupJoinMessage) msg, new CompletableFuture<>()));
         }
         else if (msg instanceof GroupLeaveMessage) {
-            ctx.executor().execute(() -> handleLeaveRequest(ctx, sender, (GroupLeaveMessage) msg, future));
+            ctx.executor().execute(() -> handleLeaveRequest(ctx, sender, (GroupLeaveMessage) msg, new CompletableFuture<>()));
         }
     }
 
@@ -158,14 +157,14 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                     doJoin(ctx, sender, group, future, msg.isRenew());
                 }
                 else {
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_PROOF_TO_WEAK), (Address) sender)))).combine(new CompletableFuture<Void>());
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_PROOF_TO_WEAK), (Address) sender)))).combine(new CompletableFuture<>());
                     future.completeExceptionally(new IllegalArgumentException("Member '" + sender + "' does not fulfill requirements of group '" + groupName + "'"));
 
                     LOG.debug("Member `{}` does not fulfill requirements of group `{}`", sender, groupName);
                 }
             }
             else {
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_GROUP_NOT_FOUND), (Address) sender)))).combine(new CompletableFuture<Void>());
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_GROUP_NOT_FOUND), (Address) sender)))).combine(new CompletableFuture<>());
                 future.completeExceptionally(new IllegalArgumentException("There is no group '" + groupName + "'"));
 
                 LOG.debug("There is no group `{}`.", groupName);

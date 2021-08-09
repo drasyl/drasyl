@@ -380,17 +380,16 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
-                                  final RemoteMessage msg,
-                                  final CompletableFuture<Void> future) throws IOException {
+                                  final RemoteMessage msg) throws IOException {
         if (sender instanceof InetSocketAddressWrapper && msg.getRecipient() != null) {
             // This message is for us and we will fully decode it
             if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient()) && msg instanceof FullReadMessage) {
-                handleMessage(ctx, (InetSocketAddressWrapper) sender, (FullReadMessage<?>) msg, future);
+                handleMessage(ctx, (InetSocketAddressWrapper) sender, (FullReadMessage<?>) msg, new CompletableFuture<>());
             }
             else if (!ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
-                if (!processMessage(ctx, msg.getRecipient(), msg, future)) {
+                if (!processMessage(ctx, msg.getRecipient(), msg, new CompletableFuture<>())) {
                     // passthrough message
-                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
+                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender));
                 }
             }
             else if (LOG.isDebugEnabled()) {
@@ -399,7 +398,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
         else {
             // passthrough message
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender));
         }
     }
 

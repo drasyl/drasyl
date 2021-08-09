@@ -76,9 +76,8 @@ public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, Appli
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final IdentityPublicKey sender,
-                                  final Object msg,
-                                  final CompletableFuture<Void> future) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+                                  final Object msg) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
     }
 
     @Override

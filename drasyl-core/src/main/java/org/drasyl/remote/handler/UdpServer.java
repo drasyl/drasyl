@@ -204,9 +204,8 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
-                                  final Object msg,
-                                  final CompletableFuture<Void> future) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+                                  final Object msg) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
     }
 
     public class Port implements Event {

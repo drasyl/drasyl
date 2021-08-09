@@ -31,7 +31,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
-import org.drasyl.util.ReferenceCountUtil;
 
 import java.io.PrintStream;
 import java.time.Duration;
@@ -151,19 +150,10 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
-                                  final Object msg,
-                                  final CompletableFuture<Void> future) {
+                                  final Object msg) {
         inboundMessages.increment();
-        if (consumeInbound.test(sender, msg)) {
-            try {
-                future.complete(null);
-            }
-            finally {
-                ReferenceCountUtil.safeRelease(msg);
-            }
-        }
-        else {
-            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+        if (!consumeInbound.test(sender, msg)) {
+            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
         }
     }
 

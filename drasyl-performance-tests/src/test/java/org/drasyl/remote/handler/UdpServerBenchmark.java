@@ -85,12 +85,10 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                         @Override
                         protected void matchedInbound(final ChannelHandlerContext ctx,
                                                       final Address sender,
-                                                      final ByteBuf msg,
-                                                      final CompletableFuture<Void> future) {
+                                                      final ByteBuf msg) {
                             try {
                                 final int index = msg.readableBytes();
                                 futures[index].complete(null);
-                                future.complete(null);
                             }
                             finally {
                                 ReferenceCountUtil.safeRelease(msg);

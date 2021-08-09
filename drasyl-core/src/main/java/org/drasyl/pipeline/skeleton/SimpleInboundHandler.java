@@ -66,13 +66,11 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
      * @param ctx    handler context
      * @param sender the sender of the message
      * @param msg    the message
-     * @param future the future of the message
      */
     @SuppressWarnings("java:S112")
     protected abstract void matchedInbound(ChannelHandlerContext ctx,
                                            MA sender,
-                                           MI msg,
-                                           CompletableFuture<Void> future) throws Exception;
+                                           MI msg) throws Exception;
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
@@ -84,7 +82,7 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
             if (matcherMessage.match(msg1) && matcherAddress.match(sender)) {
                 @SuppressWarnings("unchecked") final MI castedMsg = (MI) msg1;
                 @SuppressWarnings("unchecked") final MA castedAddress = (MA) sender;
-                matchedInbound(ctx, castedAddress, castedMsg, future);
+                matchedInbound(ctx, castedAddress, castedMsg);
             }
             else {
                 ctx.fireChannelRead(new MigrationInboundMessage<>(msg1, sender, future));

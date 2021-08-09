@@ -61,8 +61,6 @@ import org.drasyl.remote.protocol.UnarmedMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
-
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.Null.NULL;
@@ -157,9 +155,8 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                 @Override
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
-                                              final UnarmedMessage msg,
-                                              final CompletableFuture<Void> future) throws Exception {
-                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.readAndRelease(), sender, future));
+                                              final UnarmedMessage msg) throws Exception {
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg.readAndRelease(), sender));
                 }
             });
 

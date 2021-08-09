@@ -107,14 +107,9 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
-                                  final ByteBuf msg,
-                                  final CompletableFuture<Void> future) throws Exception {
-        final CompletableFuture<Void> future1 = new CompletableFuture<>();
-        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future1));
-        FutureCombiner.getInstance()
-                .add(future1)
-                .add(checkForReachableSuperPeer(sender))
-                .combine(future);
+                                  final ByteBuf msg) throws Exception {
+        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
+        checkForReachableSuperPeer(sender);
     }
 
     /**

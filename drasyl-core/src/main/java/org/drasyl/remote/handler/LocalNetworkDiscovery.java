@@ -125,13 +125,12 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
-                                  final DiscoveryMessage msg,
-                                  final CompletableFuture<Void> future) {
+                                  final DiscoveryMessage msg) {
         if (pingDisposable != null && sender instanceof InetSocketAddressWrapper && msg.getRecipient() == null) {
-            handlePing(ctx, sender, msg, future);
+            handlePing(ctx, sender, msg, new CompletableFuture<>());
         }
         else {
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender, future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender));
         }
     }
 

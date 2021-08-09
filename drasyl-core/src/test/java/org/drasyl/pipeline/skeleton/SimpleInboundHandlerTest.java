@@ -33,8 +33,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.concurrent.CompletableFuture;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
@@ -53,9 +51,8 @@ class SimpleInboundHandlerTest {
             @Override
             protected void matchedInbound(final ChannelHandlerContext ctx,
                                           final Address sender,
-                                          final byte[] msg,
-                                          final CompletableFuture<Void> future) {
-                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) new String(msg), sender, future));
+                                          final byte[] msg) {
+                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) new String(msg), sender));
             }
         };
 
@@ -76,9 +73,8 @@ class SimpleInboundHandlerTest {
             @Override
             protected void matchedInbound(final ChannelHandlerContext ctx,
                                           final Address sender,
-                                          final byte[] msg,
-                                          final CompletableFuture<Void> future) {
-                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) new String(msg), sender, future));
+                                          final byte[] msg) {
+                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) new String(msg), sender));
             }
         };
 

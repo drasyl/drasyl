@@ -120,7 +120,7 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
         if (matcherMessage.match(msg) && matcherAddress.match(sender)) {
             @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
-            matchedInbound(ctx, castedAddress, castedMsg, future);
+            matchedInbound(ctx, castedAddress, castedMsg);
         }
         else {
             ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
@@ -133,13 +133,11 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
      * @param ctx    handler context
      * @param sender the sender of the message
      * @param msg    the message
-     * @param future the future of the message
      */
     @SuppressWarnings("java:S112")
     protected abstract void matchedInbound(ChannelHandlerContext ctx,
                                            A sender,
-                                           I msg,
-                                           CompletableFuture<Void> future) throws Exception;
+                                           I msg) throws Exception;
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {

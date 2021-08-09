@@ -72,15 +72,14 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
-                                  final ChunkMessage msg,
-                                  final CompletableFuture<Void> future) throws IOException {
+                                  final ChunkMessage msg) throws IOException {
         // message is addressed to me
         if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())) {
-            handleInboundChunk(ctx, sender, msg, future);
+            handleInboundChunk(ctx, sender, msg, new CompletableFuture<>());
         }
         else {
             // passthrough all messages not addressed to us
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
         }
     }
 

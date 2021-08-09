@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.MigrationInboundMessage;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.remote.handler.UdpServer;
@@ -35,7 +34,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMinutes;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -70,15 +68,13 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
     @Override
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
-                                  final ByteBuf msg,
-                                  final CompletableFuture<Void> future) {
+                                  final ByteBuf msg) {
         if (methods.get(currentMethodPointer).acceptMessage(sender, msg)) {
-            future.complete(null);
             ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, msg));
         }
         else {
             // message was not for the mapper -> passthrough
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
         }
     }
 

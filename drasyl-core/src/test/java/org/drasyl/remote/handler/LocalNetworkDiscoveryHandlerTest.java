@@ -48,7 +48,6 @@ import test.util.IdentityTestUtil;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofSeconds;
@@ -207,7 +206,7 @@ class LocalNetworkDiscoveryTest {
             when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
 
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-            handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
+            handler.matchedInbound(ctx, sender, msg);
 
             verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).addPath(any(), eq(publicKey), any());
         }
@@ -221,7 +220,7 @@ class LocalNetworkDiscoveryTest {
             when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(publicKey);
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-            handler.matchedInbound(ctx, sender, msg, new CompletableFuture<>());
+            handler.matchedInbound(ctx, sender, msg);
 
             verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get(), never()).addPath(any(), eq(msg.getSender()), any());
         }
