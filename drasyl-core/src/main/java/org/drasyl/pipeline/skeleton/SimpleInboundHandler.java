@@ -84,7 +84,7 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
                 matchedInbound(ctx, castedAddress, castedMsg);
             }
             else {
-                ctx.fireChannelRead(new AddressedMessage<>(msg1, sender));
+                ctx.fireChannelRead(msg);
             }
         }
         catch (final Exception e) {

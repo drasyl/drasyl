@@ -76,14 +76,14 @@ public abstract class MessageToMessageDecoder<I, A extends Address> extends Simp
 
             final int size = out.size();
             if (size == 1) {
-                ctx.fireChannelRead(new AddressedMessage<>(out.get(0), (Address) sender));
+                ctx.fireChannelRead(new AddressedMessage<>(out.get(0), sender));
             }
             else {
                 final FutureCombiner combiner = FutureCombiner.getInstance();
 
                 for (final Object o : out) {
                     final CompletableFuture<Void> future1 = new CompletableFuture<>();
-                    ctx.fireChannelRead(new AddressedMessage<>(o, (Address) sender));
+                    ctx.fireChannelRead(new AddressedMessage<>(o, sender));
                     combiner.add(future1);
                 }
 

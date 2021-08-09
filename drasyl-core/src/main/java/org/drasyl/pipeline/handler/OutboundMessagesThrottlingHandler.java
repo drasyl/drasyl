@@ -68,7 +68,7 @@ public class OutboundMessagesThrottlingHandler extends ChannelOutboundHandlerAda
             final CompletableFuture<Void> future = new CompletableFuture<>();
             FutureUtil.combine(future, promise);
             try {
-                queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(migrationMsg.message(), migrationMsg.address())))).combine(future));
+                queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(migrationMsg))).combine(future));
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);

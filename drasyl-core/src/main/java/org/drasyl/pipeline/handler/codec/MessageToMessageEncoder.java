@@ -76,14 +76,14 @@ public abstract class MessageToMessageEncoder<O, A extends Address> extends Simp
 
             final int size = out.size();
             if (size == 1) {
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(out.get(0), (Address) recipient)))).combine(future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(out.get(0), recipient)))).combine(future);
             }
             else {
                 final FutureCombiner combiner = FutureCombiner.getInstance();
 
                 for (final Object o : out) {
                     final CompletableFuture<Void> future1 = new CompletableFuture<>();
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(o, (Address) recipient)))).combine(future1);
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(o, recipient)))).combine(future1);
                     combiner.add(future1);
                 }
 
