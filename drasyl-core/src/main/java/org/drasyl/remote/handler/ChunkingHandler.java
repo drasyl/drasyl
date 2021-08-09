@@ -26,6 +26,7 @@ import com.google.common.cache.RemovalListener;
 import com.google.protobuf.CodedOutputStream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
@@ -33,7 +34,6 @@ import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.PartialReadMessage;
@@ -61,7 +61,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  * splitting outgoing too large messages into chunks.
  */
 @SuppressWarnings({ "java:S110" })
-public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMessage, InetSocketAddressWrapper> {
+public class ChunkingHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkingHandler.class);
     private final Worm<Map<Nonce, ChunksCollector>> chunksCollectors;
 
@@ -70,16 +70,60 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
     }
 
     @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final InetSocketAddressWrapper sender,
-                                  final ChunkMessage msg) throws IOException {
-        // message is addressed to me
-        if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())) {
-            handleInboundChunk(ctx, sender, msg, new CompletableFuture<>());
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ChunkMessage && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddressWrapper) {
+            final ChunkMessage chunkMsg = (ChunkMessage) ((AddressedMessage<?, ?>) msg).message();
+            final InetSocketAddressWrapper sender = (InetSocketAddressWrapper) ((AddressedMessage<?, ?>) msg).address();
+
+            // message is addressed to me
+            if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(chunkMsg.getRecipient())) {
+                handleInboundChunk(ctx, sender, chunkMsg, new CompletableFuture<>());
+            }
+            else {
+                // passthrough all messages not addressed to us
+                ctx.fireChannelRead(msg);
+            }
         }
         else {
-            // passthrough all messages not addressed to us
-            ctx.fireChannelRead(new AddressedMessage<>((Object) msg, (Address) sender));
+            super.channelRead(ctx, msg);
+        }
+    }
+
+    @Override
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
+            final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
+            final Address recipient = ((AddressedMessage<?, ?>) msg).address();
+
+            if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getSender())) {
+                // message from us, check if we have to chunk it
+                final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
+                remoteMsg.writeTo(messageByteBuf);
+                final int messageLength = messageByteBuf.readableBytes();
+                final int messageMaxContentLength = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength();
+                if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
+                    ReferenceCountUtil.safeRelease(messageByteBuf);
+                    LOG.debug("The message has a size of {} bytes and is too large. The max. allowed size is {} bytes. Message dropped.", messageLength, messageMaxContentLength);
+                }
+                else if (messageLength > ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageMtu()) {
+                    // message is too big, we have to chunk it
+                    chunkMessage(ctx, recipient, remoteMsg, FutureUtil.toFuture(promise), messageByteBuf, messageLength);
+                }
+                else {
+                    ReferenceCountUtil.safeRelease(messageByteBuf);
+                    // message is small enough. No chunking required
+                    ctx.writeAndFlush(msg, promise);
+                }
+            }
+            else {
+                // message not from us. Passthrough
+                ctx.writeAndFlush(msg, promise);
+            }
+        }
+        else {
+            super.write(ctx, msg, promise);
         }
     }
 
@@ -120,38 +164,6 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
                 })
                 .build()
                 .asMap());
-    }
-
-    @SuppressWarnings("java:S112")
-    @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final InetSocketAddressWrapper recipient,
-                                   final RemoteMessage msg,
-                                   final ChannelPromise promise) throws Exception {
-        if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())) {
-            // message from us, check if we have to chunk it
-            final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
-            msg.writeTo(messageByteBuf);
-            final int messageLength = messageByteBuf.readableBytes();
-            final int messageMaxContentLength = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength();
-            if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
-                ReferenceCountUtil.safeRelease(messageByteBuf);
-                throw new Exception("The message has a size of " + messageLength + " bytes and is too large. The max. allowed size is " + messageMaxContentLength + " bytes. Message dropped.");
-            }
-            else if (messageLength > ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageMtu()) {
-                // message is too big, we have to chunk it
-                chunkMessage(ctx, recipient, msg, FutureUtil.toFuture(promise), messageByteBuf, messageLength);
-            }
-            else {
-                ReferenceCountUtil.safeRelease(messageByteBuf);
-                // message is small enough. No chunking required
-                ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
-            }
-        }
-        else {
-            // message not from us. Passthrough
-            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
-        }
     }
 
     @SuppressWarnings("unchecked")

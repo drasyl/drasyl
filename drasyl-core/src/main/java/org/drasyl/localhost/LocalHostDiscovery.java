@@ -22,13 +22,13 @@
 package org.drasyl.localhost;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.SetUtil;
@@ -78,7 +78,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</a>
  */
 @SuppressWarnings("java:S1192")
-public class LocalHostDiscovery extends SimpleDuplexHandler<Object, ApplicationMessage, IdentityPublicKey> {
+public class LocalHostDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
     private static final Object path = LocalHostDiscovery.class;
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
@@ -111,26 +111,26 @@ public class LocalHostDiscovery extends SimpleDuplexHandler<Object, ApplicationM
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final IdentityPublicKey recipient,
-                                   final ApplicationMessage message,
-                                   final ChannelPromise promise) {
-        final InetSocketAddressWrapper localAddress = routes.get(recipient);
-        if (localAddress != null) {
-            LOG.trace("Send message `{}` via local route {}.", () -> message, () -> localAddress);
-            ctx.writeAndFlush(new AddressedMessage<>(message, localAddress), promise);
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey) {
+            final IdentityPublicKey recipient = (IdentityPublicKey) ((AddressedMessage<?, ?>) msg).address();
+            final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
+
+            final InetSocketAddressWrapper localAddress = routes.get(recipient);
+            if (localAddress != null) {
+                LOG.trace("Send message `{}` via local route {}.", () -> applicationMsg, () -> localAddress);
+                ctx.writeAndFlush(msg, promise);
+            }
+            else {
+                // passthrough message
+                ctx.writeAndFlush(msg, promise);
+            }
         }
         else {
-            // passthrough message
-            ctx.writeAndFlush(new AddressedMessage<>(message, recipient), promise);
+            super.write(ctx, msg, promise);
         }
-    }
-
-    @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final IdentityPublicKey sender,
-                                  final Object msg) throws Exception {
-        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     private synchronized CompletableFuture<Void> startDiscovery(final ChannelHandlerContext ctx,

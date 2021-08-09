@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler;
 
 import com.typesafe.config.Config;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -29,7 +30,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -43,7 +43,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
  */
 @ChannelHandler.Sharable
 @Stateless
-public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, ApplicationMessage, IdentityPublicKey> {
+public final class StaticRoutesHandler extends ChannelDuplexHandler {
     public static final StaticRoutesHandler INSTANCE = new StaticRoutesHandler();
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
@@ -53,26 +53,26 @@ public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, Appli
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final IdentityPublicKey recipient,
-                                   final ApplicationMessage envelope,
-                                   final ChannelPromise promise) {
-        final InetSocketAddressWrapper staticAddress = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
-        if (staticAddress != null) {
-            LOG.trace("Send message `{}` via static route {}.", () -> envelope, () -> staticAddress);
-            ctx.writeAndFlush(new AddressedMessage<>(envelope, staticAddress), promise);
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey) {
+            final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
+            final IdentityPublicKey recipient = (IdentityPublicKey) ((AddressedMessage<?, ?>) msg).address();
+
+            final InetSocketAddressWrapper staticAddress = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
+            if (staticAddress != null) {
+                LOG.trace("Send message `{}` via static route {}.", () -> applicationMsg, () -> staticAddress);
+                ctx.writeAndFlush(new AddressedMessage<>(applicationMsg, staticAddress), promise);
+            }
+            else {
+                // passthrough message
+                ctx.writeAndFlush(msg, promise);
+            }
         }
         else {
-            // passthrough message
-            ctx.writeAndFlush(new AddressedMessage<>(envelope, recipient), promise);
+            super.write(ctx, msg, promise);
         }
-    }
-
-    @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final IdentityPublicKey sender,
-                                  final Object msg) throws Exception {
-        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     @Override

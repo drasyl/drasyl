@@ -27,12 +27,11 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -52,7 +51,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
  * Monitors various states or events in the drasyl node.
  */
 @SuppressWarnings({ "java:S110" })
-public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
+public class Monitoring extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(Monitoring.class);
     private final Map<String, Counter> counters;
     private final Function<ChannelHandlerContext, MeterRegistry> registrySupplier;
@@ -98,24 +97,23 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     }
 
     @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final Address sender,
-                                  final Object msg) {
-        ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        super.write(ctx, msg, promise);
 
-        // passthrough message
-        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
+        if (msg instanceof AddressedMessage) {
+            ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.inbound_messages", ((AddressedMessage<?, ?>) msg).message()));
+        }
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final Address recipient,
-                                   final Object msg,
-                                   final ChannelPromise promise) {
-        ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+        super.channelRead(ctx, msg);
 
-        // passthrough message
-        ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
+        if (msg instanceof AddressedMessage) {
+            ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.outbound_messages", ((AddressedMessage<?, ?>) msg).message()));
+        }
     }
 
     synchronized void startMonitoring(final ChannelHandlerContext ctx) {

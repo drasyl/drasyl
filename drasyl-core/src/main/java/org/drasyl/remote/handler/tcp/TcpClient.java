@@ -24,6 +24,7 @@ package org.drasyl.remote.handler.tcp;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -34,7 +35,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
@@ -67,7 +67,7 @@ import static org.drasyl.util.NettyUtil.getBestSocketChannel;
  * This client is only used if the node does not act as a super peer itself.
  */
 @SuppressWarnings({ "java:S110" })
-public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketAddressWrapper> {
+public class TcpClient extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpClient.class);
     private final Set<InetSocketAddressWrapper> superPeerAddresses;
     private final Bootstrap bootstrap;
@@ -105,11 +105,12 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     }
 
     @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final InetSocketAddressWrapper sender,
-                                  final ByteBuf msg) throws Exception {
-        ctx.fireChannelRead(new AddressedMessage<>((Object) msg, (Address) sender));
-        checkForReachableSuperPeer(sender);
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+        super.channelRead(ctx, msg);
+
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddressWrapper) {
+            checkForReachableSuperPeer((InetSocketAddressWrapper) ((AddressedMessage<?, ?>) msg).address());
+        }
     }
 
     /**
@@ -128,40 +129,46 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final InetSocketAddressWrapper recipient,
-                                   final ByteBuf msg,
-                                   final ChannelPromise promise) throws Exception {
-        // check if we can route the message via a tcp connection
-        final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
-        if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
-            LOG.trace("Send message `{}` via TCP connection to `{}`.", () -> msg, () -> recipient);
-            mySuperPeerChannel.channel().writeAndFlush(msg).addListener(future -> {
-                if (future.isSuccess()) {
-                    promise.setSuccess();
-                }
-                else {
-                    promise.setFailure(future.cause());
-                }
-            });
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddressWrapper) {
+            final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
+            final InetSocketAddressWrapper recipient = (InetSocketAddressWrapper) ((AddressedMessage<?, ?>) msg).address();
+
+            // check if we can route the message via a tcp connection
+            final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
+            if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
+                LOG.trace("Send message `{}` via TCP connection to `{}`.", () -> byteBufMsg, () -> recipient);
+                mySuperPeerChannel.channel().writeAndFlush(byteBufMsg).addListener(future -> {
+                    if (future.isSuccess()) {
+                        promise.setSuccess();
+                    }
+                    else {
+                        promise.setFailure(future.cause());
+                    }
+                });
+            }
+            else {
+                // passthrough message
+                final ChannelPromise promise1 = ctx.newPromise();
+                ctx.writeAndFlush(new AddressedMessage<>((Object) byteBufMsg, (Address) recipient)).addListener(future -> {
+                    if (future.isSuccess()) {
+                        promise1.setSuccess();
+                    }
+                    else {
+                        promise1.setFailure(future.cause());
+                    }
+                });
+
+                FutureCombiner.getInstance()
+                        .add(FutureUtil.toFuture(promise1))
+                        .add(checkForUnreachableSuperPeers(ctx, recipient))
+                        .combine(FutureUtil.toFuture(promise));
+            }
         }
         else {
-            // passthrough message
-
-            final ChannelPromise promise1 = ctx.newPromise();
-            ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient)).addListener(future -> {
-                if (future.isSuccess()) {
-                    promise1.setSuccess();
-                }
-                else {
-                    promise1.setFailure(future.cause());
-                }
-            });
-
-            FutureCombiner.getInstance()
-                    .add(FutureUtil.toFuture(promise1))
-                    .add(checkForUnreachableSuperPeers(ctx, recipient))
-                    .combine(FutureUtil.toFuture(promise));
+            super.write(ctx, msg, promise);
         }
     }
 

@@ -21,6 +21,7 @@
  */
 package org.drasyl.pipeline.handler;
 
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -28,7 +29,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 
 import java.io.PrintStream;
 import java.time.Duration;
@@ -45,7 +45,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * any position in a {@link Pipeline}.
  */
 @SuppressWarnings({ "java:S110", "java:S106", "unused" })
-public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Object, Address> {
+public class MessagesThroughputHandler extends ChannelDuplexHandler {
     public static final Duration INTERVAL = ofSeconds(1);
     private final BiPredicate<Address, Object> consumeOutbound;
     private final BiPredicate<Address, Object> consumeInbound;
@@ -131,26 +131,33 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final Address recipient,
-                                   final Object msg,
-                                   final ChannelPromise promise) {
-        outboundMessages.increment();
-        if (consumeOutbound.test(recipient, msg)) {
-            promise.setSuccess();
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage) {
+            outboundMessages.increment();
+            if (consumeOutbound.test(((AddressedMessage<?, ?>) msg).address(), ((AddressedMessage<?, ?>) msg).message())) {
+                promise.setSuccess();
+            }
+            else {
+                ctx.writeAndFlush(msg, promise);
+            }
         }
         else {
-            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
+            super.write(ctx, msg, promise);
         }
     }
 
     @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final Address sender,
-                                  final Object msg) {
-        inboundMessages.increment();
-        if (!consumeInbound.test(sender, msg)) {
-            ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+        if (msg instanceof AddressedMessage) {
+            inboundMessages.increment();
+            if (!consumeInbound.test(((AddressedMessage<?, ?>) msg).address(), ((AddressedMessage<?, ?>) msg).message())) {
+                ctx.fireChannelRead(msg);
+            }
+        }
+        else {
+            super.channelRead(ctx, msg);
         }
     }
 

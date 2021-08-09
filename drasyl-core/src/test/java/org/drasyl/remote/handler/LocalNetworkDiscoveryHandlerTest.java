@@ -197,7 +197,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddressWrapper sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                   @Mock final Peer peer) {
+                                                   @Mock final Peer peer) throws Exception {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
@@ -205,21 +205,21 @@ class LocalNetworkDiscoveryTest {
             when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
 
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-            handler.matchedInbound(ctx, sender, msg);
+            handler.channelRead(ctx, new AddressedMessage<>(msg, sender));
 
             verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).addPath(any(), eq(publicKey), any());
         }
 
         @Test
         void shouldIgnoreInboundPingFromItself(@Mock final InetSocketAddressWrapper sender,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) throws Exception {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
             when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(publicKey);
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
-            handler.matchedInbound(ctx, sender, msg);
+            handler.channelRead(ctx, new AddressedMessage<>(msg, sender));
 
             verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get(), never()).addPath(any(), eq(msg.getSender()), any());
         }

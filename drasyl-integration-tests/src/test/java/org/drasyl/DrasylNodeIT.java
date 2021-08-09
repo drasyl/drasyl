@@ -21,8 +21,8 @@
  */
 package org.drasyl;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.event.Event;
@@ -32,9 +32,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -585,12 +583,11 @@ class DrasylNodeIT {
                         .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
                         .build();
                 client = new EmbeddedNode(config).started();
-                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new SimpleOutboundHandler<ByteBuf, Address>() {
+                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new ChannelOutboundHandlerAdapter() {
                     @Override
-                    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                                   final Address recipient,
-                                                   final ByteBuf msg,
-                                                   final ChannelPromise promise) {
+                    public void write(final ChannelHandlerContext ctx,
+                                      final Object msg,
+                                      final ChannelPromise promise) {
                         LOG.trace("UDP message blocked: {}", msg);
                         promise.setSuccess();
                     }

@@ -24,6 +24,7 @@ package org.drasyl.remote.handler.tcp;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -35,7 +36,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -60,7 +60,7 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  * <p>
  * This server is only used if the node act as a super peer.
  */
-public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAddressWrapper> {
+public class TcpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     private final ServerBootstrap bootstrap;
     private final Map<SocketAddress, Channel> clientChannels;
@@ -115,33 +115,33 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final InetSocketAddressWrapper recipient,
-                                   final ByteBuf msg,
-                                   final ChannelPromise promise) throws Exception {
-        // check if we can route the message via a tcp connection
-        final Channel client = clientChannels.get(recipient);
-        if (client != null) {
-            if (client.isWritable()) {
-                LOG.trace("Send message `{}` via TCP to client `{}`", msg, recipient);
-                client.writeAndFlush(msg, promise);
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddressWrapper) {
+            final InetSocketAddressWrapper recipient = (InetSocketAddressWrapper) ((AddressedMessage<?, ?>) msg).address();
+            final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
+
+            // check if we can route the message via a tcp connection
+            final Channel client = clientChannels.get(recipient);
+            if (client != null) {
+                if (client.isWritable()) {
+                    LOG.trace("Send message `{}` via TCP to client `{}`", byteBufMsg, recipient);
+                    client.writeAndFlush(byteBufMsg, promise);
+                }
+                else {
+                    ReferenceCountUtil.safeRelease(byteBufMsg);
+                    promise.setFailure(new Exception("TCP channel is not writable."));
+                }
             }
             else {
-                ReferenceCountUtil.safeRelease(msg);
-                promise.setFailure(new Exception("TCP channel is not writable."));
+                // message is not addressed to any of our clients. passthrough message
+                ctx.writeAndFlush(msg, promise);
             }
         }
         else {
-            // message is not addressed to any of our clients. passthrough message
-            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
+            super.write(ctx, msg, promise);
         }
-    }
-
-    @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final InetSocketAddressWrapper sender,
-                                  final Object msg) throws Exception {
-        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     @Override

@@ -21,13 +21,13 @@
  */
 package org.drasyl.intravm;
 
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -48,7 +48,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
  */
 @ChannelHandler.Sharable
 @SuppressWarnings({ "java:S110" })
-public class IntraVmDiscovery extends SimpleDuplexHandler<Object, Object, Address> {
+public class IntraVmDiscovery extends ChannelDuplexHandler {
     public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
@@ -66,26 +66,25 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<Object, Object, Addres
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final Address recipient,
-                                   final Object msg,
-                                   final ChannelPromise promise) {
-        final ChannelHandlerContext discoveree = discoveries.get(Pair.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), recipient));
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage) {
+            final Address recipient = ((AddressedMessage<?, ?>) msg).address();
 
-        if (discoveree == null) {
-            // passthrough message
-            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
+            final ChannelHandlerContext discoveree = discoveries.get(Pair.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), recipient));
+
+            if (discoveree == null) {
+                // passthrough message
+                ctx.writeAndFlush(msg, promise);
+            }
+            else {
+                discoveree.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+            }
         }
         else {
-            discoveree.fireChannelRead(new AddressedMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+            super.write(ctx, msg, promise);
         }
-    }
-
-    @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final Address sender,
-                                  final Object msg) throws Exception {
-        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     private void startDiscovery(final ChannelHandlerContext myCtx) {

@@ -23,6 +23,7 @@ package org.drasyl.remote.handler.crypto;
 
 import com.google.common.cache.CacheBuilder;
 import com.goterl.lazysodium.utils.SessionPair;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
@@ -34,7 +35,6 @@ import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.ArmedMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
@@ -61,7 +61,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
  * addressed from or to us. Messages that could not be (dis-)armed are dropped.
  */
 @SuppressWarnings({ "java:S110" })
-public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessage<?>, Address> {
+public class ArmHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ArmHandler.class);
     private final Map<IdentityPublicKey, Session> sessions;
     private final Crypto crypto;
@@ -396,34 +396,47 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final Address recipient,
-                                   final FullReadMessage<?> msg,
-                                   final ChannelPromise promise) throws Exception {
-        if (msg.getRecipient() == null) {
-            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
-            return;
-        }
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof FullReadMessage) {
+            final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) ((AddressedMessage<?, ?>) msg).message();
+            final Address recipient = ((AddressedMessage<?, ?>) msg).address();
 
-        if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())
-                || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())) {
-            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
-            return;
-        }
+            if (fullReadMsg.getRecipient() == null) {
+                ctx.writeAndFlush(msg, promise);
+                return;
+            }
 
-        filteredOutbound(ctx, recipient, msg, FutureUtil.toFuture(promise));
+            if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getSender())
+                    || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getRecipient())) {
+                ctx.writeAndFlush(msg, promise);
+                return;
+            }
+
+            filteredOutbound(ctx, recipient, fullReadMsg, FutureUtil.toFuture(promise));
+        }
+        else {
+            super.write(ctx, msg, promise);
+        }
     }
 
     @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final Address sender,
-                                  final ArmedMessage msg) throws Exception {
-        if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())
-                || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())) {
-            ctx.fireChannelRead(new AddressedMessage<>((Object) msg, sender));
-            return;
-        }
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ArmedMessage) {
+            final ArmedMessage armedMessage = (ArmedMessage) ((AddressedMessage<?, ?>) msg).message();
+            final Address sender = ((AddressedMessage<?, ?>) msg).address();
 
-        filteredInbound(ctx, sender, msg, new CompletableFuture<>());
+            if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(armedMessage.getRecipient())
+                    || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(armedMessage.getSender())) {
+                ctx.fireChannelRead(msg);
+                return;
+            }
+
+            filteredInbound(ctx, sender, armedMessage, new CompletableFuture<>());
+        }
+        else {
+            super.channelRead(ctx, msg);
+        }
     }
 }

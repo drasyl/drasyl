@@ -25,6 +25,7 @@ import com.google.common.hash.Hashing;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
@@ -38,7 +39,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedInteger;
@@ -62,7 +62,7 @@ import static org.drasyl.util.network.NetworkUtil.getAddresses;
  * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the
  * {@link org.drasyl.pipeline.Pipeline}.
  */
-public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAddressWrapper> {
+public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private static final short MIN_DERIVED_PORT = 22528;
     private final Bootstrap bootstrap;
@@ -96,6 +96,11 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
         super.channelInactive(ctx);
 
         stopServer();
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+        super.channelRead(ctx, msg);
     }
 
     static Set<Endpoint> determineActualEndpoints(final Identity identity,
@@ -182,33 +187,33 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final InetSocketAddressWrapper recipient,
-                                   final ByteBuf msg,
-                                   final ChannelPromise promise) {
-        if (channel != null && channel.isWritable()) {
-            final DatagramPacket packet = new DatagramPacket(msg, recipient);
-            LOG.trace("Send Datagram {}", packet);
-            channel.writeAndFlush(packet).addListener(future -> {
-                if (future.isSuccess()) {
-                    promise.setSuccess();
-                }
-                else {
-                    promise.setFailure(future.cause());
-                }
-            });
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddressWrapper) {
+            final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
+            final InetSocketAddressWrapper recipient = (InetSocketAddressWrapper) ((AddressedMessage<?, ?>) msg).address();
+
+            if (channel != null && channel.isWritable()) {
+                final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
+                LOG.trace("Send Datagram {}", packet);
+                channel.writeAndFlush(packet).addListener(future -> {
+                    if (future.isSuccess()) {
+                        promise.setSuccess();
+                    }
+                    else {
+                        promise.setFailure(future.cause());
+                    }
+                });
+            }
+            else {
+                ReferenceCountUtil.safeRelease(msg);
+                promise.setFailure(new Exception("UDP channel is not present or is not writable."));
+            }
         }
         else {
-            ReferenceCountUtil.safeRelease(msg);
-            promise.setFailure(new Exception("UDP channel is not present or is not writable."));
+            super.write(ctx, msg, promise);
         }
-    }
-
-    @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final InetSocketAddressWrapper sender,
-                                  final Object msg) throws Exception {
-        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     public class Port implements Event {

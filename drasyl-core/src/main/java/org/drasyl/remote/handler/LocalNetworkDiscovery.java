@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
@@ -28,7 +29,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.RemoteMessage;
@@ -65,7 +65,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * @see UdpMulticastServer
  */
 @SuppressWarnings("java:S110")
-public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage, RemoteMessage, Address> {
+public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
     private static final Object path = LocalNetworkDiscovery.class;
     private final Map<IdentityPublicKey, Peer> peers;
@@ -123,14 +123,20 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     }
 
     @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final Address sender,
-                                  final DiscoveryMessage msg) {
-        if (pingDisposable != null && sender instanceof InetSocketAddressWrapper && msg.getRecipient() == null) {
-            handlePing(ctx, sender, msg, new CompletableFuture<>());
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage) {
+            final Address sender = ((AddressedMessage<?, ?>) msg).address();
+            final DiscoveryMessage discoveryMsg = (DiscoveryMessage) ((AddressedMessage<?, ?>) msg).message();
+
+            if (pingDisposable != null && sender instanceof InetSocketAddressWrapper && discoveryMsg.getRecipient() == null) {
+                handlePing(ctx, sender, discoveryMsg, new CompletableFuture<>());
+            }
+            else {
+                ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
+            }
         }
         else {
-            ctx.fireChannelRead(new AddressedMessage<>((Object) msg, sender));
+            super.channelRead(ctx, msg);
         }
     }
 
@@ -149,19 +155,25 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
         future.complete(null);
     }
 
-    @SuppressWarnings("SuspiciousMethodCalls")
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final Address recipient,
-                                   final RemoteMessage msg,
-                                   final ChannelPromise promise) throws Exception {
-        final Peer peer = peers.get(recipient);
-        if (peer != null) {
-            LOG.trace("Send message `{}` via local network route `{}`.", () -> msg, peer::getAddress);
-            ctx.writeAndFlush(new AddressedMessage<>(msg, peer.getAddress()), promise);
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
+            final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
+            final Address recipient = ((AddressedMessage<?, ?>) msg).address();
+
+            final Peer peer = peers.get(recipient);
+            if (peer != null) {
+                LOG.trace("Send message `{}` via local network route `{}`.", () -> remoteMsg, peer::getAddress);
+                ctx.writeAndFlush(new AddressedMessage<>(remoteMsg, peer.getAddress()), promise);
+            }
+            else {
+                ctx.writeAndFlush(msg, promise);
+            }
         }
         else {
-            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
+            super.write(ctx, msg, promise);
         }
     }
 

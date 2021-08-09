@@ -23,11 +23,11 @@ package org.drasyl.loopback.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
@@ -37,7 +37,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
  */
 @ChannelHandler.Sharable
 @Stateless
-public class LoopbackMessageHandler extends SimpleDuplexHandler<Object, Object, Address> {
+public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
     private final boolean started;
 
     LoopbackMessageHandler(final boolean started) {
@@ -49,22 +49,16 @@ public class LoopbackMessageHandler extends SimpleDuplexHandler<Object, Object, 
     }
 
     @Override
-    protected void matchedOutbound(final ChannelHandlerContext ctx,
-                                   final Address recipient,
-                                   final Object msg,
-                                   final ChannelPromise promise) {
-        if (started && ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(recipient)) {
-            ctx.fireChannelRead(new AddressedMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage) {
+            if (started && ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(((AddressedMessage<?, ?>) msg).address())) {
+                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+            }
+            else {
+                ctx.writeAndFlush(msg, promise);
+            }
         }
-        else {
-            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
-        }
-    }
-
-    @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final Address sender,
-                                  final Object msg) throws Exception {
-        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 }
