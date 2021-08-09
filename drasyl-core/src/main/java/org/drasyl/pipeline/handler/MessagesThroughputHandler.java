@@ -25,7 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -153,7 +153,7 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
                                   final Object msg) {
         inboundMessages.increment();
         if (!consumeInbound.test(sender, msg)) {
-            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+            ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
         }
     }
 

@@ -31,7 +31,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
@@ -153,7 +153,7 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
                     protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                 final DatagramPacket packet) {
                         LOG.trace("Datagram received {}", packet);
-                        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) packet.content().retain(), (Address) new InetSocketAddressWrapper(packet.sender())));
+                        ctx.fireChannelRead(new AddressedMessage<>((Object) packet.content().retain(), (Address) new InetSocketAddressWrapper(packet.sender())));
                     }
                 })
                 .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost(), bindPort);
@@ -205,7 +205,7 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
                                   final Object msg) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     public class Port implements Event {

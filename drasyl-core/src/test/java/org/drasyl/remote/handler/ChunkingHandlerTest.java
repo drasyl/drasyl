@@ -27,8 +27,8 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -101,7 +101,7 @@ class ChunkingHandlerTest {
                 try {
                     final ByteBuf bytes = Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]);
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes);
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) headChunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) headChunk, (Address) senderAddress));
 
                     assertNull(pipeline.readInbound());
                 }
@@ -124,12 +124,12 @@ class ChunkingHandlerTest {
                     message.writeTo(bytes);
 
                     final BodyChunkMessage bodyChunk = BodyChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(1), bytes.slice(remoteMessageMtu / 2, remoteMessageMtu / 2));
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) bodyChunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) bodyChunk, (Address) senderAddress));
 
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(bodyChunk.getNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes.slice(0, remoteMessageMtu / 2));
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) headChunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) headChunk, (Address) senderAddress));
 
-                    assertEquals(message, ((MigrationInboundMessage<UnarmedMessage, Address>) pipeline.readInbound()).message().read());
+                    assertEquals(message, ((AddressedMessage<UnarmedMessage, Address>) pipeline.readInbound()).message().read());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -172,11 +172,11 @@ class ChunkingHandlerTest {
                     final ByteBuf chunkPayload = Unpooled.wrappedBuffer(bytes);
 
                     final PartialReadMessage chunk = PartialReadMessage.of(chunkHeader, chunkPayload);
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) chunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) chunk, (Address) senderAddress));
 
                     final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload);
 
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) headChunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) headChunk, (Address) senderAddress));
 
                     assertNull(pipeline.readInbound());
                 }
@@ -197,9 +197,9 @@ class ChunkingHandlerTest {
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                    assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
+                    assertEquals(new AddressedMessage<>(msg, sender), pipeline.readInbound());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -225,9 +225,9 @@ class ChunkingHandlerTest {
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
                     try (final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload)) {
-                        pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(headChunk, sender));
+                        pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, sender));
 
-                        assertEquals(new MigrationInboundMessage<>(headChunk, sender), pipeline.readInbound());
+                        assertEquals(new AddressedMessage<>(headChunk, sender), pipeline.readInbound());
                     }
                 }
                 finally {

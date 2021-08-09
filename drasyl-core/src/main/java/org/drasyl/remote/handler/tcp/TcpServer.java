@@ -30,7 +30,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
@@ -145,7 +145,7 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
                                   final Object msg) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     @Override
@@ -225,7 +225,7 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
             final CompletableFuture<Void> future = new CompletableFuture<>();
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender)));
+            ctx.fireChannelRead(new AddressedMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender)));
             future.exceptionally(e -> {
                 if (e.getCause() instanceof InvalidMessageFormatException) {
                     LOG.debug("Close TCP connection to `{}` because a message with an invalid format has been received. Possibly not a drasyl client talks to us!?", nettyCtx.channel()::remoteAddress, () -> e);

@@ -24,8 +24,8 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -111,7 +111,7 @@ class PortMapperTest {
             final TestObserver<Object> inboundMessages;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
                 assertNull(pipeline.readInbound());
             }
@@ -130,9 +130,9 @@ class PortMapperTest {
             final TestObserver<Object> inboundMessages;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
+                assertEquals(new AddressedMessage<>(msg, sender), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();

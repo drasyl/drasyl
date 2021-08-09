@@ -26,7 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
@@ -122,7 +122,7 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
             matchedInbound(ctx, castedAddress, castedMsg);
         }
         else {
-            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+            ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
         }
     }
 
@@ -140,8 +140,8 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof MigrationInboundMessage) {
-            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
+        if (msg instanceof AddressedMessage) {
+            final AddressedMessage<?, ? extends Address> migrationMsg = (AddressedMessage<?, ? extends Address>) msg;
             try {
                 onInbound(ctx, migrationMsg.address(), migrationMsg.message());
             }

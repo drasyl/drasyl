@@ -22,8 +22,8 @@
 package org.drasyl.remote.handler;
 
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -69,7 +69,7 @@ class OtherNetworkFilterTest {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) message.getSender()));
+            pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, (Address) message.getSender()));
 
             assertNull(pipeline.readInbound());
         }
@@ -86,9 +86,9 @@ class OtherNetworkFilterTest {
         final AcknowledgementMessage message = AcknowledgementMessage.of(123, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, sender));
+            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-            assertEquals(new MigrationInboundMessage<>(message, sender), pipeline.readInbound());
+            assertEquals(new AddressedMessage<>(message, sender), pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();

@@ -24,7 +24,7 @@ package org.drasyl.localhost;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
@@ -133,7 +133,7 @@ public class LocalHostDiscovery extends SimpleDuplexHandler<Object, ApplicationM
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final IdentityPublicKey sender,
                                   final Object msg) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     private synchronized CompletableFuture<Void> startDiscovery(final ChannelHandlerContext ctx,

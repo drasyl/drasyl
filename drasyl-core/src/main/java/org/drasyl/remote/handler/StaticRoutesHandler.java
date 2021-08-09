@@ -24,7 +24,7 @@ package org.drasyl.remote.handler;
 import com.typesafe.config.Config;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Stateless;
@@ -77,7 +77,7 @@ public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, Appli
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final IdentityPublicKey sender,
                                   final Object msg) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     @Override

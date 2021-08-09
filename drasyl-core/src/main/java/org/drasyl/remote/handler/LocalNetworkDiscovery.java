@@ -23,7 +23,7 @@ package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
@@ -130,7 +130,7 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
             handlePing(ctx, sender, msg, new CompletableFuture<>());
         }
         else {
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender));
+            ctx.fireChannelRead(new AddressedMessage<>((Object) msg, sender));
         }
     }
 

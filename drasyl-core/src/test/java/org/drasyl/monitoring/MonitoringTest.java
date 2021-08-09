@@ -26,8 +26,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -129,9 +129,9 @@ class MonitoringTest {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                assertEquals(new MigrationInboundMessage<>(message, sender), pipeline.readInbound());
+                assertEquals(new AddressedMessage<>(message, sender), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();

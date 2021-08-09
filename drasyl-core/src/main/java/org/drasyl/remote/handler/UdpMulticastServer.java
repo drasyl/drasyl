@@ -32,7 +32,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -131,7 +131,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                             final InetSocketAddressWrapper sender = new InetSocketAddressWrapper(packet.sender());
                             nodes.values().forEach(nodeCtx -> {
                                 LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.attr(IDENTITY_ATTR_KEY).get()::getIdentityPublicKey);
-                                nodeCtx.fireChannelRead(new MigrationInboundMessage<>((Object) packet.content().retain(), (Address) sender));
+                                nodeCtx.fireChannelRead(new AddressedMessage<>((Object) packet.content().retain(), (Address) sender));
                             });
                         }
                     })
@@ -183,10 +183,10 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof MigrationInboundMessage) {
-            final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
+        if (msg instanceof AddressedMessage) {
+            final AddressedMessage<?, ? extends Address> migrationMsg = (AddressedMessage<?, ? extends Address>) msg;
             try {
-                ctx.fireChannelRead(new MigrationInboundMessage<>(migrationMsg.message(), migrationMsg.address()));
+                ctx.fireChannelRead(new AddressedMessage<>(migrationMsg.message(), migrationMsg.address()));
             }
             catch (final Exception e) {
                 ctx.fireExceptionCaught(e);

@@ -24,8 +24,8 @@ package org.drasyl.pipeline.skeleton;
 import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -78,7 +78,7 @@ class SimpleDuplexHandlerTest {
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final IdentityPublicKey sender,
                                               final Object msg) {
-                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) sender));
+                    ctx.fireChannelRead(new AddressedMessage<>(msg, (Address) sender));
                 }
 
                 @Override
@@ -87,7 +87,7 @@ class SimpleDuplexHandlerTest {
                                                final byte[] msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, identity.getIdentityPublicKey()));
+                    ctx.fireChannelRead(new AddressedMessage<>(msg, identity.getIdentityPublicKey()));
                 }
             };
 
@@ -95,7 +95,7 @@ class SimpleDuplexHandlerTest {
             try {
                 pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(payload, recipient));
 
-                assertEquals(new MigrationInboundMessage<>(payload, identity.getIdentityPublicKey()), pipeline.readInbound());
+                assertEquals(new AddressedMessage<>(payload, identity.getIdentityPublicKey()), pipeline.readInbound());
                 assertNull(pipeline.readOutbound());
             }
             finally {
@@ -110,7 +110,7 @@ class SimpleDuplexHandlerTest {
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final IdentityPublicKey sender,
                                               final Object msg) {
-                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) sender));
+                    ctx.fireChannelRead(new AddressedMessage<>(msg, (Address) sender));
                 }
 
                 @Override
@@ -119,7 +119,7 @@ class SimpleDuplexHandlerTest {
                                                final MyMessage msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) msg.getSender()));
+                    ctx.fireChannelRead(new AddressedMessage<>((Object) msg, (Address) msg.getSender()));
                 }
             };
 
@@ -164,7 +164,7 @@ class SimpleDuplexHandlerTest {
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 final byte[] msg = new byte[]{};
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
                 assertEquals(new MigrationOutboundMessage<>(msg, sender), pipeline.readOutbound());
                 assertNull(pipeline.readInbound());
@@ -198,9 +198,9 @@ class SimpleDuplexHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
+                assertEquals(new AddressedMessage<>(msg, sender), pipeline.readInbound());
                 assertNull(pipeline.readOutbound());
             }
             finally {

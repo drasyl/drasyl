@@ -29,7 +29,7 @@ import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -107,7 +107,7 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
         ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
 
         // passthrough message
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 
     @Override

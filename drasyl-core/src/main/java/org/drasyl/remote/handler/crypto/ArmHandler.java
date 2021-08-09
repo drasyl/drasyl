@@ -24,7 +24,7 @@ package org.drasyl.remote.handler.crypto;
 import com.google.common.cache.CacheBuilder;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -210,7 +210,7 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
             future.complete(null);
         }
         else {
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) plaintextMsg, sender));
+            ctx.fireChannelRead(new AddressedMessage<>((Object) plaintextMsg, sender));
         }
     }
 
@@ -420,7 +420,7 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
                                   final ArmedMessage msg) throws Exception {
         if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())
                 || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())) {
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender));
+            ctx.fireChannelRead(new AddressedMessage<>((Object) msg, sender));
             return;
         }
 

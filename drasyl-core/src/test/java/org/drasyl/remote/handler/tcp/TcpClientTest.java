@@ -28,8 +28,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -103,9 +103,9 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
+                assertEquals(new AddressedMessage<>(msg, sender), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -123,9 +123,9 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
+                assertEquals(new AddressedMessage<>(msg, sender), pipeline.readInbound());
                 verify(superPeerChannel).cancel(true);
                 verify(superPeerChannel.channel()).close();
                 assertEquals(0, noResponseFromSuperPeerSince.get());

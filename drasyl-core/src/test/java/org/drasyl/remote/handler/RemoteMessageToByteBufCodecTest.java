@@ -27,8 +27,8 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -88,9 +88,9 @@ class RemoteMessageToByteBufCodecTest {
             try {
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) byteBuf, (Address) sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) byteBuf, (Address) sender));
 
-                assertThat(((MigrationInboundMessage<Object, Address>) pipeline.readInbound()).message(), instanceOf(PartialReadMessage.class));
+                assertThat(((AddressedMessage<Object, Address>) pipeline.readInbound()).message(), instanceOf(PartialReadMessage.class));
             }
             finally {
                 pipeline.drasylClose();

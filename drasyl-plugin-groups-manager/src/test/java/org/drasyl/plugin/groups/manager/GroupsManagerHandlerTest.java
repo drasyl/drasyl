@@ -27,8 +27,8 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -199,7 +199,7 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 assertEquals(new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
@@ -219,7 +219,7 @@ class GroupsManagerHandlerTest {
 
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(null);
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
@@ -239,7 +239,7 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(false);
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
@@ -260,7 +260,7 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
@@ -280,7 +280,7 @@ class GroupsManagerHandlerTest {
 
                 when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 assertNull(pipeline.readOutbound());
@@ -302,7 +302,7 @@ class GroupsManagerHandlerTest {
             try {
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
@@ -322,7 +322,7 @@ class GroupsManagerHandlerTest {
 
                 doThrow(DatabaseException.class).when(databaseAdapter).removeGroupMember(any(), anyString());
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
                 assertNull(pipeline.readOutbound());

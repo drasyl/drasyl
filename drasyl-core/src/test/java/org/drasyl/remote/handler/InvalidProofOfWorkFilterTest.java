@@ -22,8 +22,8 @@
 package org.drasyl.remote.handler;
 
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
@@ -67,7 +67,7 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
         try {
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) message.getSender()));
+            pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, (Address) message.getSender()));
 
             assertNull(pipeline.readInbound());
         }
@@ -82,9 +82,9 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
         try {
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, message.getSender()));
+            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
-            assertEquals(new MigrationInboundMessage<>(message, message.getSender()), pipeline.readInbound());
+            assertEquals(new AddressedMessage<>(message, message.getSender()), pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();
@@ -97,7 +97,7 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_3, peersManager, handler);
         try {
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) message.getSender()));
+            pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, (Address) message.getSender()));
 
             verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
         }

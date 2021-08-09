@@ -26,8 +26,8 @@ import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeEvent;
@@ -171,7 +171,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(discoveryMessage, address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(discoveryMessage, address));
 
                 assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(AcknowledgementMessage.class));
                 verify(peersManager, never()).addPath(any(), any(), any());
@@ -191,7 +191,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) acknowledgementMessage, (Address) address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) acknowledgementMessage, (Address) address));
 
                 verify(peersManager).addPath(any(), any(), any());
             }
@@ -214,7 +214,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) acknowledgementMessage, (Address) address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) acknowledgementMessage, (Address) address));
 
                 verify(peersManager).addPathAndSuperPeer(any(), any(), any());
             }
@@ -342,7 +342,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(uniteMessage.getPublicKey(), peer)), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) uniteMessage, (Address) address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) uniteMessage, (Address) address));
 
                 verify(rendezvousPeers).add(any());
             }
@@ -372,7 +372,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(message.getSender(), senderPeer, message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, (Address) sender));
 
                 assertEquals(message, ((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
                 assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
@@ -398,7 +398,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, sender));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, sender));
 
                     assertEquals(message, ((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
                 }
@@ -417,7 +417,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, (Address) sender));
 
                     assertNull(pipeline.readOutbound());
                 }
@@ -440,10 +440,10 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(applicationMessage, address));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(applicationMessage, address));
 
                     verify(peer).applicationTrafficOccurred();
-                    assertEquals(new MigrationInboundMessage<>(applicationMessage, sender), pipeline.readInbound());
+                    assertEquals(new AddressedMessage<>(applicationMessage, sender), pipeline.readInbound());
                 }
                 finally {
                     pipeline.drasylClose();

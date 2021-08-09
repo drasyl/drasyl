@@ -25,7 +25,7 @@ import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -389,7 +389,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             else if (!ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
                 if (!processMessage(ctx, msg.getRecipient(), msg, new CompletableFuture<>())) {
                     // passthrough message
-                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender));
+                    ctx.fireChannelRead(new AddressedMessage<>((Object) msg, sender));
                 }
             }
             else if (LOG.isDebugEnabled()) {
@@ -398,7 +398,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
         else {
             // passthrough message
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, sender));
+            ctx.fireChannelRead(new AddressedMessage<>((Object) msg, sender));
         }
     }
 
@@ -420,7 +420,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         }
         else {
             // passthrough message
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
+            ctx.fireChannelRead(new AddressedMessage<>((Object) msg, (Address) sender));
         }
     }
 
@@ -531,7 +531,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             peer.applicationTrafficOccurred();
         }
 
-        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) msg.getSender()));
+        ctx.fireChannelRead(new AddressedMessage<>((Object) msg, (Address) msg.getSender()));
     }
 
     private CompletableFuture<Void> sendPing(final ChannelHandlerContext ctx,

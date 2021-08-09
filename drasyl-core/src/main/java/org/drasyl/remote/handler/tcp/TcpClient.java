@@ -29,7 +29,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.Address;
@@ -108,7 +108,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final InetSocketAddressWrapper sender,
                                   final ByteBuf msg) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
+        ctx.fireChannelRead(new AddressedMessage<>((Object) msg, (Address) sender));
         checkForReachableSuperPeer(sender);
     }
 
@@ -225,7 +225,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
                                     final ByteBuf msg) {
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender)));
+            ctx.fireChannelRead(new AddressedMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender)));
         }
     }
 }

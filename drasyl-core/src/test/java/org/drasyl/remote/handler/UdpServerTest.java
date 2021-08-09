@@ -30,8 +30,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
@@ -187,7 +187,7 @@ class UdpServerTest {
             try {
                 pipeline.pipeline().fireChannelActive();
 
-                assertThat(((MigrationInboundMessage<Object, Address>) pipeline.readInbound()).message(), instanceOf(ByteBuf.class));
+                assertThat(((AddressedMessage<Object, Address>) pipeline.readInbound()).message(), instanceOf(ByteBuf.class));
             }
             finally {
                 pipeline.drasylClose();

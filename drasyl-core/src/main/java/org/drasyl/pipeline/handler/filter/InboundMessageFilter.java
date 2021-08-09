@@ -23,7 +23,7 @@ package org.drasyl.pipeline.handler.filter;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.util.ReferenceCountUtil;
@@ -49,7 +49,7 @@ public abstract class InboundMessageFilter<I, A extends Address> extends SimpleI
                                   final I msg) throws Exception {
         try {
             if (accept(ctx, sender, msg)) {
-                ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+                ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
             }
             else {
                 messageRejected(ctx, sender, msg);

@@ -25,7 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 
@@ -50,7 +50,7 @@ import java.util.concurrent.CompletableFuture;
  * </pre>
  */
 @SuppressWarnings("java:S118")
-public abstract class SimpleInboundHandler<MI, MA extends Address> extends SimpleChannelInboundHandler<MigrationInboundMessage<MI, MA>> {
+public abstract class SimpleInboundHandler<MI, MA extends Address> extends SimpleChannelInboundHandler<AddressedMessage<MI, MA>> {
     private final TypeParameterMatcher matcherMessage;
     private final TypeParameterMatcher matcherAddress;
 
@@ -74,7 +74,7 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final MigrationInboundMessage<MI, MA> msg) {
+                                final AddressedMessage<MI, MA> msg) {
         try {
             final Address sender = msg.address();
             final Object msg1 = msg.message();
@@ -84,7 +84,7 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
                 matchedInbound(ctx, castedAddress, castedMsg);
             }
             else {
-                ctx.fireChannelRead(new MigrationInboundMessage<>(msg1, sender));
+                ctx.fireChannelRead(new AddressedMessage<>(msg1, sender));
             }
         }
         catch (final Exception e) {

@@ -23,7 +23,7 @@ package org.drasyl.loopback.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
@@ -58,7 +58,7 @@ public class LoopbackMessageHandler extends SimpleDuplexHandler<Object, Object, 
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
         if (started && ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(recipient)) {
-            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+            ctx.fireChannelRead(new AddressedMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
         }
         else {
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
@@ -69,6 +69,6 @@ public class LoopbackMessageHandler extends SimpleDuplexHandler<Object, Object, 
     protected void matchedInbound(final ChannelHandlerContext ctx,
                                   final Address sender,
                                   final Object msg) throws Exception {
-        ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
     }
 }

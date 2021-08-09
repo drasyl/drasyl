@@ -24,7 +24,7 @@ package org.drasyl.remote.handler.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.remote.handler.UdpServer;
@@ -74,7 +74,7 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
         }
         else {
             // message was not for the mapper -> passthrough
-            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
+            ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
         }
     }
 

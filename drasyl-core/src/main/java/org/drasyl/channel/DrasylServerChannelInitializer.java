@@ -156,7 +156,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                 protected void matchedInbound(final ChannelHandlerContext ctx,
                                               final Address sender,
                                               final UnarmedMessage msg) throws Exception {
-                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg.readAndRelease(), sender));
+                    ctx.fireChannelRead(new AddressedMessage<>(msg.readAndRelease(), sender));
                 }
             });
 
@@ -206,10 +206,10 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
      * Routes inbound messages to the correct child channel and broadcast events to all child
      * channels.
      */
-    private static class ChildChannelRouter extends SimpleChannelInboundHandler<MigrationInboundMessage<?, ?>> {
+    private static class ChildChannelRouter extends SimpleChannelInboundHandler<AddressedMessage<?, ? extends Address>> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final MigrationInboundMessage<?, ?> migrationMsg) {
+                                    final AddressedMessage<?, ? extends Address> migrationMsg) {
             Object msg = migrationMsg.message();
             final IdentityPublicKey sender = (IdentityPublicKey) migrationMsg.address();
 

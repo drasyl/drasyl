@@ -25,8 +25,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -73,9 +73,9 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
 
-                assertEquals(new MigrationInboundMessage<>("Hallo Welt", address), pipeline.readInbound());
+                assertEquals(new AddressedMessage<>("Hallo Welt", address), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -91,9 +91,9 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
 
-                assertEquals(new MigrationInboundMessage<>("Hallo Welt", address), pipeline.readInbound());
+                assertEquals(new AddressedMessage<>("Hallo Welt", address), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -105,9 +105,9 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), null, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
 
-                assertEquals(new MigrationInboundMessage<>(null, address), pipeline.readInbound());
+                assertEquals(new AddressedMessage<>(null, address), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -119,7 +119,7 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
                 assertNull(pipeline.readInbound());
             }
@@ -137,7 +137,7 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
                 assertNull(pipeline.readInbound());
             }

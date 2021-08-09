@@ -23,8 +23,8 @@ package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -52,15 +52,15 @@ class SimpleInboundHandlerTest {
             protected void matchedInbound(final ChannelHandlerContext ctx,
                                           final Address sender,
                                           final byte[] msg) {
-                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) new String(msg), sender));
+                ctx.fireChannelRead(new AddressedMessage<>((Object) new String(msg), sender));
             }
         };
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>("Hallo Welt".getBytes(), sender));
+            pipeline.pipeline().fireChannelRead(new AddressedMessage<>("Hallo Welt".getBytes(), sender));
 
-            assertEquals(new MigrationInboundMessage<>("Hallo Welt", sender), pipeline.readInbound());
+            assertEquals(new AddressedMessage<>("Hallo Welt", sender), pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();
@@ -74,15 +74,15 @@ class SimpleInboundHandlerTest {
             protected void matchedInbound(final ChannelHandlerContext ctx,
                                           final Address sender,
                                           final byte[] msg) {
-                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) new String(msg), sender));
+                ctx.fireChannelRead(new AddressedMessage<>((Object) new String(msg), sender));
             }
         };
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(1337, sender));
+            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(1337, sender));
 
-            assertEquals(new MigrationInboundMessage<>(1337, sender), pipeline.readInbound());
+            assertEquals(new AddressedMessage<>(1337, sender), pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();

@@ -22,8 +22,8 @@
 package org.drasyl.loopback.handler;
 
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -69,7 +69,7 @@ class LoopbackMessageHandlerTest {
         try {
             pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
 
-            assertEquals(new MigrationInboundMessage<>(message, recipient), pipeline.readInbound());
+            assertEquals(new AddressedMessage<>(message, recipient), pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();
