@@ -27,7 +27,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
@@ -58,22 +57,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
         this.outboundMessageMatcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
-    @Skip
-    @SuppressWarnings("java:S112")
-    public void onOutbound(final ChannelHandlerContext ctx,
-                           final Address recipient,
-                           final Object msg,
-                           final CompletableFuture<Void> future) throws Exception {
-        if (outboundMessageMatcher.match(msg) && matcherAddress.match(recipient)) {
-            @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
-            @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
-            matchedOutbound(ctx, castedAddress, castedMsg, future);
-        }
-        else {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
-        }
-    }
-
     /**
      * Is called for each message of type {@link O}.
      *
@@ -97,7 +80,16 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
             final CompletableFuture<Void> future = new CompletableFuture<>();
             FutureUtil.combine(future, promise);
             try {
-                onOutbound(ctx, migrationMsg.address(), migrationMsg.message(), future);
+                final Address recipient = migrationMsg.address();
+                final Object msg1 = migrationMsg.message();
+                if (outboundMessageMatcher.match(msg1) && matcherAddress.match(recipient)) {
+                    @SuppressWarnings("unchecked") final O castedMsg = (O) msg1;
+                    @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
+                    matchedOutbound(ctx, castedAddress, castedMsg, future);
+                }
+                else {
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg1, recipient)))).combine(future);
+                }
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);
@@ -107,21 +99,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
         }
         else {
             ctx.write(msg, promise);
-        }
-    }
-
-    @Skip
-    @SuppressWarnings("java:S112")
-    public void onInbound(final ChannelHandlerContext ctx,
-                          final Address sender,
-                          final Object msg) throws Exception {
-        if (matcherMessage.match(msg) && matcherAddress.match(sender)) {
-            @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
-            @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
-            matchedInbound(ctx, castedAddress, castedMsg);
-        }
-        else {
-            ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
         }
     }
 
@@ -142,7 +119,16 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
         if (msg instanceof AddressedMessage) {
             final AddressedMessage<?, ? extends Address> migrationMsg = (AddressedMessage<?, ? extends Address>) msg;
             try {
-                onInbound(ctx, migrationMsg.address(), migrationMsg.message());
+                final Address sender = migrationMsg.address();
+                final Object msg1 = migrationMsg.message();
+                if (matcherMessage.match(msg1) && matcherAddress.match(sender)) {
+                    @SuppressWarnings("unchecked") final I castedMsg = (I) msg1;
+                    @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
+                    matchedInbound(ctx, castedAddress, castedMsg);
+                }
+                else {
+                    ctx.fireChannelRead(new AddressedMessage<>(msg1, sender));
+                }
             }
             catch (final Exception e) {
                 ctx.fireExceptionCaught(e);

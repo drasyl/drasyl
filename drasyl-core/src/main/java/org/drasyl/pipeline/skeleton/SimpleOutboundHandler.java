@@ -28,7 +28,6 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
@@ -68,22 +67,6 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Channe
         matcherAddress = TypeParameterMatcher.find(this, SimpleOutboundHandler.class, "A");
     }
 
-    @Skip
-    @SuppressWarnings("java:S112")
-    public void onOutbound(final ChannelHandlerContext ctx,
-                           final Address recipient,
-                           final Object msg,
-                           final CompletableFuture<Void> future) throws Exception {
-        if (matcherMessage.match(msg) && matcherAddress.match(recipient)) {
-            @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
-            @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
-            matchedOutbound(ctx, castedAddress, castedMsg, future);
-        }
-        else {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
-        }
-    }
-
     /**
      * Is called for each message of type {@link O}.
      *
@@ -107,7 +90,16 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Channe
             final CompletableFuture<Void> future = new CompletableFuture<>();
             FutureUtil.combine(future, promise);
             try {
-                onOutbound(ctx, migrationMsg.address(), migrationMsg.message(), future);
+                final Address recipient = migrationMsg.address();
+                final Object msg1 = migrationMsg.message();
+                if (matcherMessage.match(msg1) && matcherAddress.match(recipient)) {
+                    @SuppressWarnings("unchecked") final O castedMsg = (O) msg1;
+                    @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
+                    matchedOutbound(ctx, castedAddress, castedMsg, future);
+                }
+                else {
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg1, recipient)))).combine(future);
+                }
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);
