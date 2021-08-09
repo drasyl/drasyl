@@ -153,7 +153,7 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
                     protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                 final DatagramPacket packet) {
                         LOG.trace("Datagram received {}", packet);
-                        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) packet.content().retain(), (Address) new InetSocketAddressWrapper(packet.sender()), new CompletableFuture<>()));
+                        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) packet.content().retain(), (Address) new InetSocketAddressWrapper(packet.sender())));
                     }
                 })
                 .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost(), bindPort);

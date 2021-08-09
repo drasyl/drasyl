@@ -78,18 +78,16 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
         try {
             final Address sender = msg.address();
             final Object msg1 = msg.message();
-            final CompletableFuture<Void> future = msg.future();
             if (matcherMessage.match(msg1) && matcherAddress.match(sender)) {
                 @SuppressWarnings("unchecked") final MI castedMsg = (MI) msg1;
                 @SuppressWarnings("unchecked") final MA castedAddress = (MA) sender;
                 matchedInbound(ctx, castedAddress, castedMsg);
             }
             else {
-                ctx.fireChannelRead(new MigrationInboundMessage<>(msg1, sender, future));
+                ctx.fireChannelRead(new MigrationInboundMessage<>(msg1, sender));
             }
         }
         catch (final Exception e) {
-            msg.future().completeExceptionally(e);
             ctx.fireExceptionCaught(e);
             ReferenceCountUtil.safeRelease(msg.message());
         }

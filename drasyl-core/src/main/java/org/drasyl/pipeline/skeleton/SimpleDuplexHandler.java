@@ -115,15 +115,14 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
     @SuppressWarnings("java:S112")
     public void onInbound(final ChannelHandlerContext ctx,
                           final Address sender,
-                          final Object msg,
-                          final CompletableFuture<Void> future) throws Exception {
+                          final Object msg) throws Exception {
         if (matcherMessage.match(msg) && matcherAddress.match(sender)) {
             @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
             matchedInbound(ctx, castedAddress, castedMsg);
         }
         else {
-            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender));
         }
     }
 
@@ -144,10 +143,9 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
         if (msg instanceof MigrationInboundMessage) {
             final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
             try {
-                onInbound(ctx, migrationMsg.address(), migrationMsg.message(), migrationMsg.future());
+                onInbound(ctx, migrationMsg.address(), migrationMsg.message());
             }
             catch (final Exception e) {
-                migrationMsg.future().completeExceptionally(e);
                 ctx.fireExceptionCaught(e);
                 ReferenceCountUtil.safeRelease(migrationMsg.message());
             }

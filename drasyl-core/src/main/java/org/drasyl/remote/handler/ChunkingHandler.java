@@ -94,7 +94,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
             if (message != null) {
                 // message complete, pass it inbound
                 getChunksCollectors(ctx.attr(CONFIG_ATTR_KEY).get()).remove(chunk.getNonce());
-                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender, future));
+                ctx.fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender));
             }
             else {
                 // other chunks missing, but this chunk has been processed

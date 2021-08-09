@@ -87,7 +87,7 @@ class SimpleDuplexHandlerTest {
                                                final byte[] msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, identity.getIdentityPublicKey(), new CompletableFuture<Void>()));
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, identity.getIdentityPublicKey()));
                 }
             };
 

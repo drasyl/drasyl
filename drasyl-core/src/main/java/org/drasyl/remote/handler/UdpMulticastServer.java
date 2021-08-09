@@ -47,7 +47,6 @@ import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
@@ -132,7 +131,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                             final InetSocketAddressWrapper sender = new InetSocketAddressWrapper(packet.sender());
                             nodes.values().forEach(nodeCtx -> {
                                 LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.attr(IDENTITY_ATTR_KEY).get()::getIdentityPublicKey);
-                                nodeCtx.fireChannelRead(new MigrationInboundMessage<>((Object) packet.content().retain(), (Address) sender, new CompletableFuture<Void>()));
+                                nodeCtx.fireChannelRead(new MigrationInboundMessage<>((Object) packet.content().retain(), (Address) sender));
                             });
                         }
                     })
@@ -187,10 +186,9 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         if (msg instanceof MigrationInboundMessage) {
             final MigrationInboundMessage<?, ?> migrationMsg = (MigrationInboundMessage<?, ?>) msg;
             try {
-                ctx.fireChannelRead(new MigrationInboundMessage<>(migrationMsg.message(), migrationMsg.address(), migrationMsg.future()));
+                ctx.fireChannelRead(new MigrationInboundMessage<>(migrationMsg.message(), migrationMsg.address()));
             }
             catch (final Exception e) {
-                migrationMsg.future().completeExceptionally(e);
                 ctx.fireExceptionCaught(e);
                 ReferenceCountUtil.safeRelease(migrationMsg.message());
             }

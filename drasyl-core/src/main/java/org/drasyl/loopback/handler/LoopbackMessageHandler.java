@@ -58,7 +58,7 @@ public class LoopbackMessageHandler extends SimpleDuplexHandler<Object, Object, 
                                    final Object msg,
                                    final CompletableFuture<Void> future) {
         if (started && ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(recipient)) {
-            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
         }
         else {
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);

@@ -83,7 +83,7 @@ public abstract class MessageToMessageDecoder<I, A extends Address> extends Simp
 
                 for (final Object o : out) {
                     final CompletableFuture<Void> future1 = new CompletableFuture<>();
-                    ctx.fireChannelRead(new MigrationInboundMessage<>(o, (Address) sender, future1));
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(o, (Address) sender));
                     combiner.add(future1);
                 }
 

@@ -24,7 +24,6 @@ package org.drasyl.intravm;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -47,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class IntraVmDiscoveryTest {
@@ -103,11 +101,6 @@ class IntraVmDiscoveryTest {
                                                        @Mock(answer = RETURNS_DEEP_STUBS) final Object message,
                                                        @Mock final ChannelHandlerContext ctx) {
             discoveries.put(Pair.of(0, recipient), ctx);
-            when(ctx.fireChannelRead(any())).thenAnswer(invocation -> {
-                @SuppressWarnings("unchecked") final MigrationInboundMessage msg = invocation.getArgument(0, MigrationInboundMessage.class);
-                msg.future().complete(null);
-                return null;
-            });
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);

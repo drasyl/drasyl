@@ -225,7 +225,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
                                     final ByteBuf msg) {
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender), new CompletableFuture<Void>()));
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender)));
         }
     }
 }

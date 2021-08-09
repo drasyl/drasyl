@@ -210,7 +210,7 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
             future.complete(null);
         }
         else {
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) plaintextMsg, sender, future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) plaintextMsg, sender));
         }
     }
 

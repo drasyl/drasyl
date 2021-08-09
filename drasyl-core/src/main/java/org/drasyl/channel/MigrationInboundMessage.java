@@ -23,29 +23,12 @@ package org.drasyl.channel;
 
 import org.drasyl.pipeline.address.Address;
 
-import java.util.concurrent.CompletableFuture;
-
-import static java.util.Objects.requireNonNull;
-
 /**
  * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
  */
 public class MigrationInboundMessage<T, A extends Address> extends AddressedMessage<T, A> {
-    private final CompletableFuture<Void> future;
-
-    public MigrationInboundMessage(final T message,
-                                   final A address,
-                                   final CompletableFuture<Void> future) {
-        super(message, address);
-        this.future = requireNonNull(future);
-    }
-
     public MigrationInboundMessage(final T message,
                                    final A address) {
-        this(message, address, new CompletableFuture<>());
-    }
-
-    public CompletableFuture<Void> future() {
-        return future;
+        super(message, address);
     }
 }

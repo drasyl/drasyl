@@ -225,7 +225,7 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
             final CompletableFuture<Void> future = new CompletableFuture<>();
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender), future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg.retain(), (Address) new InetSocketAddressWrapper(sender)));
             future.exceptionally(e -> {
                 if (e.getCause() instanceof InvalidMessageFormatException) {
                     LOG.debug("Close TCP connection to `{}` because a message with an invalid format has been received. Possibly not a drasyl client talks to us!?", nettyCtx.channel()::remoteAddress, () -> e);

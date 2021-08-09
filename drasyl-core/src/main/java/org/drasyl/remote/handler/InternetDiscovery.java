@@ -416,11 +416,11 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             handleUnite(ctx, (UniteMessage) msg, future);
         }
         else if (msg instanceof ApplicationMessage) {
-            handleApplication(ctx, (ApplicationMessage) msg, future);
+            handleApplication(ctx, (ApplicationMessage) msg);
         }
         else {
             // passthrough message
-            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future));
+            ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
         }
     }
 
@@ -525,14 +525,13 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     }
 
     private void handleApplication(final ChannelHandlerContext ctx,
-                                   final ApplicationMessage msg,
-                                   final CompletableFuture<Void> future) {
+                                   final ApplicationMessage msg) {
         if (directConnectionPeers.contains(msg.getSender())) {
             final Peer peer = peers.computeIfAbsent(msg.getSender(), key -> new Peer());
             peer.applicationTrafficOccurred();
         }
 
-        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) msg.getSender(), future));
+        ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) msg.getSender()));
     }
 
     private CompletableFuture<Void> sendPing(final ChannelHandlerContext ctx,
