@@ -26,7 +26,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
@@ -243,12 +242,12 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
 
             if (!processMessage(ctx, (IdentityPublicKey) recipient, msg, future)) {
                 // passthrough message
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, recipient)))).combine(future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient)))).combine(future);
             }
         }
         else {
             // passthrough message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, recipient)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient)))).combine(future);
         }
     }
 
@@ -294,14 +293,14 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
             }
 
             LOG.trace("Send message to {} to {}.", recipient, recipientSocketAddress);
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipientSocketAddress)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipientSocketAddress)))).combine(future);
 
             return true;
         }
         else if (superPeerPeer != null) {
             final InetSocketAddressWrapper superPeerSocketAddress = superPeerPeer.getAddress();
             LOG.trace("No connection to {}. Send message to super peer.", recipient);
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) superPeerSocketAddress)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) superPeerSocketAddress)))).combine(future);
 
             return true;
         }
@@ -346,7 +345,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
         final CompletableFuture<Void> future1 = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) senderRendezvousEnvelope, (Address) sender)))).combine(future1);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) senderRendezvousEnvelope, (Address) sender)))).combine(future1);
         future1.exceptionally(e -> {
             //noinspection unchecked
             LOG.warn("Unable to send unite message for peer `{}` to `{}`", () -> senderKey, () -> sender, () -> e);
@@ -357,7 +356,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
         final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) recipientRendezvousEnvelope, (Address) recipient)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) recipientRendezvousEnvelope, (Address) recipient)))).combine(future);
         future.exceptionally(e -> {
             //noinspection unchecked
             LOG.warn("Unable to send unite message for peer `{}` to `{}`", () -> recipientKey, () -> recipient, () -> e);
@@ -451,7 +450,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         final ProofOfWork myProofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final AcknowledgementMessage responseEnvelope = AcknowledgementMessage.of(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
         LOG.trace("Send {} to {}", responseEnvelope, sender);
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) responseEnvelope, (Address) sender)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) responseEnvelope, (Address) sender)))).combine(future);
     }
 
     private void handlePong(final ChannelHandlerContext ctx,
@@ -547,7 +546,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
         messageEnvelope = DiscoveryMessage.of(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
         openPingsCache.put(messageEnvelope.getNonce(), new Ping(recipientAddress));
         LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) messageEnvelope, (Address) recipientAddress)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) messageEnvelope, (Address) recipientAddress)))).combine(future);
         return future;
     }
 

@@ -24,8 +24,8 @@ package org.drasyl.pipeline.handler.codec;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -63,7 +63,7 @@ class MessageToMessageEncoderTest {
         });
         try {
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(new Object(), recipient), promise);
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(new Object(), recipient), promise);
             assertFalse(promise.isSuccess());
         }
         finally {
@@ -83,7 +83,7 @@ class MessageToMessageEncoderTest {
         });
         try {
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(new Object(), recipient), promise);
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(new Object(), recipient), promise);
             assertFalse(promise.isSuccess());
         }
         finally {
@@ -102,9 +102,9 @@ class MessageToMessageEncoderTest {
             }
         });
         try {
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(new Object(), recipient));
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(new Object(), recipient));
 
-            assertEquals(new MigrationOutboundMessage<>("Hallo Welt", recipient), pipeline.readOutbound());
+            assertEquals(new AddressedMessage<>("Hallo Welt", recipient), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();
@@ -140,7 +140,7 @@ class MessageToMessageEncoderTest {
         });
         try {
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(new Object(), recipient), promise);
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(new Object(), recipient), promise);
             assertFalse(promise.isSuccess());
         }
         finally {

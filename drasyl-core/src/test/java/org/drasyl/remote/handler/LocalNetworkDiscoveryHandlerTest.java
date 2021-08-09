@@ -26,7 +26,6 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
@@ -161,7 +160,7 @@ class LocalNetworkDiscoveryTest {
             verify(peer).isStale(any());
             verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removePath(any(), eq(publicKey), any());
             assertTrue(peers.isEmpty());
-            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<MigrationOutboundMessage>) m -> m.message() instanceof DiscoveryMessage && m.address().equals(MULTICAST_ADDRESS)));
+            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage>) m -> m.message() instanceof DiscoveryMessage && m.address().equals(MULTICAST_ADDRESS)));
         }
     }
 
@@ -251,9 +250,9 @@ class LocalNetworkDiscoveryTest {
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
 
-        pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
+        pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
 
-        assertEquals(new MigrationOutboundMessage<>(message, peer.getAddress()), pipeline.readOutbound());
+        assertEquals(new AddressedMessage<>(message, peer.getAddress()), pipeline.readOutbound());
     }
 
     @Test
@@ -263,9 +262,9 @@ class LocalNetworkDiscoveryTest {
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
-            assertEquals(new MigrationOutboundMessage<>(message, recipient), pipeline.readOutbound());
+            assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();

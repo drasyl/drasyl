@@ -23,8 +23,8 @@ package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -81,9 +81,9 @@ class HopCountGuardTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
 
-            assertEquals(new MigrationOutboundMessage<>(message.incrementHopCount(), recipient), pipeline.readOutbound());
+            assertEquals(new AddressedMessage<>(message.incrementHopCount(), recipient), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();
@@ -100,7 +100,7 @@ class HopCountGuardTest {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) message.getSender()), promise);
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) message.getSender()), promise);
             assertFalse(promise.isSuccess());
 
             assertNull(pipeline.readOutbound());

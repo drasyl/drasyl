@@ -29,7 +29,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -146,7 +145,7 @@ class GroupsManagerHandlerTest {
 
             handler.staleTask(ctx);
 
-            verify(ctx, times(2)).writeAndFlush(argThat((ArgumentMatcher<MigrationOutboundMessage>) m -> m.message() instanceof MemberLeftMessage &&
+            verify(ctx, times(2)).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage>) m -> m.message() instanceof MemberLeftMessage &&
                     ((MemberLeftMessage) m.message()).getMember().equals(publicKey) &&
                     ((MemberLeftMessage) m.message()).getGroup().equals(org.drasyl.plugin.groups.client.Group.of(group.getName()))));
         }
@@ -202,8 +201,8 @@ class GroupsManagerHandlerTest {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
-                assertEquals(new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
-                assertEquals(new MemberJoinedMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new MemberJoinedMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -222,7 +221,7 @@ class GroupsManagerHandlerTest {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -242,7 +241,7 @@ class GroupsManagerHandlerTest {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -263,7 +262,7 @@ class GroupsManagerHandlerTest {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -305,8 +304,8 @@ class GroupsManagerHandlerTest {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
                 pipeline.runPendingTasks();
 
-                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
-                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
             }
             finally {
                 pipeline.drasylClose();

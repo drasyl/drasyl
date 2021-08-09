@@ -29,7 +29,6 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -106,12 +105,12 @@ class RemoteMessageToByteBufCodecTest {
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
 
-                assertEquals(new MigrationOutboundMessage<>(byteBuf, recipient), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(byteBuf, recipient), pipeline.readOutbound());
 
                 byteBuf.release();
             }
@@ -129,7 +128,7 @@ class RemoteMessageToByteBufCodecTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) messageEnvelope, (Address) recipient), promise);
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) messageEnvelope, (Address) recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {

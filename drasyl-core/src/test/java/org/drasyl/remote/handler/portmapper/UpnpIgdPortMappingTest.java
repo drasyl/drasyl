@@ -27,7 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.annotations.NonNull;
-import org.drasyl.channel.MigrationOutboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.protocol.UpnpIgdUtil;
@@ -75,7 +75,7 @@ public class UpnpIgdPortMappingTest {
 
             new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
-            verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
+            verify(ctx).writeAndFlush(any(AddressedMessage.class));
         }
 
         @Nested

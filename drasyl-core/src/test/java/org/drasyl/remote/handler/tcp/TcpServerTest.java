@@ -30,8 +30,8 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
@@ -132,7 +132,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
                 verify(client).writeAndFlush(any());
             }
@@ -152,7 +152,7 @@ class TcpServerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient), promise);
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {
@@ -166,9 +166,9 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipient));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                assertEquals(new MigrationOutboundMessage<>(msg, recipient), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(msg, recipient), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();

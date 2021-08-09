@@ -28,7 +28,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeEvent;
 import org.drasyl.identity.Identity;
@@ -173,7 +172,7 @@ class InternetDiscoveryTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(discoveryMessage, address));
 
-                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(AcknowledgementMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(AcknowledgementMessage.class));
                 verify(peersManager, never()).addPath(any(), any(), any());
             }
             finally {
@@ -288,7 +287,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<MigrationOutboundMessage>) m -> m.message() instanceof DiscoveryMessage));
+            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage>) m -> m.message() instanceof DiscoveryMessage));
         }
 
         @Test
@@ -306,7 +305,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<MigrationOutboundMessage>) m -> m.message() instanceof DiscoveryMessage));
+            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage>) m -> m.message() instanceof DiscoveryMessage));
         }
 
         @Test
@@ -321,7 +320,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx, never()).writeAndFlush(any(MigrationOutboundMessage.class));
+            verify(ctx, never()).writeAndFlush(any(AddressedMessage.class));
             verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removeChildrenAndPath(any(), eq(publicKey), any());
         }
     }
@@ -374,9 +373,9 @@ class InternetDiscoveryTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, (Address) sender));
 
-                assertEquals(message, ((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
-                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
-                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
+                assertEquals(message, ((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
+                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -400,7 +399,7 @@ class InternetDiscoveryTest {
                 try {
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, sender));
 
-                    assertEquals(message, ((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
+                    assertEquals(message, ((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -466,9 +465,9 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
+                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
-                    assertEquals(new MigrationOutboundMessage<>(message, recipientSocketAddress), pipeline.readOutbound());
+                    assertEquals(new AddressedMessage<>(message, recipientSocketAddress), pipeline.readOutbound());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -487,9 +486,9 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers, superPeers, recipient);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
+                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                    assertEquals(new MigrationOutboundMessage<>(message, superPeerSocketAddress), pipeline.readOutbound());
+                    assertEquals(new AddressedMessage<>(message, superPeerSocketAddress), pipeline.readOutbound());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -506,9 +505,9 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
+                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
-                    assertEquals(new MigrationOutboundMessage<>(message, recipient), pipeline.readOutbound());
+                    assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -527,7 +526,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(recipient, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
+                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
                     verify(peer).applicationTrafficOccurred();
                 }

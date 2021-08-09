@@ -27,7 +27,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureCombiner;
@@ -71,7 +70,7 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
             matchedOutbound(ctx, castedAddress, castedMsg, future);
         }
         else {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
         }
     }
 
@@ -93,8 +92,8 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof MigrationOutboundMessage) {
-            final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
+        if (msg instanceof AddressedMessage) {
+            final AddressedMessage<?, ? extends Address> migrationMsg = (AddressedMessage<?, ? extends Address>) msg;
             final CompletableFuture<Void> future = new CompletableFuture<>();
             FutureUtil.combine(future, promise);
             try {

@@ -25,7 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.channel.MigrationOutboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.TokenBucket;
@@ -63,12 +63,12 @@ public class OutboundMessagesThrottlingHandler extends ChannelOutboundHandlerAda
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof MigrationOutboundMessage) {
-            final MigrationOutboundMessage<?, ?> migrationMsg = (MigrationOutboundMessage<?, ?>) msg;
+        if (msg instanceof AddressedMessage) {
+            final AddressedMessage<?, ? extends org.drasyl.pipeline.address.Address> migrationMsg = (AddressedMessage<?, ? extends org.drasyl.pipeline.address.Address>) msg;
             final CompletableFuture<Void> future = new CompletableFuture<>();
             FutureUtil.combine(future, promise);
             try {
-                queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(migrationMsg.message(), migrationMsg.address())))).combine(future));
+                queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(migrationMsg.message(), migrationMsg.address())))).combine(future));
             }
             catch (final Exception e) {
                 future.completeExceptionally(e);

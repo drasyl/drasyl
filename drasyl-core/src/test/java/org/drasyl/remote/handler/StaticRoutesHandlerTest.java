@@ -23,8 +23,8 @@ package org.drasyl.remote.handler;
 
 import com.google.common.collect.ImmutableMap;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -89,9 +89,9 @@ class StaticRoutesHandlerTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, publicKey));
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, publicKey));
 
-            assertEquals(new MigrationOutboundMessage<>(message, address), pipeline.readOutbound());
+            assertEquals(new AddressedMessage<>(message, address), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();
@@ -105,9 +105,9 @@ class StaticRoutesHandlerTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, publicKey));
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, publicKey));
 
-            assertEquals(new MigrationOutboundMessage<>(message, publicKey), pipeline.readOutbound());
+            assertEquals(new AddressedMessage<>(message, publicKey), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();

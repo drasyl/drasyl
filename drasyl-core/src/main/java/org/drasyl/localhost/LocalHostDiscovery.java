@@ -25,7 +25,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -121,11 +120,11 @@ public class LocalHostDiscovery extends SimpleDuplexHandler<Object, ApplicationM
         final InetSocketAddressWrapper localAddress = routes.get(recipient);
         if (localAddress != null) {
             LOG.trace("Send message `{}` via local route {}.", () -> message, () -> localAddress);
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) localAddress)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) message, (Address) localAddress)))).combine(future);
         }
         else {
             // passthrough message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient)))).combine(future);
         }
     }
 

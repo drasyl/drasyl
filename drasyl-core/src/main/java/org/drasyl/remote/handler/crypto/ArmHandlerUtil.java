@@ -23,7 +23,7 @@ package org.drasyl.remote.handler.crypto;
 
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.MigrationOutboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.IdentityPublicKey;
@@ -79,7 +79,7 @@ public final class ArmHandlerUtil {
         try {
             final ArmedMessage armedMessage = msg.setAgreementId(agreementId).arm(cryptoInstance, agreementPair);
             // send encrypted message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) armedMessage, recipient)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) armedMessage, recipient)))).combine(future);
         }
         catch (final IOException e) {
             future.completeExceptionally(new CryptoException(e));

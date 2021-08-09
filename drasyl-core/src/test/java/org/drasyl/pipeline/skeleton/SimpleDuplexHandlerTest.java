@@ -26,7 +26,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -93,7 +92,7 @@ class SimpleDuplexHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(payload, recipient));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(payload, recipient));
 
                 assertEquals(new AddressedMessage<>(payload, identity.getIdentityPublicKey()), pipeline.readInbound());
                 assertNull(pipeline.readOutbound());
@@ -126,9 +125,9 @@ class SimpleDuplexHandlerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final byte[] payload = new byte[]{};
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(payload, recipient));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(payload, recipient));
 
-                assertEquals(new MigrationOutboundMessage<>(payload, recipient), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(payload, recipient), pipeline.readOutbound());
                 assertNull(pipeline.readInbound());
             }
             finally {
@@ -147,7 +146,7 @@ class SimpleDuplexHandlerTest {
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
                 }
 
                 @Override
@@ -155,7 +154,7 @@ class SimpleDuplexHandlerTest {
                                               final Address sender,
                                               final byte[] msg) {
                     // Emit this message as outbound message to test
-                    ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, sender));
+                    ctx.writeAndFlush(new AddressedMessage<>(msg, sender));
                 }
             };
 
@@ -166,7 +165,7 @@ class SimpleDuplexHandlerTest {
                 final byte[] msg = new byte[]{};
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                assertEquals(new MigrationOutboundMessage<>(msg, sender), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(msg, sender), pipeline.readOutbound());
                 assertNull(pipeline.readInbound());
                 eventTestObserver.assertNoValues();
             }
@@ -184,7 +183,7 @@ class SimpleDuplexHandlerTest {
                                                final Address recipient,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
                 }
 
                 @Override
@@ -192,7 +191,7 @@ class SimpleDuplexHandlerTest {
                                               final Address sender,
                                               final List<?> msg) {
                     // Emit this message as outbound message to test
-                    ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, sender));
+                    ctx.writeAndFlush(new AddressedMessage<>((Object) msg, sender));
                 }
             };
 

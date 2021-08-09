@@ -25,8 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -264,7 +264,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
                 assertNotNull(pipeline.readOutbound());
             }
@@ -279,9 +279,9 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                assertEquals(new MigrationOutboundMessage<>(message, recipient), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();

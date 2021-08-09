@@ -30,7 +30,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -143,7 +142,7 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
         else {
             // passthrough message
             final CompletableFuture<Void> future1 = new CompletableFuture<>();
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient)))).combine(future1);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient)))).combine(future1);
             FutureCombiner.getInstance()
                     .add(future1)
                     .add(checkForUnreachableSuperPeers(ctx, recipient))

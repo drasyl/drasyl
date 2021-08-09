@@ -29,7 +29,6 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.Identity;
@@ -257,9 +256,9 @@ class ChunkingHandlerTest {
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipientAddress));
+                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
 
-                    assertEquals(pipeline.readOutbound(), new MigrationOutboundMessage<>(msg, recipientAddress));
+                    assertEquals(pipeline.readOutbound(), new AddressedMessage<>(msg, recipientAddress));
                 }
                 finally {
                     pipeline.drasylClose();
@@ -280,7 +279,7 @@ class ChunkingHandlerTest {
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
                     final ChannelPromise promise = pipeline.newPromise();
-                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) address), promise);
+                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) address), promise);
                     assertFalse(promise.isSuccess());
 
                     assertNull(pipeline.readOutbound());
@@ -306,9 +305,9 @@ class ChunkingHandlerTest {
                 final ChannelInboundHandler handler = new ChunkingHandler();
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, address));
+                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, address));
 
-                    assertThat(((MigrationOutboundMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
+                    assertThat(((AddressedMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
                         @Override
                         public void describeTo(final Description description) {
 
@@ -319,7 +318,7 @@ class ChunkingHandlerTest {
                             return m instanceof HeadChunkMessage && ((HeadChunkMessage) m).getTotalChunks().getValue() == 3 && m.getBytes().readableBytes() <= remoteMessageMtu;
                         }
                     });
-                    assertThat(((MigrationOutboundMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
+                    assertThat(((AddressedMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
                         @Override
                         public void describeTo(final Description description) {
 
@@ -330,7 +329,7 @@ class ChunkingHandlerTest {
                             return m instanceof BodyChunkMessage && ((BodyChunkMessage) m).getChunkNo().getValue() == 1 && m.getBytes().readableBytes() <= remoteMessageMtu;
                         }
                     });
-                    assertThat(((MigrationOutboundMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
+                    assertThat(((AddressedMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
                         @Override
                         public void describeTo(final Description description) {
 
@@ -359,9 +358,9 @@ class ChunkingHandlerTest {
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipientAddress));
+                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
 
-                    assertEquals(new MigrationOutboundMessage<>(msg, recipientAddress), pipeline.readOutbound());
+                    assertEquals(new AddressedMessage<>(msg, recipientAddress), pipeline.readOutbound());
                 }
                 finally {
                     pipeline.drasylClose();

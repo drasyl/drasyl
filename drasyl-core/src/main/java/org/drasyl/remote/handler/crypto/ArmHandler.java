@@ -25,7 +25,6 @@ import com.google.common.cache.CacheBuilder;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.LongTimeEncryptionEvent;
@@ -401,13 +400,13 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
                                    final FullReadMessage<?> msg,
                                    final CompletableFuture<Void> future) throws Exception {
         if (msg.getRecipient() == null) {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, recipient)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient)))).combine(future);
             return;
         }
 
         if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())
                 || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())) {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, recipient)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient)))).combine(future);
             return;
         }
 

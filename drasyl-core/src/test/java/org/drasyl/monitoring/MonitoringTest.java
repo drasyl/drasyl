@@ -28,7 +28,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -144,9 +143,9 @@ class MonitoringTest {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                assertEquals(new MigrationOutboundMessage<>(message, recipient), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();

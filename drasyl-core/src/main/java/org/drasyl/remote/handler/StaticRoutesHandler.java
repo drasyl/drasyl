@@ -25,7 +25,6 @@ import com.typesafe.config.Config;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
@@ -65,11 +64,11 @@ public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, Appli
         final InetSocketAddressWrapper staticAddress = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
         if (staticAddress != null) {
             LOG.trace("Send message `{}` via static route {}.", () -> envelope, () -> staticAddress);
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) envelope, (Address) staticAddress)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) envelope, (Address) staticAddress)))).combine(future);
         }
         else {
             // passthrough message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) envelope, (Address) recipient)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) envelope, (Address) recipient)))).combine(future);
         }
     }
 

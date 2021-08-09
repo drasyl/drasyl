@@ -80,20 +80,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
 
         // my tail
         pipeline().addLast("MY_TAIL", new ChannelInboundHandlerAdapter() {
-//            @Override
-//            public void channelRead(final ChannelHandlerContext ctx,
-//                                    final Object msg) throws Exception {
-//                if (msg instanceof MigrationInboundMessage) {
-//                    final MigrationInboundMessage<?, ?> m = (MigrationInboundMessage<?, ?>) msg;
-//                    if (m.address() instanceof IdentityPublicKey) {
-//                        final IdentityPublicKey senderAddress = (IdentityPublicKey) m.address();
-//                        inboundEvents.onNext(MessageEvent.of(senderAddress, m.message()));
-//                    }
-//                }
-//
-//                super.channelRead(ctx, msg);
-//            }
-
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,
                                            final Object evt) throws Exception {

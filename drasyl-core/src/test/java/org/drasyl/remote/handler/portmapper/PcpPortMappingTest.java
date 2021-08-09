@@ -26,7 +26,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.annotations.NonNull;
-import org.drasyl.channel.MigrationOutboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -70,7 +70,7 @@ public class PcpPortMappingTest {
 
             new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier).start(ctx, 12345, onFailure);
 
-            verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
+            verify(ctx).writeAndFlush(any(AddressedMessage.class));
         }
     }
 
@@ -86,7 +86,7 @@ public class PcpPortMappingTest {
 
             verify(timeoutGuard).cancel(false);
             verify(refreshTask).cancel(false);
-            verify(ctx).writeAndFlush(any(MigrationOutboundMessage.class));
+            verify(ctx).writeAndFlush(any(AddressedMessage.class));
         }
     }
 

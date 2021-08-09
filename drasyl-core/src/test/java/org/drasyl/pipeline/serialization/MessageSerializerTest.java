@@ -27,7 +27,6 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
@@ -158,9 +157,9 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>("Hello World", identity.getIdentityPublicKey()));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>("Hello World", identity.getIdentityPublicKey()));
 
-                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
 
             }
             finally {
@@ -179,9 +178,9 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, identity.getIdentityPublicKey()));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, identity.getIdentityPublicKey()));
 
-                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -194,7 +193,7 @@ class MessageSerializerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient), promise);
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient), promise);
                 assertFalse(promise.isSuccess());
 
                 assertNull(pipeline.readOutbound());
@@ -214,7 +213,7 @@ class MessageSerializerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient), promise);
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient), promise);
 
                 assertFalse(promise.isSuccess());
                 assertNull(pipeline.readOutbound());
@@ -231,9 +230,9 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(null, identity.getIdentityPublicKey()));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(null, identity.getIdentityPublicKey()));
 
-                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
             }
             finally {
                 pipeline.drasylClose();

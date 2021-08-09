@@ -27,7 +27,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -131,10 +130,10 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) applicationMessage, receiveAddress));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) applicationMessage, receiveAddress));
 
-                assertEquals(applicationMessage, ((MigrationOutboundMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
-                assertThat(((MigrationOutboundMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+                assertEquals(applicationMessage, ((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
+                assertThat(((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -161,9 +160,9 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, receiveAddress));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(new MigrationOutboundMessage<>(msg, receiveAddress), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(msg, receiveAddress), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -183,9 +182,9 @@ class ArmHandlerTest {
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork());
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, receiveAddress));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(new MigrationOutboundMessage<>(msg, receiveAddress), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(msg, receiveAddress), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -209,9 +208,9 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, receiveAddress));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(new MigrationOutboundMessage<>(msg, receiveAddress), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(msg, receiveAddress), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -250,9 +249,9 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, receiveAddress));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(msg, ((MigrationOutboundMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
+                assertEquals(msg, ((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
             }
             finally {
                 pipeline.drasylClose();
@@ -279,10 +278,10 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
 
-                assertThat(((MigrationOutboundMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(ApplicationMessage.class));
-                assertThat(((MigrationOutboundMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+                assertThat(((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(ApplicationMessage.class));
+                assertThat(((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -306,7 +305,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, receiveAddress));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
                 assertNotNull(pipeline.readOutbound());
             }
@@ -369,7 +368,7 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg.arm(Crypto.INSTANCE, sessionPairSender), (Address) receiveAddress));
 
-                assertThat(((MigrationOutboundMessage<ArmedMessage, Address>) pipeline.readOutbound()).message().disarmAndRelease(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+                assertThat(((AddressedMessage<ArmedMessage, Address>) pipeline.readOutbound()).message().disarmAndRelease(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -496,7 +495,7 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
 
-                assertThat(((MigrationOutboundMessage<ArmedMessage, Address>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairSender), instanceOf(KeyExchangeMessage.class));
+                assertThat(((AddressedMessage<ArmedMessage, Address>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairSender), instanceOf(KeyExchangeMessage.class));
                 observerEvents.assertNoValues();
             }
             finally {
@@ -631,9 +630,9 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
 
-                assertEquals(new MigrationOutboundMessage<>(armedMsg, receiveAddress), pipeline.readOutbound());
+                assertEquals(new AddressedMessage<>(armedMsg, receiveAddress), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -709,9 +708,9 @@ class ArmHandlerTest {
                 doReturn(true).when(agreement).isInitialized();
                 doReturn(false).when(agreement).isRenewable();
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, receiveAddress));
+                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(RemoteMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(RemoteMessage.class));
             }
             finally {
                 pipeline.drasylClose();

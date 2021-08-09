@@ -23,8 +23,8 @@ package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
@@ -58,15 +58,15 @@ class SimpleOutboundHandlerTest {
                                            final Address recipient,
                                            final byte[] msg,
                                            final CompletableFuture<Void> future) {
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new String(msg), recipient)))).combine(future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new String(msg), recipient)))).combine(future);
             }
         };
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>("Hallo Welt".getBytes(), recipient));
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>("Hallo Welt".getBytes(), recipient));
 
-            assertEquals(new MigrationOutboundMessage<>("Hallo Welt", recipient), pipeline.readOutbound());
+            assertEquals(new AddressedMessage<>("Hallo Welt", recipient), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();
@@ -81,15 +81,15 @@ class SimpleOutboundHandlerTest {
                                            final Address recipient,
                                            final byte[] msg,
                                            final CompletableFuture<Void> future) {
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new String(msg), recipient)))).combine(future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new String(msg), recipient)))).combine(future);
             }
         };
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(1337, recipient));
+            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(1337, recipient));
 
-            assertEquals(new MigrationOutboundMessage<>(1337, recipient), pipeline.readOutbound());
+            assertEquals(new AddressedMessage<>(1337, recipient), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();

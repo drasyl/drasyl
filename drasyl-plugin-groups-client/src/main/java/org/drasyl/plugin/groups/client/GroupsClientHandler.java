@@ -23,7 +23,7 @@ package org.drasyl.plugin.groups.client;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationOutboundMessage;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -127,7 +127,7 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
             final GroupUri groupURI = entry.getValue();
             try {
                 final CompletableFuture<Void> future = new CompletableFuture<>();
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupLeaveMessage(group), (Address) groupURI.getManager())))).combine(future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupLeaveMessage(group), (Address) groupURI.getManager())))).combine(future);
                 future.get();
             }
             catch (final InterruptedException e) {
@@ -233,7 +233,7 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
         ctx.fireUserEventTriggered(GroupJoinedEvent.of(
                 group,
                 msg.getMembers(),
-                () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupLeaveMessage(group), sender)))).combine(new CompletableFuture<>())));
+                () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupLeaveMessage(group), sender)))).combine(new CompletableFuture<>())));
     }
 
     /**
@@ -249,7 +249,7 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
         final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), (Address) groupManager)))).combine(new CompletableFuture<>());
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), (Address) groupManager)))).combine(new CompletableFuture<>());
 
         // Add re-try task
         if (!renewTasks.containsKey(group.getGroup())) {

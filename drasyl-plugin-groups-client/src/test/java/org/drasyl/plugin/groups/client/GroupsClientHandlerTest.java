@@ -27,7 +27,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -136,7 +135,7 @@ class GroupsClientHandlerTest {
                 pipeline.pipeline().addLast("handler", handler);
                 pipeline.pipeline().remove("handler");
 
-                assertEquals(new GroupLeaveMessage(group), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new GroupLeaveMessage(group), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
 
                 verify(renewTasks).clear();
             }
@@ -188,7 +187,7 @@ class GroupsClientHandlerTest {
                             .assertValue(event);
                 });
 
-                assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
             }
             finally {
                 pipeline.drasylClose();
