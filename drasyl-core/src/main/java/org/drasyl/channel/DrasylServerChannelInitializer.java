@@ -105,7 +105,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
         ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
             @Override
             public void exceptionCaught(final ChannelHandlerContext ctx,
-                                        final Throwable e) throws Exception {
+                                        final Throwable e) {
                 LOG.warn("drasyl node faced error and will shut down:", e);
                 ctx.pipeline().fireUserEventTriggered(NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e));
                 ch.close();
