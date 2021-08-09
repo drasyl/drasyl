@@ -24,13 +24,10 @@ package org.drasyl.pipeline.skeleton;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -73,38 +70,27 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Channe
      * @param ctx       handler context
      * @param recipient the recipient of the message
      * @param msg       the message
-     * @param future    a future for the message
+     * @param promise   a future for the message
      */
     @SuppressWarnings("java:S112")
     protected abstract void matchedOutbound(ChannelHandlerContext ctx,
                                             A recipient,
                                             O msg,
-                                            CompletableFuture<Void> future) throws Exception;
+                                            ChannelPromise promise) throws Exception;
 
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) {
+                      final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage) {
-            final AddressedMessage<?, ? extends Address> migrationMsg = (AddressedMessage<?, ? extends Address>) msg;
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            FutureUtil.combine(future, promise);
-            try {
-                final Address recipient = migrationMsg.address();
-                final Object msg1 = migrationMsg.message();
-                if (matcherMessage.match(msg1) && matcherAddress.match(recipient)) {
-                    @SuppressWarnings("unchecked") final O castedMsg = (O) msg1;
-                    @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
-                    matchedOutbound(ctx, castedAddress, castedMsg, future);
-                }
-                else {
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg1, recipient)))).combine(future);
-                }
+            final AddressedMessage<?, ? extends Address> addressedMsg = (AddressedMessage<?, ? extends Address>) msg;
+            if (matcherMessage.match(addressedMsg.message()) && matcherAddress.match(addressedMsg.address())) {
+                @SuppressWarnings("unchecked") final O castedMsg = (O) addressedMsg.message();
+                @SuppressWarnings("unchecked") final A castedAddress = (A) addressedMsg.address();
+                matchedOutbound(ctx, castedAddress, castedMsg, promise);
             }
-            catch (final Exception e) {
-                future.completeExceptionally(e);
-                ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(migrationMsg.message());
+            else {
+                ctx.writeAndFlush(msg, promise);
             }
         }
         else {

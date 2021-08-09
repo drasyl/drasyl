@@ -23,6 +23,7 @@ package org.drasyl;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -589,9 +590,9 @@ class DrasylNodeIT {
                     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                    final Address recipient,
                                                    final ByteBuf msg,
-                                                   final CompletableFuture<Void> future) {
+                                                   final ChannelPromise promise) {
                         LOG.trace("UDP message blocked: {}", msg);
-                        future.complete(null);
+                        promise.setSuccess();
                     }
                 });
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client"));

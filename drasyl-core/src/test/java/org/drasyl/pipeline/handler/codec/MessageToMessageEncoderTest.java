@@ -36,7 +36,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -120,13 +119,13 @@ class MessageToMessageEncoderTest {
             protected void matchedOutbound(final ChannelHandlerContext ctx,
                                            final Address recipient,
                                            final Object msg,
-                                           final CompletableFuture<Void> future) {
+                                           final ChannelPromise promise) {
                 if (!firstWritten) {
                     firstWritten = true;
-                    future.complete(null);
+                    promise.setSuccess();
                 }
                 else {
-                    future.completeExceptionally(new Exception());
+                    promise.setFailure(new Exception());
                 }
             }
         }, new MessageToMessageEncoder<>() {

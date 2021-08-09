@@ -22,6 +22,7 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -29,14 +30,10 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -57,8 +54,8 @@ class SimpleOutboundHandlerTest {
             protected void matchedOutbound(final ChannelHandlerContext ctx,
                                            final Address recipient,
                                            final byte[] msg,
-                                           final CompletableFuture<Void> future) {
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new String(msg), recipient)))).combine(future);
+                                           final ChannelPromise promise) {
+                ctx.writeAndFlush(new AddressedMessage<>(new String(msg), recipient), promise);
             }
         };
 
@@ -80,8 +77,8 @@ class SimpleOutboundHandlerTest {
             protected void matchedOutbound(final ChannelHandlerContext ctx,
                                            final Address recipient,
                                            final byte[] msg,
-                                           final CompletableFuture<Void> future) {
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new String(msg), recipient)))).combine(future);
+                                           final ChannelPromise promise) {
+                ctx.writeAndFlush(new AddressedMessage<>(new String(msg), recipient), promise);
             }
         };
 

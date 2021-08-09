@@ -22,17 +22,16 @@
 package org.drasyl.pipeline.handler.codec;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCounted;
+import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * {@link SimpleOutboundHandler} which encodes from one message to one ore more other message(s).
@@ -60,7 +59,7 @@ public abstract class MessageToMessageEncoder<O, A extends Address> extends Simp
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final A recipient,
                                    final O msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final ChannelPromise promise) throws Exception {
         final List<Object> out = new ArrayList<>();
         try {
             try {
@@ -76,18 +75,18 @@ public abstract class MessageToMessageEncoder<O, A extends Address> extends Simp
 
             final int size = out.size();
             if (size == 1) {
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(out.get(0), recipient)))).combine(future);
+                ctx.writeAndFlush(new AddressedMessage<>(out.get(0), recipient), promise);
             }
             else {
-                final FutureCombiner combiner = FutureCombiner.getInstance();
+                final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
 
                 for (final Object o : out) {
-                    final CompletableFuture<Void> future1 = new CompletableFuture<>();
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(o, recipient)))).combine(future1);
-                    combiner.add(future1);
+                    final ChannelPromise promise1 = ctx.newPromise();
+                    ctx.writeAndFlush(new AddressedMessage<>(o, recipient), promise1);
+                    combiner.add(promise1);
                 }
 
-                combiner.combine(future);
+                combiner.finish(promise);
             }
         }
         catch (final EncoderException e) {

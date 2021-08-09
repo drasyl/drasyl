@@ -22,9 +22,11 @@
 package org.drasyl.pipeline.handler.codec;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
+import org.drasyl.util.FutureUtil;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -93,7 +95,9 @@ public abstract class MessageToMessageCodec<I, O, A extends Address> extends Sim
                                    final A recipient,
                                    final O msg,
                                    final CompletableFuture<Void> future) throws Exception {
-        encoder.matchedOutbound(ctx, recipient, msg, future);
+        final ChannelPromise promise = ctx.newPromise();
+        FutureUtil.combine(promise, future);
+        encoder.matchedOutbound(ctx, recipient, msg, promise);
     }
 
     /**
