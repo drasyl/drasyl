@@ -33,7 +33,7 @@ import org.drasyl.event.PeerEvent;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.handler.filter.OutboundMessageFilter;
+import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -584,17 +584,10 @@ class DrasylNodeIT {
                         .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
                         .build();
                 client = new EmbeddedNode(config).started();
-                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new OutboundMessageFilter<ByteBuf, Address>() {
+                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new SimpleOutboundHandler<ByteBuf, Address>() {
                     @Override
-                    protected boolean accept(final ChannelHandlerContext ctx,
-                                             final Address sender,
-                                             final ByteBuf msg) {
-                        return false; // drop all messages
-                    }
-
-                    @Override
-                    protected void messageRejected(final ChannelHandlerContext ctx,
-                                                   final Address sender,
+                    protected void matchedOutbound(final ChannelHandlerContext ctx,
+                                                   final Address recipient,
                                                    final ByteBuf msg,
                                                    final CompletableFuture<Void> future) {
                         LOG.trace("UDP message blocked: {}", msg);
