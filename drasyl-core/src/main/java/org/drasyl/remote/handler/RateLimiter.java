@@ -32,7 +32,6 @@ import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.UniteMessage;
 import org.drasyl.util.Pair;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
@@ -83,8 +82,7 @@ public class RateLimiter extends InboundMessageFilter<FullReadMessage<?>, Addres
     @Override
     protected void messageRejected(final ChannelHandlerContext ctx,
                                    final Address sender,
-                                   final FullReadMessage<?> msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final FullReadMessage<?> msg) throws Exception {
         throw new Exception("Message exceeding rate limit dropped");
     }
 

@@ -28,8 +28,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
 import org.drasyl.remote.protocol.RemoteMessage;
 
-import java.util.concurrent.CompletableFuture;
-
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 
@@ -57,8 +55,7 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteM
     @Override
     protected void messageRejected(final ChannelHandlerContext ctx,
                                    final Address sender,
-                                   final RemoteMessage msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final RemoteMessage msg) throws Exception {
         throw new Exception("Message `" + msg.getNonce() + "` with invalid proof of work dropped.");
     }
 }

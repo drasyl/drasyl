@@ -29,8 +29,6 @@ import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 
-import java.util.concurrent.CompletableFuture;
-
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
 /**
@@ -57,8 +55,7 @@ public final class OtherNetworkFilter extends InboundMessageFilter<RemoteMessage
     @Override
     protected void messageRejected(final ChannelHandlerContext ctx,
                                    final Address sender,
-                                   final RemoteMessage msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final RemoteMessage msg) throws Exception {
         throw new Exception("Message from other network dropped");
     }
 }

@@ -37,8 +37,8 @@ import java.util.concurrent.CompletableFuture;
  * filter. Basically you have to implement {@link #accept(ChannelHandlerContext, Address, Object)}
  * to decided whether you want to pass through or drop a message.
  * <p>
- * Furthermore overriding {@link #messageRejected(ChannelHandlerContext, Address, Object,
- * CompletableFuture)} gives you the flexibility to respond to rejected messages.
+ * Furthermore overriding {@link #messageRejected(ChannelHandlerContext, Address, Object)} gives you
+ * the flexibility to respond to rejected messages.
  * <p>
  * This class will automatically call {@link ReferenceCounted#release()} on rejected messages and
  * complete the corresponding future.
@@ -55,7 +55,7 @@ public abstract class InboundMessageFilter<I, A extends Address> extends SimpleI
                 ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender, future));
             }
             else {
-                messageRejected(ctx, sender, msg, future);
+                messageRejected(ctx, sender, msg);
                 ReferenceCountUtil.safeRelease(msg);
                 future.complete(null);
             }
@@ -89,8 +89,7 @@ public abstract class InboundMessageFilter<I, A extends Address> extends SimpleI
     @SuppressWarnings({ "unused", "RedundantThrows", "java:S112" })
     protected void messageRejected(final ChannelHandlerContext ctx,
                                    final A sender,
-                                   final I msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final I msg) throws Exception {
         // do nothing
     }
 }
