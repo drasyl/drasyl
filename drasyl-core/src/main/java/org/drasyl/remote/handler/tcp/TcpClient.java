@@ -27,6 +27,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
@@ -130,23 +131,23 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final ByteBuf msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final ChannelPromise promise) throws Exception {
         // check if we can route the message via a tcp connection
         final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
         if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
             LOG.trace("Send message `{}` via TCP connection to `{}`.", () -> msg, () -> recipient);
-            FutureCombiner.getInstance()
-                    .add(FutureUtil.toFuture(mySuperPeerChannel.channel().writeAndFlush(msg)))
-                    .combine(future);
+            mySuperPeerChannel.channel().writeAndFlush(msg, promise);
         }
         else {
             // passthrough message
-            final CompletableFuture<Void> future1 = new CompletableFuture<>();
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient)))).combine(future1);
+
+            final ChannelPromise promise1 = ctx.newPromise();
+            ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient), promise1);
+
             FutureCombiner.getInstance()
-                    .add(future1)
+                    .add(FutureUtil.toFuture(promise1))
                     .add(checkForUnreachableSuperPeers(ctx, recipient))
-                    .combine(future);
+                    .combine(FutureUtil.toFuture(promise));
         }
     }
 

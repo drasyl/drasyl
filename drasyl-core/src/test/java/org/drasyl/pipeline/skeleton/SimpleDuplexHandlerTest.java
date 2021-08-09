@@ -22,6 +22,7 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
@@ -33,8 +34,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
 import org.drasyl.remote.protocol.RemoteMessage;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -84,7 +82,7 @@ class SimpleDuplexHandlerTest {
                 protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final IdentityPublicKey recipient,
                                                final byte[] msg,
-                                               final CompletableFuture<Void> future) {
+                                               final ChannelPromise promise) {
                     // Emit this message as inbound message to test
                     ctx.fireChannelRead(new AddressedMessage<>(msg, identity.getIdentityPublicKey()));
                 }
@@ -116,7 +114,7 @@ class SimpleDuplexHandlerTest {
                 protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final IdentityPublicKey recipient,
                                                final MyMessage msg,
-                                               final CompletableFuture<Void> future) {
+                                               final ChannelPromise promise) {
                     // Emit this message as inbound message to test
                     ctx.fireChannelRead(new AddressedMessage<>((Object) msg, (Address) msg.getSender()));
                 }
@@ -145,8 +143,8 @@ class SimpleDuplexHandlerTest {
                 protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final Address recipient,
                                                final Object msg,
-                                               final CompletableFuture<Void> future) {
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
+                                               final ChannelPromise promise) {
+                    ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
                 }
 
                 @Override
@@ -182,8 +180,8 @@ class SimpleDuplexHandlerTest {
                 protected void matchedOutbound(final ChannelHandlerContext ctx,
                                                final Address recipient,
                                                final Object msg,
-                                               final CompletableFuture<Void> future) {
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
+                                               final ChannelPromise promise) {
+                    ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
                 }
 
                 @Override

@@ -23,19 +23,17 @@ package org.drasyl.intravm;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -71,12 +69,12 @@ public class IntraVmDiscovery extends SimpleDuplexHandler<Object, Object, Addres
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
-                                   final CompletableFuture<Void> future) {
+                                   final ChannelPromise promise) {
         final ChannelHandlerContext discoveree = discoveries.get(Pair.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), recipient));
 
         if (discoveree == null) {
             // passthrough message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
         }
         else {
             discoveree.fireChannelRead(new AddressedMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));

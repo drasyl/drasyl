@@ -28,6 +28,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylConfig;
@@ -39,8 +40,6 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.logging.Logger;
@@ -49,7 +48,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -187,17 +185,15 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final ByteBuf msg,
-                                   final CompletableFuture<Void> future) {
+                                   final ChannelPromise promise) {
         if (channel != null && channel.isWritable()) {
             final DatagramPacket packet = new DatagramPacket(msg, recipient);
             LOG.trace("Send Datagram {}", packet);
-            FutureCombiner.getInstance()
-                    .add(FutureUtil.toFuture(channel.writeAndFlush(packet)))
-                    .combine(future);
+            channel.writeAndFlush(packet, promise);
         }
         else {
             ReferenceCountUtil.safeRelease(msg);
-            future.completeExceptionally(new Exception("UDP channel is not present or is not writable."));
+            promise.setFailure(new Exception("UDP channel is not present or is not writable."));
         }
     }
 

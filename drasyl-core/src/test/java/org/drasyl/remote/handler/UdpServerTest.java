@@ -57,7 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -149,15 +148,13 @@ class UdpServerTest {
         void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             final InetSocketAddressWrapper recipient = new InetSocketAddressWrapper(1234);
             when(channel.isWritable()).thenReturn(true);
-            when(channel.writeAndFlush(any()).isDone()).thenReturn(true);
-            when(channel.writeAndFlush(any()).isSuccess()).thenReturn(true);
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
-                verify(channel, times(3)).writeAndFlush(any());
+                verify(channel).writeAndFlush(any(), any());
             }
             finally {
                 pipeline.drasylClose();

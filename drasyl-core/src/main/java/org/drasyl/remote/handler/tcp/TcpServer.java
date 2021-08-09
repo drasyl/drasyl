@@ -27,6 +27,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -37,8 +38,6 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -119,24 +118,22 @@ public class TcpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final ByteBuf msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final ChannelPromise promise) throws Exception {
         // check if we can route the message via a tcp connection
         final Channel client = clientChannels.get(recipient);
         if (client != null) {
             if (client.isWritable()) {
                 LOG.trace("Send message `{}` via TCP to client `{}`", msg, recipient);
-                FutureCombiner.getInstance()
-                        .add(FutureUtil.toFuture(client.writeAndFlush(msg)))
-                        .combine(future);
+                client.writeAndFlush(msg, promise);
             }
             else {
                 ReferenceCountUtil.safeRelease(msg);
-                future.completeExceptionally(new Exception("TCP channel is not writable."));
+                promise.setFailure(new Exception("TCP channel is not writable."));
             }
         }
         else {
             // message is not addressed to any of our clients. passthrough message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
         }
     }
 

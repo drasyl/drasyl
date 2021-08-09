@@ -22,18 +22,16 @@
 package org.drasyl.pipeline.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 
 import java.io.PrintStream;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiPredicate;
@@ -136,13 +134,13 @@ public class MessagesThroughputHandler extends SimpleDuplexHandler<Object, Objec
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
-                                   final CompletableFuture<Void> future) {
+                                   final ChannelPromise promise) {
         outboundMessages.increment();
         if (consumeOutbound.test(recipient, msg)) {
-            future.complete(null);
+            promise.setSuccess();
         }
         else {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
         }
     }
 

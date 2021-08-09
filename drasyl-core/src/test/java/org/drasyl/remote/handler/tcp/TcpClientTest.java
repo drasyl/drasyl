@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -163,7 +164,7 @@ public class TcpClientTest {
             try {
                 pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
-                verify(superPeerChannel.channel()).writeAndFlush(msg);
+                verify(superPeerChannel.channel()).writeAndFlush(eq(msg), any());
                 assertNull(pipeline.readOutbound());
             }
             finally {

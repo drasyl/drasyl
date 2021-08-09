@@ -23,6 +23,7 @@ package org.drasyl.remote.handler;
 
 import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
@@ -232,7 +233,7 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final Address recipient,
                                    final ApplicationMessage msg,
-                                   final CompletableFuture<Void> future) throws IOException {
+                                   final ChannelPromise promise) throws IOException {
         if (recipient instanceof IdentityPublicKey) {
             // record communication to keep active connections alive
             if (directConnectionPeers.contains(recipient)) {
@@ -240,14 +241,14 @@ public class InternetDiscovery extends SimpleDuplexHandler<RemoteMessage, Applic
                 peer.applicationTrafficOccurred();
             }
 
-            if (!processMessage(ctx, (IdentityPublicKey) recipient, msg, future)) {
+            if (!processMessage(ctx, (IdentityPublicKey) recipient, msg, FutureUtil.toFuture(promise))) {
                 // passthrough message
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient)))).combine(future);
+                ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient), promise);
             }
         }
         else {
             // passthrough message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient), promise);
         }
     }
 

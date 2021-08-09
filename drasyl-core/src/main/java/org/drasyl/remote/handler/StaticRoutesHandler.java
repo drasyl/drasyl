@@ -24,19 +24,15 @@ package org.drasyl.remote.handler;
 import com.typesafe.config.Config;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.protocol.ApplicationMessage;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-
-import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
@@ -60,15 +56,15 @@ public final class StaticRoutesHandler extends SimpleDuplexHandler<Object, Appli
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final IdentityPublicKey recipient,
                                    final ApplicationMessage envelope,
-                                   final CompletableFuture<Void> future) {
+                                   final ChannelPromise promise) {
         final InetSocketAddressWrapper staticAddress = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
         if (staticAddress != null) {
             LOG.trace("Send message `{}` via static route {}.", () -> envelope, () -> staticAddress);
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) envelope, (Address) staticAddress)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(envelope, staticAddress), promise);
         }
         else {
             // passthrough message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) envelope, (Address) recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(envelope, recipient), promise);
         }
     }
 

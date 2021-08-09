@@ -24,6 +24,7 @@ package org.drasyl.remote.handler.crypto;
 import com.google.common.cache.CacheBuilder;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -398,19 +399,19 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final Address recipient,
                                    final FullReadMessage<?> msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final ChannelPromise promise) throws Exception {
         if (msg.getRecipient() == null) {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
             return;
         }
 
         if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())
                 || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient())) {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
             return;
         }
 
-        filteredOutbound(ctx, recipient, msg, future);
+        filteredOutbound(ctx, recipient, msg, FutureUtil.toFuture(promise));
     }
 
     @Override

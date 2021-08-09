@@ -33,6 +33,8 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
@@ -56,7 +58,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @State(Scope.Benchmark)
 public class InternetDiscoveryBenchmark extends AbstractBenchmark {
@@ -68,7 +72,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     private ChannelHandlerContext ctx;
     private Address recipient;
     private ApplicationMessage msg;
-    private CompletableFuture<Void> future;
+    private ChannelPromise future;
     private Set<IdentityPublicKey> superPeers;
     private IdentityPublicKey bestSuperPeer;
 
@@ -86,7 +90,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
         msg = ApplicationMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), recipient, byte[].class.getName(), ByteString.EMPTY);
 
-        future = new CompletableFuture<>();
+        future = new MyChannelPromise();
 
         directConnectionPeers.add(recipient);
         final Peer peer = new Peer();
@@ -319,5 +323,163 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     }
 
     private static class MyAddress implements Address {
+    }
+
+    private static class MyChannelPromise implements ChannelPromise {
+        @Override
+        public Channel channel() {
+            return null;
+        }
+
+        @Override
+        public ChannelPromise setSuccess(final Void result) {
+            return null;
+        }
+
+        @Override
+        public boolean trySuccess(final Void result) {
+            return false;
+        }
+
+        @Override
+        public ChannelPromise setSuccess() {
+            return null;
+        }
+
+        @Override
+        public boolean trySuccess() {
+            return false;
+        }
+
+        @Override
+        public ChannelPromise setFailure(final Throwable cause) {
+            return null;
+        }
+
+        @Override
+        public boolean tryFailure(final Throwable cause) {
+            return false;
+        }
+
+        @Override
+        public boolean setUncancellable() {
+            return false;
+        }
+
+        @Override
+        public boolean isSuccess() {
+            return false;
+        }
+
+        @Override
+        public boolean isCancellable() {
+            return false;
+        }
+
+        @Override
+        public Throwable cause() {
+            return null;
+        }
+
+        @Override
+        public ChannelPromise addListener(final GenericFutureListener<? extends Future<? super Void>> listener) {
+            return null;
+        }
+
+        @Override
+        public ChannelPromise addListeners(final GenericFutureListener<? extends Future<? super Void>>... listeners) {
+            return null;
+        }
+
+        @Override
+        public ChannelPromise removeListener(final GenericFutureListener<? extends Future<? super Void>> listener) {
+            return null;
+        }
+
+        @Override
+        public ChannelPromise removeListeners(final GenericFutureListener<? extends Future<? super Void>>... listeners) {
+            return null;
+        }
+
+        @Override
+        public ChannelPromise sync() throws InterruptedException {
+            return null;
+        }
+
+        @Override
+        public ChannelPromise syncUninterruptibly() {
+            return null;
+        }
+
+        @Override
+        public ChannelPromise await() throws InterruptedException {
+            return null;
+        }
+
+        @Override
+        public ChannelPromise awaitUninterruptibly() {
+            return null;
+        }
+
+        @Override
+        public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
+            return false;
+        }
+
+        @Override
+        public boolean await(final long timeoutMillis) throws InterruptedException {
+            return false;
+        }
+
+        @Override
+        public boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
+            return false;
+        }
+
+        @Override
+        public boolean awaitUninterruptibly(final long timeoutMillis) {
+            return false;
+        }
+
+        @Override
+        public Void getNow() {
+            return null;
+        }
+
+        @Override
+        public boolean cancel(final boolean mayInterruptIfRunning) {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public boolean isDone() {
+            return false;
+        }
+
+        @Override
+        public Void get() throws InterruptedException, ExecutionException {
+            return null;
+        }
+
+        @Override
+        public Void get(final long timeout,
+                        final TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            return null;
+        }
+
+        @Override
+        public boolean isVoid() {
+            return false;
+        }
+
+        @Override
+        public ChannelPromise unvoid() {
+            return null;
+        }
     }
 }

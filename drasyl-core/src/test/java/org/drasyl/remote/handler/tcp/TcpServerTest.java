@@ -134,7 +134,7 @@ class TcpServerTest {
             try {
                 pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
-                verify(client).writeAndFlush(any());
+                verify(client).writeAndFlush(any(), any());
             }
             finally {
                 pipeline.drasylClose();

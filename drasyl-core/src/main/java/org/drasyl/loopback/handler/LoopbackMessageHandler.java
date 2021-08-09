@@ -23,14 +23,11 @@ package org.drasyl.loopback.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
-
-import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
@@ -55,12 +52,12 @@ public class LoopbackMessageHandler extends SimpleDuplexHandler<Object, Object, 
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
-                                   final CompletableFuture<Void> future) {
+                                   final ChannelPromise promise) {
         if (started && ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(recipient)) {
             ctx.fireChannelRead(new AddressedMessage<>(msg, (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
         }
         else {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
         }
     }
 

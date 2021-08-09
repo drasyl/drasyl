@@ -90,7 +90,7 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Channe
                 matchedOutbound(ctx, castedAddress, castedMsg, promise);
             }
             else {
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
             }
         }
         else {

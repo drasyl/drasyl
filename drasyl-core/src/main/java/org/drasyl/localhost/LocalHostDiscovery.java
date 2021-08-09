@@ -23,16 +23,14 @@ package org.drasyl.localhost;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.ApplicationMessage;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.logging.Logger;
@@ -116,15 +114,15 @@ public class LocalHostDiscovery extends SimpleDuplexHandler<Object, ApplicationM
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final IdentityPublicKey recipient,
                                    final ApplicationMessage message,
-                                   final CompletableFuture<Void> future) {
+                                   final ChannelPromise promise) {
         final InetSocketAddressWrapper localAddress = routes.get(recipient);
         if (localAddress != null) {
             LOG.trace("Send message `{}` via local route {}.", () -> message, () -> localAddress);
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) message, (Address) localAddress)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(message, localAddress), promise);
         }
         else {
             // passthrough message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(message, recipient), promise);
         }
     }
 

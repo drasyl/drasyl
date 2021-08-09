@@ -27,6 +27,7 @@ import com.google.protobuf.CodedOutputStream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
@@ -126,7 +127,7 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final InetSocketAddressWrapper recipient,
                                    final RemoteMessage msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final ChannelPromise promise) throws Exception {
         if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getSender())) {
             // message from us, check if we have to chunk it
             final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
@@ -139,17 +140,17 @@ public class ChunkingHandler extends SimpleDuplexHandler<ChunkMessage, RemoteMes
             }
             else if (messageLength > ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageMtu()) {
                 // message is too big, we have to chunk it
-                chunkMessage(ctx, recipient, msg, future, messageByteBuf, messageLength);
+                chunkMessage(ctx, recipient, msg, FutureUtil.toFuture(promise), messageByteBuf, messageLength);
             }
             else {
                 ReferenceCountUtil.safeRelease(messageByteBuf);
                 // message is small enough. No chunking required
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient)))).combine(future);
+                ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
             }
         }
         else {
             // message not from us. Passthrough
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
         }
     }
 

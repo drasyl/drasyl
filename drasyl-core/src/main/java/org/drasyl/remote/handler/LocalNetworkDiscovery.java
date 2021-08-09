@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
@@ -153,14 +154,14 @@ public class LocalNetworkDiscovery extends SimpleDuplexHandler<DiscoveryMessage,
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final Address recipient,
                                    final RemoteMessage msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final ChannelPromise promise) throws Exception {
         final Peer peer = peers.get(recipient);
         if (peer != null) {
             LOG.trace("Send message `{}` via local network route `{}`.", () -> msg, peer::getAddress);
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) peer.getAddress())))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(msg, peer.getAddress()), promise);
         }
         else {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
         }
     }
 

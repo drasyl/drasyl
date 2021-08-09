@@ -28,12 +28,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -41,7 +40,6 @@ import org.drasyl.util.network.NetworkUtil;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -113,11 +111,11 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     protected void matchedOutbound(final ChannelHandlerContext ctx,
                                    final Address recipient,
                                    final Object msg,
-                                   final CompletableFuture<Void> future) {
+                                   final ChannelPromise promise) {
         ctx.executor().execute(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
 
         // passthrough message
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipient)))).combine(future);
+        ctx.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
     }
 
     synchronized void startMonitoring(final ChannelHandlerContext ctx) {
