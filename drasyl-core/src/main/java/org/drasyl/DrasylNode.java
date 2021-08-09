@@ -37,7 +37,6 @@ import org.drasyl.channel.DefaultDrasylServerChannel;
 import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.channel.DrasylChannelEventLoopGroupUtil;
 import org.drasyl.channel.DrasylServerChannelInitializer;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -482,18 +481,7 @@ public abstract class DrasylNode {
                 @Override
                 public void userEventTriggered(final ChannelHandlerContext ctx,
                                                final Object evt) {
-                    if (evt instanceof MigrationEvent) {
-                        final MigrationEvent e = (MigrationEvent) evt;
-
-                        try {
-                            onEvent(e.event());
-                            e.future().complete(null);
-                        }
-                        catch (final Exception ex) {
-                            e.future().completeExceptionally(ex);
-                        }
-                    }
-                    else if (evt instanceof Event) {
+                    if (evt instanceof Event) {
                         onEvent((Event) evt);
                     }
                     else if (evt instanceof Resolve) {

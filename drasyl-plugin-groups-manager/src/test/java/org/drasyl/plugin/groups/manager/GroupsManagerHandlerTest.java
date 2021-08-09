@@ -28,7 +28,6 @@ import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -174,7 +173,7 @@ class GroupsManagerHandlerTest {
             try {
                 final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
-                pipeline.pipeline().fireUserEventTriggered(new MigrationEvent(event));
+                pipeline.pipeline().fireUserEventTriggered(event);
 
                 testObserver.awaitCount(1)
                         .assertValueCount(1)

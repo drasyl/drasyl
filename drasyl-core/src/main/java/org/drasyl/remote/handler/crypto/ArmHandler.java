@@ -24,7 +24,6 @@ package org.drasyl.remote.handler.crypto;
 import com.google.common.cache.CacheBuilder;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.crypto.Crypto;
@@ -176,7 +175,7 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
                     session.getInitializedAgreements().remove(agreementId);
 
                     session.getCurrentActiveAgreement().computeOnCondition(a -> agreementId.equals(a.getAgreementId().orElse(null)), a -> {
-                        ctx.fireUserEventTriggered(new MigrationEvent(LongTimeEncryptionEvent.of(Peer.of(recipientsKey))));
+                        ctx.fireUserEventTriggered(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)));
 
                         return null;
                     });
@@ -256,7 +255,7 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
         return session.getCurrentActiveAgreement()
                 // remove stale agreement
                 .computeOnCondition(a -> a != null && a.isStale(), agreement -> {
-                    ctx.fireUserEventTriggered(new MigrationEvent(LongTimeEncryptionEvent.of(Peer.of(recipientsKey))));
+                    ctx.fireUserEventTriggered(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)));
 
                     return null;
                 })
@@ -311,7 +310,7 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
             session.getInitializedAgreements().put(id, initializedAgreement);
             session.getCurrentActiveAgreement().computeOnCondition(c -> true, f -> initializedAgreement);
 
-            ctx.fireUserEventTriggered(new MigrationEvent(PerfectForwardSecrecyEncryptionEvent.of(Peer.of(recipientsPublicKey))));
+            ctx.fireUserEventTriggered(PerfectForwardSecrecyEncryptionEvent.of(Peer.of(recipientsPublicKey)));
 
             return null;
         });
@@ -379,7 +378,7 @@ public class ArmHandler extends SimpleDuplexHandler<ArmedMessage, FullReadMessag
                                         final IdentityPublicKey recipientsKey) {
         // remove stale agreement
         final Optional<Agreement> agreement = session.getCurrentActiveAgreement().computeOnCondition(a -> a != null && a.isStale(), a -> {
-            ctx.fireUserEventTriggered(new MigrationEvent(LongTimeEncryptionEvent.of(Peer.of(recipientsKey))));
+            ctx.fireUserEventTriggered(LongTimeEncryptionEvent.of(Peer.of(recipientsKey)));
 
             return null;
         });

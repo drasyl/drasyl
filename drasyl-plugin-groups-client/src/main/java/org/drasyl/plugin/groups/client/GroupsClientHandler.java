@@ -23,9 +23,7 @@ package org.drasyl.plugin.groups.client;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationOutboundMessage;
-import org.drasyl.event.Event;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -93,16 +91,16 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
                                   final GroupsServerMessage msg,
                                   final CompletableFuture<Void> future) {
         if (msg instanceof MemberJoinedMessage) {
-            onMemberJoined(ctx, (MemberJoinedMessage) msg, future);
+            onMemberJoined(ctx, (MemberJoinedMessage) msg);
         }
         else if (msg instanceof MemberLeftMessage) {
             onMemberLeft(ctx, (MemberLeftMessage) msg, future);
         }
         else if (msg instanceof GroupWelcomeMessage) {
-            onWelcome(ctx, sender, (GroupWelcomeMessage) msg, future);
+            onWelcome(ctx, sender, (GroupWelcomeMessage) msg);
         }
         else if (msg instanceof GroupJoinFailedMessage) {
-            onJoinFailed(ctx, (GroupJoinFailedMessage) msg, future);
+            onJoinFailed(ctx, (GroupJoinFailedMessage) msg);
         }
     }
 
@@ -146,13 +144,10 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof MigrationEvent) {
-            final Event event = ((MigrationEvent) evt).event();
-            if (event instanceof NodeUpEvent) {
-                // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
-                ctx.executor().schedule(() -> groups.values().forEach(group ->
-                        joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
-            }
+        if (evt instanceof NodeUpEvent) {
+            // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
+            ctx.executor().schedule(() -> groups.values().forEach(group ->
+                    joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
         }
 
         ctx.fireUserEventTriggered(evt);
@@ -161,30 +156,22 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
     /**
      * Will be executed on {@link MemberJoinedMessage}.
      *
-     * @param ctx    the handling context
-     * @param msg    the member joined message
-     * @param future the message future
+     * @param ctx the handling context
+     * @param msg the member joined message
      */
     private static void onMemberJoined(final ChannelHandlerContext ctx,
-                                       final MemberJoinedMessage msg,
-                                       final CompletableFuture<Void> future) {
-        final CompletableFuture<Void> future1 = new CompletableFuture<>();
-        ctx.fireUserEventTriggered(new MigrationEvent(GroupMemberJoinedEvent.of(msg.getMember(), msg.getGroup()), future1));
-        FutureCombiner.getInstance()
-                .add(future1)
-                .combine(future);
+                                       final MemberJoinedMessage msg) {
+        ctx.fireUserEventTriggered(GroupMemberJoinedEvent.of(msg.getMember(), msg.getGroup()));
     }
 
     /**
      * Will be executed on {@link GroupJoinFailedMessage}.
      *
-     * @param ctx    the handling context
-     * @param msg    the join failed message
-     * @param future the message future
+     * @param ctx the handling context
+     * @param msg the join failed message
      */
     private void onJoinFailed(final ChannelHandlerContext ctx,
-                              final GroupJoinFailedMessage msg,
-                              final CompletableFuture<Void> future) {
+                              final GroupJoinFailedMessage msg) {
         final Group group = msg.getGroup();
 
         // cancel renew task
@@ -193,12 +180,8 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
             disposable.cancel(false);
         }
 
-        final CompletableFuture<Void> future1 = new CompletableFuture<>();
-        ctx.fireUserEventTriggered(new MigrationEvent(GroupJoinFailedEvent.of(group, msg.getReason(),
-                () -> joinGroup(ctx, groups.get(group), false)), future1));
-        FutureCombiner.getInstance()
-                .add(future1)
-                .combine(future);
+        ctx.fireUserEventTriggered(GroupJoinFailedEvent.of(group, msg.getReason(),
+                () -> joinGroup(ctx, groups.get(group), false)));
     }
 
     /**
@@ -220,18 +203,10 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
                 disposable.cancel(false);
             }
 
-            final CompletableFuture<Void> future1 = new CompletableFuture<>();
-            ctx.fireUserEventTriggered(new MigrationEvent(GroupLeftEvent.of(group, () -> joinGroup(ctx, groups.get(group), false)), future1));
-            FutureCombiner.getInstance()
-                    .add(future1)
-                    .combine(future);
+            ctx.fireUserEventTriggered(GroupLeftEvent.of(group, () -> joinGroup(ctx, groups.get(group), false)));
         }
         else {
-            final CompletableFuture<Void> future1 = new CompletableFuture<>();
-            ctx.fireUserEventTriggered(new MigrationEvent(GroupMemberLeftEvent.of(msg.getMember(), group), future1));
-            FutureCombiner.getInstance()
-                    .add(future1)
-                    .combine(future);
+            ctx.fireUserEventTriggered(GroupMemberLeftEvent.of(msg.getMember(), group));
         }
     }
 
@@ -241,12 +216,10 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
      * @param ctx    the handling context
      * @param sender the sender (group manager)
      * @param msg    the welcome message
-     * @param future the message future
      */
     private void onWelcome(final ChannelHandlerContext ctx,
                            final Address sender,
-                           final GroupWelcomeMessage msg,
-                           final CompletableFuture<Void> future) {
+                           final GroupWelcomeMessage msg) {
         final Group group = msg.getGroup();
         final Duration timeout = groups.get(group).getTimeout();
 
@@ -260,14 +233,10 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
         renewTasks.put(group, ctx.executor().scheduleAtFixedRate(() ->
                 joinGroup(ctx, groups.get(group), true), timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
 
-        final CompletableFuture<Void> future1 = new CompletableFuture<>();
-        ctx.fireUserEventTriggered(new MigrationEvent(GroupJoinedEvent.of(
+        ctx.fireUserEventTriggered(GroupJoinedEvent.of(
                 group,
                 msg.getMembers(),
-                () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupLeaveMessage(group), sender)))).combine(new CompletableFuture<Void>())), future1));
-        FutureCombiner.getInstance()
-                .add(future1)
-                .combine(future);
+                () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupLeaveMessage(group), sender)))).combine(new CompletableFuture<>())));
     }
 
     /**
@@ -283,7 +252,7 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
         final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), (Address) groupManager)))).combine(new CompletableFuture<Void>());
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), (Address) groupManager)))).combine(new CompletableFuture<>());
 
         // Add re-try task
         if (!renewTasks.containsKey(group.getGroup())) {

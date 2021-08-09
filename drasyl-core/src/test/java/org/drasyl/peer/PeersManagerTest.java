@@ -24,7 +24,7 @@ package org.drasyl.peer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.MigrationEvent;
+import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
@@ -151,7 +151,7 @@ class PeersManagerTest {
                                                  @Mock final Object path) {
             underTest.addPath(ctx, publicKey, path);
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e.event())));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
         }
 
         @Test
@@ -201,7 +201,7 @@ class PeersManagerTest {
 
             underTest.removePath(ctx, publicKey, path);
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> PeerRelayEvent.of(Peer.of(publicKey)).equals(e.event())));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerRelayEvent.of(Peer.of(publicKey)).equals(e)));
         }
 
         @AfterEach
@@ -231,7 +231,7 @@ class PeersManagerTest {
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> e.event() instanceof NodeOfflineEvent));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> e instanceof NodeOfflineEvent));
         }
 
         @Test
@@ -244,7 +244,7 @@ class PeersManagerTest {
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
 
-            verify(ctx, never()).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> e.event() instanceof NodeOfflineEvent));
+            verify(ctx, never()).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> e instanceof NodeOfflineEvent));
         }
 
         @AfterEach
@@ -274,8 +274,8 @@ class PeersManagerTest {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e.event())));
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> e.event() instanceof NodeOnlineEvent));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> e instanceof NodeOnlineEvent));
         }
 
         @AfterEach
@@ -333,7 +333,7 @@ class PeersManagerTest {
                                                                          @Mock final Object path) {
             underTest.addPathAndChildren(ctx, publicKey, path);
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<MigrationEvent>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e.event())));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
         }
 
         @Test

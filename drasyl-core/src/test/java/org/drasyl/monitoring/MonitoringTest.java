@@ -27,7 +27,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
@@ -114,7 +113,7 @@ class MonitoringTest {
             try {
                 final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
 
-                pipeline.pipeline().fireUserEventTriggered(new MigrationEvent(event));
+                pipeline.pipeline().fireUserEventTriggered(event);
 
                 inboundEvents.awaitCount(1)
                         .assertValue(event);

@@ -31,7 +31,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
@@ -109,10 +108,10 @@ class PluginsIT {
             environment.getPipeline().addFirst("TestHandler", new ChannelHandlerAdapter() {
                 @Override
                 public void handlerAdded(final ChannelHandlerContext ctx) {
-                    ctx.fireUserEventTriggered(new MigrationEvent(event1));
+                    ctx.fireUserEventTriggered(event1);
                 }
             });
-            environment.getPipeline().fireUserEventTriggered(new MigrationEvent(event2));
+            environment.getPipeline().fireUserEventTriggered(event2);
         }
     }
 }

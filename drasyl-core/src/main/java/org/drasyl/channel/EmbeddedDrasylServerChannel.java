@@ -97,9 +97,8 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,
                                            final Object evt) throws Exception {
-                if (evt instanceof MigrationEvent) {
-                    final MigrationEvent e = (MigrationEvent) evt;
-                    inboundEvents.onNext(e.event());
+                if (evt instanceof Event) {
+                    inboundEvents.onNext((Event) evt);
                 }
 
                 super.userEventTriggered(ctx, evt);

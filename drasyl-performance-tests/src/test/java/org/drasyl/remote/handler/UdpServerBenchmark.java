@@ -26,7 +26,6 @@ import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.channel.MigrationEvent;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -99,7 +98,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                         }
                     });
 
-            pipeline.pipeline().fireUserEventTriggered(new MigrationEvent(NodeUpEvent.of(Node.of(identity2))));
+            pipeline.pipeline().fireUserEventTriggered(NodeUpEvent.of(Node.of(identity2)));
             final NodeUpEvent event = (NodeUpEvent) pipeline.inboundEvents().filter(e -> e instanceof NodeUpEvent).blockingFirst();
 
             port = event.getNode().getPort();
@@ -112,7 +111,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
     @TearDown
     public void teardown() {
-        pipeline.pipeline().fireUserEventTriggered(new MigrationEvent(NodeDownEvent.of(Node.of(identity2))));
+        pipeline.pipeline().fireUserEventTriggered(NodeDownEvent.of(Node.of(identity2)));
     }
 
     @State(Scope.Thread)
