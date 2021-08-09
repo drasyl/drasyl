@@ -29,9 +29,9 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
@@ -52,6 +52,8 @@ import java.util.Set;
 
 import static org.drasyl.remote.handler.UdpServer.determineActualEndpoints;
 import static org.drasyl.util.network.NetworkUtil.getAddresses;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -183,12 +185,9 @@ class UdpServerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<ByteBuf> inboundMessages = pipeline.drasylInboundMessages(ByteBuf.class).test();
-
                 pipeline.pipeline().fireChannelActive();
 
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1);
+                assertThat(((MigrationInboundMessage<Object, Address>) pipeline.readInbound()).message(), instanceOf(ByteBuf.class));
             }
             finally {
                 pipeline.drasylClose();

@@ -29,7 +29,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -55,6 +54,7 @@ import java.util.Map;
 
 import static java.net.InetSocketAddress.createUnresolved;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -155,7 +155,7 @@ class TcpServerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.processOutbound(recipient, msg, promise);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {
@@ -169,12 +169,9 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipient));
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
-
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1);
+                assertEquals(new MigrationOutboundMessage<>(msg, recipient), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();

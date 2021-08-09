@@ -27,7 +27,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -51,6 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.net.InetSocketAddress.createUnresolved;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -103,13 +103,9 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
-
                 pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
 
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(msg);
+                assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -127,14 +123,9 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
-
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(msg);
-
+                assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
                 verify(superPeerChannel).cancel(true);
                 verify(superPeerChannel.channel()).close();
                 assertEquals(0, noResponseFromSuperPeerSince.get());
@@ -150,13 +141,9 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipient));
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
-
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(msg);
+                assertEquals(new MigrationOutboundMessage<>(msg, recipient), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -175,12 +162,10 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
-
                 pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) msg, (Address) recipient));
 
                 verify(superPeerChannel.channel()).writeAndFlush(msg);
-                outboundMessages.assertEmpty();
+                assertNull(pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();

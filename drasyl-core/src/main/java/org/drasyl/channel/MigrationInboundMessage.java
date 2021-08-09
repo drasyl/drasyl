@@ -23,6 +23,7 @@ package org.drasyl.channel;
 
 import org.drasyl.pipeline.address.Address;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
@@ -43,6 +44,14 @@ public class MigrationInboundMessage<T, A extends Address> {
         this.future = requireNonNull(future);
     }
 
+    @Override
+    public String toString() {
+        return "MigrationInboundMessage{" +
+                "message=" + message +
+                ", address=" + address +
+                '}';
+    }
+
     public MigrationInboundMessage(final T message,
                                    final A address) {
         this(message, address, new CompletableFuture<>());
@@ -58,5 +67,22 @@ public class MigrationInboundMessage<T, A extends Address> {
 
     public CompletableFuture<Void> future() {
         return future;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final MigrationInboundMessage<?, ?> that = (MigrationInboundMessage<?, ?>) o;
+        return Objects.equals(message, that.message) && Objects.equals(address, that.address);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(message, address);
     }
 }

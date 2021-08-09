@@ -22,7 +22,6 @@
 package org.drasyl.intravm;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -44,6 +43,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -127,11 +127,9 @@ class IntraVmDiscoveryTest {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, (Address) recipient));
-
-                outboundMessages.assertValueCount(1);
+                assertEquals(new MigrationOutboundMessage<>(message, recipient), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();

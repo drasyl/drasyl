@@ -22,15 +22,12 @@
 package org.drasyl.pipeline.skeleton;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,13 +61,9 @@ class SimpleInboundHandlerTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>("Hallo Welt".getBytes(), sender));
 
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) "Hallo Welt".getBytes(), sender));
-
-            inboundMessageTestObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, "Hallo Welt"));
+            assertEquals(new MigrationInboundMessage<>("Hallo Welt", sender), pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();
@@ -90,13 +84,9 @@ class SimpleInboundHandlerTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(1337, sender));
 
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) 1337, sender));
-
-            inboundMessageTestObserver.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(sender, null, 1337));
+            assertEquals(new MigrationInboundMessage<>(1337, sender), pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();

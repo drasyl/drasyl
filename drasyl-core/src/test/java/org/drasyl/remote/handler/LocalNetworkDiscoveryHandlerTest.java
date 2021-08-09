@@ -23,7 +23,6 @@ package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -35,8 +34,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.handler.LocalNetworkDiscovery.Peer;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
@@ -235,13 +232,9 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
-
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
+                assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -258,13 +251,10 @@ class LocalNetworkDiscoveryTest {
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
 
-        pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
+        pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
 
-        outboundMessages.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(null, peer.getAddress(), message));
+        assertEquals(new MigrationOutboundMessage<>(message, peer.getAddress()), pipeline.readOutbound());
     }
 
     @Test
@@ -273,13 +263,14 @@ class LocalNetworkDiscoveryTest {
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
-        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+        try {
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
-        pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
-
-        outboundMessages.awaitCount(1)
-                .assertValueCount(1)
-                .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message));
+            assertEquals(new MigrationOutboundMessage<>(message, recipient), pipeline.readOutbound());
+        }
+        finally {
+            pipeline.drasylClose();
+        }
     }
 
     @Nested

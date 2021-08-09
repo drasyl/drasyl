@@ -26,9 +26,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.reactivex.rxjava3.core.Observable;
@@ -36,21 +34,9 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.pipeline.serialization.Serialization;
-import org.drasyl.util.RandomUtil;
-import org.drasyl.util.ReferenceCountUtil;
-import org.drasyl.util.TypeReference;
-
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Optional;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
@@ -62,82 +48,22 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
  */
 public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements ServerChannel {
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    public static final
-    Optional<Object> NULL_MESSAGE = Optional.empty();
-    private final Subject<AddressedEnvelope<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
-    private final Subject<AddressedEnvelope<Address, Object>> outboundMessages;
 
     public EmbeddedDrasylServerChannel(final DrasylConfig config,
                                        final Identity identity,
                                        final PeersManager peersManager,
                                        final Serialization inboundSerialization,
                                        final Serialization outboundSerialization,
-                                       final Subject<AddressedEnvelope<Address, Object>> inboundMessages,
                                        final Subject<Event> inboundEvents,
-                                       final Subject<AddressedEnvelope<Address, Object>> outboundMessages,
                                        final ChannelHandler... handlers) {
-        this.inboundMessages = inboundMessages;
         this.inboundEvents = inboundEvents;
-        this.outboundMessages = outboundMessages;
 
         attr(CONFIG_ATTR_KEY).set(config);
         attr(IDENTITY_ATTR_KEY).set(identity);
         attr(PEERS_MANAGER_ATTR_KEY).set(peersManager);
         attr(INBOUND_SERIALIZATION_ATTR_KEY).set(inboundSerialization);
         attr(OUTBOUND_SERIALIZATION_ATTR_KEY).set(outboundSerialization);
-
-        // my tail
-        pipeline().addLast("MY_TAIL", new ChannelInboundHandlerAdapter() {
-            @Override
-            public void channelRead(final ChannelHandlerContext ctx,
-                                    final Object msg) throws Exception {
-                if (msg instanceof MigrationInboundMessage) {
-                    final MigrationInboundMessage<?, ?> m = (MigrationInboundMessage<?, ?>) msg;
-                    if (m.address() instanceof IdentityPublicKey) {
-                        final IdentityPublicKey senderAddress = (IdentityPublicKey) m.address();
-                        inboundEvents.onNext(MessageEvent.of(senderAddress, m.message()));
-                    }
-                    inboundMessages.onNext(new DefaultAddressedEnvelope<>(m.address(), null, m.message()));
-
-                    m.future().complete(null);
-                }
-                else {
-                    super.channelRead(ctx, msg);
-                }
-            }
-
-            @Override
-            public void userEventTriggered(final ChannelHandlerContext ctx,
-                                           final Object evt) throws Exception {
-                if (evt instanceof MigrationEvent) {
-                    final MigrationEvent e = (MigrationEvent) evt;
-                    inboundEvents.onNext(e.event());
-                    e.future().complete(null);
-                }
-                else {
-                    super.userEventTriggered(ctx, evt);
-                }
-            }
-        });
-
-        // my head
-        pipeline().addFirst("MY_HEAD", new ChannelOutboundHandlerAdapter() {
-            @Override
-            public void write(final ChannelHandlerContext ctx,
-                              final Object msg,
-                              final ChannelPromise promise) throws Exception {
-                if (msg instanceof MigrationOutboundMessage) {
-                    final MigrationOutboundMessage<?, ?> m = (MigrationOutboundMessage<?, ?>) msg;
-                    outboundMessages.onNext(new DefaultAddressedEnvelope<>(null, m.address(), m.message()));
-                    promise.setSuccess();
-                }
-                else {
-                    super.write(ctx, msg, promise);
-                }
-            }
-        });
 
         pipeline().addLast(new ChannelInitializer<>() {
             @Override
@@ -147,8 +73,36 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
                     if (h == null) {
                         break;
                     }
-                    pipeline.addBefore("MY_TAIL", RandomUtil.randomString(5), h);
+                    pipeline.addLast(h);
                 }
+            }
+        });
+
+        // my tail
+        pipeline().addLast("MY_TAIL", new ChannelInboundHandlerAdapter() {
+//            @Override
+//            public void channelRead(final ChannelHandlerContext ctx,
+//                                    final Object msg) throws Exception {
+//                if (msg instanceof MigrationInboundMessage) {
+//                    final MigrationInboundMessage<?, ?> m = (MigrationInboundMessage<?, ?>) msg;
+//                    if (m.address() instanceof IdentityPublicKey) {
+//                        final IdentityPublicKey senderAddress = (IdentityPublicKey) m.address();
+//                        inboundEvents.onNext(MessageEvent.of(senderAddress, m.message()));
+//                    }
+//                }
+//
+//                super.channelRead(ctx, msg);
+//            }
+
+            @Override
+            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                           final Object evt) throws Exception {
+                if (evt instanceof MigrationEvent) {
+                    final MigrationEvent e = (MigrationEvent) evt;
+                    inboundEvents.onNext(e.event());
+                }
+
+                super.userEventTriggered(ctx, evt);
             }
         });
     }
@@ -163,38 +117,9 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
                 peersManager,
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()),
-                ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized(),
                 ReplaySubject.<Event>create().toSerialized(),
-                ReplaySubject.<AddressedEnvelope<Address, Object>>create().toSerialized(),
                 handlers
         );
-    }
-
-    /**
-     * @return all messages of type {@code T} that passes the pipeline until the end
-     */
-    @SuppressWarnings("unchecked")
-    public <T> Observable<T> drasylInboundMessages(final Class<T> clazz) {
-        return (Observable<T>) inboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(clazz::isInstance);
-    }
-
-    /**
-     * @return all messages of type {@code T} that passes the pipeline until the end
-     */
-    @SuppressWarnings("unchecked")
-    public <T> Observable<T> drasylInboundMessages(final TypeReference<T> typeReference) {
-        return (Observable<T>) inboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(m -> isInstance(typeReference.getType(), m));
-    }
-
-    public Observable<Object> drasylInboundMessages() {
-        return inboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE);
-    }
-
-    /**
-     * @return all messages that passes the pipeline until the end
-     */
-    public Observable<AddressedEnvelope<Address, Object>> inboundMessagesWithSender() {
-        return inboundMessages;
     }
 
     /**
@@ -204,53 +129,11 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
         return inboundEvents;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> Observable<T> drasylOutboundMessages(final Class<T> clazz) {
-        return (Observable<T>) outboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(clazz::isInstance);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> Observable<T> drasylOutboundMessages(final TypeReference<T> typeReference) {
-        return (Observable<T>) outboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE).filter(m -> isInstance(typeReference.getType(), m));
-    }
-
-    public Observable<Object> drasylOutboundMessages() {
-        return outboundMessages.map(m -> m.getContent() != null ? m.getContent() : NULL_MESSAGE);
-    }
-
-    /**
-     * @return all messages that passes the pipeline until the end
-     */
-    public Observable<AddressedEnvelope<Address, Object>> outboundMessagesWithRecipient() {
-        return outboundMessages;
-    }
-
     public void drasylClose() {
-        outboundMessages.onComplete();
-        inboundMessages.onComplete();
+        releaseOutbound();
+        releaseInbound();
         inboundEvents.onComplete();
 
-        outboundMessages.toList().blockingGet().forEach(o -> ReferenceCountUtil.safeRelease(o.getContent()));
-        inboundMessages.toList().blockingGet().forEach(o -> ReferenceCountUtil.safeRelease(o.getContent()));
-
         close();
-    }
-
-    public ChannelPromise processOutbound(final Address recipient,
-                                          final Object msg,
-                                          final ChannelPromise promise) {
-        pipeline().writeAndFlush(new MigrationOutboundMessage<>(msg, recipient), promise);
-        return promise;
-    }
-
-    private static boolean isInstance(final Type type, final Object obj) {
-        if (type instanceof Class<?>) {
-            return ((Class<?>) type).isInstance(obj);
-        }
-        else if (type instanceof ParameterizedType) {
-            final Type rawType = ((ParameterizedType) type).getRawType();
-            return isInstance(rawType, obj);
-        }
-        return false;
     }
 }

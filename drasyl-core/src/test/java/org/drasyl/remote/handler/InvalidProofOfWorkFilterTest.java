@@ -21,7 +21,6 @@
  */
 package org.drasyl.remote.handler;
 
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -29,8 +28,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +38,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -68,11 +67,9 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
         try {
-            final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
-
             pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) message.getSender()));
 
-            inboundMessages.assertNoValues();
+            assertNull(pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();
@@ -85,13 +82,9 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
         try {
-            final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
+            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, message.getSender()));
 
-            pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) message.getSender()));
-
-            inboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(message.getSender(), null, message));
+            assertEquals(new MigrationInboundMessage<>(message, message.getSender()), pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();

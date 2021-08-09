@@ -22,16 +22,12 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.collect.ImmutableMap;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -90,16 +87,11 @@ class StaticRoutesHandlerTest {
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
-            outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, publicKey));
 
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) publicKey));
-
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(null, address, message));
+            assertEquals(new MigrationOutboundMessage<>(message, address), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();
@@ -111,16 +103,11 @@ class StaticRoutesHandlerTest {
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
 
-        final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
-            outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, publicKey));
 
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) publicKey));
-
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(null, publicKey, message));
+            assertEquals(new MigrationOutboundMessage<>(message, publicKey), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();

@@ -24,7 +24,6 @@ package org.drasyl.pipeline.serialization;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelPromise;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -34,6 +33,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.ApplicationMessage;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.serialization.StringSerializer;
 import org.junit.jupiter.api.Nested;
@@ -45,8 +45,11 @@ import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 
-import static org.drasyl.channel.EmbeddedDrasylServerChannel.NULL_MESSAGE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -70,13 +73,9 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, address));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) address));
-
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue("Hallo Welt");
+                assertEquals(new MigrationInboundMessage<>("Hallo Welt", address), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -92,13 +91,9 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, address));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) address));
-
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue("Hallo Welt");
+                assertEquals(new MigrationInboundMessage<>("Hallo Welt", address), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -110,13 +105,9 @@ class MessageSerializerTest {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), null, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, address));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) address));
-
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(NULL_MESSAGE);
+                assertEquals(new MigrationInboundMessage<>(null, address), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -124,15 +115,13 @@ class MessageSerializerTest {
         }
 
         @Test
-        void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final IdentityPublicKey sender) throws InterruptedException {
+        void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock final IdentityPublicKey sender) {
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, sender));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender));
-
-                inboundMessages.assertNoValues();
+                assertNull(pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -141,18 +130,16 @@ class MessageSerializerTest {
 
         @Test
         void shouldCompleteExceptionallyIfDeserializationFail(@Mock final IdentityPublicKey sender,
-                                                              @Mock final Serializer serializer) throws IOException, InterruptedException {
+                                                              @Mock final Serializer serializer) throws IOException {
             when(serializer.fromByteArray(any(), anyString())).thenThrow(IOException.class);
             when(config.getSerializationSerializers()).thenReturn(ImmutableMap.of("string", serializer));
             when(config.getSerializationsBindingsInbound()).thenReturn(ImmutableMap.of(String.class, "string"));
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, sender));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender));
-
-                inboundMessages.assertNoValues();
+                assertNull(pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -171,12 +158,10 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>("Hello World", identity.getIdentityPublicKey()));
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) "Hello World", (Address) identity.getIdentityPublicKey()));
+                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
 
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1);
             }
             finally {
                 pipeline.drasylClose();
@@ -194,12 +179,9 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, identity.getIdentityPublicKey()));
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, (Address) identity.getIdentityPublicKey()));
-
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1);
+                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -211,14 +193,11 @@ class MessageSerializerTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
-
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.processOutbound(recipient, message, promise);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient), promise);
                 assertFalse(promise.isSuccess());
 
-                outboundMessages
-                        .assertNoValues();
+                assertNull(pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -234,13 +213,11 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
-
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.processOutbound(recipient, message, promise);
-                assertFalse(promise.isSuccess());
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient), promise);
 
-                outboundMessages.assertNoValues();
+                assertFalse(promise.isSuccess());
+                assertNull(pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -254,12 +231,9 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                final TestObserver<ApplicationMessage> outboundMessages = pipeline.drasylOutboundMessages(ApplicationMessage.class).test();
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(null, identity.getIdentityPublicKey()));
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(null, (Address) identity.getIdentityPublicKey()));
-
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1);
+                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
             }
             finally {
                 pipeline.drasylClose();

@@ -24,7 +24,6 @@ package org.drasyl.remote.handler;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -39,8 +38,6 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.handler.InternetDiscovery.Peer;
 import org.drasyl.remote.handler.InternetDiscovery.Ping;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
@@ -71,10 +68,12 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -173,13 +172,9 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(discoveryMessage, address));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) discoveryMessage, (Address) address));
-
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(m -> m instanceof AcknowledgementMessage);
+                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(AcknowledgementMessage.class));
                 verify(peersManager, never()).addPath(any(), any(), any());
             }
             finally {
@@ -378,15 +373,11 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(message.getSender(), senderPeer, message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
-
                 pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender));
 
-                outboundMessages.awaitCount(3)
-                        .assertValueCount(3)
-                        .assertValueAt(0, m -> m.equals(message))
-                        .assertValueAt(1, m -> m instanceof UniteMessage)
-                        .assertValueAt(2, m -> m instanceof UniteMessage);
+                assertEquals(message, ((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
+                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
+                assertThat(((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -408,13 +399,9 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    final @NonNull TestObserver<RemoteMessage> outboundMessages = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
-
                     pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, sender));
 
-                    outboundMessages.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(message);
+                    assertEquals(message, ((MigrationOutboundMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -431,11 +418,9 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
-
                     pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, (Address) sender));
 
-                    outboundMessages.assertNoValues();
+                    assertNull(pipeline.readOutbound());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -456,14 +441,10 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<AddressedEnvelope<Address, Object>> inboundMessages = pipeline.inboundMessagesWithSender().test();
-
-                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) applicationMessage, (Address) address));
+                    pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(applicationMessage, address));
 
                     verify(peer).applicationTrafficOccurred();
-                    inboundMessages.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(new DefaultAddressedEnvelope<>(sender, null, applicationMessage));
+                    assertEquals(new MigrationInboundMessage<>(applicationMessage, sender), pipeline.readInbound());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -486,12 +467,9 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
-
                     pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
-                    outboundMessages.awaitCount(1)
-                            .assertValue(new DefaultAddressedEnvelope<>(null, recipientSocketAddress, message));
+                    assertEquals(new MigrationOutboundMessage<>(message, recipientSocketAddress), pipeline.readOutbound());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -510,12 +488,9 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers, superPeers, recipient);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
 
-                    pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
-
-                    outboundMessages.awaitCount(1)
-                            .assertValue(new DefaultAddressedEnvelope<>(null, superPeerSocketAddress, message));
+                    assertEquals(new MigrationOutboundMessage<>(message, superPeerSocketAddress), pipeline.readOutbound());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -532,13 +507,9 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
-
                     pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
 
-                    outboundMessages.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message));
+                    assertEquals(new MigrationOutboundMessage<>(message, recipient), pipeline.readOutbound());
                 }
                 finally {
                     pipeline.drasylClose();

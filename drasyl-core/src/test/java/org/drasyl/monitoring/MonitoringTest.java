@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
@@ -129,12 +130,9 @@ class MonitoringTest {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessages = pipeline.drasylInboundMessages().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(message, sender));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) message, sender));
-
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1);
+                assertEquals(new MigrationInboundMessage<>(message, sender), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -147,12 +145,9 @@ class MonitoringTest {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
 
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, recipient));
-
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1);
+                assertEquals(new MigrationOutboundMessage<>(message, recipient), pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();

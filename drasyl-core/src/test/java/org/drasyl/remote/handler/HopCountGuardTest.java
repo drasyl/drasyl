@@ -22,7 +22,6 @@
 package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelPromise;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationOutboundMessage;
@@ -31,8 +30,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
@@ -48,7 +45,9 @@ import test.util.IdentityTestUtil;
 
 import static org.drasyl.remote.protocol.HopCount.MAX_HOP_COUNT;
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
@@ -82,13 +81,9 @@ class HopCountGuardTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
 
-            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
-
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(new DefaultAddressedEnvelope<>(null, recipient, message.incrementHopCount()));
+            assertEquals(new MigrationOutboundMessage<>(message.incrementHopCount(), recipient), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();
@@ -104,13 +99,11 @@ class HopCountGuardTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
-
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.processOutbound(message.getSender(), message, promise);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) message.getSender()), promise);
             assertFalse(promise.isSuccess());
 
-            outboundMessages.assertNoValues();
+            assertNull(pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();

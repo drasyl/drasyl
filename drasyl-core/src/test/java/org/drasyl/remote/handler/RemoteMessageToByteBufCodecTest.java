@@ -26,7 +26,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPromise;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
@@ -37,8 +36,6 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.Nonce;
@@ -53,6 +50,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -86,14 +86,11 @@ class RemoteMessageToByteBufCodecTest {
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<PartialReadMessage> inboundMessages = pipeline.drasylInboundMessages(PartialReadMessage.class).test();
-
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
                 pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) byteBuf, (Address) sender));
 
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1);
+                assertThat(((MigrationInboundMessage<Object, Address>) pipeline.readInbound()).message(), instanceOf(PartialReadMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -109,15 +106,12 @@ class RemoteMessageToByteBufCodecTest {
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<AddressedEnvelope<Address, Object>> outboundMessages = pipeline.outboundMessagesWithRecipient().test();
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) message, (Address) recipient));
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(message, recipient));
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
 
-                outboundMessages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(new DefaultAddressedEnvelope<>(null, recipient, byteBuf));
+                assertEquals(new MigrationOutboundMessage<>(byteBuf, recipient), pipeline.readOutbound());
 
                 byteBuf.release();
             }
@@ -135,7 +129,7 @@ class RemoteMessageToByteBufCodecTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.processOutbound(recipient, messageEnvelope, promise);
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) messageEnvelope, (Address) recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {

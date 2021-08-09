@@ -29,7 +29,6 @@ import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.UdpServer;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +40,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -110,11 +111,9 @@ class PortMapperTest {
             final TestObserver<Object> inboundMessages;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                inboundMessages = pipeline.drasylInboundMessages().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
-
-                inboundMessages.assertEmpty();
+                assertNull(pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -131,12 +130,9 @@ class PortMapperTest {
             final TestObserver<Object> inboundMessages;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                inboundMessages = pipeline.drasylInboundMessages().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
-
-                inboundMessages.awaitCount(1)
-                        .assertValueCount(1);
+                assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();

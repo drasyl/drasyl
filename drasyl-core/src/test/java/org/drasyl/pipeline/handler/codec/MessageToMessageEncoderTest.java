@@ -23,7 +23,6 @@ package org.drasyl.pipeline.handler.codec;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationOutboundMessage;
@@ -39,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
@@ -63,7 +63,7 @@ class MessageToMessageEncoderTest {
         });
         try {
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.processOutbound(recipient, new Object(), promise);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(new Object(), recipient), promise);
             assertFalse(promise.isSuccess());
         }
         finally {
@@ -83,7 +83,7 @@ class MessageToMessageEncoderTest {
         });
         try {
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.processOutbound(recipient, new Object(), promise);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(new Object(), recipient), promise);
             assertFalse(promise.isSuccess());
         }
         finally {
@@ -102,13 +102,9 @@ class MessageToMessageEncoderTest {
             }
         });
         try {
-            final TestObserver<Object> outboundMessages = pipeline.drasylOutboundMessages().test();
-
             pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(new Object(), recipient));
 
-            outboundMessages.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue("Hallo Welt");
+            assertEquals(new MigrationOutboundMessage<>("Hallo Welt", recipient), pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();
@@ -144,7 +140,7 @@ class MessageToMessageEncoderTest {
         });
         try {
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.processOutbound(recipient, new Object(), promise);
+            pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(new Object(), recipient), promise);
             assertFalse(promise.isSuccess());
         }
         finally {

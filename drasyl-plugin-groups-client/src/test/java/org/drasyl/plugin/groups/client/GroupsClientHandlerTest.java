@@ -28,6 +28,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationEvent;
 import org.drasyl.channel.MigrationInboundMessage;
+import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -65,6 +66,7 @@ import java.util.Set;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -132,14 +134,10 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager);
             try {
-                final TestObserver<GroupLeaveMessage> testObserver = pipeline.drasylOutboundMessages(GroupLeaveMessage.class).test();
-
                 pipeline.pipeline().addLast("handler", handler);
                 pipeline.pipeline().remove("handler");
 
-                testObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(new GroupLeaveMessage(group));
+                assertEquals(new GroupLeaveMessage(group), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
 
                 verify(renewTasks).clear();
             }
@@ -177,7 +175,6 @@ class GroupsClientHandlerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
-                final TestObserver<GroupJoinMessage> outboundObserver = pipeline.drasylOutboundMessages(GroupJoinMessage.class).test();
 
                 when(uri.getGroup()).thenReturn(group);
                 when(uri.getCredentials()).thenReturn(credentials);
@@ -192,10 +189,7 @@ class GroupsClientHandlerTest {
                             .assertValue(event);
                 });
 
-                outboundObserver
-                        .awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false));
+                assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((MigrationOutboundMessage<Object, Address>) pipeline.readOutbound()).message());
             }
             finally {
                 pipeline.drasylClose();

@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiPredicate;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -143,11 +144,9 @@ class MessagesThroughputHandlerTest {
         final TestObserver<Object> observable;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            observable = pipeline.drasylOutboundMessages().test();
-
             pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(new Object(), address));
 
-            observable.assertEmpty();
+            assertNull(pipeline.readOutbound());
         }
         finally {
             pipeline.drasylClose();
@@ -160,11 +159,9 @@ class MessagesThroughputHandlerTest {
         final TestObserver<Object> observable;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            observable = pipeline.drasylInboundMessages().test();
-
             pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(new Object(), address));
 
-            observable.assertEmpty();
+            assertNull(pipeline.readInbound());
         }
         finally {
             pipeline.drasylClose();

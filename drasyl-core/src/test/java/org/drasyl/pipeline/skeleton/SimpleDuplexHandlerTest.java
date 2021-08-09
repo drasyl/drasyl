@@ -28,13 +28,11 @@ import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.channel.MigrationOutboundMessage;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.message.AddressedEnvelope;
-import org.drasyl.pipeline.message.DefaultAddressedEnvelope;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
@@ -48,6 +46,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -88,20 +88,16 @@ class SimpleDuplexHandlerTest {
                                                final byte[] msg,
                                                final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) identity.getIdentityPublicKey(), new CompletableFuture<Void>()));
+                    ctx.fireChannelRead(new MigrationInboundMessage<>(msg, identity.getIdentityPublicKey(), new CompletableFuture<Void>()));
                 }
             };
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
-                final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) payload, (Address) recipient));
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(payload, recipient));
 
-                inboundMessageTestObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(new DefaultAddressedEnvelope<>(sender, null, payload));
-                outboundMessageTestObserver.assertNoValues();
+                assertEquals(new MigrationInboundMessage<>(payload, identity.getIdentityPublicKey()), pipeline.readInbound());
+                assertNull(pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -131,16 +127,11 @@ class SimpleDuplexHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessageTestObserver = pipeline.drasylInboundMessages().test();
-                final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
-
                 final byte[] payload = new byte[]{};
-                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>((Object) payload, (Address) recipient));
+                pipeline.pipeline().writeAndFlush(new MigrationOutboundMessage<>(payload, recipient));
 
-                outboundMessageTestObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(payload);
-                inboundMessageTestObserver.assertNoValues();
+                assertEquals(new MigrationOutboundMessage<>(payload, recipient), pipeline.readOutbound());
+                assertNull(pipeline.readInbound());
             }
             finally {
                 pipeline.drasylClose();
@@ -167,23 +158,19 @@ class SimpleDuplexHandlerTest {
                                               final byte[] msg,
                                               final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>((Object) msg, sender)))).combine(new CompletableFuture<Void>());
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, sender)))).combine(new CompletableFuture<Void>());
                 }
             };
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundMessageTestObserver = pipeline.drasylInboundMessages().test();
-                final TestObserver<Object> outboundMessageTestObserver = pipeline.drasylOutboundMessages().test();
                 final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
                 final byte[] msg = new byte[]{};
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
 
-                outboundMessageTestObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(msg);
-                inboundMessageTestObserver.assertNoValues();
+                assertEquals(new MigrationOutboundMessage<>(msg, sender), pipeline.readOutbound());
+                assertNull(pipeline.readInbound());
                 eventTestObserver.assertNoValues();
             }
             finally {
@@ -215,19 +202,10 @@ class SimpleDuplexHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<AddressedEnvelope<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessagesWithSender().test();
-                final TestObserver<RemoteMessage> outboundMessageTestObserver = pipeline.drasylOutboundMessages(RemoteMessage.class).test();
-                final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>(msg, sender));
 
-                pipeline.pipeline().fireChannelRead(new MigrationInboundMessage<>((Object) msg, (Address) sender));
-
-                inboundMessageTestObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(new DefaultAddressedEnvelope<>(sender, null, msg));
-                eventTestObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(MessageEvent.of(sender, msg));
-                outboundMessageTestObserver.assertNoValues();
+                assertEquals(new MigrationInboundMessage<>(msg, sender), pipeline.readInbound());
+                assertNull(pipeline.readOutbound());
             }
             finally {
                 pipeline.drasylClose();
