@@ -140,7 +140,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
                 assertEquals(new AddressedMessage<>(msg, recipient), pipeline.readOutbound());
             }
@@ -159,7 +159,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
                 verify(superPeerChannel.channel()).writeAndFlush(msg);
                 assertNull(pipeline.readOutbound());
@@ -187,7 +187,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
                 verify(bootstrap.handler(any())).connect(any(InetSocketAddress.class));
                 verify(superPeerChannel).addListener(any());

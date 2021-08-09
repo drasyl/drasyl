@@ -250,7 +250,7 @@ class LocalNetworkDiscoveryTest {
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
 
-        pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
+        pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
         assertEquals(new AddressedMessage<>(message, peer.getAddress()), pipeline.readOutbound());
     }
@@ -262,7 +262,7 @@ class LocalNetworkDiscoveryTest {
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+            pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
             assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
         }

@@ -105,7 +105,7 @@ class RemoteMessageToByteBufCodecTest {
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
@@ -128,7 +128,7 @@ class RemoteMessageToByteBufCodecTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) messageEnvelope, (Address) recipient), promise);
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) messageEnvelope, (Address) recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {

@@ -465,7 +465,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+                    pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
                     assertEquals(new AddressedMessage<>(message, recipientSocketAddress), pipeline.readOutbound());
                 }
@@ -486,7 +486,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers, superPeers, recipient);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
+                    pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                     assertEquals(new AddressedMessage<>(message, superPeerSocketAddress), pipeline.readOutbound());
                 }
@@ -505,7 +505,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+                    pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
                     assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
                 }
@@ -526,7 +526,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(recipient, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+                    pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
                     verify(peer).applicationTrafficOccurred();
                 }

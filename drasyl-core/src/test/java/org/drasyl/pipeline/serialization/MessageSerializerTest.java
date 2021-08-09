@@ -157,7 +157,7 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>("Hello World", identity.getIdentityPublicKey()));
+                pipeline.writeAndFlush(new AddressedMessage<>("Hello World", identity.getIdentityPublicKey()));
 
                 assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
 
@@ -178,7 +178,7 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, identity.getIdentityPublicKey()));
+                pipeline.writeAndFlush(new AddressedMessage<>(message, identity.getIdentityPublicKey()));
 
                 assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
             }
@@ -193,7 +193,7 @@ class MessageSerializerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient), promise);
+                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient), promise);
                 assertFalse(promise.isSuccess());
 
                 assertNull(pipeline.readOutbound());
@@ -213,7 +213,7 @@ class MessageSerializerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient), promise);
+                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient), promise);
 
                 assertFalse(promise.isSuccess());
                 assertNull(pipeline.readOutbound());
@@ -230,7 +230,7 @@ class MessageSerializerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, MessageSerializer.INSTANCE);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(null, identity.getIdentityPublicKey()));
+                pipeline.writeAndFlush(new AddressedMessage<>(null, identity.getIdentityPublicKey()));
 
                 assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
             }

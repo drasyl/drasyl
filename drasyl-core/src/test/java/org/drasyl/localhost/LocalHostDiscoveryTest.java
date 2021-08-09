@@ -264,7 +264,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
 
                 assertNotNull(pipeline.readOutbound());
             }
@@ -279,7 +279,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                 assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
             }

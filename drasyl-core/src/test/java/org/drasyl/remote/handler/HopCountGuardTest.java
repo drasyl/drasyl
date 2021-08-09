@@ -81,7 +81,7 @@ class HopCountGuardTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
+            pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
             assertEquals(new AddressedMessage<>(message.incrementHopCount(), recipient), pipeline.readOutbound());
         }
@@ -100,7 +100,7 @@ class HopCountGuardTest {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) message, (Address) message.getSender()), promise);
+            pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) message.getSender()), promise);
             assertFalse(promise.isSuccess());
 
             assertNull(pipeline.readOutbound());

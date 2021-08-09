@@ -152,7 +152,7 @@ class UdpServerTest {
             final UdpServer handler = new UdpServer(bootstrap, channel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
                 verify(channel).writeAndFlush(any());
             }

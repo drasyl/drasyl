@@ -143,7 +143,7 @@ class MonitoringTest {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                 assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
             }

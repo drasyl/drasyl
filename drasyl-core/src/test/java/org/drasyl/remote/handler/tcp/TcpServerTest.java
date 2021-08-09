@@ -132,7 +132,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
                 verify(client).writeAndFlush(any(), any());
             }
@@ -152,7 +152,7 @@ class TcpServerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient), promise);
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {
@@ -166,7 +166,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
                 assertEquals(new AddressedMessage<>(msg, recipient), pipeline.readOutbound());
             }

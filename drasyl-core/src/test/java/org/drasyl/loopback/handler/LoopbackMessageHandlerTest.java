@@ -50,7 +50,7 @@ class LoopbackMessageHandlerTest {
                                                     @Mock final Object message) {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new LoopbackMessageHandler());
         try {
-            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
+            pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
             assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
         }
@@ -66,7 +66,7 @@ class LoopbackMessageHandlerTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new LoopbackMessageHandler(true));
         try {
-            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
+            pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
             assertEquals(new AddressedMessage<>(message, recipient), pipeline.readInbound());
         }

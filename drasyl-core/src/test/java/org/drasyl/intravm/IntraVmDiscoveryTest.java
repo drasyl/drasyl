@@ -105,7 +105,7 @@ class IntraVmDiscoveryTest {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(message, (Address) recipient));
 
                 verify(ctx).fireChannelRead(any());
             }
@@ -120,7 +120,7 @@ class IntraVmDiscoveryTest {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                 assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
             }

@@ -110,7 +110,7 @@ class MessagesThroughputHandlerTest {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(new Object(), address));
+            pipeline.writeAndFlush(new AddressedMessage<>(new Object(), address));
 
             verify(outboundMessages).increment();
             verify(inboundMessages, never()).increment();
@@ -141,7 +141,7 @@ class MessagesThroughputHandlerTest {
         final TestObserver<Object> observable;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(new Object(), address));
+            pipeline.writeAndFlush(new AddressedMessage<>(new Object(), address));
 
             assertNull(pipeline.readOutbound());
         }

@@ -89,7 +89,7 @@ class StaticRoutesHandlerTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
-            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, publicKey));
+            pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
             assertEquals(new AddressedMessage<>(message, address), pipeline.readOutbound());
         }
@@ -105,7 +105,7 @@ class StaticRoutesHandlerTest {
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
         try {
-            pipeline.pipeline().writeAndFlush(new AddressedMessage<>(message, publicKey));
+            pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
             assertEquals(new AddressedMessage<>(message, publicKey), pipeline.readOutbound());
         }

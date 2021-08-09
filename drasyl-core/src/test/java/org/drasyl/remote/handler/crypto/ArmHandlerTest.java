@@ -130,7 +130,7 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) applicationMessage, receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) applicationMessage, receiveAddress));
 
                 assertEquals(applicationMessage, ((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
                 assertThat(((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
@@ -160,7 +160,7 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
                 assertEquals(new AddressedMessage<>(msg, receiveAddress), pipeline.readOutbound());
             }
@@ -182,7 +182,7 @@ class ArmHandlerTest {
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork());
 
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
                 assertEquals(new AddressedMessage<>(msg, receiveAddress), pipeline.readOutbound());
             }
@@ -208,7 +208,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
                 assertEquals(new AddressedMessage<>(msg, receiveAddress), pipeline.readOutbound());
             }
@@ -249,7 +249,7 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
                 assertEquals(msg, ((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
             }
@@ -278,7 +278,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
 
                 assertThat(((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(ApplicationMessage.class));
                 assertThat(((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
@@ -305,7 +305,7 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
                 assertNotNull(pipeline.readOutbound());
             }
@@ -630,7 +630,7 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
 
                 assertEquals(new AddressedMessage<>(armedMsg, receiveAddress), pipeline.readOutbound());
             }
@@ -708,7 +708,7 @@ class ArmHandlerTest {
                 doReturn(true).when(agreement).isInitialized();
                 doReturn(false).when(agreement).isRenewable();
 
-                pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
                 assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(RemoteMessage.class));
             }

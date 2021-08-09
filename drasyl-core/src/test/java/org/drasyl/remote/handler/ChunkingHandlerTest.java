@@ -256,7 +256,7 @@ class ChunkingHandlerTest {
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
+                    pipeline.writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
 
                     assertEquals(pipeline.readOutbound(), new AddressedMessage<>(msg, recipientAddress));
                 }
@@ -279,7 +279,7 @@ class ChunkingHandlerTest {
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
                     final ChannelPromise promise = pipeline.newPromise();
-                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) address), promise);
+                    pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) address), promise);
                     assertFalse(promise.isSuccess());
 
                     assertNull(pipeline.readOutbound());
@@ -305,7 +305,7 @@ class ChunkingHandlerTest {
                 final ChannelInboundHandler handler = new ChunkingHandler();
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, address));
+                    pipeline.writeAndFlush(new AddressedMessage<>(msg, address));
 
                     assertThat(((AddressedMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
                         @Override
@@ -358,7 +358,7 @@ class ChunkingHandlerTest {
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
+                    pipeline.writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
 
                     assertEquals(new AddressedMessage<>(msg, recipientAddress), pipeline.readOutbound());
                 }
