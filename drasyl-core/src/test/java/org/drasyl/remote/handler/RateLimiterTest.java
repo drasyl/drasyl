@@ -23,6 +23,7 @@ package org.drasyl.remote.handler;
 
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
@@ -46,10 +47,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,10 +79,17 @@ class RateLimiterTest {
         final AcknowledgementMessage msg = AcknowledgementMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), Nonce.randomNonce());
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertFalse(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(2)).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(3)).fireChannelRead(any());
     }
 
     @Test
@@ -95,10 +104,17 @@ class RateLimiterTest {
         final DiscoveryMessage msg = DiscoveryMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), 0);
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertFalse(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(2)).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(3)).fireChannelRead(any());
     }
 
     @Test
@@ -113,10 +129,17 @@ class RateLimiterTest {
         final UniteMessage msg = UniteMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(1337));
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertFalse(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(2)).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(3)).fireChannelRead(any());
     }
 
     @Test
@@ -130,10 +153,17 @@ class RateLimiterTest {
         final UniteMessage msg = UniteMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), recipient.getIdentityPublicKey(), new InetSocketAddress(1337));
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(2)).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(3)).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(4)).fireChannelRead(any());
     }
 
     @Test
@@ -147,9 +177,16 @@ class RateLimiterTest {
         final ApplicationMessage msg = ApplicationMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
-        assertTrue(rateLimiter.accept(ctx, msgSender, msg));
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(2)).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(3)).fireChannelRead(any());
+
+        rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
+        verify(ctx, times(4)).fireChannelRead(any());
     }
 }

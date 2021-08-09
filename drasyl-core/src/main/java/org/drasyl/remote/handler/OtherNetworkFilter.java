@@ -23,11 +23,13 @@ package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
@@ -37,7 +39,8 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 @SuppressWarnings("java:S110")
 @ChannelHandler.Sharable
 @Stateless
-public final class OtherNetworkFilter extends InboundMessageFilter<RemoteMessage, Address> {
+public final class OtherNetworkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+    private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
 
     private OtherNetworkFilter() {
@@ -45,17 +48,19 @@ public final class OtherNetworkFilter extends InboundMessageFilter<RemoteMessage
     }
 
     @Override
-    protected boolean accept(final ChannelHandlerContext ctx,
-                             final Address sender,
-                             final RemoteMessage msg) throws Exception {
-        return msg instanceof ChunkMessage || ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId() == msg.getNetworkId();
-    }
-
-    @SuppressWarnings("java:S112")
-    @Override
-    protected void messageRejected(final ChannelHandlerContext ctx,
-                                   final Address sender,
-                                   final RemoteMessage msg) throws Exception {
-        throw new Exception("Message from other network dropped");
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedMessage<?, ?> msg) throws Exception {
+        if (msg.message() instanceof RemoteMessage) {
+            final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
+            if (remoteMsg instanceof ChunkMessage || ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId() == remoteMsg.getNetworkId()) {
+                ctx.fireChannelRead(msg);
+            }
+            else {
+                LOG.debug("Message `{}` from other network of work dropped.", remoteMsg::getNonce);
+            }
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
     }
 }

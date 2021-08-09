@@ -23,10 +23,10 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * all methods fail, the program waits for {@link #RETRY_DELAY} and then tries all methods again. It
  * never gives up.
  */
-public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressWrapper> {
+public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
     public static final Duration MAPPING_LIFETIME = ofMinutes(10);
     public static final Duration RETRY_DELAY = ofMinutes(5);
     private static final Logger LOG = LoggerFactory.getLogger(PortMapper.class);
@@ -66,15 +66,19 @@ public class PortMapper extends SimpleInboundHandler<ByteBuf, InetSocketAddressW
     }
 
     @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final InetSocketAddressWrapper sender,
-                                  final ByteBuf msg) {
-        if (methods.get(currentMethodPointer).acceptMessage(sender, msg)) {
-            ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, msg));
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedMessage<?, ?> msg) throws Exception {
+        if (msg.message() instanceof ByteBuf && msg.address() instanceof InetSocketAddressWrapper) {
+            if (methods.get(currentMethodPointer).acceptMessage((InetSocketAddressWrapper) msg.address(), (ByteBuf) msg.message())) {
+                ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, (InetSocketAddressWrapper) msg.address(), (ByteBuf) msg.message()));
+            }
+            else {
+                // message was not for the mapper -> passthrough
+                ctx.fireChannelRead(msg);
+            }
         }
         else {
-            // message was not for the mapper -> passthrough
-            ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
+            ctx.fireChannelRead(msg);
         }
     }
 

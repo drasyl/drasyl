@@ -52,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -156,15 +155,13 @@ public class TcpClientTest {
                                                                   @Mock final ChannelFuture channelFuture) {
             when(superPeerChannel.isSuccess()).thenReturn(true);
             when(superPeerChannel.channel().writeAndFlush(any())).thenReturn(channelFuture);
-            when(channelFuture.isDone()).thenReturn(true);
-            when(channelFuture.isSuccess()).thenReturn(true);
 
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
-                verify(superPeerChannel.channel()).writeAndFlush(eq(msg), any());
+                verify(superPeerChannel.channel()).writeAndFlush(msg);
                 assertNull(pipeline.readOutbound());
             }
             finally {

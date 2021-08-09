@@ -24,9 +24,10 @@ package org.drasyl.pipeline.serialization;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
@@ -45,7 +46,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATI
 @ChannelHandler.Sharable
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public final class MessageSerializer extends MessageToMessageCodec<ApplicationMessage, Object, IdentityPublicKey> {
+public final class MessageSerializer extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
     public static final MessageSerializer INSTANCE = new MessageSerializer();
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
 
@@ -54,44 +55,55 @@ public final class MessageSerializer extends MessageToMessageCodec<ApplicationMe
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx,
-                          final IdentityPublicKey sender,
-                          final ApplicationMessage message,
+    protected void encode(final ChannelHandlerContext ctx,
+                          final AddressedMessage<?, ?> msg,
                           final List<Object> out) throws Exception {
-        final Serializer serializer = ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(message.getType());
+        if (msg.address() instanceof IdentityPublicKey) {
+            final Object o = msg.message();
 
-        if (serializer != null) {
-            final Object o = serializer.fromByteArray(message.getPayloadAsByteArray(), message.getType());
-            out.add(o);
-            LOG.trace("Message has been deserialized to `{}`", () -> o);
+            final String type;
+            if (o != null) {
+                type = o.getClass().getName();
+            }
+            else {
+                type = null;
+            }
+
+            final Serializer serializer = ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(type);
+
+            if (serializer != null) {
+                final ApplicationMessage applicationMsg = ApplicationMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), (IdentityPublicKey) msg.address(), type, ByteString.copyFrom(serializer.toByteArray(o)));
+                out.add(new AddressedMessage<>(applicationMsg, msg.address()));
+                LOG.trace("Message has been serialized to `{}`", () -> applicationMsg);
+            }
+            else {
+                LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
+            }
         }
         else {
-            LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", message::getType);
+            out.add(msg);
         }
     }
 
     @Override
-    protected void encode(final ChannelHandlerContext ctx,
-                          final IdentityPublicKey recipient,
-                          final Object o,
+    protected void decode(final ChannelHandlerContext ctx,
+                          final AddressedMessage<?, ?> msg,
                           final List<Object> out) throws Exception {
-        final String type;
-        if (o != null) {
-            type = o.getClass().getName();
+        if (msg.message() instanceof ApplicationMessage && msg.address() instanceof IdentityPublicKey) {
+            final ApplicationMessage applicationMsg = (ApplicationMessage) msg.message();
+            final Serializer serializer = ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(applicationMsg.getType());
+
+            if (serializer != null) {
+                final Object o = serializer.fromByteArray(applicationMsg.getPayloadAsByteArray(), applicationMsg.getType());
+                out.add(new AddressedMessage<>(o, msg.address()));
+                LOG.trace("Message has been deserialized to `{}`", () -> o);
+            }
+            else {
+                LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", applicationMsg::getType);
+            }
         }
         else {
-            type = null;
-        }
-
-        final Serializer serializer = ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(type);
-
-        if (serializer != null) {
-            final ApplicationMessage message = ApplicationMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipient, type, ByteString.copyFrom(serializer.toByteArray(o)));
-            out.add(message);
-            LOG.trace("Message has been serialized to `{}`", () -> message);
-        }
-        else {
-            LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
+            out.add(msg);
         }
     }
 }

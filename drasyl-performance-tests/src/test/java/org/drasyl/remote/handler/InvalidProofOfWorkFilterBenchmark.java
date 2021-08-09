@@ -34,6 +34,7 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.ApplicationMessage;
@@ -69,7 +70,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void acceptMsgAddressedToMe() {
         try {
-            InvalidProofOfWorkFilter.INSTANCE.accept(ctx, msgSender, msgAddressedToMe);
+            InvalidProofOfWorkFilter.INSTANCE.channelRead0(ctx, new AddressedMessage<>(msgAddressedToMe, msgSender));
         }
         catch (final Exception e) {
             handleUnexpectedException(e);
@@ -80,7 +81,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void acceptMsgNotAddressedToMe() {
         try {
-            InvalidProofOfWorkFilter.INSTANCE.accept(ctx, msgSender, msgNotAddressedToMe);
+            InvalidProofOfWorkFilter.INSTANCE.channelRead0(ctx, new AddressedMessage<>(msgAddressedToMe, msgSender));
         }
         catch (final Exception e) {
             handleUnexpectedException(e);

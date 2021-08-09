@@ -23,14 +23,16 @@ package org.drasyl.remote.handler;
 
 import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.UniteMessage;
 import org.drasyl.util.Pair;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -46,7 +48,8 @@ import static org.drasyl.util.DurationUtil.max;
  * Messages exceeding the rate limit are dropped.
  */
 @SuppressWarnings("java:S110")
-public class RateLimiter extends InboundMessageFilter<FullReadMessage<?>, Address> {
+public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+    private static final Logger LOG = LoggerFactory.getLogger(RateLimiter.class);
     private static final long CACHE_SIZE = 1_000;
     private static final long ACKNOWLEDGEMENT_RATE_LIMIT = 100; // 1 ack msg per 100ms
     private static final long DISCOVERY_RATE_LIMIT = 100; // 1 discovery msg per 100ms
@@ -72,18 +75,21 @@ public class RateLimiter extends InboundMessageFilter<FullReadMessage<?>, Addres
     }
 
     @Override
-    protected boolean accept(final ChannelHandlerContext ctx,
-                             final Address sender,
-                             final FullReadMessage<?> msg) throws Exception {
-        return !ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient()) || rateLimitGate(msg);
-    }
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedMessage<?, ?> msg) throws Exception {
+        if (msg.message() instanceof FullReadMessage) {
+            final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) msg.message();
 
-    @SuppressWarnings("java:S112")
-    @Override
-    protected void messageRejected(final ChannelHandlerContext ctx,
-                                   final Address sender,
-                                   final FullReadMessage<?> msg) throws Exception {
-        throw new Exception("Message exceeding rate limit dropped");
+            if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
+                ctx.fireChannelRead(msg);
+            }
+            else {
+                LOG.debug("Message `{}` exceeding rate limit dropped.", fullReadMsg::getNonce);
+            }
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
     }
 
     @SuppressWarnings({ "java:S1142", "unchecked" })

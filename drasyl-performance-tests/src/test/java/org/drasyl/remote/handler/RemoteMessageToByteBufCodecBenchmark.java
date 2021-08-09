@@ -36,6 +36,7 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.ApplicationMessage;
@@ -89,7 +90,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
     public void decode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            RemoteMessageToByteBufCodec.INSTANCE.decode(ctx, sender, byteBuf.slice(), out);
+            RemoteMessageToByteBufCodec.INSTANCE.decode(ctx, new AddressedMessage<>(byteBuf.slice(), sender), out);
             byteBuf.release();
             blackhole.consume(out);
         }
@@ -103,7 +104,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
     public void encode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            RemoteMessageToByteBufCodec.INSTANCE.encode(ctx, recipient, message, out);
+            RemoteMessageToByteBufCodec.INSTANCE.encode(ctx, new AddressedMessage<>(message, recipient), out);
             byteBuf.release();
             blackhole.consume(out);
         }

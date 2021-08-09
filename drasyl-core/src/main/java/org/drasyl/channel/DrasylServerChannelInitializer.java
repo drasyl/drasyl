@@ -41,7 +41,6 @@ import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.MessageSerializer;
-import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
 import org.drasyl.remote.handler.InternetDiscovery;
@@ -151,12 +150,16 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter());
 
-            ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleInboundHandler<UnarmedMessage, Address>() {
+            ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
                 @Override
-                protected void matchedInbound(final ChannelHandlerContext ctx,
-                                              final Address sender,
-                                              final UnarmedMessage msg) throws Exception {
-                    ctx.fireChannelRead(new AddressedMessage<>(msg.readAndRelease(), sender));
+                protected void channelRead0(final ChannelHandlerContext ctx,
+                                            final AddressedMessage<?, ?> msg) throws Exception {
+                    if (msg.message() instanceof UnarmedMessage) {
+                        ctx.fireChannelRead(new AddressedMessage<>(((UnarmedMessage) msg.message()).read(), msg.address()));
+                    }
+                    else {
+                        ctx.fireChannelRead(msg);
+                    }
                 }
             });
 

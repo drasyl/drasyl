@@ -23,12 +23,11 @@ package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.handler.codec.MessageToMessageEncoder;
 import org.drasyl.remote.protocol.RemoteMessage;
-
-import java.util.List;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
@@ -39,23 +38,28 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
  */
 @ChannelHandler.Sharable
 @Stateless
-public final class HopCountGuard extends MessageToMessageEncoder<RemoteMessage, Address> {
+public final class HopCountGuard extends ChannelOutboundHandlerAdapter {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
 
     private HopCountGuard() {
         // singleton
     }
 
-    @SuppressWarnings("java:S112")
     @Override
-    protected void encode(final ChannelHandlerContext ctx,
-                          final Address recipient,
-                          final RemoteMessage msg, final List<Object> out) throws Exception {
-        if (msg.getHopCount().getByte() < ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageHopLimit()) {
-            out.add(msg.incrementHopCount());
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
+            final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
+            if (remoteMsg.getHopCount().getByte() < ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageHopLimit()) {
+                ctx.writeAndFlush(new AddressedMessage<>(remoteMsg.incrementHopCount(), ((AddressedMessage<?, ?>) msg).address()));
+            }
+            else {
+                promise.setFailure(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
+            }
         }
         else {
-            throw new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message.");
+            super.write(ctx, msg, promise);
         }
     }
 }

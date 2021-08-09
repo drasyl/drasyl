@@ -21,13 +21,14 @@
  */
 package org.drasyl.channel;
 
+import io.netty.util.ReferenceCounted;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class AddressedMessage<M, A extends Address> {
+public class AddressedMessage<M, A extends Address> implements ReferenceCounted {
     private final M message;
     private final A address;
 
@@ -67,5 +68,67 @@ public class AddressedMessage<M, A extends Address> {
     @Override
     public int hashCode() {
         return Objects.hash(message, address);
+    }
+
+    @Override
+    public int refCnt() {
+        if (message instanceof ReferenceCounted) {
+            return ((ReferenceCounted) message).refCnt();
+        }
+        else {
+            return 0;
+        }
+    }
+
+    @Override
+    public ReferenceCounted retain() {
+        if (message instanceof ReferenceCounted) {
+            ((ReferenceCounted) message).retain();
+        }
+        return this;
+    }
+
+    @Override
+    public ReferenceCounted retain(final int increment) {
+        if (message instanceof ReferenceCounted) {
+            ((ReferenceCounted) message).retain(increment);
+        }
+        return this;
+    }
+
+    @Override
+    public ReferenceCounted touch() {
+        if (message instanceof ReferenceCounted) {
+            ((ReferenceCounted) message).touch();
+        }
+        return this;
+    }
+
+    @Override
+    public ReferenceCounted touch(final Object hint) {
+        if (message instanceof ReferenceCounted) {
+            ((ReferenceCounted) message).touch(hint);
+        }
+        return this;
+    }
+
+    @Override
+    public boolean release() {
+        if (message instanceof ReferenceCounted) {
+            return ((ReferenceCounted) message).release();
+        }
+        else {
+            return true;
+        }
+    }
+
+    @Override
+    public boolean release(final int decrement) {
+        if (message instanceof ReferenceCounted) {
+            return ((ReferenceCounted) message).release(decrement);
+        }
+        else {
+            return true;
+        }
     }
 }

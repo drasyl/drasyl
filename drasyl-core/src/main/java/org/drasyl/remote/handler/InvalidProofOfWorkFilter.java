@@ -23,10 +23,12 @@ package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.handler.filter.InboundMessageFilter;
 import org.drasyl.remote.protocol.RemoteMessage;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
@@ -37,7 +39,8 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 @SuppressWarnings("java:S110")
 @ChannelHandler.Sharable
 @Stateless
-public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteMessage, Address> {
+public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+    private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
 
     private InvalidProofOfWorkFilter() {
@@ -45,17 +48,20 @@ public final class InvalidProofOfWorkFilter extends InboundMessageFilter<RemoteM
     }
 
     @Override
-    protected boolean accept(final ChannelHandlerContext ctx,
-                             final Address sender,
-                             final RemoteMessage msg) throws Exception {
-        return !ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msg.getRecipient()) || msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY);
-    }
-
-    @SuppressWarnings("java:S112")
-    @Override
-    protected void messageRejected(final ChannelHandlerContext ctx,
-                                   final Address sender,
-                                   final RemoteMessage msg) throws Exception {
-        throw new Exception("Message `" + msg.getNonce() + "` with invalid proof of work dropped.");
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedMessage<?, ?> msg) throws Exception {
+        if (msg.message() instanceof RemoteMessage) {
+            final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
+            final boolean validProofOfWork = !ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
+            if (validProofOfWork) {
+                ctx.fireChannelRead(msg);
+            }
+            else {
+                LOG.debug("Message `{}` with invalid proof of work dropped.", remoteMsg::getNonce);
+            }
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
     }
 }

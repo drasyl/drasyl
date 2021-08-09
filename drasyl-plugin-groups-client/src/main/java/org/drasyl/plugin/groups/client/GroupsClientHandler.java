@@ -22,13 +22,13 @@
 package org.drasyl.plugin.groups.client;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.event.GroupLeftEvent;
@@ -63,7 +63,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 
-public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessage, Address> {
+public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
     private static final Duration RETRY_DELAY = Duration.ofSeconds(10);
     private static final Duration FIRST_JOIN_DELAY = Duration.ofSeconds(5);
@@ -86,20 +86,26 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
     }
 
     @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final Address sender,
-                                  final GroupsServerMessage msg) {
-        if (msg instanceof MemberJoinedMessage) {
-            onMemberJoined(ctx, (MemberJoinedMessage) msg);
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedMessage<?, ?> msg) {
+        if (msg.message() instanceof GroupsServerMessage) {
+            final GroupsServerMessage grpMsg = (GroupsServerMessage) msg.message();
+
+            if (grpMsg instanceof MemberJoinedMessage) {
+                onMemberJoined(ctx, (MemberJoinedMessage) grpMsg);
+            }
+            else if (grpMsg instanceof MemberLeftMessage) {
+                onMemberLeft(ctx, (MemberLeftMessage) grpMsg);
+            }
+            else if (grpMsg instanceof GroupWelcomeMessage) {
+                onWelcome(ctx, msg.address(), (GroupWelcomeMessage) grpMsg);
+            }
+            else if (grpMsg instanceof GroupJoinFailedMessage) {
+                onJoinFailed(ctx, (GroupJoinFailedMessage) grpMsg);
+            }
         }
-        else if (msg instanceof MemberLeftMessage) {
-            onMemberLeft(ctx, (MemberLeftMessage) msg);
-        }
-        else if (msg instanceof GroupWelcomeMessage) {
-            onWelcome(ctx, sender, (GroupWelcomeMessage) msg);
-        }
-        else if (msg instanceof GroupJoinFailedMessage) {
-            onJoinFailed(ctx, (GroupJoinFailedMessage) msg);
+        else {
+            ctx.fireChannelRead(msg);
         }
     }
 

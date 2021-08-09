@@ -154,7 +154,7 @@ class UdpServerTest {
             try {
                 pipeline.pipeline().writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
 
-                verify(channel).writeAndFlush(any(), any());
+                verify(channel).writeAndFlush(any());
             }
             finally {
                 pipeline.drasylClose();

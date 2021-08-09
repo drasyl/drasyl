@@ -24,9 +24,9 @@ package org.drasyl.remote.handler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.pipeline.Stateless;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.handler.codec.MessageToMessageCodec;
 import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 
@@ -38,7 +38,7 @@ import java.util.List;
 @SuppressWarnings("java:S110")
 @ChannelHandler.Sharable
 @Stateless
-public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<ByteBuf, RemoteMessage, InetSocketAddressWrapper> {
+public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
     public static final RemoteMessageToByteBufCodec INSTANCE = new RemoteMessageToByteBufCodec();
 
     private RemoteMessageToByteBufCodec() {
@@ -46,20 +46,33 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Byt
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx,
-                          final InetSocketAddressWrapper sender,
-                          final ByteBuf msg,
+    protected void encode(final ChannelHandlerContext ctx,
+                          final AddressedMessage<?, ?> msg,
                           final List<Object> out) throws Exception {
-        out.add(PartialReadMessage.of(msg.retain()));
+        if (msg.message() instanceof RemoteMessage) {
+            final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
+
+            final ByteBuf buffer = ctx.alloc().ioBuffer();
+            remoteMsg.writeTo(buffer);
+
+            out.add(new AddressedMessage<>(buffer, msg.address()));
+        }
+        else {
+            out.add(msg);
+        }
     }
 
     @Override
-    protected void encode(final ChannelHandlerContext ctx,
-                          final InetSocketAddressWrapper recipient,
-                          final RemoteMessage msg,
+    protected void decode(final ChannelHandlerContext ctx,
+                          final AddressedMessage<?, ?> msg,
                           final List<Object> out) throws Exception {
-        final ByteBuf buffer = ctx.alloc().ioBuffer();
-        msg.writeTo(buffer);
-        out.add(buffer);
+        if (msg.message() instanceof ByteBuf) {
+            final ByteBuf byteBufMsg = (ByteBuf) msg.message();
+
+            out.add(new AddressedMessage<>(PartialReadMessage.of(byteBufMsg.retain()), msg.address()));
+        }
+        else {
+            out.add(msg);
+        }
     }
 }

@@ -22,11 +22,11 @@
 package org.drasyl.plugin.groups.manager;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.plugin.groups.client.message.GroupLeaveMessage;
@@ -58,7 +58,7 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
 
-public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, IdentityPublicKey> {
+public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
     private Future staleTask;
@@ -125,14 +125,20 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     }
 
     @Override
-    protected void matchedInbound(final ChannelHandlerContext ctx,
-                                  final IdentityPublicKey sender,
-                                  final GroupsClientMessage msg) {
-        if (msg instanceof GroupJoinMessage) {
-            ctx.executor().execute(() -> handleJoinRequest(ctx, sender, (GroupJoinMessage) msg, new CompletableFuture<>()));
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedMessage<?, ?> msg) {
+        if (msg.message() instanceof GroupsClientMessage && msg.address() instanceof IdentityPublicKey) {
+            final GroupsClientMessage grpMsg = (GroupsClientMessage) msg.message();
+
+            if (grpMsg instanceof GroupJoinMessage) {
+                ctx.executor().execute(() -> handleJoinRequest(ctx, (IdentityPublicKey) msg.address(), (GroupJoinMessage) grpMsg, new CompletableFuture<>()));
+            }
+            else if (grpMsg instanceof GroupLeaveMessage) {
+                ctx.executor().execute(() -> handleLeaveRequest(ctx, (IdentityPublicKey) msg.address(), (GroupLeaveMessage) grpMsg, new CompletableFuture<>()));
+            }
         }
-        else if (msg instanceof GroupLeaveMessage) {
-            ctx.executor().execute(() -> handleLeaveRequest(ctx, sender, (GroupLeaveMessage) msg, new CompletableFuture<>()));
+        else {
+            ctx.fireChannelRead(msg);
         }
     }
 
