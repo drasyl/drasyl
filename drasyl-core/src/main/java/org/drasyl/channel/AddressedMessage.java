@@ -23,11 +23,49 @@ package org.drasyl.channel;
 
 import org.drasyl.pipeline.address.Address;
 
-/**
- * A wrapper used to add {@link Handler} to a {@link io.netty.channel.Channel}.
- */
-public class MigrationOutboundMessage<T, A extends Address> extends AddressedMessage<T, A> {
-    public MigrationOutboundMessage(final T message, final A address) {
-        super(message, address);
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
+
+public class AddressedMessage<M, A extends Address> {
+    private final M message;
+    private final A address;
+
+    public AddressedMessage(final M message, final A address) {
+        this.message = message;
+        this.address = requireNonNull(address);
+    }
+
+    public M message() {
+        return message;
+    }
+
+    public A address() {
+        return address;
+    }
+
+    @Override
+    public String toString() {
+        return "AddressedMessage{" +
+                "message=" + message +
+                ", address=" + address +
+                '}';
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final AddressedMessage<?, ?> that = (AddressedMessage<?, ?>) o;
+        return Objects.equals(message, that.message) && Objects.equals(address, that.address);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(message, address);
     }
 }
