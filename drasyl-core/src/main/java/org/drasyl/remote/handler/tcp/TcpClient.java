@@ -136,13 +136,27 @@ public class TcpClient extends SimpleDuplexHandler<ByteBuf, ByteBuf, InetSocketA
         final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
         if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
             LOG.trace("Send message `{}` via TCP connection to `{}`.", () -> msg, () -> recipient);
-            mySuperPeerChannel.channel().writeAndFlush(msg, promise);
+            mySuperPeerChannel.channel().writeAndFlush(msg).addListener(future -> {
+                if (future.isSuccess()) {
+                    promise.setSuccess();
+                }
+                else {
+                    promise.setFailure(future.cause());
+                }
+            });
         }
         else {
             // passthrough message
 
             final ChannelPromise promise1 = ctx.newPromise();
-            ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient), promise1);
+            ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient)).addListener(future -> {
+                if (future.isSuccess()) {
+                    promise1.setSuccess();
+                }
+                else {
+                    promise1.setFailure(future.cause());
+                }
+            });
 
             FutureCombiner.getInstance()
                     .add(FutureUtil.toFuture(promise1))

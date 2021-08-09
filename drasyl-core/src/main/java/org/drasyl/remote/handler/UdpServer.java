@@ -189,7 +189,14 @@ public class UdpServer extends SimpleDuplexHandler<Object, ByteBuf, InetSocketAd
         if (channel != null && channel.isWritable()) {
             final DatagramPacket packet = new DatagramPacket(msg, recipient);
             LOG.trace("Send Datagram {}", packet);
-            channel.writeAndFlush(packet, promise);
+            channel.writeAndFlush(packet).addListener(future -> {
+                if (future.isSuccess()) {
+                    promise.setSuccess();
+                }
+                else {
+                    promise.setFailure(future.cause());
+                }
+            });
         }
         else {
             ReferenceCountUtil.safeRelease(msg);
