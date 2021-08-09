@@ -27,7 +27,6 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.channel.MigrationInboundMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
@@ -62,43 +61,6 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
     }
 
     /**
-     * Create a new instance
-     *
-     * @param inboundMessageType the type of messages to match
-     * @param addressType        the type of the address to match
-     */
-    protected SimpleInboundHandler(final Class<? extends MI> inboundMessageType,
-                                   final Class<? extends MA> addressType) {
-        super(false);
-        this.matcherMessage = TypeParameterMatcher.get(inboundMessageType);
-        this.matcherAddress = TypeParameterMatcher.get(addressType);
-    }
-
-    @Skip
-    @SuppressWarnings("java:S112")
-    public void onInbound(final ChannelHandlerContext ctx,
-                          final Address sender,
-                          final Object msg,
-                          final CompletableFuture<Void> future) throws Exception {
-        if (acceptInbound(msg) && acceptAddress(sender)) {
-            @SuppressWarnings("unchecked") final MI castedMsg = (MI) msg;
-            @SuppressWarnings("unchecked") final MA castedAddress = (MA) sender;
-            matchedInbound(ctx, castedAddress, castedMsg, future);
-        }
-        else {
-            ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
-        }
-    }
-
-    /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be
-     * passed to the next {@link Handler} in the {@link Pipeline}.
-     */
-    protected boolean acceptInbound(final Object msg) {
-        return matcherMessage.match(msg);
-    }
-
-    /**
      * Is called for each message of type {@link MI}.
      *
      * @param ctx    handler context
@@ -112,18 +74,21 @@ public abstract class SimpleInboundHandler<MI, MA extends Address> extends Simpl
                                            MI msg,
                                            CompletableFuture<Void> future) throws Exception;
 
-    /**
-     * Returns {@code true} if the given address should be handled, {@code false} otherwise.
-     */
-    protected boolean acceptAddress(final Address address) {
-        return matcherAddress.match(address);
-    }
-
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final MigrationInboundMessage<MI, MA> msg) {
         try {
-            onInbound(ctx, msg.address(), msg.message(), msg.future());
+            final Address sender = msg.address();
+            final Object msg1 = msg.message();
+            final CompletableFuture<Void> future = msg.future();
+            if (matcherMessage.match(msg1) && matcherAddress.match(sender)) {
+                @SuppressWarnings("unchecked") final MI castedMsg = (MI) msg1;
+                @SuppressWarnings("unchecked") final MA castedAddress = (MA) sender;
+                matchedInbound(ctx, castedAddress, castedMsg, future);
+            }
+            else {
+                ctx.fireChannelRead(new MigrationInboundMessage<>(msg1, sender, future));
+            }
         }
         catch (final Exception e) {
             msg.future().completeExceptionally(e);

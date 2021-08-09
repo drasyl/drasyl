@@ -74,7 +74,7 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Channe
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) throws Exception {
-        if (acceptOutbound(msg) && acceptAddress(recipient)) {
+        if (matcherMessage.match(msg) && matcherAddress.match(recipient)) {
             @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
             matchedOutbound(ctx, castedAddress, castedMsg, future);
@@ -82,14 +82,6 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Channe
         else {
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
         }
-    }
-
-    /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be
-     * passed to the next {@link Handler} in the {@link Pipeline}.
-     */
-    protected boolean acceptOutbound(final Object msg) {
-        return matcherMessage.match(msg);
     }
 
     /**
@@ -105,13 +97,6 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Channe
                                             A recipient,
                                             O msg,
                                             CompletableFuture<Void> future) throws Exception;
-
-    /**
-     * Returns {@code true} if the given address should be handled, {@code false} otherwise.
-     */
-    protected boolean acceptAddress(final Address address) {
-        return matcherAddress.match(address);
-    }
 
     @Override
     public void write(final ChannelHandlerContext ctx,

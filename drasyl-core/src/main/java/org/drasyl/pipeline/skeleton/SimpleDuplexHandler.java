@@ -65,7 +65,7 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
                            final Address recipient,
                            final Object msg,
                            final CompletableFuture<Void> future) throws Exception {
-        if (acceptOutbound(msg) && acceptAddress(recipient)) {
+        if (outboundMessageMatcher.match(msg) && matcherAddress.match(recipient)) {
             @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
             matchedOutbound(ctx, castedAddress, castedMsg, future);
@@ -73,14 +73,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
         else {
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new MigrationOutboundMessage<>(msg, recipient)))).combine(future);
         }
-    }
-
-    /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be
-     * passed to the next {@link Handler} in the {@link Pipeline}.
-     */
-    protected boolean acceptOutbound(final Object msg) {
-        return outboundMessageMatcher.match(msg);
     }
 
     /**
@@ -125,7 +117,7 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
                           final Address sender,
                           final Object msg,
                           final CompletableFuture<Void> future) throws Exception {
-        if (acceptInbound(msg) && acceptAddress(sender)) {
+        if (matcherMessage.match(msg) && matcherAddress.match(sender)) {
             @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
             @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
             matchedInbound(ctx, castedAddress, castedMsg, future);
@@ -133,14 +125,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
         else {
             ctx.fireChannelRead(new MigrationInboundMessage<>(msg, sender, future));
         }
-    }
-
-    /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be
-     * passed to the next {@link Handler} in the {@link Pipeline}.
-     */
-    protected boolean acceptInbound(final Object msg) {
-        return matcherMessage.match(msg);
     }
 
     /**
@@ -156,13 +140,6 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Chann
                                            A sender,
                                            I msg,
                                            CompletableFuture<Void> future) throws Exception;
-
-    /**
-     * Returns {@code true} if the given address should be handled, {@code false} otherwise.
-     */
-    protected boolean acceptAddress(final Address address) {
-        return matcherAddress.match(address);
-    }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
