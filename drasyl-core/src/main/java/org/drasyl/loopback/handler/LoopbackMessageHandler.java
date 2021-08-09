@@ -21,12 +21,11 @@
  */
 package org.drasyl.loopback.handler;
 
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
@@ -35,8 +34,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
  * This handler converts outgoing messages addressed to the local node to incoming messages
  * addressed to the local node.
  */
-@ChannelHandler.Sharable
-@Stateless
+@Sharable
 public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
     private final boolean started;
 

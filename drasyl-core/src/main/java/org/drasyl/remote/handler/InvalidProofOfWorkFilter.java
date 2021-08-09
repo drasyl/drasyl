@@ -21,11 +21,10 @@
  */
 package org.drasyl.remote.handler;
 
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.Stateless;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -37,8 +36,7 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
  * This handler filters out all messages received with invalid proof of work.
  */
 @SuppressWarnings("java:S110")
-@ChannelHandler.Sharable
-@Stateless
+@Sharable
 public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();

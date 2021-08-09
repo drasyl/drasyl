@@ -22,12 +22,11 @@
 package org.drasyl.pipeline.serialization;
 
 import com.google.protobuf.ByteString;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.Stateless;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
@@ -43,8 +42,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATI
 /**
  * This handler serializes messages to {@link ApplicationMessage} an vice vera.
  */
-@ChannelHandler.Sharable
-@Stateless
+@Sharable
 @SuppressWarnings({ "java:S110" })
 public final class MessageSerializer extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
     public static final MessageSerializer INSTANCE = new MessageSerializer();

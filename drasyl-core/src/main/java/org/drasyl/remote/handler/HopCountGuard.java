@@ -21,12 +21,11 @@
  */
 package org.drasyl.remote.handler;
 
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.Stateless;
 import org.drasyl.remote.protocol.RemoteMessage;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
@@ -36,8 +35,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
  * increments the hop counter of each outgoing message. If the limit of hops is reached, the message
  * is discarded. Otherwise the message can pass.
  */
-@ChannelHandler.Sharable
-@Stateless
+@Sharable
 public final class HopCountGuard extends ChannelOutboundHandlerAdapter {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
 

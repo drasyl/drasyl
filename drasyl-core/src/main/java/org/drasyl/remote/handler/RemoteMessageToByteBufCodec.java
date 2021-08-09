@@ -22,11 +22,10 @@
 package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.Stateless;
 import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 
@@ -36,8 +35,7 @@ import java.util.List;
  * This codec converts {@link RemoteMessage}s to {@link ByteBuf}s an vice vera.
  */
 @SuppressWarnings("java:S110")
-@ChannelHandler.Sharable
-@Stateless
+@Sharable
 public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
     public static final RemoteMessageToByteBufCodec INSTANCE = new RemoteMessageToByteBufCodec();
 

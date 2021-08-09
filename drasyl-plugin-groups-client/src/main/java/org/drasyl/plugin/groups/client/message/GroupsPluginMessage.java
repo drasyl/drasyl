@@ -21,10 +21,8 @@
  */
 package org.drasyl.plugin.groups.client.message;
 
-import org.drasyl.pipeline.AutoSwallow;
-
 /**
  * Default interface for all messages of the groups plugin.
  */
-public interface GroupsPluginMessage extends AutoSwallow {
+public interface GroupsPluginMessage {
 }

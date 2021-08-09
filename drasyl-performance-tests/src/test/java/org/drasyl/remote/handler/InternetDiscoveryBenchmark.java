@@ -36,6 +36,7 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.AbstractBenchmark;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
@@ -52,7 +53,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import test.util.IdentityTestUtil;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -104,9 +104,9 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void matchedWrite() {
         try {
-            handler.matchedOutbound(ctx, recipient, msg, future);
+            handler.write(ctx, new AddressedMessage(msg, recipient), future);
         }
-        catch (final IOException e) {
+        catch (final Exception e) {
             handleUnexpectedException(e);
         }
     }

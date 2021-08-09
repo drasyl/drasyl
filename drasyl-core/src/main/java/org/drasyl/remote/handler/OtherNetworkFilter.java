@@ -21,11 +21,10 @@
  */
 package org.drasyl.remote.handler;
 
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.Stateless;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.logging.Logger;
@@ -37,8 +36,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
  * This handler filters out all messages received from other networks.
  */
 @SuppressWarnings("java:S110")
-@ChannelHandler.Sharable
-@Stateless
+@Sharable
 public final class OtherNetworkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
