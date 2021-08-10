@@ -24,16 +24,9 @@ package org.drasyl.channel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
-import org.drasyl.event.Node;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeNormalTerminationEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
@@ -59,7 +52,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.Null.NULL;
 
 /**
@@ -90,29 +82,18 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
     public static final String TCP_CLIENT = "TCP_CLIENT";
     public static final String PORT_MAPPER = "PORT_MAPPER";
     public static final String UDP_SERVER = "UDP_SERVER";
-    public static final String NODE_EVENTS = "NODE_EVENTS";
 
     @SuppressWarnings({ "java:S138", "java:S1541", "java:S3776" })
     @Override
     protected void initChannel(final Channel ch) {
         final DrasylConfig config = ch.attr(CONFIG_ATTR_KEY).get();
 
-        ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void exceptionCaught(final ChannelHandlerContext ctx,
-                                        final Throwable e) {
-                LOG.warn("drasyl node faced error and will shut down:", e);
-                ctx.pipeline().fireUserEventTriggered(NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e));
-                ch.close();
-            }
-        });
-
         ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 
         // convert outbound messages addresses to us to inbound messages
         ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
 
-        // discover nodes running within the same jvm.
+        // discover nodes running within the same jvm
         if (config.isIntraVmDiscoveryEnabled()) {
             ch.pipeline().addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
         }
@@ -199,8 +180,6 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             }
             ch.pipeline().addFirst(UDP_SERVER, new UdpServer());
         }
-
-        ch.pipeline().addFirst(NODE_EVENTS, new NodeLifecycleEvents());
     }
 
     /**
@@ -210,68 +189,24 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
     private static class ChildChannelRouter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final AddressedMessage<?, ?> migrationMsg) {
-            Object msg = migrationMsg.message();
-            final IdentityPublicKey sender = (IdentityPublicKey) migrationMsg.address();
+                                    final AddressedMessage<?, ?> msg) {
+            if (msg.address() instanceof IdentityPublicKey) {
+                Object o = msg.message();
+                final IdentityPublicKey sender = (IdentityPublicKey) msg.address();
 
-            // create/get channel
-            final Channel channel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
+                // create/get channel
+                final Channel channel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
 
-            if (msg == null) {
-                msg = NULL;
+                if (o == null) {
+                    o = NULL;
+                }
+
+                // pass message to channel
+                channel.pipeline().fireChannelRead(o);
             }
-
-            // pass message to channel
-            channel.pipeline().fireChannelRead(msg);
-        }
-
-        @Override
-        public void userEventTriggered(final ChannelHandlerContext ctx,
-                                       final Object evt) throws Exception {
-            super.userEventTriggered(ctx, evt);
-
-            if (evt instanceof Event) {
-                ((DefaultDrasylServerChannel) ctx.channel()).channels().forEach((address, channel) -> channel.pipeline().fireUserEventTriggered(evt));
+            else {
+                ctx.fireChannelRead(msg);
             }
-        }
-    }
-
-    /**
-     * Emits node lifecycle events ({@link NodeUpEvent}, {@link NodeDownEvent}, {@link
-     * NodeNormalTerminationEvent}, {@link NodeUnrecoverableErrorEvent}).
-     */
-    private static class NodeLifecycleEvents extends ChannelInboundHandlerAdapter {
-        private boolean errorOccurred = false;
-
-        @Override
-        public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-            super.channelActive(ctx);
-
-            LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
-            ctx.fireUserEventTriggered(NodeUpEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
-            LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
-        }
-
-        @Override
-        public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-            super.channelInactive(ctx);
-
-            LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
-            if (!errorOccurred) {
-                ctx.fireUserEventTriggered(NodeDownEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
-                ctx.fireUserEventTriggered(NodeNormalTerminationEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
-                LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
-            }
-        }
-
-        @Override
-        public void userEventTriggered(final ChannelHandlerContext ctx,
-                                       final Object evt) throws Exception {
-            if (evt instanceof NodeUnrecoverableErrorEvent) {
-                errorOccurred = true;
-            }
-
-            super.userEventTriggered(ctx, evt);
         }
     }
 }

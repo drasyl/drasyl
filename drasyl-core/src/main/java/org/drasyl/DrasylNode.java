@@ -40,6 +40,11 @@ import org.drasyl.channel.DrasylServerChannelInitializer;
 import org.drasyl.channel.MessageSerializer;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
+import org.drasyl.event.Node;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.PluginManager;
@@ -62,6 +67,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.Null.NULL;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
 
@@ -445,6 +451,8 @@ public abstract class DrasylNode {
      * Initialize the {@link io.netty.channel.ServerChannel} used by {@link DrasylNode}.
      */
     public class DrasylNodeServerChannelInitializer extends DrasylServerChannelInitializer {
+        private boolean errorOccurred = false;
+
         @SuppressWarnings("java:S1188")
         @Override
         protected void initChannel(final Channel ch) {
@@ -460,6 +468,10 @@ public abstract class DrasylNode {
                 public void channelActive(final ChannelHandlerContext ctx) throws Exception {
                     super.channelActive(ctx);
 
+                    LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
+                    ctx.fireUserEventTriggered(NodeUpEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                    LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
+
                     pluginManager.afterStart(ctx);
                 }
 
@@ -468,6 +480,13 @@ public abstract class DrasylNode {
                     super.channelInactive(ctx);
 
                     pluginManager.beforeShutdown(ctx);
+
+                    LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
+                    if (!errorOccurred) {
+                        ctx.fireUserEventTriggered(NodeDownEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                        ctx.fireUserEventTriggered(NodeNormalTerminationEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                        LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
+                    }
                 }
 
                 @Override
@@ -482,6 +501,10 @@ public abstract class DrasylNode {
                 public void userEventTriggered(final ChannelHandlerContext ctx,
                                                final Object evt) {
                     if (evt instanceof Event) {
+                        if (evt instanceof NodeUnrecoverableErrorEvent) {
+                            errorOccurred = true;
+                        }
+
                         onEvent((Event) evt);
                     }
                     else if (evt instanceof Resolve) {
@@ -491,6 +514,14 @@ public abstract class DrasylNode {
                         final Channel resolvedChannel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
                         resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
                     }
+                }
+
+                @Override
+                public void exceptionCaught(final ChannelHandlerContext ctx,
+                                            final Throwable e) {
+                    LOG.warn("drasyl node faced error and will shut down:", e);
+                    ctx.pipeline().fireUserEventTriggered(NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e));
+                    ch.close();
                 }
             });
 
