@@ -27,6 +27,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -103,7 +104,10 @@ public class TcpClientTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                assertEquals(new AddressedMessage<>(msg, sender), pipeline.readInbound());
+                final ReferenceCounted actual = pipeline.readInbound();
+                assertEquals(new AddressedMessage<>(msg, sender), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -123,10 +127,13 @@ public class TcpClientTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                assertEquals(new AddressedMessage<>(msg, sender), pipeline.readInbound());
+                final ReferenceCounted actual = pipeline.readInbound();
+                assertEquals(new AddressedMessage<>(msg, sender), actual);
                 verify(superPeerChannel).cancel(true);
                 verify(superPeerChannel.channel()).close();
                 assertEquals(0, noResponseFromSuperPeerSince.get());
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -141,7 +148,10 @@ public class TcpClientTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                assertEquals(new AddressedMessage<>(msg, recipient), pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertEquals(new AddressedMessage<>(msg, recipient), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();

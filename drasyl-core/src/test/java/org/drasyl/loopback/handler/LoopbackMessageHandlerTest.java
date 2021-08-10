@@ -21,6 +21,7 @@
  */
 package org.drasyl.loopback.handler;
 
+import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -52,7 +53,10 @@ class LoopbackMessageHandlerTest {
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-            assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
+            final ReferenceCounted actual = pipeline.readOutbound();
+            assertEquals(new AddressedMessage<>(message, recipient), actual);
+
+            actual.release();
         }
         finally {
             pipeline.drasylClose();
@@ -68,7 +72,10 @@ class LoopbackMessageHandlerTest {
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-            assertEquals(new AddressedMessage<>(message, recipient), pipeline.readInbound());
+            final ReferenceCounted actual = pipeline.readInbound();
+            assertEquals(new AddressedMessage<>(message, recipient), actual);
+
+            actual.release();
         }
         finally {
             pipeline.drasylClose();

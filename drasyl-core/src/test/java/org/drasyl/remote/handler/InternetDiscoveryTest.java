@@ -24,6 +24,7 @@ package org.drasyl.remote.handler;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ReferenceCounted;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
@@ -170,8 +171,11 @@ class InternetDiscoveryTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(discoveryMessage, address));
 
-                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(AcknowledgementMessage.class));
+                final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                assertThat(actual.message(), instanceOf(AcknowledgementMessage.class));
                 verify(peersManager, never()).addPath(any(), any(), any());
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -371,9 +375,16 @@ class InternetDiscoveryTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                assertEquals(message, ((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message());
-                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
-                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
+                final AddressedMessage<RemoteMessage, SocketAddress> actual1 = pipeline.readOutbound();
+                assertEquals(message, actual1.message());
+                final AddressedMessage<RemoteMessage, SocketAddress> actual2 = pipeline.readOutbound();
+                assertThat(actual2.message(), instanceOf(UniteMessage.class));
+                final AddressedMessage<RemoteMessage, SocketAddress> actual3 = pipeline.readOutbound();
+                assertThat(actual3.message(), instanceOf(UniteMessage.class));
+
+                actual1.release();
+                actual2.release();
+                actual3.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -397,7 +408,10 @@ class InternetDiscoveryTest {
                 try {
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                    assertEquals(message, ((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message());
+                    final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                    assertEquals(message, actual.message());
+
+                    actual.release();
                 }
                 finally {
                     pipeline.drasylClose();
@@ -411,7 +425,7 @@ class InternetDiscoveryTest {
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey recipient) {
                 when(message.getRecipient()).thenThrow(IllegalArgumentException.class);
 
-                final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
+                final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(recipient, recipientPeer)), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
@@ -440,7 +454,10 @@ class InternetDiscoveryTest {
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>(applicationMessage, address));
 
                     verify(peer).applicationTrafficOccurred();
-                    assertEquals(new AddressedMessage<>(applicationMessage, sender), pipeline.readInbound());
+                    final ReferenceCounted actual = pipeline.readInbound();
+                    assertEquals(new AddressedMessage<>(applicationMessage, sender), actual);
+
+                    actual.release();
                 }
                 finally {
                     pipeline.drasylClose();
@@ -465,7 +482,10 @@ class InternetDiscoveryTest {
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                    assertEquals(new AddressedMessage<>(message, recipientSocketAddress), pipeline.readOutbound());
+                    final ReferenceCounted actual = pipeline.readOutbound();
+                    assertEquals(new AddressedMessage<>(message, recipientSocketAddress), actual);
+
+                    actual.release();
                 }
                 finally {
                     pipeline.drasylClose();
@@ -486,7 +506,10 @@ class InternetDiscoveryTest {
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                    assertEquals(new AddressedMessage<>(message, superPeerSocketAddress), pipeline.readOutbound());
+                    final ReferenceCounted actual = pipeline.readOutbound();
+                    assertEquals(new AddressedMessage<>(message, superPeerSocketAddress), actual);
+
+                    actual.release();
                 }
                 finally {
                     pipeline.drasylClose();
@@ -505,7 +528,10 @@ class InternetDiscoveryTest {
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                    assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
+                    final ReferenceCounted actual = pipeline.readOutbound();
+                    assertEquals(new AddressedMessage<>(message, recipient), actual);
+
+                    actual.release();
                 }
                 finally {
                     pipeline.drasylClose();

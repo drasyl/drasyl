@@ -30,7 +30,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
@@ -177,23 +176,6 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             channel.close().awaitUninterruptibly();
             channel = null;
             LOG.debug("Server stopped");
-        }
-    }
-
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof AddressedMessage) {
-            final AddressedMessage<?, ?> migrationMsg = (AddressedMessage<?, ?>) msg;
-            try {
-                ctx.fireChannelRead(new AddressedMessage<>(migrationMsg.message(), migrationMsg.address()));
-            }
-            catch (final Exception e) {
-                ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(migrationMsg.message());
-            }
-        }
-        else {
-            ctx.fireChannelRead(msg);
         }
     }
 

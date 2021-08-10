@@ -182,7 +182,10 @@ class UdpServerTest {
             try {
                 pipeline.pipeline().fireChannelActive();
 
-                assertThat(((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message(), instanceOf(ByteBuf.class));
+                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                assertThat(actual.message(), instanceOf(ByteBuf.class));
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();

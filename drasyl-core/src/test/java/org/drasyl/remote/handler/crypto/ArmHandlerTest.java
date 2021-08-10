@@ -23,6 +23,7 @@ package org.drasyl.remote.handler.crypto;
 
 import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.SessionPair;
+import io.netty.util.ReferenceCounted;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
@@ -131,8 +132,13 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>((Object) applicationMessage, receiveAddress));
 
-                assertEquals(applicationMessage, ((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
-                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+                final AddressedMessage<ArmedMessage, SocketAddress> actual1 = pipeline.readOutbound();
+                assertEquals(applicationMessage, actual1.message().disarm(Crypto.INSTANCE, sessionPairReceiver));
+                final AddressedMessage<ArmedMessage, SocketAddress> actual2 = pipeline.readOutbound();
+                assertThat(actual2.message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+
+                actual1.release();
+                actual2.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -161,7 +167,10 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(new AddressedMessage<>(msg, receiveAddress), pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertEquals(new AddressedMessage<>(msg, receiveAddress), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -183,7 +192,10 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(new AddressedMessage<>(msg, receiveAddress), pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertEquals(new AddressedMessage<>(msg, receiveAddress), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -209,7 +221,10 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(new AddressedMessage<>(msg, receiveAddress), pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertEquals(new AddressedMessage<>(msg, receiveAddress), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -250,7 +265,10 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(msg, ((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
+                final AddressedMessage<ArmedMessage, SocketAddress> actual = pipeline.readOutbound();
+                assertEquals(msg, actual.message().disarm(Crypto.INSTANCE, sessionPairReceiver));
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -279,8 +297,13 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(ApplicationMessage.class));
-                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+                final AddressedMessage<ArmedMessage, SocketAddress> actual1 = pipeline.readOutbound();
+                assertThat(actual1.message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(ApplicationMessage.class));
+                final AddressedMessage<ArmedMessage, SocketAddress> actual2 = pipeline.readOutbound();
+                assertThat(actual2.message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+
+                actual1.release();
+                actual2.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -306,7 +329,10 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertNotNull(pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertNotNull(actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -367,7 +393,10 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg.arm(Crypto.INSTANCE, sessionPairSender), receiveAddress));
 
-                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarmAndRelease(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+                final AddressedMessage<ArmedMessage, SocketAddress> actual = pipeline.readOutbound();
+                assertThat(actual.message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -494,8 +523,11 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairSender), instanceOf(KeyExchangeMessage.class));
+                final AddressedMessage<ArmedMessage, SocketAddress> actual = pipeline.readOutbound();
+                assertThat(actual.message().disarm(Crypto.INSTANCE, sessionPairSender), instanceOf(KeyExchangeMessage.class));
                 observerEvents.assertNoValues();
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -631,7 +663,10 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(new AddressedMessage<>(armedMsg, receiveAddress), pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertEquals(new AddressedMessage<>(armedMsg, receiveAddress), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -670,8 +705,14 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertNotNull(pipeline.readOutbound());
-                assertNotNull(pipeline.readOutbound());
+                final ReferenceCounted actual1 = pipeline.readOutbound();
+                assertNotNull(actual1);
+
+                final ReferenceCounted actual2 = pipeline.readOutbound();
+                assertNotNull(actual2);
+
+                actual1.release();
+                actual2.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -709,7 +750,10 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(RemoteMessage.class));
+                final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                assertThat(actual.message(), instanceOf(RemoteMessage.class));
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -743,7 +787,10 @@ class ArmHandlerTest {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
                 assertNull(pipeline.readOutbound());
-                assertThat(((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message(), instanceOf(FullReadMessage.class));
+                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                assertThat(actual.message(), instanceOf(FullReadMessage.class));
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -763,7 +810,10 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(msg, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
+                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                assertEquals(msg, actual.message());
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -781,7 +831,10 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(msg, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
+                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                assertEquals(msg, actual.message());
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -808,7 +861,10 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(disarmedMessage, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
+                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                assertEquals(disarmedMessage, actual.message());
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -835,7 +891,10 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(disarmedMsg, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
+                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                assertEquals(disarmedMsg, actual.message());
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -862,7 +921,10 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(disarmedMessage, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
+                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                assertEquals(disarmedMessage, actual.message());
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -895,8 +957,11 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(new AddressedMessage<>(disarmedMessage, receiveAddress), pipeline.readInbound());
+                final ReferenceCounted actual = pipeline.readInbound();
+                assertEquals(new AddressedMessage<>(disarmedMessage, receiveAddress), actual);
                 assertTrue(agreements.isEmpty());
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -932,7 +997,10 @@ class ArmHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(disarmedMessage, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
+                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                assertEquals(disarmedMessage, actual.message());
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();

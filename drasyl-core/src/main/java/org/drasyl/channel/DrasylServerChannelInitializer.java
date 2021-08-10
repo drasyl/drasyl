@@ -137,7 +137,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                         ctx.fireChannelRead(new AddressedMessage<>(((UnarmedMessage) msg.message()).read(), msg.address()));
                     }
                     else {
-                        ctx.fireChannelRead(msg);
+                        ctx.fireChannelRead(msg.retain());
                     }
                 }
             });

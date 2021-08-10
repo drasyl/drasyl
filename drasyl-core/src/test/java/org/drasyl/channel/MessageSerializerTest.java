@@ -24,6 +24,7 @@ package org.drasyl.channel;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -72,7 +73,10 @@ class MessageSerializerTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
 
-                assertEquals(new AddressedMessage<>("Hallo Welt", address), pipeline.readInbound());
+                final ReferenceCounted actual = pipeline.readInbound();
+                assertEquals(new AddressedMessage<>("Hallo Welt", address), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -90,7 +94,10 @@ class MessageSerializerTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
 
-                assertEquals(new AddressedMessage<>("Hallo Welt", address), pipeline.readInbound());
+                final ReferenceCounted actual = pipeline.readInbound();
+                assertEquals(new AddressedMessage<>("Hallo Welt", address), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -104,7 +111,10 @@ class MessageSerializerTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
 
-                assertEquals(new AddressedMessage<>(null, address), pipeline.readInbound());
+                final ReferenceCounted actual = pipeline.readInbound();
+                assertEquals(new AddressedMessage<>(null, address), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -157,8 +167,10 @@ class MessageSerializerTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>("Hello World", identity.getIdentityPublicKey()));
 
-                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+                final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                assertThat(actual.message(), instanceOf(ApplicationMessage.class));
 
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -178,7 +190,10 @@ class MessageSerializerTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, identity.getIdentityPublicKey()));
 
-                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+                final ReferenceCounted o = pipeline.readOutbound();
+                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) o).message(), instanceOf(ApplicationMessage.class));
+
+                o.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -230,7 +245,10 @@ class MessageSerializerTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(null, identity.getIdentityPublicKey()));
 
-                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+                final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                assertThat(actual.message(), instanceOf(ApplicationMessage.class));
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();

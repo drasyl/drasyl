@@ -108,10 +108,9 @@ class ChunksCollector {
         if (allChunksPresent()) {
             // message complete, use zero-copy to compose it!
             final CompositeByteBuf messageByteBuf = Unpooled.compositeBuffer(totalChunks);
-            for (int i = 0; i < totalChunks; i++) {
-                final ByteBuf chunkByteBuf = chunks.remove(i);
-                messageByteBuf.addComponent(true, chunkByteBuf);
-            }
+            final ByteBuf[] components = chunks.values().toArray(new ByteBuf[0]);
+            chunks.clear();
+            messageByteBuf.addComponents(true, components);
             return PartialReadMessage.of(messageByteBuf);
         }
         else {

@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCounted;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
@@ -132,7 +133,10 @@ class PortMapperTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                assertEquals(new AddressedMessage<>(msg, sender), pipeline.readInbound());
+                final ReferenceCounted actual = pipeline.readInbound();
+                assertEquals(new AddressedMessage<>(msg, sender), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();

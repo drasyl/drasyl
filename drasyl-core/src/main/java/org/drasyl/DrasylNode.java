@@ -469,7 +469,7 @@ public abstract class DrasylNode {
                     super.channelActive(ctx);
 
                     LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
-                    ctx.fireUserEventTriggered(NodeUpEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                    userEventTriggered(ctx, NodeUpEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
                     LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
 
                     pluginManager.afterStart(ctx);
@@ -483,8 +483,8 @@ public abstract class DrasylNode {
 
                     LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
                     if (!errorOccurred) {
-                        ctx.fireUserEventTriggered(NodeDownEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
-                        ctx.fireUserEventTriggered(NodeNormalTerminationEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                        userEventTriggered(ctx, NodeDownEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                        userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
                         LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
                     }
                 }
@@ -520,7 +520,7 @@ public abstract class DrasylNode {
                 public void exceptionCaught(final ChannelHandlerContext ctx,
                                             final Throwable e) {
                     LOG.warn("drasyl node faced error and will shut down:", e);
-                    ctx.pipeline().fireUserEventTriggered(NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e));
+                    userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e));
                     ch.close();
                 }
             });

@@ -52,14 +52,14 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
             final boolean validProofOfWork = !ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
             if (validProofOfWork) {
-                ctx.fireChannelRead(msg);
+                ctx.fireChannelRead(msg.retain());
             }
             else {
                 LOG.debug("Message `{}` with invalid proof of work dropped.", remoteMsg::getNonce);
             }
         }
         else {
-            ctx.fireChannelRead(msg);
+            ctx.fireChannelRead(msg.retain());
         }
     }
 }

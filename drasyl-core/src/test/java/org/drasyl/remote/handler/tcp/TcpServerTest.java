@@ -29,6 +29,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -166,7 +167,10 @@ class TcpServerTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                assertEquals(new AddressedMessage<>(msg, recipient), pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertEquals(new AddressedMessage<>(msg, recipient), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();

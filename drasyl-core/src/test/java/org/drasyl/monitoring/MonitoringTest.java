@@ -24,6 +24,7 @@ package org.drasyl.monitoring;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ReferenceCounted;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
@@ -130,7 +131,10 @@ class MonitoringTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                assertEquals(new AddressedMessage<>(message, sender), pipeline.readInbound());
+                final ReferenceCounted actual = pipeline.readInbound();
+                assertEquals(new AddressedMessage<>(message, sender), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -145,7 +149,10 @@ class MonitoringTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertEquals(new AddressedMessage<>(message, recipient), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();

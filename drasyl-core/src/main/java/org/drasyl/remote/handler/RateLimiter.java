@@ -81,14 +81,14 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?,
             final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) msg.message();
 
             if (!ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
-                ctx.fireChannelRead(msg);
+                ctx.fireChannelRead(msg.retain());
             }
             else {
                 LOG.debug("Message `{}` exceeding rate limit dropped.", fullReadMsg::getNonce);
             }
         }
         else {
-            ctx.fireChannelRead(msg);
+            ctx.fireChannelRead(msg.retain());
         }
     }
 

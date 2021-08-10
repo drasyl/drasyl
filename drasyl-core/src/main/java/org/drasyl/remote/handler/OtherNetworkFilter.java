@@ -51,14 +51,14 @@ public final class OtherNetworkFilter extends SimpleChannelInboundHandler<Addres
         if (msg.message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
             if (remoteMsg instanceof ChunkMessage || ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == remoteMsg.getNetworkId()) {
-                ctx.fireChannelRead(msg);
+                ctx.fireChannelRead(msg.retain());
             }
             else {
                 LOG.debug("Message `{}` from other network of work dropped.", remoteMsg::getNonce);
             }
         }
         else {
-            ctx.fireChannelRead(msg);
+            ctx.fireChannelRead(msg.retain());
         }
     }
 }

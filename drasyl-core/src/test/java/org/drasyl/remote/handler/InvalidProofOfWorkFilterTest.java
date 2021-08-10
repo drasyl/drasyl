@@ -21,6 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
+import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -83,7 +84,10 @@ class InvalidProofOfWorkFilterTest {
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
-            assertEquals(new AddressedMessage<>(message, message.getSender()), pipeline.readInbound());
+            final ReferenceCounted actual = pipeline.readInbound();
+            assertEquals(new AddressedMessage<>(message, message.getSender()), actual);
+
+            actual.release();
         }
         finally {
             pipeline.drasylClose();

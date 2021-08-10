@@ -22,6 +22,7 @@
 package org.drasyl.localhost;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
@@ -266,7 +267,10 @@ class LocalHostDiscoveryTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                assertNotNull(pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertNotNull(actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();
@@ -281,7 +285,10 @@ class LocalHostDiscoveryTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
+                final ReferenceCounted actual = pipeline.readOutbound();
+                assertEquals(new AddressedMessage<>(message, recipient), actual);
+
+                actual.release();
             }
             finally {
                 pipeline.drasylClose();

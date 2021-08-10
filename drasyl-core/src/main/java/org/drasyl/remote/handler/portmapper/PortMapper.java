@@ -69,16 +69,19 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, 
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final AddressedMessage<?, ?> msg) throws Exception {
         if (msg.message() instanceof ByteBuf && msg.address() instanceof InetSocketAddress) {
-            if (methods.get(currentMethodPointer).acceptMessage((InetSocketAddress) msg.address(), (ByteBuf) msg.message())) {
-                ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, (InetSocketAddress) msg.address(), (ByteBuf) msg.message()));
+            final InetSocketAddress sender = (InetSocketAddress) msg.address();
+            final ByteBuf byteBufMsg = (ByteBuf) msg.message();
+            if (methods.get(currentMethodPointer).acceptMessage(sender, byteBufMsg)) {
+                byteBufMsg.retain();
+                ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, byteBufMsg));
             }
             else {
                 // message was not for the mapper -> passthrough
-                ctx.fireChannelRead(msg);
+                ctx.fireChannelRead(msg.retain());
             }
         }
         else {
-            ctx.fireChannelRead(msg);
+            ctx.fireChannelRead(msg.retain());
         }
     }
 

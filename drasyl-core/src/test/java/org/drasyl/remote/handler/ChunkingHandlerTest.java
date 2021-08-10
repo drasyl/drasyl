@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -121,13 +122,17 @@ class ChunkingHandlerTest {
                     final ApplicationMessage message = ApplicationMessage.of(0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFrom(randomBytes(remoteMessageMtu - 200)));
                     message.writeTo(bytes);
 
-                    final BodyChunkMessage bodyChunk = BodyChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(1), bytes.slice(remoteMessageMtu / 2, remoteMessageMtu / 2));
+                    final BodyChunkMessage bodyChunk = BodyChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(1), bytes.slice(remoteMessageMtu / 2, remoteMessageMtu / 2).copy());
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>(bodyChunk, senderAddress));
 
-                    final HeadChunkMessage headChunk = HeadChunkMessage.of(bodyChunk.getNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes.slice(0, remoteMessageMtu / 2));
+                    final HeadChunkMessage headChunk = HeadChunkMessage.of(bodyChunk.getNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes.slice(0, remoteMessageMtu / 2).copy());
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
 
-                    assertEquals(message, ((AddressedMessage<UnarmedMessage, SocketAddress>) pipeline.readInbound()).message().read());
+                    final AddressedMessage<UnarmedMessage, SocketAddress> actual = pipeline.readInbound();
+                    assertEquals(message, actual.message().read());
+
+                    actual.release();
+                    bytes.release();
                 }
                 finally {
                     pipeline.drasylClose();
@@ -197,7 +202,10 @@ class ChunkingHandlerTest {
                 try {
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                    assertEquals(new AddressedMessage<>(msg, sender), pipeline.readInbound());
+                    final ReferenceCounted actual = pipeline.readInbound();
+                    assertEquals(new AddressedMessage<>(msg, sender), actual);
+
+                    actual.release();
                 }
                 finally {
                     pipeline.drasylClose();
@@ -222,11 +230,13 @@ class ChunkingHandlerTest {
                             .build();
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
-                    try (final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload)) {
-                        pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, sender));
+                    final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload);
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, sender));
 
-                        assertEquals(new AddressedMessage<>(headChunk, sender), pipeline.readInbound());
-                    }
+                    final ReferenceCounted actual = pipeline.readInbound();
+                    assertEquals(new AddressedMessage<>(headChunk, sender), actual);
+
+                    actual.release();
                 }
                 finally {
                     pipeline.drasylClose();
@@ -257,7 +267,10 @@ class ChunkingHandlerTest {
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
 
-                    assertEquals(pipeline.readOutbound(), new AddressedMessage<>(msg, recipientAddress));
+                    final ReferenceCounted actual = pipeline.readOutbound();
+                    assertEquals(new AddressedMessage<>(msg, recipientAddress), actual);
+
+                    actual.release();
                 }
                 finally {
                     pipeline.drasylClose();
@@ -306,7 +319,8 @@ class ChunkingHandlerTest {
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(msg, address));
 
-                    assertThat(((AddressedMessage<ChunkMessage, SocketAddress>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
+                    final AddressedMessage<ChunkMessage, SocketAddress> actual1 = pipeline.readOutbound();
+                    assertThat(actual1.message(), new TypeSafeMatcher<>() {
                         @Override
                         public void describeTo(final Description description) {
 
@@ -317,7 +331,8 @@ class ChunkingHandlerTest {
                             return m instanceof HeadChunkMessage && ((HeadChunkMessage) m).getTotalChunks().getValue() == 3 && m.getBytes().readableBytes() <= remoteMessageMtu;
                         }
                     });
-                    assertThat(((AddressedMessage<ChunkMessage, SocketAddress>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
+                    final AddressedMessage<ChunkMessage, SocketAddress> actual2 = pipeline.readOutbound();
+                    assertThat(actual2.message(), new TypeSafeMatcher<>() {
                         @Override
                         public void describeTo(final Description description) {
 
@@ -328,7 +343,8 @@ class ChunkingHandlerTest {
                             return m instanceof BodyChunkMessage && ((BodyChunkMessage) m).getChunkNo().getValue() == 1 && m.getBytes().readableBytes() <= remoteMessageMtu;
                         }
                     });
-                    assertThat(((AddressedMessage<ChunkMessage, SocketAddress>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
+                    final AddressedMessage<ChunkMessage, SocketAddress> actual3 = pipeline.readOutbound();
+                    assertThat(actual3.message(), new TypeSafeMatcher<>() {
                         @Override
                         public void describeTo(final Description description) {
 
@@ -339,6 +355,10 @@ class ChunkingHandlerTest {
                             return m instanceof BodyChunkMessage && ((BodyChunkMessage) m).getChunkNo().getValue() == 2 && m.getBytes().readableBytes() <= remoteMessageMtu;
                         }
                     });
+
+                    actual1.release();
+                    actual2.release();
+                    actual3.release();
                 }
                 finally {
                     pipeline.drasylClose();
@@ -359,7 +379,10 @@ class ChunkingHandlerTest {
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
 
-                    assertEquals(new AddressedMessage<>(msg, recipientAddress), pipeline.readOutbound());
+                    final ReferenceCounted actual = pipeline.readOutbound();
+                    assertEquals(new AddressedMessage<>(msg, recipientAddress), actual);
+
+                    actual.release();
                 }
                 finally {
                     pipeline.drasylClose();

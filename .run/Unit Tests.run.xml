@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-    <configuration default="false" name="Unit Tests^10" type="JUnit" factoryName="JUnit" repeat_count="10" repeat_mode="N Times">
+    <configuration default="false" name="Unit Tests" type="JUnit" factoryName="JUnit" repeat_count="10">
         <useClassPathOnly/>
         <option name="PACKAGE_NAME" value=""/>
         <option name="MAIN_CLASS_NAME" value=""/>

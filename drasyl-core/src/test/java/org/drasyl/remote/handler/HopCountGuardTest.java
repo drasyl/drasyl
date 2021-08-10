@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -82,7 +83,10 @@ class HopCountGuardTest {
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-            assertEquals(new AddressedMessage<>(message.incrementHopCount(), recipient), pipeline.readOutbound());
+            final ReferenceCounted actual = pipeline.readOutbound();
+            assertEquals(new AddressedMessage<>(message.incrementHopCount(), recipient), actual);
+
+            actual.release();
         }
         finally {
             pipeline.drasylClose();

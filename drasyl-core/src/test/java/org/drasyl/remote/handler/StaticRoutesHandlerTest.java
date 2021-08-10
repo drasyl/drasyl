@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.collect.ImmutableMap;
+import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -93,7 +94,10 @@ class StaticRoutesHandlerTest {
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
-            assertEquals(new AddressedMessage<>(message, address), pipeline.readOutbound());
+            final ReferenceCounted actual = pipeline.readOutbound();
+            assertEquals(new AddressedMessage<>(message, address), actual);
+
+            actual.release();
         }
         finally {
             pipeline.drasylClose();
@@ -109,7 +113,10 @@ class StaticRoutesHandlerTest {
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
-            assertEquals(new AddressedMessage<>(message, publicKey), pipeline.readOutbound());
+            final ReferenceCounted actual = pipeline.readOutbound();
+            assertEquals(new AddressedMessage<>(message, publicKey), actual);
+
+            actual.release();
         }
         finally {
             pipeline.drasylClose();
