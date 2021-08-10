@@ -37,27 +37,20 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
  */
 @Sharable
 public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
-    private final boolean started;
-
-    LoopbackMessageHandler(final boolean started) {
-        this.started = started;
-    }
-
-    public LoopbackMessageHandler() {
-        this(false);
-    }
-
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage) {
-            if (started && ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(((AddressedMessage<?, ?>) msg).address())) {
+            if (ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(((AddressedMessage<?, ?>) msg).address())) {
                 ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), (SocketAddress) ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
             }
             else {
                 ctx.writeAndFlush(msg, promise);
             }
+        }
+        else {
+            super.write(ctx, msg, promise);
         }
     }
 }

@@ -125,15 +125,13 @@ class TcpServerTest {
             when(clientChannels.get(any())).thenReturn(client);
             when(client.isWritable()).thenReturn(true);
             when(client.writeAndFlush(any())).thenReturn(channelFuture);
-            when(channelFuture.isDone()).thenReturn(true);
-            when(channelFuture.isSuccess()).thenReturn(true);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                verify(client).writeAndFlush(any(), any());
+                verify(client).writeAndFlush(any());
             }
             finally {
                 pipeline.drasylClose();

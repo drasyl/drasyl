@@ -34,7 +34,6 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
-import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -43,7 +42,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
@@ -125,7 +123,14 @@ public class TcpServer extends ChannelDuplexHandler {
             if (client != null) {
                 if (client.isWritable()) {
                     LOG.trace("Send message `{}` via TCP to client `{}`", byteBufMsg, recipient);
-                    client.writeAndFlush(byteBufMsg, promise);
+                    client.writeAndFlush(byteBufMsg).addListener(future -> {
+                        if (future.isSuccess()) {
+                            promise.setSuccess();
+                        }
+                        else {
+                            promise.setFailure(future.cause());
+                        }
+                    });
                 }
                 else {
                     ReferenceCountUtil.safeRelease(byteBufMsg);
@@ -218,15 +223,7 @@ public class TcpServer extends ChannelDuplexHandler {
                                     final ByteBuf msg) {
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
-            final CompletableFuture<Void> future = new CompletableFuture<>();
             ctx.fireChannelRead(new AddressedMessage<>(msg.retain(), sender));
-            future.exceptionally(e -> {
-                if (e.getCause() instanceof InvalidMessageFormatException) {
-                    LOG.debug("Close TCP connection to `{}` because a message with an invalid format has been received. Possibly not a drasyl client talks to us!?", nettyCtx.channel()::remoteAddress, () -> e);
-                    nettyCtx.close();
-                }
-                return null;
-            });
         }
     }
 

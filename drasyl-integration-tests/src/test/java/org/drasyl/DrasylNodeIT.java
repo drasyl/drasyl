@@ -206,6 +206,8 @@ class DrasylNodeIT {
                         IdentityTestUtil.ID_3.getIdentityPublicKey().toString());
                 for (final String recipient : identities) {
                     superPeer.send(recipient, "Hallo Welt");
+                    client1.send(recipient, "Hallo Welt");
+                    client2.send(recipient, "Hallo Welt");
                 }
 
                 //
@@ -558,6 +560,7 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackServerBindHost(createInetAddress("127.0.0.1"))
                         .remoteTcpFallbackServerBindPort(0)
                         .intraVmDiscoveryEnabled(false)
@@ -577,6 +580,7 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(true)
                         .remoteTcpFallbackClientTimeout(ofSeconds(2))
@@ -602,7 +606,6 @@ class DrasylNodeIT {
             }
 
             @Test
-            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
                 superPeer.events(PeerDirectEvent.class).test()
                         .awaitCount(1)
@@ -1033,7 +1036,7 @@ class DrasylNodeIT {
                 final CompletableFuture<Void> future = node.start();
 
                 await().untilAsserted(() -> assertTrue(future.isDone()));
-                events.assertError(e -> e instanceof Exception);
+                events.awaitCount(1).assertError(e -> e instanceof Exception);
             }
         }
     }

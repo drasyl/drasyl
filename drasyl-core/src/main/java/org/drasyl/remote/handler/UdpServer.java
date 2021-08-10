@@ -176,12 +176,14 @@ public class UdpServer extends ChannelDuplexHandler {
     }
 
     private void stopServer() {
-        final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-        LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
-        // shutdown server
-        channel.close().awaitUninterruptibly();
-        channel = null;
-        LOG.debug("Server stopped");
+        if (channel != null) {
+            final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+            LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
+            // shutdown server
+            channel.close().awaitUninterruptibly();
+            channel = null;
+            LOG.debug("Server stopped");
+        }
     }
 
     @Override

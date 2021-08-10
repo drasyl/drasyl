@@ -121,7 +121,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             final SocketAddress localAddress = routes.get(recipient);
             if (localAddress != null) {
                 LOG.trace("Send message `{}` via local route {}.", () -> applicationMsg, () -> localAddress);
-                ctx.writeAndFlush(msg, promise);
+                ctx.writeAndFlush(new AddressedMessage<>(applicationMsg, localAddress), promise);
             }
             else {
                 // passthrough message

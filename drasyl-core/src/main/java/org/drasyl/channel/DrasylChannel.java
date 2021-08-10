@@ -37,6 +37,8 @@ import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 
+import static org.drasyl.channel.Null.NULL;
+
 /**
  * A {@link Channel} for peer communication.
  */
@@ -116,9 +118,13 @@ public class DrasylChannel extends AbstractChannel {
         }
 
         for (; ; ) {
-            final Object msg = in.current();
+            Object msg = in.current();
             if (msg == null) {
                 break;
+            }
+
+            if (msg == NULL) {
+                msg = null;
             }
 
             parent().writeAndFlush(new AddressedMessage<>(msg, remoteAddress));
