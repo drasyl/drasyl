@@ -60,10 +60,10 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
-    private Future staleTask;
+    private Future<?> staleTask;
 
     GroupsManagerHandler(final DatabaseAdapter database,
-                         final Future staleTask) {
+                         final Future<?> staleTask) {
         this.database = database;
         this.staleTask = staleTask;
     }
@@ -262,8 +262,8 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
-        ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
-        ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
+        ctx.channel().attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
+        ctx.channel().attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
 
         // Register stale task timer
         staleTask = ctx.executor().scheduleAtFixedRate(() -> staleTask(ctx), 1L, 1L, MINUTES);

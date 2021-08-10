@@ -58,7 +58,7 @@ import static org.drasyl.util.network.NetworkUtil.getAddresses;
 
 /**
  * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the
- * {@link org.drasyl.pipeline.Pipeline}.
+ * {@link Channel}.
  */
 public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
@@ -96,11 +96,6 @@ public class UdpServer extends ChannelDuplexHandler {
         stopServer();
     }
 
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
-        super.channelRead(ctx, msg);
-    }
-
     static Set<Endpoint> determineActualEndpoints(final Identity identity,
                                                   final DrasylConfig config,
                                                   final InetSocketAddress listenAddress) {
@@ -129,7 +124,7 @@ public class UdpServer extends ChannelDuplexHandler {
                 .collect(Collectors.toSet());
     }
 
-    @SuppressWarnings("UnstableApiUsage")
+    @SuppressWarnings({ "UnstableApiUsage", "java:S112" })
     private void startServer(final ChannelHandlerContext ctx) throws Exception {
         LOG.debug("Start Server...");
         final int bindPort;
@@ -216,15 +211,18 @@ public class UdpServer extends ChannelDuplexHandler {
         }
     }
 
-    public class Port implements Event {
-        private final int port;
+    /**
+     * Signals that the {@link UdpServer} is bind to {@link Port#getPort()}.
+     */
+    public static class Port implements Event {
+        private final int value;
 
-        public Port(final int port) {
-            this.port = requireNonNegative(port, "port must be non-negative");
+        public Port(final int value) {
+            this.value = requireNonNegative(value, "port must be non-negative");
         }
 
         public int getPort() {
-            return port;
+            return value;
         }
     }
 }

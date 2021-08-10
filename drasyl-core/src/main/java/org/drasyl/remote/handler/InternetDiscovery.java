@@ -83,7 +83,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private final Map<IdentityPublicKey, Peer> peers;
     private final Set<IdentityPublicKey> directConnectionPeers;
     private final Set<IdentityPublicKey> superPeers;
-    private Future heartbeatDisposable;
+    private Future<?> heartbeatDisposable;
     private IdentityPublicKey bestSuperPeer;
 
     public InternetDiscovery(final DrasylConfig config) {

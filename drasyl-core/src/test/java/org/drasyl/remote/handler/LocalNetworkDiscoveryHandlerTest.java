@@ -82,7 +82,7 @@ class LocalNetworkDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Map<IdentityPublicKey, Peer> peers;
     @Mock
-    private Future pingDisposable;
+    private Future<?> pingDisposable;
 
     @Nested
     class EventHandling {

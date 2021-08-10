@@ -77,8 +77,8 @@ public class PcpPortMapping implements PortMapping {
     private Runnable onFailure;
     private byte[] nonce;
     private InetSocketAddress defaultGateway;
-    private Future timeoutGuard;
-    private Future refreshTask;
+    private Future<?> timeoutGuard;
+    private Future<?> refreshTask;
     private Set<InetAddress> interfaces;
     private final Supplier<InetAddress> defaultGatewaySupplier;
     private final Supplier<Set<InetAddress>> interfacesSupplier;
@@ -89,8 +89,8 @@ public class PcpPortMapping implements PortMapping {
                    final Runnable onFailure,
                    final byte[] nonce,
                    final InetSocketAddress defaultGateway,
-                   final Future timeoutGuard,
-                   final Future refreshTask,
+                   final Future<?> timeoutGuard,
+                   final Future<?> refreshTask,
                    final Set<InetAddress> interfaces,
                    final Supplier<InetAddress> defaultGatewaySupplier,
                    final Supplier<Set<InetAddress>> interfaceSupplier) {

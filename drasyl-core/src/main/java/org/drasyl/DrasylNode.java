@@ -451,7 +451,7 @@ public abstract class DrasylNode {
      * Initialize the {@link io.netty.channel.ServerChannel} used by {@link DrasylNode}.
      */
     public class DrasylNodeServerChannelInitializer extends DrasylServerChannelInitializer {
-        private boolean errorOccurred = false;
+        private boolean errorOccurred;
 
         @SuppressWarnings("java:S1188")
         @Override

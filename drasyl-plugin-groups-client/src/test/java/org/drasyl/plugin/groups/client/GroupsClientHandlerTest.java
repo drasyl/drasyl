@@ -75,7 +75,7 @@ class GroupsClientHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelHandlerContext ctx;
     @Mock
-    private HashMap<Group, Future> renewTasks;
+    private HashMap<Group, Future<?>> renewTasks;
     @Mock
     private Map<Group, GroupUri> groups;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -99,8 +99,8 @@ class GroupsClientHandlerTest {
         @Test
         void shouldStartHandler(@Mock final Serialization inboundSerialization,
                                 @Mock final Serialization outboundSerialization) {
-            when(ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(inboundSerialization);
-            when(ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(outboundSerialization);
+            when(ctx.channel().attr(INBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(inboundSerialization);
+            when(ctx.channel().attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(outboundSerialization);
 
             final GroupsClientHandler handler = new GroupsClientHandler(Set.of());
 
@@ -114,8 +114,8 @@ class GroupsClientHandlerTest {
     @Nested
     class HandlerRemoved {
         @Test
-        void shouldStopRenewTasks(@Mock final Future disposable) {
-            final Map<Group, Future> renewTasks = new HashMap<>(Map.of(group, disposable));
+        void shouldStopRenewTasks(@Mock final Future<?> disposable) {
+            final Map<Group, Future<?>> renewTasks = new HashMap<>(Map.of(group, disposable));
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay);
 
             handler.handlerRemoved(ctx);

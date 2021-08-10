@@ -72,8 +72,8 @@ class NatPmpPortMappingTest {
         @Test
         void shouldDestroyMapping(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                   @Mock final InetAddress externalAddress,
-                                  @Mock final Future timeoutGuard,
-                                  @Mock final Future refreshTask,
+                                  @Mock final Future<?> timeoutGuard,
+                                  @Mock final Future<?> refreshTask,
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
             final AtomicBoolean externalAddressRequested = new AtomicBoolean();
             final AtomicBoolean mappingRequested = new AtomicBoolean();
@@ -104,7 +104,7 @@ class NatPmpPortMappingTest {
             @Test
             void shouldScheduleRefreshOnMappingMessage(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                        @Mock final InetSocketAddress sender,
-                                                       @Mock final Future timeoutGuard,
+                                                       @Mock final Future<?> timeoutGuard,
                                                        @Mock final InetAddress externalAddress,
                                                        @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
                 final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("008100000004f9bf63f163f100000258"));
@@ -134,8 +134,8 @@ class NatPmpPortMappingTest {
     class Fail {
         @Test
         void shouldDisposeAllTasks(
-                @Mock final Future timeoutGuard,
-                @Mock final Future refreshTask,
+                @Mock final Future<?> timeoutGuard,
+                @Mock final Future<?> refreshTask,
                 @Mock final Runnable onFailure,
                 @Mock final Supplier<InetAddress> defaultGatewaySupplier) {
             final AtomicBoolean externalAddressRequested = new AtomicBoolean();

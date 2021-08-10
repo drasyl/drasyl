@@ -64,9 +64,9 @@ public class UpnpIgdPortMappingTest {
         @Test
         void shouldStartSsdpDiscovery(@Mock final UpnpIgdUtil upnpIgdUtil,
                                       @Mock final Set<URI> ssdpServices,
-                                      @Mock final Future timeoutGuard,
-                                      @Mock final Future ssdpDiscoverTask,
-                                      @Mock final Future refreshTask,
+                                      @Mock final Future<?> timeoutGuard,
+                                      @Mock final Future<?> ssdpDiscoverTask,
+                                      @Mock final Future<?> refreshTask,
                                       @Mock final Service upnpService,
                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                       @Mock final Runnable onFailure) {
@@ -81,9 +81,9 @@ public class UpnpIgdPortMappingTest {
         class OnDiscoveryTimeout {
             @Test
             void shouldScheduleRefreshWhenMappingCouldBeCreated(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                                @Mock final Future timeoutGuard,
-                                                                @Mock final Future ssdpDiscoverTask,
-                                                                @Mock final Future refreshTask,
+                                                                @Mock final Future<?> timeoutGuard,
+                                                                @Mock final Future<?> ssdpDiscoverTask,
+                                                                @Mock final Future<?> refreshTask,
                                                                 @Mock final Service upnpService,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                 @Mock final Runnable onFailure) throws InterruptedException {
@@ -105,9 +105,9 @@ public class UpnpIgdPortMappingTest {
 
             @Test
             void shouldScheduleRefreshWhenThereIsAnExistingMapping(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                                   @Mock final Future timeoutGuard,
-                                                                   @Mock final Future ssdpDiscoverTask,
-                                                                   @Mock final Future refreshTask,
+                                                                   @Mock final Future<?> timeoutGuard,
+                                                                   @Mock final Future<?> ssdpDiscoverTask,
+                                                                   @Mock final Future<?> refreshTask,
                                                                    @Mock final Service upnpService,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                    @Mock final Runnable onFailure,
@@ -134,9 +134,9 @@ public class UpnpIgdPortMappingTest {
             class WhenMappingFailed {
                 @Test
                 void shouldFailIfServiceDetailsCouldNotObtained(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                                @Mock final Future timeoutGuard,
-                                                                @Mock final Future ssdpDiscoverTask,
-                                                                @Mock final Future refreshTask,
+                                                                @Mock final Future<?> timeoutGuard,
+                                                                @Mock final Future<?> ssdpDiscoverTask,
+                                                                @Mock final Future<?> refreshTask,
                                                                 @Mock final Service upnpService,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                 @Mock final Runnable onFailure) throws InterruptedException {
@@ -158,9 +158,9 @@ public class UpnpIgdPortMappingTest {
 
                 @Test
                 void shouldFailIfStatusInfoCouldNotObtained(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                            @Mock final Future timeoutGuard,
-                                                            @Mock final Future ssdpDiscoverTask,
-                                                            @Mock final Future refreshTask,
+                                                            @Mock final Future<?> timeoutGuard,
+                                                            @Mock final Future<?> ssdpDiscoverTask,
+                                                            @Mock final Future<?> refreshTask,
                                                             @Mock final Service upnpService,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                             @Mock final Runnable onFailure) throws InterruptedException {
@@ -182,9 +182,9 @@ public class UpnpIgdPortMappingTest {
 
                 @Test
                 void shouldFailIfExternalAddressCouldNotObtained(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                                 @Mock final Future timeoutGuard,
-                                                                 @Mock final Future ssdpDiscoverTask,
-                                                                 @Mock final Future refreshTask,
+                                                                 @Mock final Future<?> timeoutGuard,
+                                                                 @Mock final Future<?> ssdpDiscoverTask,
+                                                                 @Mock final Future<?> refreshTask,
                                                                  @Mock final Service upnpService,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                  @Mock final Runnable onFailure) throws InterruptedException {
@@ -207,9 +207,9 @@ public class UpnpIgdPortMappingTest {
 
                 @Test
                 void shouldFailIfMappingRequestFailed(@Mock(answer = RETURNS_DEEP_STUBS) final UpnpIgdUtil upnpIgdUtil,
-                                                      @Mock final Future timeoutGuard,
-                                                      @Mock final Future ssdpDiscoverTask,
-                                                      @Mock final Future refreshTask,
+                                                      @Mock final Future<?> timeoutGuard,
+                                                      @Mock final Future<?> ssdpDiscoverTask,
+                                                      @Mock final Future<?> refreshTask,
                                                       @Mock final Service upnpService,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                       @Mock final Runnable onFailure) throws InterruptedException {
@@ -238,9 +238,9 @@ public class UpnpIgdPortMappingTest {
         @Test
         void shouldDestroyMapping(@Mock final UpnpIgdUtil upnpIgdUtil,
                                   @Mock final Set<URI> ssdpServices,
-                                  @Mock final Future timeoutGuard,
-                                  @Mock final Future ssdpDiscoverTask,
-                                  @Mock final Future refreshTask,
+                                  @Mock final Future<?> timeoutGuard,
+                                  @Mock final Future<?> ssdpDiscoverTask,
+                                  @Mock final Future<?> refreshTask,
                                   @Mock final Service upnpService,
                                   @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                   @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) throws InterruptedException {
@@ -261,9 +261,9 @@ public class UpnpIgdPortMappingTest {
     class HandleMessage {
         @Test
         void shouldHandleIncomingSsdpPacket(@Mock final UpnpIgdUtil upnpIgdUtil,
-                                            @Mock final Future timeoutGuard,
-                                            @Mock final Future ssdpDiscoverTask,
-                                            @Mock final Future refreshTask,
+                                            @Mock final Future<?> timeoutGuard,
+                                            @Mock final Future<?> ssdpDiscoverTask,
+                                            @Mock final Future<?> refreshTask,
                                             @Mock final Service upnpService,
                                             @Mock final Runnable onFailure,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
@@ -279,9 +279,9 @@ public class UpnpIgdPortMappingTest {
     class Fail {
         @Test
         void shouldDisposeAllTasks(@Mock final UpnpIgdUtil upnpIgdUtil,
-                                   @Mock final Future timeoutGuard,
-                                   @Mock final Future ssdpDiscoverTask,
-                                   @Mock final Future refreshTask,
+                                   @Mock final Future<?> timeoutGuard,
+                                   @Mock final Future<?> ssdpDiscoverTask,
+                                   @Mock final Future<?> refreshTask,
                                    @Mock final Service upnpService,
                                    @Mock final Runnable onFailure) {
             new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, new HashSet<>(), null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, onFailure).fail();

@@ -79,9 +79,9 @@ public class UpnpIgdPortMapping implements PortMapping {
     private final Set<URI> ssdpServices;
     private String description;
     private int port;
-    private Future timeoutGuard;
-    private Future ssdpDiscoverTask;
-    private Future refreshTask;
+    private Future<?> timeoutGuard;
+    private Future<?> ssdpDiscoverTask;
+    private Future<?> refreshTask;
     private Service upnpService;
     private Runnable onFailure;
 
@@ -91,9 +91,9 @@ public class UpnpIgdPortMapping implements PortMapping {
                        final Set<URI> ssdpServices,
                        final String description,
                        final int port,
-                       final Future timeoutGuard,
-                       final Future ssdpDiscoverTask,
-                       final Future refreshTask,
+                       final Future<?> timeoutGuard,
+                       final Future<?> ssdpDiscoverTask,
+                       final Future<?> refreshTask,
                        final Service upnpService,
                        final Runnable onFailure) {
         this.ssdpDiscoveryActive = ssdpDiscoveryActive;

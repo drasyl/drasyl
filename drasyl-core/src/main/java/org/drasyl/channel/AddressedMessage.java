@@ -115,8 +115,7 @@ public class AddressedMessage<M, A extends SocketAddress> implements ReferenceCo
     @Override
     public boolean release() {
         if (message instanceof ReferenceCounted) {
-            final boolean release = ((ReferenceCounted) message).release();
-            return release;
+            return ((ReferenceCounted) message).release();
         }
         else {
             return true;

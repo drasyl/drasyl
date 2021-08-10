@@ -97,9 +97,9 @@ class LocalHostDiscoveryTest {
     private ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<IdentityPublicKey, SocketAddress> routes = new HashMap<>();
     @Mock
-    private Future watchDisposable;
+    private Future<?> watchDisposable;
     @Mock
-    private Future postDisposable;
+    private Future<?> postDisposable;
 
     @Nested
     class StartDiscovery {

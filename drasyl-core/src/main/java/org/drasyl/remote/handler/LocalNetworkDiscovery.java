@@ -69,10 +69,10 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
     private static final Object path = LocalNetworkDiscovery.class;
     private final Map<IdentityPublicKey, Peer> peers;
-    private Future pingDisposable;
+    private Future<?> pingDisposable;
 
     public LocalNetworkDiscovery(final Map<IdentityPublicKey, Peer> peers,
-                                 final Future pingDisposable) {
+                                 final Future<?> pingDisposable) {
         this.peers = requireNonNull(peers);
         this.pingDisposable = pingDisposable;
     }

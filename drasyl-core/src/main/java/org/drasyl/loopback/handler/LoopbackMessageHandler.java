@@ -27,8 +27,6 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 
-import java.net.SocketAddress;
-
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 /**
@@ -43,7 +41,7 @@ public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage) {
             if (ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(((AddressedMessage<?, ?>) msg).address())) {
-                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), (SocketAddress) ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
             }
             else {
                 ctx.writeAndFlush(msg, promise);

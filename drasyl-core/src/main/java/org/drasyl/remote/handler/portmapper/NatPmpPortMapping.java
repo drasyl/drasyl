@@ -74,8 +74,8 @@ public class NatPmpPortMapping implements PortMapping {
     private int port;
     private InetSocketAddress defaultGateway;
     private InetAddress externalAddress;
-    private Future timeoutGuard;
-    private Future refreshTask;
+    private Future<?> timeoutGuard;
+    private Future<?> refreshTask;
     private Runnable onFailure;
     private final Supplier<InetAddress> defaultGatewaySupplier;
 
@@ -84,8 +84,8 @@ public class NatPmpPortMapping implements PortMapping {
                              final int port,
                              final InetSocketAddress defaultGateway,
                              final InetAddress externalAddress,
-                             final Future timeoutGuard,
-                             final Future refreshTask,
+                             final Future<?> timeoutGuard,
+                             final Future<?> refreshTask,
                              final Runnable onFailure,
                              final Supplier<InetAddress> defaultGatewaySupplier) {
         this.externalAddressRequested = externalAddressRequested;

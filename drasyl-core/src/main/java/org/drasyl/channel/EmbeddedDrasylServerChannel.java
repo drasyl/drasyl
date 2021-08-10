@@ -102,6 +102,7 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
      * Returns the {@link Queue} which holds all the user events that were received by this {@link
      * Channel}.
      */
+    @SuppressWarnings("java:S2384")
     public Queue<Object> userEvents() {
         if (userEvents == null) {
             userEvents = new ArrayDeque<>();

@@ -24,6 +24,7 @@ package org.drasyl.peer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundInvoker;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -140,7 +141,7 @@ public class PeersManager {
         }
     }
 
-    public void addPath(final ChannelHandlerContext ctx,
+    public void addPath(final ChannelInboundInvoker ctx,
                         final IdentityPublicKey publicKey,
                         final Object path) {
         requireNonNull(publicKey);
@@ -158,7 +159,7 @@ public class PeersManager {
         }
     }
 
-    public void removePath(final ChannelHandlerContext ctx,
+    public void removePath(final ChannelInboundInvoker ctx,
                            final IdentityPublicKey publicKey,
                            final Object path) {
         requireNonNull(publicKey);
@@ -225,7 +226,7 @@ public class PeersManager {
         }
     }
 
-    public void addPathAndChildren(final ChannelHandlerContext ctx,
+    public void addPathAndChildren(final ChannelInboundInvoker ctx,
                                    final IdentityPublicKey publicKey,
                                    final Object path) {
         requireNonNull(publicKey);
@@ -248,7 +249,7 @@ public class PeersManager {
         }
     }
 
-    public void removeChildrenAndPath(final ChannelHandlerContext ctx,
+    public void removeChildrenAndPath(final ChannelInboundInvoker ctx,
                                       final IdentityPublicKey publicKey,
                                       final Object path) {
         requireNonNull(publicKey);

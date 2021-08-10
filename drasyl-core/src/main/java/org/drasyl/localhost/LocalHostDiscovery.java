@@ -86,8 +86,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     public static final String FILE_SUFFIX = ".json";
     private final ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<IdentityPublicKey, SocketAddress> routes;
-    private Future watchDisposable;
-    private Future postDisposable;
+    private Future<?> watchDisposable;
+    private Future<?> postDisposable;
     private WatchService watchService; // NOSONAR
 
     public LocalHostDiscovery() {
@@ -102,8 +102,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @SuppressWarnings({ "java:S107" })
     LocalHostDiscovery(final ThrowingBiConsumer<File, Object, IOException> jacksonWriter,
                        final Map<IdentityPublicKey, SocketAddress> routes,
-                       final Future watchDisposable,
-                       final Future postDisposable) {
+                       final Future<?> watchDisposable,
+                       final Future<?> postDisposable) {
         this.jacksonWriter = requireNonNull(jacksonWriter);
         this.routes = requireNonNull(routes);
         this.watchDisposable = watchDisposable;

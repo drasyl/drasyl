@@ -69,11 +69,11 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
     private static final Duration FIRST_JOIN_DELAY = Duration.ofSeconds(5);
     private final Duration firstJoinDelay;
     private final Map<Group, GroupUri> groups;
-    private final Map<Group, Future> renewTasks;
+    private final Map<Group, Future<?>> renewTasks;
 
     @SuppressWarnings("java:S2384")
     GroupsClientHandler(final Map<Group, GroupUri> groups,
-                        final Map<Group, Future> renewTasks,
+                        final Map<Group, Future<?>> renewTasks,
                         final Duration firstJoinDelay) {
         this.groups = requireNonNull(groups);
         this.renewTasks = requireNonNull(renewTasks);
@@ -111,14 +111,14 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
-        ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
-        ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
+        ctx.channel().attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
+        ctx.channel().attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
     }
 
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) {
         // Stop all renew tasks
-        for (final Future renewTask : renewTasks.values()) {
+        for (final Future<?> renewTask : renewTasks.values()) {
             renewTask.cancel(false);
         }
         renewTasks.clear();
@@ -180,7 +180,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         final Group group = msg.getGroup();
 
         // cancel renew task
-        final Future disposable = renewTasks.remove(group);
+        final Future<?> disposable = renewTasks.remove(group);
         if (disposable != null) {
             disposable.cancel(false);
         }
@@ -199,9 +199,9 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
                               final MemberLeftMessage msg) {
         final Group group = msg.getGroup();
 
-        if (msg.getMember().equals(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey())) {
+        if (msg.getMember().equals(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey())) {
             // cancel renew task
-            final Future disposable = renewTasks.remove(group);
+            final Future<?> disposable = renewTasks.remove(group);
             if (disposable != null) {
                 disposable.cancel(false);
             }
@@ -227,7 +227,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         final Duration timeout = groups.get(group).getTimeout();
 
         // replace old re-try task with renew task
-        final Future disposable = renewTasks.remove(group);
+        final Future<?> disposable = renewTasks.remove(group);
         if (disposable != null) {
             disposable.cancel(false);
         }
@@ -239,7 +239,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         ctx.fireUserEventTriggered(GroupJoinedEvent.of(
                 group,
                 msg.getMembers(),
-                () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupLeaveMessage(group), sender)))).combine(new CompletableFuture<>())));
+                () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), sender)))).combine(new CompletableFuture<>())));
     }
 
     /**
@@ -252,7 +252,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
     private void joinGroup(final ChannelHandlerContext ctx,
                            final GroupUri group,
                            final boolean renew) {
-        final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
+        final ProofOfWork proofOfWork = ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager)))).combine(new CompletableFuture<>());

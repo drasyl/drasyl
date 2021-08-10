@@ -48,18 +48,15 @@ import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
 import org.drasyl.remote.protocol.UnarmedMessage;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.Null.NULL;
 
 /**
- * A special {@link ChannelInboundHandler} to initialize the default {@link DrasylServerChannel}
- * behavior.
+ * A special {@link ChannelInboundHandler} to initialize the default drasyl {@link
+ * io.netty.channel.ServerChannel} behavior.
  */
 public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> {
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannelInitializer.class);
     public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
     public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
     public static final String CHILD_CHANNEL_ROUTER = "CHILD_CHANNEL_ROUTER";

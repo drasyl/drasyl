@@ -50,12 +50,12 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, 
     private static final Logger LOG = LoggerFactory.getLogger(PortMapper.class);
     private final ArrayList<PortMapping> methods;
     private int currentMethodPointer;
-    private Future retryTask;
+    private Future<?> retryTask;
 
     @SuppressWarnings("java:S2384")
     PortMapper(final ArrayList<PortMapping> methods,
                final int currentMethodPointer,
-               final Future retryTask) {
+               final Future<?> retryTask) {
         this.methods = methods;
         this.currentMethodPointer = currentMethodPointer;
         this.retryTask = retryTask;

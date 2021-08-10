@@ -23,7 +23,6 @@ package org.drasyl.channel;
 
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
@@ -34,8 +33,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * https://github.com/netty/netty/issues/639#issuecomment-9263566
  */
-public class DrasylChannelEventLoopGroupUtil {
-    private static final Logger LOG = LoggerFactory.getLogger(EventLoopGroupUtil.class);
+public final class DrasylChannelEventLoopGroupUtil {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylChannelEventLoopGroupUtil.class);
     public static final int PARENT_DEFAULT_THREADS = Math.max(2, (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1));
     public static final int CHILD_DEFAULT_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() - 2);
     static volatile boolean parentEventLoopGroupCreated;
@@ -46,9 +45,10 @@ public class DrasylChannelEventLoopGroupUtil {
     }
 
     /**
-     * Use this {@link NioEventLoopGroup} for the {@link DrasylServerChannel}. By default the group
-     * has {@link #PARENT_DEFAULT_THREADS} threads. This number can be changed by using the java
-     * system property {@code org.drasyl.event-loop.parent}.
+     * Use this {@link NioEventLoopGroup} for the {@link org.drasyl.DrasylNode}'s {@link
+     * io.netty.channel.ServerChannel}. By default the group has {@link #PARENT_DEFAULT_THREADS}
+     * threads. This number can be changed by using the java system property {@code
+     * org.drasyl.event-loop.parent}.
      *
      * @return a {@link NioEventLoopGroup} for parent channels
      */
@@ -57,9 +57,10 @@ public class DrasylChannelEventLoopGroupUtil {
     }
 
     /**
-     * Use this {@link NioEventLoopGroup} for the {@link DrasylChannel}. By default the group has
-     * {@link #CHILD_DEFAULT_THREADS} threads. This number can  be changed by using the java system
-     * property {@code org.drasyl.event-loop.child}.
+     * Use this {@link NioEventLoopGroup} for the {@link org.drasyl.DrasylNode}'s {@link
+     * io.netty.channel.ServerChannel}. By default the group has {@link #CHILD_DEFAULT_THREADS}
+     * threads. This number can  be changed by using the java system property {@code
+     * org.drasyl.event-loop.child}.
      *
      * @return a {@link NioEventLoopGroup} for child channels
      */

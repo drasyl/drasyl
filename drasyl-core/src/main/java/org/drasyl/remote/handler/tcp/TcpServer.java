@@ -92,7 +92,7 @@ public class TcpServer extends ChannelDuplexHandler {
             LOG.debug("Server started and listening at tcp:/{}", socketAddress);
 
             // consume NodeUpEvent and publish NodeUpEvent with port
-            ctx.fireUserEventTriggered(new TcpServer.Port(socketAddress.getPort()));
+            ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
         }
         else {
             // server start failed
@@ -227,15 +227,18 @@ public class TcpServer extends ChannelDuplexHandler {
         }
     }
 
-    public class Port implements Event {
-        private final int port;
+    /**
+     * Signals that the {@link TcpServer} is bind to {@link TcpServer.Port#getPort()}.
+     */
+    public static class Port implements Event {
+        private final int value;
 
-        public Port(final int port) {
-            this.port = requireNonNegative(port, "port must be non-negative");
+        public Port(final int value) {
+            this.value = requireNonNegative(value, "port must be non-negative");
         }
 
         public int getPort() {
-            return port;
+            return value;
         }
     }
 }

@@ -94,7 +94,7 @@ class GroupsManagerHandlerTest {
     @Mock
     private ChannelPipeline pipeline;
     @Mock
-    private Future staleTask;
+    private Future<?> staleTask;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
@@ -119,8 +119,8 @@ class GroupsManagerHandlerTest {
         @Test
         void shouldAddClassesToValidatorAndAddStaleTask(@Mock final Serialization inboundSerialization,
                                                         @Mock final Serialization outboundSerialization) {
-            when(ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(inboundSerialization);
-            when(ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(outboundSerialization);
+            when(ctx.channel().attr(INBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(inboundSerialization);
+            when(ctx.channel().attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(outboundSerialization);
             when(ctx.executor()).thenReturn(scheduler);
 
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
