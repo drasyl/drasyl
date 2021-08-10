@@ -27,9 +27,9 @@ import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import org.drasyl.pipeline.address.Address;
 
 import java.io.PrintStream;
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -46,16 +46,16 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @SuppressWarnings({ "java:S110", "java:S106", "unused" })
 public class MessagesThroughputHandler extends ChannelDuplexHandler {
     public static final Duration INTERVAL = ofSeconds(1);
-    private final BiPredicate<Address, Object> consumeOutbound;
-    private final BiPredicate<Address, Object> consumeInbound;
+    private final BiPredicate<SocketAddress, Object> consumeOutbound;
+    private final BiPredicate<SocketAddress, Object> consumeInbound;
     private final LongAdder outboundMessages;
     private final LongAdder inboundMessages;
     private final Scheduler scheduler;
     private final PrintStream printStream;
     private Disposable disposable;
 
-    MessagesThroughputHandler(final BiPredicate<Address, Object> consumeOutbound,
-                              final BiPredicate<Address, Object> consumeInbound,
+    MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
+                              final BiPredicate<SocketAddress, Object> consumeInbound,
                               final LongAdder outboundMessages,
                               final LongAdder inboundMessages,
                               final Scheduler scheduler,
@@ -79,8 +79,8 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
      * @param consumeInbound  predicate that consumes inbound messages on match
      * @param scheduler       scheduler on which this handler is executed
      */
-    public MessagesThroughputHandler(final BiPredicate<Address, Object> consumeOutbound,
-                                     final BiPredicate<Address, Object> consumeInbound,
+    public MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
+                                     final BiPredicate<SocketAddress, Object> consumeInbound,
                                      final Scheduler scheduler) {
         this(consumeOutbound, consumeInbound, new LongAdder(), new LongAdder(), scheduler, System.out, null);
     }
@@ -93,8 +93,8 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
      * @param consumeOutbound predicate that consumes outbound messages on match
      * @param consumeInbound  predicate that consumes inbound messages on match
      */
-    public MessagesThroughputHandler(final BiPredicate<Address, Object> consumeOutbound,
-                                     final BiPredicate<Address, Object> consumeInbound) {
+    public MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
+                                     final BiPredicate<SocketAddress, Object> consumeInbound) {
         this(consumeOutbound, consumeInbound, Schedulers.single());
     }
 

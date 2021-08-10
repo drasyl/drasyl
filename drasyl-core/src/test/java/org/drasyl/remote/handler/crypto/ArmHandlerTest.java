@@ -36,8 +36,6 @@ import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.ArmedMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
@@ -56,6 +54,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,7 +84,7 @@ class ArmHandlerTest {
     @Mock
     private PeersManager peersManager;
     private int networkId;
-    private InetSocketAddressWrapper receiveAddress;
+    private SocketAddress receiveAddress;
     private SessionPair sessionPairSender;
     private SessionPair sessionPairReceiver;
     private Duration sessionExpireTime;
@@ -95,7 +95,7 @@ class ArmHandlerTest {
     @BeforeEach
     void setUp() throws CryptoException {
         networkId = -1;
-        receiveAddress = new InetSocketAddressWrapper("127.0.0.1", 22527);
+        receiveAddress = new InetSocketAddress("127.0.0.1", 22527);
         sessionPairSender = Crypto.INSTANCE.generateSessionKeyPair(
                 IdentityTestUtil.ID_1.getKeyAgreementKeyPair(),
                 IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
@@ -132,8 +132,8 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>((Object) applicationMessage, receiveAddress));
 
-                assertEquals(applicationMessage, ((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
-                assertThat(((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+                assertEquals(applicationMessage, ((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
+                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -251,7 +251,7 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(msg, ((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
+                assertEquals(msg, ((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver));
             }
             finally {
                 pipeline.drasylClose();
@@ -278,10 +278,10 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertThat(((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(ApplicationMessage.class));
-                assertThat(((AddressedMessage<ArmedMessage, InetSocketAddressWrapper>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(ApplicationMessage.class));
+                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -335,7 +335,7 @@ class ArmHandlerTest {
                                 body)
                         .setAgreementId(agreementId);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg.arm(Crypto.INSTANCE, sessionPairSender), (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg.arm(Crypto.INSTANCE, sessionPairSender), receiveAddress));
 
                 assertNull(pipeline.readOutbound());
             }
@@ -366,9 +366,9 @@ class ArmHandlerTest {
                                 body)
                         .setAgreementId(agreementId);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg.arm(Crypto.INSTANCE, sessionPairSender), (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg.arm(Crypto.INSTANCE, sessionPairSender), receiveAddress));
 
-                assertThat(((AddressedMessage<ArmedMessage, Address>) pipeline.readOutbound()).message().disarmAndRelease(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
+                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarmAndRelease(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -407,7 +407,7 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
@@ -455,7 +455,7 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId2)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
@@ -493,9 +493,9 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertThat(((AddressedMessage<ArmedMessage, Address>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairSender), instanceOf(KeyExchangeMessage.class));
+                assertThat(((AddressedMessage<ArmedMessage, SocketAddress>) pipeline.readOutbound()).message().disarm(Crypto.INSTANCE, sessionPairSender), instanceOf(KeyExchangeMessage.class));
                 observerEvents.assertNoValues();
             }
             finally {
@@ -532,7 +532,7 @@ class ArmHandlerTest {
                 assertFalse(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(0, session.getInitializedAgreements().size());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
                 pipeline.runPendingTasks();
 
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
@@ -578,7 +578,7 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
                 pipeline.runPendingTasks();
 
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
@@ -630,7 +630,7 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
                 assertEquals(new AddressedMessage<>(armedMsg, receiveAddress), pipeline.readOutbound());
             }
@@ -669,7 +669,7 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
                 assertNotNull(pipeline.readOutbound());
                 assertNotNull(pipeline.readOutbound());
@@ -710,7 +710,7 @@ class ArmHandlerTest {
 
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(RemoteMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(RemoteMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -741,10 +741,10 @@ class ArmHandlerTest {
                 doReturn(concurrentAgreement).when(session).getCurrentActiveAgreement();
                 doReturn(Optional.of(agreement)).when(concurrentAgreement).computeOnCondition(any(), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
                 assertNull(pipeline.readOutbound());
-                assertThat(((AddressedMessage<Object, Address>) pipeline.readInbound()).message(), instanceOf(FullReadMessage.class));
+                assertThat(((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message(), instanceOf(FullReadMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -762,9 +762,9 @@ class ArmHandlerTest {
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(msg, ((AddressedMessage<Object, Address>) pipeline.readInbound()).message());
+                assertEquals(msg, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -780,9 +780,9 @@ class ArmHandlerTest {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(msg, ((AddressedMessage<Object, Address>) pipeline.readInbound()).message());
+                assertEquals(msg, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -807,9 +807,9 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(disarmedMessage, ((AddressedMessage<Object, Address>) pipeline.readInbound()).message());
+                assertEquals(disarmedMessage, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -834,9 +834,9 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMsg).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(disarmedMsg, ((AddressedMessage<Object, Address>) pipeline.readInbound()).message());
+                assertEquals(disarmedMsg, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -861,9 +861,9 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(disarmedMessage, ((AddressedMessage<Object, Address>) pipeline.readInbound()).message());
+                assertEquals(disarmedMessage, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -931,9 +931,9 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) receiveAddress));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertEquals(disarmedMessage, ((AddressedMessage<Object, Address>) pipeline.readInbound()).message());
+                assertEquals(disarmedMessage, ((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message());
             }
             finally {
                 pipeline.drasylClose();

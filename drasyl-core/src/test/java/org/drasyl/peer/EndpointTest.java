@@ -22,7 +22,6 @@
 package org.drasyl.peer;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -129,7 +129,7 @@ class EndpointTest {
     class ToInetSocketAddress {
         @Test
         void shouldReturnCorrectAddress() {
-            assertEquals(new InetSocketAddressWrapper("localhost", 123), Endpoint.of("udp://localhost:123?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()).toInetSocketAddress());
+            assertEquals(new InetSocketAddress("localhost", 123), Endpoint.of("udp://localhost:123?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()).toInetSocketAddress());
         }
     }
 

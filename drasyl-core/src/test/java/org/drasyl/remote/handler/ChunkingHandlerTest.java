@@ -35,8 +35,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.BodyChunkMessage;
@@ -58,6 +56,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.SocketAddress;
 import java.time.Duration;
 
 import static java.time.Duration.ofSeconds;
@@ -90,7 +89,7 @@ class ChunkingHandlerTest {
         @Nested
         class WhenAddressedToMe {
             @Test
-            void shouldCacheChunkedMessageIfOtherChunksAreStillMissing(@Mock final InetSocketAddressWrapper senderAddress) throws InterruptedException {
+            void shouldCacheChunkedMessageIfOtherChunksAreStillMissing(@Mock final SocketAddress senderAddress) throws InterruptedException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
                 when(identity.getIdentityPublicKey()).thenReturn(ID_2.getIdentityPublicKey());
@@ -100,7 +99,7 @@ class ChunkingHandlerTest {
                 try {
                     final ByteBuf bytes = Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]);
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes);
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) headChunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
 
                     assertNull(pipeline.readInbound());
                 }
@@ -110,7 +109,7 @@ class ChunkingHandlerTest {
             }
 
             @Test
-            void shouldBuildMessageAfterReceivingLastMissingChunk(@Mock final InetSocketAddressWrapper senderAddress) throws InvalidMessageFormatException {
+            void shouldBuildMessageAfterReceivingLastMissingChunk(@Mock final SocketAddress senderAddress) throws InvalidMessageFormatException {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
                 when(identity.getIdentityPublicKey()).thenReturn(ID_2.getIdentityPublicKey());
@@ -123,12 +122,12 @@ class ChunkingHandlerTest {
                     message.writeTo(bytes);
 
                     final BodyChunkMessage bodyChunk = BodyChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(1), bytes.slice(remoteMessageMtu / 2, remoteMessageMtu / 2));
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) bodyChunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(bodyChunk, senderAddress));
 
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(bodyChunk.getNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes.slice(0, remoteMessageMtu / 2));
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) headChunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
 
-                    assertEquals(message, ((AddressedMessage<UnarmedMessage, Address>) pipeline.readInbound()).message().read());
+                    assertEquals(message, ((AddressedMessage<UnarmedMessage, SocketAddress>) pipeline.readInbound()).message().read());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -136,7 +135,7 @@ class ChunkingHandlerTest {
             }
 
             @Test
-            void shouldCompleteExceptionallyWhenChunkedMessageExceedMaxSize(@Mock final InetSocketAddressWrapper senderAddress) {
+            void shouldCompleteExceptionallyWhenChunkedMessageExceedMaxSize(@Mock final SocketAddress senderAddress) {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
                 when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(messageComposedMessageTransferTimeout);
 
@@ -171,11 +170,11 @@ class ChunkingHandlerTest {
                     final ByteBuf chunkPayload = Unpooled.wrappedBuffer(bytes);
 
                     final PartialReadMessage chunk = PartialReadMessage.of(chunkHeader, chunkPayload);
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) chunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(chunk, senderAddress));
 
                     final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload);
 
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) headChunk, (Address) senderAddress));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
 
                     assertNull(pipeline.readInbound());
                 }
@@ -242,7 +241,7 @@ class ChunkingHandlerTest {
         class FromMe {
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldPassthroughMessageNotExceedingMtuSize(@Mock final InetSocketAddressWrapper recipientAddress) throws CryptoException, InvalidMessageFormatException {
+            void shouldPassthroughMessageNotExceedingMtuSize(@Mock final SocketAddress recipientAddress) throws CryptoException, InvalidMessageFormatException {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
@@ -267,7 +266,7 @@ class ChunkingHandlerTest {
 
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldDropMessageExceedingMaximumMessageSize(@Mock final InetSocketAddressWrapper address) {
+            void shouldDropMessageExceedingMaximumMessageSize(@Mock final SocketAddress address) {
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
                 final IdentityPublicKey sender = ID_1.getIdentityPublicKey();
@@ -279,7 +278,7 @@ class ChunkingHandlerTest {
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
                     final ChannelPromise promise = pipeline.newPromise();
-                    pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) address), promise);
+                    pipeline.writeAndFlush(new AddressedMessage<>(msg, address), promise);
                     assertFalse(promise.isSuccess());
 
                     assertNull(pipeline.readOutbound());
@@ -291,7 +290,7 @@ class ChunkingHandlerTest {
 
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldChunkMessageExceedingMtuSize(@Mock final InetSocketAddressWrapper address) throws CryptoException, InvalidMessageFormatException {
+            void shouldChunkMessageExceedingMtuSize(@Mock final SocketAddress address) throws CryptoException, InvalidMessageFormatException {
                 when(config.getRemoteMessageMtu()).thenReturn(remoteMessageMtu);
                 when(config.getRemoteMessageMaxContentLength()).thenReturn(remoteMaxContentLength);
 
@@ -307,7 +306,7 @@ class ChunkingHandlerTest {
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(msg, address));
 
-                    assertThat(((AddressedMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
+                    assertThat(((AddressedMessage<ChunkMessage, SocketAddress>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
                         @Override
                         public void describeTo(final Description description) {
 
@@ -318,7 +317,7 @@ class ChunkingHandlerTest {
                             return m instanceof HeadChunkMessage && ((HeadChunkMessage) m).getTotalChunks().getValue() == 3 && m.getBytes().readableBytes() <= remoteMessageMtu;
                         }
                     });
-                    assertThat(((AddressedMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
+                    assertThat(((AddressedMessage<ChunkMessage, SocketAddress>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
                         @Override
                         public void describeTo(final Description description) {
 
@@ -329,7 +328,7 @@ class ChunkingHandlerTest {
                             return m instanceof BodyChunkMessage && ((BodyChunkMessage) m).getChunkNo().getValue() == 1 && m.getBytes().readableBytes() <= remoteMessageMtu;
                         }
                     });
-                    assertThat(((AddressedMessage<ChunkMessage, Address>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
+                    assertThat(((AddressedMessage<ChunkMessage, SocketAddress>) pipeline.readOutbound()).message(), new TypeSafeMatcher<ChunkMessage>() {
                         @Override
                         public void describeTo(final Description description) {
 
@@ -350,7 +349,7 @@ class ChunkingHandlerTest {
         @Nested
         class NotFromMe {
             @Test
-            void shouldPassthroughMessage(@Mock final InetSocketAddressWrapper recipientAddress) {
+            void shouldPassthroughMessage(@Mock final SocketAddress recipientAddress) {
                 final IdentityPublicKey sender = ID_1.getIdentityPublicKey();
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 

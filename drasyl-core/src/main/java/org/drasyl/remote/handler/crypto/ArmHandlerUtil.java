@@ -30,7 +30,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.ArmedMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
@@ -41,6 +40,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -73,13 +73,13 @@ public final class ArmHandlerUtil {
                                                         final SessionPair agreementPair,
                                                         final AgreementId agreementId,
                                                         final ChannelHandlerContext ctx,
-                                                        final Address recipient,
+                                                        final SocketAddress recipient,
                                                         final FullReadMessage<?> msg,
                                                         final CompletableFuture<Void> future) {
         try {
             final ArmedMessage armedMessage = msg.setAgreementId(agreementId).arm(cryptoInstance, agreementPair);
             // send encrypted message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) armedMessage, recipient)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(armedMessage, recipient)))).combine(future);
         }
         catch (final IOException e) {
             future.completeExceptionally(new CryptoException(e));
@@ -115,7 +115,7 @@ public final class ArmHandlerUtil {
      */
     public static CompletableFuture<Void> sendAck(final Crypto cryptoInstance,
                                                   final ChannelHandlerContext ctx,
-                                                  final Address recipientsAddress,
+                                                  final SocketAddress recipientsAddress,
                                                   final IdentityPublicKey recipientsKey,
                                                   final Session session) {
         final Optional<Agreement> agreement = session.getCurrentInactiveAgreement().getValue();
@@ -159,7 +159,7 @@ public final class ArmHandlerUtil {
                                           final ChannelHandlerContext ctx,
                                           final Session session,
                                           final Agreement agreement,
-                                          final Address recipient,
+                                          final SocketAddress recipient,
                                           final IdentityPublicKey recipientsKey) {
         final FullReadMessage<?> msg = KeyExchangeMessage.of(
                 ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(),

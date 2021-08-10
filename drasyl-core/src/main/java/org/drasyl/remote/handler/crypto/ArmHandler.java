@@ -34,7 +34,6 @@ import org.drasyl.event.Peer;
 import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.ArmedMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
@@ -45,6 +44,7 @@ import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -115,7 +115,7 @@ public class ArmHandler extends ChannelDuplexHandler {
     }
 
     protected void filteredOutbound(final ChannelHandlerContext ctx,
-                                    final Address recipient,
+                                    final SocketAddress recipient,
                                     final FullReadMessage<?> msg,
                                     final CompletableFuture<Void> future) {
         final IdentityPublicKey recipientsKey = msg.getRecipient();
@@ -144,7 +144,7 @@ public class ArmHandler extends ChannelDuplexHandler {
     }
 
     protected void filteredInbound(final ChannelHandlerContext ctx,
-                                   final Address sender,
+                                   final SocketAddress sender,
                                    final ArmedMessage msg,
                                    final CompletableFuture<Void> future) throws Exception {
         final IdentityPublicKey recipientsKey = msg.getSender(); // on inbound our recipient is the sender of the message
@@ -210,7 +210,7 @@ public class ArmHandler extends ChannelDuplexHandler {
             future.complete(null);
         }
         else {
-            ctx.fireChannelRead(new AddressedMessage<>((Object) plaintextMsg, sender));
+            ctx.fireChannelRead(new AddressedMessage<>(plaintextMsg, sender));
         }
     }
 
@@ -273,7 +273,7 @@ public class ArmHandler extends ChannelDuplexHandler {
      */
     private void doKeyExchange(final Session session,
                                final ChannelHandlerContext ctx,
-                               final Address recipient,
+                               final SocketAddress recipient,
                                final IdentityPublicKey recipientPublicKey) {
         final Agreement agreement = computeOnEmptyOrStaleAgreement(session, recipientPublicKey, ctx);
 
@@ -327,7 +327,7 @@ public class ArmHandler extends ChannelDuplexHandler {
      * @param future       the future to fulfill
      */
     private void receivedKeyExchangeMessage(final ChannelHandlerContext ctx,
-                                            final Address sender,
+                                            final SocketAddress sender,
                                             final KeyExchangeMessage plaintextMsg,
                                             final Session session,
                                             final CompletableFuture<Void> future) {
@@ -374,7 +374,7 @@ public class ArmHandler extends ChannelDuplexHandler {
      */
     private void checkForRenewAgreement(final ChannelHandlerContext ctx,
                                         final Session session,
-                                        final Address recipient,
+                                        final SocketAddress recipient,
                                         final IdentityPublicKey recipientsKey) {
         // remove stale agreement
         final Optional<Agreement> agreement = session.getCurrentActiveAgreement().computeOnCondition(a -> a != null && a.isStale(), a -> {
@@ -401,7 +401,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof FullReadMessage) {
             final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) ((AddressedMessage<?, ?>) msg).message();
-            final Address recipient = ((AddressedMessage<?, ?>) msg).address();
+            final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
             if (fullReadMsg.getRecipient() == null) {
                 ctx.writeAndFlush(msg, promise);
@@ -425,7 +425,7 @@ public class ArmHandler extends ChannelDuplexHandler {
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ArmedMessage) {
             final ArmedMessage armedMessage = (ArmedMessage) ((AddressedMessage<?, ?>) msg).message();
-            final Address sender = ((AddressedMessage<?, ?>) msg).address();
+            final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
 
             if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(armedMessage.getRecipient())
                     || ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(armedMessage.getSender())) {

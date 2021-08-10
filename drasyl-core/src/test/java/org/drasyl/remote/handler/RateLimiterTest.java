@@ -26,7 +26,6 @@ import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
@@ -42,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -69,7 +69,7 @@ class RateLimiterTest {
 
     @Test
     void shouldRejectAcknowledgementMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                                   @Mock final Address msgSender,
+                                                                   @Mock final SocketAddress msgSender,
                                                                    @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
         when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
@@ -94,7 +94,7 @@ class RateLimiterTest {
 
     @Test
     void shouldRejectDiscoveryMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                             @Mock final Address msgSender,
+                                                             @Mock final SocketAddress msgSender,
                                                              @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
         when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
@@ -119,7 +119,7 @@ class RateLimiterTest {
 
     @Test
     void shouldRejectUniteMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                         @Mock final Address msgSender,
+                                                         @Mock final SocketAddress msgSender,
                                                          @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
         when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
@@ -144,7 +144,7 @@ class RateLimiterTest {
 
     @Test
     void shouldNotRateLimitMessagesNotAddressedToUs(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                    @Mock final Address msgSender,
+                                                    @Mock final SocketAddress msgSender,
                                                     @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
         when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
@@ -168,7 +168,7 @@ class RateLimiterTest {
 
     @Test
     void shouldNotRateLimitApplicationMessages(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                               @Mock final Address msgSender,
+                                               @Mock final SocketAddress msgSender,
                                                @Mock final Supplier<Long> timeProvider) throws Exception {
         when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
         when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());

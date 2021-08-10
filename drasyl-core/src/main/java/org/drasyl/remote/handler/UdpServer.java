@@ -37,8 +37,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedInteger;
@@ -156,7 +154,7 @@ public class UdpServer extends ChannelDuplexHandler {
                     protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                 final DatagramPacket packet) {
                         LOG.trace("Datagram received {}", packet);
-                        ctx.fireChannelRead(new AddressedMessage<>((Object) packet.content().retain(), (Address) new InetSocketAddressWrapper(packet.sender())));
+                        ctx.fireChannelRead(new AddressedMessage<>(packet.content().retain(), packet.sender()));
                     }
                 })
                 .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost(), bindPort);
@@ -190,9 +188,9 @@ public class UdpServer extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddressWrapper) {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
             final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
-            final InetSocketAddressWrapper recipient = (InetSocketAddressWrapper) ((AddressedMessage<?, ?>) msg).address();
+            final InetSocketAddress recipient = (InetSocketAddress) ((AddressedMessage<?, ?>) msg).address();
 
             if (channel != null && channel.isWritable()) {
                 final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);

@@ -27,11 +27,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -70,7 +70,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage) {
-            final Address recipient = ((AddressedMessage<?, ?>) msg).address();
+            final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
             final ChannelHandlerContext discoveree = discoveries.get(Pair.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), recipient));
 
@@ -79,7 +79,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
                 ctx.writeAndFlush(msg, promise);
             }
             else {
-                discoveree.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), (Address) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+                discoveree.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
             }
         }
         else {

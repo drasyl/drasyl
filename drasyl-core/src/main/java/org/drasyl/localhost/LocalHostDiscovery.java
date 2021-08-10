@@ -28,7 +28,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.SetUtil;
@@ -41,6 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,7 +85,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     public static final String FILE_SUFFIX = ".json";
     private final ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
-    private final Map<IdentityPublicKey, InetSocketAddressWrapper> routes;
+    private final Map<IdentityPublicKey, SocketAddress> routes;
     private Future watchDisposable;
     private Future postDisposable;
     private WatchService watchService; // NOSONAR
@@ -101,7 +101,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
     @SuppressWarnings({ "java:S107" })
     LocalHostDiscovery(final ThrowingBiConsumer<File, Object, IOException> jacksonWriter,
-                       final Map<IdentityPublicKey, InetSocketAddressWrapper> routes,
+                       final Map<IdentityPublicKey, SocketAddress> routes,
                        final Future watchDisposable,
                        final Future postDisposable) {
         this.jacksonWriter = requireNonNull(jacksonWriter);
@@ -118,7 +118,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             final IdentityPublicKey recipient = (IdentityPublicKey) ((AddressedMessage<?, ?>) msg).address();
             final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
 
-            final InetSocketAddressWrapper localAddress = routes.get(recipient);
+            final SocketAddress localAddress = routes.get(recipient);
             if (localAddress != null) {
                 LOG.trace("Send message `{}` via local route {}.", () -> applicationMsg, () -> localAddress);
                 ctx.writeAndFlush(msg, promise);
@@ -303,7 +303,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         // add new routes
         newRoutes.forEach(((publicKey, address) -> {
             if (!routes.containsKey(publicKey)) {
-                routes.put(publicKey, new InetSocketAddressWrapper(address));
+                routes.put(publicKey, address);
                 ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path);
             }
         }));

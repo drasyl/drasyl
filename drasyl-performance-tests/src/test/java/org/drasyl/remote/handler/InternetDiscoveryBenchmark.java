@@ -38,8 +38,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.InternetDiscovery.Peer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.Nonce;
@@ -53,6 +51,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import test.util.IdentityTestUtil;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,7 +69,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     private Set<IdentityPublicKey> directConnectionPeers;
     private InternetDiscovery handler;
     private ChannelHandlerContext ctx;
-    private Address recipient;
+    private SocketAddress recipient;
     private ApplicationMessage msg;
     private ChannelPromise future;
     private Set<IdentityPublicKey> superPeers;
@@ -95,7 +94,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         directConnectionPeers.add(recipient);
         final Peer peer = new Peer();
         peer.inboundPingOccurred();
-        peer.setAddress(new InetSocketAddressWrapper("127.0.0.1", 25527));
+        peer.setAddress(new InetSocketAddress("127.0.0.1", 25527));
         peers.put(recipient, peer);
     }
 
@@ -322,7 +321,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         }
     }
 
-    private static class MyAddress implements Address {
+    private static class MyAddress extends SocketAddress {
     }
 
     private static class MyChannelPromise implements ChannelPromise {

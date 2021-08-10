@@ -63,7 +63,7 @@ public class OutboundMessagesThrottlingHandler extends ChannelOutboundHandlerAda
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof AddressedMessage) {
-            final AddressedMessage<?, ? extends org.drasyl.pipeline.address.Address> migrationMsg = (AddressedMessage<?, ? extends org.drasyl.pipeline.address.Address>) msg;
+            final AddressedMessage<?, ?> migrationMsg = (AddressedMessage<?, ?>) msg;
             final CompletableFuture<Void> future = new CompletableFuture<>();
             FutureUtil.combine(future, promise);
             try {

@@ -27,8 +27,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -44,6 +42,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,7 +72,7 @@ public class NatPmpPortMapping implements PortMapping {
     private final AtomicBoolean externalAddressRequested;
     private final AtomicBoolean mappingRequested;
     private int port;
-    private InetSocketAddressWrapper defaultGateway;
+    private InetSocketAddress defaultGateway;
     private InetAddress externalAddress;
     private Future timeoutGuard;
     private Future refreshTask;
@@ -83,7 +82,7 @@ public class NatPmpPortMapping implements PortMapping {
     public NatPmpPortMapping(final AtomicBoolean externalAddressRequested,
                              final AtomicBoolean mappingRequested,
                              final int port,
-                             final InetSocketAddressWrapper defaultGateway,
+                             final InetSocketAddress defaultGateway,
                              final InetAddress externalAddress,
                              final Future timeoutGuard,
                              final Future refreshTask,
@@ -119,14 +118,14 @@ public class NatPmpPortMapping implements PortMapping {
     }
 
     @Override
-    public boolean acceptMessage(final InetSocketAddressWrapper sender,
+    public boolean acceptMessage(final InetSocketAddress sender,
                                  final ByteBuf msg) {
         return defaultGateway != null && defaultGateway.equals(sender);
     }
 
     @Override
     public void handleMessage(final ChannelHandlerContext ctx,
-                              final InetSocketAddressWrapper sender,
+                              final InetSocketAddress sender,
                               final ByteBuf msg) {
         try (final InputStream in = new DataInputStream(new ByteBufInputStream(msg))) {
             final Message message = NatPmpUtil.readMessage(in);
@@ -164,7 +163,7 @@ public class NatPmpPortMapping implements PortMapping {
             LOG.debug("Unable to determine default gateway.");
             return;
         }
-        defaultGateway = new InetSocketAddressWrapper(defaultGatewayAddress, NAT_PMP_PORT);
+        defaultGateway = new InetSocketAddress(defaultGatewayAddress, NAT_PMP_PORT);
 
         // now we can request the external address from the gateway
         requestExternalAddress(ctx);
@@ -206,7 +205,7 @@ public class NatPmpPortMapping implements PortMapping {
         externalAddressRequested.set(true);
 
         final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) defaultGateway)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)))).combine(future);
         future.exceptionally(e -> {
             LOG.warn("Unable to send external address request message to `{}`", () -> defaultGateway, () -> e);
             return null;
@@ -238,7 +237,7 @@ public class NatPmpPortMapping implements PortMapping {
         mappingRequested.set(true);
 
         final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) defaultGateway)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)))).combine(future);
         future.exceptionally(e -> {
             LOG.warn("Unable to send mapping request message to `{}`", () -> defaultGateway, () -> e);
             return null;

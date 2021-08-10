@@ -31,8 +31,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
@@ -48,6 +46,8 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -179,7 +179,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private void pingSuperPeers(final ChannelHandlerContext ctx) {
         if (ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
             for (final Endpoint endpoint : ctx.attr(CONFIG_ATTR_KEY).get().getRemoteSuperPeerEndpoints()) {
-                final InetSocketAddressWrapper address = new InetSocketAddressWrapper(endpoint.getHost(), endpoint.getPort());
+                final SocketAddress address = new InetSocketAddress(endpoint.getHost(), endpoint.getPort());
                 sendPing(ctx, endpoint.getIdentityPublicKey(), address, new CompletableFuture<>()).exceptionally(e -> {
                     //noinspection unchecked
                     LOG.warn("Unable to send ping for super peer `{}` to `{}`", endpoint::getIdentityPublicKey, () -> address, () -> e);
@@ -198,7 +198,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private void pingDirectConnectionPeers(final ChannelHandlerContext ctx) {
         for (final IdentityPublicKey publicKey : new HashSet<>(directConnectionPeers)) {
             final Peer peer = peers.get(publicKey);
-            final InetSocketAddressWrapper address = peer.getAddress();
+            final SocketAddress address = peer.getAddress();
             if (address != null && peer.hasApplicationTraffic(ctx.attr(CONFIG_ATTR_KEY).get())) {
                 sendPing(ctx, publicKey, address, new CompletableFuture<>()).exceptionally(e -> {
                     //noinspection unchecked
@@ -234,7 +234,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage) {
             final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
-            final Address recipient = ((AddressedMessage<?, ?>) msg).address();
+            final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
             if (recipient instanceof IdentityPublicKey) {
                 // record communication to keep active connections alive
@@ -284,12 +284,12 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         }
 
         if (recipientPeer != null && recipientPeer.getAddress() != null && recipientPeer.isReachable(ctx.attr(CONFIG_ATTR_KEY).get())) {
-            final InetSocketAddressWrapper recipientSocketAddress = recipientPeer.getAddress();
+            final InetSocketAddress recipientSocketAddress = recipientPeer.getAddress();
             final Peer senderPeer = peers.get(msg.getSender());
 
             // rendezvous? I'm a super peer?
             if (senderPeer != null && superPeerPeer == null && senderPeer.getAddress() != null) {
-                final InetSocketAddressWrapper senderSocketAddress = senderPeer.getAddress();
+                final InetSocketAddress senderSocketAddress = senderPeer.getAddress();
                 final IdentityPublicKey msgSender = msg.getSender();
                 final IdentityPublicKey msgRecipient = msg.getRecipient();
                 LOG.trace("Relay message from {} to {}.", msgSender, recipient);
@@ -300,14 +300,14 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             }
 
             LOG.trace("Send message to {} to {}.", recipient, recipientSocketAddress);
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipientSocketAddress)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, recipientSocketAddress)))).combine(future);
 
             return true;
         }
         else if (superPeerPeer != null) {
-            final InetSocketAddressWrapper superPeerSocketAddress = superPeerPeer.getAddress();
+            final SocketAddress superPeerSocketAddress = superPeerPeer.getAddress();
             LOG.trace("No connection to {}. Send message to super peer.", recipient);
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) superPeerSocketAddress)))).combine(future);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, superPeerSocketAddress)))).combine(future);
 
             return true;
         }
@@ -346,13 +346,13 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private static void sendUnites(final ChannelHandlerContext ctx,
                                    final IdentityPublicKey senderKey,
                                    final IdentityPublicKey recipientKey,
-                                   final InetSocketAddressWrapper recipient,
-                                   final InetSocketAddressWrapper sender) {
+                                   final InetSocketAddress recipient,
+                                   final InetSocketAddress sender) {
         // send recipient's information to sender
         final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
         final CompletableFuture<Void> future1 = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) senderRendezvousEnvelope, (Address) sender)))).combine(future1);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(senderRendezvousEnvelope, sender)))).combine(future1);
         future1.exceptionally(e -> {
             //noinspection unchecked
             LOG.warn("Unable to send unite message for peer `{}` to `{}`", () -> senderKey, () -> sender, () -> e);
@@ -363,7 +363,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
         final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) recipientRendezvousEnvelope, (Address) recipient)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(recipientRendezvousEnvelope, recipient)))).combine(future);
         future.exceptionally(e -> {
             //noinspection unchecked
             LOG.warn("Unable to send unite message for peer `{}` to `{}`", () -> recipientKey, () -> recipient, () -> e);
@@ -387,12 +387,12 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
-            final Address sender = ((AddressedMessage<?, ?>) msg).address();
+            final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
 
-            if (sender instanceof InetSocketAddressWrapper && remoteMsg.getRecipient() != null) {
+            if (sender instanceof InetSocketAddress && remoteMsg.getRecipient() != null) {
                 // This message is for us and we will fully decode it
                 if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getRecipient()) && remoteMsg instanceof FullReadMessage) {
-                    handleMessage(ctx, (InetSocketAddressWrapper) sender, (FullReadMessage<?>) remoteMsg, new CompletableFuture<>());
+                    handleMessage(ctx, (InetSocketAddress) sender, (FullReadMessage<?>) remoteMsg, new CompletableFuture<>());
                 }
                 else if (!ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
                     if (!processMessage(ctx, remoteMsg.getRecipient(), remoteMsg, new CompletableFuture<>())) {
@@ -415,7 +415,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     }
 
     private void handleMessage(final ChannelHandlerContext ctx,
-                               final InetSocketAddressWrapper sender,
+                               final InetSocketAddress sender,
                                final FullReadMessage<?> msg,
                                final CompletableFuture<Void> future) {
         if (msg instanceof DiscoveryMessage) {
@@ -432,12 +432,12 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         }
         else {
             // passthrough message
-            ctx.fireChannelRead(new AddressedMessage<>((Object) msg, (Address) sender));
+            ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
         }
     }
 
     private void handlePing(final ChannelHandlerContext ctx,
-                            final InetSocketAddressWrapper sender,
+                            final InetSocketAddress sender,
                             final DiscoveryMessage msg,
                             final CompletableFuture<Void> future) {
         final IdentityPublicKey envelopeSender = msg.getSender();
@@ -463,11 +463,11 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         final ProofOfWork myProofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final AcknowledgementMessage responseEnvelope = AcknowledgementMessage.of(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
         LOG.trace("Send {} to {}", responseEnvelope, sender);
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) responseEnvelope, (Address) sender)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(responseEnvelope, sender)))).combine(future);
     }
 
     private void handlePong(final ChannelHandlerContext ctx,
-                            final InetSocketAddressWrapper sender,
+                            final InetSocketAddress sender,
                             final AcknowledgementMessage msg,
                             final CompletableFuture<Void> future) {
         final IdentityPublicKey envelopeSender = msg.getSender();
@@ -525,7 +525,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                              final UniteMessage msg,
                              final CompletableFuture<Void> future) {
         final InetAddress address = msg.getAddress();
-        final InetSocketAddressWrapper socketAddress = new InetSocketAddressWrapper(address, msg.getPort());
+        final InetSocketAddress socketAddress = new InetSocketAddress(address, msg.getPort());
         LOG.trace("Got {}", msg);
 
         final Peer peer = peers.computeIfAbsent(msg.getPublicKey(), key -> new Peer());
@@ -543,12 +543,12 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             peer.applicationTrafficOccurred();
         }
 
-        ctx.fireChannelRead(new AddressedMessage<>((Object) msg, (Address) msg.getSender()));
+        ctx.fireChannelRead(new AddressedMessage<>(msg, msg.getSender()));
     }
 
     private CompletableFuture<Void> sendPing(final ChannelHandlerContext ctx,
                                              final IdentityPublicKey recipient,
-                                             final InetSocketAddressWrapper recipientAddress,
+                                             final SocketAddress recipientAddress,
                                              final CompletableFuture<Void> future) {
         final int networkId = ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId();
         final IdentityPublicKey sender = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey();
@@ -559,19 +559,19 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         messageEnvelope = DiscoveryMessage.of(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
         openPingsCache.put(messageEnvelope.getNonce(), new Ping(recipientAddress));
         LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) messageEnvelope, (Address) recipientAddress)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, recipientAddress)))).combine(future);
         return future;
     }
 
     @SuppressWarnings("java:S2972")
     static class Peer {
-        private InetSocketAddressWrapper address;
+        private InetSocketAddress address;
         private long lastInboundControlTrafficTime;
         private long lastInboundPongTime;
         private long lastApplicationTrafficTime;
         private long lastOutboundPingTime;
 
-        Peer(final InetSocketAddressWrapper address,
+        Peer(final InetSocketAddress address,
              final long lastInboundControlTrafficTime,
              final long lastInboundPongTime,
              final long lastApplicationTrafficTime) {
@@ -584,11 +584,11 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         public Peer() {
         }
 
-        public InetSocketAddressWrapper getAddress() {
+        public InetSocketAddress getAddress() {
             return address;
         }
 
-        public void setAddress(final InetSocketAddressWrapper address) {
+        public void setAddress(final InetSocketAddress address) {
             this.address = address;
         }
 
@@ -645,15 +645,15 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
     @SuppressWarnings("java:S2972")
     public static class Ping {
-        private final InetSocketAddressWrapper address;
+        private final SocketAddress address;
         private final long pingTime;
 
-        public Ping(final InetSocketAddressWrapper address) {
+        public Ping(final SocketAddress address) {
             this.address = requireNonNull(address);
             pingTime = System.currentTimeMillis();
         }
 
-        public InetSocketAddressWrapper getAddress() {
+        public SocketAddress getAddress() {
             return address;
         }
 

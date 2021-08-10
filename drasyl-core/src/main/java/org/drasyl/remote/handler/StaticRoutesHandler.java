@@ -28,10 +28,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+
+import java.net.SocketAddress;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
@@ -58,7 +59,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
             final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
             final IdentityPublicKey recipient = (IdentityPublicKey) ((AddressedMessage<?, ?>) msg).address();
 
-            final InetSocketAddressWrapper staticAddress = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
+            final SocketAddress staticAddress = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
             if (staticAddress != null) {
                 LOG.trace("Send message `{}` via static route {}.", () -> applicationMsg, () -> staticAddress);
                 ctx.writeAndFlush(new AddressedMessage<>(applicationMsg, staticAddress), promise);

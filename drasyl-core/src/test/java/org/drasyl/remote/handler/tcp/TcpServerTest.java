@@ -34,8 +34,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerChannelInitializer;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerHandler;
 import org.junit.jupiter.api.Nested;
@@ -119,7 +117,7 @@ class TcpServerTest {
     class MessagePassing {
         @SuppressWarnings("SuspiciousMethodCalls")
         @Test
-        void shouldPassOutgoingMessageToTcpClient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper recipient,
+        void shouldPassOutgoingMessageToTcpClient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Channel client,
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg,
                                                   @Mock final ChannelFuture channelFuture) {
@@ -132,7 +130,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
                 verify(client).writeAndFlush(any(), any());
             }
@@ -143,7 +141,7 @@ class TcpServerTest {
 
         @SuppressWarnings("SuspiciousMethodCalls")
         @Test
-        void shouldRejectMessageIfClientChannelIsNotWritable(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper recipient,
+        void shouldRejectMessageIfClientChannelIsNotWritable(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Channel client,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             when(clientChannels.get(any())).thenReturn(client);
@@ -152,7 +150,7 @@ class TcpServerTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient), promise);
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {
@@ -161,7 +159,7 @@ class TcpServerTest {
         }
 
         @Test
-        void shouldPassthroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper recipient,
+        void shouldPassthroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);

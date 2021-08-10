@@ -30,7 +30,6 @@ import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.serialization.Serializer;
@@ -43,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -159,7 +159,7 @@ class MessageSerializerTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>("Hello World", identity.getIdentityPublicKey()));
 
-                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
 
             }
             finally {
@@ -180,7 +180,7 @@ class MessageSerializerTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, identity.getIdentityPublicKey()));
 
-                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -232,7 +232,7 @@ class MessageSerializerTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(null, identity.getIdentityPublicKey()));
 
-                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(ApplicationMessage.class));
             }
             finally {
                 pipeline.drasylClose();

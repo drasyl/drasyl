@@ -31,8 +31,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.LocalNetworkDiscovery.Peer;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
@@ -45,6 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -195,7 +194,7 @@ class LocalNetworkDiscoveryTest {
     @Nested
     class InboundMessageHandling {
         @Test
-        void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddressWrapper sender,
+        void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddress sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                    @Mock final Peer peer) throws Exception {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
@@ -211,7 +210,7 @@ class LocalNetworkDiscoveryTest {
         }
 
         @Test
-        void shouldIgnoreInboundPingFromItself(@Mock final InetSocketAddressWrapper sender,
+        void shouldIgnoreInboundPingFromItself(@Mock final InetSocketAddress sender,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) throws Exception {
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
@@ -225,7 +224,7 @@ class LocalNetworkDiscoveryTest {
         }
 
         @Test
-        void shouldPassthroughUnicastMessages(@Mock final InetSocketAddressWrapper sender,
+        void shouldPassthroughUnicastMessages(@Mock final InetSocketAddress sender,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
@@ -262,7 +261,7 @@ class LocalNetworkDiscoveryTest {
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, pingDisposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+            pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
             assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
         }
@@ -276,7 +275,7 @@ class LocalNetworkDiscoveryTest {
         @Nested
         class Getter {
             @Test
-            void shouldReturnCorrectValues(@Mock final InetSocketAddressWrapper address) {
+            void shouldReturnCorrectValues(@Mock final InetSocketAddress address) {
                 final Peer peer = new Peer(address, 1337L);
 
                 assertSame(address, peer.getAddress());
@@ -287,7 +286,7 @@ class LocalNetworkDiscoveryTest {
         @Nested
         class InboundPingOccurred {
             @Test
-            void shouldUpdateTime(@Mock final InetSocketAddressWrapper address) {
+            void shouldUpdateTime(@Mock final InetSocketAddress address) {
                 final Peer peer = new Peer(address, 1337L);
 
                 peer.inboundPingOccurred();
@@ -299,7 +298,7 @@ class LocalNetworkDiscoveryTest {
         @Nested
         class IsStale {
             @Test
-            void shouldReturnCorrectValue(@Mock final InetSocketAddressWrapper address,
+            void shouldReturnCorrectValue(@Mock final InetSocketAddress address,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
                 when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
                 when(ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout()).thenReturn(ofSeconds(60));

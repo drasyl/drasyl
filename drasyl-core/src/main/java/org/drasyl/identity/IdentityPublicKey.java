@@ -32,7 +32,6 @@ import org.drasyl.DrasylAddress;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringDeserializer;
 import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringSerializer;
 import org.drasyl.util.InternPool;
@@ -49,7 +48,7 @@ import static org.drasyl.crypto.Crypto.PK_LONG_TIME_KEY_LENGTH;
  */
 @AutoValue
 @SuppressWarnings("java:S118")
-public abstract class IdentityPublicKey extends SocketAddress implements PublicKey, Address, DrasylAddress {
+public abstract class IdentityPublicKey extends SocketAddress implements PublicKey, DrasylAddress {
     public static final short KEY_LENGTH_AS_BYTES = PK_LONG_TIME_KEY_LENGTH;
     public static final short KEY_LENGTH_AS_STRING = KEY_LENGTH_AS_BYTES * 2;
     private static final InternPool<IdentityPublicKey> POOL = new InternPool<>();

@@ -23,7 +23,8 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+
+import java.net.InetSocketAddress;
 
 /**
  * Represents a method for creating port forwarding (e.g., PCP, NAT-PMP, or UPnP-IGD).
@@ -53,7 +54,7 @@ public interface PortMapping {
      * @param msg    the message
      */
     void handleMessage(ChannelHandlerContext ctx,
-                       InetSocketAddressWrapper sender,
+                       InetSocketAddress sender,
                        ByteBuf msg);
 
     /**
@@ -65,6 +66,6 @@ public interface PortMapping {
      * @return {@code true} if the message is relevant for the current port forwarding method.
      * Otherwise {@code false}
      */
-    boolean acceptMessage(InetSocketAddressWrapper sender,
+    boolean acceptMessage(InetSocketAddress sender,
                           ByteBuf msg);
 }

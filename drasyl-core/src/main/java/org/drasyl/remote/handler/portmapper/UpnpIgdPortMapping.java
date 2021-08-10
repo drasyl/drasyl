@@ -27,8 +27,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -42,6 +40,7 @@ import org.drasyl.util.protocol.UpnpIgdUtil.Message;
 import org.drasyl.util.protocol.UpnpIgdUtil.Service;
 import org.drasyl.util.protocol.UpnpIgdUtil.StatusInfo;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -129,7 +128,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     }
 
     @Override
-    public boolean acceptMessage(final InetSocketAddressWrapper sender,
+    public boolean acceptMessage(final InetSocketAddress sender,
                                  final ByteBuf msg) {
         return sender != null
                 && sender.getPort() == SSDP_MULTICAST_ADDRESS.getPort();
@@ -137,7 +136,7 @@ public class UpnpIgdPortMapping implements PortMapping {
 
     @Override
     public void handleMessage(final ChannelHandlerContext ctx,
-                              final InetSocketAddressWrapper sender,
+                              final InetSocketAddress sender,
                               final ByteBuf msg) {
         try {
             if (ssdpDiscoveryActive.get()) {
@@ -255,7 +254,7 @@ public class UpnpIgdPortMapping implements PortMapping {
             }
         }, SSDP_DISCOVERY_TIMEOUT.toMillis(), MILLISECONDS);
         final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) SSDP_MULTICAST_ADDRESS)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, SSDP_MULTICAST_ADDRESS)))).combine(future);
         future.exceptionally(e -> {
             LOG.warn("Unable to send ssdp discovery message to `{}`", () -> SSDP_MULTICAST_ADDRESS, () -> e);
             return null;

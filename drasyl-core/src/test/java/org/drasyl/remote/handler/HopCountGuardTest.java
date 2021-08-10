@@ -29,7 +29,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
@@ -100,7 +99,7 @@ class HopCountGuardTest {
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             final ChannelPromise promise = pipeline.newPromise();
-            pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) message.getSender()), promise);
+            pipeline.writeAndFlush(new AddressedMessage<>(message, message.getSender()), promise);
             assertFalse(promise.isSuccess());
 
             assertNull(pipeline.readOutbound());

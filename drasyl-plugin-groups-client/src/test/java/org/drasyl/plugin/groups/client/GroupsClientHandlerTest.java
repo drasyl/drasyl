@@ -34,7 +34,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.Serialization;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
@@ -56,6 +55,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -135,7 +135,7 @@ class GroupsClientHandlerTest {
                 pipeline.pipeline().addLast("handler", handler);
                 pipeline.pipeline().remove("handler");
 
-                assertEquals(new GroupLeaveMessage(group), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new GroupLeaveMessage(group), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
 
                 verify(renewTasks).clear();
             }
@@ -187,7 +187,7 @@ class GroupsClientHandlerTest {
                             .assertValue(event);
                 });
 
-                assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((AddressedMessage<Object, Address>) pipeline.readOutbound()).message());
+                assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
             }
             finally {
                 pipeline.drasylClose();
@@ -205,7 +205,7 @@ class GroupsClientHandlerTest {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -224,7 +224,7 @@ class GroupsClientHandlerTest {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -245,7 +245,7 @@ class GroupsClientHandlerTest {
                 final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -269,7 +269,7 @@ class GroupsClientHandlerTest {
                 when(groups.get(any())).thenReturn(uri);
                 when(uri.getTimeout()).thenReturn(Duration.ofMinutes(10));
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)
@@ -290,7 +290,7 @@ class GroupsClientHandlerTest {
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
                 final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) msg, (Address) publicKey));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
                 eventObserver.awaitCount(1)
                         .assertValueCount(1)

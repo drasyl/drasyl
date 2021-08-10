@@ -34,8 +34,6 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -43,6 +41,7 @@ import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -62,7 +61,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     private static final String MULTICAST_INTERFACE_PROPERTY = "org.drasyl.remote.multicast.interface";
     private static final Logger LOG = LoggerFactory.getLogger(UdpMulticastServer.class);
-    public static final InetSocketAddressWrapper MULTICAST_ADDRESS;
+    public static final InetSocketAddress MULTICAST_ADDRESS;
     public static final NetworkInterface MULTICAST_INTERFACE;
     private static final String MULTICAST_BIND_HOST;
     private static UdpMulticastServer instance;
@@ -74,7 +73,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         try {
             final String stringValue = SystemPropertyUtil.get("org.drasyl.remote.multicast.address", "239.22.5.27:22527");
             final URI uriValue = new URI("my://" + stringValue);
-            MULTICAST_ADDRESS = new InetSocketAddressWrapper(uriValue.getHost(), uriValue.getPort());
+            MULTICAST_ADDRESS = new InetSocketAddress(uriValue.getHost(), uriValue.getPort());
         }
         catch (final URISyntaxException | IllegalArgumentException e) {
             throw new RuntimeException("Invalid multicast address given:", e);
@@ -128,10 +127,10 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                         @Override
                         protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                     final DatagramPacket packet) {
-                            final InetSocketAddressWrapper sender = new InetSocketAddressWrapper(packet.sender());
+                            final SocketAddress sender = packet.sender();
                             nodes.values().forEach(nodeCtx -> {
                                 LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.attr(IDENTITY_ATTR_KEY).get()::getIdentityPublicKey);
-                                nodeCtx.fireChannelRead(new AddressedMessage<>((Object) packet.content().retain(), (Address) sender));
+                                nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content().retain(), sender));
                             });
                         }
                     })
@@ -184,7 +183,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof AddressedMessage) {
-            final AddressedMessage<?, ? extends Address> migrationMsg = (AddressedMessage<?, ? extends Address>) msg;
+            final AddressedMessage<?, ?> migrationMsg = (AddressedMessage<?, ?>) msg;
             try {
                 ctx.fireChannelRead(new AddressedMessage<>(migrationMsg.message(), migrationMsg.address()));
             }

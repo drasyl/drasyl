@@ -28,13 +28,13 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.PrintStream;
+import java.net.SocketAddress;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiPredicate;
 
@@ -57,9 +57,9 @@ class MessagesThroughputHandlerTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    BiPredicate<Address, Object> consumeOutbound;
+    BiPredicate<SocketAddress, Object> consumeOutbound;
     @Mock
-    BiPredicate<Address, Object> consumeInbound;
+    BiPredicate<SocketAddress, Object> consumeInbound;
     @Mock
     LongAdder outboundMessages;
     @Mock
@@ -106,7 +106,7 @@ class MessagesThroughputHandlerTest {
     }
 
     @Test
-    void shouldRecordOutboundMessage(@Mock final Address address) {
+    void shouldRecordOutboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
@@ -121,7 +121,7 @@ class MessagesThroughputHandlerTest {
     }
 
     @Test
-    void shouldRecordInboundMessage(@Mock final Address address) {
+    void shouldRecordInboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
@@ -136,7 +136,7 @@ class MessagesThroughputHandlerTest {
     }
 
     @Test
-    void shouldConsumeMatchingOutboundMessage(@Mock final Address address) {
+    void shouldConsumeMatchingOutboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
         final TestObserver<Object> observable;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
@@ -151,7 +151,7 @@ class MessagesThroughputHandlerTest {
     }
 
     @Test
-    void shouldConsumeMatchingInboundMessage(@Mock final Address address) {
+    void shouldConsumeMatchingInboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, scheduler, printStream, null);
         final TestObserver<Object> observable;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);

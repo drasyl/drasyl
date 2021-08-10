@@ -32,8 +32,6 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.PartialReadMessage;
@@ -48,6 +46,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -71,9 +70,9 @@ public class ChunkingHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ChunkMessage && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddressWrapper) {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ChunkMessage) {
             final ChunkMessage chunkMsg = (ChunkMessage) ((AddressedMessage<?, ?>) msg).message();
-            final InetSocketAddressWrapper sender = (InetSocketAddressWrapper) ((AddressedMessage<?, ?>) msg).address();
+            final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
 
             // message is addressed to me
             if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(chunkMsg.getRecipient())) {
@@ -95,7 +94,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
-            final Address recipient = ((AddressedMessage<?, ?>) msg).address();
+            final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
             if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getSender())) {
                 // message from us, check if we have to chunk it
@@ -128,7 +127,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
     }
 
     private void handleInboundChunk(final ChannelHandlerContext ctx,
-                                    final InetSocketAddressWrapper sender,
+                                    final SocketAddress sender,
                                     final ChunkMessage chunk,
                                     final CompletableFuture<Void> future) throws IOException {
         try {
@@ -138,7 +137,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             if (message != null) {
                 // message complete, pass it inbound
                 getChunksCollectors(ctx.attr(CONFIG_ATTR_KEY).get()).remove(chunk.getNonce());
-                ctx.fireChannelRead(new AddressedMessage<>((Object) message, (Address) sender));
+                ctx.fireChannelRead(new AddressedMessage<>(message, sender));
             }
             else {
                 // other chunks missing, but this chunk has been processed
@@ -168,7 +167,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
 
     @SuppressWarnings("unchecked")
     private static void chunkMessage(final ChannelHandlerContext ctx,
-                                     final Address recipient,
+                                     final SocketAddress recipient,
                                      final RemoteMessage msg,
                                      final CompletableFuture<Void> future,
                                      final ByteBuf messageByteBuf,
@@ -211,7 +210,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                     final RemoteMessage chunk = PartialReadMessage.of(chunkByteBuf);
 
                     final CompletableFuture<Void> future1 = new CompletableFuture<>();
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) chunk, recipient)))).combine(future1);
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(chunk, recipient)))).combine(future1);
                     combiner.add(future1);
                 }
                 finally {

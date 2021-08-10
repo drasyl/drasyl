@@ -27,9 +27,10 @@ import com.google.auto.value.AutoValue;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.UriUtil;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -91,8 +92,8 @@ public abstract class Endpoint {
      * @throws IllegalArgumentException if the port parameter is outside the range of valid port
      *                                  values, or if the hostname parameter is {@code null}.
      */
-    public InetSocketAddressWrapper toInetSocketAddress() {
-        return new InetSocketAddressWrapper(getHost(), getPort());
+    public SocketAddress toInetSocketAddress() {
+        return new InetSocketAddress(getHost(), getPort());
     }
 
     @JsonValue

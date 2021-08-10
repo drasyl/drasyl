@@ -22,13 +22,13 @@
 package org.drasyl.channel;
 
 import io.netty.util.ReferenceCounted;
-import org.drasyl.pipeline.address.Address;
 
+import java.net.SocketAddress;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class AddressedMessage<M, A extends Address> implements ReferenceCounted {
+public class AddressedMessage<M, A extends SocketAddress> implements ReferenceCounted {
     private final M message;
     private final A address;
 

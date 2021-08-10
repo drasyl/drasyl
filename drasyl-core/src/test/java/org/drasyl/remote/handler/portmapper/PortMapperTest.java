@@ -29,7 +29,6 @@ import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.UdpServer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,6 +36,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,7 +102,7 @@ class PortMapperTest {
     class MessageHandling {
         @Test
         void shouldConsumeMethodMessages(@Mock final PortMapping method,
-                                         @Mock final InetSocketAddressWrapper sender,
+                                         @Mock final InetSocketAddress sender,
                                          @Mock final ByteBuf msg) {
             when(method.acceptMessage(eq(sender), any())).thenReturn(true);
 
@@ -122,7 +123,7 @@ class PortMapperTest {
 
         @Test
         void shouldPassthroughNonMethodMessages(@Mock final PortMapping method,
-                                                @Mock final InetSocketAddressWrapper sender,
+                                                @Mock final SocketAddress sender,
                                                 @Mock final ByteBuf msg) {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 

@@ -27,13 +27,15 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -51,7 +53,7 @@ class StaticRoutesHandlerTest {
 
     @Test
     void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
-        final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
+        final SocketAddress address = new InetSocketAddress(22527);
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
@@ -67,7 +69,7 @@ class StaticRoutesHandlerTest {
 
     @Test
     void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
-                                            @Mock final InetSocketAddressWrapper address) {
+                                            @Mock final SocketAddress address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
@@ -83,7 +85,7 @@ class StaticRoutesHandlerTest {
 
     @Test
     void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
+        final SocketAddress address = new InetSocketAddress(22527);
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 

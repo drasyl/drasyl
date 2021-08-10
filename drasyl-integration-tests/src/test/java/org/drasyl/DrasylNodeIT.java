@@ -32,7 +32,6 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -48,6 +47,7 @@ import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -331,7 +331,7 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteStaticRoutes(Map.of(IdentityTestUtil.ID_2.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22529)))
+                        .remoteStaticRoutes(Map.of(IdentityTestUtil.ID_2.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22529)))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
@@ -353,7 +353,7 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteStaticRoutes(Map.of(IdentityTestUtil.ID_1.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22528)))
+                        .remoteStaticRoutes(Map.of(IdentityTestUtil.ID_1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)

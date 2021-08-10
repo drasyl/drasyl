@@ -22,9 +22,9 @@
 package org.drasyl.util;
 
 import org.drasyl.annotation.NonNull;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URL;
 
 /**
@@ -45,7 +45,7 @@ public final class InetSocketAddressUtil {
      *                                  be converted to a valid {@link InetSocketAddress}.
      */
     @SuppressWarnings("java:S109")
-    public static InetSocketAddressWrapper socketAddressFromString(@NonNull final String s) {
+    public static SocketAddress socketAddressFromString(@NonNull final String s) {
         final String[] split = s.split(":", 2);
         if (split.length != 2) {
             throw new IllegalArgumentException("string must contain hostname and port divided by colon");
@@ -55,7 +55,7 @@ public final class InetSocketAddressUtil {
             final String hostname = split[0];
             final int port = Integer.parseInt(split[1]);
 
-            return new InetSocketAddressWrapper(hostname, port);
+            return new InetSocketAddress(hostname, port);
         }
         catch (final NumberFormatException e) {
             throw new IllegalArgumentException("Invalid port number format", e);

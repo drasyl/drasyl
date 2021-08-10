@@ -31,8 +31,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.util.ThrowingBiConsumer;
@@ -46,6 +44,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -94,7 +94,7 @@ class LocalHostDiscoveryTest {
     private IdentityPublicKey ownPublicKey;
     @Mock
     private ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
-    private final Map<IdentityPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
+    private final Map<IdentityPublicKey, SocketAddress> routes = new HashMap<>();
     @Mock
     private Future watchDisposable;
     @Mock
@@ -233,7 +233,7 @@ class LocalHostDiscoveryTest {
     class StopDiscovery {
         @Test
         void shouldStopDiscoveryOnChannelInactive(@Mock final IdentityPublicKey publicKey,
-                                                  @Mock final InetSocketAddressWrapper address) {
+                                                  @Mock final SocketAddress address) {
             routes.put(publicKey, address);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
@@ -255,7 +255,7 @@ class LocalHostDiscoveryTest {
     class MessagePassing {
         @Test
         void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
-            final InetSocketAddressWrapper address = new InetSocketAddressWrapper(22527);
+            final SocketAddress address = new InetSocketAddress(22527);
             final IdentityPublicKey recipient = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             routes.put(recipient, address);
             when(identity.getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"));
@@ -264,7 +264,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                 assertNotNull(pipeline.readOutbound());
             }
@@ -294,7 +294,7 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldScanDirectory(@TempDir final Path dir,
                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                 @Mock final InetSocketAddressWrapper address) throws IOException {
+                                 @Mock final SocketAddress address) throws IOException {
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             final IdentityPublicKey publicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
@@ -312,7 +312,7 @@ class LocalHostDiscoveryTest {
 
             assertEquals(Map.of(
                     IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"),
-                    new InetSocketAddressWrapper("192.168.188.23", 12345)
+                    new InetSocketAddress("192.168.188.23", 12345)
             ), routes);
 
             verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).addPath(any(), eq(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b")), any());

@@ -33,8 +33,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.Nonce;
@@ -48,6 +46,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -80,16 +79,16 @@ class RemoteMessageToByteBufCodecTest {
     @Nested
     class Decode {
         @Test
-        void shouldConvertByteBufToEnvelope(@Mock final InetSocketAddressWrapper sender) throws IOException {
+        void shouldConvertByteBufToEnvelope(@Mock final SocketAddress sender) throws IOException {
             final RemoteMessage message = AcknowledgementMessage.of(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) byteBuf, (Address) sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(byteBuf, sender));
 
-                assertThat(((AddressedMessage<Object, Address>) pipeline.readInbound()).message(), instanceOf(PartialReadMessage.class));
+                assertThat(((AddressedMessage<Object, SocketAddress>) pipeline.readInbound()).message(), instanceOf(PartialReadMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -100,7 +99,7 @@ class RemoteMessageToByteBufCodecTest {
     @Nested
     class Encode {
         @Test
-        void shouldConvertEnvelopeToByteBuf(@Mock final InetSocketAddressWrapper recipient) throws IOException {
+        void shouldConvertEnvelopeToByteBuf(@Mock final SocketAddress recipient) throws IOException {
             final ApplicationMessage message = ApplicationMessage.of(1337, IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"), ProofOfWork.of(3556154), IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), byte[].class.getName(), ByteString.copyFromUtf8("Hello World"));
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
@@ -120,7 +119,7 @@ class RemoteMessageToByteBufCodecTest {
         }
 
         @Test
-        void shouldCompleteFutureExceptionallyWhenConversionFail(@Mock final InetSocketAddressWrapper recipient,
+        void shouldCompleteFutureExceptionallyWhenConversionFail(@Mock final SocketAddress recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage messageEnvelope) throws IOException {
             doThrow(RuntimeException.class).when(messageEnvelope).writeTo(any());
 
@@ -128,7 +127,7 @@ class RemoteMessageToByteBufCodecTest {
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
-                pipeline.writeAndFlush(new AddressedMessage<>((Object) messageEnvelope, (Address) recipient), promise);
+                pipeline.writeAndFlush(new AddressedMessage<>(messageEnvelope, recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {

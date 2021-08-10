@@ -26,11 +26,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,9 +68,9 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final AddressedMessage<?, ?> msg) throws Exception {
-        if (msg.message() instanceof ByteBuf && msg.address() instanceof InetSocketAddressWrapper) {
-            if (methods.get(currentMethodPointer).acceptMessage((InetSocketAddressWrapper) msg.address(), (ByteBuf) msg.message())) {
-                ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, (InetSocketAddressWrapper) msg.address(), (ByteBuf) msg.message()));
+        if (msg.message() instanceof ByteBuf && msg.address() instanceof InetSocketAddress) {
+            if (methods.get(currentMethodPointer).acceptMessage((InetSocketAddress) msg.address(), (ByteBuf) msg.message())) {
+                ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, (InetSocketAddress) msg.address(), (ByteBuf) msg.message()));
             }
             else {
                 // message was not for the mapper -> passthrough

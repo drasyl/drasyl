@@ -33,7 +33,6 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,6 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -123,7 +123,7 @@ class MonitoringTest {
         }
 
         @Test
-        void shouldPassthroughInboundMessages(@Mock final Address sender,
+        void shouldPassthroughInboundMessages(@Mock final SocketAddress sender,
                                               @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
@@ -138,7 +138,7 @@ class MonitoringTest {
         }
 
         @Test
-        void shouldPassthroughOutboundMessages(@Mock final Address recipient,
+        void shouldPassthroughOutboundMessages(@Mock final SocketAddress recipient,
                                                @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);

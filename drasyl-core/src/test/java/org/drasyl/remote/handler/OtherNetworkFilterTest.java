@@ -28,7 +28,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +35,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.net.SocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -69,7 +70,7 @@ class OtherNetworkFilterTest {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, (Address) message.getSender()));
+            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
             assertNull(pipeline.readInbound());
         }
@@ -79,7 +80,7 @@ class OtherNetworkFilterTest {
     }
 
     @Test
-    void shouldPassMessagesFromSameNetwork(@Mock final Address sender) {
+    void shouldPassMessagesFromSameNetwork(@Mock final SocketAddress sender) {
         when(config.getNetworkId()).thenReturn(123);
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;

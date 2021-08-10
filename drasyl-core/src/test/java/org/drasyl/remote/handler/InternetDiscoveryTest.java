@@ -34,8 +34,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.InternetDiscovery.Peer;
 import org.drasyl.remote.handler.InternetDiscovery.Ping;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
@@ -55,6 +53,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -162,7 +161,7 @@ class InternetDiscoveryTest {
 
         @Test
         void shouldReplyWithAcknowledgmentMessageToDiscoveryMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
-                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address) {
+                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress address) {
             final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
             when(identity.getIdentityPublicKey()).thenReturn(recipient);
@@ -172,7 +171,7 @@ class InternetDiscoveryTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(discoveryMessage, address));
 
-                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(AcknowledgementMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(AcknowledgementMessage.class));
                 verify(peersManager, never()).addPath(any(), any(), any());
             }
             finally {
@@ -181,7 +180,7 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldUpdatePeerInformationOnAcknowledgementMessageFromNormalPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
+        void shouldUpdatePeerInformationOnAcknowledgementMessageFromNormalPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress address,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
@@ -190,7 +189,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) acknowledgementMessage, (Address) address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(acknowledgementMessage, address));
 
                 verify(peersManager).addPath(any(), any(), any());
             }
@@ -200,12 +199,12 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldUpdatePeerInformationOnAcknowledgementMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
+        void shouldUpdatePeerInformationOnAcknowledgementMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress address,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                                               @Mock final Endpoint superPeerEndpoint) {
             final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
-            when(peer.getAddress()).thenReturn(new InetSocketAddressWrapper(22527));
+            when(peer.getAddress()).thenReturn(new InetSocketAddress(22527));
             when(identity.getIdentityPublicKey()).thenReturn(recipient);
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
 
@@ -213,7 +212,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) acknowledgementMessage, (Address) address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(acknowledgementMessage, address));
 
                 verify(peersManager).addPathAndSuperPeer(any(), any(), any());
             }
@@ -225,7 +224,7 @@ class InternetDiscoveryTest {
         @Test
         void shouldNotRemoveLivingSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                             @Mock final IdentityPublicKey publicKey,
-                                            @Mock final InetSocketAddressWrapper address,
+                                            @Mock final InetSocketAddress address,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
@@ -240,7 +239,7 @@ class InternetDiscoveryTest {
         @Test
         void shouldRemoveDeadSuperPeers(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                         @Mock final IdentityPublicKey publicKey,
-                                        @Mock final InetSocketAddressWrapper address,
+                                        @Mock final InetSocketAddress address,
                                         @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                         @Mock final Endpoint superPeerEndpoint) {
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
@@ -258,7 +257,7 @@ class InternetDiscoveryTest {
         @Test
         void shouldRemoveDeadChildrenOrPeers(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                              @Mock final IdentityPublicKey publicKey,
-                                             @Mock final InetSocketAddressWrapper address,
+                                             @Mock final InetSocketAddress address,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
@@ -329,7 +328,7 @@ class InternetDiscoveryTest {
     class Uniting {
         @Test
         void shouldHandleUniteMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper address,
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress address,
                                                    @Mock final Endpoint superPeerEndpoint) {
             final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
@@ -341,7 +340,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(uniteMessage.getPublicKey(), peer)), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) uniteMessage, (Address) address));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(uniteMessage, address));
 
                 verify(rendezvousPeers).add(any());
             }
@@ -351,12 +350,12 @@ class InternetDiscoveryTest {
         }
 
         @Test
-        void shouldInitiateUniteForInboundMessageWithKnownSenderAndRecipient(@Mock final InetSocketAddressWrapper sender,
+        void shouldInitiateUniteForInboundMessageWithKnownSenderAndRecipient(@Mock final InetSocketAddress sender,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer senderPeer,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
-            final InetSocketAddressWrapper senderSocketAddress = new InetSocketAddressWrapper(80);
-            final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(81);
+            final InetSocketAddress senderSocketAddress = new InetSocketAddress(80);
+            final InetSocketAddress recipientSocketAddress = new InetSocketAddress(81);
             final IdentityPublicKey myKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey senderKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
             final IdentityPublicKey recipientKey = IdentityTestUtil.ID_3.getIdentityPublicKey();
@@ -371,11 +370,11 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(message.getSender(), senderPeer, message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, (Address) sender));
+                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                assertEquals(message, ((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
-                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
-                assertThat(((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
+                assertEquals(message, ((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message());
+                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
+                assertThat(((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message(), instanceOf(UniteMessage.class));
             }
             finally {
                 pipeline.drasylClose();
@@ -390,16 +389,16 @@ class InternetDiscoveryTest {
             @Test
             void shouldRelayMessageForKnownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
-                final Address sender = new InetSocketAddressWrapper(22527);
+                final SocketAddress sender = new InetSocketAddress(22527);
                 when(recipientPeer.isReachable(any())).thenReturn(true);
-                when(recipientPeer.getAddress()).thenReturn(new InetSocketAddressWrapper(25421));
+                when(recipientPeer.getAddress()).thenReturn(new InetSocketAddress(25421));
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, sender));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                    assertEquals(message, ((AddressedMessage<RemoteMessage, Address>) pipeline.readOutbound()).message());
+                    assertEquals(message, ((AddressedMessage<RemoteMessage, SocketAddress>) pipeline.readOutbound()).message());
                 }
                 finally {
                     pipeline.drasylClose();
@@ -407,7 +406,7 @@ class InternetDiscoveryTest {
             }
 
             @Test
-            void shouldCompleteExceptionallyOnInvalidMessage(@Mock final InetSocketAddressWrapper sender,
+            void shouldCompleteExceptionallyOnInvalidMessage(@Mock final InetSocketAddress sender,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey recipient) {
@@ -416,7 +415,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>((Object) message, (Address) sender));
+                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
                     assertNull(pipeline.readOutbound());
                 }
@@ -429,7 +428,7 @@ class InternetDiscoveryTest {
             @Test
             void shouldUpdateLastCommunicationTimeAndConvertSenderOnMessage(
                     @Mock final Peer peer,
-                    @Mock final InetSocketAddressWrapper address) {
+                    @Mock final InetSocketAddress address) {
                 final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
                 final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
                 when(rendezvousPeers.contains(any())).thenReturn(true);
@@ -455,7 +454,7 @@ class InternetDiscoveryTest {
             @Test
             void shouldRelayMessageToKnowRecipient(@Mock final Peer recipientPeer,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-                final InetSocketAddressWrapper recipientSocketAddress = new InetSocketAddressWrapper(22527);
+                final InetSocketAddress recipientSocketAddress = new InetSocketAddress(22527);
                 final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
 
                 when(recipientPeer.getAddress()).thenReturn(recipientSocketAddress);
@@ -465,7 +464,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+                    pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                     assertEquals(new AddressedMessage<>(message, recipientSocketAddress), pipeline.readOutbound());
                 }
@@ -477,7 +476,7 @@ class InternetDiscoveryTest {
             @Test
             void shouldRelayMessageToSuperPeerForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeerPeer,
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-                final InetSocketAddressWrapper superPeerSocketAddress = new InetSocketAddressWrapper(22527);
+                final InetSocketAddress superPeerSocketAddress = new InetSocketAddress(22527);
                 final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
 
                 when(superPeerPeer.getAddress()).thenReturn(superPeerSocketAddress);
@@ -505,7 +504,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+                    pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                     assertEquals(new AddressedMessage<>(message, recipient), pipeline.readOutbound());
                 }
@@ -526,7 +525,7 @@ class InternetDiscoveryTest {
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(recipient, peer)), rendezvousPeers, superPeers, bestSuperPeer);
                 final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>((Object) message, (Address) recipient));
+                    pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                     verify(peer).applicationTrafficOccurred();
                 }
@@ -539,11 +538,11 @@ class InternetDiscoveryTest {
 
     @Nested
     class TestPeer {
-        private InetSocketAddressWrapper address;
+        private InetSocketAddress address;
 
         @BeforeEach
         void setUp() {
-            address = new InetSocketAddressWrapper(22527);
+            address = new InetSocketAddress(22527);
         }
 
         @Nested
@@ -642,11 +641,11 @@ class InternetDiscoveryTest {
 
     @Nested
     class TestPing {
-        private InetSocketAddressWrapper address;
+        private SocketAddress address;
 
         @BeforeEach
         void setUp() {
-            address = new InetSocketAddressWrapper(22527);
+            address = new InetSocketAddress(22527);
         }
 
         @Nested
@@ -666,7 +665,7 @@ class InternetDiscoveryTest {
             void shouldRecognizeEqualPairs() {
                 final Ping pingA = new Ping(address);
                 final Ping pingB = new Ping(address);
-                final Ping pingC = new Ping(new InetSocketAddressWrapper(25421));
+                final Ping pingC = new Ping(new InetSocketAddress(25421));
 
                 assertEquals(pingA, pingA);
                 assertEquals(pingA, pingB);
@@ -683,7 +682,7 @@ class InternetDiscoveryTest {
             void shouldRecognizeEqualPairs() {
                 final Ping pingA = new Ping(address);
                 final Ping pingB = new Ping(address);
-                final Ping pingC = new Ping(new InetSocketAddressWrapper(25421));
+                final Ping pingC = new Ping(new InetSocketAddress(25421));
 
                 assertEquals(pingA.hashCode(), pingB.hashCode());
                 assertNotEquals(pingA.hashCode(), pingC.hashCode());

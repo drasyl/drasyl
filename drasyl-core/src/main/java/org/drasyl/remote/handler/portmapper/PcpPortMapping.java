@@ -27,8 +27,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -42,6 +40,7 @@ import org.drasyl.util.protocol.PcpPortUtil.Message;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -77,7 +76,7 @@ public class PcpPortMapping implements PortMapping {
     private int port;
     private Runnable onFailure;
     private byte[] nonce;
-    private InetSocketAddressWrapper defaultGateway;
+    private InetSocketAddress defaultGateway;
     private Future timeoutGuard;
     private Future refreshTask;
     private Set<InetAddress> interfaces;
@@ -89,7 +88,7 @@ public class PcpPortMapping implements PortMapping {
                    final int port,
                    final Runnable onFailure,
                    final byte[] nonce,
-                   final InetSocketAddressWrapper defaultGateway,
+                   final InetSocketAddress defaultGateway,
                    final Future timeoutGuard,
                    final Future refreshTask,
                    final Set<InetAddress> interfaces,
@@ -137,14 +136,14 @@ public class PcpPortMapping implements PortMapping {
     }
 
     @Override
-    public boolean acceptMessage(final InetSocketAddressWrapper sender,
+    public boolean acceptMessage(final InetSocketAddress sender,
                                  final ByteBuf msg) {
         return defaultGateway != null && defaultGateway.equals(sender);
     }
 
     @Override
     public void handleMessage(final ChannelHandlerContext ctx,
-                              final InetSocketAddressWrapper sender,
+                              final InetSocketAddress sender,
                               final ByteBuf msg) {
         try (final DataInputStream in = new DataInputStream(new ByteBufInputStream(msg))) {
             final Message message = PcpPortUtil.readMessage(in);
@@ -179,7 +178,7 @@ public class PcpPortMapping implements PortMapping {
             LOG.debug("Unable to determine default gateway.");
             return;
         }
-        defaultGateway = new InetSocketAddressWrapper(defaultGatewayAddress, PCP_PORT);
+        defaultGateway = new InetSocketAddress(defaultGatewayAddress, PCP_PORT);
 
         for (final InetAddress clientAddress : interfaces) {
             LOG.debug("Send MAP opcode request to gateway `{}` with client address `{}`.", defaultGateway::getHostName, clientAddress::getHostAddress);
@@ -231,7 +230,7 @@ public class PcpPortMapping implements PortMapping {
         mappingRequested.incrementAndGet();
 
         final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) defaultGateway)))).combine(future);
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)))).combine(future);
         future.exceptionally(e -> {
             LOG.warn("Unable to send mapping request message to `{}`", () -> defaultGateway, () -> e);
             return null;

@@ -36,7 +36,6 @@ import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.Identity;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -53,7 +52,7 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 @State(Scope.Benchmark)
 public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     private MyHandlerContext ctx;
-    private MyAddress msgSender;
+    private SocketAddress msgSender;
     private ApplicationMessage msgAddressedToMe;
     private ApplicationMessage msgNotAddressedToMe;
 
@@ -299,6 +298,6 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         }
     }
 
-    private static class MyAddress implements Address {
+    private static class MyAddress extends SocketAddress {
     }
 }

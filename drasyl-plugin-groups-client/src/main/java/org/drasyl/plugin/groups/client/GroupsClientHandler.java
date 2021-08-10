@@ -28,7 +28,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.event.GroupLeftEvent;
@@ -48,6 +47,7 @@ import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -133,7 +133,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
             final GroupUri groupURI = entry.getValue();
             try {
                 final CompletableFuture<Void> future = new CompletableFuture<>();
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupLeaveMessage(group), (Address) groupURI.getManager())))).combine(future);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())))).combine(future);
                 future.get();
             }
             catch (final InterruptedException e) {
@@ -221,7 +221,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
      * @param msg    the welcome message
      */
     private void onWelcome(final ChannelHandlerContext ctx,
-                           final Address sender,
+                           final SocketAddress sender,
                            final GroupWelcomeMessage msg) {
         final Group group = msg.getGroup();
         final Duration timeout = groups.get(group).getTimeout();
@@ -255,7 +255,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), (Address) groupManager)))).combine(new CompletableFuture<>());
+        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager)))).combine(new CompletableFuture<>());
 
         // Add re-try task
         if (!renewTasks.containsKey(group.getGroup())) {

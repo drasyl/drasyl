@@ -28,7 +28,6 @@ import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -105,7 +104,7 @@ class IntraVmDiscoveryTest {
             final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(message, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                 verify(ctx).fireChannelRead(any());
             }

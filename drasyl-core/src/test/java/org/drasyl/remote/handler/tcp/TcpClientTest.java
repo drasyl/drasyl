@@ -32,8 +32,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.tcp.TcpClient.TcpClientHandler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -70,7 +68,7 @@ public class TcpClientTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Channel serverChannel;
     @Mock
-    private Set<InetSocketAddressWrapper> superPeerAddresses;
+    private Set<SocketAddress> superPeerAddresses;
     @Mock
     private AtomicLong noResponseFromSuperPeerSince;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -98,7 +96,8 @@ public class TcpClientTest {
     @Nested
     class MessagePassing {
         @Test
-        void shouldPasstroughInboundMessages(@Mock final Address sender, @Mock final Object msg) {
+        void shouldPasstroughInboundMessages(@Mock final InetSocketAddress sender,
+                                             @Mock final Object msg) {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
@@ -113,7 +112,7 @@ public class TcpClientTest {
 
         @SuppressWarnings("SuspiciousMethodCalls")
         @Test
-        void shouldStopClientOnInboundMessageFromSuperPeer(@Mock final InetSocketAddressWrapper sender,
+        void shouldStopClientOnInboundMessageFromSuperPeer(@Mock final InetSocketAddress sender,
                                                            @Mock final ByteBuf msg) {
             when(superPeerAddresses.contains(any())).thenReturn(true);
             when(superPeerChannel.isSuccess()).thenReturn(true);
@@ -135,7 +134,7 @@ public class TcpClientTest {
         }
 
         @Test
-        void shouldPasstroughOutboundMessagesWhenNoTcpConnectionIsPresent(@Mock final InetSocketAddressWrapper recipient,
+        void shouldPasstroughOutboundMessagesWhenNoTcpConnectionIsPresent(@Mock final InetSocketAddress recipient,
                                                                           @Mock final ByteBuf msg) {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
@@ -150,7 +149,7 @@ public class TcpClientTest {
         }
 
         @Test
-        void shouldPassOutboundMessagesToTcpConnectionWhenPresent(@Mock final InetSocketAddressWrapper recipient,
+        void shouldPassOutboundMessagesToTcpConnectionWhenPresent(@Mock final InetSocketAddress recipient,
                                                                   @Mock final ByteBuf msg,
                                                                   @Mock final ChannelFuture channelFuture) {
             when(superPeerChannel.isSuccess()).thenReturn(true);
@@ -159,7 +158,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
                 verify(superPeerChannel.channel()).writeAndFlush(msg);
                 assertNull(pipeline.readOutbound());
@@ -171,7 +170,7 @@ public class TcpClientTest {
 
         @SuppressWarnings("SuspiciousMethodCalls")
         @Test
-        void shouldStartClientOnOutboundMessageToSuperPeer(@Mock final InetSocketAddressWrapper recipient,
+        void shouldStartClientOnOutboundMessageToSuperPeer(@Mock final InetSocketAddress recipient,
                                                            @Mock final ByteBuf msg,
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(superPeerAddresses.contains(any())).thenReturn(true);
@@ -187,7 +186,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) recipient));
+                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
                 verify(bootstrap.handler(any())).connect(any(InetSocketAddress.class));
                 verify(superPeerChannel).addListener(any());

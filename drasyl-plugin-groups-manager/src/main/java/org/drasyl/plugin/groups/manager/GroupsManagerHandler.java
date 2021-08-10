@@ -26,7 +26,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.plugin.groups.client.message.GroupLeaveMessage;
@@ -113,7 +112,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
 
             recipients.forEach(member -> {
                 final CompletableFuture<Void> future1 = new CompletableFuture<>();
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) msg, (Address) member.getMember().getPublicKey())))).combine(future1);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, member.getMember().getPublicKey())))).combine(future1);
                 combiner.add(future1);
             });
 
@@ -163,14 +162,14 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
                     doJoin(ctx, sender, group, future, msg.isRenew());
                 }
                 else {
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_PROOF_TO_WEAK), (Address) sender)))).combine(new CompletableFuture<>());
+                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_PROOF_TO_WEAK), sender)))).combine(new CompletableFuture<>());
                     future.completeExceptionally(new IllegalArgumentException("Member '" + sender + "' does not fulfill requirements of group '" + groupName + "'"));
 
                     LOG.debug("Member `{}` does not fulfill requirements of group `{}`", sender, groupName);
                 }
             }
             else {
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_GROUP_NOT_FOUND), (Address) sender)))).combine(new CompletableFuture<>());
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_GROUP_NOT_FOUND), sender)))).combine(new CompletableFuture<>());
                 future.completeExceptionally(new IllegalArgumentException("There is no group '" + groupName + "'"));
 
                 LOG.debug("There is no group `{}`.", groupName);
@@ -200,7 +199,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
 
             database.removeGroupMember(sender, msg.getGroup().getName());
             final CompletableFuture<Void> future3 = new CompletableFuture<>();
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) leftMessage, (Address) sender)))).combine(future3);
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(leftMessage, sender)))).combine(future3);
             final CompletableFuture<Void> future1 = future3;
             final CompletableFuture<Void> future2 = new CompletableFuture<>();
             notifyMembers(ctx, msg.getGroup().getName(), leftMessage, future2);
@@ -240,7 +239,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
                         .map(v -> v.getMember().getPublicKey())
                         .collect(Collectors.toSet());
                 final CompletableFuture<Void> future3 = new CompletableFuture<>();
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), memberships), (Address) sender)))).combine(future3);
+                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), memberships), sender)))).combine(future3);
                 final CompletableFuture<Void> future1 = future3;
                 final CompletableFuture<Void> future2 = new CompletableFuture<>();
                 FutureCombiner.getInstance().addAll(future1, future2).combine(future);
@@ -254,7 +253,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
             }
         }
         catch (final DatabaseException e) {
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>((Object) new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), (Address) sender)))).combine(new CompletableFuture<>());
+            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), sender)))).combine(new CompletableFuture<>());
             future.completeExceptionally(e);
 
             LOG.debug("Error occurred during join: ", e);

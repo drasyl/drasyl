@@ -39,7 +39,6 @@ import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
-import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
@@ -209,10 +208,10 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
      * Routes inbound messages to the correct child channel and broadcast events to all child
      * channels.
      */
-    private static class ChildChannelRouter extends SimpleChannelInboundHandler<AddressedMessage<?, ? extends Address>> {
+    private static class ChildChannelRouter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final AddressedMessage<?, ? extends Address> migrationMsg) {
+                                    final AddressedMessage<?, ?> migrationMsg) {
             Object msg = migrationMsg.message();
             final IdentityPublicKey sender = (IdentityPublicKey) migrationMsg.address();
 

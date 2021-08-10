@@ -37,7 +37,6 @@ import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.HopCount;
@@ -53,6 +52,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import test.util.IdentityTestUtil;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,8 +63,8 @@ import static test.util.IdentityTestUtil.ID_2;
 @State(Scope.Benchmark)
 public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
     private ChannelHandlerContext ctx;
-    private InetSocketAddressWrapper sender;
-    private InetSocketAddressWrapper recipient;
+    private SocketAddress sender;
+    private SocketAddress recipient;
     private ByteBuf byteBuf;
     private ApplicationMessage message;
 
@@ -72,8 +72,8 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
     public void setup() {
         try {
             ctx = new MyHandlerContext();
-            sender = new InetSocketAddressWrapper("127.0.0.1", 25527);
-            recipient = new InetSocketAddressWrapper("127.0.0.1", 25527);
+            sender = new InetSocketAddress("127.0.0.1", 25527);
+            recipient = new InetSocketAddress("127.0.0.1", 25527);
             final byte[] payload = RandomUtil.randomBytes(1024);
             final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
             message = ApplicationMessage.of(Nonce.randomNonce(), 0, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, byte[].class.getName(), ByteString.copyFrom(payload));

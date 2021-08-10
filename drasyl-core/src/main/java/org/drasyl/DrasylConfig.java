@@ -35,7 +35,6 @@ import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.plugin.DrasylPlugin;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.MaskedString;
@@ -45,6 +44,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -580,13 +580,13 @@ public abstract class DrasylConfig {
     /**
      * @throws DrasylConfigException if value at path is invalid
      */
-    public static Map<IdentityPublicKey, InetSocketAddressWrapper> getStaticRoutes(final Config config,
-                                                                                   final String path) {
+    public static Map<IdentityPublicKey, SocketAddress> getStaticRoutes(final Config config,
+                                                                        final String path) {
         try {
-            final Map<IdentityPublicKey, InetSocketAddressWrapper> routes = new HashMap<>();
+            final Map<IdentityPublicKey, SocketAddress> routes = new HashMap<>();
             for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final IdentityPublicKey publicKey = IdentityPublicKey.of(entry.getKey());
-                final InetSocketAddressWrapper address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
+                final SocketAddress address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
 
                 routes.put(publicKey, address);
             }
@@ -691,7 +691,7 @@ public abstract class DrasylConfig {
 
     public abstract ImmutableSet<Endpoint> getRemoteSuperPeerEndpoints();
 
-    public abstract ImmutableMap<IdentityPublicKey, InetSocketAddressWrapper> getRemoteStaticRoutes();
+    public abstract ImmutableMap<IdentityPublicKey, SocketAddress> getRemoteStaticRoutes();
 
     public abstract boolean isRemoteLocalHostDiscoveryEnabled();
 
@@ -796,7 +796,7 @@ public abstract class DrasylConfig {
 
         public abstract Builder remoteExposeEnabled(final boolean remoteExposeEnabled);
 
-        public abstract Builder remoteStaticRoutes(final Map<IdentityPublicKey, InetSocketAddressWrapper> remoteStaticRoutes);
+        public abstract Builder remoteStaticRoutes(final Map<IdentityPublicKey, SocketAddress> remoteStaticRoutes);
 
         public abstract Builder remoteMessageMtu(final int remoteMessageMtu);
 
