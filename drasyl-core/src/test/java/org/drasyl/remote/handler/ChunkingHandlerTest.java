@@ -105,7 +105,7 @@ class ChunkingHandlerTest {
                     assertNull(pipeline.readInbound());
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -135,7 +135,7 @@ class ChunkingHandlerTest {
                     bytes.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -184,7 +184,7 @@ class ChunkingHandlerTest {
                     assertNull(pipeline.readInbound());
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
         }
@@ -208,7 +208,7 @@ class ChunkingHandlerTest {
                     actual.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -239,7 +239,7 @@ class ChunkingHandlerTest {
                     actual.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
         }
@@ -273,7 +273,7 @@ class ChunkingHandlerTest {
                     actual.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -297,7 +297,7 @@ class ChunkingHandlerTest {
                     assertNull(pipeline.readOutbound());
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -361,7 +361,7 @@ class ChunkingHandlerTest {
                     actual3.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
         }
@@ -385,7 +385,7 @@ class ChunkingHandlerTest {
                     actual.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
         }

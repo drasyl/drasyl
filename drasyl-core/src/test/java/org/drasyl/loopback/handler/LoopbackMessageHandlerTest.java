@@ -59,7 +59,7 @@ class LoopbackMessageHandlerTest {
             actual.release();
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -78,7 +78,7 @@ class LoopbackMessageHandlerTest {
             actual.release();
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 }

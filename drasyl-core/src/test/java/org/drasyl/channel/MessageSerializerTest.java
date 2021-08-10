@@ -79,7 +79,7 @@ class MessageSerializerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -100,7 +100,7 @@ class MessageSerializerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -117,7 +117,7 @@ class MessageSerializerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -131,7 +131,7 @@ class MessageSerializerTest {
                 assertNull(pipeline.readInbound());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -149,7 +149,7 @@ class MessageSerializerTest {
                 assertNull(pipeline.readInbound());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -173,7 +173,7 @@ class MessageSerializerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -196,7 +196,7 @@ class MessageSerializerTest {
                 o.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -212,7 +212,7 @@ class MessageSerializerTest {
                 assertNull(pipeline.readOutbound());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -232,7 +232,7 @@ class MessageSerializerTest {
                 assertNull(pipeline.readOutbound());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -251,7 +251,7 @@ class MessageSerializerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

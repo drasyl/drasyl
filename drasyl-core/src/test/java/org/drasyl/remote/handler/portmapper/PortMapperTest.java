@@ -77,7 +77,7 @@ class PortMapperTest {
                 verify(method).start(any(), anyInt(), any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -94,7 +94,7 @@ class PortMapperTest {
                 verify(method).stop(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -118,7 +118,7 @@ class PortMapperTest {
                 assertNull(pipeline.readInbound());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -139,7 +139,7 @@ class PortMapperTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -166,7 +166,7 @@ class PortMapperTest {
                 verify(method2).start(any(), anyInt(), any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

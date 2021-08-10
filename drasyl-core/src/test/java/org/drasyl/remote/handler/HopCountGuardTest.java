@@ -89,7 +89,7 @@ class HopCountGuardTest {
             actual.release();
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -109,7 +109,7 @@ class HopCountGuardTest {
             assertNull(pipeline.readOutbound());
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 }

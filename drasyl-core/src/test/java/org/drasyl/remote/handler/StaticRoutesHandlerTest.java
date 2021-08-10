@@ -64,7 +64,7 @@ class StaticRoutesHandlerTest {
             verify(peersManager).addPath(any(), eq(publicKey), any());
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -80,7 +80,7 @@ class StaticRoutesHandlerTest {
             verify(peersManager).removePath(any(), eq(publicKey), any());
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -100,7 +100,7 @@ class StaticRoutesHandlerTest {
             actual.release();
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -119,7 +119,7 @@ class StaticRoutesHandlerTest {
             actual.release();
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 }

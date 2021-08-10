@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -169,16 +168,12 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> testObserver = pipeline.events().test();
-
                 pipeline.pipeline().fireUserEventTriggered(event);
 
-                testObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(event);
+                assertEquals(event, pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -204,7 +199,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(new MemberJoinedMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -223,7 +218,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -243,7 +238,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -264,7 +259,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -284,7 +279,7 @@ class GroupsManagerHandlerTest {
                 assertNull(pipeline.readOutbound());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -307,7 +302,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -326,7 +321,7 @@ class GroupsManagerHandlerTest {
                 assertNull(pipeline.readOutbound());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

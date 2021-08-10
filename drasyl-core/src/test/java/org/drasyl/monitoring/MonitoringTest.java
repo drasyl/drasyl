@@ -25,7 +25,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCounted;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -82,7 +81,7 @@ class MonitoringTest {
                 verify(registrySupplier).apply(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -99,7 +98,7 @@ class MonitoringTest {
                 verify(registry).close();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -111,15 +110,12 @@ class MonitoringTest {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> inboundEvents = pipeline.events().test();
-
                 pipeline.pipeline().fireUserEventTriggered(event);
 
-                inboundEvents.awaitCount(1)
-                        .assertValue(event);
+                assertEquals(event, pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -137,7 +133,7 @@ class MonitoringTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -155,7 +151,7 @@ class MonitoringTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

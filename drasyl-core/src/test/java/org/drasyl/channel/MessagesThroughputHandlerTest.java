@@ -87,7 +87,7 @@ class MessagesThroughputHandlerTest {
             verify(printStream).printf(anyString(), any(), any(), any(), any());
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -101,7 +101,7 @@ class MessagesThroughputHandlerTest {
             verify(disposable).cancel(false);
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -116,7 +116,8 @@ class MessagesThroughputHandlerTest {
             verify(inboundMessages, never()).increment();
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.releaseOutbound();
+            pipeline.close();
         }
     }
 
@@ -128,7 +129,8 @@ class MessagesThroughputHandlerTest {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.releaseInbound();
+            pipeline.close();
         }
 
         verify(outboundMessages, never()).increment();
@@ -146,7 +148,7 @@ class MessagesThroughputHandlerTest {
             assertNull(pipeline.readOutbound());
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -161,7 +163,7 @@ class MessagesThroughputHandlerTest {
             assertNull(pipeline.readInbound());
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 }

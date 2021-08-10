@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCounted;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -108,16 +107,12 @@ class InternetDiscoveryTest {
         final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            final TestObserver<Object> inboundEvents = pipeline.events().test();
-
             pipeline.pipeline().fireUserEventTriggered(event);
 
-            inboundEvents.awaitCount(1)
-                    .assertValueCount(1)
-                    .assertValue(m -> m instanceof NodeEvent);
+            assertThat(pipeline.readUserEvent(), instanceOf(NodeEvent.class));
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -135,7 +130,7 @@ class InternetDiscoveryTest {
                 verify(handler).startHeartbeat(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -155,7 +150,7 @@ class InternetDiscoveryTest {
                 assertTrue(peers.isEmpty());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -178,7 +173,7 @@ class InternetDiscoveryTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -197,7 +192,7 @@ class InternetDiscoveryTest {
                 verify(peersManager).addPath(any(), any(), any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -220,7 +215,7 @@ class InternetDiscoveryTest {
                 verify(peersManager).addPathAndSuperPeer(any(), any(), any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -348,7 +343,8 @@ class InternetDiscoveryTest {
                 verify(rendezvousPeers).add(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.releaseOutbound();
+                pipeline.close();
             }
         }
 
@@ -387,7 +383,7 @@ class InternetDiscoveryTest {
                 actual3.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -414,7 +410,7 @@ class InternetDiscoveryTest {
                     actual.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -433,7 +429,7 @@ class InternetDiscoveryTest {
                     assertNull(pipeline.readOutbound());
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -460,7 +456,7 @@ class InternetDiscoveryTest {
                     actual.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
         }
@@ -488,7 +484,7 @@ class InternetDiscoveryTest {
                     actual.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -512,7 +508,7 @@ class InternetDiscoveryTest {
                     actual.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -534,7 +530,7 @@ class InternetDiscoveryTest {
                     actual.release();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.close();
                 }
             }
 
@@ -555,7 +551,8 @@ class InternetDiscoveryTest {
                     verify(peer).applicationTrafficOccurred();
                 }
                 finally {
-                    pipeline.drasylClose();
+                    pipeline.releaseOutbound();
+                    pipeline.close();
                 }
             }
         }

@@ -23,7 +23,6 @@ package org.drasyl.plugin.groups.client;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -139,7 +138,7 @@ class GroupsClientHandlerTest {
                 verify(renewTasks).clear();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -151,16 +150,12 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> testObserver = pipeline.events().test();
-
                 pipeline.pipeline().fireUserEventTriggered(event);
 
-                testObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(event);
+                assertEquals(event, pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -171,8 +166,6 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> eventObserver = pipeline.events().test();
-
                 when(uri.getGroup()).thenReturn(group);
                 when(uri.getCredentials()).thenReturn(credentials);
                 when(identity.getProofOfWork()).thenReturn(proofOfWork);
@@ -181,15 +174,13 @@ class GroupsClientHandlerTest {
 
                 await().untilAsserted(() -> {
                     pipeline.runPendingTasks();
-                    eventObserver.awaitCount(1)
-                            .assertValueCount(1)
-                            .assertValue(event);
+                    assertEquals(event, pipeline.readUserEvent());
                 });
 
                 assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -201,17 +192,14 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
-                eventObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(GroupMemberJoinedEvent.of(publicKey, group));
+                assertEquals(GroupMemberJoinedEvent.of(publicKey, group), pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -220,17 +208,14 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
-                eventObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(GroupMemberLeftEvent.of(publicKey, group));
+                assertEquals(GroupMemberLeftEvent.of(publicKey, group), pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -241,18 +226,15 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
-                eventObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(GroupLeftEvent.of(group, () -> {
-                        }));
+                assertEquals(GroupLeftEvent.of(group, () -> {
+                }), pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -262,7 +244,6 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
 
                 when(groups.get(any())).thenReturn(uri);
@@ -270,13 +251,11 @@ class GroupsClientHandlerTest {
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
-                eventObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(GroupJoinedEvent.of(group, Set.of(publicKey), () -> {
-                        }));
+                assertEquals(GroupJoinedEvent.of(group, Set.of(publicKey), () -> {
+                }), pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -285,19 +264,16 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
                 final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
-                eventObserver.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(GroupJoinFailedEvent.of(group, error, () -> {
-                        }));
+                assertEquals(GroupJoinFailedEvent.of(group, error, () -> {
+                }), pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

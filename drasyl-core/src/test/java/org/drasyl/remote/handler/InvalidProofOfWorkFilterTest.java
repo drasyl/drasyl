@@ -72,7 +72,7 @@ class InvalidProofOfWorkFilterTest {
             assertNull(pipeline.readInbound());
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -90,7 +90,7 @@ class InvalidProofOfWorkFilterTest {
             actual.release();
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -105,7 +105,8 @@ class InvalidProofOfWorkFilterTest {
             verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.releaseInbound();
+            pipeline.close();
         }
     }
 }

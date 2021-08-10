@@ -76,7 +76,7 @@ class OtherNetworkFilterTest {
             assertNull(pipeline.readInbound());
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 
@@ -96,7 +96,7 @@ class OtherNetworkFilterTest {
             actual.release();
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 }

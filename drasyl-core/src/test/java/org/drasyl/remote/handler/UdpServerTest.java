@@ -89,7 +89,7 @@ class UdpServerTest {
                 verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -136,7 +136,7 @@ class UdpServerTest {
                 verify(channel).close();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -156,7 +156,7 @@ class UdpServerTest {
                 verify(channel).writeAndFlush(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -188,7 +188,7 @@ class UdpServerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

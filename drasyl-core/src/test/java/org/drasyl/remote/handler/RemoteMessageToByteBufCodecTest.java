@@ -95,7 +95,7 @@ class RemoteMessageToByteBufCodecTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -120,7 +120,7 @@ class RemoteMessageToByteBufCodecTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -137,7 +137,7 @@ class RemoteMessageToByteBufCodecTest {
                 assertFalse(promise.isSuccess());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

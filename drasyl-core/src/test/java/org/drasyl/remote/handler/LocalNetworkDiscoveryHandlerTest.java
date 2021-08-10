@@ -105,7 +105,7 @@ class LocalNetworkDiscoveryTest {
                 handler.stopHeartbeat(); // we must stop, otherwise this handler goes crazy cause to the PT0S ping interval
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -120,7 +120,7 @@ class LocalNetworkDiscoveryTest {
                 verify(handler).clearRoutes(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -238,7 +238,7 @@ class LocalNetworkDiscoveryTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -276,7 +276,7 @@ class LocalNetworkDiscoveryTest {
             actual.release();
         }
         finally {
-            pipeline.drasylClose();
+            pipeline.close();
         }
     }
 

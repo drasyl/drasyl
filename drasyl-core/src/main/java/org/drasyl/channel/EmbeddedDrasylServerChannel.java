@@ -29,12 +29,13 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.ReplaySubject;
-import io.reactivex.rxjava3.subjects.Subject;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
@@ -47,17 +48,14 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
  */
 public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements ServerChannel {
-    private final Subject<Object> events;
+    private Queue<Object> userEvents;
 
     public EmbeddedDrasylServerChannel(final DrasylConfig config,
                                        final Identity identity,
                                        final PeersManager peersManager,
                                        final Serialization inboundSerialization,
                                        final Serialization outboundSerialization,
-                                       final Subject<Object> events,
                                        final ChannelHandler... handlers) {
-        this.events = requireNonNull(events);
-
         attr(CONFIG_ATTR_KEY).set(requireNonNull(config));
         attr(IDENTITY_ATTR_KEY).set(requireNonNull(identity));
         attr(PEERS_MANAGER_ATTR_KEY).set(requireNonNull(peersManager));
@@ -77,13 +75,11 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
             }
         });
 
-        pipeline().addLast("EVENTS_ACCEPTOR", new ChannelInboundHandlerAdapter() {
+        pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,
-                                           final Object evt) throws Exception {
-                events.onNext(evt);
-
-                super.userEventTriggered(ctx, evt);
+                                           final Object evt) {
+                userEvents().add(evt);
             }
         });
     }
@@ -98,23 +94,34 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
                 peersManager,
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()),
-                ReplaySubject.create().toSerialized(),
                 handlers
         );
     }
 
     /**
-     * @return all events that passes the pipeline until the end
+     * Returns the {@link Queue} which holds all the user events that were received by this {@link
+     * Channel}.
      */
-    public Observable<Object> events() {
-        return events;
+    public Queue<Object> userEvents() {
+        if (userEvents == null) {
+            userEvents = new ArrayDeque<>();
+        }
+        return userEvents;
     }
 
-    public void drasylClose() {
-        releaseOutbound();
-        releaseInbound();
-        events.onComplete();
+    /**
+     * Return received user events from this {@link Channel}
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T readUserEvent() {
+        final T event = (T) poll(userEvents);
+        if (event != null) {
+            ReferenceCountUtil.touch(event, "Caller of readInbound() will handle the user event from this point");
+        }
+        return event;
+    }
 
-        close();
+    private static Object poll(final Queue<Object> queue) {
+        return queue != null ? queue.poll() : null;
     }
 }

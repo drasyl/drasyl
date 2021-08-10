@@ -50,6 +50,8 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.awaitility.Awaitility.await;
+
 @State(Scope.Benchmark)
 public class UdpServerBenchmark extends AbstractBenchmark {
     private DatagramSocket socket;
@@ -95,9 +97,17 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     });
 
             pipeline.pipeline().fireUserEventTriggered(NodeUpEvent.of(Node.of(identity2)));
-            final NodeUpEvent event = (NodeUpEvent) pipeline.events().filter(e -> e instanceof NodeUpEvent).blockingFirst();
 
-            port = event.getNode().getPort();
+            await().until(() -> {
+                final Object evt = pipeline.readUserEvent();
+                if (evt instanceof UdpServer.Port) {
+                    port = ((UdpServer.Port) evt).getPort();
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            });
             localHost = InetAddress.getLocalHost();
         }
         catch (final Exception e) {

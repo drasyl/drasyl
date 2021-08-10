@@ -146,7 +146,7 @@ class LocalHostDiscoveryTest {
                 verify(discoveryPath).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -247,7 +247,7 @@ class LocalHostDiscoveryTest {
                 assertTrue(routes.isEmpty());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -273,7 +273,7 @@ class LocalHostDiscoveryTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -291,7 +291,7 @@ class LocalHostDiscoveryTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

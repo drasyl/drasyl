@@ -96,7 +96,7 @@ class UdpMulticastServerTest {
                 verify(datagramChannel).joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -117,7 +117,7 @@ class UdpMulticastServerTest {
                 verify(channel.close()).awaitUninterruptibly();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -146,7 +146,8 @@ class UdpMulticastServerTest {
                 verify(ctx).fireChannelRead(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.releaseInbound();
+                pipeline.close();
             }
         }
     }

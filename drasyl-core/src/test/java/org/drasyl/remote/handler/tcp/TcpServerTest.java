@@ -90,7 +90,7 @@ class TcpServerTest {
                 verify(bootstrap.childHandler(any())).bind(any(InetAddress.class), anyInt());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -109,7 +109,7 @@ class TcpServerTest {
                 verify(serverChannel).close();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -134,7 +134,7 @@ class TcpServerTest {
                 verify(client).writeAndFlush(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -153,7 +153,7 @@ class TcpServerTest {
                 assertFalse(promise.isSuccess());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -171,7 +171,7 @@ class TcpServerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

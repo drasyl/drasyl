@@ -24,7 +24,6 @@ package org.drasyl.remote.handler.crypto;
 import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.util.ReferenceCounted;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -141,7 +140,7 @@ class ArmHandlerTest {
                 actual2.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -173,7 +172,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -198,7 +197,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -227,7 +226,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -271,7 +270,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -306,7 +305,7 @@ class ArmHandlerTest {
                 actual2.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -335,7 +334,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -365,7 +364,8 @@ class ArmHandlerTest {
                 assertNull(pipeline.readOutbound());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.releaseInbound();
+                pipeline.close();
             }
         }
 
@@ -399,7 +399,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -422,8 +422,6 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Object> observer = pipeline.events().test();
-
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
@@ -440,11 +438,10 @@ class ArmHandlerTest {
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
                 assertTrue(session.getInitializedAgreements().containsKey(agreementId2));
-                observer.assertValueCount(1)
-                        .assertValue(v -> v instanceof PerfectForwardSecrecyEncryptionEvent);
+                assertThat(pipeline.readUserEvent(), instanceOf(PerfectForwardSecrecyEncryptionEvent.class));
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -467,8 +464,6 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Object> observer = pipeline.events().test();
-
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
@@ -488,11 +483,11 @@ class ArmHandlerTest {
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
                 assertTrue(session.getInitializedAgreements().containsKey(agreementId2));
-                observer.assertValueCount(1)
-                        .assertValue(v -> v instanceof PerfectForwardSecrecyEncryptionEvent);
+                assertThat(pipeline.readUserEvent(), instanceOf(PerfectForwardSecrecyEncryptionEvent.class));
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.releaseInbound();
+                pipeline.close();
             }
         }
 
@@ -505,8 +500,6 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Object> observerEvents = pipeline.events().test();
-
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
@@ -525,12 +518,12 @@ class ArmHandlerTest {
 
                 final AddressedMessage<ArmedMessage, SocketAddress> actual = pipeline.readOutbound();
                 assertThat(actual.message().disarm(Crypto.INSTANCE, sessionPairSender), instanceOf(KeyExchangeMessage.class));
-                observerEvents.assertNoValues();
+                assertNull(pipeline.readUserEvent());
 
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -547,8 +540,6 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Object> observerEvents = pipeline.events().test();
-
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
@@ -568,10 +559,11 @@ class ArmHandlerTest {
 
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(0, session.getInitializedAgreements().size());
-                observerEvents.assertNoValues();
+                assertNull(pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.releaseOutbound();
+                pipeline.close();
             }
         }
 
@@ -594,8 +586,6 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Object> observerEvents = pipeline.events().test();
-
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
@@ -614,10 +604,11 @@ class ArmHandlerTest {
 
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(keyPair.getPublicKey(), session.getCurrentInactiveAgreement().getValue().get().getRecipientsKeyAgreementKey().get());
-                observerEvents.assertNoValues();
+                assertNull(pipeline.readUserEvent());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.releaseOutbound();
+                pipeline.close();
             }
         }
     }
@@ -669,7 +660,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -715,7 +706,7 @@ class ArmHandlerTest {
                 actual2.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -756,7 +747,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -793,7 +784,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -816,7 +807,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -837,7 +828,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -867,7 +858,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -897,7 +888,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -927,7 +918,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -964,7 +955,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -1003,7 +994,7 @@ class ArmHandlerTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }

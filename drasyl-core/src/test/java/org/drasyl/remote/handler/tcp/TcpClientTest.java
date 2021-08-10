@@ -89,7 +89,7 @@ public class TcpClientTest {
                 verify(superPeerChannel.channel()).close();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -110,7 +110,7 @@ public class TcpClientTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -136,7 +136,7 @@ public class TcpClientTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -154,7 +154,7 @@ public class TcpClientTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -174,7 +174,7 @@ public class TcpClientTest {
                 assertNull(pipeline.readOutbound());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -202,7 +202,8 @@ public class TcpClientTest {
                 verify(superPeerChannel).addListener(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.releaseOutbound();
+                pipeline.close();
             }
         }
     }

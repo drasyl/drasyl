@@ -71,7 +71,7 @@ class IntraVmDiscoveryTest {
                 assertThat(discoveries, aMapWithSize(1));
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -89,7 +89,7 @@ class IntraVmDiscoveryTest {
                 assertThat(discoveries, aMapWithSize(0));
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
@@ -110,7 +110,7 @@ class IntraVmDiscoveryTest {
                 verify(ctx).fireChannelRead(any());
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
 
@@ -128,7 +128,7 @@ class IntraVmDiscoveryTest {
                 actual.release();
             }
             finally {
-                pipeline.drasylClose();
+                pipeline.close();
             }
         }
     }
