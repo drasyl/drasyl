@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.pipeline.serialization;
+package org.drasyl.channel;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
@@ -43,8 +43,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Holds a {@link Map} with all available {@link Serializer}s and the classes each serializer should
- * be used for. This class is used by {@link org.drasyl.pipeline.serialization.MessageSerializer} to
- * (de)serialize message objects when communicating with remote nodes.
+ * be used for. This class is used by {@link MessageSerializer} to (de)serialize message objects
+ * when communicating with remote nodes.
  *
  * <p>Each serializer is applied for objects of the assigned class, all subclasses, and all
  * implementations.</p>
@@ -57,7 +57,7 @@ import static java.util.Objects.requireNonNull;
  * implementations. These results will then later used when a message should be deserialized. This
  * approach allows us to load only classes with valid {@link Serializer}s.</p>
  *
- * @see org.drasyl.pipeline.serialization.MessageSerializer
+ * @see MessageSerializer
  */
 public class Serialization {
     protected static final NullSerializer NULL_SERIALIZER = new NullSerializer();

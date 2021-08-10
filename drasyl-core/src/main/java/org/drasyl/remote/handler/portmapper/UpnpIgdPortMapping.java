@@ -118,7 +118,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                       final Runnable onFailure) {
         this.onFailure = onFailure;
         this.port = port;
-        description = "drasyl" + ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
+        description = "drasyl" + ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
         mapPort(ctx);
     }
 

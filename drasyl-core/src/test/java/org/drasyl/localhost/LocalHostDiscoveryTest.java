@@ -108,18 +108,18 @@ class LocalHostDiscoveryTest {
         void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.executor()).thenReturn(executor);
             doAnswer(invocation2 -> {
                 invocation2.getArgument(0, Runnable.class).run();
                 return null;
             }).when(executor).execute(any());
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().mkdirs()).thenReturn(true);
-            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().isDirectory()).thenReturn(true);
-            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canRead()).thenReturn(true);
-            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canWrite()).thenReturn(true);
-            when(ctx.attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().mkdirs()).thenReturn(true);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().isDirectory()).thenReturn(true);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canRead()).thenReturn(true);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canWrite()).thenReturn(true);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
@@ -155,7 +155,7 @@ class LocalHostDiscoveryTest {
         void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.executor()).thenReturn(executor);
             doAnswer(invocation1 -> {
                 invocation1.getArgument(0, Runnable.class).run();
@@ -165,10 +165,10 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
-            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
-            when(ctx.attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, watchDisposable, postDisposable);
 
@@ -187,7 +187,7 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) throws IOException {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             when(ctx.executor()).thenReturn(executor);
             final Path path = Paths.get(dir.toString(), "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127.json");
             final File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
@@ -210,8 +210,8 @@ class LocalHostDiscoveryTest {
                 return null;
             });
 
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            final DrasylConfig config = ctx.attr(CONFIG_ATTR_KEY).get(); // mockito work-around
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            final DrasylConfig config = ctx.channel().attr(CONFIG_ATTR_KEY).get(); // mockito work-around
             final Path path2 = config.getRemoteLocalHostDiscoveryPath();
 
             doReturn(leaseTime).when(config).getRemoteLocalHostDiscoveryLeaseTime();
@@ -295,14 +295,14 @@ class LocalHostDiscoveryTest {
         void shouldScanDirectory(@TempDir final Path dir,
                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                  @Mock final SocketAddress address) throws IOException {
-            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
             final IdentityPublicKey publicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             routes.put(publicKey, address);
 
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath()).thenReturn(dir);
-            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(ofMinutes(5));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath()).thenReturn(dir);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(ofMinutes(5));
             final Path path = Paths.get(dir.toString(), "0", "02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b.json");
             Files.createDirectory(path.getParent());
             Files.writeString(path, "[\"192.168.188.42:12345\",\"192.168.188.23:12345\"]", StandardOpenOption.CREATE);
@@ -315,7 +315,7 @@ class LocalHostDiscoveryTest {
                     new InetSocketAddress("192.168.188.23", 12345)
             ), routes);
 
-            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).addPath(any(), eq(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b")), any());
+            verify(ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get()).addPath(any(), eq(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b")), any());
         }
     }
 }

@@ -75,7 +75,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
 
             // message is addressed to me
-            if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(chunkMsg.getRecipient())) {
+            if (ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(chunkMsg.getRecipient())) {
                 handleInboundChunk(ctx, sender, chunkMsg, new CompletableFuture<>());
             }
             else {
@@ -96,17 +96,17 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
-            if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getSender())) {
+            if (ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getSender())) {
                 // message from us, check if we have to chunk it
                 final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
                 remoteMsg.writeTo(messageByteBuf);
                 final int messageLength = messageByteBuf.readableBytes();
-                final int messageMaxContentLength = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength();
+                final int messageMaxContentLength = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength();
                 if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
                     ReferenceCountUtil.safeRelease(messageByteBuf);
                     LOG.debug("The message has a size of {} bytes and is too large. The max. allowed size is {} bytes. Message dropped.", messageLength, messageMaxContentLength);
                 }
-                else if (messageLength > ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageMtu()) {
+                else if (messageLength > ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMtu()) {
                     // message is too big, we have to chunk it
                     chunkMessage(ctx, recipient, remoteMsg, FutureUtil.toFuture(promise), messageByteBuf, messageLength);
                 }
@@ -131,12 +131,12 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                                     final ChunkMessage chunk,
                                     final CompletableFuture<Void> future) throws IOException {
         try {
-            final ChunksCollector chunksCollector = getChunksCollectors(ctx.attr(CONFIG_ATTR_KEY).get()).computeIfAbsent(chunk.getNonce(), id -> new ChunksCollector(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength(), id));
+            final ChunksCollector chunksCollector = getChunksCollectors(ctx.channel().attr(CONFIG_ATTR_KEY).get()).computeIfAbsent(chunk.getNonce(), id -> new ChunksCollector(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength(), id));
             final RemoteMessage message = chunksCollector.addChunk(chunk);
 
             if (message != null) {
                 // message complete, pass it inbound
-                getChunksCollectors(ctx.attr(CONFIG_ATTR_KEY).get()).remove(chunk.getNonce());
+                getChunksCollectors(ctx.channel().attr(CONFIG_ATTR_KEY).get()).remove(chunk.getNonce());
                 ctx.fireChannelRead(new AddressedMessage<>(message, sender));
             }
             else {
@@ -145,7 +145,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             }
         }
         catch (final IllegalStateException e) {
-            getChunksCollectors(ctx.attr(CONFIG_ATTR_KEY).get()).remove(chunk.getNonce());
+            getChunksCollectors(ctx.channel().attr(CONFIG_ATTR_KEY).get()).remove(chunk.getNonce());
             throw e;
         }
     }
@@ -184,7 +184,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                     .setTotalChunks(UnsignedShort.MAX_VALUE.getValue())
                     .buildPartial();
 
-            final int mtu = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteMessageMtu();
+            final int mtu = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMtu();
             final UnsignedShort totalChunks = totalChunks(messageSize, mtu, partialChunkHeader);
             LOG.debug("The message `{}` has a size of {} bytes and is therefore split into {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> mtu);
 

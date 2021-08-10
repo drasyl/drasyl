@@ -182,7 +182,7 @@ public class TcpClient extends ChannelDuplexHandler {
         if (superPeerAddresses.contains(recipient)) {
             final long currentTimeMillis = System.currentTimeMillis();
             noResponseFromSuperPeerSince.compareAndSet(0, currentTimeMillis);
-            if (noResponseFromSuperPeerSince.get() < currentTimeMillis - ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientTimeout().toMillis()) {
+            if (noResponseFromSuperPeerSince.get() < currentTimeMillis - ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientTimeout().toMillis()) {
                 // no response from super peer(s) for a too long duration -> establish fallback connection!
                 startClient(ctx);
             }
@@ -203,18 +203,18 @@ public class TcpClient extends ChannelDuplexHandler {
 
             superPeerChannel = bootstrap
                     .handler(new TcpClientHandler(ctx))
-                    .connect(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
+                    .connect(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
             superPeerChannel.addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
                     final Channel channel = future.channel();
-                    LOG.debug("TCP connection to `{}` established.", ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
+                    LOG.debug("TCP connection to `{}` established.", ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
                     channel.closeFuture().addListener(future1 -> {
-                        LOG.debug("TCP connection to `{}` closed.", ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
+                        LOG.debug("TCP connection to `{}` closed.", ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
                         superPeerChannel = null;
                     });
                 }
                 else {
-                    LOG.debug("Unable to establish TCP connection to `{}`:", () -> ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress(), future::cause);
+                    LOG.debug("Unable to establish TCP connection to `{}`:", () -> ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress(), future::cause);
                     superPeerChannel = null;
                 }
             });

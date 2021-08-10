@@ -36,7 +36,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.serialization.Serialization;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;

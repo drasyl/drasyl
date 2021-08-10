@@ -50,7 +50,7 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
                                 final AddressedMessage<?, ?> msg) throws Exception {
         if (msg.message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
-            final boolean validProofOfWork = !ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
+            final boolean validProofOfWork = !ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
             if (validProofOfWork) {
                 ctx.fireChannelRead(msg);
             }

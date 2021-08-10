@@ -71,7 +71,7 @@ public class UpnpIgdPortMappingTest {
                                       @Mock final Service upnpService,
                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                       @Mock final Runnable onFailure) {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
             new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -97,7 +97,7 @@ public class UpnpIgdPortMappingTest {
                     return null;
                 });
                 when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
-                when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+                when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
                 new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -123,7 +123,7 @@ public class UpnpIgdPortMappingTest {
                 });
                 when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                 when(upnpIgdUtil.getSpecificPortMappingEntry(any(), any(), any()).getDescription()).thenReturn("drasyl1234567890");
-                when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(identity);
+                when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(identity);
                 when(identity.getIdentityPublicKey().toString()).thenReturn("1234567890");
 
                 new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
@@ -150,7 +150,7 @@ public class UpnpIgdPortMappingTest {
                         return null;
                     });
                     when(upnpIgdUtil.getUpnpService(any())).thenReturn(null);
-                    when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+                    when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -174,7 +174,7 @@ public class UpnpIgdPortMappingTest {
                         return null;
                     });
                     when(upnpIgdUtil.getStatusInfo(any(), any())).thenReturn(null);
-                    when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+                    when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -199,7 +199,7 @@ public class UpnpIgdPortMappingTest {
                     });
                     when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                     when(upnpIgdUtil.getExternalIpAddress(any(), any())).thenReturn(null);
-                    when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+                    when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -224,7 +224,7 @@ public class UpnpIgdPortMappingTest {
                     });
                     when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                     when(upnpIgdUtil.addPortMapping(any(), any(), any(), any(), any())).thenReturn(null);
-                    when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+                    when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 

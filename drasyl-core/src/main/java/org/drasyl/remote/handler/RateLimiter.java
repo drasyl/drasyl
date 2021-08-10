@@ -80,7 +80,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?,
         if (msg.message() instanceof FullReadMessage) {
             final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) msg.message();
 
-            if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
+            if (!ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
                 ctx.fireChannelRead(msg);
             }
             else {

@@ -34,7 +34,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.serialization.Serialization;
 
 import java.net.SocketAddress;
 import java.util.Map;

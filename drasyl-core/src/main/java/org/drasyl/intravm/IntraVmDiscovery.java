@@ -72,14 +72,14 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
         if (msg instanceof AddressedMessage) {
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
-            final ChannelHandlerContext discoveree = discoveries.get(Pair.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), recipient));
+            final ChannelHandlerContext discoveree = discoveries.get(Pair.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), recipient));
 
             if (discoveree == null) {
                 // passthrough message
                 ctx.writeAndFlush(msg, promise);
             }
             else {
-                discoveree.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+                discoveree.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
             }
         }
         else {
@@ -96,13 +96,13 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             discoveries.forEach((key, otherCtx) -> {
                 final Integer networkId = key.first();
                 final IdentityPublicKey publicKey = key.second();
-                if (myCtx.attr(CONFIG_ATTR_KEY).get().getNetworkId() == networkId) {
-                    otherCtx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(otherCtx, myCtx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), path);
-                    myCtx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(myCtx, publicKey, path);
+                if (myCtx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == networkId) {
+                    otherCtx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPath(otherCtx, myCtx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), path);
+                    myCtx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPath(myCtx, publicKey, path);
                 }
             });
             discoveries.put(
-                    Pair.of(myCtx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), myCtx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()),
+                    Pair.of(myCtx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), myCtx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()),
                     myCtx
             );
 
@@ -119,13 +119,13 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             LOG.debug("Stop Intra VM Discovery...");
 
             // remove peer information
-            discoveries.remove(Pair.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+            discoveries.remove(Pair.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
             discoveries.forEach((key, otherCtx) -> {
                 final Integer networkId = key.first();
                 final IdentityPublicKey publicKey = key.second();
-                if (ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId() == networkId) {
-                    otherCtx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
-                    ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
+                if (ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == networkId) {
+                    otherCtx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
+                    ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
                 }
             });
 

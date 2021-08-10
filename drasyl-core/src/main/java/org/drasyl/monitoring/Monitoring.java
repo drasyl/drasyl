@@ -73,22 +73,22 @@ public class Monitoring extends ChannelDuplexHandler {
 
                     // add common tags
                     final String hostTag;
-                    if (!ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringHostTag().isEmpty()) {
-                        hostTag = ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringHostTag();
+                    if (!ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringHostTag().isEmpty()) {
+                        hostTag = ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringHostTag();
                     }
                     else {
                         hostTag = ofNullable(NetworkUtil.getLocalHostName()).orElse("");
                     }
 
                     newRegistry.config().commonTags(
-                            "public_key", ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString(),
+                            "public_key", ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString(),
                             "host", hostTag
                     );
 
                     // monitor PeersManager
-                    Gauge.builder("peersManager.peers", ctx.attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getPeers().size()).register(newRegistry);
-                    Gauge.builder("peersManager.superPeers", ctx.attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getSuperPeers().size()).register(newRegistry);
-                    Gauge.builder("peersManager.children", ctx.attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getChildren().size()).register(newRegistry);
+                    Gauge.builder("peersManager.peers", ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getPeers().size()).register(newRegistry);
+                    Gauge.builder("peersManager.superPeers", ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getSuperPeers().size()).register(newRegistry);
+                    Gauge.builder("peersManager.children", ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getChildren().size()).register(newRegistry);
 
                     return newRegistry;
                 },
@@ -173,23 +173,23 @@ public class Monitoring extends ChannelDuplexHandler {
         @Override
         @NonNull
         public String uri() {
-            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxUri().toString();
+            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxUri().toString();
         }
 
         @Override
         public String userName() {
-            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxUser();
+            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxUser();
         }
 
         @Override
         public String password() {
-            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxPassword().toUnmaskedString();
+            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxPassword().toUnmaskedString();
         }
 
         @Override
         @NonNull
         public String db() {
-            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxDatabase();
+            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxDatabase();
         }
 
         @Override
@@ -200,7 +200,7 @@ public class Monitoring extends ChannelDuplexHandler {
         @Override
         @NonNull
         public Duration step() {
-            return ctx.attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxReportingFrequency();
+            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxReportingFrequency();
         }
 
         @Override

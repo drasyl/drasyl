@@ -130,7 +130,7 @@ class UdpMulticastServerTest {
                                                      @Mock final ByteBuf message,
                                                      @Mock final IdentityPublicKey publicKey,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             when(bootstrap.handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
                 handler.channelRead(channelCtx, new DatagramPacket(message, new InetSocketAddress(22527), new InetSocketAddress(25421)));

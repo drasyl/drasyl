@@ -33,7 +33,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.serialization.Serialization;
 
 import java.io.IOException;
 
@@ -43,8 +42,8 @@ import static java.util.Objects.requireNonNull;
  * Bootstrap that helps to bootstrap {@link DrasylChannel}s to communicate with peers.
  */
 public class DrasylBootstrap {
-    private volatile EventLoopGroup parentGroup;
-    private volatile EventLoopGroup childGroup;
+    private volatile EventLoopGroup parentGroup; // NOSONAR
+    private volatile EventLoopGroup childGroup; // NOSONAR
     private final DrasylConfig config;
     private final Identity identity;
     private final ChannelFactory<ServerChannel> channelFactory;

@@ -146,11 +146,11 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             LOG.warn("Discovery directory `{}` not accessible.", discoveryPath::toAbsolutePath);
         }
         else {
-            if (ctx.attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()) {
+            if (ctx.channel().attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()) {
                 tryWatchDirectory(ctx, discoveryPath);
             }
             ctx.executor().execute(() -> scan(ctx));
-            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString() + ".json"), port);
+            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
 
@@ -167,7 +167,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             postDisposable.cancel(false);
         }
 
-        final Path filePath = discoveryPath(ctx).resolve(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString() + ".json");
+        final Path filePath = discoveryPath(ctx).resolve(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString() + ".json");
         if (filePath.toFile().exists()) {
             try {
                 Files.delete(filePath);
@@ -177,7 +177,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             }
         }
 
-        routes.keySet().forEach(publicKey -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, LocalHostDiscovery.path));
+        routes.keySet().forEach(publicKey -> ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, LocalHostDiscovery.path));
         routes.clear();
 
         LOG.debug("Local Host Discovery stopped.");
@@ -221,19 +221,19 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                                             final int port) {
         // get own address(es)
         final Set<InetAddress> addresses;
-        if (ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost().isAnyLocalAddress()) {
+        if (ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindHost().isAnyLocalAddress()) {
             // use all available addresses
             addresses = NetworkUtil.getAddresses();
         }
         else {
             // use given host
-            addresses = Set.of(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost());
+            addresses = Set.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindHost());
         }
         final Set<InetSocketAddress> socketAddresses = addresses.stream().map(a -> new InetSocketAddress(a, port)).collect(Collectors.toSet());
 
         final Duration refreshInterval;
-        if (ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().compareTo(REFRESH_INTERVAL_SAFETY_MARGIN) > 0) {
-            refreshInterval = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().minus(REFRESH_INTERVAL_SAFETY_MARGIN);
+        if (ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().compareTo(REFRESH_INTERVAL_SAFETY_MARGIN) > 0) {
+            refreshInterval = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().minus(REFRESH_INTERVAL_SAFETY_MARGIN);
         }
         else {
             refreshInterval = ofSeconds(1);
@@ -257,8 +257,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     synchronized void scan(final ChannelHandlerContext ctx) {
         final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
-        final String ownPublicKeyString = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString();
-        final long maxAge = System.currentTimeMillis() - ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().toMillis();
+        final String ownPublicKeyString = ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString();
+        final long maxAge = System.currentTimeMillis() - ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
         if (files != null) {
             final Map<IdentityPublicKey, InetSocketAddress> newRoutes = new HashMap<>();
@@ -295,7 +295,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
+                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
                 i.remove();
             }
         }
@@ -304,7 +304,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         newRoutes.forEach(((publicKey, address) -> {
             if (!routes.containsKey(publicKey)) {
                 routes.put(publicKey, address);
-                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path);
+                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path);
             }
         }));
     }
@@ -346,6 +346,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     }
 
     private static Path discoveryPath(final ChannelHandlerContext ctx) {
-        return ctx.attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(String.valueOf(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId()));
+        return ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(String.valueOf(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId()));
     }
 }

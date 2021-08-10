@@ -125,7 +125,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
         if (heartbeatDisposable == null) {
             LOG.debug("Start heartbeat scheduler");
-            final long pingInterval = ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingInterval().toMillis();
+            final long pingInterval = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemotePingInterval().toMillis();
             heartbeatDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
         }
     }
@@ -157,13 +157,13 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private void removeStalePeers(final ChannelHandlerContext ctx) {
         // check lastContactTimes
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            if (!peer.hasControlTraffic(ctx.attr(CONFIG_ATTR_KEY).get())) {
+            if (!peer.hasControlTraffic(ctx.channel().attr(CONFIG_ATTR_KEY).get())) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundControlTrafficTime());
                 if (superPeers.contains(publicKey)) {
-                    ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removeSuperPeerAndPath(ctx, publicKey, path);
+                    ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removeSuperPeerAndPath(ctx, publicKey, path);
                 }
                 else {
-                    ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removeChildrenAndPath(ctx, publicKey, path);
+                    ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removeChildrenAndPath(ctx, publicKey, path);
                 }
                 peers.remove(publicKey);
                 directConnectionPeers.remove(publicKey);
@@ -177,8 +177,8 @@ public class InternetDiscovery extends ChannelDuplexHandler {
      * @param ctx handler's context
      */
     private void pingSuperPeers(final ChannelHandlerContext ctx) {
-        if (ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
-            for (final Endpoint endpoint : ctx.attr(CONFIG_ATTR_KEY).get().getRemoteSuperPeerEndpoints()) {
+        if (ctx.channel().attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
+            for (final Endpoint endpoint : ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteSuperPeerEndpoints()) {
                 final SocketAddress address = new InetSocketAddress(endpoint.getHost(), endpoint.getPort());
                 sendPing(ctx, endpoint.getIdentityPublicKey(), address, new CompletableFuture<>()).exceptionally(e -> {
                     //noinspection unchecked
@@ -199,7 +199,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         for (final IdentityPublicKey publicKey : new HashSet<>(directConnectionPeers)) {
             final Peer peer = peers.get(publicKey);
             final SocketAddress address = peer.getAddress();
-            if (address != null && peer.hasApplicationTraffic(ctx.attr(CONFIG_ATTR_KEY).get())) {
+            if (address != null && peer.hasApplicationTraffic(ctx.channel().attr(CONFIG_ATTR_KEY).get())) {
                 sendPing(ctx, publicKey, address, new CompletableFuture<>()).exceptionally(e -> {
                     //noinspection unchecked
                     LOG.warn("Unable to send ping for peer `{}` to `{}`", () -> publicKey, () -> address, () -> e);
@@ -209,7 +209,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             // remove trivial communications, that does not send any user generated messages
             else {
                 LOG.debug("Last application communication to {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastApplicationTrafficTime());
-                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removeChildrenAndPath(ctx, publicKey, path);
+                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removeChildrenAndPath(ctx, publicKey, path);
                 directConnectionPeers.remove(publicKey);
             }
         }
@@ -218,10 +218,10 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private void removeAllPeers(final ChannelHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (superPeers.contains(publicKey)) {
-                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removeSuperPeerAndPath(ctx, publicKey, path);
+                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removeSuperPeerAndPath(ctx, publicKey, path);
             }
             else {
-                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removeChildrenAndPath(ctx, publicKey, path);
+                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removeChildrenAndPath(ctx, publicKey, path);
             }
             peers.remove(publicKey);
             directConnectionPeers.remove(publicKey);
@@ -283,7 +283,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             superPeerPeer = null;
         }
 
-        if (recipientPeer != null && recipientPeer.getAddress() != null && recipientPeer.isReachable(ctx.attr(CONFIG_ATTR_KEY).get())) {
+        if (recipientPeer != null && recipientPeer.getAddress() != null && recipientPeer.isReachable(ctx.channel().attr(CONFIG_ATTR_KEY).get())) {
             final InetSocketAddress recipientSocketAddress = recipientPeer.getAddress();
             final Peer senderPeer = peers.get(msg.getSender());
 
@@ -349,7 +349,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                                    final InetSocketAddress recipient,
                                    final InetSocketAddress sender) {
         // send recipient's information to sender
-        final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), senderKey, recipientKey, recipient);
+        final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
         final CompletableFuture<Void> future1 = new CompletableFuture<>();
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(senderRendezvousEnvelope, sender)))).combine(future1);
@@ -360,7 +360,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         });
 
         // send sender's information to recipient
-        final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipientKey, senderKey, sender);
+        final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
         final CompletableFuture<Void> future = new CompletableFuture<>();
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(recipientRendezvousEnvelope, recipient)))).combine(future);
@@ -391,10 +391,10 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
             if (sender instanceof InetSocketAddress && remoteMsg.getRecipient() != null) {
                 // This message is for us and we will fully decode it
-                if (ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getRecipient()) && remoteMsg instanceof FullReadMessage) {
+                if (ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getRecipient()) && remoteMsg instanceof FullReadMessage) {
                     handleMessage(ctx, (InetSocketAddress) sender, (FullReadMessage<?>) remoteMsg, new CompletableFuture<>());
                 }
-                else if (!ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
+                else if (!ctx.channel().attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
                     if (!processMessage(ctx, remoteMsg.getRecipient(), remoteMsg, new CompletableFuture<>())) {
                         // passthrough message
                         ctx.fireChannelRead(remoteMsg);
@@ -451,16 +451,16 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         if (childrenJoin) {
             peer.inboundPingOccurred();
             // store peer information
-            if (LOG.isDebugEnabled() && !ctx.attr(PEERS_MANAGER_ATTR_KEY).get().getChildren().contains(envelopeSender) && !ctx.attr(PEERS_MANAGER_ATTR_KEY).get().getPaths(envelopeSender).contains(path)) {
+            if (LOG.isDebugEnabled() && !ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().getChildren().contains(envelopeSender) && !ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().getPaths(envelopeSender).contains(path)) {
                 LOG.debug("PING! Add {} as children", envelopeSender);
             }
-            ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPathAndChildren(ctx, envelopeSender, path);
+            ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPathAndChildren(ctx, envelopeSender, path);
         }
 
         // reply with pong
-        final int networkId = ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId();
-        final IdentityPublicKey myPublicKey = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey();
-        final ProofOfWork myProofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
+        final int networkId = ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId();
+        final IdentityPublicKey myPublicKey = ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey();
+        final ProofOfWork myProofOfWork = ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
         final AcknowledgementMessage responseEnvelope = AcknowledgementMessage.of(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
         LOG.trace("Send {} to {}", responseEnvelope, sender);
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(responseEnvelope, sender)))).combine(future);
@@ -484,17 +484,17 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                 determineBestSuperPeer();
 
                 // store peer information
-                if (LOG.isDebugEnabled() && !ctx.attr(PEERS_MANAGER_ATTR_KEY).get().getChildren().contains(envelopeSender) && !ctx.attr(PEERS_MANAGER_ATTR_KEY).get().getPaths(envelopeSender).contains(path)) {
+                if (LOG.isDebugEnabled() && !ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().getChildren().contains(envelopeSender) && !ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().getPaths(envelopeSender).contains(path)) {
                     LOG.debug("PONG! Add {} as super peer", envelopeSender);
                 }
-                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPathAndSuperPeer(ctx, envelopeSender, path);
+                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPathAndSuperPeer(ctx, envelopeSender, path);
             }
             else {
                 // store peer information
-                if (LOG.isDebugEnabled() && !ctx.attr(PEERS_MANAGER_ATTR_KEY).get().getPaths(envelopeSender).contains(path)) {
+                if (LOG.isDebugEnabled() && !ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().getPaths(envelopeSender).contains(path)) {
                     LOG.debug("PONG! Add {} as peer", envelopeSender);
                 }
-                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, envelopeSender, path);
+                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, envelopeSender, path);
             }
         }
         future.complete(null);
@@ -550,9 +550,9 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                                              final IdentityPublicKey recipient,
                                              final SocketAddress recipientAddress,
                                              final CompletableFuture<Void> future) {
-        final int networkId = ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId();
-        final IdentityPublicKey sender = ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey();
-        final ProofOfWork proofOfWork = ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
+        final int networkId = ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId();
+        final IdentityPublicKey sender = ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey();
+        final ProofOfWork proofOfWork = ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
 
         final boolean isChildrenJoin = superPeers.contains(recipient);
         final DiscoveryMessage messageEnvelope;

@@ -133,7 +133,7 @@ public class UdpServer extends ChannelDuplexHandler {
     private void startServer(final ChannelHandlerContext ctx) throws Exception {
         LOG.debug("Start Server...");
         final int bindPort;
-        if (ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindPort() == -1) {
+        if (ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindPort() == -1) {
                 /*
                  derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
                  own identity. this is done because we also expose this port via
@@ -142,11 +142,11 @@ public class UdpServer extends ChannelDuplexHandler {
                  a completely random port would have the disadvantage that every time the node is
                  started it would use a new port and this would make discovery more difficult
                 */
-            final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toByteArray()).asBytes()).getValue();
+            final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toByteArray()).asBytes()).getValue();
             bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
         }
         else {
-            bindPort = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindPort();
+            bindPort = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindPort();
         }
         final ChannelFuture channelFuture = bootstrap
                 .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
@@ -157,7 +157,7 @@ public class UdpServer extends ChannelDuplexHandler {
                         ctx.fireChannelRead(new AddressedMessage<>(packet.content().retain(), packet.sender()));
                     }
                 })
-                .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost(), bindPort);
+                .bind(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindHost(), bindPort);
         channelFuture.awaitUninterruptibly();
 
         if (channelFuture.isSuccess()) {
@@ -171,7 +171,7 @@ public class UdpServer extends ChannelDuplexHandler {
         }
         else {
             // server start failed
-            throw new Exception("Unable to bind server to address udp://" + ctx.attr(CONFIG_ATTR_KEY).get().getRemoteBindHost() + ":" + bindPort, channelFuture.cause());
+            throw new Exception("Unable to bind server to address udp://" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindHost() + ":" + bindPort, channelFuture.cause());
         }
     }
 

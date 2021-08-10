@@ -19,13 +19,12 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.pipeline.serialization;
+package org.drasyl.channel;
 
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
@@ -67,10 +66,10 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
                 type = null;
             }
 
-            final Serializer serializer = ctx.attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(type);
+            final Serializer serializer = ctx.channel().attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(type);
 
             if (serializer != null) {
-                final ApplicationMessage applicationMsg = ApplicationMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), (IdentityPublicKey) msg.address(), type, ByteString.copyFrom(serializer.toByteArray(o)));
+                final ApplicationMessage applicationMsg = ApplicationMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), (IdentityPublicKey) msg.address(), type, ByteString.copyFrom(serializer.toByteArray(o)));
                 out.add(new AddressedMessage<>(applicationMsg, msg.address()));
                 LOG.trace("Message has been serialized to `{}`", () -> applicationMsg);
             }
@@ -89,7 +88,7 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
                           final List<Object> out) throws Exception {
         if (msg.message() instanceof ApplicationMessage && msg.address() instanceof IdentityPublicKey) {
             final ApplicationMessage applicationMsg = (ApplicationMessage) msg.message();
-            final Serializer serializer = ctx.attr(INBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(applicationMsg.getType());
+            final Serializer serializer = ctx.channel().attr(INBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(applicationMsg.getType());
 
             if (serializer != null) {
                 final Object o = serializer.fromByteArray(applicationMsg.getPayloadAsByteArray(), applicationMsg.getType());

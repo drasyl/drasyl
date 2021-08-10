@@ -19,14 +19,12 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.pipeline.serialization;
+package org.drasyl.channel;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.PeersManager;

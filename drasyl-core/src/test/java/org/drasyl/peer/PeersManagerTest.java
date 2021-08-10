@@ -84,7 +84,7 @@ class PeersManagerTest {
                                   @Mock final IdentityPublicKey children,
                                   @Mock final IdentityPublicKey peer,
                                   @Mock final Object path) {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             underTest.addPathAndSuperPeer(ctx, superPeer, path);
             underTest.addPathAndChildren(ctx, children, path);
             underTest.addPath(ctx, peer, path);
@@ -226,7 +226,7 @@ class PeersManagerTest {
         void shouldEmitNodeOfflineEventWhenRemovingLastSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                  @Mock final IdentityPublicKey publicKey,
                                                                  @Mock final Object path) {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             superPeers.add(publicKey);
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
@@ -260,7 +260,7 @@ class PeersManagerTest {
         void shouldAddPathAndAddSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock final IdentityPublicKey publicKey,
                                           @Mock final Object path) {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
             assertEquals(Set.of(publicKey), underTest.getSuperPeers());
@@ -271,7 +271,7 @@ class PeersManagerTest {
         void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                      @Mock final IdentityPublicKey publicKey,
                                                                      @Mock final Object path) {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));

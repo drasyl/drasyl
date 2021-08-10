@@ -63,8 +63,8 @@ public class PcpPortMappingTest {
                                   @Mock(answer = RETURNS_DEEP_STUBS) final Runnable onFailure,
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                   @Mock final Supplier<Set<InetAddress>> interfaceSupplier) throws UnknownHostException {
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
-            when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"));
             when(defaultGatewaySupplier.get()).thenReturn(InetAddress.getByName("38.12.1.15"));
             when(interfaceSupplier.get()).thenReturn(Set.of(InetAddress.getByName("38.12.1.15")));
 

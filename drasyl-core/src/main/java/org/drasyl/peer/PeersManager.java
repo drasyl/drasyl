@@ -194,7 +194,7 @@ public class PeersManager {
             // role (super peer)
             final boolean firstSuperPeer = superPeers.isEmpty();
             if (superPeers.add(publicKey) && firstSuperPeer) {
-                ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())));
+                ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
             }
         }
         finally {
@@ -212,7 +212,7 @@ public class PeersManager {
 
             // role (super peer)
             if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-                ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(ctx.attr(IDENTITY_ATTR_KEY).get())));
+                ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
             }
 
             // path

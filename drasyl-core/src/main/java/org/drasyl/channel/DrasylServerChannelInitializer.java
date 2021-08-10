@@ -39,7 +39,6 @@ import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
-import org.drasyl.pipeline.serialization.MessageSerializer;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
 import org.drasyl.remote.handler.InternetDiscovery;
@@ -242,7 +241,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
      * NodeNormalTerminationEvent}, {@link NodeUnrecoverableErrorEvent}).
      */
     private static class NodeLifecycleEvents extends ChannelInboundHandlerAdapter {
-        private boolean errorOccurred;
+        private boolean errorOccurred = false;
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) throws Exception {

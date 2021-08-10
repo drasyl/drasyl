@@ -50,7 +50,7 @@ public final class OtherNetworkFilter extends SimpleChannelInboundHandler<Addres
                                 final AddressedMessage<?, ?> msg) throws Exception {
         if (msg.message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
-            if (remoteMsg instanceof ChunkMessage || ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId() == remoteMsg.getNetworkId()) {
+            if (remoteMsg instanceof ChunkMessage || ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == remoteMsg.getNetworkId()) {
                 ctx.fireChannelRead(msg);
             }
             else {

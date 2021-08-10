@@ -118,7 +118,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        nodes.put(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx);
+        nodes.put(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx);
 
         if (channel == null) {
             LOG.debug("Start Server...");
@@ -129,7 +129,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                                                     final DatagramPacket packet) {
                             final SocketAddress sender = packet.sender();
                             nodes.values().forEach(nodeCtx -> {
-                                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.attr(IDENTITY_ATTR_KEY).get()::getIdentityPublicKey);
+                                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel().attr(IDENTITY_ATTR_KEY).get()::getIdentityPublicKey);
                                 nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content().retain(), sender));
                             });
                         }
@@ -166,7 +166,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     }
 
     private synchronized void stopServer(final ChannelHandlerContext ctx) {
-        nodes.remove(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey());
+        nodes.remove(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey());
 
         if (channel != null) {
             final InetSocketAddress socketAddress = channel.localAddress();

@@ -226,8 +226,8 @@ class InternetDiscoveryTest {
                                             @Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddress address,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(peer.getAddress()).thenReturn(address);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
@@ -242,16 +242,16 @@ class InternetDiscoveryTest {
                                         @Mock final InetSocketAddress address,
                                         @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                         @Mock final Endpoint superPeerEndpoint) {
-            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
+            when(ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(peer.getAddress()).thenReturn(address);
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(config);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(config);
             when(config.getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
             when(superPeers.contains(publicKey)).thenReturn(true);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removeSuperPeerAndPath(any(), eq(publicKey), any());
+            verify(ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get()).removeSuperPeerAndPath(any(), eq(publicKey), any());
         }
 
         @Test
@@ -259,14 +259,14 @@ class InternetDiscoveryTest {
                                              @Mock final IdentityPublicKey publicKey,
                                              @Mock final InetSocketAddress address,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             when(peer.getAddress()).thenReturn(address);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
 
-            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removeChildrenAndPath(any(), eq(publicKey), any());
+            verify(ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get()).removeChildrenAndPath(any(), eq(publicKey), any());
         }
 
         @Test
@@ -275,12 +275,12 @@ class InternetDiscoveryTest {
             final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()).thenReturn(true);
-            when(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()).thenReturn(true);
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteSuperPeerEndpoints()).thenReturn(ImmutableSet.of(superPeerEndpoint));
             when(superPeerEndpoint.getHost()).thenReturn("127.0.0.1");
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
-            when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(myPublicKey);
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(myPublicKey);
             when(superPeerEndpoint.getIdentityPublicKey()).thenReturn(publicKey);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, new HashSet<>(), superPeers, bestSuperPeer);
@@ -292,14 +292,14 @@ class InternetDiscoveryTest {
         @Test
         void shouldPingPeersWithRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
             final IdentityPublicKey myPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
             when(peer.hasControlTraffic(any())).thenReturn(true);
             when(peer.hasApplicationTraffic(any())).thenReturn(true);
-            when(ctx.attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
-            when(ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(myPublicKey);
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(myPublicKey);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, bestSuperPeer);
             handler.doHeartbeat(ctx);
@@ -310,8 +310,8 @@ class InternetDiscoveryTest {
         @Test
         void shouldNotPingPeersWithoutRecentCommunication(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                           @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
-            when(ctx.attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
+            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
+            when(ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get()).thenReturn(mock(PeersManager.class));
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
 
             when(peer.hasControlTraffic(any())).thenReturn(true);
@@ -320,7 +320,7 @@ class InternetDiscoveryTest {
             handler.doHeartbeat(ctx);
 
             verify(ctx, never()).writeAndFlush(any(AddressedMessage.class));
-            verify(ctx.attr(PEERS_MANAGER_ATTR_KEY).get()).removeChildrenAndPath(any(), eq(publicKey), any());
+            verify(ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get()).removeChildrenAndPath(any(), eq(publicKey), any());
         }
     }
 

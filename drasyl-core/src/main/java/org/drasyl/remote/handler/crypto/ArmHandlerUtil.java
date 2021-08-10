@@ -23,6 +23,7 @@ package org.drasyl.remote.handler.crypto;
 
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundInvoker;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -72,7 +73,7 @@ public final class ArmHandlerUtil {
     public static CompletableFuture<Void> sendEncrypted(final Crypto cryptoInstance,
                                                         final SessionPair agreementPair,
                                                         final AgreementId agreementId,
-                                                        final ChannelHandlerContext ctx,
+                                                        final ChannelOutboundInvoker ctx,
                                                         final SocketAddress recipient,
                                                         final FullReadMessage<?> msg,
                                                         final CompletableFuture<Void> future) {
@@ -126,17 +127,17 @@ public final class ArmHandlerUtil {
             // encrypt message with long time key
             return ArmHandlerUtil.sendEncrypted(cryptoInstance, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipientsAddress,
                     KeyExchangeAcknowledgementMessage.of(
-                            ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(),
-                            ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
-                            ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
+                            ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(),
+                            ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
+                            ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
                             recipientsKey,
                             agreementId
                     ), new CompletableFuture<>()).whenComplete((x, e) -> {
                 if (e == null) {
-                    LOG.trace("[{} => {}] Send ack message for session {}", () -> ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId);
+                    LOG.trace("[{} => {}] Send ack message for session {}", () -> ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId);
                 }
                 else {
-                    LOG.debug("[{} => {}] Error on sending ack message for session {}: {}", () -> ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId, () -> e);
+                    LOG.debug("[{} => {}] Error on sending ack message for session {}: {}", () -> ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId, () -> e);
                 }
             });
         }
@@ -162,9 +163,9 @@ public final class ArmHandlerUtil {
                                           final SocketAddress recipient,
                                           final IdentityPublicKey recipientsKey) {
         final FullReadMessage<?> msg = KeyExchangeMessage.of(
-                ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(),
-                ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
-                ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
+                ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(),
+                ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
+                ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
                 recipientsKey,
                 agreement.getKeyPair().getPublicKey());
 

@@ -52,8 +52,8 @@ public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage) {
-            if (started && ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(((AddressedMessage<?, ?>) msg).address())) {
-                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), (SocketAddress) ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+            if (started && ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(((AddressedMessage<?, ?>) msg).address())) {
+                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), (SocketAddress) ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
             }
             else {
                 ctx.writeAndFlush(msg, promise);

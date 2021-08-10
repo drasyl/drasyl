@@ -84,7 +84,7 @@ public class TcpServer extends ChannelDuplexHandler {
         LOG.debug("Start Server...");
         final ChannelFuture channelFuture = bootstrap
                 .childHandler(new TcpServerChannelInitializer(clientChannels, ctx))
-                .bind(ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindHost(), ctx.attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindPort());
+                .bind(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindHost(), ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindPort());
         channelFuture.awaitUninterruptibly();
 
         if (channelFuture.isSuccess()) {
@@ -99,7 +99,7 @@ public class TcpServer extends ChannelDuplexHandler {
         else {
             // server start failed
             //noinspection unchecked
-            LOG.warn("Unable to bind server to address tcp://{}:{}", ctx.attr(CONFIG_ATTR_KEY).get()::getRemoteBindHost, ctx.attr(CONFIG_ATTR_KEY).get()::getRemoteTcpFallbackServerBindPort, channelFuture::cause);
+            LOG.warn("Unable to bind server to address tcp://{}:{}", ctx.channel().attr(CONFIG_ATTR_KEY).get()::getRemoteBindHost, ctx.channel().attr(CONFIG_ATTR_KEY).get()::getRemoteTcpFallbackServerBindPort, channelFuture::cause);
         }
     }
 
@@ -168,7 +168,7 @@ public class TcpServer extends ChannelDuplexHandler {
 
         @Override
         protected void initChannel(final Channel ch) {
-            ch.pipeline().addLast(new IdleStateHandler(ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout().toMillis(), 0, 0, MILLISECONDS));
+            ch.pipeline().addLast(new IdleStateHandler(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout().toMillis(), 0, 0, MILLISECONDS));
             ch.pipeline().addLast(new TcpServerHandler(clients, ctx));
         }
     }

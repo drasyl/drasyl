@@ -59,7 +59,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
             final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
             final IdentityPublicKey recipient = (IdentityPublicKey) ((AddressedMessage<?, ?>) msg).address();
 
-            final SocketAddress staticAddress = ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
+            final SocketAddress staticAddress = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
             if (staticAddress != null) {
                 LOG.trace("Send message `{}` via static route {}.", () -> applicationMsg, () -> staticAddress);
                 ctx.writeAndFlush(new AddressedMessage<>(applicationMsg, staticAddress), promise);
@@ -89,10 +89,10 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
     }
 
     private static synchronized void populateRoutes(final ChannelHandlerContext ctx) {
-        ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path)));
+        ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path)));
     }
 
     private static synchronized void clearRoutes(final ChannelHandlerContext ctx) {
-        ctx.attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path));
+        ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path));
     }
 }

@@ -84,7 +84,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
         if (pingDisposable == null) {
             LOG.debug("Start Network Network Discovery...");
-            final long pingInterval = ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingInterval().toMillis();
+            final long pingInterval = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemotePingInterval().toMillis();
             pingDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
             LOG.debug("Network Discovery started.");
         }
@@ -101,7 +101,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
 
     synchronized void clearRoutes(final ChannelHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
+            ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
             peers.remove(publicKey);
         }));
         peers.clear();
@@ -116,7 +116,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (peer.isStale(ctx)) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundPingTime());
-                ctx.attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
+                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
                 peers.remove(publicKey);
             }
         }));
@@ -145,11 +145,11 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
                             final RemoteMessage msg,
                             final CompletableFuture<Void> future) {
         final IdentityPublicKey msgSender = msg.getSender();
-        if (!ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msgSender)) {
+        if (!ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(msgSender)) {
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
             final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender));
             peer.inboundPingOccurred();
-            ctx.attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, msgSender, path);
+            ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, msgSender, path);
         }
 
         future.complete(null);
@@ -193,7 +193,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private static void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
-        final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(ctx.attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.attr(IDENTITY_ATTR_KEY).get().getProofOfWork());
+        final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork());
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
         final CompletableFuture<Void> future = new CompletableFuture<>();
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)))).combine(future);
@@ -226,7 +226,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         }
 
         public boolean isStale(final ChannelHandlerContext ctx) {
-            return lastInboundPingTime < System.currentTimeMillis() - ctx.attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout().toMillis();
+            return lastInboundPingTime < System.currentTimeMillis() - ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout().toMillis();
         }
 
         public long getLastInboundPingTime() {
