@@ -24,9 +24,9 @@ package org.drasyl.channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.ScheduledFuture;
 
 import java.io.PrintStream;
 import java.net.SocketAddress;
@@ -50,22 +50,22 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
     private final BiPredicate<SocketAddress, Object> consumeInbound;
     private final LongAdder outboundMessages;
     private final LongAdder inboundMessages;
-    private final Scheduler scheduler;
+    private final EventLoopGroup eventLoopGroup;
     private final PrintStream printStream;
-    private Disposable disposable;
+    private ScheduledFuture<?> disposable;
 
     MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
                               final BiPredicate<SocketAddress, Object> consumeInbound,
                               final LongAdder outboundMessages,
                               final LongAdder inboundMessages,
-                              final Scheduler scheduler,
+                              final EventLoopGroup eventLoopGroup,
                               final PrintStream printStream,
-                              final Disposable disposable) {
+                              final ScheduledFuture<?> disposable) {
         this.consumeOutbound = requireNonNull(consumeOutbound);
         this.consumeInbound = requireNonNull(consumeInbound);
         this.outboundMessages = requireNonNull(outboundMessages);
         this.inboundMessages = requireNonNull(inboundMessages);
-        this.scheduler = requireNonNull(scheduler);
+        this.eventLoopGroup = requireNonNull(eventLoopGroup);
         this.printStream = requireNonNull(printStream);
         this.disposable = disposable;
     }
@@ -77,12 +77,12 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
      *
      * @param consumeOutbound predicate that consumes outbound messages on match
      * @param consumeInbound  predicate that consumes inbound messages on match
-     * @param scheduler       scheduler on which this handler is executed
+     * @param eventLoopGroup  eventLoopGroup on which this handler is executed
      */
     public MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
                                      final BiPredicate<SocketAddress, Object> consumeInbound,
-                                     final Scheduler scheduler) {
-        this(consumeOutbound, consumeInbound, new LongAdder(), new LongAdder(), scheduler, System.out, null);
+                                     final EventLoopGroup eventLoopGroup) {
+        this(consumeOutbound, consumeInbound, new LongAdder(), new LongAdder(), eventLoopGroup, System.out, null);
     }
 
     /**
@@ -95,7 +95,7 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
      */
     public MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
                                      final BiPredicate<SocketAddress, Object> consumeInbound) {
-        this(consumeOutbound, consumeInbound, Schedulers.single());
+        this(consumeOutbound, consumeInbound, new NioEventLoopGroup(1));
     }
 
     /**
@@ -103,13 +103,13 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
      * second.
      */
     public MessagesThroughputHandler() {
-        this((address, msg) -> false, (address, msg) -> false, Schedulers.single());
+        this((address, msg) -> false, (address, msg) -> false);
     }
 
     private void start() {
         final long startTime = System.currentTimeMillis();
         final AtomicLong intervalTime = new AtomicLong(startTime);
-        disposable = scheduler.schedulePeriodicallyDirect(() -> {
+        disposable = eventLoopGroup.scheduleAtFixedRate(() -> {
             final long currentTime = System.currentTimeMillis();
 
             final double relativeIntervalStartTime = (intervalTime.get() - startTime) / 1_000.;
@@ -125,7 +125,7 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
 
     private void stop() {
         if (disposable != null) {
-            disposable.dispose();
+            disposable.cancel(false);
         }
     }
 

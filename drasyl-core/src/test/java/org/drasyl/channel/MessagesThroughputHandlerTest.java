@@ -22,8 +22,8 @@
 package org.drasyl.channel;
 
 import io.netty.channel.ChannelInboundHandler;
-import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.Disposable;
+import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.ScheduledFuture;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
@@ -65,21 +65,21 @@ class MessagesThroughputHandlerTest {
     @Mock
     LongAdder inboundMessages;
     @Mock
-    Scheduler scheduler;
+    EventLoopGroup eventLoopGroup;
     @Mock
     PrintStream printStream;
     @Mock
-    Disposable disposable;
+    ScheduledFuture<?> disposable;
 
     @Test
     void shouldPrintThroughputOnChannelActive() {
-        when(scheduler.schedulePeriodicallyDirect(any(), eq(0L), eq(1_000L), eq(MILLISECONDS))).then(invocation -> {
+        when(eventLoopGroup.scheduleAtFixedRate(any(), eq(0L), eq(1_000L), eq(MILLISECONDS))).then(invocation -> {
             final Runnable runnable = invocation.getArgument(0, Runnable.class);
             runnable.run();
             return null;
         });
 
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             pipeline.pipeline().fireChannelActive();
@@ -93,12 +93,12 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldStopTaskOnChannelInactive() {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, disposable);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, disposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             pipeline.pipeline().fireChannelInactive();
 
-            verify(disposable).dispose();
+            verify(disposable).cancel(false);
         }
         finally {
             pipeline.drasylClose();
@@ -107,7 +107,7 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldRecordOutboundMessage(@Mock final SocketAddress address) {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(new Object(), address));
@@ -122,7 +122,7 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldRecordInboundMessage(@Mock final SocketAddress address) {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
@@ -137,7 +137,7 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldConsumeMatchingOutboundMessage(@Mock final SocketAddress address) {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, scheduler, printStream, null);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
         final TestObserver<Object> observable;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
@@ -152,7 +152,7 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldConsumeMatchingInboundMessage(@Mock final SocketAddress address) {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, scheduler, printStream, null);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
         final TestObserver<Object> observable;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
