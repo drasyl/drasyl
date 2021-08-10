@@ -110,7 +110,7 @@ class MonitoringTest {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
+                final TestObserver<Object> inboundEvents = pipeline.events().test();
 
                 pipeline.pipeline().fireUserEventTriggered(event);
 

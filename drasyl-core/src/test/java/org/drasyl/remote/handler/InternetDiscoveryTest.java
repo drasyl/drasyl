@@ -28,7 +28,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.event.Event;
 import org.drasyl.event.NodeEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -108,7 +107,7 @@ class InternetDiscoveryTest {
         final InternetDiscovery handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, rendezvousPeers, superPeers, bestSuperPeer);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
-            final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
+            final TestObserver<Object> inboundEvents = pipeline.events().test();
 
             pipeline.pipeline().fireUserEventTriggered(event);
 

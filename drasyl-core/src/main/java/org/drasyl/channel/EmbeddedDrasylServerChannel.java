@@ -33,10 +33,10 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
@@ -47,22 +47,22 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_K
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
  */
 public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements ServerChannel {
-    private final Subject<Event> inboundEvents;
+    private final Subject<Object> events;
 
     public EmbeddedDrasylServerChannel(final DrasylConfig config,
                                        final Identity identity,
                                        final PeersManager peersManager,
                                        final Serialization inboundSerialization,
                                        final Serialization outboundSerialization,
-                                       final Subject<Event> inboundEvents,
+                                       final Subject<Object> events,
                                        final ChannelHandler... handlers) {
-        this.inboundEvents = inboundEvents;
+        this.events = requireNonNull(events);
 
-        attr(CONFIG_ATTR_KEY).set(config);
-        attr(IDENTITY_ATTR_KEY).set(identity);
-        attr(PEERS_MANAGER_ATTR_KEY).set(peersManager);
-        attr(INBOUND_SERIALIZATION_ATTR_KEY).set(inboundSerialization);
-        attr(OUTBOUND_SERIALIZATION_ATTR_KEY).set(outboundSerialization);
+        attr(CONFIG_ATTR_KEY).set(requireNonNull(config));
+        attr(IDENTITY_ATTR_KEY).set(requireNonNull(identity));
+        attr(PEERS_MANAGER_ATTR_KEY).set(requireNonNull(peersManager));
+        attr(INBOUND_SERIALIZATION_ATTR_KEY).set(requireNonNull(inboundSerialization));
+        attr(OUTBOUND_SERIALIZATION_ATTR_KEY).set(requireNonNull(outboundSerialization));
 
         pipeline().addLast(new ChannelInitializer<>() {
             @Override
@@ -77,14 +77,11 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
             }
         });
 
-        // my tail
-        pipeline().addLast("MY_TAIL", new ChannelInboundHandlerAdapter() {
+        pipeline().addLast("EVENTS_ACCEPTOR", new ChannelInboundHandlerAdapter() {
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,
                                            final Object evt) throws Exception {
-                if (evt instanceof Event) {
-                    inboundEvents.onNext((Event) evt);
-                }
+                events.onNext(evt);
 
                 super.userEventTriggered(ctx, evt);
             }
@@ -101,7 +98,7 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
                 peersManager,
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
                 new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()),
-                ReplaySubject.<Event>create().toSerialized(),
+                ReplaySubject.create().toSerialized(),
                 handlers
         );
     }
@@ -109,14 +106,14 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
     /**
      * @return all events that passes the pipeline until the end
      */
-    public Observable<Event> inboundEvents() {
-        return inboundEvents;
+    public Observable<Object> events() {
+        return events;
     }
 
     public void drasylClose() {
         releaseOutbound();
         releaseInbound();
-        inboundEvents.onComplete();
+        events.onComplete();
 
         close();
     }

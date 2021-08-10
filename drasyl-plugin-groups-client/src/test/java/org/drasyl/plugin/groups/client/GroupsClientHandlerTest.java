@@ -28,7 +28,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.Serialization;
-import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
@@ -152,7 +151,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
+                final TestObserver<Object> testObserver = pipeline.events().test();
 
                 pipeline.pipeline().fireUserEventTriggered(event);
 
@@ -172,7 +171,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final TestObserver<Object> eventObserver = pipeline.events().test();
 
                 when(uri.getGroup()).thenReturn(group);
                 when(uri.getCredentials()).thenReturn(credentials);
@@ -202,7 +201,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
@@ -221,7 +220,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
@@ -242,7 +241,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
 
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
@@ -263,7 +262,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
 
                 when(groups.get(any())).thenReturn(uri);
@@ -286,7 +285,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
+                final TestObserver<Object> eventObserver = pipeline.events().test();
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
                 final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
 

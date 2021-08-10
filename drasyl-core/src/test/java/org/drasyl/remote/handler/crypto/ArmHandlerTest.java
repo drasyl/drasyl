@@ -29,7 +29,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.event.Event;
 import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
@@ -394,7 +393,7 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Event> observer = pipeline.inboundEvents().test();
+                final TestObserver<Object> observer = pipeline.events().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
@@ -439,7 +438,7 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Event> observer = pipeline.inboundEvents().test();
+                final TestObserver<Object> observer = pipeline.events().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
@@ -477,7 +476,7 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
+                final TestObserver<Object> observerEvents = pipeline.events().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
@@ -516,7 +515,7 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
+                final TestObserver<Object> observerEvents = pipeline.events().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
@@ -563,7 +562,7 @@ class ArmHandlerTest {
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_2, peersManager, handler);
             try {
-                final TestObserver<Event> observerEvents = pipeline.inboundEvents().test();
+                final TestObserver<Object> observerEvents = pipeline.events().test();
 
                 when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
                 when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());

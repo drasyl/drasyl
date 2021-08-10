@@ -95,7 +95,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     });
 
             pipeline.pipeline().fireUserEventTriggered(NodeUpEvent.of(Node.of(identity2)));
-            final NodeUpEvent event = (NodeUpEvent) pipeline.inboundEvents().filter(e -> e instanceof NodeUpEvent).blockingFirst();
+            final NodeUpEvent event = (NodeUpEvent) pipeline.events().filter(e -> e instanceof NodeUpEvent).blockingFirst();
 
             port = event.getNode().getPort();
             localHost = InetAddress.getLocalHost();

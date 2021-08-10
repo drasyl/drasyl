@@ -30,7 +30,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.Serialization;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -170,7 +169,7 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
-                final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
+                final TestObserver<Object> testObserver = pipeline.events().test();
 
                 pipeline.pipeline().fireUserEventTriggered(event);
 
