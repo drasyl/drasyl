@@ -24,7 +24,6 @@ package org.drasyl.channel;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.ScheduledFuture;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -140,7 +139,6 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldConsumeMatchingOutboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final TestObserver<Object> observable;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(new Object(), address));
@@ -155,7 +153,6 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldConsumeMatchingInboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final TestObserver<Object> observable;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));

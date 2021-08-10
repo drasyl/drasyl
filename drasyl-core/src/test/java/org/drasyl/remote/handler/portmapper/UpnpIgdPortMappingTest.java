@@ -26,7 +26,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import io.reactivex.rxjava3.annotations.NonNull;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.Identity;
@@ -89,8 +88,8 @@ public class UpnpIgdPortMappingTest {
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                 @Mock final Runnable onFailure) throws InterruptedException {
                 final Set<URI> ssdpServices = new HashSet<>();
-                when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
-                when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
+                when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
+                when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
                     final Runnable runnable = invocation.getArgument(0, Runnable.class);
                     ssdpServices.add(URI.create("http://192.168.188.1:5000/rootDesc.xml"));
                     runnable.run();
@@ -101,7 +100,7 @@ public class UpnpIgdPortMappingTest {
 
                 new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
-                verify(ctx.executor()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
+                verify(ctx.executor()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
             }
 
             @Test
@@ -114,8 +113,8 @@ public class UpnpIgdPortMappingTest {
                                                                    @Mock final Runnable onFailure,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) throws InterruptedException {
                 final Set<URI> ssdpServices = new HashSet<>();
-                when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
-                when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
+                when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
+                when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
                     final Runnable runnable = invocation.getArgument(0, Runnable.class);
                     ssdpServices.add(URI.create("http://192.168.188.1:5000/rootDesc.xml"));
                     runnable.run();
@@ -128,7 +127,7 @@ public class UpnpIgdPortMappingTest {
 
                 new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
-                verify(ctx.executor()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
+                verify(ctx.executor()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
             }
 
             @Nested
@@ -142,8 +141,8 @@ public class UpnpIgdPortMappingTest {
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                 @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
-                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
-                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
+                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
+                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
                         final Runnable runnable = invocation.getArgument(0, Runnable.class);
                         ssdpServices.add(URI.create("http://192.168.188.1:5000/rootDesc.xml"));
                         runnable.run();
@@ -154,7 +153,7 @@ public class UpnpIgdPortMappingTest {
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
-                    verify(ctx.executor(), never()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
+                    verify(ctx.executor(), never()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
 
                 @Test
@@ -166,8 +165,8 @@ public class UpnpIgdPortMappingTest {
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                             @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
-                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
-                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
+                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
+                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
                         final Runnable runnable = invocation.getArgument(0, Runnable.class);
                         ssdpServices.add(URI.create("http://192.168.188.1:5000/rootDesc.xml"));
                         runnable.run();
@@ -178,7 +177,7 @@ public class UpnpIgdPortMappingTest {
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
-                    verify(ctx.executor(), never()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
+                    verify(ctx.executor(), never()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
 
                 @Test
@@ -190,8 +189,8 @@ public class UpnpIgdPortMappingTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                  @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
-                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
-                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
+                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
+                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
                         final Runnable runnable = invocation.getArgument(0, Runnable.class);
                         ssdpServices.add(URI.create("http://192.168.188.1:5000/rootDesc.xml"));
                         runnable.run();
@@ -203,7 +202,7 @@ public class UpnpIgdPortMappingTest {
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
-                    verify(ctx.executor(), never()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
+                    verify(ctx.executor(), never()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
 
                 @Test
@@ -215,8 +214,8 @@ public class UpnpIgdPortMappingTest {
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                       @Mock final Runnable onFailure) throws InterruptedException {
                     final Set<URI> ssdpServices = new HashSet<>();
-                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
-                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
+                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
+                    when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
                         final Runnable runnable = invocation.getArgument(0, Runnable.class);
                         ssdpServices.add(URI.create("http://192.168.188.1:5000/rootDesc.xml"));
                         runnable.run();
@@ -228,7 +227,7 @@ public class UpnpIgdPortMappingTest {
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
-                    verify(ctx.executor(), never()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
+                    verify(ctx.executor(), never()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
             }
         }

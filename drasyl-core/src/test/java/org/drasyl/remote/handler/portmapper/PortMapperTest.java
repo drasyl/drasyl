@@ -23,11 +23,9 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCounted;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.handler.UdpServer;
@@ -69,7 +67,6 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            final TestObserver<Event> inboundEvents;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.pipeline().fireUserEventTriggered(event);
@@ -86,7 +83,6 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            final TestObserver<Event> inboundEvents;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
@@ -110,7 +106,6 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            final TestObserver<Object> inboundMessages;
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));

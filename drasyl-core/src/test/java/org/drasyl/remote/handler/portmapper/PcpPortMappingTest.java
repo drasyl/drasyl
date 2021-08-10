@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import io.reactivex.rxjava3.annotations.NonNull;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.Identity;
@@ -104,7 +103,7 @@ public class PcpPortMappingTest {
                 new PcpPortMapping(new AtomicInteger(1), 25585, null, new byte[]{}, new InetSocketAddress(12345), timeoutGuard, null, null, defaultGatewaySupplier, interfaceSupplier).handleMessage(ctx, sender, byteBuf);
 
                 verify(timeoutGuard).cancel(false);
-                verify(ctx.executor()).schedule(ArgumentMatchers.<@NonNull Runnable>any(), eq((long) 300), eq(SECONDS));
+                verify(ctx.executor()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
             }
         }
 
