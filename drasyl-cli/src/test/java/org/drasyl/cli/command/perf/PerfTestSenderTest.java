@@ -21,7 +21,7 @@
  */
 package org.drasyl.cli.command.perf;
 
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.DeferredBehavior;
@@ -62,7 +62,7 @@ class PerfTestSenderTest {
     @Mock
     private SessionRequest session;
     @Mock
-    private Scheduler scheduler;
+    private EventLoopGroup eventLoopGroup;
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
     @Mock
@@ -89,7 +89,7 @@ class PerfTestSenderTest {
             when(session.getMps()).thenReturn(1);
             when(session.getSize()).thenReturn(1);
             when(session.getTime()).thenReturn(3);
-            when(scheduler.scheduleDirect(any())).then(invocation -> {
+            when(eventLoopGroup.submit(any(Runnable.class))).then(invocation -> {
                 final Runnable runnable = invocation.getArgument(0, Runnable.class);
                 runnable.run();
                 return null;
@@ -97,7 +97,7 @@ class PerfTestSenderTest {
             when(sendMethod.apply(any(), any())).thenReturn(completedFuture(null));
             when(currentTimeSupplier.getAsLong()).thenReturn(1_000_000_000L, 1_000_000_000L, 1_500_000_000L, 2_000_000_000L, 3_000_000_000L, 4_000_000_000L);
 
-            final PerfTestSender sender = spy(new PerfTestSender(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier));
+            final PerfTestSender sender = spy(new PerfTestSender(receiver, session, eventLoopGroup, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier));
             final Behavior behavior = ((DeferredBehavior) sender.run()).apply(node);
             behavior.receive(testCompleted);
 
@@ -129,7 +129,7 @@ class PerfTestSenderTest {
 
         @Test
         void shouldSendResultsWhenRetriesAreNotExhausted() {
-            final PerfTestSender sender = new PerfTestSender(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier);
+            final PerfTestSender sender = new PerfTestSender(receiver, session, eventLoopGroup, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier);
             ((DeferredBehavior) sender.completing(results, (short) 1)).apply(node);
 
             verify(sendMethod).apply(receiver, results);
@@ -142,7 +142,7 @@ class PerfTestSenderTest {
             when(message.getSender()).thenReturn(receiver);
             when(successBehavior.get()).thenReturn(newBehavior);
 
-            final PerfTestSender sender = new PerfTestSender(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier);
+            final PerfTestSender sender = new PerfTestSender(receiver, session, eventLoopGroup, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier);
             final Behavior behavior = ((DeferredBehavior) sender.completing(results, (short) 1)).apply(node);
             behavior.receive(message);
 
@@ -155,7 +155,7 @@ class PerfTestSenderTest {
         void shouldFailWhenRetriesAreExhausted(@Mock final Behavior newBehavior) {
             when(failureBehavior.apply(any())).thenReturn(newBehavior);
 
-            final PerfTestSender sender = new PerfTestSender(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier);
+            final PerfTestSender sender = new PerfTestSender(receiver, session, eventLoopGroup, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier);
             sender.completing(results, (short) 0);
 
             verify(failureBehavior).apply(any());

@@ -23,7 +23,7 @@ package org.drasyl.cli.command.perf;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNode;
 import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.cli.command.perf.PerfServerNode.OnlineTimeout;
@@ -65,7 +65,7 @@ class PerfServerNodeTest {
     @Mock
     private CompletableFuture<Void> doneFuture;
     @Mock
-    private Scheduler perfScheduler;
+    private EventLoopGroup eventLoopGroup;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -78,7 +78,7 @@ class PerfServerNodeTest {
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new PerfServerNode(doneFuture, printStream, perfScheduler, bootstrap, pluginManager, channelFuture);
+        underTest = new PerfServerNode(doneFuture, printStream, eventLoopGroup, bootstrap, pluginManager, channelFuture);
     }
 
     @Nested

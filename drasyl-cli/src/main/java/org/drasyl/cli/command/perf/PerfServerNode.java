@@ -22,8 +22,8 @@
 package org.drasyl.cli.command.perf;
 
 import io.netty.channel.ChannelFuture;
-import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
@@ -66,19 +66,19 @@ public class PerfServerNode extends BehavioralDrasylNode {
     public static final Duration TEST_DELAY = ofMillis(10);
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream printStream;
-    private final Scheduler perfScheduler;
+    private final EventLoopGroup eventLoopGroup;
 
     @SuppressWarnings("java:S107")
     PerfServerNode(final CompletableFuture<Void> doneFuture,
                    final PrintStream printStream,
-                   final Scheduler perfScheduler,
+                   final EventLoopGroup eventLoopGroup,
                    final DrasylBootstrap bootstrap,
                    final PluginManager pluginManager,
                    final ChannelFuture channelFuture) {
         super(bootstrap, pluginManager, channelFuture);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
-        this.perfScheduler = perfScheduler;
+        this.eventLoopGroup = eventLoopGroup;
     }
 
     public PerfServerNode(final DrasylConfig config,
@@ -89,7 +89,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
                 .build());
         this.doneFuture = new CompletableFuture<>();
         this.printStream = printStream;
-        perfScheduler = Schedulers.io();
+        eventLoopGroup = new NioEventLoopGroup(1);
     }
 
     @Override
@@ -174,12 +174,12 @@ public class PerfServerNode extends BehavioralDrasylNode {
                                final SessionRequest session) {
         if (!session.isReverse()) {
             LOG.debug("Start sender.");
-            final PerfTestReceiver receiver = new PerfTestReceiver(client, session, perfScheduler, printStream, this::send, this::waitForSession, e -> waitForSession());
+            final PerfTestReceiver receiver = new PerfTestReceiver(client, session, eventLoopGroup, printStream, this::send, this::waitForSession, e -> waitForSession());
             return receiver.run();
         }
         else {
             LOG.debug("Running in reverse mode. Start receiver.");
-            final PerfTestSender sender = new PerfTestSender(client, session, perfScheduler, printStream, this::send, this::waitForSession, e -> waitForSession());
+            final PerfTestSender sender = new PerfTestSender(client, session, eventLoopGroup, printStream, this::send, this::waitForSession, e -> waitForSession());
             return sender.run();
         }
     }

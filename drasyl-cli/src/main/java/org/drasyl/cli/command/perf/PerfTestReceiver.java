@@ -21,8 +21,8 @@
  */
 package org.drasyl.cli.command.perf;
 
-import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.Disposable;
+import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.Future;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.message.SessionRejection;
@@ -63,7 +63,7 @@ public class PerfTestReceiver {
     public static final Duration SESSION_TIMEOUT = ofSeconds(10);
     private static final Logger LOG = LoggerFactory.getLogger(PerfTestReceiver.class);
     private final SessionRequest session;
-    private final Scheduler scheduler;
+    private final EventLoopGroup eventLoopGroup;
     private final IdentityPublicKey sender;
     private final PrintStream printStream;
     private final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod;
@@ -75,7 +75,7 @@ public class PerfTestReceiver {
     @SuppressWarnings("java:S107")
     PerfTestReceiver(final IdentityPublicKey sender,
                      final SessionRequest session,
-                     final Scheduler scheduler,
+                     final EventLoopGroup eventLoopGroup,
                      final PrintStream printStream,
                      final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
                      final Supplier<Behavior> successBehavior,
@@ -83,7 +83,7 @@ public class PerfTestReceiver {
                      final LongSupplier currentTimeSupplier) {
         this.sender = requireNonNull(sender);
         this.session = requireNonNull(session);
-        this.scheduler = requireNonNull(scheduler);
+        this.eventLoopGroup = requireNonNull(eventLoopGroup);
         this.printStream = requireNonNull(printStream);
         this.sendMethod = requireNonNull(sendMethod);
         this.successBehavior = requireNonNull(successBehavior);
@@ -93,17 +93,17 @@ public class PerfTestReceiver {
 
     public PerfTestReceiver(final IdentityPublicKey sender,
                             final SessionRequest session,
-                            final Scheduler scheduler,
+                            final EventLoopGroup eventLoopGroup,
                             final PrintStream printStream,
                             final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
                             final Supplier<Behavior> successBehavior,
                             final Function<Exception, Behavior> failureBehavior) {
-        this(sender, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);
+        this(sender, session, eventLoopGroup, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);
     }
 
     public Behavior run() {
         return Behaviors.withScheduler(eventScheduler -> {
-            final Disposable sessionProgress = eventScheduler.schedulePeriodicallyEvent(new CheckTestStatus(), SESSION_PROGRESS_INTERVAL, SESSION_PROGRESS_INTERVAL);
+            final Future<?> sessionProgress = eventScheduler.schedulePeriodicallyEvent(new CheckTestStatus(), SESSION_PROGRESS_INTERVAL, SESSION_PROGRESS_INTERVAL);
 
             final int messageSize = session.getSize() + PROBE_HEADER.length + Long.BYTES;
             final long startTime = currentTimeSupplier.getAsLong();
@@ -143,7 +143,7 @@ public class PerfTestReceiver {
                         printStream.println(totalResults.print());
                         printStream.println();
 
-                        sessionProgress.dispose();
+                        sessionProgress.cancel(false);
 
                         return replyResults(mySender, totalResults);
                     })
@@ -163,7 +163,7 @@ public class PerfTestReceiver {
                         if (lastMessageReceivedTime.get() < currentTime - SESSION_TIMEOUT.toNanos()) {
                             final double timeSinceLastMessage = (currentTime - lastMessageReceivedTime.get()) / MICROSECONDS;
                             printStream.printf((Locale) null, "No message received for %.2fs. Abort session.%n", timeSinceLastMessage);
-                            sessionProgress.dispose();
+                            sessionProgress.cancel(false);
                             return failureBehavior.apply(new Exception(String.format((Locale) null, "No message received for %.2fs. Abort session.%n", timeSinceLastMessage)));
                         }
                         else {
@@ -172,7 +172,7 @@ public class PerfTestReceiver {
                     })
                     .onAnyEvent(event -> same())
                     .build();
-        }, scheduler);
+        }, eventLoopGroup);
     }
 
     void handleProbeMessage(final AtomicLong lastMessageReceivedTime,

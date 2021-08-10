@@ -22,8 +22,8 @@
 package org.drasyl.cli.command.perf;
 
 import io.netty.channel.ChannelFuture;
-import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
@@ -73,14 +73,14 @@ public class PerfClientNode extends BehavioralDrasylNode {
     private static final Duration REQUEST_SESSION_TIMEOUT = ofSeconds(10);
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream printStream;
-    private final Scheduler perfScheduler;
+    private final EventLoopGroup perfScheduler;
     private final Set<IdentityPublicKey> directConnections;
     private TestOptions testOptions;
 
     @SuppressWarnings({ "java:S107", "java:S2384" })
     PerfClientNode(final CompletableFuture<Void> doneFuture,
                    final PrintStream printStream,
-                   final Scheduler perfScheduler,
+                   final EventLoopGroup perfScheduler,
                    final Set<IdentityPublicKey> directConnections,
                    final DrasylBootstrap bootstrap,
                    final PluginManager pluginManager,
@@ -100,7 +100,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
                 .build());
         this.doneFuture = new CompletableFuture<>();
         this.printStream = requireNonNull(printStream);
-        perfScheduler = Schedulers.io();
+        perfScheduler = new NioEventLoopGroup(1);
         directConnections = new HashSet<>();
     }
 

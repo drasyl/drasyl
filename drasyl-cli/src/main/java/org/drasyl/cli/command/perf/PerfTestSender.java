@@ -21,7 +21,7 @@
  */
 package org.drasyl.cli.command.perf;
 
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.message.SessionRejection;
@@ -65,7 +65,7 @@ public class PerfTestSender {
     public static final short COMPLETE_TEST_TRIES = (short) 10;
     private final SessionRequest session;
     private final IdentityPublicKey receiver;
-    private final Scheduler scheduler;
+    private final EventLoopGroup eventLoopGroup;
     private final PrintStream printStream;
     private final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod;
     private final Supplier<Behavior> successBehavior;
@@ -76,7 +76,7 @@ public class PerfTestSender {
     @SuppressWarnings("java:S107")
     PerfTestSender(final IdentityPublicKey receiver,
                    final SessionRequest session,
-                   final Scheduler scheduler,
+                   final EventLoopGroup eventLoopGroup,
                    final PrintStream printStream,
                    final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
                    final Supplier<Behavior> successBehavior,
@@ -84,7 +84,7 @@ public class PerfTestSender {
                    final LongSupplier currentTimeSupplier) {
         this.receiver = requireNonNull(receiver);
         this.session = requireNonNull(session);
-        this.scheduler = requireNonNull(scheduler);
+        this.eventLoopGroup = requireNonNull(eventLoopGroup);
         this.printStream = requireNonNull(printStream);
         this.sendMethod = requireNonNull(sendMethod);
         this.successBehavior = requireNonNull(successBehavior);
@@ -95,19 +95,19 @@ public class PerfTestSender {
     @SuppressWarnings("java:S107")
     public PerfTestSender(final IdentityPublicKey receiver,
                           final SessionRequest session,
-                          final Scheduler scheduler,
+                          final EventLoopGroup eventLoopGroup,
                           final PrintStream printStream,
                           final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
                           final Supplier<Behavior> successBehavior,
                           final Function<Exception, Behavior> failureBehavior) {
-        this(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);
+        this(receiver, session, eventLoopGroup, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);
     }
 
     public Behavior run() {
         return Behaviors.withScheduler(eventScheduler -> {
             printStream.println("Test parameters: " + session);
             printStream.println("Interval                 Transfer     Bitrate          Lost/Total Messages");
-            scheduler.scheduleDirect(() -> {
+            eventLoopGroup.submit(() -> {
                 final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
                 final int messageSize = session.getSize() + PROBE_HEADER.length + Long.BYTES;
                 final long startTime = currentTimeSupplier.getAsLong();
@@ -209,7 +209,7 @@ public class PerfTestSender {
                         .onEvent(TestCompletionTimeout.class, event -> completing(results, (short) (remainingRetries - 1)))
                         .onAnyEvent(myEvent -> same())
                         .build();
-            }, scheduler);
+            }, eventLoopGroup);
         }
         else {
             LOG.debug("Got no complete confirmation from " + receiver + ". Giving up.");

@@ -21,9 +21,9 @@
  */
 package org.drasyl.behaviour;
 
-import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.Future;
 import org.drasyl.behaviour.Behavior.BehaviorBuilder;
 import org.drasyl.event.Event;
 
@@ -94,7 +94,7 @@ public final class Behaviors {
      * @param scheduler the {@code Scheduler} to perform scheduled events on
      */
     public static Behavior withScheduler(final Function<EventScheduler, Behavior> factory,
-                                         final Scheduler scheduler) {
+                                         final EventLoopGroup scheduler) {
         return new DeferredBehavior(node -> factory.apply(new EventScheduler(node::onEvent, scheduler)));
     }
 
@@ -104,14 +104,14 @@ public final class Behaviors {
      * @param factory function that returns the behavior that should react to scheduled self events
      */
     public static Behavior withScheduler(final Function<EventScheduler, Behavior> factory) {
-        return withScheduler(factory, Schedulers.io());
+        return withScheduler(factory, new NioEventLoopGroup(1));
     }
 
     public static class EventScheduler {
         private final Consumer<Event> consumer;
-        private final Scheduler scheduler;
+        private final EventLoopGroup scheduler;
 
-        EventScheduler(final Consumer<Event> consumer, final Scheduler scheduler) {
+        EventScheduler(final Consumer<Event> consumer, final EventLoopGroup scheduler) {
             this.consumer = requireNonNull(consumer);
             this.scheduler = requireNonNull(scheduler);
         }
@@ -121,22 +121,22 @@ public final class Behaviors {
          *
          * @param event event to schedule
          * @param delay delay before emitting the event
-         * @return {@link Disposable} allowing to cancel the scheduled event
+         * @return {@link Future<?>} allowing to cancel the scheduled event
          */
         @SuppressWarnings({ "UnusedReturnValue", "unused" })
-        public Disposable scheduleEvent(final Event event, final Duration delay) {
-            return scheduler.scheduleDirect(() -> consumer.accept(event), delay.toMillis(), MILLISECONDS);
+        public Future<?> scheduleEvent(final Event event, final Duration delay) {
+            return scheduler.schedule(() -> consumer.accept(event), delay.toMillis(), MILLISECONDS);
         }
 
         /**
          * Schedules a self event.
          *
          * @param event event to schedule
-         * @return {@link Disposable} allowing to cancel the scheduled event
+         * @return {@link Future<?>} allowing to cancel the scheduled event
          */
         @SuppressWarnings({ "UnusedReturnValue", "unused" })
-        public Disposable scheduleEvent(final Event event) {
-            return scheduler.scheduleDirect(() -> consumer.accept(event));
+        public Future<?> scheduleEvent(final Event event) {
+            return scheduler.submit(() -> consumer.accept(event));
         }
 
         /**
@@ -146,13 +146,13 @@ public final class Behaviors {
          * @param initialDelay the initial delay amount, non-positive values indicate non-delayed
          *                     scheduling
          * @param period       the period at which the event should be re-emitted
-         * @return {@link Disposable} allowing to cancel the scheduled event
+         * @return {@link Future<?>} allowing to cancel the scheduled event
          */
         @SuppressWarnings({ "UnusedReturnValue", "unused" })
-        public Disposable schedulePeriodicallyEvent(final Event event,
-                                                    final Duration initialDelay,
-                                                    final Duration period) {
-            return scheduler.schedulePeriodicallyDirect(() -> consumer.accept(event), initialDelay.toMillis(), period.toMillis(), MILLISECONDS);
+        public Future<?> schedulePeriodicallyEvent(final Event event,
+                                                   final Duration initialDelay,
+                                                   final Duration period) {
+            return scheduler.scheduleAtFixedRate(() -> consumer.accept(event), initialDelay.toMillis(), period.toMillis(), MILLISECONDS);
         }
     }
 }

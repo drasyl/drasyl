@@ -23,7 +23,7 @@ package org.drasyl.cli.command.perf;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.channel.DrasylBootstrap;
@@ -77,7 +77,7 @@ class PerfClientNodeTest {
     @Mock
     private CompletableFuture<Void> doneFuture;
     @Mock
-    private Scheduler perfScheduler;
+    private EventLoopGroup eventLoopGroup;
     private Set<IdentityPublicKey> directConnections;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylBootstrap bootstrap;
@@ -92,7 +92,7 @@ class PerfClientNodeTest {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
         directConnections = new HashSet<>();
-        underTest = new PerfClientNode(doneFuture, printStream, perfScheduler, directConnections, bootstrap, pluginManager, channelFuture);
+        underTest = new PerfClientNode(doneFuture, printStream, eventLoopGroup, directConnections, bootstrap, pluginManager, channelFuture);
     }
 
     @Nested
@@ -269,7 +269,6 @@ class PerfClientNodeTest {
             class WhenSessionRequestTimeout {
                 @Test
                 void shouldCompleteExceptionally(@Mock final TestOptions serverAndOptions,
-                                                 @Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                                  @Mock final RequestSessionTimeout requestSessionTimeout,
                                                  @Mock final IdentityPublicKey sender) {
                     when(serverAndOptions.getMessagesPerSecond()).thenReturn(100);

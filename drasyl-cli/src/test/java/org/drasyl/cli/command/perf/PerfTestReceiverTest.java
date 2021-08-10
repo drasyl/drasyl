@@ -22,7 +22,7 @@
 package org.drasyl.cli.command.perf;
 
 import com.google.common.primitives.Longs;
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.DeferredBehavior;
@@ -66,7 +66,7 @@ class PerfTestReceiverTest {
     @Mock
     private SessionRequest session;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Scheduler scheduler;
+    private EventLoopGroup eventLoopGroup;
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
     @Mock
@@ -92,7 +92,7 @@ class PerfTestReceiverTest {
 
         @BeforeEach
         void setUp() {
-            receiver = spy(new PerfTestReceiver(sender, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier));
+            receiver = spy(new PerfTestReceiver(sender, session, eventLoopGroup, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier));
         }
 
         @Test
