@@ -65,11 +65,9 @@ public class DrasylBootstrap {
         channelFactory = () -> new DefaultDrasylServerChannel(
                 config,
                 identity,
-                new PeersManager(),
-                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
-                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())
+                new PeersManager()
         );
-        handler = new DrasylServerChannelInitializer();
+        handler = new DrasylServerChannelInitializer(config, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()));
     }
 
     /**

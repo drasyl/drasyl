@@ -46,8 +46,6 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel {
     public static final AttributeKey<DrasylConfig> CONFIG_ATTR_KEY = AttributeKey.valueOf(DrasylConfig.class, "CONFIG");
     public static final AttributeKey<Identity> IDENTITY_ATTR_KEY = AttributeKey.valueOf(Identity.class, "IDENTITY");
     public static final AttributeKey<PeersManager> PEERS_MANAGER_ATTR_KEY = AttributeKey.valueOf(PeersManager.class, "PEERS_MANAGER");
-    public static final AttributeKey<Serialization> INBOUND_SERIALIZATION_ATTR_KEY = AttributeKey.valueOf(Serialization.class, "INBOUND_SERIALIZATION");
-    public static final AttributeKey<Serialization> OUTBOUND_SERIALIZATION_ATTR_KEY = AttributeKey.valueOf(Serialization.class, "OUTBOUND_SERIALIZATION");
     private volatile int state; // 0 - open (node created), 1 - active (node started), 2 - closed (node shut down)
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private volatile Identity localAddress; // NOSONAR
@@ -55,14 +53,10 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel {
 
     public DefaultDrasylServerChannel(final DrasylConfig drasylConfig,
                                       final Identity identity,
-                                      final PeersManager peersManager,
-                                      final Serialization inboundSerialization,
-                                      final Serialization outboundSerialization) {
+                                      final PeersManager peersManager) {
         attr(CONFIG_ATTR_KEY).set(drasylConfig);
         attr(IDENTITY_ATTR_KEY).set(identity);
         attr(PEERS_MANAGER_ATTR_KEY).set(peersManager);
-        attr(INBOUND_SERIALIZATION_ATTR_KEY).set(inboundSerialization);
-        attr(OUTBOUND_SERIALIZATION_ATTR_KEY).set(outboundSerialization);
     }
 
     @Override

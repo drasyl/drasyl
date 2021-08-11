@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.Serialization;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
@@ -51,8 +52,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
@@ -61,15 +60,23 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
     private Future<?> staleTask;
+    private final Serialization inboundSerialization;
+    private final Serialization outboundSerialization;
 
     GroupsManagerHandler(final DatabaseAdapter database,
-                         final Future<?> staleTask) {
+                         final Future<?> staleTask,
+                         final Serialization inboundSerialization,
+                         final Serialization outboundSerialization) {
         this.database = database;
         this.staleTask = staleTask;
+        this.inboundSerialization = inboundSerialization;
+        this.outboundSerialization = outboundSerialization;
     }
 
-    public GroupsManagerHandler(final DatabaseAdapter database) {
-        this(database, null);
+    public GroupsManagerHandler(final DatabaseAdapter database,
+                                final Serialization inboundSerialization,
+                                final Serialization outboundSerialization) {
+        this(database, null, inboundSerialization, outboundSerialization);
     }
 
     /**
@@ -200,11 +207,10 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
             database.removeGroupMember(sender, msg.getGroup().getName());
             final CompletableFuture<Void> future3 = new CompletableFuture<>();
             FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(leftMessage, sender)))).combine(future3);
-            final CompletableFuture<Void> future1 = future3;
             final CompletableFuture<Void> future2 = new CompletableFuture<>();
             notifyMembers(ctx, msg.getGroup().getName(), leftMessage, future2);
 
-            FutureCombiner.getInstance().addAll(future1, future2).combine(future);
+            FutureCombiner.getInstance().addAll(future3, future2).combine(future);
             LOG.debug("Removed member `{}` from group `{}`", () -> sender, () -> msg.getGroup().getName());
         }
         catch (final DatabaseException e) {
@@ -262,8 +268,8 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
-        ctx.channel().attr(INBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
-        ctx.channel().attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
+        inboundSerialization.addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
+        outboundSerialization.addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
 
         // Register stale task timer
         staleTask = ctx.executor().scheduleAtFixedRate(() -> staleTask(ctx), 1L, 1L, MINUTES);

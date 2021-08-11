@@ -50,7 +50,7 @@ import org.drasyl.remote.handler.tcp.TcpServer;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.UnarmedMessage;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.Null.NULL;
 
 /**
@@ -80,12 +80,21 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
     public static final String TCP_CLIENT = "TCP_CLIENT";
     public static final String PORT_MAPPER = "PORT_MAPPER";
     public static final String UDP_SERVER = "UDP_SERVER";
+    private final DrasylConfig config;
+    private final Serialization inboundSerialization;
+    private final Serialization outboundSerialization;
+
+    public DrasylServerChannelInitializer(final DrasylConfig config,
+                                          final Serialization inboundSerialization,
+                                          final Serialization outboundSerialization) {
+        this.config = requireNonNull(config);
+        this.inboundSerialization = requireNonNull(inboundSerialization);
+        this.outboundSerialization = requireNonNull(outboundSerialization);
+    }
 
     @SuppressWarnings({ "java:S138", "java:S1541", "java:S3776" })
     @Override
     protected void initChannel(final Channel ch) {
-        final DrasylConfig config = ch.attr(CONFIG_ATTR_KEY).get();
-
         ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 
         // convert outbound messages addresses to us to inbound messages
@@ -98,7 +107,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
         if (config.isRemoteEnabled()) {
             // convert Object <-> ApplicationMessage
-            ch.pipeline().addFirst(MESSAGE_SERIALIZER, MessageSerializer.INSTANCE);
+            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(inboundSerialization, outboundSerialization));
 
             // route outbound messages to pre-configured ip addresses
             if (!config.getRemoteStaticRoutes().isEmpty()) {

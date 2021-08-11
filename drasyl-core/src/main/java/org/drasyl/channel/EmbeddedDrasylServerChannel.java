@@ -40,8 +40,6 @@ import java.util.Queue;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
@@ -53,14 +51,10 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
     public EmbeddedDrasylServerChannel(final DrasylConfig config,
                                        final Identity identity,
                                        final PeersManager peersManager,
-                                       final Serialization inboundSerialization,
-                                       final Serialization outboundSerialization,
                                        final ChannelHandler... handlers) {
         attr(CONFIG_ATTR_KEY).set(requireNonNull(config));
         attr(IDENTITY_ATTR_KEY).set(requireNonNull(identity));
         attr(PEERS_MANAGER_ATTR_KEY).set(requireNonNull(peersManager));
-        attr(INBOUND_SERIALIZATION_ATTR_KEY).set(requireNonNull(inboundSerialization));
-        attr(OUTBOUND_SERIALIZATION_ATTR_KEY).set(requireNonNull(outboundSerialization));
 
         pipeline().addLast(new ChannelInitializer<>() {
             @Override
@@ -82,20 +76,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
                 userEvents().add(evt);
             }
         });
-    }
-
-    public EmbeddedDrasylServerChannel(final DrasylConfig config,
-                                       final Identity identity,
-                                       final PeersManager peersManager,
-                                       final ChannelHandler... handlers) {
-        this(
-                config,
-                identity,
-                peersManager,
-                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
-                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()),
-                handlers
-        );
     }
 
     /**

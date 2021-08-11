@@ -23,14 +23,13 @@ package org.drasyl.plugin;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ServerChannel;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.Serialization;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The {@code PluginManager} notifies all enabled plugins about specific node events (like startup
@@ -38,6 +37,20 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
  */
 public class PluginManager {
     private static final Logger LOG = LoggerFactory.getLogger(PluginManager.class);
+    private final DrasylConfig config;
+    private final Identity identity;
+    private final Serialization inboundSerialization;
+    private final Serialization outboundSerialization;
+
+    public PluginManager(final DrasylConfig config,
+                         final Identity identity,
+                         final Serialization inboundSerialization,
+                         final Serialization outboundSerialization) {
+        this.config = requireNonNull(config);
+        this.identity = requireNonNull(identity);
+        this.inboundSerialization = requireNonNull(inboundSerialization);
+        this.outboundSerialization = requireNonNull(outboundSerialization);
+    }
 
     /**
      * This method is called first when the {@link org.drasyl.DrasylNode} is started.
@@ -45,13 +58,11 @@ public class PluginManager {
      * @param ctx
      */
     public void beforeStart(final ChannelHandlerContext ctx) {
-        final ServerChannel channel = (ServerChannel) ctx.channel();
-        final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
-        final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
-        final ChannelPipeline pipeline = channel.pipeline();
+        final ChannelPipeline pipeline = ctx.channel().pipeline();
+
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeStart listeners for all plugins...");
-            final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline, inboundSerialization, outboundSerialization);
             config.getPlugins().forEach(plugin -> plugin.onBeforeStart(environment));
             LOG.debug("All onBeforeStart listeners executed");
         }
@@ -63,13 +74,11 @@ public class PluginManager {
      * @param ctx
      */
     public void afterStart(final ChannelHandlerContext ctx) {
-        final ServerChannel channel = (ServerChannel) ctx.channel();
-        final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
-        final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
-        final ChannelPipeline pipeline = channel.pipeline();
+        final ChannelPipeline pipeline = ctx.channel().pipeline();
+
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterStart listeners for all plugins...");
-            final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline, inboundSerialization, outboundSerialization);
             config.getPlugins().forEach(plugin -> plugin.onAfterStart(environment));
             LOG.debug("All onAfterStart listeners executed");
         }
@@ -81,13 +90,11 @@ public class PluginManager {
      * @param ctx
      */
     public void beforeShutdown(final ChannelHandlerContext ctx) {
-        final ServerChannel channel = (ServerChannel) ctx.channel();
-        final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
-        final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
-        final ChannelPipeline pipeline = channel.pipeline();
+        final ChannelPipeline pipeline = ctx.channel().pipeline();
+
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeShutdown listeners for all plugins...");
-            final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline, inboundSerialization, outboundSerialization);
             config.getPlugins().forEach(plugin -> plugin.onBeforeShutdown(environment));
             LOG.debug("All onBeforeShutdown listeners executed");
         }
@@ -99,13 +106,11 @@ public class PluginManager {
      * @param ctx
      */
     public void afterShutdown(final ChannelHandlerContext ctx) {
-        final ServerChannel channel = (ServerChannel) ctx.channel();
-        final DrasylConfig config = channel.attr(CONFIG_ATTR_KEY).get();
-        final Identity identity = channel.attr(IDENTITY_ATTR_KEY).get();
-        final ChannelPipeline pipeline = channel.pipeline();
+        final ChannelPipeline pipeline = ctx.channel().pipeline();
+
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterShutdown listeners for all plugins...");
-            final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline, inboundSerialization, outboundSerialization);
             config.getPlugins().forEach(plugin -> plugin.onAfterShutdown(environment));
             LOG.debug("All onAfterShutdown listeners executed");
         }

@@ -39,6 +39,7 @@ import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.channel.DrasylChannelEventLoopGroupUtil;
 import org.drasyl.channel.DrasylServerChannelInitializer;
 import org.drasyl.channel.MessageSerializer;
+import org.drasyl.channel.Serialization;
 import org.drasyl.event.Event;
 import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.MessageEvent;
@@ -48,6 +49,7 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.PluginManager;
 import org.drasyl.remote.handler.UdpServer;
@@ -106,6 +108,10 @@ public abstract class DrasylNode {
     private static String version;
     protected final DrasylBootstrap bootstrap;
     private final PluginManager pluginManager;
+    private final DrasylConfig config;
+    private final Serialization inboundSerialization;
+    private final Serialization outboundSerialization;
+    private final Identity identity;
     private ChannelFuture channelFuture;
 
     static {
@@ -163,11 +169,22 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
+            this.config = config;
+            this.inboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound());
+            this.outboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound());
+            final IdentityManager identityManager = new IdentityManager(config);
+            identityManager.loadOrCreateIdentity();
+            identity = identityManager.getIdentity();
             bootstrap = new DrasylBootstrap(config)
                     .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
                     .handler(new DrasylNodeServerChannelInitializer())
                     .childHandler(new DrasylNodeChannelInitializer(this::onEvent));
-            pluginManager = new PluginManager();
+            pluginManager = new PluginManager(
+                    config,
+                    identity,
+                    inboundSerialization,
+                    outboundSerialization
+            );
 
             LOG.debug("drasyl node with config `{}` and identity `{}` created", config, bootstrap.identity());
         }
@@ -180,6 +197,10 @@ public abstract class DrasylNode {
                          final PluginManager pluginManager,
                          final ChannelFuture channelFuture) {
         this.bootstrap = requireNonNull(bootstrap);
+        this.config = null;
+        this.inboundSerialization = null; // FIXME
+        this.outboundSerialization = null; // FIXME
+        this.identity = null; // FIXME
         this.pluginManager = pluginManager;
         this.channelFuture = channelFuture;
         LOG.debug("drasyl node with config `{}` and identity `{}` created", bootstrap.config(), bootstrap.identity());
@@ -454,6 +475,7 @@ public abstract class DrasylNode {
         private boolean errorOccurred;
 
         public DrasylNodeServerChannelInitializer(final boolean errorOccurred) {
+            super(config, inboundSerialization, outboundSerialization);
             this.errorOccurred = errorOccurred;
         }
 

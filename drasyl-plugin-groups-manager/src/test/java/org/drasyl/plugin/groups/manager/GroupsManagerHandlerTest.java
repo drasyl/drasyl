@@ -63,8 +63,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
@@ -105,6 +103,10 @@ class GroupsManagerHandlerTest {
     private ProofOfWork proofOfWork;
     private Set<Membership> memberships;
     private Group group;
+    @Mock
+    private Serialization inboundSerialization;
+    @Mock
+    private Serialization outboundSerialization;
 
     @BeforeEach
     void setUp() {
@@ -119,11 +121,9 @@ class GroupsManagerHandlerTest {
         @Test
         void shouldAddClassesToValidatorAndAddStaleTask(@Mock final Serialization inboundSerialization,
                                                         @Mock final Serialization outboundSerialization) {
-            when(ctx.channel().attr(INBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(inboundSerialization);
-            when(ctx.channel().attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get()).thenReturn(outboundSerialization);
             when(ctx.executor()).thenReturn(scheduler);
 
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
 
             handler.handlerAdded(ctx);
 
@@ -137,7 +137,7 @@ class GroupsManagerHandlerTest {
     class StaleTask {
         @Test
         void shouldNotifyAboutStaleMembers() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
             when(databaseAdapter.deleteStaleMemberships()).thenReturn(memberships);
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
 
@@ -153,7 +153,7 @@ class GroupsManagerHandlerTest {
     class HandlerRemoved {
         @Test
         void shouldDisposeStaleTask() {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, staleTask);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, staleTask, inboundSerialization, outboundSerialization);
 
             handler.handlerRemoved(ctx);
 
@@ -165,7 +165,7 @@ class GroupsManagerHandlerTest {
     class OnEvent {
         @Test
         void shouldSkipOnEvent(@Mock final GroupJoinedEvent event) {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 pipeline.pipeline().fireUserEventTriggered(event);
@@ -178,11 +178,12 @@ class GroupsManagerHandlerTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Nested
     class Join {
         @Test
         void shouldHandleJoinRequest() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -205,7 +206,7 @@ class GroupsManagerHandlerTest {
 
         @Test
         void shouldSendErrorOnNotExistingGroup() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -224,7 +225,7 @@ class GroupsManagerHandlerTest {
 
         @Test
         void shouldSendErrorOnNotWeakProofOfWork() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -244,7 +245,7 @@ class GroupsManagerHandlerTest {
 
         @Test
         void shouldSendErrorOnUnknownException() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -266,7 +267,7 @@ class GroupsManagerHandlerTest {
         @Test
         @Timeout(value = 15_000, unit = MILLISECONDS)
         void shouldCompleteFutureExceptionallyOnDatabaseException() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -290,7 +291,7 @@ class GroupsManagerHandlerTest {
         void shouldHandleLeaveRequest() throws DatabaseException {
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
 
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
@@ -308,7 +309,7 @@ class GroupsManagerHandlerTest {
 
         @Test
         void shouldCompleteExceptionallyOnError() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
             try {
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));

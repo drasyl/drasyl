@@ -21,57 +21,33 @@
  */
 package org.drasyl.plugin;
 
+import com.google.auto.value.AutoValue;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
+import org.drasyl.channel.Serialization;
 import org.drasyl.identity.Identity;
-
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Models environment information of a {@link DrasylPlugin} that are required by the plugin.
  */
-public class PluginEnvironment {
-    private final DrasylConfig config;
-    private final Identity identity;
-    private final ChannelPipeline pipeline;
+@SuppressWarnings("java:S118")
+@AutoValue
+public abstract class PluginEnvironment {
+    public abstract DrasylConfig getConfig();
 
-    public PluginEnvironment(final DrasylConfig config,
-                             final Identity identity,
-                             final ChannelPipeline pipeline) {
-        this.config = requireNonNull(config);
-        this.identity = requireNonNull(identity);
-        this.pipeline = requireNonNull(pipeline);
-    }
+    public abstract Identity getIdentity();
 
-    public DrasylConfig getConfig() {
-        return config;
-    }
+    public abstract ChannelPipeline getPipeline();
 
-    public Identity getIdentity() {
-        return identity;
-    }
+    public abstract Serialization getInboundSerialization();
 
-    public ChannelPipeline getPipeline() {
-        return pipeline;
-    }
+    public abstract Serialization getOutboundSerialization();
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final PluginEnvironment that = (PluginEnvironment) o;
-        return Objects.equals(config, that.config) &&
-                Objects.equals(pipeline, that.pipeline);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(config, pipeline);
+    public static PluginEnvironment of(final DrasylConfig config,
+                                       final Identity identity,
+                                       final ChannelPipeline pipeline,
+                                       final Serialization inboundSerialization,
+                                       final Serialization outboundSerialization) {
+        return new AutoValue_PluginEnvironment(config, identity, pipeline, inboundSerialization, outboundSerialization);
     }
 }

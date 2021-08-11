@@ -22,13 +22,11 @@
 package org.drasyl.channel;
 
 import com.google.protobuf.ByteString;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
@@ -37,22 +35,23 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.INBOUND_SERIALIZATION_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.OUTBOUND_SERIALIZATION_ATTR_KEY;
 
 /**
  * This handler serializes messages to {@link ApplicationMessage} an vice vera.
  */
-@Sharable
 @SuppressWarnings({ "java:S110" })
 public final class MessageSerializer extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
-    public static final MessageSerializer INSTANCE = new MessageSerializer();
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
+    private final Serialization inboundSerialization;
+    private final Serialization outboundSerialization;
 
-    private MessageSerializer() {
-        // singleton
+    public MessageSerializer(final Serialization inboundSerialization,
+                             final Serialization outboundSerialization) {
+        this.inboundSerialization = requireNonNull(inboundSerialization);
+        this.outboundSerialization = requireNonNull(outboundSerialization);
     }
 
     @Override
@@ -70,7 +69,7 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
                 type = null;
             }
 
-            final Serializer serializer = ctx.channel().attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(type);
+            final Serializer serializer = outboundSerialization.findSerializerFor(type);
 
             if (serializer != null) {
                 try {
@@ -98,7 +97,7 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
                           final List<Object> out) {
         if (msg.message() instanceof ApplicationMessage && msg.address() instanceof IdentityPublicKey) {
             final ApplicationMessage applicationMsg = (ApplicationMessage) msg.message();
-            final Serializer serializer = ctx.channel().attr(INBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(applicationMsg.getType());
+            final Serializer serializer = inboundSerialization.findSerializerFor(applicationMsg.getType());
 
             if (serializer != null) {
                 try {
@@ -116,15 +115,6 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
         }
         else {
             out.add(msg);
-        }
-    }
-
-    /**
-     * Signals that the {@link UdpServer} was unable to bind to port.
-     */
-    public static class BindFailedException extends Exception {
-        public BindFailedException(final String message, final Throwable cause) {
-            super(message, cause);
         }
     }
 }
