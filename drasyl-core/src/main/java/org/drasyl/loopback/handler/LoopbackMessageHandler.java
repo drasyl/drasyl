@@ -24,8 +24,8 @@ package org.drasyl.loopback.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.identity.Identity;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,10 +34,10 @@ import static java.util.Objects.requireNonNull;
  * addressed to the local node.
  */
 public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
-    private final Identity identity;
+    private final DrasylAddress myAddress;
 
-    public LoopbackMessageHandler(final Identity identity) {
-        this.identity = requireNonNull(identity);
+    public LoopbackMessageHandler(final DrasylAddress myAddress) {
+        this.myAddress = requireNonNull(myAddress);
     }
 
     @Override
@@ -45,8 +45,8 @@ public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage) {
-            if (identity.getIdentityPublicKey().equals(((AddressedMessage<?, ?>) msg).address())) {
-                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), identity.getIdentityPublicKey()));
+            if (myAddress.equals(((AddressedMessage<?, ?>) msg).address())) {
+                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), myAddress));
             }
             else {
                 ctx.write(msg, promise);

@@ -36,6 +36,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -62,20 +63,22 @@ import static org.drasyl.util.network.NetworkUtil.getAddresses;
 public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private static final short MIN_DERIVED_PORT = 22528;
-    private final Identity identity;
+    private final IdentityPublicKey myAddress;
     private final Bootstrap bootstrap;
     private Channel channel;
 
-    UdpServer(final Identity identity, final Bootstrap bootstrap,
+    UdpServer(final IdentityPublicKey myAddress,
+              final Bootstrap bootstrap,
               final Channel channel) {
-        this.identity = identity;
+        this.myAddress = requireNonNull(myAddress);
         this.bootstrap = requireNonNull(bootstrap);
         this.channel = channel;
     }
 
-    public UdpServer(final Identity identity) {
+    public UdpServer(final IdentityPublicKey myAddress) {
         this(
-                identity, new Bootstrap()
+                myAddress,
+                new Bootstrap()
                         .group(EventLoopGroupUtil.getInstanceBest())
                         .channel(getBestDatagramChannel())
                         .option(ChannelOption.SO_BROADCAST, false),
@@ -138,7 +141,7 @@ public class UdpServer extends ChannelDuplexHandler {
                  a completely random port would have the disadvantage that every time the node is
                  started it would use a new port and this would make discovery more difficult
                 */
-            final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(identity.getIdentityPublicKey().toByteArray()).asBytes()).getValue();
+            final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(myAddress.toByteArray()).asBytes()).getValue();
             bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
         }
         else {

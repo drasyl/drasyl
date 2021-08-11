@@ -38,7 +38,6 @@ import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.intravm.IntraVmDiscovery.IDENTITY_ATTR_KEY;
 
 /**
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
@@ -50,7 +49,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
                                        final Identity identity,
                                        final ChannelHandler... handlers) {
         attr(CONFIG_ATTR_KEY).set(requireNonNull(config));
-        attr(IDENTITY_ATTR_KEY).set(requireNonNull(identity));
 
         pipeline().addLast(new ChannelInitializer<>() {
             @Override

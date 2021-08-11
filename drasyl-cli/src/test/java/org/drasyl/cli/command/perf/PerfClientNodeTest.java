@@ -24,6 +24,7 @@ package org.drasyl.cli.command.perf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
+import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.channel.DrasylBootstrap;
@@ -78,7 +79,7 @@ class PerfClientNodeTest {
     private CompletableFuture<Void> doneFuture;
     @Mock
     private EventLoopGroup eventLoopGroup;
-    private Set<IdentityPublicKey> directConnections;
+    private Set<DrasylAddress> directConnections;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)

@@ -81,7 +81,7 @@ class UdpServerTest {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "")));
 
-            final UdpServer handler = new UdpServer(identity, bootstrap, null);
+            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
@@ -128,7 +128,7 @@ class UdpServerTest {
         void shouldStopServerOnChannelInactive() {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(identity, bootstrap, channel);
+            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, channel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
@@ -148,7 +148,7 @@ class UdpServerTest {
             final SocketAddress recipient = new InetSocketAddress(1234);
             when(channel.isWritable()).thenReturn(true);
 
-            final UdpServer handler = new UdpServer(identity, bootstrap, channel);
+            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, channel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
@@ -176,7 +176,7 @@ class UdpServerTest {
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of());
             when(message.retain()).thenReturn(message);
 
-            final UdpServer handler = new UdpServer(identity, bootstrap, null);
+            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, null);
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {

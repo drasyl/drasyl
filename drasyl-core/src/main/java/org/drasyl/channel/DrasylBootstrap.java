@@ -31,7 +31,6 @@ import io.netty.channel.ServerChannel;
 import io.netty.util.internal.ObjectUtil;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
 
 import java.io.IOException;
 
@@ -56,12 +55,11 @@ public class DrasylBootstrap {
      * @throws IOException if identity could not be loaded or created
      */
     public DrasylBootstrap(final DrasylConfig config,
-                           final Identity identity,
-                           final PeersManager peersManager) throws IOException {
+                           final Identity identity) throws IOException {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
         channelFactory = () -> new DefaultDrasylServerChannel(config, identity);
-        handler = new DrasylServerChannelInitializer(config, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()), peersManager, identity);
+        handler = new DrasylServerChannelInitializer(config, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()), identity);
     }
 
     /**

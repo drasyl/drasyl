@@ -27,12 +27,16 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylNode.PeersManagerHandler.AddPathAndChildren;
+import org.drasyl.DrasylNode.PeersManagerHandler.AddPathAndSuperPeer;
+import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
+import org.drasyl.DrasylNode.PeersManagerHandler.RemoveChildrenAndPath;
+import org.drasyl.DrasylNode.PeersManagerHandler.RemoveSuperPeerAndPath;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
@@ -80,7 +84,6 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private static final Object path = InternetDiscovery.class;
     private final Map<Nonce, Ping> openPingsCache;
     private final Identity identity;
-    private final PeersManager peersManager;
     private final Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache;
     private final Map<IdentityPublicKey, Peer> peers;
     private final Set<IdentityPublicKey> directConnectionPeers;
@@ -89,15 +92,13 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private IdentityPublicKey bestSuperPeer;
 
     public InternetDiscovery(final DrasylConfig config,
-                             final Identity identity,
-                             final PeersManager peersManager) {
+                             final Identity identity) {
         openPingsCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getRemotePingMaxPeers())
                 .expireAfterWrite(config.getRemotePingTimeout())
                 .<Nonce, Ping>build()
                 .asMap();
         this.identity = identity;
-        this.peersManager = requireNonNull(peersManager);
         directConnectionPeers = new HashSet<>();
         if (config.getRemoteUniteMinInterval().toMillis() > 0) {
             uniteAttemptsCache = CacheBuilder.newBuilder()
@@ -115,7 +116,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
     @SuppressWarnings({ "java:S2384", "java:S107" })
     InternetDiscovery(final Map<Nonce, Ping> openPingsCache,
-                      final Identity identity, final PeersManager peersManager,
+                      final Identity identity,
                       final Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache,
                       final Map<IdentityPublicKey, Peer> peers,
                       final Set<IdentityPublicKey> directConnectionPeers,
@@ -123,7 +124,6 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                       final IdentityPublicKey bestSuperPeer) {
         this.openPingsCache = openPingsCache;
         this.identity = requireNonNull(identity);
-        this.peersManager = requireNonNull(peersManager);
         this.uniteAttemptsCache = uniteAttemptsCache;
         this.directConnectionPeers = directConnectionPeers;
         this.peers = peers;
@@ -169,10 +169,10 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             if (!peer.hasControlTraffic(ctx.channel().attr(CONFIG_ATTR_KEY).get())) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundControlTrafficTime());
                 if (superPeers.contains(publicKey)) {
-                    peersManager.removeSuperPeerAndPath(ctx, publicKey, path);
+                    ctx.fireUserEventTriggered(RemoveSuperPeerAndPath.of(publicKey, path));
                 }
                 else {
-                    peersManager.removeChildrenAndPath(ctx, publicKey, path);
+                    ctx.fireUserEventTriggered(RemoveChildrenAndPath.of(publicKey, path));
                 }
                 peers.remove(publicKey);
                 directConnectionPeers.remove(publicKey);
@@ -218,7 +218,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             // remove trivial communications, that does not send any user generated messages
             else {
                 LOG.debug("Last application communication to {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastApplicationTrafficTime());
-                peersManager.removeChildrenAndPath(ctx, publicKey, path);
+                ctx.fireUserEventTriggered(RemoveChildrenAndPath.of(publicKey, path));
                 directConnectionPeers.remove(publicKey);
             }
         }
@@ -227,10 +227,10 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private void removeAllPeers(final ChannelHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (superPeers.contains(publicKey)) {
-                peersManager.removeSuperPeerAndPath(ctx, publicKey, path);
+                ctx.fireUserEventTriggered(RemoveSuperPeerAndPath.of(publicKey, path));
             }
             else {
-                peersManager.removeChildrenAndPath(ctx, publicKey, path);
+                ctx.fireUserEventTriggered(RemoveChildrenAndPath.of(publicKey, path));
             }
             peers.remove(publicKey);
             directConnectionPeers.remove(publicKey);
@@ -460,10 +460,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         if (childrenJoin) {
             peer.inboundPingOccurred();
             // store peer information
-            if (LOG.isDebugEnabled() && !peersManager.getChildren().contains(envelopeSender) && !peersManager.getPaths(envelopeSender).contains(path)) {
-                LOG.debug("PING! Add {} as children", envelopeSender);
-            }
-            peersManager.addPathAndChildren(ctx, envelopeSender, path);
+            ctx.fireUserEventTriggered(AddPathAndChildren.of(envelopeSender, path));
         }
 
         // reply with pong
@@ -493,17 +490,11 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                 determineBestSuperPeer();
 
                 // store peer information
-                if (LOG.isDebugEnabled() && !peersManager.getChildren().contains(envelopeSender) && !peersManager.getPaths(envelopeSender).contains(path)) {
-                    LOG.debug("PONG! Add {} as super peer", envelopeSender);
-                }
-                peersManager.addPathAndSuperPeer(ctx, envelopeSender, path);
+                ctx.fireUserEventTriggered(AddPathAndSuperPeer.of(envelopeSender, path));
             }
             else {
                 // store peer information
-                if (LOG.isDebugEnabled() && !peersManager.getPaths(envelopeSender).contains(path)) {
-                    LOG.debug("PONG! Add {} as peer", envelopeSender);
-                }
-                peersManager.addPath(ctx, envelopeSender, path);
+                ctx.fireUserEventTriggered(AddPathEvent.of(envelopeSender, peer));
             }
         }
         future.complete(null);

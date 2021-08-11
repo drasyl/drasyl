@@ -22,12 +22,14 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.collect.ImmutableMap;
+import io.netty.channel.ChannelHandler;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
+import org.drasyl.DrasylNode.PeersManagerHandler.RemovePathEvent;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,31 +40,28 @@ import test.util.IdentityTestUtil;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StaticRoutesHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
-    @Mock
-    private PeersManager peersManager;
 
     @Test
     void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
         final SocketAddress address = new InetSocketAddress(22527);
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final StaticRoutesHandler handler = new StaticRoutesHandler(peersManager);
+        final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
         try {
             pipeline.pipeline().fireChannelActive();
 
-            verify(peersManager).addPath(any(), eq(publicKey), any());
+            assertThat(pipeline.readUserEvent(), instanceOf(AddPathEvent.class));
         }
         finally {
             pipeline.close();
@@ -74,12 +73,12 @@ class StaticRoutesHandlerTest {
                                             @Mock final SocketAddress address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final StaticRoutesHandler handler = new StaticRoutesHandler(peersManager);
+        final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
         try {
             pipeline.pipeline().fireChannelInactive();
 
-            verify(peersManager).removePath(any(), eq(publicKey), any());
+            assertThat(pipeline.readUserEvent(), instanceOf(RemovePathEvent.class));
         }
         finally {
             pipeline.close();
@@ -92,7 +91,7 @@ class StaticRoutesHandlerTest {
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final StaticRoutesHandler handler = new StaticRoutesHandler(peersManager);
+        final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
@@ -112,7 +111,7 @@ class StaticRoutesHandlerTest {
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
 
-        final StaticRoutesHandler handler = new StaticRoutesHandler(peersManager);
+        final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));

@@ -70,7 +70,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
             identity2 = IdentityTestUtil.ID_2;
 
-            final UdpServer handler = new UdpServer(identity2);
+            final UdpServer handler = new UdpServer(identity2.getIdentityPublicKey());
 
             final DrasylConfig config2 = DrasylConfig.newBuilder()
                     .remoteBindPort(0)

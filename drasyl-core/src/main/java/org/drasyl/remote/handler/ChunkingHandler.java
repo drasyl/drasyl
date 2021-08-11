@@ -29,10 +29,10 @@ import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.identity.Identity;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.PartialReadMessage;
@@ -64,10 +64,10 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 public class ChunkingHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkingHandler.class);
     private final Worm<Map<Nonce, ChunksCollector>> chunksCollectors;
-    private final Identity identity;
+    private final DrasylAddress myAddress;
 
-    public ChunkingHandler(final Identity identity) {
-        this.identity = requireNonNull(identity);
+    public ChunkingHandler(final DrasylAddress myAddress) {
+        this.myAddress = requireNonNull(myAddress);
         this.chunksCollectors = Worm.of();
     }
 
@@ -78,7 +78,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
 
             // message is addressed to me
-            if (identity.getIdentityPublicKey().equals(chunkMsg.getRecipient())) {
+            if (myAddress.equals(chunkMsg.getRecipient())) {
                 handleInboundChunk(ctx, sender, chunkMsg, new CompletableFuture<>());
             }
             else {
@@ -99,7 +99,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
-            if (identity.getIdentityPublicKey().equals(remoteMsg.getSender())) {
+            if (myAddress.equals(remoteMsg.getSender())) {
                 // message from us, check if we have to chunk it
                 final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
                 remoteMsg.writeTo(messageByteBuf);

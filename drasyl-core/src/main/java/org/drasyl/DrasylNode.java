@@ -177,7 +177,7 @@ public abstract class DrasylNode {
             identityManager.loadOrCreateIdentity();
             identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(identity);
-            bootstrap = new DrasylBootstrap(config, identity, peersManager)
+            bootstrap = new DrasylBootstrap(config, identity)
                     .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
                     .handler(new DrasylNodeServerChannelInitializer())
                     .childHandler(new DrasylNodeChannelInitializer(this::onEvent));
@@ -478,7 +478,7 @@ public abstract class DrasylNode {
         private boolean errorOccurred;
 
         public DrasylNodeServerChannelInitializer(final boolean errorOccurred) {
-            super(config, inboundSerialization, outboundSerialization, peersManager, identity);
+            super(config, inboundSerialization, outboundSerialization, identity);
             this.errorOccurred = errorOccurred;
         }
 
@@ -638,22 +638,22 @@ public abstract class DrasylNode {
             if (evt instanceof PeerEvent) {
                 final PeerEvent e = (PeerEvent) evt;
                 if (e instanceof AddPathEvent) {
-                    peersManager.addPath(ctx, e.getPublicKey(), e.getPath());
+                    peersManager.addPath(ctx, e.getAddress(), e.getPath());
                 }
                 else if (e instanceof RemovePathEvent) {
-                    peersManager.removePath(ctx, e.getPublicKey(), e.getPath());
+                    peersManager.removePath(ctx, e.getAddress(), e.getPath());
                 }
                 else if (e instanceof AddPathAndSuperPeer) {
-                    peersManager.addPathAndSuperPeer(ctx, e.getPublicKey(), e.getPath());
+                    peersManager.addPathAndSuperPeer(ctx, e.getAddress(), e.getPath());
                 }
                 else if (e instanceof RemoveSuperPeerAndPath) {
-                    peersManager.removeSuperPeerAndPath(ctx, e.getPublicKey(), e.getPath());
+                    peersManager.removeSuperPeerAndPath(ctx, e.getAddress(), e.getPath());
                 }
                 else if (e instanceof AddPathAndChildren) {
-                    peersManager.addPathAndChildren(ctx, e.getPublicKey(), e.getPath());
+                    peersManager.addPathAndChildren(ctx, e.getAddress(), e.getPath());
                 }
                 else if (e instanceof RemoveChildrenAndPath) {
-                    peersManager.removeChildrenAndPath(ctx, e.getPublicKey(), e.getPath());
+                    peersManager.removeChildrenAndPath(ctx, e.getAddress(), e.getPath());
                 }
             }
             else {
@@ -662,7 +662,7 @@ public abstract class DrasylNode {
         }
 
         public interface PeerEvent {
-            IdentityPublicKey getPublicKey();
+            DrasylAddress getAddress();
 
             Object getPath();
         }
@@ -670,7 +670,7 @@ public abstract class DrasylNode {
         @SuppressWarnings({ "java:S1118", "java:S2974" })
         @AutoValue
         public abstract static class AddPathEvent implements PeerEvent {
-            public static AddPathEvent of(final IdentityPublicKey publicKey, final Object path) {
+            public static AddPathEvent of(final DrasylAddress publicKey, final Object path) {
                 return new AutoValue_DrasylNode_PeersManagerHandler_AddPathEvent(publicKey, path);
             }
         }
@@ -678,7 +678,7 @@ public abstract class DrasylNode {
         @SuppressWarnings({ "java:S1118", "java:S2974" })
         @AutoValue
         public abstract static class RemovePathEvent implements PeerEvent {
-            public static RemovePathEvent of(final IdentityPublicKey publicKey, final Object path) {
+            public static RemovePathEvent of(final DrasylAddress publicKey, final Object path) {
                 return new AutoValue_DrasylNode_PeersManagerHandler_RemovePathEvent(publicKey, path);
             }
         }
@@ -686,7 +686,7 @@ public abstract class DrasylNode {
         @SuppressWarnings({ "java:S1118", "java:S2974" })
         @AutoValue
         public abstract static class AddPathAndSuperPeer implements PeerEvent {
-            public static AddPathAndSuperPeer of(final IdentityPublicKey publicKey,
+            public static AddPathAndSuperPeer of(final DrasylAddress publicKey,
                                                  final Object path) {
                 return new AutoValue_DrasylNode_PeersManagerHandler_AddPathAndSuperPeer(publicKey, path);
             }

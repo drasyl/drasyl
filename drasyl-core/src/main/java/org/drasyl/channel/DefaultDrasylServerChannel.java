@@ -33,7 +33,6 @@ import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.intravm.IntraVmDiscovery;
 
 import java.net.SocketAddress;
 import java.util.Map;
@@ -52,7 +51,6 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel {
     public DefaultDrasylServerChannel(final DrasylConfig drasylConfig,
                                       final Identity identity) {
         attr(CONFIG_ATTR_KEY).set(drasylConfig);
-        attr(IntraVmDiscovery.IDENTITY_ATTR_KEY).set(identity);
     }
 
     @Override

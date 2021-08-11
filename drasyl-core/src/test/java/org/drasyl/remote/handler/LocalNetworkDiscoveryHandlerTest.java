@@ -25,13 +25,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
+import org.drasyl.DrasylNode.PeersManagerHandler.RemovePathEvent;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.handler.LocalNetworkDiscovery.Peer;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
@@ -62,7 +63,6 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -75,8 +75,6 @@ class LocalNetworkDiscoveryTest {
     private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
-    @Mock
-    private PeersManager peersManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Map<IdentityPublicKey, Peer> peers;
     @Mock
@@ -94,7 +92,7 @@ class LocalNetworkDiscoveryTest {
         void shouldStartHeartbeatingOnChannelActive(@Mock final NodeUpEvent event) {
             when(config.getRemotePingInterval()).thenReturn(ofSeconds(1));
 
-            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity, peersManager, null));
+            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity, null));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
@@ -109,7 +107,7 @@ class LocalNetworkDiscoveryTest {
 
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnChannelInactive(@Mock final NodeUnrecoverableErrorEvent event) {
-            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity, peersManager, pingDisposable));
+            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity, pingDisposable));
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
@@ -129,7 +127,7 @@ class LocalNetworkDiscoveryTest {
         void shouldScheduleHeartbeat(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
 
-            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity, peersManager, null));
+            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity, null));
 
             handler.startHeartbeat(ctx);
 
@@ -150,11 +148,11 @@ class LocalNetworkDiscoveryTest {
             when(peer.isStale(any())).thenReturn(true);
 
             final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, pingDisposable);
             handler.doHeartbeat(ctx);
 
             verify(peer).isStale(any());
-            verify(peersManager).removePath(any(), eq(publicKey), any());
+            verify(ctx).fireUserEventTriggered(any(RemovePathEvent.class));
             assertTrue(peers.isEmpty());
             verify(ctx).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage>) m -> m.message() instanceof DiscoveryMessage && m.address().equals(MULTICAST_ADDRESS)));
         }
@@ -164,7 +162,7 @@ class LocalNetworkDiscoveryTest {
     class StopHeartbeat {
         @Test
         void shouldStopHeartbeat() {
-            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity, peersManager, pingDisposable));
+            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity, pingDisposable));
 
             handler.stopHeartbeat();
 
@@ -179,10 +177,10 @@ class LocalNetworkDiscoveryTest {
                                @Mock final Peer peer,
                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, pingDisposable);
             handler.clearRoutes(ctx);
 
-            verify(peersManager).removePath(any(), eq(publicKey), any());
+            verify(ctx).fireUserEventTriggered(any(RemovePathEvent.class));
             assertTrue(peers.isEmpty());
         }
     }
@@ -197,10 +195,10 @@ class LocalNetworkDiscoveryTest {
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
             when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
 
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, pingDisposable);
             handler.channelRead(ctx, new AddressedMessage<>(msg, sender));
 
-            verify(peersManager).addPath(any(), eq(publicKey), any());
+            verify(ctx).fireUserEventTriggered(any(AddPathEvent.class));
         }
 
         @Test
@@ -209,16 +207,16 @@ class LocalNetworkDiscoveryTest {
             final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
             when(identity.getIdentityPublicKey()).thenReturn(publicKey);
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, IdentityTestUtil.ID_2.getProofOfWork());
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, pingDisposable);
             handler.channelRead(ctx, new AddressedMessage<>(msg, sender));
 
-            verify(peersManager, never()).addPath(any(), eq(msg.getSender()), any());
+            verify(ctx, never()).fireUserEventTriggered(any(AddPathEvent.class));
         }
 
         @Test
         void shouldPassthroughUnicastMessages(@Mock final InetSocketAddress sender,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, pingDisposable);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
@@ -241,7 +239,7 @@ class LocalNetworkDiscoveryTest {
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
         when(peers.get(any())).thenReturn(peer);
 
-        final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, peersManager, pingDisposable);
+        final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, pingDisposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
 
         pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
@@ -256,7 +254,7 @@ class LocalNetworkDiscoveryTest {
     void shouldPassthroughMessageWhenRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
 
-        final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, peersManager, pingDisposable);
+        final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity, pingDisposable);
         final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));

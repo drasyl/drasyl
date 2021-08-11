@@ -25,10 +25,11 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
+import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
+import org.drasyl.DrasylNode.PeersManagerHandler.RemovePathEvent;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.RemoteMessage;
@@ -70,21 +71,18 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private static final Object path = LocalNetworkDiscovery.class;
     private final Map<IdentityPublicKey, Peer> peers;
     private final Identity identity;
-    private final PeersManager peersManager;
     private Future<?> pingDisposable;
 
     public LocalNetworkDiscovery(final Map<IdentityPublicKey, Peer> peers,
                                  final Identity identity,
-                                 final PeersManager peersManager,
                                  final Future<?> pingDisposable) {
         this.peers = requireNonNull(peers);
         this.identity = requireNonNull(identity);
-        this.peersManager = requireNonNull(peersManager);
         this.pingDisposable = pingDisposable;
     }
 
-    public LocalNetworkDiscovery(final Identity identity, final PeersManager peersManager) {
-        this(new ConcurrentHashMap<>(), identity, peersManager, null);
+    public LocalNetworkDiscovery(final Identity identity) {
+        this(new ConcurrentHashMap<>(), identity, null);
     }
 
     synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
@@ -107,7 +105,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
 
     synchronized void clearRoutes(final ChannelHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            peersManager.removePath(ctx, publicKey, path);
+            ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
             peers.remove(publicKey);
         }));
         peers.clear();
@@ -122,7 +120,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (peer.isStale(ctx)) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundPingTime());
-                peersManager.removePath(ctx, publicKey, path);
+                ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
                 peers.remove(publicKey);
             }
         }));
@@ -155,7 +153,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
             final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender));
             peer.inboundPingOccurred();
-            peersManager.addPath(ctx, msgSender, path);
+            ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, path));
         }
 
         future.complete(null);

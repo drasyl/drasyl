@@ -21,9 +21,11 @@
  */
 package org.drasyl;
 
+import java.net.SocketAddress;
+
 /**
  * Models the address to a {@link DrasylNode} in the overlay. The address is used to send overlay
  * messages to.
  */
-public interface DrasylAddress {
+public abstract class DrasylAddress extends SocketAddress {
 }

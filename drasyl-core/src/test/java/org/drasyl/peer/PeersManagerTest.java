@@ -24,6 +24,7 @@ package org.drasyl.peer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.DrasylAddress;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -61,9 +62,9 @@ import static org.mockito.Mockito.verify;
 class PeersManagerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ReadWriteLock lock;
-    private SetMultimap<IdentityPublicKey, Object> paths;
-    private Set<IdentityPublicKey> children;
-    private Set<IdentityPublicKey> superPeers;
+    private SetMultimap<DrasylAddress, Object> paths;
+    private Set<DrasylAddress> children;
+    private Set<DrasylAddress> superPeers;
     private PeersManager underTest;
     private Identity identity;
 

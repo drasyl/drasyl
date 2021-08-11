@@ -24,6 +24,7 @@ package org.drasyl.peer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import io.netty.channel.ChannelInboundInvoker;
+import org.drasyl.DrasylAddress;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -53,9 +54,9 @@ import static java.util.Objects.requireNonNull;
  */
 public class PeersManager {
     private final ReadWriteLock lock;
-    private final SetMultimap<IdentityPublicKey, Object> paths;
-    private final Set<IdentityPublicKey> children;
-    private final Set<IdentityPublicKey> superPeers;
+    private final SetMultimap<DrasylAddress, Object> paths;
+    private final Set<DrasylAddress> children;
+    private final Set<DrasylAddress> superPeers;
     private final Identity identity;
 
     public PeersManager(final Identity identity) {
@@ -64,9 +65,9 @@ public class PeersManager {
 
     @SuppressWarnings("java:S2384")
     PeersManager(final ReadWriteLock lock,
-                 final SetMultimap<IdentityPublicKey, Object> paths,
-                 final Set<IdentityPublicKey> children,
-                 final Set<IdentityPublicKey> superPeers, final Identity identity) {
+                 final SetMultimap<DrasylAddress, Object> paths,
+                 final Set<DrasylAddress> children,
+                 final Set<DrasylAddress> superPeers, final Identity identity) {
         this.lock = lock;
         this.paths = paths;
         this.children = children;
@@ -90,7 +91,7 @@ public class PeersManager {
         }
     }
 
-    public Set<IdentityPublicKey> getPeers() {
+    public Set<DrasylAddress> getPeers() {
         try {
             lock.readLock().lock();
 
@@ -101,7 +102,7 @@ public class PeersManager {
         }
     }
 
-    public Set<IdentityPublicKey> getChildren() {
+    public Set<DrasylAddress> getChildren() {
         try {
             lock.readLock().lock();
 
@@ -115,7 +116,7 @@ public class PeersManager {
         }
     }
 
-    public Set<IdentityPublicKey> getSuperPeers() {
+    public Set<DrasylAddress> getSuperPeers() {
         try {
             lock.readLock().lock();
 
@@ -143,7 +144,7 @@ public class PeersManager {
     }
 
     public void addPath(final ChannelInboundInvoker ctx,
-                        final IdentityPublicKey publicKey,
+                        final DrasylAddress publicKey,
                         final Object path) {
         requireNonNull(publicKey);
 
@@ -161,7 +162,7 @@ public class PeersManager {
     }
 
     public void removePath(final ChannelInboundInvoker ctx,
-                           final IdentityPublicKey publicKey,
+                           final DrasylAddress publicKey,
                            final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
@@ -179,7 +180,7 @@ public class PeersManager {
     }
 
     public void addPathAndSuperPeer(final ChannelInboundInvoker ctx,
-                                    final IdentityPublicKey publicKey,
+                                    final DrasylAddress publicKey,
                                     final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
@@ -205,7 +206,7 @@ public class PeersManager {
     }
 
     public void removeSuperPeerAndPath(final ChannelInboundInvoker ctx,
-                                       final IdentityPublicKey publicKey,
+                                       final DrasylAddress publicKey,
                                        final Object path) {
         requireNonNull(path);
 
@@ -228,7 +229,7 @@ public class PeersManager {
     }
 
     public void addPathAndChildren(final ChannelInboundInvoker ctx,
-                                   final IdentityPublicKey publicKey,
+                                   final DrasylAddress publicKey,
                                    final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
@@ -251,7 +252,7 @@ public class PeersManager {
     }
 
     public void removeChildrenAndPath(final ChannelInboundInvoker ctx,
-                                      final IdentityPublicKey publicKey,
+                                      final DrasylAddress publicKey,
                                       final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);

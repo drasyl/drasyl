@@ -62,7 +62,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         msgSender = new MyAddress();
         msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), sender.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
         msgNotAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
-        handler = new InvalidProofOfWorkFilter(sender);
+        handler = new InvalidProofOfWorkFilter(sender.getAddress());
     }
 
     @Benchmark

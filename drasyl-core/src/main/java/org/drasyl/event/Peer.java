@@ -22,7 +22,7 @@
 package org.drasyl.event;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.DrasylAddress;
 
 /**
  * Used by {@link Event} to describe an event related to a Peer (e.g. {@link PeerRelayEvent}, {@link
@@ -38,12 +38,12 @@ public abstract class Peer {
      *
      * @return the peer's public key.
      */
-    public abstract IdentityPublicKey getIdentityPublicKey();
+    public abstract DrasylAddress getIdentityPublicKey();
 
     /**
      * @throws NullPointerException if {@code publicKey} is {@code null}
      */
-    public static Peer of(final IdentityPublicKey publicKey) {
+    public static Peer of(final DrasylAddress publicKey) {
         return new AutoValue_Peer(publicKey);
     }
 }

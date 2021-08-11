@@ -24,6 +24,7 @@ package org.drasyl.cli.command.perf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
@@ -74,14 +75,14 @@ public class PerfClientNode extends BehavioralDrasylNode {
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream printStream;
     private final EventLoopGroup perfScheduler;
-    private final Set<IdentityPublicKey> directConnections;
+    private final Set<DrasylAddress> directConnections;
     private TestOptions testOptions;
 
     @SuppressWarnings({ "java:S107", "java:S2384" })
     PerfClientNode(final CompletableFuture<Void> doneFuture,
                    final PrintStream printStream,
                    final EventLoopGroup perfScheduler,
-                   final Set<IdentityPublicKey> directConnections,
+                   final Set<DrasylAddress> directConnections,
                    final DrasylBootstrap bootstrap,
                    final PluginManager pluginManager,
                    final ChannelFuture channelFuture) {
