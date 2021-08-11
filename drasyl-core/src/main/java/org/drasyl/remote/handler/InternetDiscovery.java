@@ -245,12 +245,12 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
                 if (!processMessage(ctx, (IdentityPublicKey) recipient, applicationMsg, FutureUtil.toFuture(promise))) {
                     // passthrough message
-                    ctx.writeAndFlush(msg, promise);
+                    ctx.write(msg, promise);
                 }
             }
             else {
                 // passthrough message
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
             }
         }
         else {

@@ -405,13 +405,13 @@ public class ArmHandler extends ChannelDuplexHandler {
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
             if (fullReadMsg.getRecipient() == null) {
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
                 return;
             }
 
             if (!ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getSender())
                     || ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getRecipient())) {
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
                 return;
             }
 

@@ -125,7 +125,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             }
             else {
                 // passthrough message
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
             }
         }
         else {

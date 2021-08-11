@@ -76,7 +76,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
 
             if (discoveree == null) {
                 // passthrough message
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
             }
             else {
                 discoveree.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));

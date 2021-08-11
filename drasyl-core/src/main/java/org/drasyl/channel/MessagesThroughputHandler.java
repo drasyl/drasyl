@@ -139,7 +139,7 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
                 promise.setSuccess();
             }
             else {
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
             }
         }
         else {

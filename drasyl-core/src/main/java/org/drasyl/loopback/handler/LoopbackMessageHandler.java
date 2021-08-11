@@ -44,7 +44,7 @@ public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
                 ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
             }
             else {
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
             }
         }
         else {

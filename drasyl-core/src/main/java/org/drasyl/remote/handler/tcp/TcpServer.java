@@ -132,7 +132,7 @@ public class TcpServer extends ChannelDuplexHandler {
             }
             else {
                 // message is not addressed to any of our clients. passthrough message
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
             }
         }
         else {

@@ -113,12 +113,12 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                 else {
                     ReferenceCountUtil.safeRelease(messageByteBuf);
                     // message is small enough. No chunking required
-                    ctx.writeAndFlush(msg, promise);
+                    ctx.write(msg, promise);
                 }
             }
             else {
                 // message not from us. Passthrough
-                ctx.writeAndFlush(msg, promise);
+                ctx.write(msg, promise);
             }
         }
         else {

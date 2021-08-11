@@ -120,11 +120,8 @@ class TcpServerTest {
         @Test
         void shouldPassOutgoingMessageToTcpClient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Channel client,
-                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg,
-                                                  @Mock final ChannelFuture channelFuture) {
+                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             when(clientChannels.get(any())).thenReturn(client);
-            when(client.isWritable()).thenReturn(true);
-            when(client.writeAndFlush(any())).thenReturn(channelFuture);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
