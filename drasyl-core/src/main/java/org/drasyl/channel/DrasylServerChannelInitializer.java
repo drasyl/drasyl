@@ -133,7 +133,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             }
 
             // discover nodes on the internet
-            ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config, identity, peersManager));
+            ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config, identity));
 
             // outbound message guards
             ch.pipeline().addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);

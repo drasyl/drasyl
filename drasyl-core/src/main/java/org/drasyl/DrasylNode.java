@@ -21,6 +21,7 @@
  */
 package org.drasyl;
 
+import com.google.auto.value.AutoValue;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -64,7 +65,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -566,6 +566,8 @@ public abstract class DrasylNode {
                 }
             });
 
+            ch.pipeline().addFirst(new PeersManagerHandler(peersManager));
+
             super.initChannel(ch);
         }
     }
@@ -580,7 +582,7 @@ public abstract class DrasylNode {
         private final Consumer<Event> onEvent;
 
         public DrasylNodeChannelInitializer(final Consumer<Event> onEvent) {
-            this.onEvent = Objects.requireNonNull(onEvent);
+            this.onEvent = requireNonNull(onEvent);
         }
 
         @Override
@@ -619,6 +621,101 @@ public abstract class DrasylNode {
                     }
                 });
                 ch.pipeline().addFirst(INACTIVITY_DETECTOR, new IdleStateHandler(0, 0, inactivityTimeout));
+            }
+        }
+    }
+
+    public static class PeersManagerHandler extends ChannelInboundHandlerAdapter {
+        private final PeersManager peersManager;
+
+        public PeersManagerHandler(final PeersManager peersManager) {
+            this.peersManager = requireNonNull(peersManager);
+        }
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                       final Object evt) {
+            if (evt instanceof PeerEvent) {
+                final PeerEvent e = (PeerEvent) evt;
+                if (e instanceof AddPathEvent) {
+                    peersManager.addPath(ctx, e.getPublicKey(), e.getPath());
+                }
+                else if (e instanceof RemovePathEvent) {
+                    peersManager.removePath(ctx, e.getPublicKey(), e.getPath());
+                }
+                else if (e instanceof AddPathAndSuperPeer) {
+                    peersManager.addPathAndSuperPeer(ctx, e.getPublicKey(), e.getPath());
+                }
+                else if (e instanceof RemoveSuperPeerAndPath) {
+                    peersManager.removeSuperPeerAndPath(ctx, e.getPublicKey(), e.getPath());
+                }
+                else if (e instanceof AddPathAndChildren) {
+                    peersManager.addPathAndChildren(ctx, e.getPublicKey(), e.getPath());
+                }
+                else if (e instanceof RemoveChildrenAndPath) {
+                    peersManager.removeChildrenAndPath(ctx, e.getPublicKey(), e.getPath());
+                }
+            }
+            else {
+                ctx.fireUserEventTriggered(evt);
+            }
+        }
+
+        public interface PeerEvent {
+            IdentityPublicKey getPublicKey();
+
+            Object getPath();
+        }
+
+        @SuppressWarnings({ "java:S1118", "java:S2974" })
+        @AutoValue
+        public abstract static class AddPathEvent implements PeerEvent {
+            public static AddPathEvent of(final IdentityPublicKey publicKey, final Object path) {
+                return new AutoValue_DrasylNode_PeersManagerHandler_AddPathEvent(publicKey, path);
+            }
+        }
+
+        @SuppressWarnings({ "java:S1118", "java:S2974" })
+        @AutoValue
+        public abstract static class RemovePathEvent implements PeerEvent {
+            public static RemovePathEvent of(final IdentityPublicKey publicKey, final Object path) {
+                return new AutoValue_DrasylNode_PeersManagerHandler_RemovePathEvent(publicKey, path);
+            }
+        }
+
+        @SuppressWarnings({ "java:S1118", "java:S2974" })
+        @AutoValue
+        public abstract static class AddPathAndSuperPeer implements PeerEvent {
+            public static AddPathAndSuperPeer of(final IdentityPublicKey publicKey,
+                                                 final Object path) {
+                return new AutoValue_DrasylNode_PeersManagerHandler_AddPathAndSuperPeer(publicKey, path);
+            }
+        }
+
+        @SuppressWarnings({ "java:S1118", "java:S2974" })
+        @AutoValue
+        public abstract static class RemoveSuperPeerAndPath implements PeerEvent {
+            public static RemoveSuperPeerAndPath of(final IdentityPublicKey publicKey,
+                                                    final Object path) {
+                return new AutoValue_DrasylNode_PeersManagerHandler_RemoveSuperPeerAndPath(publicKey, path);
+            }
+        }
+
+        @SuppressWarnings({ "java:S1118", "java:S2974" })
+        @AutoValue
+        public abstract static class AddPathAndChildren implements PeerEvent {
+            public static AddPathAndChildren of(final IdentityPublicKey publicKey,
+                                                final Object path) {
+                return new AutoValue_DrasylNode_PeersManagerHandler_AddPathAndChildren(publicKey, path);
+            }
+        }
+
+        @SuppressWarnings({ "java:S1118", "java:S2974" })
+        @AutoValue
+        public abstract static class RemoveChildrenAndPath implements PeerEvent {
+            public static RemoveChildrenAndPath of(final IdentityPublicKey publicKey,
+                                                   final Object path) {
+                return new AutoValue_DrasylNode_PeersManagerHandler_RemoveChildrenAndPath(publicKey, path);
             }
         }
     }
