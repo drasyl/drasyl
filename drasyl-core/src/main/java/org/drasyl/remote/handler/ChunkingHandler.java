@@ -131,7 +131,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                                     final ChunkMessage chunk,
                                     final CompletableFuture<Void> future) throws IOException {
         try {
-            final ChunksCollector chunksCollector = getChunksCollectors(ctx.channel().attr(CONFIG_ATTR_KEY).get()).computeIfAbsent(chunk.getNonce(), id -> new ChunksCollector(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength(), id));
+            final ChunksCollector chunksCollector = getChunksCollectors(ctx.channel().attr(CONFIG_ATTR_KEY).get()).computeIfAbsent(chunk.getNonce(), id -> new ChunksCollector(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength(), id, ctx.alloc()));
             final RemoteMessage message = chunksCollector.addChunk(chunk);
 
             if (message != null) {

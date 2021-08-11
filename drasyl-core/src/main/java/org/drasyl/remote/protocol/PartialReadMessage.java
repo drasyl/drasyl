@@ -23,7 +23,6 @@ package org.drasyl.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -147,35 +146,6 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
                     bytes
             );
         }
-    }
-
-    /**
-     * Creates a {@link PartialReadMessage} from {@code publicHeader} and {@code bytes}.
-     * <ul>
-     * <li>If {@code publicHeader.getTotalChunks()} is positive, a {@link HeadChunkMessage} object is returned.</li>
-     * <li>If {@code publicHeader.getChunkNo()} is positive, a {@link BodyChunkMessage} object is returned.</li>
-     * <li>In case {@code publicHeader.getAgreementId()} is not empty, {@link ArmedMessage} object is returned.</li>
-     * <li>In all other cases, {@link UnarmedMessage} object is returned.</li>
-     * </ul>
-     * <p>
-     * Modifying the content of {@code bytes} or the returned message's buffer affects each other's
-     * content while they maintain separate indexes and marks.
-     *
-     * @param publicHeader message's public header
-     * @param bytes        message's remainder as bytes (may be armed). {@link ByteBuf#release()}
-     *                     ownership is transferred to this {@link PartialReadMessage}.
-     * @return an {@link PartialReadMessage} object
-     * @throws NullPointerException     if {@code publicHeader.getNonce()}, {@code
-     *                                  publicHeader.getSender()}, {@code publicHeader.getProofOfWork()},
-     *                                  or {@code publicHeader.getRecipient()} is {@code null}
-     * @throws IllegalArgumentException if {@code publicHeader.getSender()} or {@code
-     *                                  publicHeader.getRecipient()} has wrong key size, or {@code
-     *                                  publicHeader.getAgreementId()} is neither {@code null} nor a
-     *                                  valid SHA256 hash
-     */
-    static PartialReadMessage of(final PublicHeader publicHeader,
-                                 final byte[] bytes) {
-        return of(publicHeader, Unpooled.wrappedBuffer(bytes));
     }
 
     /**

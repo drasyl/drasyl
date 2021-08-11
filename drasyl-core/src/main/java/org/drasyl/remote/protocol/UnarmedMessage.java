@@ -253,7 +253,16 @@ public abstract class UnarmedMessage implements PartialReadMessage {
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
                 final byte[] encryptedBytes = cryptoInstance.encrypt(in.readAllBytes(), buildAuthTag(), getNonce(), sessionPair);
 
-                return ArmedMessage.of(getNonce(), getNetworkId(), getSender(), getProofOfWork(), getRecipient(), getHopCount(), getAgreementId(), encryptedBytes);
+                return ArmedMessage.of(
+                        getNonce(),
+                        getNetworkId(),
+                        getSender(),
+                        getProofOfWork(),
+                        getRecipient(),
+                        getHopCount(),
+                        getAgreementId(),
+                        Unpooled.wrappedBuffer(encryptedBytes)
+                );
             }
         }
         catch (final IOException | CryptoException e) {
@@ -308,46 +317,6 @@ public abstract class UnarmedMessage implements PartialReadMessage {
                 agreementId,
                 bytes,
                 recipient
-        );
-    }
-
-    /**
-     * Creates an unarmed message.
-     * <p>
-     * Modifying the content of {@code bytes} or the returned message's buffer affects each other's
-     * content while they maintain separate indexes and marks.
-     *
-     * @param nonce       the nonce
-     * @param networkId   the network id
-     * @param sender      the public key of the sender
-     * @param proofOfWork the proof of work of {@code sender}
-     * @param recipient   the public key of the recipient
-     * @param hopCount    the hop count
-     * @param agreementId the agreement id
-     * @param bytes       message's remainder as bytes (may be armed). {@link ByteBuf#release()}
-     *                    ownership is transferred to this {@link PartialReadMessage}.
-     * @return an {@link PartialReadMessage}
-     * @throws NullPointerException if {@code nonce}, {@code sender}, {@code proofOfWork}, or {@code
-     *                              recipient} is {@code null}
-     */
-    @SuppressWarnings("java:S107")
-    public static UnarmedMessage of(final Nonce nonce,
-                                    final int networkId,
-                                    final IdentityPublicKey sender,
-                                    final ProofOfWork proofOfWork,
-                                    final IdentityPublicKey recipient,
-                                    final HopCount hopCount,
-                                    final AgreementId agreementId,
-                                    final byte[] bytes) {
-        return of(
-                nonce,
-                networkId,
-                sender,
-                proofOfWork,
-                recipient,
-                hopCount,
-                agreementId,
-                Unpooled.wrappedBuffer(bytes)
         );
     }
 }

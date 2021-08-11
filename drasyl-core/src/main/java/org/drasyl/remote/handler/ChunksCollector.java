@@ -22,8 +22,8 @@
 package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
 import org.drasyl.remote.protocol.BodyChunkMessage;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.HeadChunkMessage;
@@ -48,12 +48,16 @@ class ChunksCollector {
     private final int maxContentLength;
     private final Nonce nonce;
     private final Map<Integer, ByteBuf> chunks;
+    private final ByteBufAllocator alloc;
     private int messageSize;
     private int totalChunks;
 
-    public ChunksCollector(final int maxContentLength, final Nonce nonce) {
+    public ChunksCollector(final int maxContentLength,
+                           final Nonce nonce,
+                           final ByteBufAllocator alloc) {
         this.maxContentLength = maxContentLength;
         this.nonce = requireNonNull(nonce);
+        this.alloc = requireNonNull(alloc);
         this.chunks = new HashMap<>();
     }
 
@@ -107,7 +111,7 @@ class ChunksCollector {
         // message complete?
         if (allChunksPresent()) {
             // message complete, use zero-copy to compose it!
-            final CompositeByteBuf messageByteBuf = Unpooled.compositeBuffer(totalChunks);
+            final CompositeByteBuf messageByteBuf = alloc.compositeBuffer(totalChunks);
             final ByteBuf[] components = chunks.values().toArray(new ByteBuf[0]);
             chunks.clear();
             messageByteBuf.addComponents(true, components);

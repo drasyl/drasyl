@@ -25,6 +25,7 @@ import com.google.protobuf.MessageLite;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.Unpooled;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
@@ -44,7 +45,16 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
             buildBody().writeDelimitedTo(outputStream);
             final byte[] bytes = outputStream.toByteArray();
 
-            final UnarmedMessage unarmedMessage = UnarmedMessage.of(getNonce(), getNetworkId(), getSender(), getProofOfWork(), getRecipient(), getHopCount(), getAgreementId(), bytes);
+            final UnarmedMessage unarmedMessage = UnarmedMessage.of(
+                    getNonce(),
+                    getNetworkId(),
+                    getSender(),
+                    getProofOfWork(),
+                    getRecipient(),
+                    getHopCount(),
+                    getAgreementId(),
+                    Unpooled.wrappedBuffer(bytes)
+            );
             return unarmedMessage.arm(cryptoInstance, sessionPair);
         }
         catch (final IOException e) {

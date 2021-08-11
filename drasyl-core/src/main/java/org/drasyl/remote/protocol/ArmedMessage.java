@@ -118,7 +118,16 @@ public abstract class ArmedMessage implements PartialReadMessage {
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
                 final byte[] decryptedBytes = cryptoInstance.decrypt(in.readAllBytes(), buildAuthTag(), getNonce(), sessionPair);
 
-                return UnarmedMessage.of(getNonce(), getNetworkId(), getSender(), getProofOfWork(), getRecipient(), getHopCount(), getAgreementId(), decryptedBytes).read();
+                return UnarmedMessage.of(
+                        getNonce(),
+                        getNetworkId(),
+                        getSender(),
+                        getProofOfWork(),
+                        getRecipient(),
+                        getHopCount(),
+                        getAgreementId(),
+                        Unpooled.wrappedBuffer(decryptedBytes)
+                ).read();
             }
         }
         catch (final IOException | CryptoException e) {
@@ -221,45 +230,6 @@ public abstract class ArmedMessage implements PartialReadMessage {
                 hopCount,
                 bytes,
                 agreementId
-        );
-    }
-
-    /**
-     * Creates an armed message.
-     * <p>
-     * Modifying the content of {@code bytes} or the returned message's buffer affects each other's
-     * content while they maintain separate indexes and marks.
-     *
-     * @param nonce       the nonce
-     * @param networkId   the network id
-     * @param sender      the public key of the sender
-     * @param proofOfWork the proof of work of {@code sender}
-     * @param recipient   the public key of the recipient
-     * @param hopCount    the hop count
-     * @param agreementId the agreement id
-     * @param bytes       the message's remaining armed bytes
-     * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
-     *                              recipient}, {@code hopCount}, {@code agreementId}, or {@code
-     *                              bytes} is {@code null}
-     */
-    @SuppressWarnings("java:S107")
-    public static ArmedMessage of(final Nonce nonce,
-                                  final int networkId,
-                                  final IdentityPublicKey sender,
-                                  final ProofOfWork proofOfWork,
-                                  final IdentityPublicKey recipient,
-                                  final HopCount hopCount,
-                                  final AgreementId agreementId,
-                                  final byte[] bytes) {
-        return of(
-                nonce,
-                networkId,
-                sender,
-                proofOfWork,
-                recipient,
-                hopCount,
-                agreementId,
-                Unpooled.wrappedBuffer(bytes)
         );
     }
 }
