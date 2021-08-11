@@ -27,6 +27,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -50,7 +51,6 @@ import java.util.function.Supplier;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.remote.handler.portmapper.PortMapper.MAPPING_LIFETIME;
 import static org.drasyl.util.protocol.PcpPortUtil.MAPPING_NONCE_LENGTH;
 import static org.drasyl.util.protocol.PcpPortUtil.PCP_PORT;
@@ -82,6 +82,7 @@ public class PcpPortMapping implements PortMapping {
     private Set<InetAddress> interfaces;
     private final Supplier<InetAddress> defaultGatewaySupplier;
     private final Supplier<Set<InetAddress>> interfacesSupplier;
+    private final Identity identity;
 
     @SuppressWarnings("java:S2384")
     PcpPortMapping(final AtomicInteger mappingRequested,
@@ -93,7 +94,8 @@ public class PcpPortMapping implements PortMapping {
                    final Future<?> refreshTask,
                    final Set<InetAddress> interfaces,
                    final Supplier<InetAddress> defaultGatewaySupplier,
-                   final Supplier<Set<InetAddress>> interfaceSupplier) {
+                   final Supplier<Set<InetAddress>> interfaceSupplier,
+                   final Identity identity) {
         this.mappingRequested = mappingRequested;
         this.port = port;
         this.onFailure = onFailure;
@@ -104,10 +106,11 @@ public class PcpPortMapping implements PortMapping {
         this.interfaces = interfaces;
         this.defaultGatewaySupplier = defaultGatewaySupplier;
         this.interfacesSupplier = interfaceSupplier;
+        this.identity = identity;
     }
 
-    public PcpPortMapping() {
-        this(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, NetworkUtil::getDefaultGateway, NetworkUtil::getAddresses);
+    public PcpPortMapping(final Identity identity) {
+        this(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, NetworkUtil::getDefaultGateway, NetworkUtil::getAddresses, identity);
     }
 
     @Override
@@ -120,7 +123,7 @@ public class PcpPortMapping implements PortMapping {
 
         if (!interfaces.isEmpty()) {
             nonce = new byte[MAPPING_NONCE_LENGTH];
-            final byte[] publicKeyBytes = ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toByteArray();
+            final byte[] publicKeyBytes = identity.getIdentityPublicKey().toByteArray();
             System.arraycopy(publicKeyBytes, 0, nonce, 0, nonce.length);
             mapPort(ctx);
         }

@@ -23,15 +23,17 @@ package org.drasyl.remote.handler;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
@@ -47,24 +49,23 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-
 /**
  * Starts an UDP server which joins a multicast group and together with the {@link
  * LocalNetworkDiscovery} is responsible for discovering other nodes in the local network.
  *
  * @see LocalNetworkDiscovery
  */
-@ChannelHandler.Sharable
+@Sharable
 @SuppressWarnings({ "java:S112", "java:S2974" })
 public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
+    public static final AttributeKey<Identity> IDENTITY_ATTR_KEY = AttributeKey.valueOf(Identity.class, "UDP_MULTICAST_IDENTITY");
     private static final String MULTICAST_INTERFACE_PROPERTY = "org.drasyl.remote.multicast.interface";
     private static final Logger LOG = LoggerFactory.getLogger(UdpMulticastServer.class);
     public static final InetSocketAddress MULTICAST_ADDRESS;
     public static final NetworkInterface MULTICAST_INTERFACE;
     private static final String MULTICAST_BIND_HOST;
-    private static UdpMulticastServer instance;
     private final Map<IdentityPublicKey, ChannelHandlerContext> nodes;
+    private final Identity identity;
     private final Bootstrap bootstrap;
     private DatagramChannel channel;
 
@@ -97,16 +98,19 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     }
 
     UdpMulticastServer(final Map<IdentityPublicKey, ChannelHandlerContext> nodes,
-                       final Bootstrap bootstrap, final DatagramChannel channel) {
+                       final Identity identity,
+                       final Bootstrap bootstrap,
+                       final DatagramChannel channel) {
         this.nodes = nodes;
+        this.identity = identity;
         this.bootstrap = bootstrap;
         this.channel = channel;
     }
 
-    private UdpMulticastServer() {
+    public UdpMulticastServer(final Identity identity) {
         this(
                 new ConcurrentHashMap<>(),
-                new Bootstrap().group(EventLoopGroupUtil.getInstanceNio()).channel(NioDatagramChannel.class),
+                identity, new Bootstrap().group(EventLoopGroupUtil.getInstanceNio()).channel(NioDatagramChannel.class),
                 null
         );
     }
@@ -193,10 +197,10 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         ctx.fireChannelInactive();
     }
 
-    public static synchronized UdpMulticastServer getInstance() {
-        if (instance == null) {
-            instance = new UdpMulticastServer();
-        }
-        return instance;
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().attr(IDENTITY_ATTR_KEY).set(identity);
+
+        super.handlerAdded(ctx);
     }
 }

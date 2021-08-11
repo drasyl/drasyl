@@ -60,7 +60,7 @@ import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static org.drasyl.intravm.IntraVmDiscovery.IDENTITY_ATTR_KEY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;

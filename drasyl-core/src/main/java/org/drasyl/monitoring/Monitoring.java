@@ -43,7 +43,6 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 /**
  * Monitors various states or events in the drasyl node.
@@ -79,7 +78,7 @@ public class Monitoring extends ChannelDuplexHandler {
                     }
 
                     newRegistry.config().commonTags(
-                            "public_key", ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString(),
+                            "public_key", ctx.channel().localAddress().toString(),
                             "host", hostTag
                     );
 

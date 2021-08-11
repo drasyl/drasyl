@@ -26,6 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -61,8 +62,8 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, 
         this.retryTask = retryTask;
     }
 
-    public PortMapper() {
-        this(new ArrayList<>(List.of(new PcpPortMapping(), new NatPmpPortMapping(), new UpnpIgdPortMapping())), 0, null);
+    public PortMapper(final Identity identity) {
+        this(new ArrayList<>(List.of(new PcpPortMapping(identity), new NatPmpPortMapping(), new UpnpIgdPortMapping(identity))), 0, null);
     }
 
     @Override

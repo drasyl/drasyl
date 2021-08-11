@@ -26,6 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
@@ -37,7 +38,6 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 /**
  * This handler serializes messages to {@link ApplicationMessage} an vice vera.
@@ -45,11 +45,14 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 @SuppressWarnings({ "java:S110" })
 public final class MessageSerializer extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
+    private final Identity identity;
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
 
-    public MessageSerializer(final Serialization inboundSerialization,
+    public MessageSerializer(final Identity identity,
+                             final Serialization inboundSerialization,
                              final Serialization outboundSerialization) {
+        this.identity = requireNonNull(identity);
         this.inboundSerialization = requireNonNull(inboundSerialization);
         this.outboundSerialization = requireNonNull(outboundSerialization);
     }
@@ -74,7 +77,7 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
             if (serializer != null) {
                 try {
                     final ByteString payload = ByteString.copyFrom(serializer.toByteArray(o));
-                    final ApplicationMessage applicationMsg = ApplicationMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), (IdentityPublicKey) msg.address(), type, payload);
+                    final ApplicationMessage applicationMsg = ApplicationMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork(), (IdentityPublicKey) msg.address(), type, payload);
                     out.add(new AddressedMessage<>(applicationMsg, msg.address()));
                     LOG.trace("Message has been serialized to `{}`", () -> applicationMsg);
                 }

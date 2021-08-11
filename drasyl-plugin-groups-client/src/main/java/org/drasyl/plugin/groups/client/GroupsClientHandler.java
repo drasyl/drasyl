@@ -27,6 +27,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.Serialization;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
@@ -60,7 +61,6 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
@@ -71,25 +71,29 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
     private final Serialization outboundSerialization;
     private final Map<Group, GroupUri> groups;
     private final Map<Group, Future<?>> renewTasks;
+    private final Identity identity;
 
     @SuppressWarnings("java:S2384")
     GroupsClientHandler(final Map<Group, GroupUri> groups,
                         final Map<Group, Future<?>> renewTasks,
                         final Duration firstJoinDelay,
                         final Serialization inboundSerialization,
-                        final Serialization outboundSerialization) {
+                        final Serialization outboundSerialization,
+                        final Identity identity) {
         this.groups = requireNonNull(groups);
         this.renewTasks = requireNonNull(renewTasks);
         this.firstJoinDelay = requireNonNull(firstJoinDelay);
         this.inboundSerialization = requireNonNull(inboundSerialization);
         this.outboundSerialization = requireNonNull(outboundSerialization);
+        this.identity = requireNonNull(identity);
     }
 
     public GroupsClientHandler(final Set<GroupUri> groups,
                                final Serialization inboundSerialization,
-                               final Serialization outboundSerialization) {
+                               final Serialization outboundSerialization,
+                               final Identity identity) {
         this(groups.stream().collect(Collectors.toMap(GroupUri::getGroup, groupURI -> groupURI)),
-                new ConcurrentHashMap<>(), FIRST_JOIN_DELAY, inboundSerialization, outboundSerialization);
+                new ConcurrentHashMap<>(), FIRST_JOIN_DELAY, inboundSerialization, outboundSerialization, identity);
     }
 
     @Override
@@ -206,7 +210,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
                               final MemberLeftMessage msg) {
         final Group group = msg.getGroup();
 
-        if (msg.getMember().equals(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey())) {
+        if (msg.getMember().equals(identity.getIdentityPublicKey())) {
             // cancel renew task
             final Future<?> disposable = renewTasks.remove(group);
             if (disposable != null) {
@@ -259,7 +263,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
     private void joinGroup(final ChannelHandlerContext ctx,
                            final GroupUri group,
                            final boolean renew) {
-        final ProofOfWork proofOfWork = ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork();
+        final ProofOfWork proofOfWork = identity.getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager)))).combine(new CompletableFuture<>());

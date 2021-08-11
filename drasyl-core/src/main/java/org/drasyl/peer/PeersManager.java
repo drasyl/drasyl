@@ -23,7 +23,6 @@ package org.drasyl.peer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundInvoker;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
@@ -31,6 +30,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetUtil;
 
@@ -40,7 +40,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 /**
  * This class contains information about other peers. This includes the public keys, available
@@ -57,20 +56,22 @@ public class PeersManager {
     private final SetMultimap<IdentityPublicKey, Object> paths;
     private final Set<IdentityPublicKey> children;
     private final Set<IdentityPublicKey> superPeers;
+    private final Identity identity;
 
-    public PeersManager() {
-        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashSet<>(), new HashSet<>());
+    public PeersManager(final Identity identity) {
+        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashSet<>(), new HashSet<>(), identity);
     }
 
     @SuppressWarnings("java:S2384")
     PeersManager(final ReadWriteLock lock,
                  final SetMultimap<IdentityPublicKey, Object> paths,
                  final Set<IdentityPublicKey> children,
-                 final Set<IdentityPublicKey> superPeers) {
+                 final Set<IdentityPublicKey> superPeers, final Identity identity) {
         this.lock = lock;
         this.paths = paths;
         this.children = children;
         this.superPeers = superPeers;
+        this.identity = identity;
     }
 
     @Override
@@ -177,7 +178,7 @@ public class PeersManager {
         }
     }
 
-    public void addPathAndSuperPeer(final ChannelHandlerContext ctx,
+    public void addPathAndSuperPeer(final ChannelInboundInvoker ctx,
                                     final IdentityPublicKey publicKey,
                                     final Object path) {
         requireNonNull(publicKey);
@@ -195,7 +196,7 @@ public class PeersManager {
             // role (super peer)
             final boolean firstSuperPeer = superPeers.isEmpty();
             if (superPeers.add(publicKey) && firstSuperPeer) {
-                ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(identity)));
             }
         }
         finally {
@@ -203,7 +204,7 @@ public class PeersManager {
         }
     }
 
-    public void removeSuperPeerAndPath(final ChannelHandlerContext ctx,
+    public void removeSuperPeerAndPath(final ChannelInboundInvoker ctx,
                                        final IdentityPublicKey publicKey,
                                        final Object path) {
         requireNonNull(path);
@@ -213,7 +214,7 @@ public class PeersManager {
 
             // role (super peer)
             if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-                ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(identity)));
             }
 
             // path

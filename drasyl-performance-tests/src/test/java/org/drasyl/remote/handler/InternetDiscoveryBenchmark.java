@@ -85,7 +85,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         peers = new HashMap<>();
         directConnectionPeers = new HashSet<>();
         superPeers = new HashSet<>();
-        peersManager = new PeersManager();
+        peersManager = new PeersManager(IdentityTestUtil.ID_1);
         final Identity identity = IdentityTestUtil.ID_1;
         handler = new InternetDiscovery(openPingsCache, identity, peersManager, uniteAttemptsCache, peers, directConnectionPeers, superPeers, bestSuperPeer);
 

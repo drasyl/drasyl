@@ -59,7 +59,7 @@ class InvalidProofOfWorkFilterTest {
         senderPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
         recipientPublicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
         correspondingId = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
-        peersManager = new PeersManager();
+        peersManager = new PeersManager(IdentityTestUtil.ID_1);
     }
 
     @Test

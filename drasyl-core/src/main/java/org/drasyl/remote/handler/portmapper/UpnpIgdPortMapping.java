@@ -27,6 +27,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.FutureCombiner;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -52,7 +53,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.remote.handler.portmapper.PortMapper.MAPPING_LIFETIME;
 import static org.drasyl.util.protocol.UpnpIgdUtil.SSDP_MULTICAST_ADDRESS;
 
@@ -77,6 +77,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     private final AtomicBoolean ssdpDiscoveryActive;
     private final UpnpIgdUtil upnpIgdUtil;
     private final Set<URI> ssdpServices;
+    private final Identity identity;
     private String description;
     private int port;
     private Future<?> timeoutGuard;
@@ -89,6 +90,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     UpnpIgdPortMapping(final AtomicBoolean ssdpDiscoveryActive,
                        final UpnpIgdUtil upnpIgdUtil,
                        final Set<URI> ssdpServices,
+                       final Identity identity,
                        final String description,
                        final int port,
                        final Future<?> timeoutGuard,
@@ -99,6 +101,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         this.ssdpDiscoveryActive = ssdpDiscoveryActive;
         this.upnpIgdUtil = upnpIgdUtil;
         this.ssdpServices = ssdpServices;
+        this.identity = identity;
         this.description = description;
         this.port = port;
         this.timeoutGuard = timeoutGuard;
@@ -108,8 +111,8 @@ public class UpnpIgdPortMapping implements PortMapping {
         this.onFailure = onFailure;
     }
 
-    public UpnpIgdPortMapping() {
-        this(new AtomicBoolean(), new UpnpIgdUtil(), new HashSet<>(), null, 0, null, null, null, null, null);
+    public UpnpIgdPortMapping(final Identity identity) {
+        this(new AtomicBoolean(), new UpnpIgdUtil(), new HashSet<>(), identity, null, 0, null, null, null, null, null);
     }
 
     @Override
@@ -118,7 +121,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                       final Runnable onFailure) {
         this.onFailure = onFailure;
         this.port = port;
-        description = "drasyl" + ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
+        description = "drasyl" + identity.getIdentityPublicKey().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
         mapPort(ctx);
     }
 

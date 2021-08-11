@@ -41,7 +41,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
@@ -50,7 +49,8 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
  */
 @SuppressWarnings({ "java:S110" })
 public class IntraVmDiscovery extends ChannelDuplexHandler {
-    public static final AttributeKey<PeersManager> PEERS_MANAGER_ATTR_KEY = AttributeKey.valueOf(PeersManager.class, "PEERS_MANAGER");
+    public static final AttributeKey<PeersManager> PEERS_MANAGER_ATTR_KEY = AttributeKey.valueOf(PeersManager.class, "INTRA_VM_PEERS_MANAGER");
+    public static final AttributeKey<Identity> IDENTITY_ATTR_KEY = AttributeKey.valueOf(Identity.class, "INTRA_VM_IDENTITY");
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
     static Map<Pair<Integer, IdentityPublicKey>, ChannelHandlerContext> discoveries = new ConcurrentHashMap<>();

@@ -47,7 +47,7 @@ import java.net.NetworkInterface;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static org.drasyl.remote.handler.UdpMulticastServer.IDENTITY_ATTR_KEY;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_INTERFACE;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -86,7 +86,7 @@ class UdpMulticastServerTest {
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127")));
             when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).awaitUninterruptibly().isSuccess()).thenReturn(true);
 
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, identity, bootstrap, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
@@ -107,7 +107,7 @@ class UdpMulticastServerTest {
         void shouldStopServerOnChannelInactive() {
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127")));
 
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, channel);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, identity, bootstrap, channel);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
@@ -138,7 +138,7 @@ class UdpMulticastServerTest {
             });
 
             final HashMap<IdentityPublicKey, ChannelHandlerContext> nodes = new HashMap<>(Map.of(publicKey, ctx));
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, identity, bootstrap, null);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelActive();

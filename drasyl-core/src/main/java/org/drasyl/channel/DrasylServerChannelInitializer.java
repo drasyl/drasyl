@@ -106,7 +106,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
         ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 
         // convert outbound messages addresses to us to inbound messages
-        ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler());
+        ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler(identity));
 
         // discover nodes running within the same jvm
         if (config.isIntraVmDiscoveryEnabled()) {
@@ -115,7 +115,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
         if (config.isRemoteEnabled()) {
             // convert Object <-> ApplicationMessage
-            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(inboundSerialization, outboundSerialization));
+            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(identity, inboundSerialization, outboundSerialization));
 
             // route outbound messages to pre-configured ip addresses
             if (!config.getRemoteStaticRoutes().isEmpty()) {
@@ -142,7 +142,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                 ch.pipeline().addFirst(MONITORING_HANDLER, new Monitoring());
             }
 
-            ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter());
+            ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter(identity));
 
             ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
                 @Override
@@ -176,7 +176,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addFirst(UDP_MULTICAST_SERVER, UdpMulticastServer.getInstance());
+                ch.pipeline().addFirst(UDP_MULTICAST_SERVER, new UdpMulticastServer(identity));
             }
 
             // tcp fallback
@@ -191,9 +191,9 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             // udp server
             if (config.isRemoteExposeEnabled()) {
-                ch.pipeline().addFirst(PORT_MAPPER, new PortMapper());
+                ch.pipeline().addFirst(PORT_MAPPER, new PortMapper(identity));
             }
-            ch.pipeline().addFirst(UDP_SERVER, new UdpServer());
+            ch.pipeline().addFirst(UDP_SERVER, new UdpServer(identity));
         }
     }
 

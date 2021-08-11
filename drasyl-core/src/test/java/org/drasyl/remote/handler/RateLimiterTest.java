@@ -46,10 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,14 +68,12 @@ class RateLimiterTest {
     @Test
     void shouldRejectAcknowledgementMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                    @Mock final SocketAddress msgSender,
-                                                                   @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
+                                                                   @Mock final Supplier<Long> timeProvider) {
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final AcknowledgementMessage msg = AcknowledgementMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), Nonce.randomNonce());
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());
@@ -95,14 +91,12 @@ class RateLimiterTest {
     @Test
     void shouldRejectDiscoveryMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                              @Mock final SocketAddress msgSender,
-                                                             @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
+                                                             @Mock final Supplier<Long> timeProvider) {
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final DiscoveryMessage msg = DiscoveryMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), 0);
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());
@@ -120,14 +114,12 @@ class RateLimiterTest {
     @Test
     void shouldRejectUniteMessagesThatExceedTheRateLimit(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                          @Mock final SocketAddress msgSender,
-                                                         @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
+                                                         @Mock final Supplier<Long> timeProvider) {
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final UniteMessage msg = UniteMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(1337));
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());
@@ -145,13 +137,10 @@ class RateLimiterTest {
     @Test
     void shouldNotRateLimitMessagesNotAddressedToUs(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                     @Mock final SocketAddress msgSender,
-                                                    @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
-
+                                                    @Mock final Supplier<Long> timeProvider) {
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final UniteMessage msg = UniteMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), recipient.getIdentityPublicKey(), new InetSocketAddress(1337));
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());
@@ -169,13 +158,10 @@ class RateLimiterTest {
     @Test
     void shouldNotRateLimitApplicationMessages(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                @Mock final SocketAddress msgSender,
-                                               @Mock final Supplier<Long> timeProvider) throws Exception {
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
-        when(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()).thenReturn(ownIdentity.getIdentityPublicKey());
-
+                                               @Mock final Supplier<Long> timeProvider) {
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final ApplicationMessage msg = ApplicationMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());

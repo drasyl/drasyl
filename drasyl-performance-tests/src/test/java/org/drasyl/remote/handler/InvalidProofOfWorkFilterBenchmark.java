@@ -47,8 +47,6 @@ import test.util.IdentityTestUtil;
 
 import java.net.SocketAddress;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-
 @State(Scope.Benchmark)
 public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     private MyHandlerContext ctx;
@@ -62,7 +60,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         final Identity sender = IdentityTestUtil.ID_1;
         ctx = new MyHandlerContext();
         msgSender = new MyAddress();
-        msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
+        msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), sender.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
         msgNotAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
         handler = new InvalidProofOfWorkFilter(sender);
     }

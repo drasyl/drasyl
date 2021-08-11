@@ -38,7 +38,7 @@ import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static org.drasyl.intravm.IntraVmDiscovery.IDENTITY_ATTR_KEY;
 
 /**
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.

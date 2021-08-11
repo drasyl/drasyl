@@ -21,27 +21,32 @@
  */
 package org.drasyl.loopback.handler;
 
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This handler converts outgoing messages addressed to the local node to incoming messages
  * addressed to the local node.
  */
-@Sharable
 public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
+    private final Identity identity;
+
+    public LoopbackMessageHandler(final Identity identity) {
+        this.identity = requireNonNull(identity);
+    }
+
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage) {
-            if (ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(((AddressedMessage<?, ?>) msg).address())) {
-                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+            if (identity.getIdentityPublicKey().equals(((AddressedMessage<?, ?>) msg).address())) {
+                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), identity.getIdentityPublicKey()));
             }
             else {
                 ctx.write(msg, promise);

@@ -176,7 +176,7 @@ public abstract class DrasylNode {
             final IdentityManager identityManager = new IdentityManager(config);
             identityManager.loadOrCreateIdentity();
             identity = identityManager.getIdentity();
-            this.peersManager = new PeersManager();
+            this.peersManager = new PeersManager(identity);
             bootstrap = new DrasylBootstrap(config, identity, peersManager)
                     .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
                     .handler(new DrasylNodeServerChannelInitializer())
@@ -203,7 +203,7 @@ public abstract class DrasylNode {
         this.inboundSerialization = null; // FIXME
         this.outboundSerialization = null; // FIXME
         this.identity = null; // FIXME
-        this.peersManager = new PeersManager();
+        this.peersManager = new PeersManager(identity);
         this.pluginManager = pluginManager;
         this.channelFuture = channelFuture;
         LOG.debug("drasyl node with config `{}` and identity `{}` created", bootstrap.config(), bootstrap.identity());

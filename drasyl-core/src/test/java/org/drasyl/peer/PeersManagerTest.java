@@ -40,12 +40,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import test.util.IdentityTestUtil;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
@@ -54,10 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PeersManagerTest {
@@ -67,13 +65,15 @@ class PeersManagerTest {
     private Set<IdentityPublicKey> children;
     private Set<IdentityPublicKey> superPeers;
     private PeersManager underTest;
+    private Identity identity;
 
     @BeforeEach
     void setUp() {
         paths = HashMultimap.create();
         children = new HashSet<>();
         superPeers = new HashSet<>();
-        underTest = new PeersManager(lock, paths, children, superPeers);
+        identity = IdentityTestUtil.ID_1;
+        underTest = new PeersManager(lock, paths, children, superPeers, identity);
     }
 
     @Nested
@@ -84,7 +84,6 @@ class PeersManagerTest {
                                   @Mock final IdentityPublicKey children,
                                   @Mock final IdentityPublicKey peer,
                                   @Mock final Object path) {
-            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             underTest.addPathAndSuperPeer(ctx, superPeer, path);
             underTest.addPathAndChildren(ctx, children, path);
             underTest.addPath(ctx, peer, path);
@@ -226,7 +225,6 @@ class PeersManagerTest {
         void shouldEmitNodeOfflineEventWhenRemovingLastSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                  @Mock final IdentityPublicKey publicKey,
                                                                  @Mock final Object path) {
-            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             superPeers.add(publicKey);
 
             underTest.removeSuperPeerAndPath(ctx, publicKey, path);
@@ -260,7 +258,6 @@ class PeersManagerTest {
         void shouldAddPathAndAddSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock final IdentityPublicKey publicKey,
                                           @Mock final Object path) {
-            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
             assertEquals(Set.of(publicKey), underTest.getSuperPeers());
@@ -271,7 +268,6 @@ class PeersManagerTest {
         void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                      @Mock final IdentityPublicKey publicKey,
                                                                      @Mock final Object path) {
-            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
             underTest.addPathAndSuperPeer(ctx, publicKey, path);
 
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
