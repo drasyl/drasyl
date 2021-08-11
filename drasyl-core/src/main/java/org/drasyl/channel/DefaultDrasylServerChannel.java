@@ -33,7 +33,6 @@ import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
 
 import java.net.SocketAddress;
 import java.util.Map;
@@ -45,18 +44,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DefaultDrasylServerChannel extends AbstractServerChannel {
     public static final AttributeKey<DrasylConfig> CONFIG_ATTR_KEY = AttributeKey.valueOf(DrasylConfig.class, "CONFIG");
     public static final AttributeKey<Identity> IDENTITY_ATTR_KEY = AttributeKey.valueOf(Identity.class, "IDENTITY");
-    public static final AttributeKey<PeersManager> PEERS_MANAGER_ATTR_KEY = AttributeKey.valueOf(PeersManager.class, "PEERS_MANAGER");
     private volatile int state; // 0 - open (node created), 1 - active (node started), 2 - closed (node shut down)
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private volatile Identity localAddress; // NOSONAR
     private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
 
     public DefaultDrasylServerChannel(final DrasylConfig drasylConfig,
-                                      final Identity identity,
-                                      final PeersManager peersManager) {
+                                      final Identity identity) {
         attr(CONFIG_ATTR_KEY).set(drasylConfig);
         attr(IDENTITY_ATTR_KEY).set(identity);
-        attr(PEERS_MANAGER_ATTR_KEY).set(peersManager);
     }
 
     @Override

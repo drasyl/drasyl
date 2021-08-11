@@ -63,8 +63,9 @@ class IntraVmDiscoveryTest {
     class StartDiscovery {
         @Test
         void shouldStartDiscoveryOnChannelActive() {
-            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+            IntraVmDiscovery.discoveries = discoveries;
+            final IntraVmDiscovery handler = new IntraVmDiscovery(lock, peersManager, identity);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 
@@ -80,9 +81,10 @@ class IntraVmDiscoveryTest {
     class StopDiscovery {
         @Test
         void shouldStopDiscoveryOnChannelInactive(@Mock final ChannelHandlerContext ctx) {
+            IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, identity.getIdentityPublicKey()), ctx);
-            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+            final IntraVmDiscovery handler = new IntraVmDiscovery(lock, peersManager, identity);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -100,10 +102,11 @@ class IntraVmDiscoveryTest {
         void shouldSendOutgoingMessageToKnownRecipient(@Mock final IdentityPublicKey recipient,
                                                        @Mock(answer = RETURNS_DEEP_STUBS) final Object message,
                                                        @Mock final ChannelHandlerContext ctx) {
+            IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, recipient), ctx);
 
-            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+            final IntraVmDiscovery handler = new IntraVmDiscovery(lock, peersManager, identity);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -117,8 +120,9 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldPasstroughOutgoingMessageForUnknownRecipients(@Mock final IdentityPublicKey recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
-            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+            IntraVmDiscovery.discoveries = discoveries;
+            final IntraVmDiscovery handler = new IntraVmDiscovery(lock, peersManager, identity);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

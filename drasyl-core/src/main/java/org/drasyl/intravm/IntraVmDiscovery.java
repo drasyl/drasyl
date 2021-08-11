@@ -22,47 +22,52 @@
 package org.drasyl.intravm;
 
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.AttributeKey;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
  * <p>
  * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java
  */
-@ChannelHandler.Sharable
 @SuppressWarnings({ "java:S110" })
 public class IntraVmDiscovery extends ChannelDuplexHandler {
-    public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
+    public static final AttributeKey<PeersManager> PEERS_MANAGER_ATTR_KEY = AttributeKey.valueOf(PeersManager.class, "PEERS_MANAGER");
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
-    private final Map<Pair<Integer, IdentityPublicKey>, ChannelHandlerContext> discoveries;
+    static Map<Pair<Integer, IdentityPublicKey>, ChannelHandlerContext> discoveries = new ConcurrentHashMap<>();
     private final ReadWriteLock lock;
+    private final PeersManager peersManager;
+    private final Identity identity;
 
-    IntraVmDiscovery() {
-        this(new HashMap<>(), new ReentrantReadWriteLock(true));
+    public IntraVmDiscovery(final PeersManager peersManager, final Identity identity) {
+        this(new ReentrantReadWriteLock(true), peersManager, identity);
     }
 
-    IntraVmDiscovery(final Map<Pair<Integer, IdentityPublicKey>, ChannelHandlerContext> discoveries,
-                     final ReadWriteLock lock) {
-        this.discoveries = discoveries;
+    IntraVmDiscovery(final ReadWriteLock lock,
+                     final PeersManager peersManager,
+                     final Identity identity) {
         this.lock = lock;
+        this.peersManager = requireNonNull(peersManager);
+        this.identity = requireNonNull(identity);
     }
 
     @Override
@@ -113,19 +118,19 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
         }
     }
 
-    private void stopDiscovery(final ChannelHandlerContext ctx) {
+    private void stopDiscovery(final ChannelHandlerContext myCtx) {
         try {
             lock.writeLock().lock();
             LOG.debug("Stop Intra VM Discovery...");
 
             // remove peer information
-            discoveries.remove(Pair.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
+            discoveries.remove(Pair.of(myCtx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), myCtx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey()));
             discoveries.forEach((key, otherCtx) -> {
                 final Integer networkId = key.first();
                 final IdentityPublicKey publicKey = key.second();
-                if (ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == networkId) {
-                    otherCtx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
-                    ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
+                if (myCtx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == networkId) {
+                    otherCtx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(myCtx, publicKey, path);
+                    myCtx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(myCtx, publicKey, path);
                 }
             });
 
@@ -148,5 +153,13 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
         stopDiscovery(ctx);
 
         super.channelInactive(ctx);
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().attr(IDENTITY_ATTR_KEY).set(identity);
+        ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).set(peersManager);
+
+        super.handlerAdded(ctx);
     }
 }

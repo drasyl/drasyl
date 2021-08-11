@@ -32,7 +32,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -40,7 +39,6 @@ import java.util.Queue;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
@@ -50,11 +48,9 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
 
     public EmbeddedDrasylServerChannel(final DrasylConfig config,
                                        final Identity identity,
-                                       final PeersManager peersManager,
                                        final ChannelHandler... handlers) {
         attr(CONFIG_ATTR_KEY).set(requireNonNull(config));
         attr(IDENTITY_ATTR_KEY).set(requireNonNull(identity));
-        attr(PEERS_MANAGER_ATTR_KEY).set(requireNonNull(peersManager));
 
         pipeline().addLast(new ChannelInitializer<>() {
             @Override

@@ -32,7 +32,6 @@ import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -80,7 +79,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     .identitySecretKey(identity2.getIdentitySecretKey())
                     .build();
 
-            pipeline = new EmbeddedDrasylServerChannel(config2, identity2, new PeersManager(),
+            pipeline = new EmbeddedDrasylServerChannel(config2, identity2,
                     handler,
                     new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
                         @Override

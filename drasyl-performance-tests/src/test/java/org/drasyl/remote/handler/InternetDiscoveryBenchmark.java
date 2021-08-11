@@ -37,7 +37,9 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.handler.InternetDiscovery.Peer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.Nonce;
@@ -74,6 +76,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     private ChannelPromise future;
     private Set<IdentityPublicKey> superPeers;
     private IdentityPublicKey bestSuperPeer;
+    private PeersManager peersManager;
 
     @Setup
     public void setup() {
@@ -82,7 +85,9 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         peers = new HashMap<>();
         directConnectionPeers = new HashSet<>();
         superPeers = new HashSet<>();
-        handler = new InternetDiscovery(openPingsCache, uniteAttemptsCache, peers, directConnectionPeers, superPeers, bestSuperPeer);
+        peersManager = new PeersManager();
+        final Identity identity = IdentityTestUtil.ID_1;
+        handler = new InternetDiscovery(openPingsCache, identity, peersManager, uniteAttemptsCache, peers, directConnectionPeers, superPeers, bestSuperPeer);
 
         ctx = new MyHandlerContext();
         recipient = new MyAddress();

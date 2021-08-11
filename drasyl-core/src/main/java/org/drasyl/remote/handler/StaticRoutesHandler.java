@@ -23,32 +23,31 @@ package org.drasyl.remote.handler;
 
 import com.typesafe.config.Config;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
  * This handler uses preconfigured static routes ({@link org.drasyl.DrasylConfig#getStaticRoutes(Config,
  * String)}) to deliver messages.
  */
-@Sharable
 public final class StaticRoutesHandler extends ChannelDuplexHandler {
-    public static final StaticRoutesHandler INSTANCE = new StaticRoutesHandler();
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
+    private final PeersManager peersManager;
 
-    private StaticRoutesHandler() {
-        // singleton
+    public StaticRoutesHandler(final PeersManager peersManager) {
+        this.peersManager = requireNonNull(peersManager);
     }
 
     @Override
@@ -88,11 +87,11 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
         ctx.fireChannelInactive();
     }
 
-    private static synchronized void populateRoutes(final ChannelHandlerContext ctx) {
-        ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path)));
+    private void populateRoutes(final ChannelHandlerContext ctx) {
+        ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().forEach(((publicKey, address) -> peersManager.addPath(ctx, publicKey, path)));
     }
 
-    private static synchronized void clearRoutes(final ChannelHandlerContext ctx) {
-        ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path));
+    private void clearRoutes(final ChannelHandlerContext ctx) {
+        ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().keySet().forEach(publicKey -> peersManager.removePath(ctx, publicKey, path));
     }
 }

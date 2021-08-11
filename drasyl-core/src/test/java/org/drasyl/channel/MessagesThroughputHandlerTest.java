@@ -79,7 +79,7 @@ class MessagesThroughputHandlerTest {
         });
 
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
         try {
             pipeline.pipeline().fireChannelActive();
 
@@ -93,7 +93,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldStopTaskOnChannelInactive() {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, disposable);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
         try {
             pipeline.pipeline().fireChannelInactive();
 
@@ -107,7 +107,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldRecordOutboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(new Object(), address));
 
@@ -123,7 +123,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldRecordInboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
         }
@@ -139,7 +139,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldConsumeMatchingOutboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(new Object(), address));
 
@@ -153,7 +153,7 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldConsumeMatchingInboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
 

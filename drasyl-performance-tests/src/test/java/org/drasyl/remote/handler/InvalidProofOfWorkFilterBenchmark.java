@@ -55,6 +55,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     private SocketAddress msgSender;
     private ApplicationMessage msgAddressedToMe;
     private ApplicationMessage msgNotAddressedToMe;
+    private InvalidProofOfWorkFilter handler;
 
     @Setup
     public void setup() {
@@ -63,13 +64,14 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         msgSender = new MyAddress();
         msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), ctx.attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
         msgNotAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
+        handler = new InvalidProofOfWorkFilter(sender);
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void acceptMsgAddressedToMe() {
         try {
-            InvalidProofOfWorkFilter.INSTANCE.channelRead0(ctx, new AddressedMessage<>(msgAddressedToMe, msgSender));
+            handler.channelRead0(ctx, new AddressedMessage<>(msgAddressedToMe, msgSender));
         }
         catch (final Exception e) {
             handleUnexpectedException(e);
@@ -80,7 +82,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void acceptMsgNotAddressedToMe() {
         try {
-            InvalidProofOfWorkFilter.INSTANCE.channelRead0(ctx, new AddressedMessage<>(msgAddressedToMe, msgSender));
+            handler.channelRead0(ctx, new AddressedMessage<>(msgAddressedToMe, msgSender));
         }
         catch (final Exception e) {
             handleUnexpectedException(e);

@@ -21,25 +21,24 @@
  */
 package org.drasyl.remote.handler;
 
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.remote.protocol.RemoteMessage;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 
 /**
  * This handler filters out all messages received with invalid proof of work.
  */
 @SuppressWarnings("java:S110")
-@Sharable
 public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
-    public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
+    private final Identity identity;
 
-    private InvalidProofOfWorkFilter() {
-        // singleton
+    public InvalidProofOfWorkFilter(final Identity identity) {
+        this.identity = requireNonNull(identity);
     }
 
     @Override
@@ -47,7 +46,7 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
                                 final AddressedMessage<?, ?> msg) throws InvalidProofOfWorkException {
         if (msg.message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
-            final boolean validProofOfWork = !ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
+            final boolean validProofOfWork = !identity.getIdentityPublicKey().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
             if (validProofOfWork) {
                 ctx.fireChannelRead(msg.retain());
             }

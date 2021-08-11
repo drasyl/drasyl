@@ -32,6 +32,7 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.LongTimeEncryptionEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.remote.protocol.ArmedMessage;
@@ -55,8 +56,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongUnaryOperator;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-
 /**
  * Arms (encrypt) outbound and disarms (decrypt) inbound messages. Considers only messages that are
  * addressed from or to us. Messages that could not be (dis-)armed are dropped.
@@ -70,26 +69,29 @@ public class ArmHandler extends ChannelDuplexHandler {
     private final Duration retryInterval;
     private final int maxAgreements;
     private final LongUnaryOperator updateLastModificationTime;
+    private final Identity identity;
 
     protected ArmHandler(final Map<IdentityPublicKey, Session> sessions,
                          final Crypto crypto,
                          final int maxAgreements,
                          final Duration expireAfter,
                          final Duration retryInterval,
-                         final LongUnaryOperator updateLastModificationTime) {
+                         final LongUnaryOperator updateLastModificationTime,
+                         final Identity identity) {
         this.sessions = sessions;
         this.crypto = crypto;
         this.maxAgreements = maxAgreements;
         this.expireAfter = expireAfter;
         this.retryInterval = retryInterval;
         this.updateLastModificationTime = updateLastModificationTime;
+        this.identity = identity;
     }
 
     protected ArmHandler(final Map<IdentityPublicKey, Session> sessions,
                          final Crypto crypto,
                          final int maxAgreements,
                          final Duration expireAfter,
-                         final Duration retryInterval) {
+                         final Duration retryInterval, final Identity identity) {
         this(sessions,
                 crypto,
                 maxAgreements,
@@ -101,18 +103,18 @@ public class ArmHandler extends ChannelDuplexHandler {
                     }
 
                     return time;
-                });
+                }, identity);
     }
 
     public ArmHandler(final int maxSessionsCount,
                       final int maxAgreements,
                       final Duration expireAfter,
-                      final Duration retryInterval) {
+                      final Duration retryInterval, final Identity identity) {
         this(CacheBuilder.newBuilder()
                 .expireAfterAccess(expireAfter.toMillis(), TimeUnit.MILLISECONDS)
                 .maximumSize(maxSessionsCount)
                 .<IdentityPublicKey, Session>build()
-                .asMap(), Crypto.INSTANCE, maxAgreements, expireAfter, retryInterval);
+                .asMap(), Crypto.INSTANCE, maxAgreements, expireAfter, retryInterval, identity);
     }
 
     protected void filteredOutbound(final ChannelHandlerContext ctx,
@@ -227,10 +229,10 @@ public class ArmHandler extends ChannelDuplexHandler {
         return sessions.computeIfAbsent(recipientsKey, k -> {
             try {
                 final SessionPair longTimeSession = crypto.generateSessionKeyPair(
-                        ctx.channel().attr(IDENTITY_ATTR_KEY).get().getKeyAgreementKeyPair(),
+                        identity.getKeyAgreementKeyPair(),
                         recipientsKey.getLongTimeKeyAgreementKey());
                 final AgreementId agreementId = AgreementId.of(
-                        ctx.channel().attr(IDENTITY_ATTR_KEY).get().getKeyAgreementPublicKey(),
+                        identity.getKeyAgreementPublicKey(),
                         recipientsKey.getLongTimeKeyAgreementKey());
 
                 return new Session(agreementId, longTimeSession, this.maxAgreements, this.expireAfter);
@@ -283,8 +285,8 @@ public class ArmHandler extends ChannelDuplexHandler {
          * completed agreement, we want to send a key exchange message.
          */
         if (session.getLastKeyExchangeAt().getAndUpdate(updateLastModificationTime) < System.currentTimeMillis() - retryInterval.toMillis()) {
-            LOG.trace("[{} => {}] Send key exchange message, do to key exchange overdue", () -> ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientPublicKey.toString().substring(0, 4));
-            ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, agreement, recipient, recipientPublicKey);
+            LOG.trace("[{} => {}] Send key exchange message, do to key exchange overdue", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientPublicKey.toString().substring(0, 4));
+            ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, agreement, recipient, recipientPublicKey, identity);
         }
     }
 
@@ -301,7 +303,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                                          final AgreementId id,
                                          final Session session,
                                          final IdentityPublicKey recipientsPublicKey) {
-        LOG.trace("[{} <= {}] Received ack message", () -> ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsPublicKey.toString().substring(0, 4));
+        LOG.trace("[{} <= {}] Received ack message", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientsPublicKey.toString().substring(0, 4));
 
         session.getCurrentInactiveAgreement().computeOnCondition(a -> a != null && id.equals(a.getAgreementId().orElse(null)), a -> {
             final Agreement initializedAgreement = a.toBuilder()
@@ -346,7 +348,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                 final IdentityPublicKey recipientsKey = plaintextMsg.getSender(); // on inbound our recipient is the sender of the message
                 final KeyAgreementPublicKey sessionKey = plaintextMsg.getSessionKey();
 
-                LOG.trace("[{} <= {}] Received key exchange message", () -> ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
+                LOG.trace("[{} <= {}] Received key exchange message", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
 
                 ArmHandlerUtil.computeInactiveAgreementIfNeeded(crypto, session);
                 session.getCurrentInactiveAgreement().computeOnCondition(Objects::nonNull,
@@ -357,7 +359,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                 doKeyExchange(session, ctx, sender, recipientsKey);
 
                 // encrypt message with long time key
-                FutureCombiner.getInstance().add(ArmHandlerUtil.sendAck(crypto, ctx, sender, recipientsKey, session)).combine(future);
+                FutureCombiner.getInstance().add(ArmHandlerUtil.sendAck(crypto, ctx, sender, recipientsKey, session, identity)).combine(future);
             }
             catch (final Exception e) {
                 future.completeExceptionally(new CryptoException(e));
@@ -391,8 +393,8 @@ public class ArmHandler extends ChannelDuplexHandler {
                 && session.getLastRenewAttemptAt().getAndUpdate(updateLastModificationTime) < System.currentTimeMillis() - retryInterval.toMillis()) {
             final Agreement inactiveAgreement = ArmHandlerUtil.computeInactiveAgreementIfNeeded(crypto, session);
 
-            LOG.trace("[{} => {}] Send key exchange message, do to renewable", () -> ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
-            ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, inactiveAgreement, recipient, recipientsKey);
+            LOG.trace("[{} => {}] Send key exchange message, do to renewable", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
+            ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, inactiveAgreement, recipient, recipientsKey, identity);
         }
     }
 
@@ -409,8 +411,8 @@ public class ArmHandler extends ChannelDuplexHandler {
                 return;
             }
 
-            if (!ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getSender())
-                    || ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(fullReadMsg.getRecipient())) {
+            if (!identity.getIdentityPublicKey().equals(fullReadMsg.getSender())
+                    || identity.getIdentityPublicKey().equals(fullReadMsg.getRecipient())) {
                 ctx.write(msg, promise);
                 return;
             }
@@ -428,8 +430,8 @@ public class ArmHandler extends ChannelDuplexHandler {
             final ArmedMessage armedMessage = (ArmedMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
 
-            if (!ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(armedMessage.getRecipient())
-                    || ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(armedMessage.getSender())) {
+            if (!identity.getIdentityPublicKey().equals(armedMessage.getRecipient())
+                    || identity.getIdentityPublicKey().equals(armedMessage.getSender())) {
                 ctx.fireChannelRead(msg);
                 return;
             }

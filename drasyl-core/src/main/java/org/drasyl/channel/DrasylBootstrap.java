@@ -31,7 +31,6 @@ import io.netty.channel.ServerChannel;
 import io.netty.util.internal.ObjectUtil;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.PeersManager;
 
 import java.io.IOException;
@@ -56,18 +55,13 @@ public class DrasylBootstrap {
      *
      * @throws IOException if identity could not be loaded or created
      */
-    public DrasylBootstrap(final DrasylConfig config) throws IOException {
+    public DrasylBootstrap(final DrasylConfig config,
+                           final Identity identity,
+                           final PeersManager peersManager) throws IOException {
         this.config = requireNonNull(config);
-        final IdentityManager identityManager = new IdentityManager(this.config);
-        identityManager.loadOrCreateIdentity();
-        identity = identityManager.getIdentity();
-
-        channelFactory = () -> new DefaultDrasylServerChannel(
-                config,
-                identity,
-                new PeersManager()
-        );
-        handler = new DrasylServerChannelInitializer(config, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()));
+        this.identity = requireNonNull(identity);
+        channelFactory = () -> new DefaultDrasylServerChannel(config, identity);
+        handler = new DrasylServerChannelInitializer(config, new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()), new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound()), peersManager, identity);
     }
 
     /**

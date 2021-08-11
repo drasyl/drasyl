@@ -82,7 +82,7 @@ class UdpServerTest {
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "")));
 
             final UdpServer handler = new UdpServer(bootstrap, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 
@@ -129,7 +129,7 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -149,7 +149,7 @@ class UdpServerTest {
             when(channel.isWritable()).thenReturn(true);
 
             final UdpServer handler = new UdpServer(bootstrap, channel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
@@ -178,7 +178,7 @@ class UdpServerTest {
 
             final UdpServer handler = new UdpServer(bootstrap, null);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 

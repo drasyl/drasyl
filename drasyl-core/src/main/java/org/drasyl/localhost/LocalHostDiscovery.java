@@ -27,7 +27,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.util.SetUtil;
@@ -61,8 +63,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.RandomUtil.randomLong;
@@ -86,14 +86,18 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     public static final String FILE_SUFFIX = ".json";
     private final ThrowingBiConsumer<File, Object, IOException> jacksonWriter;
     private final Map<IdentityPublicKey, SocketAddress> routes;
+    private final Identity identity;
+    private final PeersManager peersManager;
     private Future<?> watchDisposable;
     private Future<?> postDisposable;
     private WatchService watchService; // NOSONAR
 
-    public LocalHostDiscovery() {
+    public LocalHostDiscovery(final Identity identity,
+                              final PeersManager peersManager) {
         this(
                 JACKSON_WRITER::writeValue,
                 new HashMap<>(),
+                identity, peersManager,
                 null,
                 null
         );
@@ -102,10 +106,14 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @SuppressWarnings({ "java:S107" })
     LocalHostDiscovery(final ThrowingBiConsumer<File, Object, IOException> jacksonWriter,
                        final Map<IdentityPublicKey, SocketAddress> routes,
+                       final Identity identity,
+                       final PeersManager peersManager,
                        final Future<?> watchDisposable,
                        final Future<?> postDisposable) {
         this.jacksonWriter = requireNonNull(jacksonWriter);
         this.routes = requireNonNull(routes);
+        this.identity = requireNonNull(identity);
+        this.peersManager = requireNonNull(peersManager);
         this.watchDisposable = watchDisposable;
         this.postDisposable = postDisposable;
     }
@@ -150,7 +158,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                 tryWatchDirectory(ctx, discoveryPath);
             }
             ctx.executor().execute(() -> scan(ctx));
-            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString() + ".json"), port);
+            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(identity.getIdentityPublicKey().toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
 
@@ -167,7 +175,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             postDisposable.cancel(false);
         }
 
-        final Path filePath = discoveryPath(ctx).resolve(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString() + ".json");
+        final Path filePath = discoveryPath(ctx).resolve(identity.getIdentityPublicKey().toString() + ".json");
         if (filePath.toFile().exists()) {
             try {
                 Files.delete(filePath);
@@ -177,7 +185,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             }
         }
 
-        routes.keySet().forEach(publicKey -> ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, LocalHostDiscovery.path));
+        routes.keySet().forEach(publicKey -> peersManager.removePath(ctx, publicKey, LocalHostDiscovery.path));
         routes.clear();
 
         LOG.debug("Local Host Discovery stopped.");
@@ -257,7 +265,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     synchronized void scan(final ChannelHandlerContext ctx) {
         final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
-        final String ownPublicKeyString = ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString();
+        final String ownPublicKeyString = identity.getIdentityPublicKey().toString();
         final long maxAge = System.currentTimeMillis() - ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime().toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
         if (files != null) {
@@ -295,7 +303,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().removePath(ctx, publicKey, path);
+                peersManager.removePath(ctx, publicKey, path);
                 i.remove();
             }
         }
@@ -304,7 +312,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         newRoutes.forEach(((publicKey, address) -> {
             if (!routes.containsKey(publicKey)) {
                 routes.put(publicKey, address);
-                ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get().addPath(ctx, publicKey, path);
+                peersManager.addPath(ctx, publicKey, path);
             }
         }));
     }

@@ -23,7 +23,6 @@ package org.drasyl.monitoring;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
@@ -45,7 +44,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.PEERS_MANAGER_ATTR_KEY;
 
 /**
  * Monitors various states or events in the drasyl node.
@@ -84,11 +82,6 @@ public class Monitoring extends ChannelDuplexHandler {
                             "public_key", ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString(),
                             "host", hostTag
                     );
-
-                    // monitor PeersManager
-                    Gauge.builder("peersManager.peers", ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getPeers().size()).register(newRegistry);
-                    Gauge.builder("peersManager.superPeers", ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getSuperPeers().size()).register(newRegistry);
-                    Gauge.builder("peersManager.children", ctx.channel().attr(PEERS_MANAGER_ATTR_KEY).get(), pm -> pm.getChildren().size()).register(newRegistry);
 
                     return newRegistry;
                 },

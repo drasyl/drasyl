@@ -27,6 +27,7 @@ import io.netty.channel.ChannelOutboundInvoker;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
@@ -46,7 +47,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 
 /**
  * A simple util/helper class for the {@link ArmHandler} that provides some static methods.
@@ -112,13 +112,15 @@ public final class ArmHandlerUtil {
      * @param recipientsAddress the address of the recipient
      * @param recipientsKey     the public key of the recipient
      * @param session           the corresponding session
+     * @param identity
      * @return the future for the acknowledgement message
      */
     public static CompletableFuture<Void> sendAck(final Crypto cryptoInstance,
                                                   final ChannelHandlerContext ctx,
                                                   final SocketAddress recipientsAddress,
                                                   final IdentityPublicKey recipientsKey,
-                                                  final Session session) {
+                                                  final Session session,
+                                                  final Identity identity) {
         final Optional<Agreement> agreement = session.getCurrentInactiveAgreement().getValue();
 
         if (agreement.isPresent() && agreement.get().getAgreementId().isPresent()) {
@@ -128,16 +130,16 @@ public final class ArmHandlerUtil {
             return ArmHandlerUtil.sendEncrypted(cryptoInstance, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipientsAddress,
                     KeyExchangeAcknowledgementMessage.of(
                             ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(),
-                            ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
-                            ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
+                            identity.getIdentityPublicKey(),
+                            identity.getProofOfWork(),
                             recipientsKey,
                             agreementId
                     ), new CompletableFuture<>()).whenComplete((x, e) -> {
                 if (e == null) {
-                    LOG.trace("[{} => {}] Send ack message for session {}", () -> ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId);
+                    LOG.trace("[{} => {}] Send ack message for session {}", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId);
                 }
                 else {
-                    LOG.debug("[{} => {}] Error on sending ack message for session {}: {}", () -> ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId, () -> e);
+                    LOG.debug("[{} => {}] Error on sending ack message for session {}: {}", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId, () -> e);
                 }
             });
         }
@@ -155,17 +157,19 @@ public final class ArmHandlerUtil {
      * @param agreement      the respective agreement
      * @param recipient      the recipient of the agreement
      * @param recipientsKey  the public key of the recipient
+     * @param identity
      */
     public static void sendKeyExchangeMsg(final Crypto cryptoInstance,
                                           final ChannelHandlerContext ctx,
                                           final Session session,
                                           final Agreement agreement,
                                           final SocketAddress recipient,
-                                          final IdentityPublicKey recipientsKey) {
+                                          final IdentityPublicKey recipientsKey,
+                                          final Identity identity) {
         final FullReadMessage<?> msg = KeyExchangeMessage.of(
                 ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(),
-                ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(),
-                ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(),
+                identity.getIdentityPublicKey(),
+                identity.getProofOfWork(),
                 recipientsKey,
                 agreement.getKeyPair().getPublicKey());
 

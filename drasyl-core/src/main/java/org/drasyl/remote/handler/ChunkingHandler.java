@@ -32,6 +32,7 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.PartialReadMessage;
@@ -50,8 +51,8 @@ import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER_LENGTH;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
@@ -63,8 +64,10 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 public class ChunkingHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkingHandler.class);
     private final Worm<Map<Nonce, ChunksCollector>> chunksCollectors;
+    private final Identity identity;
 
-    public ChunkingHandler() {
+    public ChunkingHandler(final Identity identity) {
+        this.identity = requireNonNull(identity);
         this.chunksCollectors = Worm.of();
     }
 
@@ -75,7 +78,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
 
             // message is addressed to me
-            if (ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(chunkMsg.getRecipient())) {
+            if (identity.getIdentityPublicKey().equals(chunkMsg.getRecipient())) {
                 handleInboundChunk(ctx, sender, chunkMsg, new CompletableFuture<>());
             }
             else {
@@ -96,7 +99,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
-            if (ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getSender())) {
+            if (identity.getIdentityPublicKey().equals(remoteMsg.getSender())) {
                 // message from us, check if we have to chunk it
                 final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
                 remoteMsg.writeTo(messageByteBuf);

@@ -51,6 +51,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.plugin.PluginManager;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.tcp.TcpServer;
@@ -73,7 +74,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.channel.Null.NULL;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
 
@@ -112,6 +112,7 @@ public abstract class DrasylNode {
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
     private final Identity identity;
+    private final PeersManager peersManager;
     private ChannelFuture channelFuture;
 
     static {
@@ -175,7 +176,8 @@ public abstract class DrasylNode {
             final IdentityManager identityManager = new IdentityManager(config);
             identityManager.loadOrCreateIdentity();
             identity = identityManager.getIdentity();
-            bootstrap = new DrasylBootstrap(config)
+            this.peersManager = new PeersManager();
+            bootstrap = new DrasylBootstrap(config, identity, peersManager)
                     .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
                     .handler(new DrasylNodeServerChannelInitializer())
                     .childHandler(new DrasylNodeChannelInitializer(this::onEvent));
@@ -201,6 +203,7 @@ public abstract class DrasylNode {
         this.inboundSerialization = null; // FIXME
         this.outboundSerialization = null; // FIXME
         this.identity = null; // FIXME
+        this.peersManager = new PeersManager();
         this.pluginManager = pluginManager;
         this.channelFuture = channelFuture;
         LOG.debug("drasyl node with config `{}` and identity `{}` created", bootstrap.config(), bootstrap.identity());
@@ -475,7 +478,7 @@ public abstract class DrasylNode {
         private boolean errorOccurred;
 
         public DrasylNodeServerChannelInitializer(final boolean errorOccurred) {
-            super(config, inboundSerialization, outboundSerialization);
+            super(config, inboundSerialization, outboundSerialization, peersManager, identity);
             this.errorOccurred = errorOccurred;
         }
 
@@ -499,7 +502,7 @@ public abstract class DrasylNode {
                     super.channelActive(ctx);
 
                     LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
-                    userEventTriggered(ctx, NodeUpEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                    userEventTriggered(ctx, NodeUpEvent.of(Node.of(identity)));
                     LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
 
                     pluginManager.afterStart(ctx);
@@ -513,8 +516,8 @@ public abstract class DrasylNode {
 
                     if (!errorOccurred) {
                         LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
-                        userEventTriggered(ctx, NodeDownEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
-                        userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
+                        userEventTriggered(ctx, NodeDownEvent.of(Node.of(identity)));
+                        userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of(identity)));
                         LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
                     }
                 }
@@ -551,7 +554,7 @@ public abstract class DrasylNode {
                                             final Throwable e) {
                     if (e instanceof UdpServer.BindFailedException || e instanceof TcpServer.BindFailedException) {
                         LOG.warn("drasyl node faced unrecoverable error and must shut down:", e);
-                        userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e));
+                        userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(identity), e));
                         ch.close();
                     }
                     else if (e instanceof EncoderException) {

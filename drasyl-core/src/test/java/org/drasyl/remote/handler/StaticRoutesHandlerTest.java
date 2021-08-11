@@ -57,7 +57,8 @@ class StaticRoutesHandlerTest {
         final SocketAddress address = new InetSocketAddress(22527);
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        final StaticRoutesHandler handler = new StaticRoutesHandler(peersManager);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
         try {
             pipeline.pipeline().fireChannelActive();
 
@@ -73,7 +74,8 @@ class StaticRoutesHandlerTest {
                                             @Mock final SocketAddress address) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        final StaticRoutesHandler handler = new StaticRoutesHandler(peersManager);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
         try {
             pipeline.pipeline().fireChannelInactive();
 
@@ -90,7 +92,8 @@ class StaticRoutesHandlerTest {
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        final StaticRoutesHandler handler = new StaticRoutesHandler(peersManager);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
@@ -109,7 +112,8 @@ class StaticRoutesHandlerTest {
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
 
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, peersManager, StaticRoutesHandler.INSTANCE);
+        final StaticRoutesHandler handler = new StaticRoutesHandler(peersManager);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 

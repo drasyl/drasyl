@@ -27,11 +27,13 @@ import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
 import org.drasyl.remote.handler.InternetDiscovery;
@@ -83,13 +85,19 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
     private final DrasylConfig config;
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
+    private final PeersManager peersManager;
+    private final Identity identity;
 
     public DrasylServerChannelInitializer(final DrasylConfig config,
                                           final Serialization inboundSerialization,
-                                          final Serialization outboundSerialization) {
+                                          final Serialization outboundSerialization,
+                                          final PeersManager peersManager,
+                                          final Identity identity) {
         this.config = requireNonNull(config);
         this.inboundSerialization = requireNonNull(inboundSerialization);
         this.outboundSerialization = requireNonNull(outboundSerialization);
+        this.peersManager = requireNonNull(peersManager);
+        this.identity = requireNonNull(identity);
     }
 
     @SuppressWarnings({ "java:S138", "java:S1541", "java:S3776" })
@@ -102,7 +110,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
         // discover nodes running within the same jvm
         if (config.isIntraVmDiscoveryEnabled()) {
-            ch.pipeline().addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
+            ch.pipeline().addFirst(INTRA_VM_DISCOVERY, new IntraVmDiscovery(peersManager, identity));
         }
 
         if (config.isRemoteEnabled()) {
@@ -111,21 +119,21 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             // route outbound messages to pre-configured ip addresses
             if (!config.getRemoteStaticRoutes().isEmpty()) {
-                ch.pipeline().addFirst(STATIC_ROUTES_HANDLER, StaticRoutesHandler.INSTANCE);
+                ch.pipeline().addFirst(STATIC_ROUTES_HANDLER, new StaticRoutesHandler(peersManager));
             }
 
             if (config.isRemoteLocalHostDiscoveryEnabled()) {
                 // discover nodes running on the same local computer
-                ch.pipeline().addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery());
+                ch.pipeline().addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(identity, peersManager));
             }
 
             // discovery nodes on the local network
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery());
+                ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery(identity, peersManager));
             }
 
             // discover nodes on the internet
-            ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config));
+            ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config, identity, peersManager));
 
             // outbound message guards
             ch.pipeline().addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
@@ -155,15 +163,15 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                         config.getRemoteMessageArmSessionMaxCount(),
                         config.getRemoteMessageArmSessionMaxAgreements(),
                         config.getRemoteMessageArmSessionExpireAfter(),
-                        config.getRemoteMessageArmSessionRetryInterval()));
+                        config.getRemoteMessageArmSessionRetryInterval(), identity));
             }
 
             // filter out inbound messages with invalid proof of work or other network id
-            ch.pipeline().addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);
+            ch.pipeline().addFirst(INVALID_PROOF_OF_WORK_FILTER, new InvalidProofOfWorkFilter(identity));
             ch.pipeline().addFirst(OTHER_NETWORK_FILTER, OtherNetworkFilter.INSTANCE);
 
             // split messages too big for udp
-            ch.pipeline().addFirst(CHUNKING_HANDLER, new ChunkingHandler());
+            ch.pipeline().addFirst(CHUNKING_HANDLER, new ChunkingHandler(identity));
             // convert RemoteMessage <-> ByteBuf
             ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 

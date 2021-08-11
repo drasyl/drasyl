@@ -49,7 +49,7 @@ class LoopbackMessageHandlerTest {
     @Test
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final IdentityPublicKey recipient,
                                                     @Mock final Object message) {
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new LoopbackMessageHandler());
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, new LoopbackMessageHandler());
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -68,7 +68,7 @@ class LoopbackMessageHandlerTest {
                                                    @Mock(answer = Answers.RETURNS_DEEP_STUBS) final Object message) {
         when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, new LoopbackMessageHandler());
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, new LoopbackMessageHandler());
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

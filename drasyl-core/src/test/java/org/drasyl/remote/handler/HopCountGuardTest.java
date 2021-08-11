@@ -79,7 +79,7 @@ class HopCountGuardTest {
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final FullReadMessage<AcknowledgementMessage> message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
 
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -100,7 +100,7 @@ class HopCountGuardTest {
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final RemoteMessage message = AcknowledgementMessage.of(randomNonce(), 0, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, HopCount.of(MAX_HOP_COUNT), agreementId, correspondingId);
 
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, peersManager, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
         try {
             final ChannelPromise promise = pipeline.newPromise();
             pipeline.writeAndFlush(new AddressedMessage<>(message, message.getSender()), promise);
