@@ -26,6 +26,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 
@@ -46,7 +47,7 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final AddressedMessage<?, ?> msg,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) throws InvalidMessageFormatException {
         if (msg.message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
 
@@ -63,7 +64,7 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final AddressedMessage<?, ?> msg,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) throws InvalidMessageFormatException {
         if (msg.message() instanceof ByteBuf) {
             final ByteBuf byteBufMsg = (ByteBuf) msg.message();
 

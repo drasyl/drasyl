@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.EncoderException;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -39,6 +40,7 @@ import org.drasyl.channel.DrasylChannelEventLoopGroupUtil;
 import org.drasyl.channel.DrasylServerChannelInitializer;
 import org.drasyl.channel.MessageSerializer;
 import org.drasyl.event.Event;
+import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
@@ -48,6 +50,8 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.PluginManager;
+import org.drasyl.remote.handler.UdpServer;
+import org.drasyl.remote.handler.tcp.TcpServer;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
@@ -519,9 +523,17 @@ public abstract class DrasylNode {
                 @Override
                 public void exceptionCaught(final ChannelHandlerContext ctx,
                                             final Throwable e) {
-                    LOG.warn("drasyl node faced error and will shut down:", e);
-                    userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e));
-                    ch.close();
+                    if (e instanceof UdpServer.BindFailedException || e instanceof TcpServer.BindFailedException) {
+                        LOG.warn("drasyl node faced unrecoverable error and must shut down:", e);
+                        userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get()), e));
+                        ch.close();
+                    }
+                    else if (e instanceof EncoderException) {
+                        LOG.error(e);
+                    }
+                    else {
+                        userEventTriggered(ctx, InboundExceptionEvent.of(e));
+                    }
                 }
             });
 

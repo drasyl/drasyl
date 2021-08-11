@@ -231,7 +231,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage) {
             final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
@@ -254,7 +254,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             }
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 
@@ -317,20 +317,20 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) {
         startHeartbeat(ctx);
 
-        super.channelActive(ctx);
+        ctx.fireChannelActive();
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(final ChannelHandlerContext ctx) {
         stopHeartbeat();
         openPingsCache.clear();
         uniteAttemptsCache.clear();
         removeAllPeers(ctx);
 
-        super.channelInactive(ctx);
+        ctx.fireChannelInactive();
     }
 
     /**
@@ -384,7 +384,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
@@ -410,7 +410,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             }
         }
         else {
-            super.channelRead(ctx, msg);
+            ctx.fireChannelRead(msg);
         }
     }
 

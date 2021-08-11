@@ -47,6 +47,7 @@ import org.drasyl.remote.handler.crypto.ArmHandler;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
+import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.UnarmedMessage;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
@@ -129,7 +130,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
                 @Override
                 protected void channelRead0(final ChannelHandlerContext ctx,
-                                            final AddressedMessage<?, ?> msg) throws Exception {
+                                            final AddressedMessage<?, ?> msg) throws InvalidMessageFormatException {
                     if (msg.message() instanceof UnarmedMessage) {
                         ctx.fireChannelRead(new AddressedMessage<>(((UnarmedMessage) msg.message()).read(), msg.address()));
                     }

@@ -67,7 +67,7 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, 
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) throws Exception {
+                                final AddressedMessage<?, ?> msg) {
         if (msg.message() instanceof ByteBuf && msg.address() instanceof InetSocketAddress) {
             final InetSocketAddress sender = (InetSocketAddress) msg.address();
             final ByteBuf byteBufMsg = (ByteBuf) msg.message();
@@ -103,14 +103,14 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, 
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(final ChannelHandlerContext ctx) {
         if (retryTask != null) {
             retryTask.cancel(false);
             retryTask = null;
         }
         methods.get(currentMethodPointer).stop(ctx);
 
-        super.channelInactive(ctx);
+        ctx.fireChannelInactive();
     }
 
     @Override

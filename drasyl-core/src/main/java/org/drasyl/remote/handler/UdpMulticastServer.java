@@ -180,17 +180,17 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) {
         startServer(ctx);
 
-        super.channelActive(ctx);
+        ctx.fireChannelActive();
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(final ChannelHandlerContext ctx) {
         stopServer(ctx);
 
-        super.channelInactive(ctx);
+        ctx.fireChannelInactive();
     }
 
     public static synchronized UdpMulticastServer getInstance() {

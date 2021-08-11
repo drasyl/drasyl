@@ -69,7 +69,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws IOException {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ChunkMessage) {
             final ChunkMessage chunkMsg = (ChunkMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
@@ -84,14 +84,14 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             }
         }
         else {
-            super.channelRead(ctx, msg);
+            ctx.fireChannelRead(msg);
         }
     }
 
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) throws IOException {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
@@ -122,7 +122,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             }
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 

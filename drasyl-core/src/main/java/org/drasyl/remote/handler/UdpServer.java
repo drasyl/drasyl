@@ -83,15 +83,15 @@ public class UdpServer extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) throws BindFailedException {
         startServer(ctx);
 
-        super.channelActive(ctx);
+        ctx.fireChannelActive();
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
 
         stopServer();
     }
@@ -125,7 +125,7 @@ public class UdpServer extends ChannelDuplexHandler {
     }
 
     @SuppressWarnings({ "UnstableApiUsage", "java:S112" })
-    private void startServer(final ChannelHandlerContext ctx) throws Exception {
+    private void startServer(final ChannelHandlerContext ctx) throws BindFailedException {
         LOG.debug("Start Server...");
         final int bindPort;
         if (ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindPort() == -1) {
@@ -166,7 +166,7 @@ public class UdpServer extends ChannelDuplexHandler {
         }
         else {
             // server start failed
-            throw new Exception("Unable to bind server to address udp://" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindHost() + ":" + bindPort, channelFuture.cause());
+            throw new BindFailedException("Unable to bind server to address udp://" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindHost() + ":" + bindPort, channelFuture.cause());
         }
     }
 
@@ -184,7 +184,7 @@ public class UdpServer extends ChannelDuplexHandler {
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
             final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
             final InetSocketAddress recipient = (InetSocketAddress) ((AddressedMessage<?, ?>) msg).address();
@@ -203,11 +203,11 @@ public class UdpServer extends ChannelDuplexHandler {
             }
             else {
                 ReferenceCountUtil.safeRelease(msg);
-                promise.setFailure(new Exception("UDP channel is not present or is not writable."));
+                promise.setFailure(new Exception("UDP channel is not present."));
             }
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 
@@ -223,6 +223,15 @@ public class UdpServer extends ChannelDuplexHandler {
 
         public int getPort() {
             return value;
+        }
+    }
+
+    /**
+     * Signals that the {@link UdpServer} was unable to bind to port.
+     */
+    public static class BindFailedException extends Exception {
+        public BindFailedException(final String message, final Throwable cause) {
+            super(message, cause);
         }
     }
 }

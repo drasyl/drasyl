@@ -35,7 +35,7 @@ public interface Serializer {
     /**
      * Serializes the given object into an array of bytes
      *
-     * @throws IOException if deserialization from byte array fails
+     * @throws IOException if deserialization to byte array fails
      */
     byte[] toByteArray(Object o) throws IOException;
 

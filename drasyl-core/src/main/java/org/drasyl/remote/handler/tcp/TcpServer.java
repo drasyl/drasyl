@@ -35,7 +35,6 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -78,7 +77,7 @@ public class TcpServer extends ChannelDuplexHandler {
         this.serverChannel = serverChannel;
     }
 
-    private synchronized void startServer(final ChannelHandlerContext ctx) {
+    private synchronized void startServer(final ChannelHandlerContext ctx) throws BindFailedException {
         LOG.debug("Start Server...");
         final ChannelFuture channelFuture = bootstrap
                 .childHandler(new TcpServerChannelInitializer(clientChannels, ctx))
@@ -97,7 +96,7 @@ public class TcpServer extends ChannelDuplexHandler {
         else {
             // server start failed
             //noinspection unchecked
-            LOG.warn("Unable to bind server to address tcp://{}:{}", ctx.channel().attr(CONFIG_ATTR_KEY).get()::getRemoteBindHost, ctx.channel().attr(CONFIG_ATTR_KEY).get()::getRemoteTcpFallbackServerBindPort, channelFuture::cause);
+            throw new BindFailedException("Unable to bind server to address tcp://" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindHost() + ":" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindPort(), channelFuture.cause());
         }
     }
 
@@ -113,7 +112,7 @@ public class TcpServer extends ChannelDuplexHandler {
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
             final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
@@ -121,21 +120,15 @@ public class TcpServer extends ChannelDuplexHandler {
             // check if we can route the message via a tcp connection
             final Channel client = clientChannels.get(recipient);
             if (client != null) {
-                if (client.isWritable()) {
-                    LOG.trace("Send message `{}` via TCP to client `{}`", byteBufMsg, recipient);
-                    client.writeAndFlush(byteBufMsg).addListener(future -> {
-                        if (future.isSuccess()) {
-                            promise.setSuccess();
-                        }
-                        else {
-                            promise.setFailure(future.cause());
-                        }
-                    });
-                }
-                else {
-                    ReferenceCountUtil.safeRelease(byteBufMsg);
-                    promise.setFailure(new Exception("TCP channel is not writable."));
-                }
+                LOG.trace("Send message `{}` via TCP to client `{}`", byteBufMsg, recipient);
+                client.writeAndFlush(byteBufMsg).addListener(future -> {
+                    if (future.isSuccess()) {
+                        promise.setSuccess();
+                    }
+                    else {
+                        promise.setFailure(future.cause());
+                    }
+                });
             }
             else {
                 // message is not addressed to any of our clients. passthrough message
@@ -143,20 +136,20 @@ public class TcpServer extends ChannelDuplexHandler {
             }
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) throws BindFailedException {
         startServer(ctx);
 
-        super.channelActive(ctx);
+        ctx.fireChannelActive();
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
 
         stopServer();
     }
@@ -239,6 +232,15 @@ public class TcpServer extends ChannelDuplexHandler {
 
         public int getPort() {
             return value;
+        }
+    }
+
+    /**
+     * Signals that the {@link TcpServer} was unable to bind to port.
+     */
+    public static class BindFailedException extends Exception {
+        public BindFailedException(final String message, final Throwable cause) {
+            super(message, cause);
         }
     }
 }

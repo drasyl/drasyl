@@ -76,7 +76,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?,
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) throws Exception {
+                                final AddressedMessage<?, ?> msg) {
         if (msg.message() instanceof FullReadMessage) {
             final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) msg.message();
 

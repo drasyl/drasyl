@@ -132,7 +132,7 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         if (msg instanceof AddressedMessage) {
             outboundMessages.increment();
             if (consumeOutbound.test(((AddressedMessage<?, ?>) msg).address(), ((AddressedMessage<?, ?>) msg).message())) {
@@ -143,12 +143,12 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
             }
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof AddressedMessage) {
             inboundMessages.increment();
             if (!consumeInbound.test(((AddressedMessage<?, ?>) msg).address(), ((AddressedMessage<?, ?>) msg).message())) {
@@ -156,21 +156,21 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
             }
         }
         else {
-            super.channelRead(ctx, msg);
+            ctx.fireChannelRead(msg);
         }
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) {
         start();
 
-        super.channelActive(ctx);
+        ctx.fireChannelActive();
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(final ChannelHandlerContext ctx) {
         stop();
 
-        super.channelInactive(ctx);
+        ctx.fireChannelInactive();
     }
 }

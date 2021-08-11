@@ -44,6 +44,7 @@ import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Map;
@@ -146,7 +147,7 @@ public class ArmHandler extends ChannelDuplexHandler {
     protected void filteredInbound(final ChannelHandlerContext ctx,
                                    final SocketAddress sender,
                                    final ArmedMessage msg,
-                                   final CompletableFuture<Void> future) throws Exception {
+                                   final CompletableFuture<Void> future) throws IOException {
         final IdentityPublicKey recipientsKey = msg.getSender(); // on inbound our recipient is the sender of the message
         final Session session = getSession(ctx, recipientsKey);
         final FullReadMessage<?> plaintextMsg;
@@ -398,7 +399,7 @@ public class ArmHandler extends ChannelDuplexHandler {
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof FullReadMessage) {
             final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
@@ -417,12 +418,12 @@ public class ArmHandler extends ChannelDuplexHandler {
             filteredOutbound(ctx, recipient, fullReadMsg, FutureUtil.toFuture(promise));
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws IOException {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ArmedMessage) {
             final ArmedMessage armedMessage = (ArmedMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
@@ -436,7 +437,7 @@ public class ArmHandler extends ChannelDuplexHandler {
             filteredInbound(ctx, sender, armedMessage, new CompletableFuture<>());
         }
         else {
-            super.channelRead(ctx, msg);
+            ctx.fireChannelRead(msg);
         }
     }
 }

@@ -47,7 +47,7 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) throws Exception {
+                                final AddressedMessage<?, ?> msg) throws InvalidProofOfWorkException {
         if (msg.message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
             final boolean validProofOfWork = !ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
@@ -55,11 +55,21 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
                 ctx.fireChannelRead(msg.retain());
             }
             else {
-                LOG.debug("Message `{}` with invalid proof of work dropped.", remoteMsg::getNonce);
+                throw new InvalidProofOfWorkException(remoteMsg);
             }
         }
         else {
             ctx.fireChannelRead(msg.retain());
+        }
+    }
+
+    /**
+     * Signals that a message was received with an invalid {@link org.drasyl.identity.ProofOfWork}
+     * and was dropped.
+     */
+    public static class InvalidProofOfWorkException extends Exception {
+        public InvalidProofOfWorkException(final RemoteMessage msg) {
+            super("Message `" + msg.getNonce() + "` with invalid proof of work dropped.");
         }
     }
 }

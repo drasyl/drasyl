@@ -123,7 +123,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage) {
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
             final DiscoveryMessage discoveryMsg = (DiscoveryMessage) ((AddressedMessage<?, ?>) msg).message();
@@ -132,11 +132,11 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
                 handlePing(ctx, sender, discoveryMsg, new CompletableFuture<>());
             }
             else {
-                ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
+                ctx.fireChannelRead(msg);
             }
         }
         else {
-            super.channelRead(ctx, msg);
+            ctx.fireChannelRead(msg);
         }
     }
 
@@ -155,10 +155,11 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         future.complete(null);
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
@@ -173,23 +174,23 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             }
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) {
         startHeartbeat(ctx);
 
-        super.channelActive(ctx);
+        ctx.fireChannelActive();
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(final ChannelHandlerContext ctx) {
         stopHeartbeat();
         clearRoutes(ctx);
 
-        super.channelInactive(ctx);
+        ctx.fireChannelInactive();
     }
 
     private static void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {

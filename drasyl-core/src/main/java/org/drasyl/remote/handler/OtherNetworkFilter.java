@@ -27,8 +27,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
@@ -38,7 +36,6 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 @SuppressWarnings("java:S110")
 @Sharable
 public final class OtherNetworkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
-    private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
 
     private OtherNetworkFilter() {
@@ -47,18 +44,27 @@ public final class OtherNetworkFilter extends SimpleChannelInboundHandler<Addres
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) throws Exception {
+                                final AddressedMessage<?, ?> msg) throws OtherNetworkException {
         if (msg.message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
             if (remoteMsg instanceof ChunkMessage || ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == remoteMsg.getNetworkId()) {
                 ctx.fireChannelRead(msg.retain());
             }
             else {
-                LOG.debug("Message `{}` from other network of work dropped.", remoteMsg::getNonce);
+                throw new OtherNetworkException(remoteMsg);
             }
         }
         else {
             ctx.fireChannelRead(msg.retain());
+        }
+    }
+
+    /**
+     * Signals that a message was received from another network and was dropped.
+     */
+    public static class OtherNetworkException extends Exception {
+        public OtherNetworkException(final RemoteMessage msg) {
+            super("Message `" + msg.getNonce() + "` from other network dropped.");
         }
     }
 }

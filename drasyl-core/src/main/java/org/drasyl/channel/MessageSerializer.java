@@ -24,13 +24,17 @@ package org.drasyl.channel;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
@@ -54,7 +58,7 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final AddressedMessage<?, ?> msg,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) {
         if (msg.address() instanceof IdentityPublicKey) {
             final Object o = msg.message();
 
@@ -69,9 +73,15 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
             final Serializer serializer = ctx.channel().attr(OUTBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(type);
 
             if (serializer != null) {
-                final ApplicationMessage applicationMsg = ApplicationMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), (IdentityPublicKey) msg.address(), type, ByteString.copyFrom(serializer.toByteArray(o)));
-                out.add(new AddressedMessage<>(applicationMsg, msg.address()));
-                LOG.trace("Message has been serialized to `{}`", () -> applicationMsg);
+                try {
+                    final ByteString payload = ByteString.copyFrom(serializer.toByteArray(o));
+                    final ApplicationMessage applicationMsg = ApplicationMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx.channel().attr(IDENTITY_ATTR_KEY).get().getProofOfWork(), (IdentityPublicKey) msg.address(), type, payload);
+                    out.add(new AddressedMessage<>(applicationMsg, msg.address()));
+                    LOG.trace("Message has been serialized to `{}`", () -> applicationMsg);
+                }
+                catch (final IOException e) {
+                    throw new EncoderException("Serialization failed", e);
+                }
             }
             else {
                 LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
@@ -85,15 +95,20 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final AddressedMessage<?, ?> msg,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) {
         if (msg.message() instanceof ApplicationMessage && msg.address() instanceof IdentityPublicKey) {
             final ApplicationMessage applicationMsg = (ApplicationMessage) msg.message();
             final Serializer serializer = ctx.channel().attr(INBOUND_SERIALIZATION_ATTR_KEY).get().findSerializerFor(applicationMsg.getType());
 
             if (serializer != null) {
-                final Object o = serializer.fromByteArray(applicationMsg.getPayloadAsByteArray(), applicationMsg.getType());
-                out.add(new AddressedMessage<>(o, msg.address()));
-                LOG.trace("Message has been deserialized to `{}`", () -> o);
+                try {
+                    final Object o = serializer.fromByteArray(applicationMsg.getPayloadAsByteArray(), applicationMsg.getType());
+                    out.add(new AddressedMessage<>(o, msg.address()));
+                    LOG.trace("Message has been deserialized to `{}`", () -> o);
+                }
+                catch (final IOException e) {
+                    throw new DecoderException("Deserialization failed", e);
+                }
             }
             else {
                 LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", applicationMsg::getType);
@@ -101,6 +116,15 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
         }
         else {
             out.add(msg);
+        }
+    }
+
+    /**
+     * Signals that the {@link UdpServer} was unable to bind to port.
+     */
+    public static class BindFailedException extends Exception {
+        public BindFailedException(final String message, final Throwable cause) {
+            super(message, cause);
         }
     }
 }

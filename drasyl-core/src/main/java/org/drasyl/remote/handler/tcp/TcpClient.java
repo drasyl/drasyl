@@ -104,8 +104,8 @@ public class TcpClient extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
-        super.channelRead(ctx, msg);
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        ctx.fireChannelRead(msg);
 
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
             checkForReachableSuperPeer(((AddressedMessage<?, ?>) msg).address());
@@ -130,7 +130,7 @@ public class TcpClient extends ChannelDuplexHandler {
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
             final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
@@ -167,7 +167,7 @@ public class TcpClient extends ChannelDuplexHandler {
             }
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 
@@ -222,8 +222,8 @@ public class TcpClient extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
 
         // stop client
         stopClient();

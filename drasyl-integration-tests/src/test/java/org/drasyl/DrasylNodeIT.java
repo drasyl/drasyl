@@ -1005,7 +1005,7 @@ class DrasylNodeIT {
     }
 
     @Nested
-    class Start {
+    class EventLifecycle {
         private DrasylConfig.Builder configBuilder;
 
         @BeforeEach
