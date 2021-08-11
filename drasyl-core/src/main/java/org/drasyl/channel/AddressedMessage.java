@@ -118,7 +118,7 @@ public class AddressedMessage<M, A extends SocketAddress> implements ReferenceCo
             return ((ReferenceCounted) message).release();
         }
         else {
-            return true;
+            return false;
         }
     }
 
@@ -128,7 +128,7 @@ public class AddressedMessage<M, A extends SocketAddress> implements ReferenceCo
             return ((ReferenceCounted) message).release(decrement);
         }
         else {
-            return true;
+            return false;
         }
     }
 }
