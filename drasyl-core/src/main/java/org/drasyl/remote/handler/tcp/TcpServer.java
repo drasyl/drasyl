@@ -23,6 +23,7 @@ package org.drasyl.remote.handler.tcp;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
@@ -46,6 +47,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER;
+import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER_LENGTH;
 import static org.drasyl.util.NettyUtil.getBestServerSocketChannel;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
@@ -95,7 +98,6 @@ public class TcpServer extends ChannelDuplexHandler {
         }
         else {
             // server start failed
-            //noinspection unchecked
             throw new BindFailedException("Unable to bind server to address tcp://" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindHost() + ":" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindPort(), channelFuture.cause());
         }
     }
@@ -215,6 +217,21 @@ public class TcpServer extends ChannelDuplexHandler {
         protected void channelRead0(final ChannelHandlerContext nettyCtx,
                                     final ByteBuf msg) {
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
+
+            // drasyl message?
+            if (msg.readableBytes() >= MAGIC_NUMBER_LENGTH) {
+                msg.markReaderIndex();
+                final ByteBuf magicNumber = msg.readBytes(MAGIC_NUMBER_LENGTH);
+
+                if (!Unpooled.wrappedBuffer(MAGIC_NUMBER.toByteArray()).equals(magicNumber)) {
+                    LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message.", nettyCtx.channel()::remoteAddress);
+                    nettyCtx.close();
+                }
+                else {
+                    msg.resetReaderIndex();
+                }
+            }
+
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
             ctx.fireChannelRead(new AddressedMessage<>(msg.retain(), sender));
         }

@@ -23,6 +23,7 @@ package org.drasyl.remote.handler.tcp;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -48,6 +49,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 
+import static io.netty.util.CharsetUtil.UTF_8;
 import static java.net.InetSocketAddress.createUnresolved;
 import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -223,20 +225,15 @@ class TcpServerTest {
             verify(ctx).fireChannelRead(any());
         }
 
-        // FIXME: re add such a feature
-//        @Test
-//        void shouldCloseConnectionWhenInboundMessageIsInvalid(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx,
-//                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
-//            when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
-//            when(ctx.fireChannelRead(any())).then((Answer<ChannelHandlerContext>) invocation -> {
-//                invocation.getArgument(0, MigrationInboundMessage.class).future().completeExceptionally(new Exception(new InvalidMessageFormatException()));
-//                return null;
-//            });
-//
-//            new TcpServerHandler(clients, ctx).channelRead0(nettyCtx, msg);
-//
-//            verify(nettyCtx).close();
-//        }
+        @Test
+        void shouldCloseConnectionWhenInboundMessageIsInvalid(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
+            when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
+
+            final ByteBuf msg = Unpooled.copiedBuffer("Hallo Welt", UTF_8);
+            new TcpServerHandler(clients, ctx).channelRead0(nettyCtx, msg);
+
+            verify(nettyCtx).close();
+        }
 
         @Test
         void shouldCloseConnectionOnInactivity(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx,
