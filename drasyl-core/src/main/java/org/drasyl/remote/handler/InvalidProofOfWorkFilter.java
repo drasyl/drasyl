@@ -26,8 +26,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.channel.DefaultDrasylServerChannel.IDENTITY_ATTR_KEY;
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
@@ -38,7 +36,6 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 @SuppressWarnings("java:S110")
 @Sharable
 public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
-    private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
 
     private InvalidProofOfWorkFilter() {

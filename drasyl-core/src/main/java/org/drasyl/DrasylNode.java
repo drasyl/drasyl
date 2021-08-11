@@ -228,15 +228,13 @@ public abstract class DrasylNode {
      * <p>
      * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
      * not sent and the future is fulfilled with an exception. Serializable objects can be added on
-     * start via the {@link DrasylConfig} or on demand via {@link HandlerContext#inboundSerialization()}
-     * or {@link HandlerContext#outboundSerialization()}.
+     * start via the {@link DrasylConfig}.
      * </p>
      *
      * @param recipient the recipient of a message as compressed public key
      * @param payload   the payload of a message
      * @return a completion stage if the message was successfully processed, otherwise an
      * exceptionally completion stage
-     * @see org.drasyl.pipeline.Handler
      * @see MessageSerializer
      * @since 0.1.3
      */
@@ -261,15 +259,13 @@ public abstract class DrasylNode {
      * <p>
      * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
      * not sent and the future is fulfilled with an exception. Serializable objects can be added on
-     * start via the {@link DrasylConfig} or on demand via {@link HandlerContext#inboundSerialization()}
-     * or {@link HandlerContext#outboundSerialization()}.
+     * start via the {@link DrasylConfig}.
      * </p>
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
      * @return a completion stage if the message was successfully processed, otherwise an
      * exceptionally completion stage
-     * @see org.drasyl.pipeline.Handler
      * @see MessageSerializer
      * @since 0.1.3
      */
@@ -404,7 +400,7 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Returns the {@link Pipeline} to allow users to add own handlers.
+     * Returns the {@link ChannelPipeline} to allow users to add own handlers.
      *
      * @return the pipeline
      */
@@ -457,6 +453,14 @@ public abstract class DrasylNode {
     public class DrasylNodeServerChannelInitializer extends DrasylServerChannelInitializer {
         private boolean errorOccurred;
 
+        public DrasylNodeServerChannelInitializer(final boolean errorOccurred) {
+            this.errorOccurred = errorOccurred;
+        }
+
+        public DrasylNodeServerChannelInitializer() {
+            this(false);
+        }
+
         @SuppressWarnings("java:S1188")
         @Override
         protected void initChannel(final Channel ch) {
@@ -485,8 +489,8 @@ public abstract class DrasylNode {
 
                     pluginManager.beforeShutdown(ctx);
 
-                    LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
                     if (!errorOccurred) {
+                        LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
                         userEventTriggered(ctx, NodeDownEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
                         userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of(ctx.channel().attr(IDENTITY_ATTR_KEY).get())));
                         LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());

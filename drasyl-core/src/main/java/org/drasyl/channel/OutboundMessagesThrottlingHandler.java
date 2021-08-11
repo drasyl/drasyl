@@ -24,9 +24,6 @@ package org.drasyl.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.ReferenceCountUtil;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.TokenBucket;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -34,7 +31,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.time.Duration;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.requireNonNull;
@@ -63,17 +59,7 @@ public class OutboundMessagesThrottlingHandler extends ChannelOutboundHandlerAda
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof AddressedMessage) {
-            final AddressedMessage<?, ?> migrationMsg = (AddressedMessage<?, ?>) msg;
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            FutureUtil.combine(future, promise);
-            try {
-                queue.add(ctx, () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(migrationMsg))).combine(future));
-            }
-            catch (final Exception e) {
-                future.completeExceptionally(e);
-                ctx.fireExceptionCaught(e);
-                ReferenceCountUtil.safeRelease(migrationMsg.message());
-            }
+            queue.add(ctx, () -> ctx.writeAndFlush(msg, promise));
         }
         else {
             ctx.write(msg, promise);

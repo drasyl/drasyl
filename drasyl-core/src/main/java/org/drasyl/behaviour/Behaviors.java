@@ -121,9 +121,9 @@ public final class Behaviors {
          *
          * @param event event to schedule
          * @param delay delay before emitting the event
-         * @return {@link Future<?>} allowing to cancel the scheduled event
+         * @return {@link Future} allowing to cancel the scheduled event
          */
-        @SuppressWarnings({ "UnusedReturnValue", "unused" })
+        @SuppressWarnings({ "UnusedReturnValue", "unused", "java:S1452" })
         public Future<?> scheduleEvent(final Event event, final Duration delay) {
             return scheduler.schedule(() -> consumer.accept(event), delay.toMillis(), MILLISECONDS);
         }
@@ -132,9 +132,9 @@ public final class Behaviors {
          * Schedules a self event.
          *
          * @param event event to schedule
-         * @return {@link Future<?>} allowing to cancel the scheduled event
+         * @return {@link Future} allowing to cancel the scheduled event
          */
-        @SuppressWarnings({ "UnusedReturnValue", "unused" })
+        @SuppressWarnings({ "UnusedReturnValue", "unused", "java:S1452" })
         public Future<?> scheduleEvent(final Event event) {
             return scheduler.submit(() -> consumer.accept(event));
         }
@@ -146,9 +146,9 @@ public final class Behaviors {
          * @param initialDelay the initial delay amount, non-positive values indicate non-delayed
          *                     scheduling
          * @param period       the period at which the event should be re-emitted
-         * @return {@link Future<?>} allowing to cancel the scheduled event
+         * @return {@link Future} allowing to cancel the scheduled event
          */
-        @SuppressWarnings({ "UnusedReturnValue", "unused" })
+        @SuppressWarnings({ "UnusedReturnValue", "unused", "java:S1452" })
         public Future<?> schedulePeriodicallyEvent(final Event event,
                                                    final Duration initialDelay,
                                                    final Duration period) {
