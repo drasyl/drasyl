@@ -26,9 +26,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylAddress;
-import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
-import org.drasyl.DrasylNode.PeersManagerHandler.RemovePathEvent;
+import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.RemovePathEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.DiscoveryMessage;
@@ -94,11 +94,10 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         this.pingDisposable = pingDisposable;
     }
 
-    public LocalNetworkDiscovery(final DrasylAddress myAddress,
-                                 final ProofOfWork myProofOfWork,
+    public LocalNetworkDiscovery(final int networkId,
                                  final Duration pingInterval,
-                                 final Duration pingTimeout,
-                                 final int networkId) {
+                                 final Duration pingTimeout, final DrasylAddress myAddress,
+                                 final ProofOfWork myProofOfWork) {
         this(new ConcurrentHashMap<>(), myAddress, myProofOfWork, pingInterval, pingTimeout, networkId, null);
     }
 

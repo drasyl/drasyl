@@ -21,7 +21,6 @@
  */
 package org.drasyl;
 
-import com.google.auto.value.AutoValue;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -37,9 +36,16 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
+import org.drasyl.channel.AddPathAndChildren;
+import org.drasyl.channel.AddPathAndSuperPeer;
+import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.DefaultDrasylServerChannel;
 import org.drasyl.channel.MessageSerializer;
+import org.drasyl.channel.PathEvent;
+import org.drasyl.channel.RemoveChildrenAndPath;
+import org.drasyl.channel.RemovePathEvent;
+import org.drasyl.channel.RemoveSuperPeerAndPath;
 import org.drasyl.channel.Serialization;
 import org.drasyl.event.Event;
 import org.drasyl.event.InboundExceptionEvent;
@@ -479,6 +485,7 @@ public abstract class DrasylNode {
      */
     public static class DrasylNodeChannelInitializer extends ChannelInitializer<Channel> {
         public static final String NODE_LIFECYCLE_HANDLER = "NODE_LIFECYCLE_HANDLER";
+        public static final String CHANNEL_RESOLVER = "CHANNEL_RESOLVER";
         public static final String PLUGIN_MANAGER_HANDLER = "PLUGIN_MANAGER_HANDLER";
         public static final String PEERS_MANAGER_HANDLER = "PEERS_MANAGER_HANDLER";
         public static final String CHILD_CHANNEL_ROUTER = "CHILD_CHANNEL_ROUTER";
@@ -536,31 +543,14 @@ public abstract class DrasylNode {
         @Override
         protected void initChannel(final Channel ch) {
             final PluginManager pluginManager = new PluginManager(config, identity, inboundSerialization, outboundSerialization);
-            final PeersManager peersManager = new PeersManager(identity);
 
             ch.pipeline().addFirst(NODE_LIFECYCLE_HANDLER, new NodeLifecycleHandler(ch));
 
-            ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
-                @SuppressWarnings("java:S2221")
-                @Override
-                public void userEventTriggered(final ChannelHandlerContext ctx,
-                                               final Object evt) {
-                    if (evt instanceof Resolve) {
-                        final Resolve e = (Resolve) evt;
-                        final IdentityPublicKey recipient = (IdentityPublicKey) e.recipient();
-                        final CompletableFuture<Channel> future = e.future();
-                        final Channel resolvedChannel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
-                        resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
-                    }
-                    else {
-                        ctx.fireUserEventTriggered(evt);
-                    }
-                }
-            });
+            ch.pipeline().addFirst(CHANNEL_RESOLVER, new ChannelResolver());
 
             ch.pipeline().addFirst(PLUGIN_MANAGER_HANDLER, new PluginManagerHandler(pluginManager));
 
-            ch.pipeline().addFirst(PEERS_MANAGER_HANDLER, new PeersManagerHandler(peersManager));
+            ch.pipeline().addFirst(PEERS_MANAGER_HANDLER, new PeersManagerHandler(identity));
 
             ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 
@@ -590,38 +580,38 @@ public abstract class DrasylNode {
                 if (this.config.isRemoteLocalHostDiscoveryEnabled()) {
                     // discover nodes running on the same local computer
                     ch.pipeline().addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(
-                            this.identity.getAddress(),
                             this.config.isRemoteLocalHostDiscoveryWatchEnabled(),
+                            this.config.getNetworkId(),
                             this.config.getRemoteBindHost(),
                             this.config.getRemoteLocalHostDiscoveryLeaseTime(),
                             this.config.getRemoteLocalHostDiscoveryPath(),
-                            this.config.getNetworkId()
+                            this.identity.getAddress()
                     ));
                 }
 
                 // discovery nodes on the local network
                 if (this.config.isRemoteLocalNetworkDiscoveryEnabled()) {
                     ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery(
-                            this.identity.getAddress(),
-                            this.identity.getProofOfWork(),
+                            this.config.getNetworkId(),
                             this.config.getRemotePingInterval(),
                             this.config.getRemotePingTimeout(),
-                            this.config.getNetworkId()
+                            this.identity.getAddress(),
+                            this.identity.getProofOfWork()
                     ));
                 }
 
                 // discover nodes on the internet
                 ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(
+                        this.config.getNetworkId(),
                         this.config.getRemotePingMaxPeers(),
-                        this.config.getRemotePingTimeout(),
-                        this.config.getRemoteUniteMinInterval(),
-                        this.config.getRemoteSuperPeerEndpoints(),
-                        this.identity.getAddress(),
-                        this.identity.getProofOfWork(),
                         this.config.getRemotePingInterval(),
+                        this.config.getRemotePingTimeout(),
                         this.config.getRemotePingCommunicationTimeout(),
                         this.config.isRemoteSuperPeerEnabled(),
-                        this.config.getNetworkId()
+                        this.config.getRemoteSuperPeerEndpoints(),
+                        this.config.getRemoteUniteMinInterval(),
+                        this.identity.getAddress(),
+                        this.identity.getProofOfWork()
                 ));
 
                 // outbound message guards
@@ -656,12 +646,13 @@ public abstract class DrasylNode {
                 // arm outbound and disarm inbound messages
                 if (this.config.isRemoteMessageArmEnabled()) {
                     ch.pipeline().addFirst(ARM_HANDLER, new ArmHandler(
+                            this.config.getNetworkId(),
                             this.config.getRemoteMessageArmSessionMaxCount(),
                             this.config.getRemoteMessageArmSessionMaxAgreements(),
                             this.config.getRemoteMessageArmSessionExpireAfter(),
                             this.config.getRemoteMessageArmSessionRetryInterval(),
-                            this.identity,
-                            this.config.getNetworkId()));
+                            this.identity
+                    ));
                 }
 
                 // filter out inbound messages with invalid proof of work or other network id
@@ -670,15 +661,16 @@ public abstract class DrasylNode {
 
                 // split messages too big for udp
                 ch.pipeline().addFirst(CHUNKING_HANDLER, new ChunkingHandler(
-                        this.identity.getAddress(),
                         this.config.getRemoteMessageMaxContentLength(),
                         this.config.getRemoteMessageMtu(),
-                        this.config.getRemoteMessageComposedMessageTransferTimeout()
+                        this.config.getRemoteMessageComposedMessageTransferTimeout(),
+                        this.identity.getAddress()
                 ));
 
                 // convert RemoteMessage <-> ByteBuf
                 ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 
+                // multicast server (lan discovery)
                 if (this.config.isRemoteLocalNetworkDiscoveryEnabled()) {
                     ch.pipeline().addFirst(UDP_MULTICAST_SERVER, new UdpMulticastServer(this.identity.getAddress()));
                 }
@@ -701,10 +693,12 @@ public abstract class DrasylNode {
                     }
                 }
 
-                // udp server
+                // port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
                 if (this.config.isRemoteExposeEnabled()) {
                     ch.pipeline().addFirst(PORT_MAPPER, new PortMapper(this.identity.getAddress()));
                 }
+
+                // udp server
                 ch.pipeline().addFirst(UDP_SERVER, new UdpServer(
                         this.identity.getAddress(),
                         this.config.getRemoteBindHost(),
@@ -788,9 +782,8 @@ public abstract class DrasylNode {
 
                     eventConsumer.accept((Event) evt);
                 }
-                else {
-                    // drop all other events
-                }
+
+                // drop all other events
             }
 
             @Override
@@ -834,6 +827,24 @@ public abstract class DrasylNode {
                 }
                 else {
                     ctx.fireChannelRead(msg);
+                }
+            }
+        }
+
+        private static class ChannelResolver extends ChannelInboundHandlerAdapter {
+            @SuppressWarnings("java:S2221")
+            @Override
+            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                           final Object evt) {
+                if (evt instanceof Resolve) {
+                    final Resolve e = (Resolve) evt;
+                    final IdentityPublicKey recipient = (IdentityPublicKey) e.recipient();
+                    final CompletableFuture<Channel> future = e.future();
+                    final Channel resolvedChannel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
+                    resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
+                }
+                else {
+                    ctx.fireUserEventTriggered(evt);
                 }
             }
         }
@@ -898,15 +909,15 @@ public abstract class DrasylNode {
     public static class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         private final PeersManager peersManager;
 
-        public PeersManagerHandler(final PeersManager peersManager) {
-            this.peersManager = requireNonNull(peersManager);
+        public PeersManagerHandler(final Identity identity) {
+            this.peersManager = new PeersManager(identity);
         }
 
         @Override
         public void userEventTriggered(final ChannelHandlerContext ctx,
                                        final Object evt) {
-            if (evt instanceof PeerEvent) {
-                final PeerEvent e = (PeerEvent) evt;
+            if (evt instanceof PathEvent) {
+                final PathEvent e = (PathEvent) evt;
                 if (e instanceof AddPathEvent) {
                     peersManager.addPath(ctx, e.getAddress(), e.getPath());
                 }
@@ -928,64 +939,6 @@ public abstract class DrasylNode {
             }
             else {
                 ctx.fireUserEventTriggered(evt);
-            }
-        }
-
-        public interface PeerEvent {
-            DrasylAddress getAddress();
-
-            Object getPath();
-        }
-
-        @SuppressWarnings({ "java:S1118", "java:S2974" })
-        @AutoValue
-        public abstract static class AddPathEvent implements PeerEvent {
-            public static AddPathEvent of(final DrasylAddress publicKey, final Object path) {
-                return new AutoValue_DrasylNode_PeersManagerHandler_AddPathEvent(publicKey, path);
-            }
-        }
-
-        @SuppressWarnings({ "java:S1118", "java:S2974" })
-        @AutoValue
-        public abstract static class RemovePathEvent implements PeerEvent {
-            public static RemovePathEvent of(final DrasylAddress publicKey, final Object path) {
-                return new AutoValue_DrasylNode_PeersManagerHandler_RemovePathEvent(publicKey, path);
-            }
-        }
-
-        @SuppressWarnings({ "java:S1118", "java:S2974" })
-        @AutoValue
-        public abstract static class AddPathAndSuperPeer implements PeerEvent {
-            public static AddPathAndSuperPeer of(final DrasylAddress publicKey,
-                                                 final Object path) {
-                return new AutoValue_DrasylNode_PeersManagerHandler_AddPathAndSuperPeer(publicKey, path);
-            }
-        }
-
-        @SuppressWarnings({ "java:S1118", "java:S2974" })
-        @AutoValue
-        public abstract static class RemoveSuperPeerAndPath implements PeerEvent {
-            public static RemoveSuperPeerAndPath of(final IdentityPublicKey publicKey,
-                                                    final Object path) {
-                return new AutoValue_DrasylNode_PeersManagerHandler_RemoveSuperPeerAndPath(publicKey, path);
-            }
-        }
-
-        @SuppressWarnings({ "java:S1118", "java:S2974" })
-        @AutoValue
-        public abstract static class AddPathAndChildren implements PeerEvent {
-            public static AddPathAndChildren of(final IdentityPublicKey publicKey,
-                                                final Object path) {
-                return new AutoValue_DrasylNode_PeersManagerHandler_AddPathAndChildren(publicKey, path);
-            }
-        }
-
-        @SuppressWarnings({ "java:S1118", "java:S2974" })
-        @AutoValue
-        public abstract static class RemoveChildrenAndPath implements PeerEvent {
-            public static RemoveChildrenAndPath of(final IdentityPublicKey publicKey,
-                                                   final Object path) {
-                return new AutoValue_DrasylNode_PeersManagerHandler_RemoveChildrenAndPath(publicKey, path);
             }
         }
     }

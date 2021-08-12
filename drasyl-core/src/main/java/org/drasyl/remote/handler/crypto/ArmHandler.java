@@ -72,6 +72,7 @@ public class ArmHandler extends ChannelDuplexHandler {
     private final Identity identity;
     private final int networkId;
 
+    @SuppressWarnings("java:S107")
     protected ArmHandler(final Map<IdentityPublicKey, Session> sessions,
                          final Crypto crypto,
                          final int maxAgreements,
@@ -113,12 +114,11 @@ public class ArmHandler extends ChannelDuplexHandler {
                 networkId);
     }
 
-    public ArmHandler(final int maxSessionsCount,
+    public ArmHandler(final int networkId, final int maxSessionsCount,
                       final int maxAgreements,
                       final Duration expireAfter,
                       final Duration retryInterval,
-                      final Identity identity,
-                      final int networkId) {
+                      final Identity identity) {
         this(CacheBuilder.newBuilder()
                 .expireAfterAccess(expireAfter.toMillis(), TimeUnit.MILLISECONDS)
                 .maximumSize(maxSessionsCount)

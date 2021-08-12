@@ -28,12 +28,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylAddress;
-import org.drasyl.DrasylNode.PeersManagerHandler.AddPathAndChildren;
-import org.drasyl.DrasylNode.PeersManagerHandler.AddPathAndSuperPeer;
-import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
-import org.drasyl.DrasylNode.PeersManagerHandler.RemoveChildrenAndPath;
-import org.drasyl.DrasylNode.PeersManagerHandler.RemoveSuperPeerAndPath;
+import org.drasyl.channel.AddPathAndChildren;
+import org.drasyl.channel.AddPathAndSuperPeer;
+import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.RemoveChildrenAndPath;
+import org.drasyl.channel.RemoveSuperPeerAndPath;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
@@ -99,16 +99,16 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private IdentityPublicKey bestSuperPeer;
 
     @SuppressWarnings("java:S107")
-    public InternetDiscovery(final int pingMaxPeers,
-                             final Duration pingTimeout,
-                             final Duration uniteMinInterval,
-                             final Set<Endpoint> superPeerEndpoints,
-                             final DrasylAddress myAddress,
-                             final ProofOfWork myProofOfWork,
+    public InternetDiscovery(final int networkId,
+                             final int pingMaxPeers,
                              final Duration pingInterval,
+                             final Duration pingTimeout,
                              final Duration pingCommunicationTimeout,
                              final boolean superPeerEnabled,
-                             final int networkId) {
+                             final Set<Endpoint> superPeerEndpoints,
+                             final Duration uniteMinInterval,
+                             final DrasylAddress myAddress,
+                             final ProofOfWork myProofOfWork) {
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
         this.pingCommunicationTimeout = pingCommunicationTimeout;

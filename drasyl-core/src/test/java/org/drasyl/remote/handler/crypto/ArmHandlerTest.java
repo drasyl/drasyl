@@ -105,7 +105,7 @@ class ArmHandlerTest {
     class Encryption {
         @Test
         void shouldEncryptOutgoingMessageWithRecipientAndFromMe() throws InvalidMessageFormatException {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
@@ -137,7 +137,7 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotEncryptOutgoingMessageWithSenderThatIsNotMe() {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
@@ -166,7 +166,7 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotEncryptOutgoingMessageWithNoRecipient() {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final FullReadMessage<?> msg = DiscoveryMessage.of(
@@ -188,7 +188,7 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotEncryptOutgoingMessageWithLoopback() {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
@@ -258,7 +258,7 @@ class ArmHandlerTest {
     class KeyExchange {
         @Test
         void shouldSendKeyExchangeMessageOnOutbound() throws InvalidMessageFormatException {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
@@ -287,7 +287,7 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotSendKeyExchangeMessageOnOutboundIfMaxAgreementOptionIsZero() {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
@@ -313,7 +313,7 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotSendKeyExchangeMessageOnInbound() throws InvalidMessageFormatException {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
@@ -341,7 +341,7 @@ class ArmHandlerTest {
 
         @Test
         void shouldSendKeyExchangeMessageOnInboundOnUnknownAgreementId() throws InvalidMessageFormatException {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
@@ -457,7 +457,7 @@ class ArmHandlerTest {
             // construct not existing agreementId
             final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2);
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
@@ -745,7 +745,7 @@ class ArmHandlerTest {
     class Decryption {
         @Test
         void shouldSkipMessagesNotForMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
@@ -765,7 +765,7 @@ class ArmHandlerTest {
 
         @Test
         void shouldSkipMessagesFromMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
 
             final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {

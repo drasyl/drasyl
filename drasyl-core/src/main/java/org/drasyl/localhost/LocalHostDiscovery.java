@@ -27,9 +27,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylAddress;
-import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
-import org.drasyl.DrasylNode.PeersManagerHandler.RemovePathEvent;
+import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.RemovePathEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.protocol.ApplicationMessage;
@@ -96,11 +96,11 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private Future<?> postDisposable;
     private WatchService watchService; // NOSONAR
 
-    public LocalHostDiscovery(final DrasylAddress myAddress,
-                              final boolean watchEnabled,
+    public LocalHostDiscovery(final boolean watchEnabled,
+                              final int networkId,
                               final InetAddress bindHost,
                               final Duration leaseTime,
-                              final Path path, final int networkId) {
+                              final Path path, final DrasylAddress myAddress) {
         this(
                 JACKSON_WRITER::writeValue,
                 new HashMap<>(),

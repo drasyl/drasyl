@@ -68,11 +68,11 @@ public class PeersManager {
                  final SetMultimap<DrasylAddress, Object> paths,
                  final Set<DrasylAddress> children,
                  final Set<DrasylAddress> superPeers, final Identity identity) {
-        this.lock = lock;
-        this.paths = paths;
-        this.children = children;
-        this.superPeers = superPeers;
-        this.identity = identity;
+        this.lock = requireNonNull(lock);
+        this.paths = requireNonNull(paths);
+        this.children = requireNonNull(children);
+        this.superPeers = requireNonNull(superPeers);
+        this.identity = requireNonNull(identity);
     }
 
     @Override

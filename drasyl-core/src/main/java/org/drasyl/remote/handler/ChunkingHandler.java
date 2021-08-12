@@ -68,10 +68,10 @@ public class ChunkingHandler extends ChannelDuplexHandler {
     private final int messageMtu;
     private final Duration messageComposedMessageTransferTimeout;
 
-    public ChunkingHandler(final DrasylAddress myAddress,
-                           final int messageMaxContentLength,
+    public ChunkingHandler(final int messageMaxContentLength,
                            final int messageMtu,
-                           final Duration messageComposedMessageTransferTimeout) {
+                           final Duration messageComposedMessageTransferTimeout,
+                           final DrasylAddress myAddress) {
         this.myAddress = requireNonNull(myAddress);
         this.messageMaxContentLength = messageMaxContentLength;
         this.messageMtu = messageMtu;

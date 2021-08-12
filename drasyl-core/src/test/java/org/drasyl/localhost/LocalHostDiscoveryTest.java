@@ -25,7 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import org.drasyl.DrasylNode;
+import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
@@ -283,7 +283,7 @@ class LocalHostDiscoveryTest {
                     new InetSocketAddress("192.168.188.23", 12345)
             ), routes);
 
-            verify(ctx).fireUserEventTriggered(any(DrasylNode.PeersManagerHandler.AddPathEvent.class));
+            verify(ctx).fireUserEventTriggered(any(AddPathEvent.class));
         }
     }
 }
