@@ -29,13 +29,9 @@ import org.drasyl.identity.IdentityPublicKey;
  * RemoveSuperPeerAndPath#getAddress()}  as the direct routing path to that peer is no longer
  * available.
  */
-@SuppressWarnings({ "java:S118", "java:S2974" })
+@SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
 public abstract class RemoveSuperPeerAndPath implements PathEvent {
-    private RemoveSuperPeerAndPath() {
-        // NOOP
-    }
-
     public static RemoveSuperPeerAndPath of(final IdentityPublicKey publicKey,
                                             final Object path) {
         return new AutoValue_RemoveSuperPeerAndPath(publicKey, path);

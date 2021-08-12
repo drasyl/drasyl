@@ -28,13 +28,9 @@ import org.drasyl.DrasylAddress;
  * Signals that a direct routing path has been discovered to {@link AddPathAndSuperPeer#getAddress()}
  * and that we are registered as a children as this peer.
  */
-@SuppressWarnings({ "java:S118", "java:S2974" })
+@SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
 public abstract class AddPathAndSuperPeer implements PathEvent {
-    private AddPathAndSuperPeer() {
-        // NOOP
-    }
-
     public static AddPathAndSuperPeer of(final DrasylAddress publicKey,
                                          final Object path) {
         return new AutoValue_AddPathAndSuperPeer(publicKey, path);

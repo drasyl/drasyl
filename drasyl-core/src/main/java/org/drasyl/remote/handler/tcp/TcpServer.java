@@ -116,7 +116,7 @@ public class TcpServer extends ChannelDuplexHandler {
     }
 
     private synchronized void stopServer() {
-        final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
+        final SocketAddress socketAddress = serverChannel.localAddress();
         LOG.debug("Stop Server listening at tcp:/{}...", socketAddress);
         // shutdown server
         serverChannel.close().awaitUninterruptibly();

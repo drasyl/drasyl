@@ -27,13 +27,9 @@ import org.drasyl.DrasylAddress;
 /**
  * Signals that a direct routing path has been discovered to {@link AddPathEvent#getAddress()}.
  */
-@SuppressWarnings({ "java:S118", "java:S2974" })
+@SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
 public abstract class AddPathEvent implements PathEvent {
-    private AddPathEvent() {
-        // NOOP
-    }
-
     public static AddPathEvent of(final DrasylAddress publicKey, final Object path) {
         return new AutoValue_AddPathEvent(publicKey, path);
     }

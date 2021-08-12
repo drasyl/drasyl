@@ -164,7 +164,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             else {
                 // server start failed
                 //noinspection unchecked
-                LOG.warn("Unable to bind server to address {}:{}: {}", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, channelFuture.cause()::getMessage);
+                LOG.info("Unable to bind server to address {}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port.", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, channelFuture.cause()::getMessage);
             }
         }
     }
