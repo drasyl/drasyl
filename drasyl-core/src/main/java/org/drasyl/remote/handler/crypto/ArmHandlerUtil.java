@@ -77,7 +77,7 @@ public final class ArmHandlerUtil {
         try {
             final ArmedMessage armedMessage = msg.setAgreementId(agreementId).arm(cryptoInstance, agreementPair);
             // send encrypted message
-            ctx.writeAndFlush(new AddressedMessage<>(armedMessage, recipient), promise);
+            ctx.write(new AddressedMessage<>(armedMessage, recipient), promise);
         }
         catch (final IOException e) {
             promise.setFailure(new CryptoException(e));

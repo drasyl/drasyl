@@ -189,6 +189,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         removeStalePeers(ctx);
         pingSuperPeers(ctx);
         pingDirectConnectionPeers(ctx);
+        ctx.flush();
     }
 
     /**
@@ -395,7 +396,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         // send recipient's information to sender
         final UniteMessage senderRendezvousEnvelope = UniteMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork, senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
-        ctx.writeAndFlush(new AddressedMessage<>(senderRendezvousEnvelope, sender)).addListener(future -> {
+        ctx.write(new AddressedMessage<>(senderRendezvousEnvelope, sender)).addListener(future -> {
             if (!future.isSuccess()) {
                 //noinspection unchecked
                 LOG.warn("Unable to send unite message for peer `{}` to `{}`", () -> senderKey, () -> sender, future::cause);
@@ -405,12 +406,13 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         // send sender's information to recipient
         final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork, recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
-        ctx.writeAndFlush(new AddressedMessage<>(recipientRendezvousEnvelope, recipient)).addListener(future -> {
+        ctx.write(new AddressedMessage<>(recipientRendezvousEnvelope, recipient)).addListener(future -> {
             if (!future.isSuccess()) {
                 //noinspection unchecked
                 LOG.warn("Unable to send unite message for peer `{}` to `{}`", () -> recipientKey, () -> recipient, future::cause);
             }
         });
+        ctx.flush();
     }
 
     private synchronized boolean shouldTryUnite(final IdentityPublicKey sender,
@@ -559,6 +561,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         peer.applicationTrafficOccurred();
         directConnectionPeers.add(msg.getPublicKey());
         sendPing(ctx, msg.getPublicKey(), socketAddress);
+        ctx.flush();
     }
 
     private void handleApplication(final ChannelHandlerContext ctx,
@@ -579,7 +582,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         messageEnvelope = DiscoveryMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
         openPingsCache.put(messageEnvelope.getNonce(), new Ping(recipientAddress));
         LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
-        return ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, recipientAddress));
+        return ctx.write(new AddressedMessage<>(messageEnvelope, recipientAddress));
     }
 
     @SuppressWarnings("java:S2972")

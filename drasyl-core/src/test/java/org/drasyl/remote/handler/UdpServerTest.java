@@ -112,14 +112,13 @@ class UdpServerTest {
         @Test
         void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             final SocketAddress recipient = new InetSocketAddress(1234);
-            when(channel.isWritable()).thenReturn(true);
 
             final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, channel);
             final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                verify(channel).writeAndFlush(any());
+                verify(channel).write(any());
             }
             finally {
                 pipeline.close();

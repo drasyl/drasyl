@@ -146,7 +146,7 @@ public class TcpClient extends ChannelDuplexHandler {
             final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
             if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
                 LOG.trace("Send message `{}` via TCP connection to `{}`.", () -> byteBufMsg, () -> recipient);
-                mySuperPeerChannel.channel().writeAndFlush(byteBufMsg).addListener(future -> {
+                mySuperPeerChannel.channel().write(byteBufMsg).addListener(future -> {
                     if (future.isSuccess()) {
                         promise.setSuccess();
                     }
@@ -158,7 +158,7 @@ public class TcpClient extends ChannelDuplexHandler {
             else {
                 // passthrough message
                 final ChannelPromise promise1 = ctx.newPromise();
-                ctx.writeAndFlush(new AddressedMessage<>(byteBufMsg, recipient)).addListener(future -> {
+                ctx.write(new AddressedMessage<>(byteBufMsg, recipient)).addListener(future -> {
                     if (future.isSuccess()) {
                         promise1.setSuccess();
                     }
@@ -176,6 +176,16 @@ public class TcpClient extends ChannelDuplexHandler {
         else {
             ctx.write(msg, promise);
         }
+    }
+
+    @Override
+    public void flush(final ChannelHandlerContext ctx) throws Exception {
+        final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
+        if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
+            mySuperPeerChannel.channel().flush();
+        }
+
+        super.flush(ctx);
     }
 
     /**

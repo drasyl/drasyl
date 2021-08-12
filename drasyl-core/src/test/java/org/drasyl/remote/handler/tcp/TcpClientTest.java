@@ -166,7 +166,7 @@ public class TcpClientTest {
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                verify(superPeerChannel.channel()).writeAndFlush(msg);
+                verify(superPeerChannel.channel()).write(msg);
                 assertNull(pipeline.readOutbound());
             }
             finally {

@@ -62,7 +62,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
             final SocketAddress staticAddress = staticRoutes.get(recipient);
             if (staticAddress != null) {
                 LOG.trace("Send message `{}` via static route {}.", () -> applicationMsg, () -> staticAddress);
-                ctx.writeAndFlush(new AddressedMessage<>(applicationMsg, staticAddress), promise);
+                ctx.write(new AddressedMessage<>(applicationMsg, staticAddress), promise);
             }
             else {
                 // passthrough message

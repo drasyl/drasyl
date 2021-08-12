@@ -263,7 +263,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, IdentityTestUtil.ID_1.getAddress(), IdentityTestUtil.ID_1.getProofOfWork(), uniteAttemptsCache, peers, new HashSet<>(), superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), true, ImmutableSet.of(superPeerEndpoint), 0, null);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage<?, ?>>) m -> m.message() instanceof DiscoveryMessage));
+            verify(ctx).write(argThat((ArgumentMatcher<AddressedMessage<?, ?>>) m -> m.message() instanceof DiscoveryMessage));
         }
 
         @Test
@@ -277,7 +277,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, IdentityTestUtil.ID_1.getAddress(), IdentityTestUtil.ID_1.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)), superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage<?, ?>>) m -> m.message() instanceof DiscoveryMessage));
+            verify(ctx).write(argThat((ArgumentMatcher<AddressedMessage<?, ?>>) m -> m.message() instanceof DiscoveryMessage));
         }
 
         @Test

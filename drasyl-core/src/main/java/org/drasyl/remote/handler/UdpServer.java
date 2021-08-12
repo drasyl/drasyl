@@ -166,11 +166,11 @@ public class UdpServer extends ChannelDuplexHandler {
             final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
             final InetSocketAddress recipient = (InetSocketAddress) ((AddressedMessage<?, ?>) msg).address();
 
-            if (channel != null && channel.isWritable()) {
+            if (channel != null) {
                 final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
                 LOG.trace("Send Datagram {}", packet);
                 channel.read();
-                channel.writeAndFlush(packet).addListener(future -> {
+                channel.write(packet).addListener(future -> {
                     if (future.isSuccess()) {
                         promise.setSuccess();
                     }
@@ -187,6 +187,15 @@ public class UdpServer extends ChannelDuplexHandler {
         else {
             ctx.write(msg, promise);
         }
+    }
+
+    @Override
+    public void flush(final ChannelHandlerContext ctx) throws Exception {
+        if (channel != null) {
+            channel.flush();
+        }
+
+        super.flush(ctx);
     }
 
     /**

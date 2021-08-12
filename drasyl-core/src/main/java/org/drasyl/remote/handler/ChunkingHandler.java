@@ -217,7 +217,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                     // send chunk
                     final RemoteMessage chunk = PartialReadMessage.of(chunkByteBuf);
 
-                    combiner.add(ctx.writeAndFlush(new AddressedMessage<>(chunk, recipient)));
+                    combiner.add(ctx.write(new AddressedMessage<>(chunk, recipient)));
                 }
                 finally {
                     ReferenceCountUtil.safeRelease(chunkBodyByteBuf);

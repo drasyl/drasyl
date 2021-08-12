@@ -295,6 +295,7 @@ public class ArmHandler extends ChannelDuplexHandler {
         if (session.getLastKeyExchangeAt().getAndUpdate(updateLastModificationTime) < System.currentTimeMillis() - retryInterval.toMillis()) {
             LOG.trace("[{} => {}] Send key exchange message, do to key exchange overdue", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientPublicKey.toString().substring(0, 4));
             ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, agreement, recipient, recipientPublicKey, identity, networkId);
+            ctx.flush();
         }
     }
 
@@ -370,6 +371,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                 final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
                 combiner.add(ArmHandlerUtil.sendAck(crypto, ctx, sender, recipientsKey, session, identity, networkId));
                 combiner.finish(promise);
+                ctx.flush();
             }
             catch (final Exception e) {
                 promise.setFailure(new CryptoException(e));

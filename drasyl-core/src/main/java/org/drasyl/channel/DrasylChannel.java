@@ -132,7 +132,7 @@ public class DrasylChannel extends AbstractChannel {
                 msg = null;
             }
 
-            parent().writeAndFlush(new AddressedMessage<>(msg, remoteAddress));
+            parent().write(new AddressedMessage<>(msg, remoteAddress));
             in.remove();
         }
     }
