@@ -21,9 +21,10 @@
  */
 package org.drasyl.loopback.handler;
 
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ class LoopbackMessageHandlerTest {
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final IdentityPublicKey recipient,
                                                     @Mock final Object message) {
         final LoopbackMessageHandler handler = new LoopbackMessageHandler(identity.getAddress());
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -64,7 +65,7 @@ class LoopbackMessageHandlerTest {
         when(identity.getAddress()).thenReturn(recipient);
 
         final LoopbackMessageHandler handler = new LoopbackMessageHandler(identity.getAddress());
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

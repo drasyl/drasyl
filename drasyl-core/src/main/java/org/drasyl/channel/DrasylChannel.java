@@ -40,7 +40,11 @@ import java.nio.channels.NotYetConnectedException;
 import static org.drasyl.channel.Null.NULL;
 
 /**
- * A {@link Channel} for peer communication.
+ * A virtual {@link Channel} for peer communication.
+ * <p>
+ * Inspired by {@link io.netty.channel.local.LocalChannel}.
+ *
+ * @see DrasylServerChannel
  */
 public class DrasylChannel extends AbstractChannel {
     private enum State {OPEN, BOUND, CONNECTED, CLOSED}
@@ -101,8 +105,9 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected void doBeginRead() {
-        // do nothing.
-        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings to us
+        // NOOP
+        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings
+        // TODO: we should maybe create an inboundBuffer?
     }
 
     @Override

@@ -22,9 +22,10 @@
 package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
@@ -57,7 +58,7 @@ class OtherNetworkFilterTest {
     void shouldDropMessagesFromOtherNetworks() {
         final ChannelHandler handler = new OtherNetworkFilter(123);
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
@@ -72,7 +73,7 @@ class OtherNetworkFilterTest {
     void shouldPassMessagesFromSameNetwork(@Mock final SocketAddress sender) {
         final ChannelHandler handler = new OtherNetworkFilter(123);
         final AcknowledgementMessage message = AcknowledgementMessage.of(123, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 

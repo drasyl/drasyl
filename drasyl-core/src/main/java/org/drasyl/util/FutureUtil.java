@@ -21,12 +21,9 @@
  */
 package org.drasyl.util;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -71,20 +68,5 @@ public final class FutureUtil {
         });
 
         return completableFuture;
-    }
-
-    public static void combine(final CompletionStage<Void> sender, final ChannelPromise receiver) {
-        sender.whenComplete((unused, throwable) -> {
-            if (throwable == null) {
-                receiver.setSuccess();
-            }
-            else {
-                receiver.setFailure(throwable);
-            }
-        });
-    }
-
-    public static void combine(final ChannelFuture sender, final CompletableFuture<Void> receiver) {
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(sender)).combine(receiver);
     }
 }

@@ -22,12 +22,13 @@
 package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.RemovePathEvent;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.remote.handler.LocalNetworkDiscovery.Peer;
@@ -88,7 +89,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldStartHeartbeatingOnChannelActive() {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, null));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 verify(handler).startHeartbeat(any());
                 handler.stopHeartbeat(); // we must stop, otherwise this handler goes crazy cause to the PT0S ping interval
@@ -101,7 +102,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnChannelInactive() {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -205,7 +206,7 @@ class LocalNetworkDiscoveryTest {
         void shouldPassthroughUnicastMessages(@Mock final InetSocketAddress sender,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
@@ -228,7 +229,7 @@ class LocalNetworkDiscoveryTest {
         when(peers.get(any())).thenReturn(peer);
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
 
         pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -243,7 +244,7 @@ class LocalNetworkDiscoveryTest {
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

@@ -34,8 +34,6 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.RemoteMessage;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -76,7 +74,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private final Duration pingInterval;
     private final Duration pingTimeout;
     private final int networkId;
-    private Future<?> pingDisposable;
+    private Future<?> scheduledPingFuture;
 
     public LocalNetworkDiscovery(final Map<IdentityPublicKey, Peer> peers,
                                  final DrasylAddress myAddress,
@@ -84,36 +82,37 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
                                  final Duration pingInterval,
                                  final Duration pingTimeout,
                                  final int networkId,
-                                 final Future<?> pingDisposable) {
+                                 final Future<?> scheduledPingFuture) {
         this.peers = requireNonNull(peers);
         this.myAddress = requireNonNull(myAddress);
         this.myProofOfWork = requireNonNull(myProofOfWork);
-        this.pingInterval = pingInterval;
-        this.pingTimeout = pingTimeout;
+        this.pingInterval = requireNonNull(pingInterval);
+        this.pingTimeout = requireNonNull(pingTimeout);
         this.networkId = networkId;
-        this.pingDisposable = pingDisposable;
+        this.scheduledPingFuture = scheduledPingFuture;
     }
 
     public LocalNetworkDiscovery(final int networkId,
                                  final Duration pingInterval,
-                                 final Duration pingTimeout, final DrasylAddress myAddress,
+                                 final Duration pingTimeout,
+                                 final DrasylAddress myAddress,
                                  final ProofOfWork myProofOfWork) {
         this(new ConcurrentHashMap<>(), myAddress, myProofOfWork, pingInterval, pingTimeout, networkId, null);
     }
 
     synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
-        if (pingDisposable == null) {
+        if (scheduledPingFuture == null) {
             LOG.debug("Start Network Network Discovery...");
-            pingDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval.toMillis()), pingInterval.toMillis(), MILLISECONDS);
+            scheduledPingFuture = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval.toMillis()), pingInterval.toMillis(), MILLISECONDS);
             LOG.debug("Network Discovery started.");
         }
     }
 
     synchronized void stopHeartbeat() {
-        if (pingDisposable != null) {
+        if (scheduledPingFuture != null) {
             LOG.debug("Stop Network Host Discovery...");
-            pingDisposable.cancel(false);
-            pingDisposable = null;
+            scheduledPingFuture.cancel(false);
+            scheduledPingFuture = null;
             LOG.debug("Network Discovery stopped.");
         }
     }
@@ -147,7 +146,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
             final DiscoveryMessage discoveryMsg = (DiscoveryMessage) ((AddressedMessage<?, ?>) msg).message();
 
-            if (pingDisposable != null && sender instanceof InetSocketAddress && discoveryMsg.getRecipient() == null) {
+            if (scheduledPingFuture != null && sender instanceof InetSocketAddress && discoveryMsg.getRecipient() == null) {
                 handlePing(ctx, sender, discoveryMsg, new CompletableFuture<>());
             }
             else {
@@ -215,11 +214,10 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
         final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork);
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)))).combine(future);
-        future.exceptionally(e -> {
-            LOG.warn("Unable to send discovery message to multicast group `{}`", () -> MULTICAST_ADDRESS, () -> e);
-            return null;
+        ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)).addListener(future -> {
+            if (!future.isSuccess()) {
+                LOG.warn("Unable to send discovery message to multicast group `{}`", () -> MULTICAST_ADDRESS, future::cause);
+            }
         });
     }
 

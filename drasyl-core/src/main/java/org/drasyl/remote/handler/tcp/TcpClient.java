@@ -83,8 +83,8 @@ public class TcpClient extends ChannelDuplexHandler {
         this.superPeerAddresses = requireNonNull(superPeerAddresses);
         this.bootstrap = requireNonNull(bootstrap);
         this.noResponseFromSuperPeerSince = requireNonNull(noResponseFromSuperPeerSince);
-        this.timeout = timeout;
-        this.address = address;
+        this.timeout = requireNonNull(timeout);
+        this.address = requireNonNull(address);
         this.superPeerChannel = superPeerChannel;
     }
 
@@ -125,15 +125,13 @@ public class TcpClient extends ChannelDuplexHandler {
      * This method is called whenever a message is received. It checks whether a message has been
      * received from a super peer and closes the fallback TCP connection if necessary.
      */
-    private CompletableFuture<Void> checkForReachableSuperPeer(final SocketAddress sender) {
+    private void checkForReachableSuperPeer(final SocketAddress sender) {
         // message from super peer?
         if (superPeerAddresses.contains(sender)) {
             // super peer(s) reachable via udp -> close fallback connection!
             noResponseFromSuperPeerSince.set(0);
             stopClient();
         }
-
-        return completedFuture(null);
     }
 
     @Override

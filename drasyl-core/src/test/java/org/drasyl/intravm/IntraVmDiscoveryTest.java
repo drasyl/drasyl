@@ -22,10 +22,11 @@
 package org.drasyl.intravm;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Pair;
@@ -61,7 +62,7 @@ class IntraVmDiscoveryTest {
         void shouldStartDiscoveryOnChannelActive() {
             IntraVmDiscovery.discoveries = discoveries;
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 
@@ -80,7 +81,7 @@ class IntraVmDiscoveryTest {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, identity.getAddress()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -102,7 +103,7 @@ class IntraVmDiscoveryTest {
             discoveries.put(Pair.of(0, recipient), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -118,7 +119,7 @@ class IntraVmDiscoveryTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             IntraVmDiscovery.discoveries = discoveries;
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

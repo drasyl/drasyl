@@ -44,8 +44,6 @@ import org.drasyl.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
 import org.drasyl.serialization.JacksonJsonSerializer;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -54,9 +52,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -142,18 +138,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         for (final Entry<Group, GroupUri> entry : groups.entrySet()) {
             final Group group = entry.getKey();
             final GroupUri groupURI = entry.getValue();
-            try {
-                final CompletableFuture<Void> future = new CompletableFuture<>();
-                FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())))).combine(future);
-                future.get();
-            }
-            catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-                LOG.warn("Exception occurred during de-registration from group `{}`: ", group.getName(), e);
-            }
-            catch (final ExecutionException e) {
-                LOG.warn("Exception occurred during de-registration from group `{}`: ", group.getName(), e);
-            }
+            ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())).awaitUninterruptibly();
         }
     }
 
@@ -250,7 +235,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         ctx.fireUserEventTriggered(GroupJoinedEvent.of(
                 group,
                 msg.getMembers(),
-                () -> FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), sender)))).combine(new CompletableFuture<>())));
+                () -> ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), sender))));
     }
 
     /**
@@ -266,7 +251,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         final ProofOfWork proofOfWork = identity.getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager)))).combine(new CompletableFuture<>());
+        ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager));
 
         // Add re-try task
         if (!renewTasks.containsKey(group.getGroup())) {

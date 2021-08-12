@@ -28,19 +28,34 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * A message that wraps another message with an address.
+ *
+ * @param <M> the type of the wrapped message
+ * @param <A> the type of the address
+ */
 public class AddressedMessage<M, A extends SocketAddress> implements ReferenceCounted {
     private final M message;
     private final A address;
 
+    /**
+     * @throws NullPointerException if {@code address} is {@code null}
+     */
     public AddressedMessage(final M message, final A address) {
         this.message = message;
         this.address = requireNonNull(address);
     }
 
+    /**
+     * Returns the message wrapped by this addressed message.
+     */
     public M message() {
         return message;
     }
 
+    /**
+     * Returns the address of this message.
+     */
     public A address() {
         return address;
     }

@@ -40,7 +40,7 @@ import org.drasyl.channel.AddPathAndChildren;
 import org.drasyl.channel.AddPathAndSuperPeer;
 import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.DefaultDrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MessageSerializer;
 import org.drasyl.channel.PathEvent;
 import org.drasyl.channel.RemoveChildrenAndPath;
@@ -197,7 +197,7 @@ public abstract class DrasylNode {
         bootstrap = new ServerBootstrap()
                 .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
                 .localAddress(identity)
-                .channel(DefaultDrasylServerChannel.class)
+                .channel(DrasylServerChannel.class)
                 .handler(new DrasylNodeChannelInitializer(config, identity, inboundSerialization, outboundSerialization, this::onEvent))
                 .childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent));
 
@@ -559,7 +559,7 @@ public abstract class DrasylNode {
 
             // discover nodes running within the same jvm
             if (this.config.isIntraVmDiscoveryEnabled()) {
-                ch.pipeline().addFirst(INTRA_VM_DISCOVERY, new IntraVmDiscovery(this.identity.getAddress(), this.config.getNetworkId()));
+                ch.pipeline().addFirst(INTRA_VM_DISCOVERY, new IntraVmDiscovery(this.config.getNetworkId(), this.identity.getAddress()));
             }
 
             if (this.config.isRemoteEnabled()) {
@@ -580,8 +580,8 @@ public abstract class DrasylNode {
                 if (this.config.isRemoteLocalHostDiscoveryEnabled()) {
                     // discover nodes running on the same local computer
                     ch.pipeline().addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(
-                            this.config.isRemoteLocalHostDiscoveryWatchEnabled(),
                             this.config.getNetworkId(),
+                            this.config.isRemoteLocalHostDiscoveryWatchEnabled(),
                             this.config.getRemoteBindHost(),
                             this.config.getRemoteLocalHostDiscoveryLeaseTime(),
                             this.config.getRemoteLocalHostDiscoveryPath(),
@@ -816,7 +816,7 @@ public abstract class DrasylNode {
                     final IdentityPublicKey sender = (IdentityPublicKey) msg.address();
 
                     // create/get channel
-                    final Channel channel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
+                    final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
 
                     if (o == null) {
                         o = NULL;
@@ -840,7 +840,7 @@ public abstract class DrasylNode {
                     final Resolve e = (Resolve) evt;
                     final IdentityPublicKey recipient = (IdentityPublicKey) e.recipient();
                     final CompletableFuture<Channel> future = e.future();
-                    final Channel resolvedChannel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
+                    final Channel resolvedChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
                     resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
                 }
                 else {

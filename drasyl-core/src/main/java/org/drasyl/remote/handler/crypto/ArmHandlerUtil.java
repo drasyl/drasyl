@@ -22,8 +22,10 @@
 package org.drasyl.remote.handler.crypto;
 
 import com.goterl.lazysodium.utils.SessionPair;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundInvoker;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -36,15 +38,12 @@ import org.drasyl.remote.protocol.ArmedMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
 import org.drasyl.remote.protocol.KeyExchangeMessage;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * A simple util/helper class for the {@link ArmHandler} that provides some static methods.
@@ -65,26 +64,26 @@ public final class ArmHandlerUtil {
      * @param ctx            the handler the handler context
      * @param recipient      the recipient of the encrypted message
      * @param msg            the message to encrypt
-     * @param future         the future to fulfill
+     * @param promise        the future to fulfill
      * @return the corresponding {@code future}
      */
-    public static CompletableFuture<Void> sendEncrypted(final Crypto cryptoInstance,
-                                                        final SessionPair agreementPair,
-                                                        final AgreementId agreementId,
-                                                        final ChannelOutboundInvoker ctx,
-                                                        final SocketAddress recipient,
-                                                        final FullReadMessage<?> msg,
-                                                        final CompletableFuture<Void> future) {
+    public static ChannelPromise sendEncrypted(final Crypto cryptoInstance,
+                                               final SessionPair agreementPair,
+                                               final AgreementId agreementId,
+                                               final ChannelOutboundInvoker ctx,
+                                               final SocketAddress recipient,
+                                               final FullReadMessage<?> msg,
+                                               final ChannelPromise promise) {
         try {
             final ArmedMessage armedMessage = msg.setAgreementId(agreementId).arm(cryptoInstance, agreementPair);
             // send encrypted message
-            FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(armedMessage, recipient)))).combine(future);
+            ctx.writeAndFlush(new AddressedMessage<>(armedMessage, recipient), promise);
         }
         catch (final IOException e) {
-            future.completeExceptionally(new CryptoException(e));
+            promise.setFailure(new CryptoException(e));
         }
 
-        return future;
+        return promise;
     }
 
     /**
@@ -110,17 +109,17 @@ public final class ArmHandlerUtil {
      * @param recipientsAddress the address of the recipient
      * @param recipientsKey     the public key of the recipient
      * @param session           the corresponding session
-     * @param identity
-     * @param networkId
+     * @param identity          the sender's identity
+     * @param networkId         the sender's network id
      * @return the future for the acknowledgement message
      */
-    public static CompletableFuture<Void> sendAck(final Crypto cryptoInstance,
-                                                  final ChannelHandlerContext ctx,
-                                                  final SocketAddress recipientsAddress,
-                                                  final IdentityPublicKey recipientsKey,
-                                                  final Session session,
-                                                  final Identity identity,
-                                                  final int networkId) {
+    public static ChannelFuture sendAck(final Crypto cryptoInstance,
+                                        final ChannelHandlerContext ctx,
+                                        final SocketAddress recipientsAddress,
+                                        final IdentityPublicKey recipientsKey,
+                                        final Session session,
+                                        final Identity identity,
+                                        final int networkId) {
         final Optional<Agreement> agreement = session.getCurrentInactiveAgreement().getValue();
 
         if (agreement.isPresent() && agreement.get().getAgreementId().isPresent()) {
@@ -134,17 +133,17 @@ public final class ArmHandlerUtil {
                             identity.getProofOfWork(),
                             recipientsKey,
                             agreementId
-                    ), new CompletableFuture<>()).whenComplete((x, e) -> {
-                if (e == null) {
+                    ), ctx.newPromise()).addListener(future -> {
+                if (future.isSuccess()) {
                     LOG.trace("[{} => {}] Send ack message for session {}", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId);
                 }
                 else {
-                    LOG.debug("[{} => {}] Error on sending ack message for session {}: {}", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId, () -> e);
+                    LOG.debug("[{} => {}] Error on sending ack message for session {}: {}", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4), () -> agreementId, future::cause);
                 }
             });
         }
         else {
-            return CompletableFuture.failedFuture(new IllegalStateException("There is currently no inactive agreement."));
+            return ctx.newFailedFuture(new IllegalStateException("There is currently no inactive agreement."));
         }
     }
 
@@ -157,9 +156,10 @@ public final class ArmHandlerUtil {
      * @param agreement      the respective agreement
      * @param recipient      the recipient of the agreement
      * @param recipientsKey  the public key of the recipient
-     * @param identity
-     * @param networkId
+     * @param identity       the sender's identity
+     * @param networkId      the sender's network id
      */
+    @SuppressWarnings("java:S107")
     public static void sendKeyExchangeMsg(final Crypto cryptoInstance,
                                           final ChannelHandlerContext ctx,
                                           final Session session,
@@ -176,7 +176,7 @@ public final class ArmHandlerUtil {
                 agreement.getKeyPair().getPublicKey());
 
         // encrypt message with long time key
-        ArmHandlerUtil.sendEncrypted(cryptoInstance, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipient, msg, new CompletableFuture<>());
+        ArmHandlerUtil.sendEncrypted(cryptoInstance, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipient, msg, ctx.newPromise());
     }
 
     /**

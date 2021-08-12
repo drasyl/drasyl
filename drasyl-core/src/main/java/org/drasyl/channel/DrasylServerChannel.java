@@ -37,13 +37,23 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A {@link Channel} for overlay network management.
+ * A virtual {@link io.netty.channel.ServerChannel} used for overlay network management. This
+ * channel must be bind to an {@link Identity}.
+ * <p>
+ * Inspired by {@link io.netty.channel.local.LocalServerChannel}.
+ *
+ * @see DrasylChannel
  */
-public class DefaultDrasylServerChannel extends AbstractServerChannel {
+public class DrasylServerChannel extends AbstractServerChannel {
     private volatile int state; // 0 - open (node created), 1 - active (node started), 2 - closed (node shut down)
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
     private volatile Identity localAddress; // NOSONAR
+
+    public DrasylServerChannel() {
+        state = 0;
+        localAddress = null;
+    }
 
     @Override
     protected boolean isCompatible(final EventLoop loop) {
@@ -81,8 +91,9 @@ public class DefaultDrasylServerChannel extends AbstractServerChannel {
 
     @Override
     protected void doBeginRead() {
-        // do nothing.
-        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings to us
+        // NOOP
+        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings
+        // TODO: we should maybe create an inboundBuffer?
     }
 
     @Override

@@ -23,11 +23,12 @@ package org.drasyl.remote.handler;
 
 import com.google.common.collect.ImmutableMap;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.RemovePathEvent;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,7 @@ class StaticRoutesHandlerTest {
         final SocketAddress address = new InetSocketAddress(22527);
 
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.pipeline().fireChannelActive();
 
@@ -66,7 +67,7 @@ class StaticRoutesHandlerTest {
     void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
                                             @Mock final SocketAddress address) {
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.pipeline().fireChannelInactive();
 
@@ -83,7 +84,7 @@ class StaticRoutesHandlerTest {
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
@@ -101,7 +102,7 @@ class StaticRoutesHandlerTest {
     void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of());
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 

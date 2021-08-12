@@ -26,9 +26,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
@@ -74,7 +75,7 @@ class RemoteMessageToByteBufCodecTest {
         void shouldConvertByteBufToEnvelope(@Mock final SocketAddress sender) throws IOException {
             final RemoteMessage message = AcknowledgementMessage.of(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
@@ -97,7 +98,7 @@ class RemoteMessageToByteBufCodecTest {
         void shouldConvertEnvelopeToByteBuf(@Mock final SocketAddress recipient) throws IOException {
             final ApplicationMessage message = ApplicationMessage.of(1337, IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"), ProofOfWork.of(3556154), IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), byte[].class.getName(), ByteString.copyFromUtf8("Hello World"));
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -121,7 +122,7 @@ class RemoteMessageToByteBufCodecTest {
             doThrow(RuntimeException.class).when(messageEnvelope).writeTo(any());
 
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
                 pipeline.writeAndFlush(new AddressedMessage<>(messageEnvelope, recipient), promise);

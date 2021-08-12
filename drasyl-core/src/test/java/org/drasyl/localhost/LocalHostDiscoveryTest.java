@@ -22,12 +22,13 @@
 package org.drasyl.localhost;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -124,7 +125,7 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.resolve(anyString())).thenReturn(discoveryPath);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), true, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireUserEventTriggered(event);
 
@@ -229,7 +230,7 @@ class LocalHostDiscoveryTest {
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -247,7 +248,7 @@ class LocalHostDiscoveryTest {
         void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

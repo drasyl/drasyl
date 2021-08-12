@@ -28,8 +28,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -47,7 +45,6 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofSeconds;
@@ -256,11 +253,11 @@ public class UpnpIgdPortMapping implements PortMapping {
                 }
             }
         }, SSDP_DISCOVERY_TIMEOUT.toMillis(), MILLISECONDS);
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, SSDP_MULTICAST_ADDRESS)))).combine(future);
-        future.exceptionally(e -> {
-            LOG.warn("Unable to send ssdp discovery message to `{}`", () -> SSDP_MULTICAST_ADDRESS, () -> e);
-            return null;
+
+        ctx.writeAndFlush(new AddressedMessage<>(msg, SSDP_MULTICAST_ADDRESS)).addListener(future -> {
+            if (!future.isSuccess()) {
+                LOG.warn("Unable to send ssdp discovery message to `{}`", () -> SSDP_MULTICAST_ADDRESS, future::cause);
+            }
         });
     }
 

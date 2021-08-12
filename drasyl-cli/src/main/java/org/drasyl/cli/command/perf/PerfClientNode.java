@@ -74,14 +74,14 @@ public class PerfClientNode extends BehavioralDrasylNode {
     private static final Duration REQUEST_SESSION_TIMEOUT = ofSeconds(10);
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream printStream;
-    private final EventLoopGroup perfScheduler;
+    private final EventLoopGroup eventLoopGroup;
     private final Set<DrasylAddress> directConnections;
     private TestOptions testOptions;
 
     @SuppressWarnings({ "java:S107", "java:S2384" })
     PerfClientNode(final CompletableFuture<Void> doneFuture,
                    final PrintStream printStream,
-                   final EventLoopGroup perfScheduler,
+                   final EventLoopGroup eventLoopGroup,
                    final Set<DrasylAddress> directConnections,
                    final Identity identity,
                    final ServerBootstrap bootstrap,
@@ -89,7 +89,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
         super(identity, bootstrap, channelFuture);
         this.doneFuture = requireNonNull(doneFuture);
         this.printStream = requireNonNull(printStream);
-        this.perfScheduler = requireNonNull(perfScheduler);
+        this.eventLoopGroup = requireNonNull(eventLoopGroup);
         this.directConnections = requireNonNull(directConnections);
     }
 
@@ -101,7 +101,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
                 .build());
         this.doneFuture = new CompletableFuture<>();
         this.printStream = requireNonNull(printStream);
-        perfScheduler = new NioEventLoopGroup(1);
+        eventLoopGroup = new NioEventLoopGroup(1);
         directConnections = new HashSet<>();
     }
 
@@ -262,12 +262,12 @@ public class PerfClientNode extends BehavioralDrasylNode {
         };
 
         if (!session.isReverse()) {
-            final PerfTestSender sender = new PerfTestSender(testOptions.getServer(), session, perfScheduler, printStream, this::send, successBehavior, failureBehavior);
+            final PerfTestSender sender = new PerfTestSender(testOptions.getServer(), session, eventLoopGroup, printStream, this::send, successBehavior, failureBehavior);
             return sender.run();
         }
         else {
             printStream.println("Reverse mode, server is sending");
-            final PerfTestReceiver receiver = new PerfTestReceiver(testOptions.getServer(), session, perfScheduler, printStream, this::send, successBehavior, failureBehavior);
+            final PerfTestReceiver receiver = new PerfTestReceiver(testOptions.getServer(), session, eventLoopGroup, printStream, this::send, successBehavior, failureBehavior);
             return receiver.run();
         }
     }

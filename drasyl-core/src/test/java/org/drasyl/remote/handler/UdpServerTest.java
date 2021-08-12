@@ -27,9 +27,10 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -77,7 +78,7 @@ class UdpServerTest {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
             }
@@ -94,7 +95,7 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, channel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -114,7 +115,7 @@ class UdpServerTest {
             when(channel.isWritable()).thenReturn(true);
 
             final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, channel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
@@ -142,7 +143,7 @@ class UdpServerTest {
 
             final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, null);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 

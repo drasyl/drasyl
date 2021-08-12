@@ -26,6 +26,7 @@ import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -40,8 +41,6 @@ import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.KeyExchangeAcknowledgementMessage;
 import org.drasyl.remote.protocol.KeyExchangeMessage;
 import org.drasyl.util.ConcurrentReference;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -52,7 +51,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongUnaryOperator;
 
@@ -114,7 +112,8 @@ public class ArmHandler extends ChannelDuplexHandler {
                 networkId);
     }
 
-    public ArmHandler(final int networkId, final int maxSessionsCount,
+    public ArmHandler(final int networkId,
+                      final int maxSessionsCount,
                       final int maxAgreements,
                       final Duration expireAfter,
                       final Duration retryInterval,
@@ -129,7 +128,7 @@ public class ArmHandler extends ChannelDuplexHandler {
     protected void filteredOutbound(final ChannelHandlerContext ctx,
                                     final SocketAddress recipient,
                                     final FullReadMessage<?> msg,
-                                    final CompletableFuture<Void> future) {
+                                    final ChannelPromise promise) {
         final IdentityPublicKey recipientsKey = msg.getRecipient();
         final Session session = getSession(ctx, recipientsKey);
 
@@ -142,11 +141,11 @@ public class ArmHandler extends ChannelDuplexHandler {
                 && agreement.get().isInitialized()
                 && !agreement.get().isStale()) {
             // do PFS encryption
-            ArmHandlerUtil.sendEncrypted(crypto, agreement.get().getSessionPair().get(), agreement.get().getAgreementId().get(), ctx, recipient, msg, future); //NOSONAR
+            ArmHandlerUtil.sendEncrypted(crypto, agreement.get().getSessionPair().get(), agreement.get().getAgreementId().get(), ctx, recipient, msg, promise); //NOSONAR
         }
         else {
             // do normal encryption
-            ArmHandlerUtil.sendEncrypted(crypto, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipient, msg, future);
+            ArmHandlerUtil.sendEncrypted(crypto, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipient, msg, promise);
 
             // start key exchange
             if (this.maxAgreements > 0) {
@@ -158,7 +157,7 @@ public class ArmHandler extends ChannelDuplexHandler {
     protected void filteredInbound(final ChannelHandlerContext ctx,
                                    final SocketAddress sender,
                                    final ArmedMessage msg,
-                                   final CompletableFuture<Void> future) throws IOException {
+                                   final ChannelPromise promise) throws IOException {
         final IdentityPublicKey recipientsKey = msg.getSender(); // on inbound our recipient is the sender of the message
         final Session session = getSession(ctx, recipientsKey);
         final FullReadMessage<?> plaintextMsg;
@@ -201,7 +200,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                 plaintextMsg = ArmHandlerUtil.decrypt(crypto, session.getInitializedAgreements().get(agreementId).getSessionPair().orElse(null), msg);
             }
             else {
-                future.completeExceptionally(new CryptoException("Decryption-Error: agreement id could not be found. Message was dropped."));
+                promise.setFailure(new CryptoException("Decryption-Error: agreement id could not be found. Message was dropped."));
                 LOG.debug("Agreement id `{}` could not be found. Dropped message: {}", () -> agreementId, () -> msg);
 
                 // on unknown agreement id we want to send a new key exchange message, may be we're crashed and the recipient node sends us an old agreement
@@ -214,12 +213,12 @@ public class ArmHandler extends ChannelDuplexHandler {
 
         // check for key exchange msg
         if (this.maxAgreements > 0 && longTimeEncryptionUsed && plaintextMsg instanceof KeyExchangeMessage) {
-            receivedKeyExchangeMessage(ctx, sender, (KeyExchangeMessage) plaintextMsg, session, future);
+            receivedKeyExchangeMessage(ctx, sender, (KeyExchangeMessage) plaintextMsg, session, promise);
         }
         // check for key exchange acknowledgement msg
         else if (this.maxAgreements > 0 && plaintextMsg instanceof KeyExchangeAcknowledgementMessage) {
             receivedAcknowledgement(ctx, ((KeyExchangeAcknowledgementMessage) plaintextMsg).getAcknowledgementAgreementId(), session, recipientsKey);
-            future.complete(null);
+            promise.setSuccess();
         }
         else {
             ctx.fireChannelRead(new AddressedMessage<>(plaintextMsg, sender));
@@ -336,13 +335,13 @@ public class ArmHandler extends ChannelDuplexHandler {
      * @param sender       the sender of the {@link KeyExchangeMessage} message
      * @param plaintextMsg the message
      * @param session      the corresponding session
-     * @param future       the future to fulfill
+     * @param promise      the future to fulfill
      */
     private void receivedKeyExchangeMessage(final ChannelHandlerContext ctx,
                                             final SocketAddress sender,
                                             final KeyExchangeMessage plaintextMsg,
                                             final Session session,
-                                            final CompletableFuture<Void> future) {
+                                            final ChannelPromise promise) {
         //TODO: Umschreiben. Hier lieber schauen, ob die Exchange Nachricht sich auf den aktuellen aktiven Key bezieht oder einen möglichen neuen
         //TODO: in jedem Fall den jeweiligen Key mit einem ACK bestätigen.
         //TODO: Handlet es sich um einen neuen Key muss auch ein neuer "inactive" key erzeugt und bestätigt werden
@@ -368,10 +367,12 @@ public class ArmHandler extends ChannelDuplexHandler {
                 doKeyExchange(session, ctx, sender, recipientsKey);
 
                 // encrypt message with long time key
-                FutureCombiner.getInstance().add(ArmHandlerUtil.sendAck(crypto, ctx, sender, recipientsKey, session, identity, networkId)).combine(future);
+                final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
+                combiner.add(ArmHandlerUtil.sendAck(crypto, ctx, sender, recipientsKey, session, identity, networkId));
+                combiner.finish(promise);
             }
             catch (final Exception e) {
-                future.completeExceptionally(new CryptoException(e));
+                promise.setFailure(new CryptoException(e));
             }
         });
     }
@@ -426,7 +427,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                 return;
             }
 
-            filteredOutbound(ctx, recipient, fullReadMsg, FutureUtil.toFuture(promise));
+            filteredOutbound(ctx, recipient, fullReadMsg, promise);
         }
         else {
             ctx.write(msg, promise);
@@ -445,7 +446,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                 return;
             }
 
-            filteredInbound(ctx, sender, armedMessage, new CompletableFuture<>());
+            filteredInbound(ctx, sender, armedMessage, ctx.newPromise());
         }
         else {
             ctx.fireChannelRead(msg);

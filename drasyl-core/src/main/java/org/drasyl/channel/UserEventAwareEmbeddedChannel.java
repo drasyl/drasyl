@@ -25,7 +25,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCountUtil;
 
@@ -33,12 +32,12 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 
 /**
- * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
+ * A {@link EmbeddedChannel} that record all received user events.
  */
-public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements ServerChannel {
+public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
     private Queue<Object> userEvents;
 
-    public EmbeddedDrasylServerChannel(final ChannelHandler... handlers) {
+    public UserEventAwareEmbeddedChannel(final ChannelHandler... handlers) {
         super(handlers);
 
         pipeline().addLast(new ChannelInboundHandlerAdapter() {

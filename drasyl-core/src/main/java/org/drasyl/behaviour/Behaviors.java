@@ -89,13 +89,13 @@ public final class Behaviors {
     /**
      * A behavior with support for scheduled self events in a node.
      *
-     * @param factory   function that returns the behavior that should react to scheduled self
-     *                  events
-     * @param scheduler the {@code Scheduler} to perform scheduled events on
+     * @param factory        function that returns the behavior that should react to scheduled self
+     *                       events
+     * @param eventLoopGroup the {@code Scheduler} to perform scheduled events on
      */
     public static Behavior withScheduler(final Function<EventScheduler, Behavior> factory,
-                                         final EventLoopGroup scheduler) {
-        return new DeferredBehavior(node -> factory.apply(new EventScheduler(node::onEvent, scheduler)));
+                                         final EventLoopGroup eventLoopGroup) {
+        return new DeferredBehavior(node -> factory.apply(new EventScheduler(node::onEvent, eventLoopGroup)));
     }
 
     /**
@@ -109,11 +109,11 @@ public final class Behaviors {
 
     public static class EventScheduler {
         private final Consumer<Event> consumer;
-        private final EventLoopGroup scheduler;
+        private final EventLoopGroup eventLoopGroup;
 
-        EventScheduler(final Consumer<Event> consumer, final EventLoopGroup scheduler) {
+        EventScheduler(final Consumer<Event> consumer, final EventLoopGroup eventLoopGroup) {
             this.consumer = requireNonNull(consumer);
-            this.scheduler = requireNonNull(scheduler);
+            this.eventLoopGroup = requireNonNull(eventLoopGroup);
         }
 
         /**
@@ -125,7 +125,7 @@ public final class Behaviors {
          */
         @SuppressWarnings({ "UnusedReturnValue", "unused", "java:S1452" })
         public Future<?> scheduleEvent(final Event event, final Duration delay) {
-            return scheduler.schedule(() -> consumer.accept(event), delay.toMillis(), MILLISECONDS);
+            return eventLoopGroup.schedule(() -> consumer.accept(event), delay.toMillis(), MILLISECONDS);
         }
 
         /**
@@ -136,7 +136,7 @@ public final class Behaviors {
          */
         @SuppressWarnings({ "UnusedReturnValue", "unused", "java:S1452" })
         public Future<?> scheduleEvent(final Event event) {
-            return scheduler.submit(() -> consumer.accept(event));
+            return eventLoopGroup.submit(() -> consumer.accept(event));
         }
 
         /**
@@ -152,7 +152,7 @@ public final class Behaviors {
         public Future<?> schedulePeriodicallyEvent(final Event event,
                                                    final Duration initialDelay,
                                                    final Duration period) {
-            return scheduler.scheduleAtFixedRate(() -> consumer.accept(event), initialDelay.toMillis(), period.toMillis(), MILLISECONDS);
+            return eventLoopGroup.scheduleAtFixedRate(() -> consumer.accept(event), initialDelay.toMillis(), period.toMillis(), MILLISECONDS);
         }
     }
 }

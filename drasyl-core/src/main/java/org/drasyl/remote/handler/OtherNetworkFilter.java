@@ -27,7 +27,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 
-
 /**
  * This handler filters out all messages received from other networks.
  */

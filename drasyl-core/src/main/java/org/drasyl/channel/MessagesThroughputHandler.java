@@ -41,7 +41,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Helper class to visualize the number of inbound and outbound messages per second. Can be added to
- * any position in a {@link Pipeline}.
+ * any position in a {@link io.netty.channel.ChannelPipeline}.
  */
 @SuppressWarnings({ "java:S110", "java:S106", "unused" })
 public class MessagesThroughputHandler extends ChannelDuplexHandler {
@@ -52,7 +52,7 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
     private final LongAdder inboundMessages;
     private final EventLoopGroup eventLoopGroup;
     private final PrintStream printStream;
-    private ScheduledFuture<?> disposable;
+    private ScheduledFuture<?> scheduledFuture;
 
     MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
                               final BiPredicate<SocketAddress, Object> consumeInbound,
@@ -60,14 +60,14 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
                               final LongAdder inboundMessages,
                               final EventLoopGroup eventLoopGroup,
                               final PrintStream printStream,
-                              final ScheduledFuture<?> disposable) {
+                              final ScheduledFuture<?> scheduledFuture) {
         this.consumeOutbound = requireNonNull(consumeOutbound);
         this.consumeInbound = requireNonNull(consumeInbound);
         this.outboundMessages = requireNonNull(outboundMessages);
         this.inboundMessages = requireNonNull(inboundMessages);
         this.eventLoopGroup = requireNonNull(eventLoopGroup);
         this.printStream = requireNonNull(printStream);
-        this.disposable = disposable;
+        this.scheduledFuture = scheduledFuture;
     }
 
     /**
@@ -109,7 +109,7 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
     private void start() {
         final long startTime = System.currentTimeMillis();
         final AtomicLong intervalTime = new AtomicLong(startTime);
-        disposable = eventLoopGroup.scheduleAtFixedRate(() -> {
+        scheduledFuture = eventLoopGroup.scheduleAtFixedRate(() -> {
             final long currentTime = System.currentTimeMillis();
 
             final double relativeIntervalStartTime = (intervalTime.get() - startTime) / 1_000.;
@@ -124,8 +124,8 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
     }
 
     private void stop() {
-        if (disposable != null) {
-            disposable.cancel(false);
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(false);
         }
     }
 

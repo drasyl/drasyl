@@ -43,7 +43,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
  * <p>
- * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java
+ * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java">Jadex</a>
  */
 @SuppressWarnings({ "java:S110" })
 public class IntraVmDiscovery extends ChannelDuplexHandler {
@@ -54,13 +54,15 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     private final DrasylAddress myAddress;
     private final int myNetworkId;
 
-    public IntraVmDiscovery(final DrasylAddress myAddress, final int myNetworkId) {
+    public IntraVmDiscovery(final int myNetworkId,
+                            final DrasylAddress myAddress) {
         this(new ReentrantReadWriteLock(true), myAddress, myNetworkId);
     }
 
     IntraVmDiscovery(final ReadWriteLock lock,
-                     final DrasylAddress myAddress, final int myNetworkId) {
-        this.lock = lock;
+                     final DrasylAddress myAddress,
+                     final int myNetworkId) {
+        this.lock = requireNonNull(lock);
         this.myAddress = requireNonNull(myAddress);
         this.myNetworkId = myNetworkId;
     }

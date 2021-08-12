@@ -67,7 +67,8 @@ public class PeersManager {
     PeersManager(final ReadWriteLock lock,
                  final SetMultimap<DrasylAddress, Object> paths,
                  final Set<DrasylAddress> children,
-                 final Set<DrasylAddress> superPeers, final Identity identity) {
+                 final Set<DrasylAddress> superPeers,
+                 final Identity identity) {
         this.lock = requireNonNull(lock);
         this.paths = requireNonNull(paths);
         this.children = requireNonNull(children);

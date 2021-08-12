@@ -23,9 +23,10 @@ package org.drasyl.remote.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.crypto.AgreementId;
@@ -67,7 +68,7 @@ class HopCountGuardTest {
         final ChannelHandler handler = new HopCountGuard((byte) 2);
         final FullReadMessage<AcknowledgementMessage> message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
 
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -86,7 +87,7 @@ class HopCountGuardTest {
         final ChannelHandler handler = new HopCountGuard((byte) 1);
         final RemoteMessage message = AcknowledgementMessage.of(randomNonce(), 0, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, HopCount.of(MAX_HOP_COUNT), agreementId, correspondingId);
 
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             final ChannelPromise promise = pipeline.newPromise();
             pipeline.writeAndFlush(new AddressedMessage<>(message, message.getSender()), promise);

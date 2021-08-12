@@ -96,8 +96,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private Future<?> postDisposable;
     private WatchService watchService; // NOSONAR
 
-    public LocalHostDiscovery(final boolean watchEnabled,
-                              final int networkId,
+    public LocalHostDiscovery(final int networkId,
+                              final boolean watchEnabled,
                               final InetAddress bindHost,
                               final Duration leaseTime,
                               final Path path, final DrasylAddress myAddress) {

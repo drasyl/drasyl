@@ -29,6 +29,7 @@ import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.DrasylAddress;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
@@ -37,8 +38,6 @@ import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.RemoteMessage;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedShort;
 import org.drasyl.util.Worm;
@@ -75,7 +74,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
         this.myAddress = requireNonNull(myAddress);
         this.messageMaxContentLength = messageMaxContentLength;
         this.messageMtu = messageMtu;
-        this.messageComposedMessageTransferTimeout = messageComposedMessageTransferTimeout;
+        this.messageComposedMessageTransferTimeout = requireNonNull(messageComposedMessageTransferTimeout);
         this.chunksCollectors = Worm.of();
     }
 
@@ -118,7 +117,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                 }
                 else if (messageLength > messageMtu) {
                     // message is too big, we have to chunk it
-                    chunkMessage(ctx, recipient, remoteMsg, FutureUtil.toFuture(promise), messageByteBuf, messageLength);
+                    chunkMessage(ctx, recipient, remoteMsg, promise, messageByteBuf, messageLength);
                 }
                 else {
                     ReferenceCountUtil.safeRelease(messageByteBuf);
@@ -179,7 +178,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
     private void chunkMessage(final ChannelHandlerContext ctx,
                               final SocketAddress recipient,
                               final RemoteMessage msg,
-                              final CompletableFuture<Void> future,
+                              final ChannelPromise promise,
                               final ByteBuf messageByteBuf,
                               final int messageSize) throws IOException {
         try {
@@ -197,7 +196,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             final UnsignedShort totalChunks = totalChunks(messageSize, messageMtu, partialChunkHeader);
             LOG.debug("The message `{}` has a size of {} bytes and is therefore split into {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> messageMtu);
 
-            final FutureCombiner combiner = FutureCombiner.getInstance();
+            final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
             final int chunkSize = getChunkSize(partialChunkHeader, messageMtu);
 
             while (messageByteBuf.readableBytes() > 0) {
@@ -218,9 +217,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                     // send chunk
                     final RemoteMessage chunk = PartialReadMessage.of(chunkByteBuf);
 
-                    final CompletableFuture<Void> future1 = new CompletableFuture<>();
-                    FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(chunk, recipient)))).combine(future1);
-                    combiner.add(future1);
+                    combiner.add(ctx.writeAndFlush(new AddressedMessage<>(chunk, recipient)));
                 }
                 finally {
                     ReferenceCountUtil.safeRelease(chunkBodyByteBuf);
@@ -229,7 +226,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                 chunkNo = chunkNo.increment();
             }
 
-            combiner.combine(future);
+            combiner.finish(promise);
         }
         finally {
             ReferenceCountUtil.safeRelease(messageByteBuf);

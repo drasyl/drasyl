@@ -27,7 +27,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -58,7 +58,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
     private final static AtomicInteger THREAD_INDEX = new AtomicInteger(0);
     private InetAddress localHost;
     private int port;
-    private EmbeddedDrasylServerChannel pipeline;
+    private UserEventAwareEmbeddedChannel pipeline;
     private Identity identity2;
 
     @SuppressWarnings("unchecked")
@@ -79,7 +79,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     .identitySecretKey(identity2.getIdentitySecretKey())
                     .build();
 
-            pipeline = new EmbeddedDrasylServerChannel(
+            pipeline = new UserEventAwareEmbeddedChannel(
                     handler,
                     new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
                         @Override

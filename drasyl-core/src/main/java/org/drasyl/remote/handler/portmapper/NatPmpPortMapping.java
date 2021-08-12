@@ -27,8 +27,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -44,7 +42,6 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -204,11 +201,10 @@ public class NatPmpPortMapping implements PortMapping {
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         externalAddressRequested.set(true);
 
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)))).combine(future);
-        future.exceptionally(e -> {
-            LOG.warn("Unable to send external address request message to `{}`", () -> defaultGateway, () -> e);
-            return null;
+        ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)).addListener(future -> {
+            if (!future.isSuccess()) {
+                LOG.warn("Unable to send external address request message to `{}`", () -> defaultGateway, future::cause);
+            }
         });
     }
 
@@ -236,11 +232,10 @@ public class NatPmpPortMapping implements PortMapping {
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         mappingRequested.set(true);
 
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-        FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)))).combine(future);
-        future.exceptionally(e -> {
-            LOG.warn("Unable to send mapping request message to `{}`", () -> defaultGateway, () -> e);
-            return null;
+        ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)).addListener(future -> {
+            if (!future.isSuccess()) {
+                LOG.warn("Unable to send mapping request message to `{}`", () -> defaultGateway, future::cause);
+            }
         });
     }
 

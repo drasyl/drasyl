@@ -24,14 +24,15 @@ package org.drasyl.remote.handler;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddPathAndSuperPeer;
 import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.RemoveChildrenAndPath;
 import org.drasyl.channel.RemoveSuperPeerAndPath;
+import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.event.NodeEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -98,7 +99,7 @@ class InternetDiscoveryTest {
     @Test
     void shouldPassthroughAllOtherEvents(@Mock final NodeEvent event) {
         final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+        final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
             pipeline.pipeline().fireUserEventTriggered(event);
 
@@ -114,7 +115,7 @@ class InternetDiscoveryTest {
         @Test
         void shouldStartHeartbeatingOnChannelActive() {
             final InternetDiscovery handler = spy(new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 verify(handler).startHeartbeat(any());
             }
@@ -128,7 +129,7 @@ class InternetDiscoveryTest {
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final InternetDiscovery handler = spy(new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -152,7 +153,7 @@ class InternetDiscoveryTest {
             when(identity.getAddress()).thenReturn(recipient);
             final DiscoveryMessage discoveryMessage = DiscoveryMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, System.currentTimeMillis());
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(discoveryMessage, address));
 
@@ -176,7 +177,7 @@ class InternetDiscoveryTest {
             when(identity.getAddress()).thenReturn(recipient);
             final AcknowledgementMessage acknowledgementMessage = AcknowledgementMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Nonce.randomNonce());
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(acknowledgementMessage, address));
 
@@ -199,7 +200,7 @@ class InternetDiscoveryTest {
 
             final AcknowledgementMessage acknowledgementMessage = AcknowledgementMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Nonce.randomNonce());
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), ofSeconds(1), ofSeconds(5), ofSeconds(30), false, ImmutableSet.of(superPeerEndpoint), 0, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(acknowledgementMessage, address));
 
@@ -308,7 +309,7 @@ class InternetDiscoveryTest {
 
             final UniteMessage uniteMessage = UniteMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(22527));
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(uniteMessage.getPublicKey(), peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, ImmutableSet.of(superPeerEndpoint), 0, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(uniteMessage, address));
 
@@ -340,7 +341,7 @@ class InternetDiscoveryTest {
             when(message.getRecipient()).thenReturn(recipientKey);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, Map.of(message.getSender(), senderPeer, message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
@@ -373,7 +374,7 @@ class InternetDiscoveryTest {
                 when(recipientPeer.getAddress()).thenReturn(new InetSocketAddress(25421));
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, Map.of(message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-                final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
                 try {
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
@@ -395,7 +396,7 @@ class InternetDiscoveryTest {
                 when(message.getRecipient()).thenThrow(IllegalArgumentException.class);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(recipient, recipientPeer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-                final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
                 try {
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
@@ -419,7 +420,7 @@ class InternetDiscoveryTest {
 
                 final ApplicationMessage applicationMessage = ApplicationMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, byte[].class.getName(), ByteString.EMPTY);
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-                final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
                 try {
                     pipeline.pipeline().fireChannelRead(new AddressedMessage<>(applicationMessage, address));
 
@@ -448,7 +449,7 @@ class InternetDiscoveryTest {
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-                final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -472,7 +473,7 @@ class InternetDiscoveryTest {
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, recipient);
-                final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -494,7 +495,7 @@ class InternetDiscoveryTest {
                 when(identity.getIdentityPublicKey()).thenReturn(sender);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-                final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -518,7 +519,7 @@ class InternetDiscoveryTest {
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(recipient, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
-                final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
+                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
                 try {
                     pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
