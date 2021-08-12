@@ -22,18 +22,17 @@
 package org.drasyl.channel;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.DrasylAddress;
 
 /**
- * Signals that we are no longer registered at as a children at {@link
- * RemoveSuperPeerAndPath#getAddress()}  as the direct routing path to that peer is no longer
- * available.
+ * Signals that a direct routing path has been discovered to {@link AddPathAndSuperPeerEvent#getAddress()}
+ * and that we are registered as a children as this peer.
  */
 @SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
-public abstract class RemoveSuperPeerAndPath implements PathEvent {
-    public static RemoveSuperPeerAndPath of(final IdentityPublicKey publicKey,
-                                            final Object path) {
-        return new AutoValue_RemoveSuperPeerAndPath(publicKey, path);
+public abstract class AddPathAndSuperPeerEvent implements PathEvent {
+    public static AddPathAndSuperPeerEvent of(final DrasylAddress publicKey,
+                                              final Object path) {
+        return new AutoValue_AddPathAndSuperPeerEvent(publicKey, path);
     }
 }

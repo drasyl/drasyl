@@ -245,7 +245,7 @@ class LocalHostDiscoveryTest {
         }
 
         @Test
-        void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
+        void shouldPassThroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
             final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);

@@ -108,7 +108,7 @@ class PortMapperTest {
         }
 
         @Test
-        void shouldPassthroughNonMethodMessages(@Mock final PortMapping method,
+        void shouldPassThroughNonMethodMessages(@Mock final PortMapping method,
                                                 @Mock final SocketAddress sender,
                                                 @Mock final ByteBuf msg) {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));

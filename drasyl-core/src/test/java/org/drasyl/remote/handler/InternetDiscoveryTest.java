@@ -27,11 +27,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.AddPathAndSuperPeer;
+import org.drasyl.channel.AddPathAndSuperPeerEvent;
 import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.RemoveChildrenAndPath;
-import org.drasyl.channel.RemoveSuperPeerAndPath;
+import org.drasyl.channel.RemoveChildrenAndPathEvent;
+import org.drasyl.channel.RemoveSuperPeerAndPathEvent;
 import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.event.NodeEvent;
 import org.drasyl.identity.Identity;
@@ -97,7 +97,7 @@ class InternetDiscoveryTest {
     private Map<IdentityPublicKey, Peer> peers;
 
     @Test
-    void shouldPassthroughAllOtherEvents(@Mock final NodeEvent event) {
+    void shouldPassThroughAllOtherEvents(@Mock final NodeEvent event) {
         final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
         final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
         try {
@@ -204,7 +204,7 @@ class InternetDiscoveryTest {
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(acknowledgementMessage, address));
 
-                assertThat(pipeline.readUserEvent(), instanceOf(AddPathAndSuperPeer.class));
+                assertThat(pipeline.readUserEvent(), instanceOf(AddPathAndSuperPeerEvent.class));
             }
             finally {
                 pipeline.close();
@@ -221,7 +221,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
             handler.doHeartbeat(ctx);
 
-            verify(ctx, never()).fireUserEventTriggered(any(RemoveSuperPeerAndPath.class));
+            verify(ctx, never()).fireUserEventTriggered(any(RemoveSuperPeerAndPathEvent.class));
         }
 
         @Test
@@ -236,7 +236,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, ImmutableSet.of(superPeerEndpoint), 0, null);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).fireUserEventTriggered(any(RemoveSuperPeerAndPath.class));
+            verify(ctx).fireUserEventTriggered(any(RemoveSuperPeerAndPathEvent.class));
         }
 
         @Test
@@ -249,7 +249,7 @@ class InternetDiscoveryTest {
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(), superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).fireUserEventTriggered(any(RemoveChildrenAndPath.class));
+            verify(ctx).fireUserEventTriggered(any(RemoveChildrenAndPathEvent.class));
         }
 
         @Test
@@ -291,7 +291,7 @@ class InternetDiscoveryTest {
             handler.doHeartbeat(ctx);
 
             verify(ctx, never()).writeAndFlush(any(AddressedMessage.class));
-            verify(ctx).fireUserEventTriggered(any(RemoveChildrenAndPath.class));
+            verify(ctx).fireUserEventTriggered(any(RemoveChildrenAndPathEvent.class));
         }
     }
 
@@ -488,7 +488,7 @@ class InternetDiscoveryTest {
             }
 
             @Test
-            void shouldPassthroughForUnknownRecipientWhenNoSuperPeerIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
+            void shouldPassThroughForUnknownRecipientWhenNoSuperPeerIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
                 final IdentityPublicKey sender = IdentityTestUtil.ID_1.getIdentityPublicKey();
                 final IdentityPublicKey recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
 

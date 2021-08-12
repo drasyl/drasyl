@@ -41,7 +41,7 @@ class ByteArraySerializerTest {
     @Nested
     class ToByteArray {
         @Test
-        void shouldPassthroughByteArray() throws IOException {
+        void shouldPassThroughByteArray() throws IOException {
             final byte[] bytes = serializer.toByteArray(new byte[]{ 1, 3, 3, 7 });
 
             assertArrayEquals(new byte[]{ 1, 3, 3, 7 }, bytes);
@@ -56,7 +56,7 @@ class ByteArraySerializerTest {
     @Nested
     class FromByteArray {
         @Test
-        void shouldPassthroughByteArray() throws IOException {
+        void shouldPassThroughByteArray() throws IOException {
             final byte[] bytes = serializer.fromByteArray(new byte[]{ 1, 3, 3, 7 }, byte[].class);
 
             assertArrayEquals(new byte[]{ 1, 3, 3, 7 }, bytes);

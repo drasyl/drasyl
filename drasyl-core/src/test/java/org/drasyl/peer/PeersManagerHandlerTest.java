@@ -25,6 +25,12 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.DrasylAddress;
+import org.drasyl.channel.AddPathAndChildrenEvent;
+import org.drasyl.channel.AddPathAndSuperPeerEvent;
+import org.drasyl.channel.AddPathEvent;
+import org.drasyl.channel.RemoveChildrenAndPathEvent;
+import org.drasyl.channel.RemovePathEvent;
+import org.drasyl.channel.RemoveSuperPeerAndPathEvent;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -33,7 +39,7 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.junit.jupiter.api.AfterEach;
+import org.drasyl.util.SetUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -45,7 +51,6 @@ import test.util.IdentityTestUtil;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -59,13 +64,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class PeersManagerTest {
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private ReadWriteLock lock;
+class PeersManagerHandlerTest {
     private SetMultimap<DrasylAddress, Object> paths;
     private Set<DrasylAddress> children;
     private Set<DrasylAddress> superPeers;
-    private PeersManager underTest;
+    private PeersManagerHandler underTest;
     private Identity identity;
 
     @BeforeEach
@@ -74,73 +77,7 @@ class PeersManagerTest {
         children = new HashSet<>();
         superPeers = new HashSet<>();
         identity = IdentityTestUtil.ID_1;
-        underTest = new PeersManager(lock, paths, children, superPeers, identity);
-    }
-
-    @Nested
-    class GetPeers {
-        @Test
-        void shouldReturnAllPeers(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                  @Mock final IdentityPublicKey superPeer,
-                                  @Mock final IdentityPublicKey children,
-                                  @Mock final IdentityPublicKey peer,
-                                  @Mock final Object path) {
-            underTest.addPathAndSuperPeer(ctx, superPeer, path);
-            underTest.addPathAndChildren(ctx, children, path);
-            underTest.addPath(ctx, peer, path);
-
-            assertEquals(Set.of(superPeer, children, peer), underTest.getPeers());
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.readLock()).lock();
-            verify(lock.readLock()).unlock();
-        }
-    }
-
-    @Nested
-    class GetChildren {
-        @Test
-        void shouldReturnChildren(@Mock final IdentityPublicKey publicKey) {
-            children.add(publicKey);
-
-            assertEquals(Set.of(publicKey), underTest.getChildren());
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.readLock()).lock();
-            verify(lock.readLock()).unlock();
-        }
-    }
-
-    @Nested
-    class GetSuperPeers {
-        @Test
-        void shouldReturnSuperPeers(@Mock final IdentityPublicKey publicKey) {
-            superPeers.add(publicKey);
-
-            assertEquals(Set.of(publicKey), underTest.getSuperPeers());
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.readLock()).lock();
-            verify(lock.readLock()).unlock();
-        }
-    }
-
-    @Nested
-    class GetPaths {
-        @Test
-        void shouldReturnPaths(@Mock final ChannelHandlerContext ctx,
-                               @Mock final IdentityPublicKey publicKey,
-                               @Mock final Object path) {
-            paths.put(publicKey, path);
-
-            assertEquals(Set.of(path), underTest.getPaths(publicKey));
-        }
+        underTest = new PeersManagerHandler(paths, children, superPeers, identity);
     }
 
     @Nested
@@ -149,7 +86,7 @@ class PeersManagerTest {
         void shouldEmitEventIfThisIsTheFirstPath(@Mock final ChannelHandlerContext ctx,
                                                  @Mock final IdentityPublicKey publicKey,
                                                  @Mock final Object path) {
-            underTest.addPath(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, AddPathEvent.of(publicKey, path));
 
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
         }
@@ -161,7 +98,7 @@ class PeersManagerTest {
                                                      @Mock final Object path2) {
             paths.put(publicKey, path1);
 
-            underTest.addPath(ctx, publicKey, path2);
+            underTest.userEventTriggered(ctx, AddPathEvent.of(publicKey, path2));
 
             verify(ctx, never()).fireUserEventTriggered(any());
         }
@@ -175,7 +112,7 @@ class PeersManagerTest {
                               @Mock final Object path) {
             paths.put(publicKey, path);
 
-            underTest.removePath(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, RemovePathEvent.of(publicKey, path));
 
             assertThat(paths.get(publicKey), not(contains(path)));
         }
@@ -188,7 +125,7 @@ class PeersManagerTest {
             paths.put(publicKey, path1);
             paths.put(publicKey, path2);
 
-            underTest.removePath(ctx, publicKey, path1);
+            underTest.userEventTriggered(ctx, RemovePathEvent.of(publicKey, path1));
 
             verify(ctx, never()).fireUserEventTriggered(any());
         }
@@ -199,15 +136,9 @@ class PeersManagerTest {
                                                                       @Mock final Object path) {
             paths.put(publicKey, path);
 
-            underTest.removePath(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, RemovePathEvent.of(publicKey, path));
 
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerRelayEvent.of(Peer.of(publicKey)).equals(e)));
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.writeLock()).lock();
-            verify(lock.writeLock()).unlock();
         }
     }
 
@@ -217,9 +148,9 @@ class PeersManagerTest {
         void shouldRemoveSuperPeerAndPath(@Mock final ChannelHandlerContext ctx,
                                           @Mock final IdentityPublicKey publicKey,
                                           @Mock final Object path) {
-            underTest.removeSuperPeerAndPath(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, RemoveSuperPeerAndPathEvent.of(publicKey, path));
 
-            assertEquals(Set.of(), underTest.getSuperPeers());
+            assertEquals(Set.of(), superPeers);
         }
 
         @Test
@@ -228,7 +159,7 @@ class PeersManagerTest {
                                                                  @Mock final Object path) {
             superPeers.add(publicKey);
 
-            underTest.removeSuperPeerAndPath(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, RemoveSuperPeerAndPathEvent.of(publicKey, path));
 
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> e instanceof NodeOfflineEvent));
         }
@@ -241,15 +172,9 @@ class PeersManagerTest {
             superPeers.add(publicKey2);
             superPeers.add(publicKey);
 
-            underTest.removeSuperPeerAndPath(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, RemoveSuperPeerAndPathEvent.of(publicKey, path));
 
             verify(ctx, never()).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> e instanceof NodeOfflineEvent));
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.writeLock()).lock();
-            verify(lock.writeLock()).unlock();
         }
     }
 
@@ -259,26 +184,20 @@ class PeersManagerTest {
         void shouldAddPathAndAddSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock final IdentityPublicKey publicKey,
                                           @Mock final Object path) {
-            underTest.addPathAndSuperPeer(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, path));
 
-            assertEquals(Set.of(publicKey), underTest.getSuperPeers());
-            assertEquals(Set.of(path), underTest.getPaths(publicKey));
+            assertEquals(Set.of(publicKey), superPeers);
+            assertEquals(Set.of(path), paths.get(publicKey));
         }
 
         @Test
         void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                      @Mock final IdentityPublicKey publicKey,
                                                                      @Mock final Object path) {
-            underTest.addPathAndSuperPeer(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, path));
 
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> e instanceof NodeOnlineEvent));
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.writeLock()).lock();
-            verify(lock.writeLock()).unlock();
         }
     }
 
@@ -290,25 +209,19 @@ class PeersManagerTest {
                                          @Mock final Object path) {
             paths.put(publicKey, path);
 
-            underTest.removeChildrenAndPath(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, RemoveChildrenAndPathEvent.of(publicKey, path));
 
-            assertThat(underTest.getPeers(), not(hasItem(publicKey)));
-            assertEquals(Set.of(), underTest.getChildren());
+            assertThat(SetUtil.merge(paths.keySet(), SetUtil.merge(superPeers, children)), not(hasItem(publicKey)));
+            assertEquals(Set.of(), children);
         }
 
         @Test
         void shouldNotEmitEventWhenRemovingUnknownPeer(@Mock final ChannelHandlerContext ctx,
                                                        @Mock final IdentityPublicKey publicKey,
                                                        @Mock final Object path) {
-            underTest.removeChildrenAndPath(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, RemoveChildrenAndPathEvent.of(publicKey, path));
 
             verify(ctx, never()).fireUserEventTriggered(any());
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.writeLock()).lock();
-            verify(lock.writeLock()).unlock();
         }
     }
 
@@ -318,17 +231,17 @@ class PeersManagerTest {
         void shouldAddPathAndChildren(@Mock final ChannelHandlerContext ctx,
                                       @Mock final IdentityPublicKey publicKey,
                                       @Mock final Object path) {
-            underTest.addPathAndChildren(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, AddPathAndChildrenEvent.of(publicKey, path));
 
-            assertThat(underTest.getPeers(), hasItem(publicKey));
-            assertEquals(Set.of(publicKey), underTest.getChildren());
+            assertThat(SetUtil.merge(paths.keySet(), SetUtil.merge(superPeers, children)), hasItem(publicKey));
+            assertEquals(Set.of(publicKey), children);
         }
 
         @Test
         void shouldEmitPeerDirectEventIfGivenPathIsTheFirstOneForThePeer(@Mock final ChannelHandlerContext ctx,
                                                                          @Mock final IdentityPublicKey publicKey,
                                                                          @Mock final Object path) {
-            underTest.addPathAndChildren(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, AddPathAndChildrenEvent.of(publicKey, path));
 
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
         }
@@ -340,15 +253,9 @@ class PeersManagerTest {
                                                                     @Mock final Object o) {
             paths.put(publicKey, o);
 
-            underTest.addPathAndChildren(ctx, publicKey, path);
+            underTest.userEventTriggered(ctx, AddPathAndChildrenEvent.of(publicKey, path));
 
             verify(ctx, never()).fireUserEventTriggered(any());
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.writeLock()).lock();
-            verify(lock.writeLock()).unlock();
         }
     }
 }

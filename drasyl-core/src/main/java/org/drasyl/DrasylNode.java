@@ -36,16 +36,9 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
-import org.drasyl.channel.AddPathAndChildren;
-import org.drasyl.channel.AddPathAndSuperPeer;
-import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MessageSerializer;
-import org.drasyl.channel.PathEvent;
-import org.drasyl.channel.RemoveChildrenAndPath;
-import org.drasyl.channel.RemovePathEvent;
-import org.drasyl.channel.RemoveSuperPeerAndPath;
 import org.drasyl.channel.Serialization;
 import org.drasyl.event.Event;
 import org.drasyl.event.InboundExceptionEvent;
@@ -62,7 +55,7 @@ import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
-import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.PeersManagerHandler;
 import org.drasyl.plugin.PluginManager;
 import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
@@ -902,43 +895,6 @@ public abstract class DrasylNode {
                     }
                 });
                 ch.pipeline().addFirst(INACTIVITY_DETECTOR, new IdleStateHandler(0, 0, inactivityTimeout));
-            }
-        }
-    }
-
-    public static class PeersManagerHandler extends ChannelInboundHandlerAdapter {
-        private final PeersManager peersManager;
-
-        public PeersManagerHandler(final Identity identity) {
-            this.peersManager = new PeersManager(identity);
-        }
-
-        @Override
-        public void userEventTriggered(final ChannelHandlerContext ctx,
-                                       final Object evt) {
-            if (evt instanceof PathEvent) {
-                final PathEvent e = (PathEvent) evt;
-                if (e instanceof AddPathEvent) {
-                    peersManager.addPath(ctx, e.getAddress(), e.getPath());
-                }
-                else if (e instanceof RemovePathEvent) {
-                    peersManager.removePath(ctx, e.getAddress(), e.getPath());
-                }
-                else if (e instanceof AddPathAndSuperPeer) {
-                    peersManager.addPathAndSuperPeer(ctx, e.getAddress(), e.getPath());
-                }
-                else if (e instanceof RemoveSuperPeerAndPath) {
-                    peersManager.removeSuperPeerAndPath(ctx, e.getAddress(), e.getPath());
-                }
-                else if (e instanceof AddPathAndChildren) {
-                    peersManager.addPathAndChildren(ctx, e.getAddress(), e.getPath());
-                }
-                else if (e instanceof RemoveChildrenAndPath) {
-                    peersManager.removeChildrenAndPath(ctx, e.getAddress(), e.getPath());
-                }
-            }
-            else {
-                ctx.fireUserEventTriggered(evt);
             }
         }
     }

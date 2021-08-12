@@ -170,7 +170,7 @@ class ChunkingHandlerTest {
         @Nested
         class WhenNotAddressedToMe {
             @Test
-            void shouldPassthroughNonChunkedMessage() {
+            void shouldPassThroughNonChunkedMessage() {
                 final IdentityPublicKey sender = ID_1.getIdentityPublicKey();
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 
@@ -191,7 +191,7 @@ class ChunkingHandlerTest {
             }
 
             @Test
-            void shouldPassthroughChunkedMessage() {
+            void shouldPassThroughChunkedMessage() {
                 final IdentityPublicKey sender = ID_1.getIdentityPublicKey();
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
                 final Nonce nonce = randomNonce();
@@ -229,7 +229,7 @@ class ChunkingHandlerTest {
         class FromMe {
             @Test
             @Timeout(value = 5_000, unit = MILLISECONDS)
-            void shouldPassthroughMessageNotExceedingMtuSize(@Mock final SocketAddress recipientAddress) throws CryptoException, InvalidMessageFormatException {
+            void shouldPassThroughMessageNotExceedingMtuSize(@Mock final SocketAddress recipientAddress) throws CryptoException, InvalidMessageFormatException {
                 final IdentityPublicKey sender = ID_1.getIdentityPublicKey();
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 
@@ -336,7 +336,7 @@ class ChunkingHandlerTest {
         @Nested
         class NotFromMe {
             @Test
-            void shouldPassthroughMessage(@Mock final SocketAddress recipientAddress) {
+            void shouldPassThroughMessage(@Mock final SocketAddress recipientAddress) {
                 final IdentityPublicKey sender = ID_1.getIdentityPublicKey();
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 

@@ -27,12 +27,12 @@ import org.drasyl.DrasylAddress;
  * Classes implementing this interface signals that a direct routing path availability and/or the
  * relation (children/super peer) to a peer has changed.
  *
- * @see AddPathAndChildren
- * @see AddPathAndSuperPeer
+ * @see AddPathAndChildrenEvent
+ * @see AddPathAndSuperPeerEvent
  * @see AddPathEvent
- * @see RemoveChildrenAndPath
+ * @see RemoveChildrenAndPathEvent
  * @see RemovePathEvent
- * @see RemoveSuperPeerAndPath
+ * @see RemoveSuperPeerAndPathEvent
  */
 public interface PathEvent {
     DrasylAddress getAddress();

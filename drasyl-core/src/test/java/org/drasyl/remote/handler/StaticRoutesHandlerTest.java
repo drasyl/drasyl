@@ -99,7 +99,7 @@ class StaticRoutesHandlerTest {
     }
 
     @Test
-    void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
+    void shouldPassThroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of());
         final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);

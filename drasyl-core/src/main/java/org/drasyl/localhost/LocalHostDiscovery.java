@@ -151,7 +151,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                 ctx.write(new AddressedMessage<>(applicationMsg, localAddress), promise);
             }
             else {
-                // passthrough message
+                // pass through message
                 ctx.write(msg, promise);
             }
         }

@@ -65,7 +65,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
                 ctx.write(new AddressedMessage<>(applicationMsg, staticAddress), promise);
             }
             else {
-                // passthrough message
+                // pass through message
                 ctx.write(msg, promise);
             }
         }

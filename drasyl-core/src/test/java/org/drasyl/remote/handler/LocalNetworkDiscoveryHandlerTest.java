@@ -203,7 +203,7 @@ class LocalNetworkDiscoveryTest {
         }
 
         @Test
-        void shouldPassthroughUnicastMessages(@Mock final InetSocketAddress sender,
+        void shouldPassThroughUnicastMessages(@Mock final InetSocketAddress sender,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
             final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
@@ -240,7 +240,7 @@ class LocalNetworkDiscoveryTest {
     }
 
     @Test
-    void shouldPassthroughMessageWhenRouteIsAbsent(@Mock final IdentityPublicKey recipient,
+    void shouldPassThroughMessageWhenRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);

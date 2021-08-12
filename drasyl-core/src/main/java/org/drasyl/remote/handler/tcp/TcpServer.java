@@ -146,7 +146,7 @@ public class TcpServer extends ChannelDuplexHandler {
                 });
             }
             else {
-                // message is not addressed to any of our clients. passthrough message
+                // message is not addressed to any of our clients. pass through message
                 ctx.write(msg, promise);
             }
         }

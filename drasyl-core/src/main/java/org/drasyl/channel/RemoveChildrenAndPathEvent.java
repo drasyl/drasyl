@@ -25,14 +25,14 @@ import com.google.auto.value.AutoValue;
 import org.drasyl.identity.IdentityPublicKey;
 
 /**
- * Signals that a direct routing path has been discovered to {@link AddPathAndChildren#getAddress()}
- * and that this peer is registered at us as a children.
+ * Signals that {@link RemoveChildrenAndPathEvent#getAddress()} is no longer registered at us as a
+ * children as the direct routing path to that peer is no longer available.
  */
 @SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
-public abstract class AddPathAndChildren implements PathEvent {
-    public static AddPathAndChildren of(final IdentityPublicKey publicKey,
-                                        final Object path) {
-        return new AutoValue_AddPathAndChildren(publicKey, path);
+public abstract class RemoveChildrenAndPathEvent implements PathEvent {
+    public static RemoveChildrenAndPathEvent of(final IdentityPublicKey publicKey,
+                                                final Object path) {
+        return new AutoValue_RemoveChildrenAndPathEvent(publicKey, path);
     }
 }

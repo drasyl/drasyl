@@ -90,7 +90,7 @@ class MonitoringTest {
     @Nested
     class MessagePassing {
         @Test
-        void shouldPassthroughAllEvents(@Mock final Event event) {
+        void shouldPassThroughAllEvents(@Mock final Event event) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, null));
             final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
             try {
@@ -104,7 +104,7 @@ class MonitoringTest {
         }
 
         @Test
-        void shouldPassthroughInboundMessages(@Mock final SocketAddress sender,
+        void shouldPassThroughInboundMessages(@Mock final SocketAddress sender,
                                               @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, null));
             final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
@@ -122,7 +122,7 @@ class MonitoringTest {
         }
 
         @Test
-        void shouldPassthroughOutboundMessages(@Mock final SocketAddress recipient,
+        void shouldPassThroughOutboundMessages(@Mock final SocketAddress recipient,
                                                @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, null));
             final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);

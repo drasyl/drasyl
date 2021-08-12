@@ -89,7 +89,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                 handleInboundChunk(ctx, sender, chunkMsg, new CompletableFuture<>());
             }
             else {
-                // passthrough all messages not addressed to us
+                // pass through all messages not addressed to us
                 ctx.fireChannelRead(msg);
             }
         }
@@ -126,7 +126,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                 }
             }
             else {
-                // message not from us. Passthrough
+                // message not from us. Pass through
                 ctx.write(msg, promise);
             }
         }

@@ -156,7 +156,7 @@ public class TcpClient extends ChannelDuplexHandler {
                 });
             }
             else {
-                // passthrough message
+                // pass through message
                 final ChannelPromise promise1 = ctx.newPromise();
                 ctx.write(new AddressedMessage<>(byteBufMsg, recipient)).addListener(future -> {
                     if (future.isSuccess()) {

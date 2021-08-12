@@ -77,7 +77,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             final ChannelHandlerContext discoveree = discoveries.get(Pair.of(myNetworkId, recipient));
 
             if (discoveree == null) {
-                // passthrough message
+                // pass through message
                 ctx.write(msg, promise);
             }
             else {

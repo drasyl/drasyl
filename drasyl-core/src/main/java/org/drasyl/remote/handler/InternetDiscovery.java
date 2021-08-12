@@ -28,12 +28,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylAddress;
-import org.drasyl.channel.AddPathAndChildren;
-import org.drasyl.channel.AddPathAndSuperPeer;
+import org.drasyl.channel.AddPathAndChildrenEvent;
+import org.drasyl.channel.AddPathAndSuperPeerEvent;
 import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.RemoveChildrenAndPath;
-import org.drasyl.channel.RemoveSuperPeerAndPath;
+import org.drasyl.channel.RemoveChildrenAndPathEvent;
+import org.drasyl.channel.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
@@ -203,10 +203,10 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             if (!peer.hasControlTraffic(pingTimeout)) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundControlTrafficTime());
                 if (superPeers.contains(publicKey)) {
-                    ctx.fireUserEventTriggered(RemoveSuperPeerAndPath.of(publicKey, path));
+                    ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(publicKey, path));
                 }
                 else {
-                    ctx.fireUserEventTriggered(RemoveChildrenAndPath.of(publicKey, path));
+                    ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(publicKey, path));
                 }
                 peers.remove(publicKey);
                 directConnectionPeers.remove(publicKey);
@@ -254,7 +254,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             // remove trivial communications, that does not send any user generated messages
             else {
                 LOG.debug("Last application communication to {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastApplicationTrafficTime());
-                ctx.fireUserEventTriggered(RemoveChildrenAndPath.of(publicKey, path));
+                ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(publicKey, path));
                 directConnectionPeers.remove(publicKey);
             }
         }
@@ -263,10 +263,10 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private void removeAllPeers(final ChannelHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (superPeers.contains(publicKey)) {
-                ctx.fireUserEventTriggered(RemoveSuperPeerAndPath.of(publicKey, path));
+                ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(publicKey, path));
             }
             else {
-                ctx.fireUserEventTriggered(RemoveChildrenAndPath.of(publicKey, path));
+                ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(publicKey, path));
             }
             peers.remove(publicKey);
             directConnectionPeers.remove(publicKey);
@@ -289,12 +289,12 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                 }
 
                 if (!processMessage(ctx, (IdentityPublicKey) recipient, applicationMsg, promise)) {
-                    // passthrough message
+                    // pass through message
                     ctx.write(msg, promise);
                 }
             }
             else {
-                // passthrough message
+                // pass through message
                 ctx.write(msg, promise);
             }
         }
@@ -440,7 +440,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             }
             else if (!superPeerEnabled) {
                 if (!processMessage(ctx, remoteMsg.getRecipient(), remoteMsg, ctx.newPromise())) {
-                    // passthrough message
+                    // pass through message
                     ctx.fireChannelRead(remoteMsg);
                 }
             }
@@ -469,7 +469,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
             handleApplication(ctx, (ApplicationMessage) msg);
         }
         else {
-            // passthrough message
+            // pass through message
             ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
         }
     }
@@ -488,7 +488,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         if (childrenJoin) {
             peer.inboundPingOccurred();
             // store peer information
-            ctx.fireUserEventTriggered(AddPathAndChildren.of(envelopeSender, path));
+            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(envelopeSender, path));
         }
 
         // reply with pong
@@ -514,7 +514,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                 determineBestSuperPeer();
 
                 // store peer information
-                ctx.fireUserEventTriggered(AddPathAndSuperPeer.of(envelopeSender, path));
+                ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(envelopeSender, path));
             }
             else {
                 // store peer information
