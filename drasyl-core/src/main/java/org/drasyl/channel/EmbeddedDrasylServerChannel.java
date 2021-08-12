@@ -31,7 +31,6 @@ import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.Identity;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -46,7 +45,6 @@ public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements Serv
     private Queue<Object> userEvents;
 
     public EmbeddedDrasylServerChannel(final DrasylConfig config,
-                                       final Identity identity,
                                        final ChannelHandler... handlers) {
         attr(CONFIG_ATTR_KEY).set(requireNonNull(config));
 

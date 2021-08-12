@@ -24,8 +24,8 @@ package org.drasyl.remote.handler;
 import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
@@ -56,17 +56,17 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?,
     private static final long UNITE_RATE_LIMIT = 100; // 1 unit msg per 100ms
     private final Supplier<Long> timeProvider;
     private final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache;
-    private final Identity identity;
+    private final DrasylAddress myAddress;
 
     RateLimiter(final Supplier<Long> timeProvider,
                 final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache,
-                final Identity identity) {
+                final DrasylAddress myAddress) {
         this.timeProvider = requireNonNull(timeProvider);
         this.cache = requireNonNull(cache);
-        this.identity = requireNonNull(identity);
+        this.myAddress = requireNonNull(myAddress);
     }
 
-    public RateLimiter(final Identity identity) {
+    public RateLimiter(final DrasylAddress myAddress) {
         this(
                 System::currentTimeMillis,
                 CacheBuilder.newBuilder()
@@ -74,7 +74,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?,
                         .expireAfterAccess(max(max(ofMillis(ACKNOWLEDGEMENT_RATE_LIMIT), ofMillis(DISCOVERY_RATE_LIMIT)), ofMillis(UNITE_RATE_LIMIT)))
                         .<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long>build()
                         .asMap(),
-                identity);
+                myAddress);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?,
         if (msg.message() instanceof FullReadMessage) {
             final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) msg.message();
 
-            if (!identity.getIdentityPublicKey().equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
+            if (!myAddress.equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
                 ctx.fireChannelRead(msg.retain());
             }
             else {

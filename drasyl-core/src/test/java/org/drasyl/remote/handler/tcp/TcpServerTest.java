@@ -85,7 +85,7 @@ class TcpServerTest {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 
@@ -104,7 +104,7 @@ class TcpServerTest {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -126,7 +126,7 @@ class TcpServerTest {
             when(clientChannels.get(any())).thenReturn(client);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
@@ -145,7 +145,7 @@ class TcpServerTest {
             when(clientChannels.get(any())).thenReturn(client);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
@@ -160,7 +160,7 @@ class TcpServerTest {
         void shouldPassthroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 

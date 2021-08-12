@@ -26,6 +26,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
+import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNode.PeersManagerHandler.AddPathAndChildren;
 import org.drasyl.DrasylNode.PeersManagerHandler.AddPathAndSuperPeer;
@@ -33,7 +34,6 @@ import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
 import org.drasyl.DrasylNode.PeersManagerHandler.RemoveChildrenAndPath;
 import org.drasyl.DrasylNode.PeersManagerHandler.RemoveSuperPeerAndPath;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
@@ -83,7 +83,8 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscovery.class);
     private static final Object path = InternetDiscovery.class;
     private final Map<Nonce, Ping> openPingsCache;
-    private final Identity identity;
+    private final DrasylAddress myAddress;
+    private final ProofOfWork myProofOfWork;
     private final Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache;
     private final Map<IdentityPublicKey, Peer> peers;
     private final Set<IdentityPublicKey> directConnectionPeers;
@@ -92,13 +93,15 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private IdentityPublicKey bestSuperPeer;
 
     public InternetDiscovery(final DrasylConfig config,
-                             final Identity identity) {
+                             final DrasylAddress myAddress,
+                             final ProofOfWork myProofOfWork) {
         openPingsCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getRemotePingMaxPeers())
                 .expireAfterWrite(config.getRemotePingTimeout())
                 .<Nonce, Ping>build()
                 .asMap();
-        this.identity = identity;
+        this.myAddress = myAddress;
+        this.myProofOfWork = myProofOfWork;
         directConnectionPeers = new HashSet<>();
         if (config.getRemoteUniteMinInterval().toMillis() > 0) {
             uniteAttemptsCache = CacheBuilder.newBuilder()
@@ -116,14 +119,16 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
     @SuppressWarnings({ "java:S2384", "java:S107" })
     InternetDiscovery(final Map<Nonce, Ping> openPingsCache,
-                      final Identity identity,
+                      final DrasylAddress myAddress,
+                      final ProofOfWork myProofOfWork,
                       final Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache,
                       final Map<IdentityPublicKey, Peer> peers,
                       final Set<IdentityPublicKey> directConnectionPeers,
                       final Set<IdentityPublicKey> superPeers,
                       final IdentityPublicKey bestSuperPeer) {
         this.openPingsCache = openPingsCache;
-        this.identity = requireNonNull(identity);
+        this.myAddress = requireNonNull(myAddress);
+        this.myProofOfWork = requireNonNull(myProofOfWork);
         this.uniteAttemptsCache = uniteAttemptsCache;
         this.directConnectionPeers = directConnectionPeers;
         this.peers = peers;
@@ -358,7 +363,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                             final InetSocketAddress recipient,
                             final InetSocketAddress sender) {
         // send recipient's information to sender
-        final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork(), senderKey, recipientKey, recipient);
+        final UniteMessage senderRendezvousEnvelope = UniteMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), (IdentityPublicKey) myAddress, myProofOfWork, senderKey, recipientKey, recipient);
         LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
         final CompletableFuture<Void> future1 = new CompletableFuture<>();
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(senderRendezvousEnvelope, sender)))).combine(future1);
@@ -369,7 +374,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         });
 
         // send sender's information to recipient
-        final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork(), recipientKey, senderKey, sender);
+        final UniteMessage recipientRendezvousEnvelope = UniteMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), (IdentityPublicKey) myAddress, myProofOfWork, recipientKey, senderKey, sender);
         LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
         final CompletableFuture<Void> future = new CompletableFuture<>();
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(recipientRendezvousEnvelope, recipient)))).combine(future);
@@ -400,7 +405,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
             if (sender instanceof InetSocketAddress && remoteMsg.getRecipient() != null) {
                 // This message is for us and we will fully decode it
-                if (identity.getIdentityPublicKey().equals(remoteMsg.getRecipient()) && remoteMsg instanceof FullReadMessage) {
+                if (myAddress.equals(remoteMsg.getRecipient()) && remoteMsg instanceof FullReadMessage) {
                     handleMessage(ctx, (InetSocketAddress) sender, (FullReadMessage<?>) remoteMsg, new CompletableFuture<>());
                 }
                 else if (!ctx.channel().attr(CONFIG_ATTR_KEY).get().isRemoteSuperPeerEnabled()) {
@@ -465,9 +470,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
         // reply with pong
         final int networkId = ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId();
-        final IdentityPublicKey myPublicKey = identity.getIdentityPublicKey();
-        final ProofOfWork myProofOfWork = identity.getProofOfWork();
-        final AcknowledgementMessage responseEnvelope = AcknowledgementMessage.of(networkId, myPublicKey, myProofOfWork, envelopeSender, id);
+        final AcknowledgementMessage responseEnvelope = AcknowledgementMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork, envelopeSender, id);
         LOG.trace("Send {} to {}", responseEnvelope, sender);
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(responseEnvelope, sender)))).combine(future);
     }
@@ -551,12 +554,10 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                                              final SocketAddress recipientAddress,
                                              final CompletableFuture<Void> future) {
         final int networkId = ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId();
-        final IdentityPublicKey sender = identity.getIdentityPublicKey();
-        final ProofOfWork proofOfWork = identity.getProofOfWork();
 
         final boolean isChildrenJoin = superPeers.contains(recipient);
         final DiscoveryMessage messageEnvelope;
-        messageEnvelope = DiscoveryMessage.of(networkId, sender, proofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
+        messageEnvelope = DiscoveryMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork, recipient, isChildrenJoin ? System.currentTimeMillis() : 0);
         openPingsCache.put(messageEnvelope.getNonce(), new Ping(recipientAddress));
         LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, recipientAddress)))).combine(future);

@@ -134,7 +134,7 @@ class LocalHostDiscoveryTest {
             when(config.isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireUserEventTriggered(event);
 
@@ -231,7 +231,7 @@ class LocalHostDiscoveryTest {
             routes.put(publicKey, address);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -256,7 +256,7 @@ class LocalHostDiscoveryTest {
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -274,7 +274,7 @@ class LocalHostDiscoveryTest {
         void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

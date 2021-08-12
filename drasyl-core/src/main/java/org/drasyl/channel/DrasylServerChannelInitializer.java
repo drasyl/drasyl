@@ -111,7 +111,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
         if (config.isRemoteEnabled()) {
             // convert Object <-> ApplicationMessage
-            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(identity, inboundSerialization, outboundSerialization));
+            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization));
 
             // route outbound messages to pre-configured ip addresses
             if (!config.getRemoteStaticRoutes().isEmpty()) {
@@ -125,11 +125,11 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             // discovery nodes on the local network
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery(identity));
+                ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery(identity.getAddress(), identity.getProofOfWork()));
             }
 
             // discover nodes on the internet
-            ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config, identity));
+            ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(config, identity.getAddress(), identity.getProofOfWork()));
 
             // outbound message guards
             ch.pipeline().addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
@@ -138,7 +138,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                 ch.pipeline().addFirst(MONITORING_HANDLER, new Monitoring());
             }
 
-            ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter(identity));
+            ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter(identity.getAddress()));
 
             ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
                 @Override
@@ -159,7 +159,9 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
                         config.getRemoteMessageArmSessionMaxCount(),
                         config.getRemoteMessageArmSessionMaxAgreements(),
                         config.getRemoteMessageArmSessionExpireAfter(),
-                        config.getRemoteMessageArmSessionRetryInterval(), identity));
+                        config.getRemoteMessageArmSessionRetryInterval(),
+                        identity
+                ));
             }
 
             // filter out inbound messages with invalid proof of work or other network id
@@ -172,7 +174,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
             ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addFirst(UDP_MULTICAST_SERVER, new UdpMulticastServer(identity));
+                ch.pipeline().addFirst(UDP_MULTICAST_SERVER, new UdpMulticastServer(identity.getAddress()));
             }
 
             // tcp fallback
@@ -187,9 +189,9 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<Channel> 
 
             // udp server
             if (config.isRemoteExposeEnabled()) {
-                ch.pipeline().addFirst(PORT_MAPPER, new PortMapper(identity));
+                ch.pipeline().addFirst(PORT_MAPPER, new PortMapper(identity.getAddress()));
             }
-            ch.pipeline().addFirst(UDP_SERVER, new UdpServer(identity.getIdentityPublicKey()));
+            ch.pipeline().addFirst(UDP_SERVER, new UdpServer(identity.getAddress()));
         }
     }
 

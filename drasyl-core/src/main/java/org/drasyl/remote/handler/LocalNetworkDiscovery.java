@@ -25,11 +25,12 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
+import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
 import org.drasyl.DrasylNode.PeersManagerHandler.RemovePathEvent;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.RemoteMessage;
@@ -70,19 +71,23 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
     private static final Object path = LocalNetworkDiscovery.class;
     private final Map<IdentityPublicKey, Peer> peers;
-    private final Identity identity;
+    private final DrasylAddress myAddress;
+    private final ProofOfWork myProofOfWork;
     private Future<?> pingDisposable;
 
     public LocalNetworkDiscovery(final Map<IdentityPublicKey, Peer> peers,
-                                 final Identity identity,
+                                 final DrasylAddress myAddress,
+                                 final ProofOfWork myProofOfWork,
                                  final Future<?> pingDisposable) {
         this.peers = requireNonNull(peers);
-        this.identity = requireNonNull(identity);
+        this.myAddress = requireNonNull(myAddress);
+        this.myProofOfWork = requireNonNull(myProofOfWork);
         this.pingDisposable = pingDisposable;
     }
 
-    public LocalNetworkDiscovery(final Identity identity) {
-        this(new ConcurrentHashMap<>(), identity, null);
+    public LocalNetworkDiscovery(final DrasylAddress myAddress,
+                                 final ProofOfWork myProofOfWork) {
+        this(new ConcurrentHashMap<>(), myAddress, myProofOfWork, null);
     }
 
     synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
@@ -149,7 +154,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
                             final RemoteMessage msg,
                             final CompletableFuture<Void> future) {
         final IdentityPublicKey msgSender = msg.getSender();
-        if (!identity.getIdentityPublicKey().equals(msgSender)) {
+        if (!myAddress.equals(msgSender)) {
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
             final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender));
             peer.inboundPingOccurred();
@@ -198,7 +203,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
-        final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork());
+        final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), (IdentityPublicKey) myAddress, myProofOfWork);
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
         final CompletableFuture<Void> future = new CompletableFuture<>();
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)))).combine(future);

@@ -27,7 +27,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -59,13 +58,12 @@ public class PcpPortMappingTest {
         void shouldRequestMapping(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                   @Mock(answer = RETURNS_DEEP_STUBS) final Runnable onFailure,
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier,
-                                  @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                  @Mock final Identity identity) throws UnknownHostException {
-            when(identity.getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"));
+                                  @Mock final Supplier<Set<InetAddress>> interfaceSupplier) throws UnknownHostException {
+            final IdentityPublicKey myAddress = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             when(defaultGatewaySupplier.get()).thenReturn(InetAddress.getByName("38.12.1.15"));
             when(interfaceSupplier.get()).thenReturn(Set.of(InetAddress.getByName("38.12.1.15")));
 
-            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier, identity).start(ctx, 12345, onFailure);
+            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier, myAddress).start(ctx, 12345, onFailure);
 
             verify(ctx).writeAndFlush(any(AddressedMessage.class));
         }
@@ -79,8 +77,8 @@ public class PcpPortMappingTest {
                                   @Mock final Future<?> timeoutGuard,
                                   @Mock final Future<?> refreshTask,
                                   @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                  @Mock final Identity identity) throws UnknownHostException {
-            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, new InetSocketAddress(12345), timeoutGuard, refreshTask, Set.of(InetAddress.getByName("38.12.1.15")), defaultGatewaySupplier, interfaceSupplier, identity).stop(ctx);
+                                  @Mock final IdentityPublicKey myAddress) throws UnknownHostException {
+            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, new InetSocketAddress(12345), timeoutGuard, refreshTask, Set.of(InetAddress.getByName("38.12.1.15")), defaultGatewaySupplier, interfaceSupplier, myAddress).stop(ctx);
 
             verify(timeoutGuard).cancel(false);
             verify(refreshTask).cancel(false);
@@ -98,9 +96,9 @@ public class PcpPortMappingTest {
                                                        @Mock final Future<?> timeoutGuard,
                                                        @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                                        @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                                       @Mock final Identity identity) {
+                                                       @Mock final IdentityPublicKey myAddress) {
                 final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("02810000000002580004ea00000000000000000000000000027c2af0012b29445e68a77e1100000063f163f100000000000000000000ffffc0a8b202"));
-                new PcpPortMapping(new AtomicInteger(1), 25585, null, new byte[]{}, new InetSocketAddress(12345), timeoutGuard, null, null, defaultGatewaySupplier, interfaceSupplier, identity).handleMessage(ctx, sender, byteBuf);
+                new PcpPortMapping(new AtomicInteger(1), 25585, null, new byte[]{}, new InetSocketAddress(12345), timeoutGuard, null, null, defaultGatewaySupplier, interfaceSupplier, myAddress).handleMessage(ctx, sender, byteBuf);
 
                 verify(timeoutGuard).cancel(false);
                 verify(ctx.executor()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
@@ -114,8 +112,8 @@ public class PcpPortMappingTest {
                                    @Mock final ByteBuf msg,
                                    @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                    @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                   @Mock final Identity identity) {
-                assertFalse(new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier, identity).acceptMessage(sender, msg));
+                                   @Mock final IdentityPublicKey myAddress) {
+                assertFalse(new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier, myAddress).acceptMessage(sender, msg));
             }
         }
     }
@@ -128,8 +126,8 @@ public class PcpPortMappingTest {
                                    @Mock final Runnable onFailure,
                                    @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                    @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                   @Mock final Identity identity) {
-            new PcpPortMapping(new AtomicInteger(), 0, onFailure, new byte[]{}, null, timeoutGuard, refreshTask, null, defaultGatewaySupplier, interfaceSupplier, identity).fail();
+                                   @Mock final IdentityPublicKey myAddress) {
+            new PcpPortMapping(new AtomicInteger(), 0, onFailure, new byte[]{}, null, timeoutGuard, refreshTask, null, defaultGatewaySupplier, interfaceSupplier, myAddress).fail();
 
             verify(timeoutGuard).cancel(false);
             verify(refreshTask).cancel(false);

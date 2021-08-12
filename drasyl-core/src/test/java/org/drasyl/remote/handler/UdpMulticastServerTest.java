@@ -29,12 +29,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
+import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.peer.PeersManager;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +47,6 @@ import java.net.NetworkInterface;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.drasyl.remote.handler.UdpMulticastServer.IDENTITY_ATTR_KEY;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_INTERFACE;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -55,7 +54,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -70,15 +68,14 @@ class UdpMulticastServerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DatagramChannel channel;
     @Mock
-    private PeersManager peersManager;
-    @Mock
-    private Map<IdentityPublicKey, ChannelHandlerContext> nodes;
+    private Map<DrasylAddress, ChannelHandlerContext> nodes;
 
     @Nested
     class StartServer {
         @Test
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
-                                              @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel datagramChannel) {
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel datagramChannel,
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
             when(bootstrap.handler(any()).bind(anyString(), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel()).thenReturn(datagramChannel);
@@ -86,12 +83,12 @@ class UdpMulticastServerTest {
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127")));
             when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).awaitUninterruptibly().isSuccess()).thenReturn(true);
 
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, identity, bootstrap, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, myAddress, bootstrap, null);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 
-                verify(nodes).put(eq(identity.getIdentityPublicKey()), any());
+                verify(nodes).put(eq(myAddress), any());
                 verify(bootstrap.handler(any())).bind(anyString(), anyInt());
                 verify(datagramChannel).joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
             }
@@ -104,15 +101,15 @@ class UdpMulticastServerTest {
     @Nested
     class StopServer {
         @Test
-        void shouldStopServerOnChannelInactive() {
+        void shouldStopServerOnChannelInactive(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
             when(config.getRemoteEndpoints()).thenReturn(ImmutableSet.of(Endpoint.of("udp://localhost:22527?publicKey=18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127")));
 
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, identity, bootstrap, channel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, myAddress, bootstrap, channel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
-                verify(nodes).remove(identity.getIdentityPublicKey());
+                verify(nodes).remove(myAddress);
                 verify(channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE)).awaitUninterruptibly();
                 verify(channel.close()).awaitUninterruptibly();
             }
@@ -129,17 +126,17 @@ class UdpMulticastServerTest {
         void shouldPassIngoingMessagesToAllPipelines(@Mock final ChannelHandlerContext channelCtx,
                                                      @Mock final ByteBuf message,
                                                      @Mock final IdentityPublicKey publicKey,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.channel().attr(IDENTITY_ATTR_KEY).get()).thenReturn(mock(Identity.class));
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
             when(bootstrap.handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
                 handler.channelRead(channelCtx, new DatagramPacket(message, new InetSocketAddress(22527), new InetSocketAddress(25421)));
                 return bootstrap;
             });
 
-            final HashMap<IdentityPublicKey, ChannelHandlerContext> nodes = new HashMap<>(Map.of(publicKey, ctx));
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, identity, bootstrap, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final HashMap<DrasylAddress, ChannelHandlerContext> nodes = new HashMap<>(Map.of(publicKey, ctx));
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, myAddress, bootstrap, null);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 

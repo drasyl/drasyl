@@ -69,7 +69,7 @@ class OtherNetworkFilterTest {
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
@@ -86,7 +86,7 @@ class OtherNetworkFilterTest {
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final AcknowledgementMessage message = AcknowledgementMessage.of(123, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 

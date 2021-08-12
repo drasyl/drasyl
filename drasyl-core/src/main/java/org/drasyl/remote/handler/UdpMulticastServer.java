@@ -32,9 +32,9 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
+import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -58,14 +58,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Sharable
 @SuppressWarnings({ "java:S112", "java:S2974" })
 public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
-    public static final AttributeKey<Identity> IDENTITY_ATTR_KEY = AttributeKey.valueOf(Identity.class, "UDP_MULTICAST_IDENTITY");
+    public static final AttributeKey<DrasylAddress> ADDRESS_ATTR_KEY = AttributeKey.valueOf(Identity.class, "UDP_MULTICAST_ADDRESS");
     private static final String MULTICAST_INTERFACE_PROPERTY = "org.drasyl.remote.multicast.interface";
     private static final Logger LOG = LoggerFactory.getLogger(UdpMulticastServer.class);
     public static final InetSocketAddress MULTICAST_ADDRESS;
     public static final NetworkInterface MULTICAST_INTERFACE;
     private static final String MULTICAST_BIND_HOST;
-    private final Map<IdentityPublicKey, ChannelHandlerContext> nodes;
-    private final Identity identity;
+    private final Map<DrasylAddress, ChannelHandlerContext> nodes;
+    private final DrasylAddress myAddress;
     private final Bootstrap bootstrap;
     private DatagramChannel channel;
 
@@ -97,20 +97,21 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         MULTICAST_INTERFACE = multicastInterface;
     }
 
-    UdpMulticastServer(final Map<IdentityPublicKey, ChannelHandlerContext> nodes,
-                       final Identity identity,
+    UdpMulticastServer(final Map<DrasylAddress, ChannelHandlerContext> nodes,
+                       final DrasylAddress myAddress,
                        final Bootstrap bootstrap,
                        final DatagramChannel channel) {
         this.nodes = nodes;
-        this.identity = identity;
+        this.myAddress = myAddress;
         this.bootstrap = bootstrap;
         this.channel = channel;
     }
 
-    public UdpMulticastServer(final Identity identity) {
+    public UdpMulticastServer(final DrasylAddress myAddress) {
         this(
                 new ConcurrentHashMap<>(),
-                identity, new Bootstrap().group(EventLoopGroupUtil.getInstanceNio()).channel(NioDatagramChannel.class),
+                myAddress,
+                new Bootstrap().group(EventLoopGroupUtil.getInstanceNio()).channel(NioDatagramChannel.class),
                 null
         );
     }
@@ -121,7 +122,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        nodes.put(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey(), ctx);
+        nodes.put(ctx.channel().attr(ADDRESS_ATTR_KEY).get(), ctx);
 
         if (channel == null) {
             LOG.debug("Start Server...");
@@ -132,7 +133,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                                                     final DatagramPacket packet) {
                             final SocketAddress sender = packet.sender();
                             nodes.values().forEach(nodeCtx -> {
-                                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel().attr(IDENTITY_ATTR_KEY).get()::getIdentityPublicKey);
+                                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel().attr(ADDRESS_ATTR_KEY)::get);
                                 nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content().retain(), sender));
                             });
                         }
@@ -169,7 +170,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     }
 
     private synchronized void stopServer(final ChannelHandlerContext ctx) {
-        nodes.remove(ctx.channel().attr(IDENTITY_ATTR_KEY).get().getIdentityPublicKey());
+        nodes.remove(ctx.channel().attr(ADDRESS_ATTR_KEY).get());
 
         if (channel != null) {
             final InetSocketAddress socketAddress = channel.localAddress();
@@ -199,7 +200,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
-        ctx.channel().attr(IDENTITY_ATTR_KEY).set(identity);
+        ctx.channel().attr(ADDRESS_ATTR_KEY).set(myAddress);
 
         super.handlerAdded(ctx);
     }

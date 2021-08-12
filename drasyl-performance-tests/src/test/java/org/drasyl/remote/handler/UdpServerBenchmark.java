@@ -79,7 +79,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     .identitySecretKey(identity2.getIdentitySecretKey())
                     .build();
 
-            pipeline = new EmbeddedDrasylServerChannel(config2, identity2,
+            pipeline = new EmbeddedDrasylServerChannel(config2,
                     handler,
                     new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
                         @Override

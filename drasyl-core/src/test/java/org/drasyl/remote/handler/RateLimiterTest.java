@@ -73,7 +73,7 @@ class RateLimiterTest {
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final AcknowledgementMessage msg = AcknowledgementMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), Nonce.randomNonce());
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity.getAddress());
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());
@@ -96,7 +96,7 @@ class RateLimiterTest {
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final DiscoveryMessage msg = DiscoveryMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), 0);
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity.getAddress());
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());
@@ -119,7 +119,7 @@ class RateLimiterTest {
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final UniteMessage msg = UniteMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(1337));
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity.getAddress());
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());
@@ -140,7 +140,7 @@ class RateLimiterTest {
                                                     @Mock final Supplier<Long> timeProvider) {
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final UniteMessage msg = UniteMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), recipient.getIdentityPublicKey(), new InetSocketAddress(1337));
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity.getAddress());
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());
@@ -161,7 +161,7 @@ class RateLimiterTest {
                                                @Mock final Supplier<Long> timeProvider) {
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
         final ApplicationMessage msg = ApplicationMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), byte[].class.getName(), ByteString.EMPTY);
-        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity);
+        final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity.getAddress());
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
         verify(ctx).fireChannelRead(any());

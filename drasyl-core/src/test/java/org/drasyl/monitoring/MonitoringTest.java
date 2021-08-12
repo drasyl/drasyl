@@ -74,7 +74,7 @@ class MonitoringTest {
             when(registrySupplier.apply(any())).thenReturn(registry);
 
             final Monitoring handler = new Monitoring(counters, registrySupplier, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 
@@ -91,7 +91,7 @@ class MonitoringTest {
         @Test
         void shouldStopDiscoveryOnChannelInactive(@Mock final NodeUnrecoverableErrorEvent event) {
             final Monitoring handler = new Monitoring(counters, registrySupplier, registry);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -108,7 +108,7 @@ class MonitoringTest {
         @Test
         void shouldPassthroughAllEvents(@Mock final Event event) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireUserEventTriggered(event);
 
@@ -123,7 +123,7 @@ class MonitoringTest {
         void shouldPassthroughInboundMessages(@Mock final SocketAddress sender,
                                               @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
@@ -141,7 +141,7 @@ class MonitoringTest {
         void shouldPassthroughOutboundMessages(@Mock final SocketAddress recipient,
                                                @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

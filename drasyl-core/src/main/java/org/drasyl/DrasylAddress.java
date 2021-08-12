@@ -28,4 +28,5 @@ import java.net.SocketAddress;
  * messages to.
  */
 public abstract class DrasylAddress extends SocketAddress {
+    public abstract byte[] toByteArray();
 }

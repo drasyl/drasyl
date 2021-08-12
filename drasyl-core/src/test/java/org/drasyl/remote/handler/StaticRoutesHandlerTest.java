@@ -57,7 +57,7 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
         try {
             pipeline.pipeline().fireChannelActive();
 
@@ -74,7 +74,7 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
         try {
             pipeline.pipeline().fireChannelInactive();
 
@@ -92,7 +92,7 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
         final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
@@ -112,7 +112,7 @@ class StaticRoutesHandlerTest {
         when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
 
         final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, IdentityTestUtil.ID_1, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 

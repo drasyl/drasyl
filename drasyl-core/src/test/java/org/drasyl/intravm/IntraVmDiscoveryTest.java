@@ -63,7 +63,7 @@ class IntraVmDiscoveryTest {
         void shouldStartDiscoveryOnChannelActive() {
             IntraVmDiscovery.discoveries = discoveries;
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress());
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelActive();
 
@@ -82,7 +82,7 @@ class IntraVmDiscoveryTest {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, identity.getAddress()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress());
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -104,7 +104,7 @@ class IntraVmDiscoveryTest {
             discoveries.put(Pair.of(0, recipient), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress());
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -120,7 +120,7 @@ class IntraVmDiscoveryTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             IntraVmDiscovery.discoveries = discoveries;
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress());
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, identity, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

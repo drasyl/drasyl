@@ -32,11 +32,11 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
+import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.ReferenceCountUtil;
@@ -63,11 +63,11 @@ import static org.drasyl.util.network.NetworkUtil.getAddresses;
 public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private static final short MIN_DERIVED_PORT = 22528;
-    private final IdentityPublicKey myAddress;
+    private final DrasylAddress myAddress;
     private final Bootstrap bootstrap;
     private Channel channel;
 
-    UdpServer(final IdentityPublicKey myAddress,
+    UdpServer(final DrasylAddress myAddress,
               final Bootstrap bootstrap,
               final Channel channel) {
         this.myAddress = requireNonNull(myAddress);
@@ -75,7 +75,7 @@ public class UdpServer extends ChannelDuplexHandler {
         this.channel = channel;
     }
 
-    public UdpServer(final IdentityPublicKey myAddress) {
+    public UdpServer(final DrasylAddress myAddress) {
         this(
                 myAddress,
                 new Bootstrap()
