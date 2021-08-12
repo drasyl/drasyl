@@ -21,26 +21,22 @@
  */
 package org.drasyl.remote.handler;
 
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-
 /**
  * This handler ensures that {@link RemoteMessage}s do not infinitely circulate in the network. It
  * increments the hop counter of each outgoing message. If the limit of hops is reached, the message
  * is discarded. Otherwise the message can pass.
  */
-@Sharable
 public final class HopCountGuard extends ChannelOutboundHandlerAdapter {
-    public static final HopCountGuard INSTANCE = new HopCountGuard();
+    private final byte messageHopLimit;
 
-    private HopCountGuard() {
-        // singleton
+    public HopCountGuard(final byte messageHopLimit) {
+        this.messageHopLimit = messageHopLimit;
     }
 
     @Override
@@ -49,7 +45,7 @@ public final class HopCountGuard extends ChannelOutboundHandlerAdapter {
                       final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
-            if (remoteMsg.getHopCount().getByte() < ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageHopLimit()) {
+            if (remoteMsg.getHopCount().getByte() < messageHopLimit) {
                 ctx.writeAndFlush(new AddressedMessage<>(remoteMsg.incrementHopCount(), ((AddressedMessage<?, ?>) msg).address()));
             }
             else {

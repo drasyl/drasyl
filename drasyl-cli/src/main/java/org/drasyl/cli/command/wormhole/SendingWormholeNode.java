@@ -21,20 +21,20 @@
  */
 package org.drasyl.cli.command.wormhole;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
-import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.plugin.PluginManager;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -63,10 +63,10 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
     SendingWormholeNode(final CompletableFuture<Void> doneFuture,
                         final PrintStream out,
                         final String password,
-                        final DrasylBootstrap bootstrap,
-                        final PluginManager pluginManager,
+                        final Identity identity,
+                        final ServerBootstrap bootstrap,
                         final ChannelFuture channelFuture) {
-        super(bootstrap, pluginManager, channelFuture);
+        super(identity, bootstrap, channelFuture);
         this.doneFuture = requireNonNull(doneFuture);
         this.out = requireNonNull(out);
         this.password = password;

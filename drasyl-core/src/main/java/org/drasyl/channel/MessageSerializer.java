@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
 /**
  * This handler serializes messages to {@link ApplicationMessage} an vice vera.
@@ -46,15 +45,18 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 @SuppressWarnings({ "java:S110" })
 public final class MessageSerializer extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
+    private final int networkId;
     private final DrasylAddress myAddress;
     private final ProofOfWork myProofOfWork;
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
 
-    public MessageSerializer(final DrasylAddress myAddress,
+    public MessageSerializer(final int networkId,
+                             final DrasylAddress myAddress,
                              final ProofOfWork myProofOfWork,
                              final Serialization inboundSerialization,
                              final Serialization outboundSerialization) {
+        this.networkId = networkId;
         this.myAddress = requireNonNull(myAddress);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.inboundSerialization = requireNonNull(inboundSerialization);
@@ -81,7 +83,7 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
             if (serializer != null) {
                 try {
                     final ByteString payload = ByteString.copyFrom(serializer.toByteArray(o));
-                    final ApplicationMessage applicationMsg = ApplicationMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), (IdentityPublicKey) myAddress, myProofOfWork, (IdentityPublicKey) msg.address(), type, payload);
+                    final ApplicationMessage applicationMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork, (IdentityPublicKey) msg.address(), type, payload);
                     out.add(new AddressedMessage<>(applicationMsg, msg.address()));
                     LOG.trace("Message has been serialized to `{}`", () -> applicationMsg);
                 }

@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNode;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
@@ -45,6 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.FileSystem;
@@ -63,7 +63,6 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,14 +73,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class LocalHostDiscoveryTest {
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     private final Duration leaseTime = ofSeconds(60);
@@ -96,32 +92,27 @@ class LocalHostDiscoveryTest {
     private Future<?> watchDisposable;
     @Mock
     private Future<?> postDisposable;
+    private boolean watchEnabled;
+    @Mock
+    private InetAddress bindHost;
+    private int networkId;
 
     @Nested
     class StartDiscovery {
-        @SuppressWarnings("unchecked")
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
-                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                             @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
-            when(ctx.executor()).thenReturn(executor);
-            doAnswer(invocation2 -> {
-                invocation2.getArgument(0, Runnable.class).run();
-                return null;
-            }).when(executor).execute(any());
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().mkdirs()).thenReturn(true);
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().isDirectory()).thenReturn(true);
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canRead()).thenReturn(true);
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(anyString()).toFile().canWrite()).thenReturn(true);
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
+                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            when(discoveryPath.resolve(anyString()).toFile().mkdirs()).thenReturn(true);
+            when(discoveryPath.resolve(anyString()).toFile().isDirectory()).thenReturn(true);
+            when(discoveryPath.resolve(anyString()).toFile().canRead()).thenReturn(true);
+            when(discoveryPath.resolve(anyString()).toFile().canWrite()).thenReturn(true);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), false, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
 
             handler.userEventTriggered(ctx, event);
 
-            verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+            verify(ctx.executor()).execute(any());
         }
 
         @Test
@@ -130,11 +121,10 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
-            when(config.getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
-            when(config.isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
+            when(discoveryPath.resolve(anyString())).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), true, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.pipeline().fireUserEventTriggered(event);
 
@@ -145,7 +135,6 @@ class LocalHostDiscoveryTest {
             }
         }
 
-        @SuppressWarnings("unchecked")
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
@@ -160,12 +149,9 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(leaseTime);
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath().resolve(any(String.class))).thenReturn(discoveryPath);
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().isRemoteLocalHostDiscoveryWatchEnabled()).thenReturn(true);
+            when(discoveryPath.resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), true, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
 
             handler.userEventTriggered(ctx, event);
 
@@ -173,7 +159,6 @@ class LocalHostDiscoveryTest {
             verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
         }
 
-        @SuppressWarnings("unchecked")
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@TempDir final Path dir,
@@ -183,14 +168,13 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) throws IOException {
             when(ctx.executor()).thenReturn(executor);
-            final Path path = Paths.get(dir.toString(), "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127.json");
+            final Path myPath = Paths.get(dir.toString(), "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127.json");
             final File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
 
             doReturn(true).when(file).exists();
             doReturn(true).when(file).isDirectory();
             doReturn(true).when(file).canRead();
             doReturn(true).when(file).canWrite();
-            doReturn(path).when(discoveryPath).resolve(anyString());
             doAnswer(invocation1 -> {
                 invocation1.getArgument(0, Runnable.class).run();
                 return null;
@@ -204,22 +188,16 @@ class LocalHostDiscoveryTest {
                 return null;
             });
 
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            final DrasylConfig config = ctx.channel().attr(CONFIG_ATTR_KEY).get(); // mockito work-around
-            final Path path2 = config.getRemoteLocalHostDiscoveryPath();
-
-            doReturn(leaseTime).when(config).getRemoteLocalHostDiscoveryLeaseTime();
-            doReturn(true).when(config).isRemoteLocalHostDiscoveryWatchEnabled();
-            doReturn(discoveryPath).when(path2).resolve(anyString());
+            doReturn(discoveryPath).when(discoveryPath).resolve(anyString());
             doReturn(fileSystem).when(discoveryPath).getFileSystem();
             doReturn(watchService).when(fileSystem).newWatchService();
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), true, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
 
             handler.userEventTriggered(ctx, event);
 
             verify(watchService).poll();
-            verify(jacksonWriter).accept(eq(path.toFile()), any());
+            verify(jacksonWriter).accept(any(), any());
         }
     }
 
@@ -227,21 +205,16 @@ class LocalHostDiscoveryTest {
     class StopDiscovery {
         @Test
         void shouldStopDiscoveryOnChannelInactive(@Mock final IdentityPublicKey publicKey,
-                                                  @Mock final SocketAddress address) {
+                                                  @Mock final SocketAddress address,
+                                                  @Mock final ChannelHandlerContext ctx) {
             routes.put(publicKey, address);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
-            try {
-                pipeline.pipeline().fireChannelInactive();
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            handler.channelInactive(ctx);
 
-                verify(watchDisposable).cancel(false);
-                verify(postDisposable).cancel(false);
-                assertTrue(routes.isEmpty());
-            }
-            finally {
-                pipeline.close();
-            }
+            verify(watchDisposable).cancel(false);
+            verify(postDisposable).cancel(false);
+            assertTrue(routes.isEmpty());
         }
     }
 
@@ -255,8 +228,8 @@ class LocalHostDiscoveryTest {
             when(identity.getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -273,8 +246,8 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
-            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -298,14 +271,11 @@ class LocalHostDiscoveryTest {
             final IdentityPublicKey publicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             routes.put(publicKey, address);
 
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryPath()).thenReturn(dir);
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteLocalHostDiscoveryLeaseTime()).thenReturn(ofMinutes(5));
             final Path path = Paths.get(dir.toString(), "0", "02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b.json");
             Files.createDirectory(path.getParent());
             Files.writeString(path, "[\"192.168.188.42:12345\",\"192.168.188.23:12345\"]", StandardOpenOption.CREATE);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchEnabled, bindHost, ofMinutes(5), dir, networkId, watchDisposable, postDisposable);
             handler.scan(ctx);
 
             assertEquals(Map.of(

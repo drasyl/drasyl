@@ -33,11 +33,8 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylAddress;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.Endpoint;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedInteger;
@@ -46,15 +43,11 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
-import static org.drasyl.util.network.NetworkUtil.getAddresses;
 
 /**
  * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the
@@ -65,23 +58,31 @@ public class UdpServer extends ChannelDuplexHandler {
     private static final short MIN_DERIVED_PORT = 22528;
     private final DrasylAddress myAddress;
     private final Bootstrap bootstrap;
+    private final InetAddress bindHost;
+    private final int bindPort;
     private Channel channel;
 
     UdpServer(final DrasylAddress myAddress,
               final Bootstrap bootstrap,
-              final Channel channel) {
+              final InetAddress bindHost, final int bindPort, final Channel channel) {
         this.myAddress = requireNonNull(myAddress);
         this.bootstrap = requireNonNull(bootstrap);
+        this.bindHost = bindHost;
+        this.bindPort = bindPort;
         this.channel = channel;
     }
 
-    public UdpServer(final DrasylAddress myAddress) {
+    public UdpServer(final DrasylAddress myAddress,
+                     final InetAddress bindHost,
+                     final int bindPort) {
         this(
                 myAddress,
                 new Bootstrap()
                         .group(EventLoopGroupUtil.getInstanceBest())
                         .channel(getBestDatagramChannel())
                         .option(ChannelOption.SO_BROADCAST, false),
+                bindHost,
+                bindPort,
                 null
         );
     }
@@ -100,39 +101,11 @@ public class UdpServer extends ChannelDuplexHandler {
         stopServer();
     }
 
-    static Set<Endpoint> determineActualEndpoints(final Identity identity,
-                                                  final DrasylConfig config,
-                                                  final InetSocketAddress listenAddress) {
-        final Set<Endpoint> configEndpoints = config.getRemoteEndpoints();
-        if (!configEndpoints.isEmpty()) {
-            // read endpoints from config
-            return configEndpoints.stream().map(endpoint -> {
-                if (endpoint.getPort() == 0) {
-                    return Endpoint.of(endpoint.getHost(), listenAddress.getPort(), identity.getIdentityPublicKey());
-                }
-                return endpoint;
-            }).collect(Collectors.toSet());
-        }
-
-        final Set<InetAddress> addresses;
-        if (listenAddress.getAddress().isAnyLocalAddress()) {
-            // use all available addresses
-            addresses = getAddresses();
-        }
-        else {
-            // use given host
-            addresses = Set.of(listenAddress.getAddress());
-        }
-        return addresses.stream()
-                .map(address -> Endpoint.of(address.getHostAddress(), listenAddress.getPort(), identity.getIdentityPublicKey()))
-                .collect(Collectors.toSet());
-    }
-
     @SuppressWarnings({ "UnstableApiUsage", "java:S112" })
     private void startServer(final ChannelHandlerContext ctx) throws BindFailedException {
         LOG.debug("Start Server...");
-        final int bindPort;
-        if (ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindPort() == -1) {
+        final int actualBindPort;
+        if (this.bindPort == -1) {
                 /*
                  derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
                  own identity. this is done because we also expose this port via
@@ -142,10 +115,10 @@ public class UdpServer extends ChannelDuplexHandler {
                  started it would use a new port and this would make discovery more difficult
                 */
             final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(myAddress.toByteArray()).asBytes()).getValue();
-            bindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
+            actualBindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
         }
         else {
-            bindPort = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindPort();
+            actualBindPort = this.bindPort;
         }
         final ChannelFuture channelFuture = bootstrap
                 .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
@@ -156,7 +129,7 @@ public class UdpServer extends ChannelDuplexHandler {
                         ctx.fireChannelRead(new AddressedMessage<>(packet.content().retain(), packet.sender()));
                     }
                 })
-                .bind(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindHost(), bindPort);
+                .bind(bindHost, actualBindPort);
         channelFuture.awaitUninterruptibly();
 
         if (channelFuture.isSuccess()) {
@@ -170,7 +143,7 @@ public class UdpServer extends ChannelDuplexHandler {
         }
         else {
             // server start failed
-            throw new BindFailedException("Unable to bind server to address udp://" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteBindHost() + ":" + bindPort, channelFuture.cause());
+            throw new BindFailedException("Unable to bind server to address udp://" + bindHost + ":" + actualBindPort, channelFuture.cause());
         }
     }
 
@@ -196,6 +169,7 @@ public class UdpServer extends ChannelDuplexHandler {
             if (channel != null && channel.isWritable()) {
                 final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
                 LOG.trace("Send Datagram {}", packet);
+                channel.read();
                 channel.writeAndFlush(packet).addListener(future -> {
                     if (future.isSuccess()) {
                         promise.setSuccess();

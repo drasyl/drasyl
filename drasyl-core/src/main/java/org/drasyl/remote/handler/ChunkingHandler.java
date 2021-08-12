@@ -30,7 +30,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylAddress;
-import org.drasyl.DrasylConfig;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.remote.protocol.ChunkMessage;
@@ -48,11 +47,11 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER_LENGTH;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
@@ -65,9 +64,18 @@ public class ChunkingHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkingHandler.class);
     private final Worm<Map<Nonce, ChunksCollector>> chunksCollectors;
     private final DrasylAddress myAddress;
+    private final int messageMaxContentLength;
+    private final int messageMtu;
+    private final Duration messageComposedMessageTransferTimeout;
 
-    public ChunkingHandler(final DrasylAddress myAddress) {
+    public ChunkingHandler(final DrasylAddress myAddress,
+                           final int messageMaxContentLength,
+                           final int messageMtu,
+                           final Duration messageComposedMessageTransferTimeout) {
         this.myAddress = requireNonNull(myAddress);
+        this.messageMaxContentLength = messageMaxContentLength;
+        this.messageMtu = messageMtu;
+        this.messageComposedMessageTransferTimeout = messageComposedMessageTransferTimeout;
         this.chunksCollectors = Worm.of();
     }
 
@@ -104,12 +112,11 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                 final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
                 remoteMsg.writeTo(messageByteBuf);
                 final int messageLength = messageByteBuf.readableBytes();
-                final int messageMaxContentLength = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength();
                 if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
                     ReferenceCountUtil.safeRelease(messageByteBuf);
                     LOG.debug("The message has a size of {} bytes and is too large. The max. allowed size is {} bytes. Message dropped.", messageLength, messageMaxContentLength);
                 }
-                else if (messageLength > ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMtu()) {
+                else if (messageLength > messageMtu) {
                     // message is too big, we have to chunk it
                     chunkMessage(ctx, recipient, remoteMsg, FutureUtil.toFuture(promise), messageByteBuf, messageLength);
                 }
@@ -134,12 +141,12 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                                     final ChunkMessage chunk,
                                     final CompletableFuture<Void> future) throws IOException {
         try {
-            final ChunksCollector chunksCollector = getChunksCollectors(ctx.channel().attr(CONFIG_ATTR_KEY).get()).computeIfAbsent(chunk.getNonce(), id -> new ChunksCollector(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMaxContentLength(), id, ctx.alloc()));
+            final ChunksCollector chunksCollector = getChunksCollectors().computeIfAbsent(chunk.getNonce(), id -> new ChunksCollector(messageMaxContentLength, id, ctx.alloc()));
             final RemoteMessage message = chunksCollector.addChunk(chunk);
 
             if (message != null) {
                 // message complete, pass it inbound
-                getChunksCollectors(ctx.channel().attr(CONFIG_ATTR_KEY).get()).remove(chunk.getNonce());
+                getChunksCollectors().remove(chunk.getNonce());
                 ctx.fireChannelRead(new AddressedMessage<>(message, sender));
             }
             else {
@@ -148,19 +155,19 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             }
         }
         catch (final IllegalStateException e) {
-            getChunksCollectors(ctx.channel().attr(CONFIG_ATTR_KEY).get()).remove(chunk.getNonce());
+            getChunksCollectors().remove(chunk.getNonce());
             throw e;
         }
     }
 
-    private Map<Nonce, ChunksCollector> getChunksCollectors(final DrasylConfig config) {
+    private Map<Nonce, ChunksCollector> getChunksCollectors() {
         return chunksCollectors.getOrCompute(() -> CacheBuilder.newBuilder()
                 .maximumSize(1_000)
-                .expireAfterWrite(config.getRemoteMessageComposedMessageTransferTimeout())
+                .expireAfterWrite(messageComposedMessageTransferTimeout)
                 .removalListener((RemovalListener<Nonce, ChunksCollector>) entry -> {
                     if (entry.getValue().hasChunks()) {
                         //noinspection unchecked
-                        LOG.debug("Not all chunks of message `{}` were received within {}ms ({} of {} present). Message dropped.", entry::getKey, config.getRemoteMessageComposedMessageTransferTimeout()::toMillis, entry.getValue()::getPresentChunks, entry.getValue()::getTotalChunks);
+                        LOG.debug("Not all chunks of message `{}` were received within {}ms ({} of {} present). Message dropped.", entry::getKey, messageComposedMessageTransferTimeout::toMillis, entry.getValue()::getPresentChunks, entry.getValue()::getTotalChunks);
                         entry.getValue().release();
                     }
                 })
@@ -169,12 +176,12 @@ public class ChunkingHandler extends ChannelDuplexHandler {
     }
 
     @SuppressWarnings("unchecked")
-    private static void chunkMessage(final ChannelHandlerContext ctx,
-                                     final SocketAddress recipient,
-                                     final RemoteMessage msg,
-                                     final CompletableFuture<Void> future,
-                                     final ByteBuf messageByteBuf,
-                                     final int messageSize) throws IOException {
+    private void chunkMessage(final ChannelHandlerContext ctx,
+                              final SocketAddress recipient,
+                              final RemoteMessage msg,
+                              final CompletableFuture<Void> future,
+                              final ByteBuf messageByteBuf,
+                              final int messageSize) throws IOException {
         try {
             // create & send chunks
             UnsignedShort chunkNo = UnsignedShort.of(0);
@@ -187,12 +194,11 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                     .setTotalChunks(UnsignedShort.MAX_VALUE.getValue())
                     .buildPartial();
 
-            final int mtu = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteMessageMtu();
-            final UnsignedShort totalChunks = totalChunks(messageSize, mtu, partialChunkHeader);
-            LOG.debug("The message `{}` has a size of {} bytes and is therefore split into {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> mtu);
+            final UnsignedShort totalChunks = totalChunks(messageSize, messageMtu, partialChunkHeader);
+            LOG.debug("The message `{}` has a size of {} bytes and is therefore split into {} chunks (MTU = {}).", () -> sanitizeLogArg(msg), () -> messageSize, () -> totalChunks, () -> messageMtu);
 
             final FutureCombiner combiner = FutureCombiner.getInstance();
-            final int chunkSize = getChunkSize(partialChunkHeader, mtu);
+            final int chunkSize = getChunkSize(partialChunkHeader, messageMtu);
 
             while (messageByteBuf.readableBytes() > 0) {
                 ByteBuf chunkBodyByteBuf = null;

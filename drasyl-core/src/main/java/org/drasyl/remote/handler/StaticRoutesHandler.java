@@ -23,7 +23,6 @@ package org.drasyl.remote.handler;
 
 import com.typesafe.config.Config;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
@@ -35,21 +34,21 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.util.Map;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This handler uses preconfigured static routes ({@link org.drasyl.DrasylConfig#getStaticRoutes(Config,
  * String)}) to deliver messages.
  */
-@Sharable
 public final class StaticRoutesHandler extends ChannelDuplexHandler {
-    public static final StaticRoutesHandler INSTANCE = new StaticRoutesHandler();
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
+    private final Map<IdentityPublicKey, SocketAddress> staticRoutes;
 
-    private StaticRoutesHandler() {
-        // singleton
+    public StaticRoutesHandler(final Map<IdentityPublicKey, SocketAddress> staticRoutes) {
+        this.staticRoutes = requireNonNull(staticRoutes);
     }
 
     @Override
@@ -60,7 +59,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
             final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
             final IdentityPublicKey recipient = (IdentityPublicKey) ((AddressedMessage<?, ?>) msg).address();
 
-            final SocketAddress staticAddress = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().get(recipient);
+            final SocketAddress staticAddress = staticRoutes.get(recipient);
             if (staticAddress != null) {
                 LOG.trace("Send message `{}` via static route {}.", () -> applicationMsg, () -> staticAddress);
                 ctx.writeAndFlush(new AddressedMessage<>(applicationMsg, staticAddress), promise);
@@ -90,10 +89,10 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
     }
 
     private void populateRoutes(final ChannelHandlerContext ctx) {
-        ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().forEach(((publicKey, address) -> ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, path))));
+        staticRoutes.forEach(((publicKey, address) -> ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, path))));
     }
 
     private void clearRoutes(final ChannelHandlerContext ctx) {
-        ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteStaticRoutes().keySet().forEach(publicKey -> ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path)));
+        staticRoutes.keySet().forEach(publicKey -> ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path)));
     }
 }

@@ -24,7 +24,6 @@ package org.drasyl.remote.handler.crypto;
 import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.crypto.Crypto;
@@ -34,7 +33,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.ArmedMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
@@ -78,10 +76,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ArmHandlerTest {
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylConfig config;
-    @Mock
-    private PeersManager peersManager;
     private int networkId;
     private SocketAddress receiveAddress;
     private SessionPair sessionPairSender;
@@ -111,13 +105,10 @@ class ArmHandlerTest {
     class Encryption {
         @Test
         void shouldEncryptOutgoingMessageWithRecipientAndFromMe() throws InvalidMessageFormatException {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
-
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> applicationMessage = ApplicationMessage.of(
@@ -146,13 +137,10 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotEncryptOutgoingMessageWithSenderThatIsNotMe() {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
-
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
@@ -178,12 +166,9 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotEncryptOutgoingMessageWithNoRecipient() {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
-
                 final FullReadMessage<?> msg = DiscoveryMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
@@ -203,12 +188,9 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotEncryptOutgoingMessageWithLoopback() {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
-
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
@@ -245,13 +227,10 @@ class ArmHandlerTest {
                     .setStaleAt(OptionalLong.of(System.currentTimeMillis() + 600_000))
                     .build());
 
-            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
-
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
                                 networkId,
@@ -279,12 +258,9 @@ class ArmHandlerTest {
     class KeyExchange {
         @Test
         void shouldSendKeyExchangeMessageOnOutbound() throws InvalidMessageFormatException {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
-
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
@@ -311,12 +287,9 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotSendKeyExchangeMessageOnOutboundIfMaxAgreementOptionIsZero() {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
-
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
                         networkId,
@@ -340,14 +313,11 @@ class ArmHandlerTest {
 
         @Test
         void shouldNotSendKeyExchangeMessageOnInbound() throws InvalidMessageFormatException {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
-
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
@@ -371,15 +341,12 @@ class ArmHandlerTest {
 
         @Test
         void shouldSendKeyExchangeMessageOnInboundOnUnknownAgreementId() throws InvalidMessageFormatException {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 // construct wrong agreement id
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_3.getKeyAgreementPublicKey());
-
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
 
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
@@ -418,13 +385,10 @@ class ArmHandlerTest {
                     .setSessionPair(Optional.of(sessionPairReceiver))
                     .build());
 
-            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2);
+            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
-
                 final ArmedMessage msg = KeyExchangeAcknowledgementMessage.of(networkId,
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
                                 IdentityTestUtil.ID_1.getProofOfWork(),
@@ -460,13 +424,10 @@ class ArmHandlerTest {
                     .setSessionPair(Optional.of(sessionPairReceiver))
                     .build());
 
-            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2);
+            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
-
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final RemoteMessage msg = ApplicationMessage.of(
                                 networkId,
@@ -496,13 +457,10 @@ class ArmHandlerTest {
             // construct not existing agreementId
             final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
-
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final RemoteMessage msg = ApplicationMessage.of(
                                 networkId,
@@ -536,13 +494,10 @@ class ArmHandlerTest {
 
             final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyPair = Crypto.INSTANCE.generateEphemeralKeyPair();
 
-            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2);
+            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
-
                 final RemoteMessage msg = KeyExchangeMessage.of(networkId,
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
                                 IdentityTestUtil.ID_1.getProofOfWork(),
@@ -582,13 +537,10 @@ class ArmHandlerTest {
                     .setSessionPair(Optional.of(sessionPairReceiver))
                     .build());
 
-            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2);
+            final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_2.getIdentityPublicKey());
-                when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_2.getProofOfWork());
-
                 final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyPair = Crypto.INSTANCE.generateEphemeralKeyPair();
 
                 final RemoteMessage msg = KeyExchangeMessage.of(networkId,
@@ -624,9 +576,9 @@ class ArmHandlerTest {
                                                                               @Mock final Map<IdentityPublicKey, Session> sessions,
                                                                               @Mock final Crypto crypto,
                                                                               @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException, CryptoException {
-            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
@@ -672,9 +624,9 @@ class ArmHandlerTest {
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Agreement agreement,
                                                                              @Mock final Map<IdentityPublicKey, Session> sessions,
                                                                              @Mock final Crypto crypto) throws CryptoException {
-            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(new byte[]{}).when(crypto).encrypt(any(), any(), any(), any());
 
@@ -719,9 +671,9 @@ class ArmHandlerTest {
                                                                        @Mock final Map<IdentityPublicKey, Session> sessions,
                                                                        @Mock final Crypto crypto,
                                                                        @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException {
-            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
@@ -760,9 +712,9 @@ class ArmHandlerTest {
                                                                       @Mock final
                                                                       ConcurrentReference<Agreement> concurrentAgreement,
                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Agreement agreement) {
-            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -793,9 +745,9 @@ class ArmHandlerTest {
     class Decryption {
         @Test
         void shouldSkipMessagesNotForMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
 
@@ -813,9 +765,9 @@ class ArmHandlerTest {
 
         @Test
         void shouldSkipMessagesFromMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
-            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
@@ -838,9 +790,9 @@ class ArmHandlerTest {
                                                  @Mock final Map<IdentityPublicKey, Session> sessions,
                                                  @Mock final Crypto crypto,
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
-            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -868,9 +820,9 @@ class ArmHandlerTest {
                                                                            @Mock final Map<IdentityPublicKey, Session> sessions,
                                                                            @Mock final Crypto crypto,
                                                                            @Mock final FullReadMessage<?> disarmedMsg) throws IOException {
-            final ArmHandler handler = new ArmHandler(sessions, crypto, 0, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, crypto, 0, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -898,9 +850,9 @@ class ArmHandlerTest {
                                             @Mock final Map<IdentityPublicKey, Session> sessions,
                                             @Mock final Crypto crypto,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
-            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -929,9 +881,9 @@ class ArmHandlerTest {
                                                                              @Mock final Agreement agreement,
                                                                              @Mock final Crypto crypto,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
-            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -966,9 +918,9 @@ class ArmHandlerTest {
                                                            @Mock final Agreement agreement,
                                                            @Mock final Crypto crypto,
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
-            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
+            final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();

@@ -70,6 +70,7 @@ public class ArmHandler extends ChannelDuplexHandler {
     private final int maxAgreements;
     private final LongUnaryOperator updateLastModificationTime;
     private final Identity identity;
+    private final int networkId;
 
     protected ArmHandler(final Map<IdentityPublicKey, Session> sessions,
                          final Crypto crypto,
@@ -77,7 +78,8 @@ public class ArmHandler extends ChannelDuplexHandler {
                          final Duration expireAfter,
                          final Duration retryInterval,
                          final LongUnaryOperator updateLastModificationTime,
-                         final Identity identity) {
+                         final Identity identity,
+                         final int networkId) {
         this.sessions = sessions;
         this.crypto = crypto;
         this.maxAgreements = maxAgreements;
@@ -85,13 +87,16 @@ public class ArmHandler extends ChannelDuplexHandler {
         this.retryInterval = retryInterval;
         this.updateLastModificationTime = updateLastModificationTime;
         this.identity = identity;
+        this.networkId = networkId;
     }
 
     protected ArmHandler(final Map<IdentityPublicKey, Session> sessions,
                          final Crypto crypto,
                          final int maxAgreements,
                          final Duration expireAfter,
-                         final Duration retryInterval, final Identity identity) {
+                         final Duration retryInterval,
+                         final Identity identity,
+                         final int networkId) {
         this(sessions,
                 crypto,
                 maxAgreements,
@@ -103,18 +108,22 @@ public class ArmHandler extends ChannelDuplexHandler {
                     }
 
                     return time;
-                }, identity);
+                },
+                identity,
+                networkId);
     }
 
     public ArmHandler(final int maxSessionsCount,
                       final int maxAgreements,
                       final Duration expireAfter,
-                      final Duration retryInterval, final Identity identity) {
+                      final Duration retryInterval,
+                      final Identity identity,
+                      final int networkId) {
         this(CacheBuilder.newBuilder()
                 .expireAfterAccess(expireAfter.toMillis(), TimeUnit.MILLISECONDS)
                 .maximumSize(maxSessionsCount)
                 .<IdentityPublicKey, Session>build()
-                .asMap(), Crypto.INSTANCE, maxAgreements, expireAfter, retryInterval, identity);
+                .asMap(), Crypto.INSTANCE, maxAgreements, expireAfter, retryInterval, identity, networkId);
     }
 
     protected void filteredOutbound(final ChannelHandlerContext ctx,
@@ -286,7 +295,7 @@ public class ArmHandler extends ChannelDuplexHandler {
          */
         if (session.getLastKeyExchangeAt().getAndUpdate(updateLastModificationTime) < System.currentTimeMillis() - retryInterval.toMillis()) {
             LOG.trace("[{} => {}] Send key exchange message, do to key exchange overdue", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientPublicKey.toString().substring(0, 4));
-            ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, agreement, recipient, recipientPublicKey, identity);
+            ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, agreement, recipient, recipientPublicKey, identity, networkId);
         }
     }
 
@@ -359,7 +368,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                 doKeyExchange(session, ctx, sender, recipientsKey);
 
                 // encrypt message with long time key
-                FutureCombiner.getInstance().add(ArmHandlerUtil.sendAck(crypto, ctx, sender, recipientsKey, session, identity)).combine(future);
+                FutureCombiner.getInstance().add(ArmHandlerUtil.sendAck(crypto, ctx, sender, recipientsKey, session, identity, networkId)).combine(future);
             }
             catch (final Exception e) {
                 future.completeExceptionally(new CryptoException(e));
@@ -394,7 +403,7 @@ public class ArmHandler extends ChannelDuplexHandler {
             final Agreement inactiveAgreement = ArmHandlerUtil.computeInactiveAgreementIfNeeded(crypto, session);
 
             LOG.trace("[{} => {}] Send key exchange message, do to renewable", () -> identity.getIdentityPublicKey().toString().substring(0, 4), () -> recipientsKey.toString().substring(0, 4));
-            ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, inactiveAgreement, recipient, recipientsKey, identity);
+            ArmHandlerUtil.sendKeyExchangeMsg(crypto, ctx, session, inactiveAgreement, recipient, recipientsKey, identity, networkId);
         }
     }
 

@@ -22,12 +22,10 @@
 package org.drasyl.remote.handler;
 
 import io.netty.util.ReferenceCounted;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,16 +38,11 @@ import test.util.IdentityTestUtil;
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class InvalidProofOfWorkFilterTest {
-    @Mock
-    private PeersManager peersManager;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylConfig config;
     private IdentityPublicKey senderPublicKey;
     private IdentityPublicKey recipientPublicKey;
     private Nonce correspondingId;
@@ -59,14 +52,13 @@ class InvalidProofOfWorkFilterTest {
         senderPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
         recipientPublicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
         correspondingId = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
-        peersManager = new PeersManager(IdentityTestUtil.ID_1);
     }
 
     @Test
     void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter(IdentityTestUtil.ID_2.getAddress());
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
@@ -81,7 +73,7 @@ class InvalidProofOfWorkFilterTest {
     void shouldPassMessagesWithValidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, IdentityTestUtil.ID_1.getProofOfWork(), recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter(IdentityTestUtil.ID_2.getAddress());
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
@@ -99,7 +91,7 @@ class InvalidProofOfWorkFilterTest {
     void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter(IdentityTestUtil.ID_3.getAddress());
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 

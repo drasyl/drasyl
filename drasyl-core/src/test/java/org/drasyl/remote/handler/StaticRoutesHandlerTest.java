@@ -24,7 +24,6 @@ package org.drasyl.remote.handler;
 import com.google.common.collect.ImmutableMap;
 import io.netty.channel.ChannelHandler;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNode.PeersManagerHandler.AddPathEvent;
 import org.drasyl.DrasylNode.PeersManagerHandler.RemovePathEvent;
 import org.drasyl.channel.AddressedMessage;
@@ -44,20 +43,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StaticRoutesHandlerTest {
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylConfig config;
-
     @Test
     void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
         final SocketAddress address = new InetSocketAddress(22527);
-        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.pipeline().fireChannelActive();
 
@@ -71,10 +65,8 @@ class StaticRoutesHandlerTest {
     @Test
     void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
                                             @Mock final SocketAddress address) {
-        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
-
-        final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.pipeline().fireChannelInactive();
 
@@ -89,10 +81,9 @@ class StaticRoutesHandlerTest {
     void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         final SocketAddress address = new InetSocketAddress(22527);
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
-        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of(publicKey, address));
 
-        final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
@@ -109,10 +100,8 @@ class StaticRoutesHandlerTest {
     @Test
     void shouldPassthroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        when(config.getRemoteStaticRoutes()).thenReturn(ImmutableMap.of());
-
-        final ChannelHandler handler = StaticRoutesHandler.INSTANCE;
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of());
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
 

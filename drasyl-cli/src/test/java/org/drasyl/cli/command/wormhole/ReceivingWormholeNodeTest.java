@@ -21,16 +21,16 @@
  */
 package org.drasyl.cli.command.wormhole;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
-import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.RequestText;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -61,9 +61,9 @@ class ReceivingWormholeNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private RequestText request;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylBootstrap bootstrap;
+    private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private PluginManager pluginManager;
+    private ServerBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;
     private ReceivingWormholeNode underTest;
@@ -72,7 +72,7 @@ class ReceivingWormholeNodeTest {
     void setUp() {
         outStream = new ByteArrayOutputStream();
         out = new PrintStream(outStream, true);
-        underTest = new ReceivingWormholeNode(doneFuture, out, request, bootstrap, pluginManager, channelFuture);
+        underTest = new ReceivingWormholeNode(doneFuture, out, request, identity, bootstrap, channelFuture);
     }
 
     @Nested
@@ -139,7 +139,7 @@ class ReceivingWormholeNodeTest {
                 void shouldRequestText(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
                     when(channelFuture.channel().isOpen()).thenReturn(true);
 
-                    underTest = new ReceivingWormholeNode(doneFuture, out, null, bootstrap, pluginManager, channelFuture);
+                    underTest = new ReceivingWormholeNode(doneFuture, out, null, identity, bootstrap, channelFuture);
 
                     underTest.onEvent(nodeOnline);
                     underTest.onEvent(event);
@@ -153,7 +153,7 @@ class ReceivingWormholeNodeTest {
         class OnRequestText {
             @Test
             void shouldNotRequestTextBecauseNotOffline(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
-                underTest = new ReceivingWormholeNode(doneFuture, out, null, bootstrap, pluginManager, channelFuture);
+                underTest = new ReceivingWormholeNode(doneFuture, out, null, identity, bootstrap, channelFuture);
 
                 underTest.onEvent(event);
 

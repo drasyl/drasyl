@@ -41,6 +41,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -48,7 +49,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.drasyl.util.RandomUtil.randomLong;
 
@@ -73,28 +73,39 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private final Map<IdentityPublicKey, Peer> peers;
     private final DrasylAddress myAddress;
     private final ProofOfWork myProofOfWork;
+    private final Duration pingInterval;
+    private final Duration pingTimeout;
+    private final int networkId;
     private Future<?> pingDisposable;
 
     public LocalNetworkDiscovery(final Map<IdentityPublicKey, Peer> peers,
                                  final DrasylAddress myAddress,
                                  final ProofOfWork myProofOfWork,
+                                 final Duration pingInterval,
+                                 final Duration pingTimeout,
+                                 final int networkId,
                                  final Future<?> pingDisposable) {
         this.peers = requireNonNull(peers);
         this.myAddress = requireNonNull(myAddress);
         this.myProofOfWork = requireNonNull(myProofOfWork);
+        this.pingInterval = pingInterval;
+        this.pingTimeout = pingTimeout;
+        this.networkId = networkId;
         this.pingDisposable = pingDisposable;
     }
 
     public LocalNetworkDiscovery(final DrasylAddress myAddress,
-                                 final ProofOfWork myProofOfWork) {
-        this(new ConcurrentHashMap<>(), myAddress, myProofOfWork, null);
+                                 final ProofOfWork myProofOfWork,
+                                 final Duration pingInterval,
+                                 final Duration pingTimeout,
+                                 final int networkId) {
+        this(new ConcurrentHashMap<>(), myAddress, myProofOfWork, pingInterval, pingTimeout, networkId, null);
     }
 
     synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
         if (pingDisposable == null) {
             LOG.debug("Start Network Network Discovery...");
-            final long pingInterval = ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemotePingInterval().toMillis();
-            pingDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval), pingInterval, MILLISECONDS);
+            pingDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval.toMillis()), pingInterval.toMillis(), MILLISECONDS);
             LOG.debug("Network Discovery started.");
         }
     }
@@ -123,7 +134,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
 
     private void removeStalePeers(final ChannelHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            if (peer.isStale(ctx)) {
+            if (peer.isStale()) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundPingTime());
                 ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
                 peers.remove(publicKey);
@@ -156,7 +167,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         final IdentityPublicKey msgSender = msg.getSender();
         if (!myAddress.equals(msgSender)) {
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
-            final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender));
+            final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender, pingTimeout));
             peer.inboundPingOccurred();
             ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, path));
         }
@@ -203,7 +214,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
-        final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), (IdentityPublicKey) myAddress, myProofOfWork);
+        final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork);
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
         final CompletableFuture<Void> future = new CompletableFuture<>();
         FutureCombiner.getInstance().add(FutureUtil.toFuture(ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)))).combine(future);
@@ -214,17 +225,19 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     static class Peer {
+        private final Duration pingTimeout;
         private final SocketAddress address;
         private long lastInboundPingTime;
 
-        Peer(final SocketAddress address,
+        Peer(final Duration pingTimeout, final SocketAddress address,
              final long lastInboundPingTime) {
+            this.pingTimeout = pingTimeout;
             this.address = requireNonNull(address);
             this.lastInboundPingTime = lastInboundPingTime;
         }
 
-        public Peer(final SocketAddress address) {
-            this(address, 0L);
+        public Peer(final SocketAddress address, final Duration pingTimeout) {
+            this(pingTimeout, address, 0L);
         }
 
         public SocketAddress getAddress() {
@@ -235,8 +248,8 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             lastInboundPingTime = System.currentTimeMillis();
         }
 
-        public boolean isStale(final ChannelHandlerContext ctx) {
-            return lastInboundPingTime < System.currentTimeMillis() - ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout().toMillis();
+        public boolean isStale() {
+            return lastInboundPingTime < System.currentTimeMillis() - pingTimeout.toMillis();
         }
 
         public long getLastInboundPingTime() {

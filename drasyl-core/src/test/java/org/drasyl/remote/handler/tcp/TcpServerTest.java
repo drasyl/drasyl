@@ -31,13 +31,11 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerChannelInitializer;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerHandler;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,34 +45,38 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.Map;
 
 import static io.netty.util.CharsetUtil.UTF_8;
 import static java.net.InetSocketAddress.createUnresolved;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TcpServerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylConfig config;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
-    @Mock(answer = RETURNS_DEEP_STUBS)
     private ServerBootstrap bootstrap;
-    @Mock
-    private PeersManager peersManager;
     @Mock
     private Map<SocketAddress, Channel> clientChannels;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Channel serverChannel;
+    private InetAddress bindHost;
+    private int bindPort;
+    private final Duration pingTimeout = ofSeconds(10);
+
+    @BeforeEach
+    void setUp() throws UnknownHostException {
+        bindHost = InetAddress.getLocalHost();
+        bindPort = 22527;
+    }
 
     @Nested
     class StartServer {
@@ -84,11 +86,9 @@ class TcpServerTest {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
 
-            final TcpServer handler = new TcpServer(bootstrap, clientChannels, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, null);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
-                pipeline.pipeline().fireChannelActive();
-
                 verify(bootstrap.childHandler(any())).bind(any(InetAddress.class), anyInt());
             }
             finally {
@@ -103,8 +103,8 @@ class TcpServerTest {
         void shouldStopServerOnChannelInactive() {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
-            final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -125,8 +125,8 @@ class TcpServerTest {
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             when(clientChannels.get(any())).thenReturn(client);
 
-            final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
@@ -144,8 +144,8 @@ class TcpServerTest {
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             when(clientChannels.get(any())).thenReturn(client);
 
-            final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final ChannelPromise promise = pipeline.newPromise();
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
@@ -159,8 +159,8 @@ class TcpServerTest {
         @Test
         void shouldPassthroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
-            final TcpServer handler = new TcpServer(bootstrap, clientChannels, serverChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
@@ -184,9 +184,7 @@ class TcpServerTest {
 
         @Test
         void shouldAddCorrectHandlersToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Channel ch) {
-            when(ctx.channel().attr(CONFIG_ATTR_KEY).get()).thenReturn(mock(DrasylConfig.class, RETURNS_DEEP_STUBS));
-
-            new TcpServerChannelInitializer(clients, ctx).initChannel(ch);
+            new TcpServerChannelInitializer(clients, ctx, pingTimeout).initChannel(ch);
 
             verify(ch.pipeline()).addLast(any(IdleStateHandler.class));
             verify(ch.pipeline()).addLast(any(TcpServerHandler.class));

@@ -31,10 +31,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.util.MaskedString;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +44,6 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
 /**
  * Monitors various states or events in the drasyl node.
@@ -62,24 +63,29 @@ public class Monitoring extends ChannelDuplexHandler {
         this.registry = registry;
     }
 
-    public Monitoring() {
+    public Monitoring(final String hostTag,
+                      final URI influxUri,
+                      final String influxUser,
+                      final MaskedString influxPassword,
+                      final String influxDatabase,
+                      final Duration influxReportingFrequency) {
         this(
                 new HashMap<>(),
                 ctx -> {
-                    final MeterRegistry newRegistry = new InfluxMeterRegistry(new MyInfluxConfig(ctx), Clock.SYSTEM);
+                    final MeterRegistry newRegistry = new InfluxMeterRegistry(new MyInfluxConfig(influxUri, influxUser, influxPassword, influxDatabase, influxReportingFrequency), Clock.SYSTEM);
 
                     // add common tags
-                    final String hostTag;
-                    if (!ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringHostTag().isEmpty()) {
-                        hostTag = ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringHostTag();
+                    final String myHostTag;
+                    if (!hostTag.isEmpty()) {
+                        myHostTag = hostTag;
                     }
                     else {
-                        hostTag = ofNullable(NetworkUtil.getLocalHostName()).orElse("");
+                        myHostTag = ofNullable(NetworkUtil.getLocalHostName()).orElse("");
                     }
 
                     newRegistry.config().commonTags(
                             "public_key", ctx.channel().localAddress().toString(),
-                            "host", hostTag
+                            "host", myHostTag
                     );
 
                     return newRegistry;
@@ -134,15 +140,15 @@ public class Monitoring extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) {
         startMonitoring(ctx);
 
-        super.channelActive(ctx);
+        ctx.fireChannelActive();
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
 
         stopMonitoring();
     }
@@ -156,32 +162,44 @@ public class Monitoring extends ChannelDuplexHandler {
 
     @SuppressWarnings("java:S2972")
     private static class MyInfluxConfig implements InfluxConfig {
-        private final ChannelHandlerContext ctx;
+        private final URI influxUri;
+        private final String influxUser;
+        private final MaskedString influxPassword;
+        private final String influxDatabase;
+        private final Duration influxReportingFrequency;
 
-        public MyInfluxConfig(final ChannelHandlerContext ctx) {
-            this.ctx = requireNonNull(ctx);
+        public MyInfluxConfig(final URI influxUri,
+                              final String influxUser,
+                              final MaskedString influxPassword,
+                              final String influxDatabase,
+                              final Duration influxReportingFrequency) {
+            this.influxUri = influxUri;
+            this.influxUser = influxUser;
+            this.influxPassword = influxPassword;
+            this.influxDatabase = influxDatabase;
+            this.influxReportingFrequency = influxReportingFrequency;
         }
 
         @Override
         @NonNull
         public String uri() {
-            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxUri().toString();
+            return influxUri.toString();
         }
 
         @Override
         public String userName() {
-            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxUser();
+            return influxUser;
         }
 
         @Override
         public String password() {
-            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxPassword().toUnmaskedString();
+            return influxPassword.toUnmaskedString();
         }
 
         @Override
         @NonNull
         public String db() {
-            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxDatabase();
+            return influxDatabase;
         }
 
         @Override
@@ -192,7 +210,7 @@ public class Monitoring extends ChannelDuplexHandler {
         @Override
         @NonNull
         public Duration step() {
-            return ctx.channel().attr(CONFIG_ATTR_KEY).get().getMonitoringInfluxReportingFrequency();
+            return influxReportingFrequency;
         }
 
         @Override

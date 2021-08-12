@@ -70,7 +70,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
             identity2 = IdentityTestUtil.ID_2;
 
-            final UdpServer handler = new UdpServer(identity2.getIdentityPublicKey());
+            final UdpServer handler = new UdpServer(identity2.getIdentityPublicKey(), InetAddress.getLocalHost(), 22527);
 
             final DrasylConfig config2 = DrasylConfig.newBuilder()
                     .remoteBindPort(0)
@@ -79,7 +79,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     .identitySecretKey(identity2.getIdentitySecretKey())
                     .build();
 
-            pipeline = new EmbeddedDrasylServerChannel(config2,
+            pipeline = new EmbeddedDrasylServerChannel(
                     handler,
                     new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
                         @Override

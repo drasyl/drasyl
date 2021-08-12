@@ -21,16 +21,17 @@
  */
 package org.drasyl.cli.command.wormhole;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import org.drasyl.DrasylNode;
-import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode.SetText;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -63,7 +64,9 @@ class SendingWormholeNodeTest {
     @SuppressWarnings("FieldCanBeLocal")
     private final String password = "123";
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylBootstrap bootstrap;
+    private Identity identity;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ServerBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -74,7 +77,7 @@ class SendingWormholeNodeTest {
     void setUp() {
         outStream = new ByteArrayOutputStream();
         out = new PrintStream(outStream, true);
-        underTest = new SendingWormholeNode(doneFuture, out, password, bootstrap, pluginManager, channelFuture);
+        underTest = new SendingWormholeNode(doneFuture, out, password, identity, bootstrap, channelFuture);
     }
 
     @Nested

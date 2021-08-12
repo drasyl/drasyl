@@ -21,11 +21,11 @@
  */
 package org.drasyl.cli.command.perf;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNode;
-import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.cli.command.perf.PerfServerNode.OnlineTimeout;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
@@ -35,7 +35,7 @@ import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.plugin.PluginManager;
+import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -67,9 +67,9 @@ class PerfServerNodeTest {
     @Mock
     private EventLoopGroup eventLoopGroup;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylBootstrap bootstrap;
+    private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private PluginManager pluginManager;
+    private ServerBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;
     private PerfServerNode underTest;
@@ -78,7 +78,7 @@ class PerfServerNodeTest {
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new PerfServerNode(doneFuture, printStream, eventLoopGroup, bootstrap, pluginManager, channelFuture);
+        underTest = new PerfServerNode(doneFuture, printStream, eventLoopGroup, identity, bootstrap, channelFuture);
     }
 
     @Nested

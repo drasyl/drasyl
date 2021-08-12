@@ -22,35 +22,29 @@
 package org.drasyl.loopback.handler;
 
 import io.netty.util.ReferenceCounted;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class LoopbackMessageHandlerTest {
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
-    @Mock
-    private PeersManager peersManager;
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private DrasylConfig config;
 
     @Test
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final IdentityPublicKey recipient,
                                                     @Mock final Object message) {
         final LoopbackMessageHandler handler = new LoopbackMessageHandler(identity.getAddress());
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -66,11 +60,11 @@ class LoopbackMessageHandlerTest {
 
     @Test
     void shouldBounceMessageIfRecipientIsLocalNode(@Mock final IdentityPublicKey recipient,
-                                                   @Mock(answer = Answers.RETURNS_DEEP_STUBS) final Object message) {
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
         when(identity.getAddress()).thenReturn(recipient);
 
         final LoopbackMessageHandler handler = new LoopbackMessageHandler(identity.getAddress());
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
 

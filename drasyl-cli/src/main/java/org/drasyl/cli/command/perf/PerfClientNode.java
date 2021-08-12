@@ -21,6 +21,7 @@
  */
 package org.drasyl.cli.command.perf;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -30,7 +31,6 @@ import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
-import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.cli.command.perf.message.PerfMessage;
 import org.drasyl.cli.command.perf.message.Ping;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
@@ -43,8 +43,8 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -83,10 +83,10 @@ public class PerfClientNode extends BehavioralDrasylNode {
                    final PrintStream printStream,
                    final EventLoopGroup perfScheduler,
                    final Set<DrasylAddress> directConnections,
-                   final DrasylBootstrap bootstrap,
-                   final PluginManager pluginManager,
+                   final Identity identity,
+                   final ServerBootstrap bootstrap,
                    final ChannelFuture channelFuture) {
-        super(bootstrap, pluginManager, channelFuture);
+        super(identity, bootstrap, channelFuture);
         this.doneFuture = requireNonNull(doneFuture);
         this.printStream = requireNonNull(printStream);
         this.perfScheduler = requireNonNull(perfScheduler);

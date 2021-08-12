@@ -21,10 +21,11 @@
  */
 package org.drasyl.behaviour;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.event.Event;
+import org.drasyl.identity.Identity;
 import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -32,9 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.drasyl.behaviour.Behavior.SAME;
 import static org.drasyl.behaviour.Behavior.SHUTDOWN;
@@ -48,10 +46,10 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class BehavioralDrasylNodeTest {
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylBootstrap bootstrap;
+    private Identity identity;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ServerBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -67,7 +65,7 @@ class BehavioralDrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            node = spy(new BehavioralDrasylNode(bootstrap, pluginManager, channelFuture, channel, behavior) {
+            node = spy(new BehavioralDrasylNode(identity, bootstrap, channelFuture, channel, behavior) {
                 @Override
                 protected Behavior created() {
                     return null;

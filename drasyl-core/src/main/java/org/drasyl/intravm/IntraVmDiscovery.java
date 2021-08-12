@@ -39,7 +39,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
@@ -53,15 +52,17 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     static Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new ConcurrentHashMap<>();
     private final ReadWriteLock lock;
     private final DrasylAddress myAddress;
+    private final int myNetworkId;
 
-    public IntraVmDiscovery(final DrasylAddress myAddress) {
-        this(new ReentrantReadWriteLock(true), myAddress);
+    public IntraVmDiscovery(final DrasylAddress myAddress, final int myNetworkId) {
+        this(new ReentrantReadWriteLock(true), myAddress, myNetworkId);
     }
 
     IntraVmDiscovery(final ReadWriteLock lock,
-                     final DrasylAddress myAddress) {
+                     final DrasylAddress myAddress, final int myNetworkId) {
         this.lock = lock;
         this.myAddress = requireNonNull(myAddress);
+        this.myNetworkId = myNetworkId;
     }
 
     @Override
@@ -71,7 +72,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
         if (msg instanceof AddressedMessage) {
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
-            final ChannelHandlerContext discoveree = discoveries.get(Pair.of(ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), recipient));
+            final ChannelHandlerContext discoveree = discoveries.get(Pair.of(myNetworkId, recipient));
 
             if (discoveree == null) {
                 // passthrough message
@@ -95,13 +96,13 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             discoveries.forEach((key, otherCtx) -> {
                 final Integer networkId = key.first();
                 final DrasylAddress publicKey = key.second();
-                if (myCtx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == networkId) {
+                if (myNetworkId == networkId) {
                     otherCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(myAddress, path));
                     myCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(publicKey, path));
                 }
             });
             discoveries.put(
-                    Pair.of(myCtx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), myAddress),
+                    Pair.of(myNetworkId, myAddress),
                     myCtx
             );
 
@@ -118,11 +119,11 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             LOG.debug("Stop Intra VM Discovery...");
 
             // remove peer information
-            discoveries.remove(Pair.of(myCtx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(), myAddress));
+            discoveries.remove(Pair.of(myNetworkId, myAddress));
             discoveries.forEach((key, otherCtx) -> {
-                final Integer networkId = key.first();
+                final Integer otherNetworkId = key.first();
                 final DrasylAddress publicKey = key.second();
-                if (myCtx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == networkId) {
+                if (myNetworkId == otherNetworkId) {
                     otherCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of(myAddress, path));
                     myCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
                 }

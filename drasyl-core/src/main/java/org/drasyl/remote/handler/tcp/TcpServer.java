@@ -39,14 +39,15 @@ import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER;
 import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER_LENGTH;
 import static org.drasyl.util.NettyUtil.getBestServerSocketChannel;
@@ -62,29 +63,41 @@ public class TcpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     private final ServerBootstrap bootstrap;
     private final Map<SocketAddress, Channel> clientChannels;
+    private final InetAddress bindHost;
+    private final int bindPort;
+    private final Duration pingTimeout;
     private Channel serverChannel;
 
-    public TcpServer() {
+    public TcpServer(final InetAddress bindHost, final int bindPort, final Duration pingTimeout) {
         this(
                 new ServerBootstrap().group(EventLoopGroupUtil.getInstanceBest(), EventLoopGroupUtil.getInstanceBest()).channel(getBestServerSocketChannel()),
                 new ConcurrentHashMap<>(),
+                bindHost,
+                bindPort,
+                pingTimeout,
                 null
         );
     }
 
     TcpServer(final ServerBootstrap bootstrap,
               final Map<SocketAddress, Channel> clientChannels,
+              final InetAddress bindHost,
+              final int bindPort,
+              final Duration pingTimeout,
               final Channel serverChannel) {
         this.bootstrap = requireNonNull(bootstrap);
         this.clientChannels = requireNonNull(clientChannels);
+        this.bindHost = bindHost;
+        this.bindPort = bindPort;
+        this.pingTimeout = pingTimeout;
         this.serverChannel = serverChannel;
     }
 
     private synchronized void startServer(final ChannelHandlerContext ctx) throws BindFailedException {
         LOG.debug("Start Server...");
         final ChannelFuture channelFuture = bootstrap
-                .childHandler(new TcpServerChannelInitializer(clientChannels, ctx))
-                .bind(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindHost(), ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindPort());
+                .childHandler(new TcpServerChannelInitializer(clientChannels, ctx, pingTimeout))
+                .bind(bindHost, bindPort);
         channelFuture.awaitUninterruptibly();
 
         if (channelFuture.isSuccess()) {
@@ -98,7 +111,7 @@ public class TcpServer extends ChannelDuplexHandler {
         }
         else {
             // server start failed
-            throw new BindFailedException("Unable to bind server to address tcp://" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindHost() + ":" + ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackServerBindPort(), channelFuture.cause());
+            throw new BindFailedException("Unable to bind server to address tcp://" + bindHost + ":" + bindPort, channelFuture.cause());
         }
     }
 
@@ -159,16 +172,19 @@ public class TcpServer extends ChannelDuplexHandler {
     static class TcpServerChannelInitializer extends ChannelInitializer<Channel> {
         private final Map<SocketAddress, Channel> clients;
         private final ChannelHandlerContext ctx;
+        private final Duration pingTimeout;
 
         public TcpServerChannelInitializer(final Map<SocketAddress, Channel> clients,
-                                           final ChannelHandlerContext ctx) {
+                                           final ChannelHandlerContext ctx,
+                                           final Duration pingTimeout) {
             this.clients = requireNonNull(clients);
             this.ctx = requireNonNull(ctx);
+            this.pingTimeout = pingTimeout;
         }
 
         @Override
         protected void initChannel(final Channel ch) {
-            ch.pipeline().addLast(new IdleStateHandler(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemotePingTimeout().toMillis(), 0, 0, MILLISECONDS));
+            ch.pipeline().addLast(new IdleStateHandler(pingTimeout.toMillis(), 0, 0, MILLISECONDS));
             ch.pipeline().addLast(new TcpServerHandler(clients, ctx));
         }
     }

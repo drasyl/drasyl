@@ -28,9 +28,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
-import io.netty.util.AttributeKey;
 import org.drasyl.DrasylAddress;
-import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -42,16 +40,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * A {@link Channel} for overlay network management.
  */
 public class DefaultDrasylServerChannel extends AbstractServerChannel {
-    public static final AttributeKey<DrasylConfig> CONFIG_ATTR_KEY = AttributeKey.valueOf(DrasylConfig.class, "CONFIG");
     private volatile int state; // 0 - open (node created), 1 - active (node started), 2 - closed (node shut down)
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private volatile Identity localAddress; // NOSONAR
     private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
-
-    public DefaultDrasylServerChannel(final DrasylConfig drasylConfig,
-                                      final Identity identity) {
-        attr(CONFIG_ATTR_KEY).set(drasylConfig);
-    }
+    private volatile Identity localAddress; // NOSONAR
 
     @Override
     protected boolean isCompatible(final EventLoop loop) {

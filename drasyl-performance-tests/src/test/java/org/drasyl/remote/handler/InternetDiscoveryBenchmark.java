@@ -39,7 +39,7 @@ import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.remote.handler.InternetDiscovery.Peer;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.Nonce;
@@ -55,6 +55,7 @@ import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -76,7 +77,12 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     private ChannelPromise future;
     private Set<IdentityPublicKey> superPeers;
     private IdentityPublicKey bestSuperPeer;
-    private PeersManager peersManager;
+    private Duration pingInterval;
+    private Duration pingTimeout;
+    private Duration pingCommunicationTimeout;
+    private boolean superPeerEnabled;
+    private Set<Endpoint> superPeerEndpoints;
+    private int networkId;
 
     @Setup
     public void setup() {
@@ -85,9 +91,8 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         peers = new HashMap<>();
         directConnectionPeers = new HashSet<>();
         superPeers = new HashSet<>();
-        peersManager = new PeersManager(IdentityTestUtil.ID_1);
         final Identity identity = IdentityTestUtil.ID_1;
-        handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, directConnectionPeers, superPeers, bestSuperPeer);
+        handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, directConnectionPeers, superPeers, pingInterval, pingTimeout, pingCommunicationTimeout, superPeerEnabled, superPeerEndpoints, networkId, bestSuperPeer);
 
         ctx = new MyHandlerContext();
         recipient = new MyAddress();

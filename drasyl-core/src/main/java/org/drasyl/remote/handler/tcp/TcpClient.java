@@ -30,7 +30,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -41,6 +40,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,7 +48,6 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.util.NettyUtil.getBestSocketChannel;
 
 /**
@@ -71,23 +70,33 @@ public class TcpClient extends ChannelDuplexHandler {
     private final Set<SocketAddress> superPeerAddresses;
     private final Bootstrap bootstrap;
     private final AtomicLong noResponseFromSuperPeerSince;
+    private final Duration timeout;
+    private final InetSocketAddress address;
     private ChannelFuture superPeerChannel;
 
     TcpClient(final Set<SocketAddress> superPeerAddresses,
               final Bootstrap bootstrap,
               final AtomicLong noResponseFromSuperPeerSince,
+              final Duration timeout,
+              final InetSocketAddress address,
               final ChannelFuture superPeerChannel) {
         this.superPeerAddresses = requireNonNull(superPeerAddresses);
         this.bootstrap = requireNonNull(bootstrap);
         this.noResponseFromSuperPeerSince = requireNonNull(noResponseFromSuperPeerSince);
+        this.timeout = timeout;
+        this.address = address;
         this.superPeerChannel = superPeerChannel;
     }
 
-    public TcpClient(final DrasylConfig config) {
+    public TcpClient(final Set<Endpoint> superPeerEndpoints,
+                     final Duration timeout,
+                     final InetSocketAddress address) {
         this(
-                config.getRemoteSuperPeerEndpoints().stream().map(Endpoint::toInetSocketAddress).collect(Collectors.toSet()),
+                superPeerEndpoints.stream().map(Endpoint::toInetSocketAddress).collect(Collectors.toSet()),
                 new Bootstrap().group(EventLoopGroupUtil.getInstanceBest()).channel(getBestSocketChannel()),
                 new AtomicLong(),
+                timeout,
+                address,
                 null
         );
     }
@@ -182,7 +191,7 @@ public class TcpClient extends ChannelDuplexHandler {
         if (superPeerAddresses.contains(recipient)) {
             final long currentTimeMillis = System.currentTimeMillis();
             noResponseFromSuperPeerSince.compareAndSet(0, currentTimeMillis);
-            if (noResponseFromSuperPeerSince.get() < currentTimeMillis - ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientTimeout().toMillis()) {
+            if (noResponseFromSuperPeerSince.get() < currentTimeMillis - timeout.toMillis()) {
                 // no response from super peer(s) for a too long duration -> establish fallback connection!
                 startClient(ctx);
             }
@@ -203,18 +212,18 @@ public class TcpClient extends ChannelDuplexHandler {
 
             superPeerChannel = bootstrap
                     .handler(new TcpClientHandler(ctx))
-                    .connect(ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
+                    .connect(address);
             superPeerChannel.addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
                     final Channel channel = future.channel();
-                    LOG.debug("TCP connection to `{}` established.", ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
+                    LOG.debug("TCP connection to `{}` established.", address);
                     channel.closeFuture().addListener(future1 -> {
-                        LOG.debug("TCP connection to `{}` closed.", ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress());
+                        LOG.debug("TCP connection to `{}` closed.", address);
                         superPeerChannel = null;
                     });
                 }
                 else {
-                    LOG.debug("Unable to establish TCP connection to `{}`:", () -> ctx.channel().attr(CONFIG_ATTR_KEY).get().getRemoteTcpFallbackClientAddress(), future::cause);
+                    LOG.debug("Unable to establish TCP connection to `{}`:", () -> address, future::cause);
                     superPeerChannel = null;
                 }
             });

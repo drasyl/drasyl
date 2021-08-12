@@ -22,12 +22,14 @@
 package org.drasyl;
 
 import com.google.auto.value.AutoValue;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -35,10 +37,8 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
+import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.DefaultDrasylServerChannel;
-import org.drasyl.channel.DrasylBootstrap;
-import org.drasyl.channel.DrasylChannelEventLoopGroupUtil;
-import org.drasyl.channel.DrasylServerChannelInitializer;
 import org.drasyl.channel.MessageSerializer;
 import org.drasyl.channel.Serialization;
 import org.drasyl.event.Event;
@@ -52,10 +52,29 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.intravm.IntraVmDiscovery;
+import org.drasyl.localhost.LocalHostDiscovery;
+import org.drasyl.loopback.handler.LoopbackMessageHandler;
+import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.plugin.PluginManager;
+import org.drasyl.remote.handler.ChunkingHandler;
+import org.drasyl.remote.handler.HopCountGuard;
+import org.drasyl.remote.handler.InternetDiscovery;
+import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
+import org.drasyl.remote.handler.LocalNetworkDiscovery;
+import org.drasyl.remote.handler.OtherNetworkFilter;
+import org.drasyl.remote.handler.RateLimiter;
+import org.drasyl.remote.handler.RemoteMessageToByteBufCodec;
+import org.drasyl.remote.handler.StaticRoutesHandler;
+import org.drasyl.remote.handler.UdpMulticastServer;
 import org.drasyl.remote.handler.UdpServer;
+import org.drasyl.remote.handler.crypto.ArmHandler;
+import org.drasyl.remote.handler.portmapper.PortMapper;
+import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
+import org.drasyl.remote.protocol.InvalidMessageFormatException;
+import org.drasyl.remote.protocol.UnarmedMessage;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
@@ -73,7 +92,6 @@ import java.util.function.Consumer;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 import static org.drasyl.channel.Null.NULL;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
 
@@ -106,13 +124,8 @@ import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static String version;
-    protected final DrasylBootstrap bootstrap;
-    private final PluginManager pluginManager;
-    private final DrasylConfig config;
-    private final Serialization inboundSerialization;
-    private final Serialization outboundSerialization;
     private final Identity identity;
-    private final PeersManager peersManager;
+    private final ServerBootstrap bootstrap;
     private ChannelFuture channelFuture;
 
     static {
@@ -141,18 +154,12 @@ public abstract class DrasylNode {
         }
     }
 
-    /**
-     * Creates a new drasyl Node. The node is only being created, it neither connects to the Overlay
-     * Network, nor can send or receive messages. To do this you have to call {@link #start()}.
-     * <p>
-     * Note: This is a blocking method, because when a node is started for the first time, its
-     * identity must be created. This can take up to a minute because of the proof of work.
-     *
-     * @throws DrasylException       if identity could not be loaded or created
-     * @throws DrasylConfigException if config is invalid
-     */
-    protected DrasylNode() throws DrasylException {
-        this(DrasylConfig.of());
+    protected DrasylNode(final Identity identity,
+                         final ServerBootstrap bootstrap,
+                         final ChannelFuture channelFuture) {
+        this.identity = requireNonNull(identity);
+        this.bootstrap = requireNonNull(bootstrap);
+        this.channelFuture = channelFuture;
     }
 
     /**
@@ -170,43 +177,39 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
-            this.config = config;
-            this.inboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound());
-            this.outboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound());
             final IdentityManager identityManager = new IdentityManager(config);
             identityManager.loadOrCreateIdentity();
             identity = identityManager.getIdentity();
-            this.peersManager = new PeersManager(identity);
-            bootstrap = new DrasylBootstrap(config, identity)
-                    .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
-                    .handler(new DrasylNodeServerChannelInitializer())
-                    .childHandler(new DrasylNodeChannelInitializer(this::onEvent));
-            pluginManager = new PluginManager(
-                    config,
-                    identity,
-                    inboundSerialization,
-                    outboundSerialization
-            );
-
-            LOG.debug("drasyl node with config `{}` and identity `{}` created", config, bootstrap.identity());
         }
         catch (final IOException e) {
             throw new DrasylException("Couldn't load or create identity", e);
         }
+
+        final Serialization inboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound());
+        final Serialization outboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound());
+
+        bootstrap = new ServerBootstrap()
+                .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
+                .localAddress(identity)
+                .channel(DefaultDrasylServerChannel.class)
+                .handler(new DrasylNodeChannelInitializer(config, identity, inboundSerialization, outboundSerialization, this::onEvent))
+                .childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent));
+
+        LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
     }
 
-    protected DrasylNode(final DrasylBootstrap bootstrap,
-                         final PluginManager pluginManager,
-                         final ChannelFuture channelFuture) {
-        this.bootstrap = requireNonNull(bootstrap);
-        this.config = null;
-        this.inboundSerialization = null; // FIXME
-        this.outboundSerialization = null; // FIXME
-        this.identity = null; // FIXME
-        this.peersManager = new PeersManager(identity);
-        this.pluginManager = pluginManager;
-        this.channelFuture = channelFuture;
-        LOG.debug("drasyl node with config `{}` and identity `{}` created", bootstrap.config(), bootstrap.identity());
+    /**
+     * Creates a new drasyl Node. The node is only being created, it neither connects to the Overlay
+     * Network, nor can send or receive messages. To do this you have to call {@link #start()}.
+     * <p>
+     * Note: This is a blocking method, because when a node is started for the first time, its
+     * identity must be created. This can take up to a minute because of the proof of work.
+     *
+     * @throws DrasylException       if identity could not be loaded or created
+     * @throws DrasylConfigException if config is invalid
+     */
+    protected DrasylNode() throws DrasylException {
+        this(DrasylConfig.of());
     }
 
     /**
@@ -445,12 +448,12 @@ public abstract class DrasylNode {
      */
     @NonNull
     public Identity identity() {
-        return bootstrap.identity();
+        return identity;
     }
 
     /**
-     * Signals {@link DrasylNodeServerChannelInitializer} to resolve a given {@link DrasylAddress}
-     * to a {@link Channel}.
+     * Signals {@link DrasylNodeChannelInitializer} to resolve a given {@link DrasylAddress} to a
+     * {@link Channel}.
      */
     public static class Resolve {
         private final DrasylAddress recipient;
@@ -474,121 +477,388 @@ public abstract class DrasylNode {
     /**
      * Initialize the {@link io.netty.channel.ServerChannel} used by {@link DrasylNode}.
      */
-    public class DrasylNodeServerChannelInitializer extends DrasylServerChannelInitializer {
+    public static class DrasylNodeChannelInitializer extends ChannelInitializer<Channel> {
+        public static final String NODE_LIFECYCLE_HANDLER = "NODE_LIFECYCLE_HANDLER";
+        public static final String PLUGIN_MANAGER_HANDLER = "PLUGIN_MANAGER_HANDLER";
+        public static final String PEERS_MANAGER_HANDLER = "PEERS_MANAGER_HANDLER";
+        public static final String CHILD_CHANNEL_ROUTER = "CHILD_CHANNEL_ROUTER";
+        public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
+        public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
+        public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
+        public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
+        public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
+        public static final String INTERNET_DISCOVERY = "INTERNET_DISCOVERY";
+        public static final String LOCAL_NETWORK_DISCOVER = "LOCAL_NETWORK_DISCOVER";
+        public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
+        public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
+        public static final String RATE_LIMITER = "RATE_LIMITER";
+        public static final String UNARMED_MESSAGE_READER = "UNARMED_MESSAGE_READER";
+        public static final String ARM_HANDLER = "ARM_HANDLER";
+        public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
+        public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
+        public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
+        public static final String REMOTE_MESSAGE_TO_BYTE_BUF_CODEC = "REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC";
+        public static final String UDP_MULTICAST_SERVER = "UDP_MULTICAST_SERVER";
+        public static final String TCP_SERVER = "TCP_SERVER";
+        public static final String TCP_CLIENT = "TCP_CLIENT";
+        public static final String PORT_MAPPER = "PORT_MAPPER";
+        public static final String UDP_SERVER = "UDP_SERVER";
+        private final DrasylConfig config;
+        private final Identity identity;
+        private final Serialization inboundSerialization;
+        private final Serialization outboundSerialization;
+        private final Consumer<Event> eventConsumer;
         private boolean errorOccurred;
 
-        public DrasylNodeServerChannelInitializer(final boolean errorOccurred) {
-            super(config, inboundSerialization, outboundSerialization, identity);
+        public DrasylNodeChannelInitializer(final DrasylConfig config,
+                                            final Identity identity,
+                                            final Serialization inboundSerialization,
+                                            final Serialization outboundSerialization,
+                                            final Consumer<Event> eventConsumer,
+                                            final boolean errorOccurred) {
+            this.config = requireNonNull(config);
+            this.identity = requireNonNull(identity);
+            this.inboundSerialization = requireNonNull(inboundSerialization);
+            this.outboundSerialization = requireNonNull(outboundSerialization);
             this.errorOccurred = errorOccurred;
+            this.eventConsumer = requireNonNull(eventConsumer);
         }
 
-        public DrasylNodeServerChannelInitializer() {
-            this(false);
+        public DrasylNodeChannelInitializer(final DrasylConfig config,
+                                            final Identity identity,
+                                            final Serialization inboundSerialization,
+                                            final Serialization outboundSerialization,
+                                            final Consumer<Event> eventConsumer) {
+            this(config, identity, inboundSerialization, outboundSerialization, eventConsumer, false);
         }
 
         @SuppressWarnings("java:S1188")
         @Override
         protected void initChannel(final Channel ch) {
+            final PluginManager pluginManager = new PluginManager(config, identity, inboundSerialization, outboundSerialization);
+            final PeersManager peersManager = new PeersManager(identity);
+
+            ch.pipeline().addFirst(NODE_LIFECYCLE_HANDLER, new NodeLifecycleHandler(ch));
+
             ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
-                @Override
-                public void channelRegistered(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelRegistered(ctx);
-
-                    pluginManager.beforeStart(ctx);
-                }
-
-                @Override
-                public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelActive(ctx);
-
-                    LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
-                    userEventTriggered(ctx, NodeUpEvent.of(Node.of(identity)));
-                    LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
-
-                    pluginManager.afterStart(ctx);
-                }
-
-                @Override
-                public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelInactive(ctx);
-
-                    pluginManager.beforeShutdown(ctx);
-
-                    if (!errorOccurred) {
-                        LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
-                        userEventTriggered(ctx, NodeDownEvent.of(Node.of(identity)));
-                        userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of(identity)));
-                        LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
-                    }
-                }
-
-                @Override
-                public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
-                    super.channelUnregistered(ctx);
-
-                    pluginManager.afterShutdown(ctx);
-                }
-
                 @SuppressWarnings("java:S2221")
                 @Override
                 public void userEventTriggered(final ChannelHandlerContext ctx,
                                                final Object evt) {
-                    if (evt instanceof Event) {
-                        if (evt instanceof NodeUnrecoverableErrorEvent) {
-                            errorOccurred = true;
-                        }
-
-                        onEvent((Event) evt);
-                    }
-                    else if (evt instanceof Resolve) {
+                    if (evt instanceof Resolve) {
                         final Resolve e = (Resolve) evt;
                         final IdentityPublicKey recipient = (IdentityPublicKey) e.recipient();
                         final CompletableFuture<Channel> future = e.future();
                         final Channel resolvedChannel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
                         resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
                     }
-                }
-
-                @Override
-                public void exceptionCaught(final ChannelHandlerContext ctx,
-                                            final Throwable e) {
-                    if (e instanceof UdpServer.BindFailedException || e instanceof TcpServer.BindFailedException) {
-                        LOG.warn("drasyl node faced unrecoverable error and must shut down:", e);
-                        userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(identity), e));
-                        ch.close();
-                    }
-                    else if (e instanceof EncoderException) {
-                        LOG.error(e);
-                    }
                     else {
-                        userEventTriggered(ctx, InboundExceptionEvent.of(e));
+                        ctx.fireUserEventTriggered(evt);
                     }
                 }
             });
 
-            ch.pipeline().addFirst(new PeersManagerHandler(peersManager));
+            ch.pipeline().addFirst(PLUGIN_MANAGER_HANDLER, new PluginManagerHandler(pluginManager));
 
-            super.initChannel(ch);
+            ch.pipeline().addFirst(PEERS_MANAGER_HANDLER, new PeersManagerHandler(peersManager));
+
+            ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
+
+            // convert outbound messages addresses to us to inbound messages
+            ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler(this.identity.getAddress()));
+
+            // discover nodes running within the same jvm
+            if (this.config.isIntraVmDiscoveryEnabled()) {
+                ch.pipeline().addFirst(INTRA_VM_DISCOVERY, new IntraVmDiscovery(this.identity.getAddress(), this.config.getNetworkId()));
+            }
+
+            if (this.config.isRemoteEnabled()) {
+                // convert Object <-> ApplicationMessage
+                ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(
+                        this.config.getNetworkId(),
+                        this.identity.getAddress(),
+                        this.identity.getProofOfWork(),
+                        this.inboundSerialization,
+                        this.outboundSerialization
+                ));
+
+                // route outbound messages to pre-configured ip addresses
+                if (!this.config.getRemoteStaticRoutes().isEmpty()) {
+                    ch.pipeline().addFirst(STATIC_ROUTES_HANDLER, new StaticRoutesHandler(this.config.getRemoteStaticRoutes()));
+                }
+
+                if (this.config.isRemoteLocalHostDiscoveryEnabled()) {
+                    // discover nodes running on the same local computer
+                    ch.pipeline().addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(
+                            this.identity.getAddress(),
+                            this.config.isRemoteLocalHostDiscoveryWatchEnabled(),
+                            this.config.getRemoteBindHost(),
+                            this.config.getRemoteLocalHostDiscoveryLeaseTime(),
+                            this.config.getRemoteLocalHostDiscoveryPath(),
+                            this.config.getNetworkId()
+                    ));
+                }
+
+                // discovery nodes on the local network
+                if (this.config.isRemoteLocalNetworkDiscoveryEnabled()) {
+                    ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery(
+                            this.identity.getAddress(),
+                            this.identity.getProofOfWork(),
+                            this.config.getRemotePingInterval(),
+                            this.config.getRemotePingTimeout(),
+                            this.config.getNetworkId()
+                    ));
+                }
+
+                // discover nodes on the internet
+                ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(
+                        this.config.getRemotePingMaxPeers(),
+                        this.config.getRemotePingTimeout(),
+                        this.config.getRemoteUniteMinInterval(),
+                        this.config.getRemoteSuperPeerEndpoints(),
+                        this.identity.getAddress(),
+                        this.identity.getProofOfWork(),
+                        this.config.getRemotePingInterval(),
+                        this.config.getRemotePingCommunicationTimeout(),
+                        this.config.isRemoteSuperPeerEnabled(),
+                        this.config.getNetworkId()
+                ));
+
+                // outbound message guards
+                ch.pipeline().addFirst(HOP_COUNT_GUARD, new HopCountGuard(this.config.getRemoteMessageHopLimit()));
+
+                if (this.config.isMonitoringEnabled()) {
+                    ch.pipeline().addFirst(MONITORING_HANDLER, new Monitoring(
+                            this.config.getMonitoringHostTag(),
+                            this.config.getMonitoringInfluxUri(),
+                            this.config.getMonitoringInfluxUser(),
+                            this.config.getMonitoringInfluxPassword(),
+                            this.config.getMonitoringInfluxDatabase(),
+                            this.config.getMonitoringInfluxReportingFrequency()
+                    ));
+                }
+
+                ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter(this.identity.getAddress()));
+
+                ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
+                    @Override
+                    protected void channelRead0(final ChannelHandlerContext ctx,
+                                                final AddressedMessage<?, ?> msg) throws InvalidMessageFormatException {
+                        if (msg.message() instanceof UnarmedMessage) {
+                            ctx.fireChannelRead(new AddressedMessage<>(((UnarmedMessage) msg.message()).read(), msg.address()));
+                        }
+                        else {
+                            ctx.fireChannelRead(msg.retain());
+                        }
+                    }
+                });
+
+                // arm outbound and disarm inbound messages
+                if (this.config.isRemoteMessageArmEnabled()) {
+                    ch.pipeline().addFirst(ARM_HANDLER, new ArmHandler(
+                            this.config.getRemoteMessageArmSessionMaxCount(),
+                            this.config.getRemoteMessageArmSessionMaxAgreements(),
+                            this.config.getRemoteMessageArmSessionExpireAfter(),
+                            this.config.getRemoteMessageArmSessionRetryInterval(),
+                            this.identity,
+                            this.config.getNetworkId()));
+                }
+
+                // filter out inbound messages with invalid proof of work or other network id
+                ch.pipeline().addFirst(INVALID_PROOF_OF_WORK_FILTER, new InvalidProofOfWorkFilter(this.identity.getAddress()));
+                ch.pipeline().addFirst(OTHER_NETWORK_FILTER, new OtherNetworkFilter(this.config.getNetworkId()));
+
+                // split messages too big for udp
+                ch.pipeline().addFirst(CHUNKING_HANDLER, new ChunkingHandler(
+                        this.identity.getAddress(),
+                        this.config.getRemoteMessageMaxContentLength(),
+                        this.config.getRemoteMessageMtu(),
+                        this.config.getRemoteMessageComposedMessageTransferTimeout()
+                ));
+
+                // convert RemoteMessage <-> ByteBuf
+                ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
+
+                if (this.config.isRemoteLocalNetworkDiscoveryEnabled()) {
+                    ch.pipeline().addFirst(UDP_MULTICAST_SERVER, new UdpMulticastServer(this.identity.getAddress()));
+                }
+
+                // tcp fallback
+                if (this.config.isRemoteTcpFallbackEnabled()) {
+                    if (!this.config.isRemoteSuperPeerEnabled()) {
+                        ch.pipeline().addFirst(TCP_SERVER, new TcpServer(
+                                this.config.getRemoteTcpFallbackServerBindHost(),
+                                this.config.getRemoteTcpFallbackServerBindPort(),
+                                this.config.getRemotePingTimeout()
+                        ));
+                    }
+                    else {
+                        ch.pipeline().addFirst(TCP_CLIENT, new TcpClient(
+                                this.config.getRemoteSuperPeerEndpoints(),
+                                this.config.getRemoteTcpFallbackClientTimeout(),
+                                this.config.getRemoteTcpFallbackClientAddress()
+                        ));
+                    }
+                }
+
+                // udp server
+                if (this.config.isRemoteExposeEnabled()) {
+                    ch.pipeline().addFirst(PORT_MAPPER, new PortMapper(this.identity.getAddress()));
+                }
+                ch.pipeline().addFirst(UDP_SERVER, new UdpServer(
+                        this.identity.getAddress(),
+                        this.config.getRemoteBindHost(),
+                        this.config.getRemoteBindPort()
+                ));
+            }
+        }
+
+        private static class PluginManagerHandler extends ChannelInboundHandlerAdapter {
+            private final PluginManager pluginManager;
+
+            public PluginManagerHandler(final PluginManager pluginManager) {
+                this.pluginManager = pluginManager;
+            }
+
+            @Override
+            public void channelRegistered(final ChannelHandlerContext ctx) throws Exception {
+                super.channelRegistered(ctx);
+
+                pluginManager.beforeStart(ctx);
+            }
+
+            @Override
+            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+                super.channelActive(ctx);
+
+                pluginManager.afterStart(ctx);
+            }
+
+            @Override
+            public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+                super.channelInactive(ctx);
+
+                pluginManager.beforeShutdown(ctx);
+            }
+
+            @Override
+            public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
+                super.channelUnregistered(ctx);
+
+                pluginManager.afterShutdown(ctx);
+            }
+        }
+
+        private class NodeLifecycleHandler extends ChannelInboundHandlerAdapter {
+            private final Channel ch;
+
+            public NodeLifecycleHandler(final Channel ch) {
+                this.ch = ch;
+            }
+
+            @Override
+            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+                super.channelActive(ctx);
+
+                LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
+                userEventTriggered(ctx, NodeUpEvent.of(Node.of(identity)));
+                LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
+            }
+
+            @Override
+            public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+                super.channelInactive(ctx);
+
+                if (!errorOccurred) {
+                    LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
+                    userEventTriggered(ctx, NodeDownEvent.of(Node.of(identity)));
+                    userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of(identity)));
+                    LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
+                }
+            }
+
+            @SuppressWarnings("java:S2221")
+            @Override
+            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                           final Object evt) {
+                if (evt instanceof Event) {
+                    if (evt instanceof NodeUnrecoverableErrorEvent) {
+                        errorOccurred = true;
+                    }
+
+                    eventConsumer.accept((Event) evt);
+                }
+                else {
+                    // drop all other events
+                }
+            }
+
+            @Override
+            public void exceptionCaught(final ChannelHandlerContext ctx,
+                                        final Throwable e) {
+                if (e instanceof UdpServer.BindFailedException || e instanceof TcpServer.BindFailedException) {
+                    LOG.warn("drasyl node faced unrecoverable error and must shut down:", e);
+                    userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(identity), e));
+                    ch.close();
+                }
+                else if (e instanceof EncoderException) {
+                    LOG.error(e);
+                }
+                else {
+                    userEventTriggered(ctx, InboundExceptionEvent.of(e));
+                }
+            }
+        }
+
+        /**
+         * Routes inbound messages to the correct child channel and broadcast events to all child
+         * channels.
+         */
+        private static class ChildChannelRouter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+            @Override
+            protected void channelRead0(final ChannelHandlerContext ctx,
+                                        final AddressedMessage<?, ?> msg) {
+                if (msg.address() instanceof IdentityPublicKey) {
+                    Object o = msg.message();
+                    final IdentityPublicKey sender = (IdentityPublicKey) msg.address();
+
+                    // create/get channel
+                    final Channel channel = ((DefaultDrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
+
+                    if (o == null) {
+                        o = NULL;
+                    }
+
+                    // pass message to channel
+                    channel.pipeline().fireChannelRead(o);
+                }
+                else {
+                    ctx.fireChannelRead(msg);
+                }
+            }
         }
     }
 
     /**
      * Initialize child {@link Channel}s used by {@link DrasylNode}.
      */
-    public static class DrasylNodeChannelInitializer extends ChannelInitializer<Channel> {
-        public static final String MESSAGE_ACCEPTOR = "NULL_MESSAGE_UNWRAPPER";
+    public static class DrasylNodeChildChannelInitializer extends ChannelInitializer<Channel> {
+        public static final String NULL_MESSAGE_UNWRAPPER = "NULL_MESSAGE_UNWRAPPER";
         public static final String INACTIVITY_CLOSER = "INACTIVITY_CLOSER";
         public static final String INACTIVITY_DETECTOR = "INACTIVITY_DETECTOR";
+        private final DrasylConfig config;
         private final Consumer<Event> onEvent;
 
-        public DrasylNodeChannelInitializer(final Consumer<Event> onEvent) {
+        public DrasylNodeChildChannelInitializer(final DrasylConfig config,
+                                                 final Consumer<Event> onEvent) {
             this.onEvent = requireNonNull(onEvent);
+            this.config = requireNonNull(config);
         }
 
         @Override
         protected void initChannel(final Channel ch) {
             // emit MessageEvents for every inbound message
-            ch.pipeline().addFirst(MESSAGE_ACCEPTOR, new ChannelInboundHandlerAdapter() {
+            ch.pipeline().addFirst(NULL_MESSAGE_UNWRAPPER, new ChannelInboundHandlerAdapter() {
                 @Override
                 public void channelRead(final ChannelHandlerContext ctx,
                                         Object msg) {
@@ -602,7 +872,7 @@ public abstract class DrasylNode {
             });
 
             // close inactive channels (to free up resources)
-            final int inactivityTimeout = (int) ch.parent().attr(CONFIG_ATTR_KEY).get().getChannelInactivityTimeout().getSeconds();
+            final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
             if (inactivityTimeout > 0) {
                 ch.pipeline().addFirst(INACTIVITY_CLOSER, new ChannelInboundHandlerAdapter() {
                     @Override

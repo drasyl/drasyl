@@ -21,25 +21,22 @@
  */
 package org.drasyl.remote.handler;
 
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.remote.protocol.ChunkMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
 /**
  * This handler filters out all messages received from other networks.
  */
 @SuppressWarnings("java:S110")
-@Sharable
 public final class OtherNetworkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
-    public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
+    private final int networkId;
 
-    private OtherNetworkFilter() {
-        // singleton
+    public OtherNetworkFilter(final int networkId) {
+        this.networkId = networkId;
     }
 
     @Override
@@ -47,7 +44,7 @@ public final class OtherNetworkFilter extends SimpleChannelInboundHandler<Addres
                                 final AddressedMessage<?, ?> msg) throws OtherNetworkException {
         if (msg.message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
-            if (remoteMsg instanceof ChunkMessage || ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId() == remoteMsg.getNetworkId()) {
+            if (remoteMsg instanceof ChunkMessage || networkId == remoteMsg.getNetworkId()) {
                 ctx.fireChannelRead(msg.retain());
             }
             else {

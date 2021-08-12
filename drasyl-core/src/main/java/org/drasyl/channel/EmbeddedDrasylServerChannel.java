@@ -25,18 +25,12 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.DrasylConfig;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
-
-import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 
 /**
  * A {@link EmbeddedChannel} based on a {@link EmbeddedDrasylServerChannel}.
@@ -44,22 +38,8 @@ import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
 public class EmbeddedDrasylServerChannel extends EmbeddedChannel implements ServerChannel {
     private Queue<Object> userEvents;
 
-    public EmbeddedDrasylServerChannel(final DrasylConfig config,
-                                       final ChannelHandler... handlers) {
-        attr(CONFIG_ATTR_KEY).set(requireNonNull(config));
-
-        pipeline().addLast(new ChannelInitializer<>() {
-            @Override
-            protected void initChannel(final Channel ch) {
-                final ChannelPipeline pipeline = ch.pipeline();
-                for (final ChannelHandler h : handlers) {
-                    if (h == null) {
-                        break;
-                    }
-                    pipeline.addLast(h);
-                }
-            }
-        });
+    public EmbeddedDrasylServerChannel(final ChannelHandler... handlers) {
+        super(handlers);
 
         pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override

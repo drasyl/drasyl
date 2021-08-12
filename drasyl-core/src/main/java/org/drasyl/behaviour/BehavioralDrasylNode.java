@@ -21,6 +21,7 @@
  */
 package org.drasyl.behaviour;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import org.drasyl.DrasylConfig;
@@ -28,9 +29,8 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.behaviour.Behavior.BehaviorBuilder;
-import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.event.Event;
-import org.drasyl.plugin.PluginManager;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -67,12 +67,12 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     }
 
     @SuppressWarnings("unused")
-    protected BehavioralDrasylNode(final DrasylBootstrap bootstrap,
-                                   final PluginManager pluginManager,
+    protected BehavioralDrasylNode(final Identity identity,
+                                   final ServerBootstrap bootstrap,
                                    final ChannelFuture channelFuture,
                                    final Channel channel,
                                    final Behavior behavior) {
-        super(bootstrap, pluginManager, channelFuture);
+        super(identity, bootstrap, channelFuture);
         logger = LoggerFactory.getLogger(getClass());
         if (behavior instanceof DeferredBehavior) {
             this.behavior = ((DeferredBehavior) behavior).apply(this);
@@ -83,10 +83,10 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     }
 
     @SuppressWarnings("unused")
-    protected BehavioralDrasylNode(final DrasylBootstrap bootstrap,
-                                   final PluginManager pluginManager,
+    protected BehavioralDrasylNode(final Identity identity,
+                                   final ServerBootstrap bootstrap,
                                    final ChannelFuture channelFuture) {
-        super(bootstrap, pluginManager, channelFuture);
+        super(identity, bootstrap, channelFuture);
         logger = LoggerFactory.getLogger(getClass());
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {

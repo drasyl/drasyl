@@ -21,14 +21,12 @@
  */
 package org.drasyl.remote.handler;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.Nonce;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,17 +39,9 @@ import java.net.SocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OtherNetworkFilterTest {
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylConfig config;
-    @Mock
-    private Identity identity;
-    @Mock
-    private PeersManager peersManager;
     private IdentityPublicKey senderPublicKey;
     private IdentityPublicKey recipientPublicKey;
     private Nonce correspondingId;
@@ -65,11 +55,9 @@ class OtherNetworkFilterTest {
 
     @Test
     void shouldDropMessagesFromOtherNetworks() {
-        when(config.getNetworkId()).thenReturn(123);
-
-        final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
+        final ChannelHandler handler = new OtherNetworkFilter(123);
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
@@ -82,11 +70,9 @@ class OtherNetworkFilterTest {
 
     @Test
     void shouldPassMessagesFromSameNetwork(@Mock final SocketAddress sender) {
-        when(config.getNetworkId()).thenReturn(123);
-
-        final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
+        final ChannelHandler handler = new OtherNetworkFilter(123);
         final AcknowledgementMessage message = AcknowledgementMessage.of(123, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+        final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
         try {
             pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 

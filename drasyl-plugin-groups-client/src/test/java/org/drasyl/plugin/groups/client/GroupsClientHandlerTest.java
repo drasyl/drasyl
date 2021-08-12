@@ -23,7 +23,6 @@ package org.drasyl.plugin.groups.client;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
 import org.drasyl.channel.Serialization;
@@ -32,7 +31,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.event.GroupLeftEvent;
@@ -76,12 +74,8 @@ class GroupsClientHandlerTest {
     private HashMap<Group, Future<?>> renewTasks;
     @Mock
     private Map<Group, GroupUri> groups;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylConfig config;
     @Mock
     private Identity identity;
-    @Mock
-    private PeersManager peersManager;
     @Mock
     private ProofOfWork proofOfWork;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -127,7 +121,7 @@ class GroupsClientHandlerTest {
         void shouldDeregisterFromGroups() {
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel();
             try {
                 pipeline.pipeline().addLast("handler", handler);
                 pipeline.pipeline().remove("handler");
@@ -147,7 +141,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldPassThroughOnNotMatchingEvent(@Mock final NodeOfflineEvent event) {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.pipeline().fireUserEventTriggered(event);
 
@@ -164,7 +158,7 @@ class GroupsClientHandlerTest {
             final String credentials = "test";
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 when(uri.getGroup()).thenReturn(group);
                 when(uri.getCredentials()).thenReturn(credentials);
@@ -190,7 +184,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessMemberJoined() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
@@ -206,7 +200,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessMemberLeft() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
@@ -224,7 +218,7 @@ class GroupsClientHandlerTest {
             when(identity.getIdentityPublicKey()).thenReturn(publicKey);
 
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
 
@@ -242,7 +236,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessWelcome() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
 
@@ -262,7 +256,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessJoinFailed() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
                 final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);

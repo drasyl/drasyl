@@ -28,11 +28,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.EmbeddedDrasylServerChannel;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.remote.handler.tcp.TcpClient.TcpClientHandler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,13 +55,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class TcpClientTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylConfig config;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
-    @Mock(answer = RETURNS_DEEP_STUBS)
     private Bootstrap bootstrap;
-    @Mock
-    private PeersManager peersManager;
     @Mock
     private Map<SocketAddress, Channel> clientChannels;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -74,6 +66,9 @@ public class TcpClientTest {
     private AtomicLong noResponseFromSuperPeerSince;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture superPeerChannel;
+    private final Duration timeout = Duration.ofSeconds(1);
+    @Mock
+    private InetSocketAddress address;
 
     @Nested
     class StopServer {
@@ -81,8 +76,8 @@ public class TcpClientTest {
         void shouldStopClientOnChannelInactive() {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.pipeline().fireChannelInactive();
 
@@ -99,8 +94,8 @@ public class TcpClientTest {
         @Test
         void shouldPasstroughInboundMessages(@Mock final InetSocketAddress sender,
                                              @Mock final Object msg) {
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
@@ -122,8 +117,8 @@ public class TcpClientTest {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1337);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
@@ -143,8 +138,8 @@ public class TcpClientTest {
         @Test
         void shouldPasstroughOutboundMessagesWhenNoTcpConnectionIsPresent(@Mock final InetSocketAddress recipient,
                                                                           @Mock final ByteBuf msg) {
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
@@ -165,8 +160,8 @@ public class TcpClientTest {
             when(superPeerChannel.isSuccess()).thenReturn(true);
             when(superPeerChannel.channel().writeAndFlush(any())).thenReturn(channelFuture);
 
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, superPeerChannel);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
@@ -193,8 +188,8 @@ public class TcpClientTest {
             when(channelFuture.isSuccess()).thenReturn(true);
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, null);
-            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(config, handler);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, null);
+            final EmbeddedDrasylServerChannel pipeline = new EmbeddedDrasylServerChannel(handler);
             try {
                 pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
 

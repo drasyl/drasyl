@@ -46,8 +46,6 @@ import java.net.SocketAddress;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.channel.DefaultDrasylServerChannel.CONFIG_ATTR_KEY;
-
 /**
  * A simple util/helper class for the {@link ArmHandler} that provides some static methods.
  */
@@ -113,6 +111,7 @@ public final class ArmHandlerUtil {
      * @param recipientsKey     the public key of the recipient
      * @param session           the corresponding session
      * @param identity
+     * @param networkId
      * @return the future for the acknowledgement message
      */
     public static CompletableFuture<Void> sendAck(final Crypto cryptoInstance,
@@ -120,7 +119,8 @@ public final class ArmHandlerUtil {
                                                   final SocketAddress recipientsAddress,
                                                   final IdentityPublicKey recipientsKey,
                                                   final Session session,
-                                                  final Identity identity) {
+                                                  final Identity identity,
+                                                  final int networkId) {
         final Optional<Agreement> agreement = session.getCurrentInactiveAgreement().getValue();
 
         if (agreement.isPresent() && agreement.get().getAgreementId().isPresent()) {
@@ -129,7 +129,7 @@ public final class ArmHandlerUtil {
             // encrypt message with long time key
             return ArmHandlerUtil.sendEncrypted(cryptoInstance, session.getLongTimeAgreementPair(), session.getLongTimeAgreementId(), ctx, recipientsAddress,
                     KeyExchangeAcknowledgementMessage.of(
-                            ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(),
+                            networkId,
                             identity.getIdentityPublicKey(),
                             identity.getProofOfWork(),
                             recipientsKey,
@@ -158,6 +158,7 @@ public final class ArmHandlerUtil {
      * @param recipient      the recipient of the agreement
      * @param recipientsKey  the public key of the recipient
      * @param identity
+     * @param networkId
      */
     public static void sendKeyExchangeMsg(final Crypto cryptoInstance,
                                           final ChannelHandlerContext ctx,
@@ -165,9 +166,10 @@ public final class ArmHandlerUtil {
                                           final Agreement agreement,
                                           final SocketAddress recipient,
                                           final IdentityPublicKey recipientsKey,
-                                          final Identity identity) {
+                                          final Identity identity,
+                                          final int networkId) {
         final FullReadMessage<?> msg = KeyExchangeMessage.of(
-                ctx.channel().attr(CONFIG_ATTR_KEY).get().getNetworkId(),
+                networkId,
                 identity.getIdentityPublicKey(),
                 identity.getProofOfWork(),
                 recipientsKey,

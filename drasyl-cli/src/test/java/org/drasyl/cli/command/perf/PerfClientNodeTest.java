@@ -21,13 +21,13 @@
  */
 package org.drasyl.cli.command.perf;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylAddress;
 import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behaviors;
-import org.drasyl.channel.DrasylBootstrap;
 import org.drasyl.cli.command.perf.PerfClientNode.DirectConnectionTimeout;
 import org.drasyl.cli.command.perf.PerfClientNode.OnlineTimeout;
 import org.drasyl.cli.command.perf.PerfClientNode.RequestSessionTimeout;
@@ -43,6 +43,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,7 +82,9 @@ class PerfClientNodeTest {
     private EventLoopGroup eventLoopGroup;
     private Set<DrasylAddress> directConnections;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylBootstrap bootstrap;
+    private Identity identity;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ServerBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -93,7 +96,7 @@ class PerfClientNodeTest {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
         directConnections = new HashSet<>();
-        underTest = new PerfClientNode(doneFuture, printStream, eventLoopGroup, directConnections, bootstrap, pluginManager, channelFuture);
+        underTest = new PerfClientNode(doneFuture, printStream, eventLoopGroup, directConnections, identity, bootstrap, channelFuture);
     }
 
     @Nested
