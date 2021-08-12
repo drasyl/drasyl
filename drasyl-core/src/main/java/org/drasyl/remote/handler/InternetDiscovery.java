@@ -95,7 +95,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     private Future<?> heartbeatDisposable;
     private IdentityPublicKey bestSuperPeer;
 
-    @SuppressWarnings("java:S107")
+    @SuppressWarnings({ "java:S107", "java:S2384" })
     public InternetDiscovery(final int networkId,
                              final int pingMaxPeers,
                              final Duration pingInterval,
@@ -106,19 +106,19 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                              final Duration uniteMinInterval,
                              final DrasylAddress myAddress,
                              final ProofOfWork myProofOfWork) {
-        this.pingInterval = pingInterval;
-        this.pingTimeout = pingTimeout;
-        this.pingCommunicationTimeout = pingCommunicationTimeout;
+        this.pingInterval = requireNonNull(pingInterval);
+        this.pingTimeout = requireNonNull(pingTimeout);
+        this.pingCommunicationTimeout = requireNonNull(pingCommunicationTimeout);
         this.superPeerEnabled = superPeerEnabled;
-        this.superPeerEndpoints = superPeerEndpoints;
+        this.superPeerEndpoints = requireNonNull(superPeerEndpoints);
         this.networkId = networkId;
         openPingsCache = CacheBuilder.newBuilder()
                 .maximumSize(pingMaxPeers)
                 .expireAfterWrite(pingTimeout)
                 .<Nonce, Ping>build()
                 .asMap();
-        this.myAddress = myAddress;
-        this.myProofOfWork = myProofOfWork;
+        this.myAddress = requireNonNull(myAddress);
+        this.myProofOfWork = requireNonNull(myProofOfWork);
         directConnectionPeers = new HashSet<>();
         if (uniteMinInterval.toMillis() > 0) {
             uniteAttemptsCache = CacheBuilder.newBuilder()
@@ -152,15 +152,15 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         this.openPingsCache = openPingsCache;
         this.myAddress = requireNonNull(myAddress);
         this.myProofOfWork = requireNonNull(myProofOfWork);
-        this.uniteAttemptsCache = uniteAttemptsCache;
-        this.directConnectionPeers = directConnectionPeers;
-        this.peers = peers;
-        this.superPeers = superPeers;
-        this.pingInterval = pingInterval;
-        this.pingTimeout = pingTimeout;
-        this.pingCommunicationTimeout = pingCommunicationTimeout;
+        this.uniteAttemptsCache = requireNonNull(uniteAttemptsCache);
+        this.directConnectionPeers = requireNonNull(directConnectionPeers);
+        this.peers = requireNonNull(peers);
+        this.superPeers = requireNonNull(superPeers);
+        this.pingInterval = requireNonNull(pingInterval);
+        this.pingTimeout = requireNonNull(pingTimeout);
+        this.pingCommunicationTimeout = requireNonNull(pingCommunicationTimeout);
         this.superPeerEnabled = superPeerEnabled;
-        this.superPeerEndpoints = superPeerEndpoints;
+        this.superPeerEndpoints = requireNonNull(superPeerEndpoints);
         this.networkId = networkId;
         this.bestSuperPeer = bestSuperPeer;
     }
@@ -388,6 +388,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
      * @param recipient    the recipient socket address
      * @param sender       the sender socket address
      */
+    @SuppressWarnings("DuplicatedCode")
     private void sendUnites(final ChannelHandlerContext ctx,
                             final IdentityPublicKey senderKey,
                             final IdentityPublicKey recipientKey,
@@ -429,28 +430,22 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
+        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress && ((RemoteMessage) ((AddressedMessage<?, ?>) msg).message()).getRecipient() != null) {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
 
-            if (sender instanceof InetSocketAddress && remoteMsg.getRecipient() != null) {
-                // This message is for us and we will fully decode it
-                if (myAddress.equals(remoteMsg.getRecipient()) && remoteMsg instanceof FullReadMessage) {
-                    handleMessage(ctx, (InetSocketAddress) sender, (FullReadMessage<?>) remoteMsg);
-                }
-                else if (!superPeerEnabled) {
-                    if (!processMessage(ctx, remoteMsg.getRecipient(), remoteMsg, ctx.newPromise())) {
-                        // passthrough message
-                        ctx.fireChannelRead(remoteMsg);
-                    }
-                }
-                else if (LOG.isDebugEnabled()) {
-                    LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", remoteMsg, sender, remoteMsg.getRecipient());
+            // this message is for us and we will fully decode it
+            if (myAddress.equals(remoteMsg.getRecipient()) && remoteMsg instanceof FullReadMessage) {
+                handleMessage(ctx, (InetSocketAddress) sender, (FullReadMessage<?>) remoteMsg);
+            }
+            else if (!superPeerEnabled) {
+                if (!processMessage(ctx, remoteMsg.getRecipient(), remoteMsg, ctx.newPromise())) {
+                    // passthrough message
+                    ctx.fireChannelRead(remoteMsg);
                 }
             }
-            else {
-                // passthrough message
-                ctx.fireChannelRead(msg);
+            else if (LOG.isDebugEnabled()) {
+                LOG.debug("We're not a super peer. Message `{}` from `{}` to `{}` for relaying was dropped.", remoteMsg, sender, remoteMsg.getRecipient());
             }
         }
         else {

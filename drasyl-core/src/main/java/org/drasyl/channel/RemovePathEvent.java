@@ -24,9 +24,17 @@ package org.drasyl.channel;
 import com.google.auto.value.AutoValue;
 import org.drasyl.DrasylAddress;
 
+/**
+ * Signals that a direct routing path to {@link RemovePathEvent#getAddress()} is no longer
+ * available.
+ */
 @SuppressWarnings({ "java:S118", "java:S2974" })
 @AutoValue
 public abstract class RemovePathEvent implements PathEvent {
+    private RemovePathEvent() {
+        // NOOP
+    }
+
     public static RemovePathEvent of(final DrasylAddress publicKey, final Object path) {
         return new AutoValue_RemovePathEvent(publicKey, path);
     }

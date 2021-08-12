@@ -24,9 +24,17 @@ package org.drasyl.channel;
 import com.google.auto.value.AutoValue;
 import org.drasyl.identity.IdentityPublicKey;
 
+/**
+ * Signals that a direct routing path has been discovered to {@link AddPathAndChildren#getAddress()}
+ * and that this peer is registered at us as a children.
+ */
 @SuppressWarnings({ "java:S118", "java:S2974" })
 @AutoValue
 public abstract class AddPathAndChildren implements PathEvent {
+    private AddPathAndChildren() {
+        // NOOP
+    }
+
     public static AddPathAndChildren of(final IdentityPublicKey publicKey,
                                         final Object path) {
         return new AutoValue_AddPathAndChildren(publicKey, path);

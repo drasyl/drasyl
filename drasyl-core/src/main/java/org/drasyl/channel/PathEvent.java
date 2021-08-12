@@ -23,6 +23,17 @@ package org.drasyl.channel;
 
 import org.drasyl.DrasylAddress;
 
+/**
+ * Classes implementing this interface signals that a direct routing path availability and/or the
+ * relation (children/super peer) to a peer has changed.
+ *
+ * @see AddPathAndChildren
+ * @see AddPathAndSuperPeer
+ * @see AddPathEvent
+ * @see RemoveChildrenAndPath
+ * @see RemovePathEvent
+ * @see RemoveSuperPeerAndPath
+ */
 public interface PathEvent {
     DrasylAddress getAddress();
 
