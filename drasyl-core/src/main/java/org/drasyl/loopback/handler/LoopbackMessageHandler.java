@@ -26,6 +26,8 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,6 +36,7 @@ import static java.util.Objects.requireNonNull;
  * addressed to the local node.
  */
 public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(LoopbackMessageHandler.class);
     private final DrasylAddress myAddress;
 
     public LoopbackMessageHandler(final DrasylAddress myAddress) {
@@ -46,7 +49,9 @@ public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage) {
             if (myAddress.equals(((AddressedMessage<?, ?>) msg).address())) {
+                LOG.trace("Outbound message `{}` is addressed to us. Convert to inbound message.", ((AddressedMessage<?, ?>) msg)::message);
                 ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), myAddress));
+                promise.setSuccess();
             }
             else {
                 ctx.write(msg, promise);
