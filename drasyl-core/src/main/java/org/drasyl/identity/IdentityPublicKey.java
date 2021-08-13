@@ -50,7 +50,7 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
     public static final short KEY_LENGTH_AS_BYTES = PK_LONG_TIME_KEY_LENGTH;
     public static final short KEY_LENGTH_AS_STRING = KEY_LENGTH_AS_BYTES * 2;
     private static final InternPool<IdentityPublicKey> POOL = new InternPool<>();
-    private final Worm<KeyAgreementPublicKey> convertedKey = Worm.of();
+    private final transient Worm<KeyAgreementPublicKey> convertedKey = Worm.of();
 
     /**
      * @return this public key as key agreement key (curve25519)
