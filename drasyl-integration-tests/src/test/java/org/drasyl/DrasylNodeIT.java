@@ -24,6 +24,7 @@ package org.drasyl;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -593,6 +594,7 @@ class DrasylNodeIT {
                                       final Object msg,
                                       final ChannelPromise promise) {
                         LOG.trace("UDP message blocked: {}", msg);
+                        ReferenceCountUtil.release(msg);
                         promise.setSuccess();
                     }
                 });
