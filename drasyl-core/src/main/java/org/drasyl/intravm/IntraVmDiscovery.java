@@ -70,7 +70,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         if (msg instanceof AddressedMessage) {
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
@@ -81,11 +81,13 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
                 ctx.write(msg, promise);
             }
             else {
+                LOG.debug("Send message `{}` via Intra VM Discovery.", ((AddressedMessage<?, ?>) msg)::message);
                 discoveree.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), myAddress));
+                promise.setSuccess();
             }
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 
