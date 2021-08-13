@@ -52,9 +52,14 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
 
             final ByteBuf buffer = ctx.alloc().ioBuffer();
-            remoteMsg.writeTo(buffer);
-
-            out.add(new AddressedMessage<>(buffer, msg.address()));
+            try {
+                remoteMsg.writeTo(buffer);
+                out.add(new AddressedMessage<>(buffer, msg.address()));
+            }
+            catch (final InvalidMessageFormatException e) {
+                buffer.release();
+                throw e;
+            }
         }
         else {
             out.add(msg);

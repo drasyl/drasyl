@@ -241,15 +241,17 @@ public class TcpServer extends ChannelDuplexHandler {
 
                 if (!Unpooled.wrappedBuffer(MAGIC_NUMBER.toByteArray()).equals(magicNumber)) {
                     LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message.", nettyCtx.channel()::remoteAddress);
+                    msg.release();
                     nettyCtx.close();
                 }
                 else {
                     msg.resetReaderIndex();
+                    final SocketAddress sender = nettyCtx.channel().remoteAddress();
+                    ctx.fireChannelRead(new AddressedMessage<>(msg.retain(), sender));
                 }
-            }
 
-            final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
-            ctx.fireChannelRead(new AddressedMessage<>(msg.retain(), sender));
+                magicNumber.release();
+            }
         }
     }
 

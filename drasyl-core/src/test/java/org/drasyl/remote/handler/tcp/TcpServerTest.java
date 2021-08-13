@@ -53,6 +53,8 @@ import java.util.Map;
 import static io.netty.util.CharsetUtil.UTF_8;
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER;
+import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER_LENGTH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -101,19 +103,13 @@ class TcpServerTest {
     @Nested
     class StopServer {
         @Test
-        void shouldStopServerOnChannelInactive() {
+        void shouldStopServerOnChannelInactive(@Mock final ChannelHandlerContext ctx) {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
-            try {
-                pipeline.pipeline().fireChannelInactive();
+            handler.channelInactive(ctx);
 
-                verify(serverChannel).close();
-            }
-            finally {
-                pipeline.close();
-            }
+            verify(serverChannel).close();
         }
     }
 
@@ -217,6 +213,8 @@ class TcpServerTest {
         @Test
         void shouldPassInboundMessageToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx,
                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
+            when(msg.readableBytes()).thenReturn((int) MAGIC_NUMBER_LENGTH);
+            when(msg.readBytes(MAGIC_NUMBER_LENGTH)).thenReturn(Unpooled.wrappedBuffer(MAGIC_NUMBER.toByteArray()));
             when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
 
             new TcpServerHandler(clients, ctx).channelRead0(nettyCtx, msg);

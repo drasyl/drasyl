@@ -148,6 +148,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                       final boolean superPeerEnabled,
                       final Set<Endpoint> superPeerEndpoints,
                       final int networkId,
+                      final Future<?> heartbeatDisposable,
                       final IdentityPublicKey bestSuperPeer) {
         this.openPingsCache = openPingsCache;
         this.myAddress = requireNonNull(myAddress);
@@ -162,6 +163,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         this.superPeerEnabled = superPeerEnabled;
         this.superPeerEndpoints = requireNonNull(superPeerEndpoints);
         this.networkId = networkId;
+        this.heartbeatDisposable = heartbeatDisposable;
         this.bestSuperPeer = bestSuperPeer;
     }
 

@@ -92,7 +92,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         directConnectionPeers = new HashSet<>();
         superPeers = new HashSet<>();
         final Identity identity = IdentityTestUtil.ID_1;
-        handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, directConnectionPeers, superPeers, pingInterval, pingTimeout, pingCommunicationTimeout, superPeerEnabled, superPeerEndpoints, networkId, bestSuperPeer);
+        handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, directConnectionPeers, superPeers, pingInterval, pingTimeout, pingCommunicationTimeout, superPeerEnabled, superPeerEndpoints, networkId, null, bestSuperPeer);
 
         ctx = new MyHandlerContext();
         recipient = new MyAddress();
@@ -411,7 +411,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public ChannelPromise sync() throws InterruptedException {
+        public ChannelPromise sync() {
             return null;
         }
 
@@ -421,7 +421,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public ChannelPromise await() throws InterruptedException {
+        public ChannelPromise await() {
             return null;
         }
 
@@ -431,12 +431,12 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
+        public boolean await(final long timeout, final TimeUnit unit) {
             return false;
         }
 
         @Override
-        public boolean await(final long timeoutMillis) throws InterruptedException {
+        public boolean await(final long timeoutMillis) {
             return false;
         }
 

@@ -43,6 +43,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
@@ -149,7 +150,7 @@ public class UdpServer extends ChannelDuplexHandler {
 
     private void stopServer() {
         if (channel != null) {
-            final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+            final SocketAddress socketAddress = channel.localAddress();
             LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
             // shutdown server
             channel.close().awaitUninterruptibly();

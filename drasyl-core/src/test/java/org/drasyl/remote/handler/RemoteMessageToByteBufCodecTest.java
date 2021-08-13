@@ -34,6 +34,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.ApplicationMessage;
+import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.remote.protocol.PartialReadMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
@@ -119,7 +120,7 @@ class RemoteMessageToByteBufCodecTest {
         @Test
         void shouldCompleteFutureExceptionallyWhenConversionFail(@Mock final SocketAddress recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage messageEnvelope) throws IOException {
-            doThrow(RuntimeException.class).when(messageEnvelope).writeTo(any());
+            doThrow(InvalidMessageFormatException.class).when(messageEnvelope).writeTo(any());
 
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
