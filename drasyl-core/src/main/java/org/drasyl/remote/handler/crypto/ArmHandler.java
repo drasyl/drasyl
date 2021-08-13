@@ -130,7 +130,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                                     final FullReadMessage<?> msg,
                                     final ChannelPromise promise) {
         final IdentityPublicKey recipientsKey = msg.getRecipient();
-        final Session session = getSession(ctx, recipientsKey);
+        final Session session = getSession(recipientsKey);
 
         if (this.maxAgreements > 0) {
             ctx.executor().execute(() -> checkForRenewAgreement(ctx, session, recipient, recipientsKey));
@@ -159,7 +159,7 @@ public class ArmHandler extends ChannelDuplexHandler {
                                    final ArmedMessage msg,
                                    final ChannelPromise promise) throws IOException {
         final IdentityPublicKey recipientsKey = msg.getSender(); // on inbound our recipient is the sender of the message
-        final Session session = getSession(ctx, recipientsKey);
+        final Session session = getSession(recipientsKey);
         final FullReadMessage<?> plaintextMsg;
         final AgreementId agreementId = msg.getAgreementId();
         boolean longTimeEncryptionUsed = false;
@@ -228,12 +228,10 @@ public class ArmHandler extends ChannelDuplexHandler {
     /**
      * Gets or computes the {@link Session} for the corresponding {@code recipientsKey}.
      *
-     * @param ctx           the handler context
      * @param recipientsKey the recipients key
      * @return corresponding {@link Session}
      */
-    private Session getSession(final ChannelHandlerContext ctx,
-                               final IdentityPublicKey recipientsKey) {
+    private Session getSession(final IdentityPublicKey recipientsKey) {
         return sessions.computeIfAbsent(recipientsKey, k -> {
             try {
                 final SessionPair longTimeSession = crypto.generateSessionKeyPair(
