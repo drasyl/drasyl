@@ -33,8 +33,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -42,12 +40,10 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.drasyl.util.NettyUtil.getBestSocketChannel;
 
 /**
@@ -157,20 +153,9 @@ public class TcpClient extends ChannelDuplexHandler {
             }
             else {
                 // pass through message
-                final ChannelPromise promise1 = ctx.newPromise();
-                ctx.write(new AddressedMessage<>(byteBufMsg, recipient)).addListener(future -> {
-                    if (future.isSuccess()) {
-                        promise1.setSuccess();
-                    }
-                    else {
-                        promise1.setFailure(future.cause());
-                    }
-                });
+                ctx.write(new AddressedMessage<>(byteBufMsg, recipient), promise);
 
-                FutureCombiner.getInstance()
-                        .add(FutureUtil.toFuture(promise1))
-                        .add(checkForUnreachableSuperPeers(ctx, recipient))
-                        .combine(FutureUtil.toFuture(promise));
+                checkForUnreachableSuperPeers(ctx, recipient);
             }
         }
         else {
@@ -193,8 +178,8 @@ public class TcpClient extends ChannelDuplexHandler {
      * received from a super peer and then tries to establish a fallback TCP connection if
      * necessary.
      */
-    private CompletableFuture<Void> checkForUnreachableSuperPeers(final ChannelHandlerContext ctx,
-                                                                  final SocketAddress recipient) {
+    private void checkForUnreachableSuperPeers(final ChannelHandlerContext ctx,
+                                               final SocketAddress recipient) {
         // message to super peer?
         if (superPeerAddresses.contains(recipient)) {
             final long currentTimeMillis = System.currentTimeMillis();
@@ -204,8 +189,6 @@ public class TcpClient extends ChannelDuplexHandler {
                 startClient(ctx);
             }
         }
-
-        return completedFuture(null);
     }
 
     @SuppressWarnings({ "java:S1905", "java:S3824" })
