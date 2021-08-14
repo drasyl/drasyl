@@ -69,6 +69,7 @@ class StaticRoutesHandlerTest {
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
+            channel.userEvents().clear();
             channel.pipeline().fireChannelInactive();
 
             assertThat(channel.readUserEvent(), instanceOf(RemovePathEvent.class));

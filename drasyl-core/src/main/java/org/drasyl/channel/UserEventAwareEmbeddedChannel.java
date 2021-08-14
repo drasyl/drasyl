@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.util.ArrayUtil;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -35,18 +36,8 @@ import java.util.Queue;
  * A {@link EmbeddedChannel} that record all received user events.
  */
 public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
-    private Queue<Object> userEvents;
-
     public UserEventAwareEmbeddedChannel(final ChannelHandler... handlers) {
-        super(handlers);
-
-        pipeline().addLast(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void userEventTriggered(final ChannelHandlerContext ctx,
-                                           final Object evt) {
-                userEvents().add(evt);
-            }
-        });
+        super(ArrayUtil.concat(handlers, new ChannelHandler[]{ new UserEventAcceptor() }));
     }
 
     /**
@@ -55,10 +46,7 @@ public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
      */
     @SuppressWarnings("java:S2384")
     public Queue<Object> userEvents() {
-        if (userEvents == null) {
-            userEvents = new ArrayDeque<>();
-        }
-        return userEvents;
+        return pipeline().get(UserEventAcceptor.class).userEvents();
     }
 
     /**
@@ -66,7 +54,7 @@ public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
      */
     @SuppressWarnings("unchecked")
     public <T> T readUserEvent() {
-        final T event = (T) poll(userEvents);
+        final T event = (T) poll(pipeline().get(UserEventAcceptor.class).userEvents());
         if (event != null) {
             ReferenceCountUtil.touch(event, "Caller of readInbound() will handle the user event from this point");
         }
@@ -75,5 +63,22 @@ public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
 
     private static Object poll(final Queue<Object> queue) {
         return queue != null ? queue.poll() : null;
+    }
+
+    private static class UserEventAcceptor extends ChannelInboundHandlerAdapter {
+        private Queue<Object> userEvents;
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                       final Object evt) {
+            userEvents().add(evt);
+        }
+
+        public Queue<Object> userEvents() {
+            if (userEvents == null) {
+                userEvents = new ArrayDeque<>();
+            }
+            return userEvents;
+        }
     }
 }
