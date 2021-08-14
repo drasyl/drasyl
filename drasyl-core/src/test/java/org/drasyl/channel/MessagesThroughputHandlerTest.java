@@ -23,7 +23,6 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.junit.jupiter.api.Test;
@@ -56,34 +55,28 @@ class MessagesThroughputHandlerTest {
     LongAdder outboundMessages;
     @Mock
     LongAdder inboundMessages;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    EventLoopGroup eventLoopGroup;
     @Mock
     PrintStream printStream;
     @Mock
     ScheduledFuture<?> disposable;
 
     @Test
-    void shouldPrintThroughputOnChannelActive() {
-        when(eventLoopGroup.scheduleAtFixedRate(any(), eq(0L), eq(1_000L), eq(MILLISECONDS))).then(invocation -> {
+    void shouldPrintThroughputOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+        when(ctx.executor().scheduleAtFixedRate(any(), eq(0L), eq(1_000L), eq(MILLISECONDS))).then(invocation -> {
             final Runnable runnable = invocation.getArgument(0, Runnable.class);
             runnable.run();
             return null;
         });
 
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        try {
-            verify(printStream).printf(anyString(), any(), any(), any(), any());
-        }
-        finally {
-            channel.close();
-        }
+        final MessagesThroughputHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, printStream, null);
+        handler.channelActive(ctx);
+
+        verify(printStream).printf(anyString(), any(), any(), any(), any());
     }
 
     @Test
     void shouldStopTaskOnChannelInactive(@Mock final ChannelHandlerContext ctx) {
-        final MessagesThroughputHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, disposable);
+        final MessagesThroughputHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, printStream, disposable);
 
         handler.channelInactive(ctx);
 
@@ -92,7 +85,7 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldRecordOutboundMessage(@Mock final SocketAddress address) {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, printStream, null);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             channel.writeAndFlush(new AddressedMessage<>(new Object(), address));
@@ -108,7 +101,7 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldRecordInboundMessage(@Mock final SocketAddress address) {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, printStream, null);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             channel.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
@@ -124,7 +117,7 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldConsumeMatchingOutboundMessage(@Mock final SocketAddress address) {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, printStream, null);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             channel.writeAndFlush(new AddressedMessage<>(new Object(), address));
@@ -138,7 +131,7 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldConsumeMatchingInboundMessage(@Mock final SocketAddress address) {
-        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
+        final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, printStream, null);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             channel.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));

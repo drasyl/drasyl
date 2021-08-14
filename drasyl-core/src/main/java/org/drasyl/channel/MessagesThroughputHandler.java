@@ -50,7 +50,6 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
     private final BiPredicate<SocketAddress, Object> consumeInbound;
     private final LongAdder outboundMessages;
     private final LongAdder inboundMessages;
-    private final EventLoopGroup eventLoopGroup;
     private final PrintStream printStream;
     private ScheduledFuture<?> scheduledFuture;
 
@@ -58,14 +57,12 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
                               final BiPredicate<SocketAddress, Object> consumeInbound,
                               final LongAdder outboundMessages,
                               final LongAdder inboundMessages,
-                              final EventLoopGroup eventLoopGroup,
                               final PrintStream printStream,
                               final ScheduledFuture<?> scheduledFuture) {
         this.consumeOutbound = requireNonNull(consumeOutbound);
         this.consumeInbound = requireNonNull(consumeInbound);
         this.outboundMessages = requireNonNull(outboundMessages);
         this.inboundMessages = requireNonNull(inboundMessages);
-        this.eventLoopGroup = requireNonNull(eventLoopGroup);
         this.printStream = requireNonNull(printStream);
         this.scheduledFuture = scheduledFuture;
     }
@@ -82,7 +79,7 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
     public MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
                                      final BiPredicate<SocketAddress, Object> consumeInbound,
                                      final EventLoopGroup eventLoopGroup) {
-        this(consumeOutbound, consumeInbound, new LongAdder(), new LongAdder(), eventLoopGroup, System.out, null);
+        this(consumeOutbound, consumeInbound, new LongAdder(), new LongAdder(), System.out, null);
     }
 
     /**
@@ -106,10 +103,10 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
         this((address, msg) -> false, (address, msg) -> false);
     }
 
-    private void start() {
+    private void start(final ChannelHandlerContext ctx) {
         final long startTime = System.currentTimeMillis();
         final AtomicLong intervalTime = new AtomicLong(startTime);
-        scheduledFuture = eventLoopGroup.scheduleAtFixedRate(() -> {
+        scheduledFuture = ctx.executor().scheduleAtFixedRate(() -> {
             final long currentTime = System.currentTimeMillis();
 
             final double relativeIntervalStartTime = (intervalTime.get() - startTime) / 1_000.;
@@ -162,7 +159,7 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        start();
+        start(ctx);
 
         ctx.fireChannelActive();
     }
