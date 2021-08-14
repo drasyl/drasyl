@@ -91,6 +91,10 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         peers = new HashMap<>();
         directConnectionPeers = new HashSet<>();
         superPeers = new HashSet<>();
+        pingInterval = Duration.ofSeconds(5);
+        pingTimeout = Duration.ofSeconds(30);
+        pingCommunicationTimeout = Duration.ofSeconds(60);
+        superPeerEndpoints = Set.of();
         final Identity identity = IdentityTestUtil.ID_1;
         handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, directConnectionPeers, superPeers, pingInterval, pingTimeout, pingCommunicationTimeout, superPeerEnabled, superPeerEndpoints, networkId, null, bestSuperPeer);
 
@@ -113,7 +117,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void matchedWrite() {
         try {
-            handler.write(ctx, new AddressedMessage(msg, recipient), future);
+            handler.write(ctx, new AddressedMessage<>(msg, recipient), future);
         }
         catch (final Exception e) {
             handleUnexpectedException(e);

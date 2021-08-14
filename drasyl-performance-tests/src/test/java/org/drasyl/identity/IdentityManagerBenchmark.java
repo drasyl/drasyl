@@ -21,6 +21,7 @@
  */
 package org.drasyl.identity;
 
+import org.drasyl.AbstractBenchmark;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -32,7 +33,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.io.IOException;
 
 @State(Scope.Benchmark)
-public class IdentityManagerBenchmark {
+public class IdentityManagerBenchmark extends AbstractBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
     @Threads(1)

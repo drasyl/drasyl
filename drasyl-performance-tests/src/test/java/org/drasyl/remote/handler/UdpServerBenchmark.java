@@ -25,12 +25,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.DrasylConfig;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -70,14 +68,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
             identity2 = IdentityTestUtil.ID_2;
 
-            final UdpServer handler = new UdpServer(identity2.getIdentityPublicKey(), InetAddress.getLocalHost(), 22527);
-
-            final DrasylConfig config2 = DrasylConfig.newBuilder()
-                    .remoteBindPort(0)
-                    .identityProofOfWork(identity2.getProofOfWork())
-                    .identityPublicKey(identity2.getIdentityPublicKey())
-                    .identitySecretKey(identity2.getIdentitySecretKey())
-                    .build();
+            final UdpServer handler = new UdpServer(identity2.getIdentityPublicKey(), InetAddress.getLocalHost(), 0);
 
             channel = new UserEventAwareEmbeddedChannel(
                     handler,
@@ -94,8 +85,6 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                             }
                         }
                     });
-
-            channel.pipeline().fireUserEventTriggered(NodeUpEvent.of(Node.of(identity2)));
 
             await().until(() -> {
                 final Object evt = channel.readUserEvent();
