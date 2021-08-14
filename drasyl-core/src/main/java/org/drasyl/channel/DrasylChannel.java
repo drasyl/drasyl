@@ -173,8 +173,6 @@ public class DrasylChannel extends AbstractChannel {
                 final Exception cause = new AlreadyConnectedException();
                 safeSetFailure(promise, cause);
                 pipeline().fireExceptionCaught(cause);
-                //noinspection UnnecessaryReturnStatement
-                return; // NOSONAR
             }
         }
     }
