@@ -63,14 +63,14 @@ class MonitoringTest {
             when(registrySupplier.apply(any())).thenReturn(registry);
 
             final Monitoring handler = new Monitoring(counters, registrySupplier, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelActive();
+                channel.pipeline().fireChannelActive();
 
                 verify(registrySupplier).apply(any());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -92,14 +92,14 @@ class MonitoringTest {
         @Test
         void shouldPassThroughAllEvents(@Mock final Event event) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, null));
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireUserEventTriggered(event);
+                channel.pipeline().fireUserEventTriggered(event);
 
-                assertEquals(event, pipeline.readUserEvent());
+                assertEquals(event, channel.readUserEvent());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -107,17 +107,17 @@ class MonitoringTest {
         void shouldPassThroughInboundMessages(@Mock final SocketAddress sender,
                                               @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, null));
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                final ReferenceCounted actual = pipeline.readInbound();
+                final ReferenceCounted actual = channel.readInbound();
                 assertEquals(new AddressedMessage<>(message, sender), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -125,17 +125,17 @@ class MonitoringTest {
         void shouldPassThroughOutboundMessages(@Mock final SocketAddress recipient,
                                                @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, null));
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(message, recipient), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }

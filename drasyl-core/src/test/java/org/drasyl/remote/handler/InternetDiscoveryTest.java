@@ -102,14 +102,14 @@ class InternetDiscoveryTest {
     @Test
     void shouldPassThroughAllOtherEvents(@Mock final NodeEvent event) {
         final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
-        final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireUserEventTriggered(event);
+            channel.pipeline().fireUserEventTriggered(event);
 
-            assertThat(pipeline.readUserEvent(), instanceOf(NodeEvent.class));
+            assertThat(channel.readUserEvent(), instanceOf(NodeEvent.class));
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -118,12 +118,12 @@ class InternetDiscoveryTest {
         @Test
         void shouldStartHeartbeatingOnChannelActive() {
             final InternetDiscovery handler = spy(new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null));
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(handler).startHeartbeat(any());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -132,9 +132,9 @@ class InternetDiscoveryTest {
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             final HashMap<IdentityPublicKey, Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final InternetDiscovery handler = spy(new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null));
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelInactive();
+                channel.pipeline().fireChannelInactive();
 
                 verify(handler).stopHeartbeat();
                 verify(openPingsCache).clear();
@@ -143,7 +143,7 @@ class InternetDiscoveryTest {
                 assertTrue(peers.isEmpty());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -156,18 +156,18 @@ class InternetDiscoveryTest {
             when(identity.getAddress()).thenReturn(recipient);
             final DiscoveryMessage discoveryMessage = DiscoveryMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, System.currentTimeMillis());
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(discoveryMessage, address));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(discoveryMessage, address));
 
-                final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                final AddressedMessage<RemoteMessage, SocketAddress> actual = channel.readOutbound();
                 assertThat(actual.message(), instanceOf(AcknowledgementMessage.class));
-                assertThat(pipeline.readUserEvent(), not(instanceOf(AddPathEvent.class)));
+                assertThat(channel.readUserEvent(), not(instanceOf(AddPathEvent.class)));
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -180,14 +180,14 @@ class InternetDiscoveryTest {
             when(identity.getAddress()).thenReturn(recipient);
             final AcknowledgementMessage acknowledgementMessage = AcknowledgementMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Nonce.randomNonce());
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(acknowledgementMessage, address));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(acknowledgementMessage, address));
 
-                assertThat(pipeline.readUserEvent(), instanceOf(AddPathEvent.class));
+                assertThat(channel.readUserEvent(), instanceOf(AddPathEvent.class));
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -203,14 +203,14 @@ class InternetDiscoveryTest {
 
             final AcknowledgementMessage acknowledgementMessage = AcknowledgementMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Nonce.randomNonce());
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), ofSeconds(1), ofSeconds(5), ofSeconds(30), false, ImmutableSet.of(superPeerEndpoint), 0, null, null);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(acknowledgementMessage, address));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(acknowledgementMessage, address));
 
-                assertThat(pipeline.readUserEvent(), instanceOf(AddPathAndSuperPeerEvent.class));
+                assertThat(channel.readUserEvent(), instanceOf(AddPathAndSuperPeerEvent.class));
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -312,15 +312,15 @@ class InternetDiscoveryTest {
 
             final UniteMessage uniteMessage = UniteMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(22527));
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(uniteMessage.getPublicKey(), peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, ImmutableSet.of(superPeerEndpoint), 0, null, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(uniteMessage, address));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(uniteMessage, address));
 
                 verify(rendezvousPeers).add(any());
             }
             finally {
-                pipeline.releaseOutbound();
-                pipeline.close();
+                channel.releaseOutbound();
+                channel.close();
             }
         }
 
@@ -344,15 +344,15 @@ class InternetDiscoveryTest {
             when(message.getRecipient()).thenReturn(recipientKey);
 
             final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, Map.of(message.getSender(), senderPeer, message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                final AddressedMessage<RemoteMessage, SocketAddress> actual1 = pipeline.readOutbound();
+                final AddressedMessage<RemoteMessage, SocketAddress> actual1 = channel.readOutbound();
                 assertEquals(message, actual1.message());
-                final AddressedMessage<RemoteMessage, SocketAddress> actual2 = pipeline.readOutbound();
+                final AddressedMessage<RemoteMessage, SocketAddress> actual2 = channel.readOutbound();
                 assertThat(actual2.message(), instanceOf(UniteMessage.class));
-                final AddressedMessage<RemoteMessage, SocketAddress> actual3 = pipeline.readOutbound();
+                final AddressedMessage<RemoteMessage, SocketAddress> actual3 = channel.readOutbound();
                 assertThat(actual3.message(), instanceOf(UniteMessage.class));
 
                 actual1.release();
@@ -360,7 +360,7 @@ class InternetDiscoveryTest {
                 actual3.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -377,17 +377,17 @@ class InternetDiscoveryTest {
                 when(recipientPeer.getAddress()).thenReturn(new InetSocketAddress(25421));
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, Map.of(message.getRecipient(), recipientPeer), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                    final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                    final AddressedMessage<RemoteMessage, SocketAddress> actual = channel.readOutbound();
                     assertEquals(message, actual.message());
 
                     actual.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
@@ -399,14 +399,14 @@ class InternetDiscoveryTest {
                 when(message.getRecipient()).thenThrow(IllegalArgumentException.class);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(recipient, recipientPeer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                    assertNull(pipeline.readOutbound());
+                    assertNull(channel.readOutbound());
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
@@ -423,18 +423,18 @@ class InternetDiscoveryTest {
 
                 final ApplicationMessage applicationMessage = ApplicationMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, byte[].class.getName(), ByteString.EMPTY);
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(applicationMessage, address));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(applicationMessage, address));
 
                     verify(peer).applicationTrafficOccurred();
-                    final ReferenceCounted actual = pipeline.readInbound();
+                    final ReferenceCounted actual = channel.readInbound();
                     assertEquals(new AddressedMessage<>(applicationMessage, sender), actual);
 
                     actual.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
         }
@@ -452,17 +452,17 @@ class InternetDiscoveryTest {
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                    channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                    final ReferenceCounted actual = pipeline.readOutbound();
+                    final ReferenceCounted actual = channel.readOutbound();
                     assertEquals(new AddressedMessage<>(message, recipientSocketAddress), actual);
 
                     actual.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
@@ -476,17 +476,17 @@ class InternetDiscoveryTest {
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, Map.of(recipient, superPeerPeer), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, recipient);
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                    channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                    final ReferenceCounted actual = pipeline.readOutbound();
+                    final ReferenceCounted actual = channel.readOutbound();
                     assertEquals(new AddressedMessage<>(message, superPeerSocketAddress), actual);
 
                     actual.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
@@ -498,17 +498,17 @@ class InternetDiscoveryTest {
                 when(identity.getIdentityPublicKey()).thenReturn(sender);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, peers, rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                    channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                    final ReferenceCounted actual = pipeline.readOutbound();
+                    final ReferenceCounted actual = channel.readOutbound();
                     assertEquals(new AddressedMessage<>(message, recipient), actual);
 
                     actual.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
@@ -523,15 +523,15 @@ class InternetDiscoveryTest {
 //                when(peer.hasControlTraffic(any())).thenReturn(true);
 
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(recipient, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, heartbeatDisposable, null);
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                    channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                     verify(peer).applicationTrafficOccurred();
                 }
                 finally {
-                    pipeline.releaseOutbound();
-                    pipeline.close();
+                    channel.releaseOutbound();
+                    channel.close();
                 }
             }
         }

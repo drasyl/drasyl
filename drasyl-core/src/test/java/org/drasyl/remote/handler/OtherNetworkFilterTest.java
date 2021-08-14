@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
@@ -58,14 +57,14 @@ class OtherNetworkFilterTest {
     void shouldDropMessagesFromOtherNetworks() {
         final ChannelHandler handler = new OtherNetworkFilter(123);
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
+            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
-            assertNull(pipeline.readInbound());
+            assertNull(channel.readInbound());
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -73,17 +72,17 @@ class OtherNetworkFilterTest {
     void shouldPassMessagesFromSameNetwork(@Mock final SocketAddress sender) {
         final ChannelHandler handler = new OtherNetworkFilter(123);
         final AcknowledgementMessage message = AcknowledgementMessage.of(123, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
+            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-            final ReferenceCounted actual = pipeline.readInbound();
+            final ReferenceCounted actual = channel.readInbound();
             assertEquals(new AddressedMessage<>(message, sender), actual);
 
             actual.release();
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 }

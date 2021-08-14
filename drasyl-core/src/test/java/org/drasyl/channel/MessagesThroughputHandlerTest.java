@@ -72,12 +72,12 @@ class MessagesThroughputHandlerTest {
         });
 
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             verify(printStream).printf(anyString(), any(), any(), any(), any());
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -93,29 +93,29 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldRecordOutboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.writeAndFlush(new AddressedMessage<>(new Object(), address));
+            channel.writeAndFlush(new AddressedMessage<>(new Object(), address));
 
             verify(outboundMessages).increment();
             verify(inboundMessages, never()).increment();
         }
         finally {
-            pipeline.releaseOutbound();
-            pipeline.close();
+            channel.releaseOutbound();
+            channel.close();
         }
     }
 
     @Test
     void shouldRecordInboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
+            channel.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
         }
         finally {
-            pipeline.releaseInbound();
-            pipeline.close();
+            channel.releaseInbound();
+            channel.close();
         }
 
         verify(outboundMessages, never()).increment();
@@ -125,28 +125,28 @@ class MessagesThroughputHandlerTest {
     @Test
     void shouldConsumeMatchingOutboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.writeAndFlush(new AddressedMessage<>(new Object(), address));
+            channel.writeAndFlush(new AddressedMessage<>(new Object(), address));
 
-            assertNull(pipeline.readOutbound());
+            assertNull(channel.readOutbound());
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
     @Test
     void shouldConsumeMatchingInboundMessage(@Mock final SocketAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, eventLoopGroup, printStream, null);
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
+            channel.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
 
-            assertNull(pipeline.readInbound());
+            assertNull(channel.readInbound());
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 }

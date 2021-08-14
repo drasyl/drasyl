@@ -68,17 +68,17 @@ class MessageSerializerTest {
 
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
 
-                final ReferenceCounted actual = pipeline.readInbound();
+                final ReferenceCounted actual = channel.readInbound();
                 assertEquals(new AddressedMessage<>("Hallo Welt", address), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -90,17 +90,17 @@ class MessageSerializerTest {
 
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), null, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
 
-                final ReferenceCounted actual = pipeline.readInbound();
+                final ReferenceCounted actual = channel.readInbound();
                 assertEquals(new AddressedMessage<>(null, address), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -112,14 +112,14 @@ class MessageSerializerTest {
 
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                assertNull(pipeline.readInbound());
+                assertNull(channel.readInbound());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -131,14 +131,14 @@ class MessageSerializerTest {
 
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
             final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
 
-                assertNull(pipeline.readInbound());
+                assertNull(channel.readInbound());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -155,17 +155,17 @@ class MessageSerializerTest {
             when(outboundSerialization.findSerializerFor(String.class.getName())).thenReturn(new StringSerializer());
 
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>("Hello World", identity.getIdentityPublicKey()));
+                channel.writeAndFlush(new AddressedMessage<>("Hello World", identity.getIdentityPublicKey()));
 
-                final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                final AddressedMessage<RemoteMessage, SocketAddress> actual = channel.readOutbound();
                 assertThat(actual.message(), instanceOf(ApplicationMessage.class));
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -175,16 +175,16 @@ class MessageSerializerTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Serialization inboundSerialization,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) {
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final ChannelPromise promise = pipeline.newPromise();
-                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient), promise);
+                final ChannelPromise promise = channel.newPromise();
+                channel.writeAndFlush(new AddressedMessage<>(message, recipient), promise);
                 assertFalse(promise.isSuccess());
 
-                assertNull(pipeline.readOutbound());
+                assertNull(channel.readOutbound());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -195,16 +195,16 @@ class MessageSerializerTest {
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final Serialization inboundSerialization,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) {
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final ChannelPromise promise = pipeline.newPromise();
-                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient), promise);
+                final ChannelPromise promise = channel.newPromise();
+                channel.writeAndFlush(new AddressedMessage<>(message, recipient), promise);
 
                 assertFalse(promise.isSuccess());
-                assertNull(pipeline.readOutbound());
+                assertNull(channel.readOutbound());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -218,17 +218,17 @@ class MessageSerializerTest {
             when(outboundSerialization.findSerializerFor(null).toByteArray(null)).thenReturn(new byte[0]);
 
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(null, identity.getIdentityPublicKey()));
+                channel.writeAndFlush(new AddressedMessage<>(null, identity.getIdentityPublicKey()));
 
-                final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                final AddressedMessage<RemoteMessage, SocketAddress> actual = channel.readOutbound();
                 assertThat(actual.message(), instanceOf(ApplicationMessage.class));
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }

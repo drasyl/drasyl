@@ -58,7 +58,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
     private final static AtomicInteger THREAD_INDEX = new AtomicInteger(0);
     private InetAddress localHost;
     private int port;
-    private UserEventAwareEmbeddedChannel pipeline;
+    private UserEventAwareEmbeddedChannel channel;
     private Identity identity2;
 
     @SuppressWarnings("unchecked")
@@ -79,7 +79,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                     .identitySecretKey(identity2.getIdentitySecretKey())
                     .build();
 
-            pipeline = new UserEventAwareEmbeddedChannel(
+            channel = new UserEventAwareEmbeddedChannel(
                     handler,
                     new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
                         @Override
@@ -95,10 +95,10 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                         }
                     });
 
-            pipeline.pipeline().fireUserEventTriggered(NodeUpEvent.of(Node.of(identity2)));
+            channel.pipeline().fireUserEventTriggered(NodeUpEvent.of(Node.of(identity2)));
 
             await().until(() -> {
-                final Object evt = pipeline.readUserEvent();
+                final Object evt = channel.readUserEvent();
                 if (evt instanceof UdpServer.Port) {
                     port = ((UdpServer.Port) evt).getPort();
                     return true;
@@ -116,7 +116,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
     @TearDown
     public void teardown() {
-        pipeline.pipeline().fireUserEventTriggered(NodeDownEvent.of(Node.of(identity2)));
+        channel.pipeline().fireUserEventTriggered(NodeDownEvent.of(Node.of(identity2)));
     }
 
     @State(Scope.Thread)

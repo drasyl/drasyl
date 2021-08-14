@@ -158,14 +158,14 @@ class GroupsManagerHandlerTest {
         @Test
         void shouldSkipOnEvent(@Mock final GroupJoinedEvent event) {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireUserEventTriggered(event);
+                channel.pipeline().fireUserEventTriggered(event);
 
-                assertEquals(event, pipeline.readUserEvent());
+                assertEquals(event, channel.readUserEvent());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -176,7 +176,7 @@ class GroupsManagerHandlerTest {
         @Test
         void shouldHandleJoinRequest() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
@@ -185,60 +185,60 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
-                pipeline.runPendingTasks();
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.runPendingTasks();
 
-                assertEquals(new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
-                assertEquals(new MemberJoinedMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
+                assertEquals(new GroupWelcomeMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
+                assertEquals(new MemberJoinedMessage(publicKey, org.drasyl.plugin.groups.client.Group.of(group.getName())), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldSendErrorOnNotExistingGroup() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(null);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
-                pipeline.runPendingTasks();
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
+                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_GROUP_NOT_FOUND), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldSendErrorOnNotWeakProofOfWork() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(false);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
-                pipeline.runPendingTasks();
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
+                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_PROOF_TO_WEAK), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldSendErrorOnUnknownException() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
@@ -246,13 +246,13 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
-                pipeline.runPendingTasks();
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
+                assertEquals(new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -260,19 +260,19 @@ class GroupsManagerHandlerTest {
         @Timeout(value = 15_000, unit = MILLISECONDS)
         void shouldCompleteFutureExceptionallyOnDatabaseException() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
                 when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
-                pipeline.runPendingTasks();
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.runPendingTasks();
 
-                assertNull(pipeline.readOutbound());
+                assertNull(channel.readOutbound());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -284,37 +284,37 @@ class GroupsManagerHandlerTest {
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
 
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
-                pipeline.runPendingTasks();
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.runPendingTasks();
 
-                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
-                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
+                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
+                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldCompleteExceptionallyOnError() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
                 doThrow(DatabaseException.class).when(databaseAdapter).removeGroupMember(any(), anyString());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
-                pipeline.runPendingTasks();
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.runPendingTasks();
 
-                assertNull(pipeline.readOutbound());
+                assertNull(channel.readOutbound());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }

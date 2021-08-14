@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.remote.handler.UdpServer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,14 +56,14 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireUserEventTriggered(event);
+                channel.pipeline().fireUserEventTriggered(event);
 
                 verify(method).start(any(), anyInt(), any());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -73,14 +72,14 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelInactive();
+                channel.pipeline().fireChannelInactive();
 
                 verify(method).stop(any());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -96,14 +95,14 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                assertNull(pipeline.readInbound());
+                assertNull(channel.readInbound());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -114,17 +113,17 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                final ReferenceCounted actual = pipeline.readInbound();
+                final ReferenceCounted actual = channel.readInbound();
                 assertEquals(new AddressedMessage<>(msg, sender), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -144,14 +143,14 @@ class PortMapperTest {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method1, method2));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireUserEventTriggered(event);
+                channel.pipeline().fireUserEventTriggered(event);
 
                 verify(method2).start(any(), anyInt(), any());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }

@@ -29,7 +29,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.IdentityPublicKey;
@@ -82,42 +81,42 @@ class ChunkingHandlerTest {
             @Test
             void shouldCacheChunkedMessageIfOtherChunksAreStillMissing(@Mock final SocketAddress senderAddress) {
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, ID_2.getIdentityPublicKey());
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
                     final ByteBuf bytes = Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]);
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes);
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
 
-                    assertNull(pipeline.readInbound());
+                    assertNull(channel.readInbound());
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
             @Test
             void shouldBuildMessageAfterReceivingLastMissingChunk(@Mock final SocketAddress senderAddress) throws InvalidMessageFormatException {
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, ID_2.getIdentityPublicKey());
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
                     final ByteBuf bytes = Unpooled.buffer();
                     final ApplicationMessage message = ApplicationMessage.of(0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFrom(randomBytes(remoteMessageMtu - 200)));
                     message.writeTo(bytes);
 
                     final BodyChunkMessage bodyChunk = BodyChunkMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(1), bytes.slice(remoteMessageMtu / 2, remoteMessageMtu / 2).copy());
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(bodyChunk, senderAddress));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(bodyChunk, senderAddress));
 
                     final HeadChunkMessage headChunk = HeadChunkMessage.of(bodyChunk.getNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), UnsignedShort.of(2), bytes.slice(0, remoteMessageMtu / 2).copy());
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
 
-                    final AddressedMessage<UnarmedMessage, SocketAddress> actual = pipeline.readInbound();
+                    final AddressedMessage<UnarmedMessage, SocketAddress> actual = channel.readInbound();
                     assertEquals(message, actual.message().read());
 
                     actual.release();
                     bytes.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
@@ -128,7 +127,7 @@ class ChunkingHandlerTest {
                 final Nonce nonce = randomNonce();
 
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, recipient);
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
                     // head chunk
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
@@ -153,16 +152,16 @@ class ChunkingHandlerTest {
                     final ByteBuf chunkPayload = Unpooled.wrappedBuffer(bytes);
 
                     final PartialReadMessage chunk = PartialReadMessage.of(chunkHeader, chunkPayload);
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(chunk, senderAddress));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(chunk, senderAddress));
 
                     final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload);
 
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
 
-                    assertNull(pipeline.readInbound());
+                    assertNull(channel.readInbound());
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
         }
@@ -176,17 +175,17 @@ class ChunkingHandlerTest {
 
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, ID_1.getIdentityPublicKey());
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                    final ReferenceCounted actual = pipeline.readInbound();
+                    final ReferenceCounted actual = channel.readInbound();
                     assertEquals(new AddressedMessage<>(msg, sender), actual);
 
                     actual.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
@@ -197,7 +196,7 @@ class ChunkingHandlerTest {
                 final Nonce nonce = randomNonce();
 
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, ID_1.getIdentityPublicKey());
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
                     final PublicHeader headChunkHeader = PublicHeader.newBuilder()
                             .setNonce(nonce.toByteString())
@@ -209,15 +208,15 @@ class ChunkingHandlerTest {
                     final byte[] bytes = new byte[remoteMessageMtu / 2];
                     final ByteBuf headChunkPayload = Unpooled.wrappedBuffer(bytes);
                     final PartialReadMessage headChunk = PartialReadMessage.of(headChunkHeader, headChunkPayload);
-                    pipeline.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, sender));
+                    channel.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, sender));
 
-                    final ReferenceCounted actual = pipeline.readInbound();
+                    final ReferenceCounted actual = channel.readInbound();
                     assertEquals(new AddressedMessage<>(headChunk, sender), actual);
 
                     actual.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
         }
@@ -237,17 +236,17 @@ class ChunkingHandlerTest {
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, sender);
                 final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]))
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
+                    channel.writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
 
-                    final ReferenceCounted actual = pipeline.readOutbound();
+                    final ReferenceCounted actual = channel.readOutbound();
                     assertEquals(new AddressedMessage<>(msg, recipientAddress), actual);
 
                     actual.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
@@ -259,16 +258,16 @@ class ChunkingHandlerTest {
 
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, sender);
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMaxContentLength]));
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    final ChannelPromise promise = pipeline.newPromise();
-                    pipeline.writeAndFlush(new AddressedMessage<>(msg, address), promise);
+                    final ChannelPromise promise = channel.newPromise();
+                    channel.writeAndFlush(new AddressedMessage<>(msg, address), promise);
                     assertFalse(promise.isSuccess());
 
-                    assertNull(pipeline.readOutbound());
+                    assertNull(channel.readOutbound());
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
 
@@ -282,11 +281,11 @@ class ChunkingHandlerTest {
                 final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, byte[].class.getName(), ByteString.copyFrom(randomBytes(remoteMessageMtu * 2)))
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, sender);
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>(msg, address));
+                    channel.writeAndFlush(new AddressedMessage<>(msg, address));
 
-                    final AddressedMessage<ChunkMessage, SocketAddress> actual1 = pipeline.readOutbound();
+                    final AddressedMessage<ChunkMessage, SocketAddress> actual1 = channel.readOutbound();
                     assertThat(actual1.message(), new TypeSafeMatcher<>() {
                         @Override
                         public void describeTo(final Description description) {
@@ -298,7 +297,7 @@ class ChunkingHandlerTest {
                             return m instanceof HeadChunkMessage && ((HeadChunkMessage) m).getTotalChunks().getValue() == 3 && m.getBytes().readableBytes() <= remoteMessageMtu;
                         }
                     });
-                    final AddressedMessage<ChunkMessage, SocketAddress> actual2 = pipeline.readOutbound();
+                    final AddressedMessage<ChunkMessage, SocketAddress> actual2 = channel.readOutbound();
                     assertThat(actual2.message(), new TypeSafeMatcher<>() {
                         @Override
                         public void describeTo(final Description description) {
@@ -310,7 +309,7 @@ class ChunkingHandlerTest {
                             return m instanceof BodyChunkMessage && ((BodyChunkMessage) m).getChunkNo().getValue() == 1 && m.getBytes().readableBytes() <= remoteMessageMtu;
                         }
                     });
-                    final AddressedMessage<ChunkMessage, SocketAddress> actual3 = pipeline.readOutbound();
+                    final AddressedMessage<ChunkMessage, SocketAddress> actual3 = channel.readOutbound();
                     assertThat(actual3.message(), new TypeSafeMatcher<>() {
                         @Override
                         public void describeTo(final Description description) {
@@ -328,7 +327,7 @@ class ChunkingHandlerTest {
                     actual3.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
         }
@@ -342,17 +341,17 @@ class ChunkingHandlerTest {
 
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, ID_1.getAddress());
                 final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, byte[].class.getName(), ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
-                final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
-                    pipeline.writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
+                    channel.writeAndFlush(new AddressedMessage<>(msg, recipientAddress));
 
-                    final ReferenceCounted actual = pipeline.readOutbound();
+                    final ReferenceCounted actual = channel.readOutbound();
                     assertEquals(new AddressedMessage<>(msg, recipientAddress), actual);
 
                     actual.release();
                 }
                 finally {
-                    pipeline.close();
+                    channel.close();
                 }
             }
         }

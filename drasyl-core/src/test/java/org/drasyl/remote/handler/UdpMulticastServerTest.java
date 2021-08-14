@@ -30,7 +30,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.DrasylAddress;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -76,14 +75,14 @@ class UdpMulticastServerTest {
             when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).awaitUninterruptibly().isSuccess()).thenReturn(true);
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, myAddress, bootstrap, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(nodes).put(eq(myAddress), any());
                 verify(bootstrap.handler(any())).bind(anyString(), anyInt());
                 verify(datagramChannel).joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -93,16 +92,16 @@ class UdpMulticastServerTest {
         @Test
         void shouldStopServerOnChannelInactive(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, myAddress, bootstrap, channel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelInactive();
+                channel.pipeline().fireChannelInactive();
 
                 verify(nodes).remove(myAddress);
-                verify(channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE)).awaitUninterruptibly();
-                verify(channel.close()).awaitUninterruptibly();
+                verify(UdpMulticastServerTest.this.channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE)).awaitUninterruptibly();
+                verify(UdpMulticastServerTest.this.channel.close()).awaitUninterruptibly();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -124,13 +123,13 @@ class UdpMulticastServerTest {
 
             final HashMap<DrasylAddress, ChannelHandlerContext> nodes = new HashMap<>(Map.of(publicKey, ctx));
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, myAddress, bootstrap, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(ctx).fireChannelRead(any());
             }
             finally {
-                pipeline.releaseInbound();
-                pipeline.close();
+                channel.releaseInbound();
+                channel.close();
             }
         }
     }

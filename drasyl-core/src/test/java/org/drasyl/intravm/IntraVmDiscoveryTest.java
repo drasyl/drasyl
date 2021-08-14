@@ -26,7 +26,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Pair;
@@ -62,14 +61,14 @@ class IntraVmDiscoveryTest {
         void shouldStartDiscoveryOnChannelActive() {
             IntraVmDiscovery.discoveries = discoveries;
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelActive();
+                channel.pipeline().fireChannelActive();
 
                 assertThat(discoveries, aMapWithSize(1));
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -81,14 +80,14 @@ class IntraVmDiscoveryTest {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, identity.getAddress()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelInactive();
+                channel.pipeline().fireChannelInactive();
 
                 assertThat(discoveries, aMapWithSize(0));
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -103,14 +102,14 @@ class IntraVmDiscoveryTest {
             discoveries.put(Pair.of(0, recipient), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                 verify(ctx).fireChannelRead(any());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -119,17 +118,17 @@ class IntraVmDiscoveryTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             IntraVmDiscovery.discoveries = discoveries;
             final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel pichanneleline = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                pichanneleline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = pichanneleline.readOutbound();
                 assertEquals(new AddressedMessage<>(message, recipient), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                pichanneleline.close();
             }
         }
     }

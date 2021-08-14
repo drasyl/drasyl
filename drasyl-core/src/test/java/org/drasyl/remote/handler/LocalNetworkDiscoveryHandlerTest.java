@@ -28,7 +28,6 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.RemovePathEvent;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.remote.handler.LocalNetworkDiscovery.Peer;
@@ -89,28 +88,28 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldStartHeartbeatingOnChannelActive() {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, null));
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(handler).startHeartbeat(any());
                 handler.stopHeartbeat(); // we must stop, otherwise this handler goes crazy cause to the PT0S ping interval
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnChannelInactive() {
             final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable));
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelInactive();
+                channel.pipeline().fireChannelInactive();
 
                 verify(handler).stopHeartbeat();
                 verify(handler).clearRoutes(any());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -206,17 +205,17 @@ class LocalNetworkDiscoveryTest {
         void shouldPassThroughUnicastMessages(@Mock final InetSocketAddress sender,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                final ReferenceCounted actual = pipeline.readInbound();
+                final ReferenceCounted actual = channel.readInbound();
                 assertEquals(new AddressedMessage<>(msg, sender), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -229,11 +228,11 @@ class LocalNetworkDiscoveryTest {
         when(peers.get(any())).thenReturn(peer);
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+        channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-        final ReferenceCounted actual = pipeline.readOutbound();
+        final ReferenceCounted actual = channel.readOutbound();
         assertEquals(new AddressedMessage<>(message, peer.getAddress()), actual);
 
         actual.release();
@@ -244,17 +243,17 @@ class LocalNetworkDiscoveryTest {
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getAddress(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+            channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-            final ReferenceCounted actual = pipeline.readOutbound();
+            final ReferenceCounted actual = channel.readOutbound();
             assertEquals(new AddressedMessage<>(message, recipient), actual);
 
             actual.release();
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 

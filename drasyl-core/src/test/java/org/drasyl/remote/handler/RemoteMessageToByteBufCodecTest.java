@@ -29,7 +29,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
@@ -76,19 +75,19 @@ class RemoteMessageToByteBufCodecTest {
         void shouldConvertByteBufToEnvelope(@Mock final SocketAddress sender) throws IOException {
             final RemoteMessage message = AcknowledgementMessage.of(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(byteBuf, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(byteBuf, sender));
 
-                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
                 assertThat(actual.message(), instanceOf(PartialReadMessage.class));
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -99,21 +98,21 @@ class RemoteMessageToByteBufCodecTest {
         void shouldConvertEnvelopeToByteBuf(@Mock final SocketAddress recipient) throws IOException {
             final ApplicationMessage message = ApplicationMessage.of(1337, IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"), ProofOfWork.of(3556154), IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), byte[].class.getName(), ByteString.copyFromUtf8("Hello World"));
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(byteBuf, recipient), actual);
 
                 byteBuf.release();
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -123,14 +122,14 @@ class RemoteMessageToByteBufCodecTest {
             doThrow(InvalidMessageFormatException.class).when(messageEnvelope).writeTo(any());
 
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final ChannelPromise promise = pipeline.newPromise();
-                pipeline.writeAndFlush(new AddressedMessage<>(messageEnvelope, recipient), promise);
+                final ChannelPromise promise = channel.newPromise();
+                channel.writeAndFlush(new AddressedMessage<>(messageEnvelope, recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }

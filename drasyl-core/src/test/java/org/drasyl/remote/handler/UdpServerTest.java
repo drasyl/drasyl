@@ -30,7 +30,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -78,12 +77,12 @@ class UdpServerTest {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -95,14 +94,14 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, channel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelInactive();
+                channel.pipeline().fireChannelInactive();
 
-                verify(channel).close();
+                verify(UdpServerTest.this.channel).close();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -114,14 +113,14 @@ class UdpServerTest {
             final SocketAddress recipient = new InetSocketAddress(1234);
 
             final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, channel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                verify(channel).write(any());
+                verify(UdpServerTest.this.channel).write(any());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -142,17 +141,17 @@ class UdpServerTest {
 
             final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, null);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelActive();
+                channel.pipeline().fireChannelActive();
 
-                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
                 assertThat(actual.message(), instanceOf(ByteBuf.class));
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }

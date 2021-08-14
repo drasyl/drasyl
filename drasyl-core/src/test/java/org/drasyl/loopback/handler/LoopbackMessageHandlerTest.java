@@ -24,7 +24,6 @@ package org.drasyl.loopback.handler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Test;
@@ -45,17 +44,17 @@ class LoopbackMessageHandlerTest {
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final IdentityPublicKey recipient,
                                                     @Mock final Object message) {
         final LoopbackMessageHandler handler = new LoopbackMessageHandler(identity.getAddress());
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+            channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-            final ReferenceCounted actual = pipeline.readOutbound();
+            final ReferenceCounted actual = channel.readOutbound();
             assertEquals(new AddressedMessage<>(message, recipient), actual);
 
             actual.release();
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -65,17 +64,17 @@ class LoopbackMessageHandlerTest {
         when(identity.getAddress()).thenReturn(recipient);
 
         final LoopbackMessageHandler handler = new LoopbackMessageHandler(identity.getAddress());
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+            channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-            final ReferenceCounted actual = pipeline.readInbound();
+            final ReferenceCounted actual = channel.readInbound();
             assertEquals(new AddressedMessage<>(message, recipient), actual);
 
             actual.release();
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 }

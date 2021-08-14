@@ -26,7 +26,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.crypto.AgreementId;
@@ -68,17 +67,17 @@ class HopCountGuardTest {
         final ChannelHandler handler = new HopCountGuard((byte) 2);
         final FullReadMessage<AcknowledgementMessage> message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
 
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+            channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-            final ReferenceCounted actual = pipeline.readOutbound();
+            final ReferenceCounted actual = channel.readOutbound();
             assertEquals(new AddressedMessage<>(message.incrementHopCount(), recipient), actual);
 
             actual.release();
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -87,16 +86,16 @@ class HopCountGuardTest {
         final ChannelHandler handler = new HopCountGuard((byte) 1);
         final RemoteMessage message = AcknowledgementMessage.of(randomNonce(), 0, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, HopCount.of(MAX_HOP_COUNT), agreementId, correspondingId);
 
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            final ChannelPromise promise = pipeline.newPromise();
-            pipeline.writeAndFlush(new AddressedMessage<>(message, message.getSender()), promise);
+            final ChannelPromise promise = channel.newPromise();
+            channel.writeAndFlush(new AddressedMessage<>(message, message.getSender()), promise);
             assertFalse(promise.isSuccess());
 
-            assertNull(pipeline.readOutbound());
+            assertNull(channel.readOutbound());
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 }

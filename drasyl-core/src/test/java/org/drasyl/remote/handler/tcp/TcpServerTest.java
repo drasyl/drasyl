@@ -33,7 +33,6 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerChannelInitializer;
 import org.drasyl.remote.handler.tcp.TcpServer.TcpServerHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,12 +89,12 @@ class TcpServerTest {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(bootstrap.childHandler(any())).bind(any(InetAddress.class), anyInt());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -123,14 +122,14 @@ class TcpServerTest {
             when(clientChannels.get(any())).thenReturn(client);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
                 verify(client).writeAndFlush(any());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -142,14 +141,14 @@ class TcpServerTest {
             when(clientChannels.get(any())).thenReturn(client);
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final ChannelPromise promise = pipeline.newPromise();
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
+                final ChannelPromise promise = channel.newPromise();
+                channel.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -157,17 +156,17 @@ class TcpServerTest {
         void shouldPassThroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(msg, recipient), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }

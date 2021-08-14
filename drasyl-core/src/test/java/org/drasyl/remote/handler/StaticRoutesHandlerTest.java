@@ -52,14 +52,14 @@ class StaticRoutesHandlerTest {
         final SocketAddress address = new InetSocketAddress(22527);
 
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
-        final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireChannelActive();
+            channel.pipeline().fireChannelActive();
 
-            assertThat(pipeline.readUserEvent(), instanceOf(AddPathEvent.class));
+            assertThat(channel.readUserEvent(), instanceOf(AddPathEvent.class));
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -67,14 +67,14 @@ class StaticRoutesHandlerTest {
     void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
                                             @Mock final SocketAddress address) {
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
-        final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireChannelInactive();
+            channel.pipeline().fireChannelInactive();
 
-            assertThat(pipeline.readUserEvent(), instanceOf(RemovePathEvent.class));
+            assertThat(channel.readUserEvent(), instanceOf(RemovePathEvent.class));
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -84,17 +84,17 @@ class StaticRoutesHandlerTest {
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
+            channel.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
-            final ReferenceCounted actual = pipeline.readOutbound();
+            final ReferenceCounted actual = channel.readOutbound();
             assertEquals(new AddressedMessage<>(message, address), actual);
 
             actual.release();
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -102,17 +102,17 @@ class StaticRoutesHandlerTest {
     void shouldPassThroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of());
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.writeAndFlush(new AddressedMessage<>(message, publicKey));
+            channel.writeAndFlush(new AddressedMessage<>(message, publicKey));
 
-            final ReferenceCounted actual = pipeline.readOutbound();
+            final ReferenceCounted actual = channel.readOutbound();
             assertEquals(new AddressedMessage<>(message, publicKey), actual);
 
             actual.release();
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 }

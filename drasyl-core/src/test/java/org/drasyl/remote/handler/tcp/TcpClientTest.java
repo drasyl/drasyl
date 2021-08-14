@@ -30,7 +30,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.remote.handler.tcp.TcpClient.TcpClientHandler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -78,14 +77,14 @@ public class TcpClientTest {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelInactive();
+                channel.pipeline().fireChannelInactive();
 
                 verify(superPeerChannel.channel()).close();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -96,17 +95,17 @@ public class TcpClientTest {
         void shouldPasstroughInboundMessages(@Mock final InetSocketAddress sender,
                                              @Mock final Object msg) {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                final ReferenceCounted actual = pipeline.readInbound();
+                final ReferenceCounted actual = channel.readInbound();
                 assertEquals(new AddressedMessage<>(msg, sender), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -119,11 +118,11 @@ public class TcpClientTest {
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1337);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
 
-                final ReferenceCounted actual = pipeline.readInbound();
+                final ReferenceCounted actual = channel.readInbound();
                 assertEquals(new AddressedMessage<>(msg, sender), actual);
                 verify(superPeerChannel).cancel(true);
                 verify(superPeerChannel.channel()).close();
@@ -132,7 +131,7 @@ public class TcpClientTest {
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -140,17 +139,17 @@ public class TcpClientTest {
         void shouldPasstroughOutboundMessagesWhenNoTcpConnectionIsPresent(@Mock final InetSocketAddress recipient,
                                                                           @Mock final ByteBuf msg) {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(msg, recipient), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -162,15 +161,15 @@ public class TcpClientTest {
             when(superPeerChannel.channel().writeAndFlush(any())).thenReturn(channelFuture);
 
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
                 verify(superPeerChannel.channel()).write(msg);
-                assertNull(pipeline.readOutbound());
+                assertNull(channel.readOutbound());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -190,16 +189,16 @@ public class TcpClientTest {
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, null);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
                 verify(bootstrap.handler(any())).connect(any(InetSocketAddress.class));
                 verify(superPeerChannel).addListener(any());
             }
             finally {
-                pipeline.releaseOutbound();
-                pipeline.close();
+                channel.releaseOutbound();
+                channel.close();
             }
         }
     }

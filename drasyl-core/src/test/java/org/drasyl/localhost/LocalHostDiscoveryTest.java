@@ -28,7 +28,6 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddPathEvent;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -125,14 +124,14 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.resolve(anyString())).thenReturn(discoveryPath);
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), true, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireUserEventTriggered(event);
+                channel.pipeline().fireUserEventTriggered(event);
 
                 verify(discoveryPath).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -230,17 +229,17 @@ class LocalHostDiscoveryTest {
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertNotNull(actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -248,17 +247,17 @@ class LocalHostDiscoveryTest {
         void shouldPassThroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
             final LocalHostDiscovery handler = new LocalHostDiscovery(jacksonWriter, routes, identity.getAddress(), watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                pipeline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(message, recipient), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }

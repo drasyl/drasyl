@@ -24,7 +24,6 @@ package org.drasyl.remote.handler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
@@ -59,14 +58,14 @@ class InvalidProofOfWorkFilterTest {
     void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter(IdentityTestUtil.ID_2.getAddress());
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
+            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
-            assertNull(pipeline.readInbound());
+            assertNull(channel.readInbound());
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -74,17 +73,17 @@ class InvalidProofOfWorkFilterTest {
     void shouldPassMessagesWithValidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, IdentityTestUtil.ID_1.getProofOfWork(), recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter(IdentityTestUtil.ID_2.getAddress());
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
+            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
-            final ReferenceCounted actual = pipeline.readInbound();
+            final ReferenceCounted actual = channel.readInbound();
             assertEquals(new AddressedMessage<>(message, message.getSender()), actual);
 
             actual.release();
         }
         finally {
-            pipeline.close();
+            channel.close();
         }
     }
 
@@ -92,15 +91,15 @@ class InvalidProofOfWorkFilterTest {
     void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, proofOfWork, recipientPublicKey, correspondingId);
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter(IdentityTestUtil.ID_3.getAddress());
-        final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            pipeline.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
+            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
             verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
         }
         finally {
-            pipeline.releaseInbound();
-            pipeline.close();
+            channel.releaseInbound();
+            channel.close();
         }
     }
 }

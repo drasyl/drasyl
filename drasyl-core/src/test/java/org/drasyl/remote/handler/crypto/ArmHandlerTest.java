@@ -107,7 +107,7 @@ class ArmHandlerTest {
         @Test
         void shouldEncryptOutgoingMessageWithRecipientAndFromMe() throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
@@ -121,25 +121,25 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.writeAndFlush(new AddressedMessage<>(applicationMessage, receiveAddress));
+                channel.writeAndFlush(new AddressedMessage<>(applicationMessage, receiveAddress));
 
-                final AddressedMessage<ArmedMessage, SocketAddress> actual1 = pipeline.readOutbound();
+                final AddressedMessage<ArmedMessage, SocketAddress> actual1 = channel.readOutbound();
                 assertEquals(applicationMessage, actual1.message().disarm(Crypto.INSTANCE, sessionPairReceiver));
-                final AddressedMessage<ArmedMessage, SocketAddress> actual2 = pipeline.readOutbound();
+                final AddressedMessage<ArmedMessage, SocketAddress> actual2 = channel.readOutbound();
                 assertThat(actual2.message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
 
                 actual1.release();
                 actual2.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldNotEncryptOutgoingMessageWithSenderThatIsNotMe() {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
@@ -153,44 +153,44 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(msg, receiveAddress), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldNotEncryptOutgoingMessageWithNoRecipient() {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final FullReadMessage<?> msg = DiscoveryMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork());
 
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(msg, receiveAddress), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldNotEncryptOutgoingMessageWithLoopback() {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
@@ -201,15 +201,15 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(msg, receiveAddress), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -230,7 +230,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
@@ -242,15 +242,15 @@ class ArmHandlerTest {
                                 body).
                         setAgreementId(agreementId);
 
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<ArmedMessage, SocketAddress> actual = pipeline.readOutbound();
+                final AddressedMessage<ArmedMessage, SocketAddress> actual = channel.readOutbound();
                 assertEquals(msg, actual.message().disarm(Crypto.INSTANCE, sessionPairReceiver));
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -260,7 +260,7 @@ class ArmHandlerTest {
         @Test
         void shouldSendKeyExchangeMessageOnOutbound() throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
@@ -271,25 +271,25 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<ArmedMessage, SocketAddress> actual1 = pipeline.readOutbound();
+                final AddressedMessage<ArmedMessage, SocketAddress> actual1 = channel.readOutbound();
                 assertThat(actual1.message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(ApplicationMessage.class));
-                final AddressedMessage<ArmedMessage, SocketAddress> actual2 = pipeline.readOutbound();
+                final AddressedMessage<ArmedMessage, SocketAddress> actual2 = channel.readOutbound();
                 assertThat(actual2.message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
 
                 actual1.release();
                 actual2.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldNotSendKeyExchangeMessageOnOutboundIfMaxAgreementOptionIsZero() {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final FullReadMessage<?> msg = ApplicationMessage.of(
@@ -300,15 +300,15 @@ class ArmHandlerTest {
                         body.getClass().getName(),
                         body);
 
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertNotNull(actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -316,7 +316,7 @@ class ArmHandlerTest {
         void shouldNotSendKeyExchangeMessageOnInbound() throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
@@ -330,13 +330,13 @@ class ArmHandlerTest {
                                 body)
                         .setAgreementId(agreementId);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg.arm(Crypto.INSTANCE, sessionPairSender), receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg.arm(Crypto.INSTANCE, sessionPairSender), receiveAddress));
 
-                assertNull(pipeline.readOutbound());
+                assertNull(channel.readOutbound());
             }
             finally {
-                pipeline.releaseInbound();
-                pipeline.close();
+                channel.releaseInbound();
+                channel.close();
             }
         }
 
@@ -344,7 +344,7 @@ class ArmHandlerTest {
         void shouldSendKeyExchangeMessageOnInboundOnUnknownAgreementId() throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 // construct wrong agreement id
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_3.getKeyAgreementPublicKey());
@@ -359,15 +359,15 @@ class ArmHandlerTest {
                                 body)
                         .setAgreementId(agreementId);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg.arm(Crypto.INSTANCE, sessionPairSender), receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg.arm(Crypto.INSTANCE, sessionPairSender), receiveAddress));
 
-                final AddressedMessage<ArmedMessage, SocketAddress> actual = pipeline.readOutbound();
+                final AddressedMessage<ArmedMessage, SocketAddress> actual = channel.readOutbound();
                 assertThat(actual.message().disarm(Crypto.INSTANCE, sessionPairReceiver), instanceOf(KeyExchangeMessage.class));
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -388,7 +388,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
 
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final ArmedMessage msg = KeyExchangeAcknowledgementMessage.of(networkId,
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
@@ -398,15 +398,15 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
                 assertTrue(session.getInitializedAgreements().containsKey(agreementId2));
-                assertThat(pipeline.readUserEvent(), instanceOf(PerfectForwardSecrecyEncryptionEvent.class));
+                assertThat(channel.readUserEvent(), instanceOf(PerfectForwardSecrecyEncryptionEvent.class));
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -427,7 +427,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
 
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final RemoteMessage msg = ApplicationMessage.of(
@@ -440,16 +440,16 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId2)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
                 assertTrue(session.getCurrentActiveAgreement().getValue().isPresent());
                 assertEquals(agreementId2, session.getCurrentActiveAgreement().getValue().get().getAgreementId().get());
                 assertTrue(session.getInitializedAgreements().containsKey(agreementId2));
-                assertThat(pipeline.readUserEvent(), instanceOf(PerfectForwardSecrecyEncryptionEvent.class));
+                assertThat(channel.readUserEvent(), instanceOf(PerfectForwardSecrecyEncryptionEvent.class));
             }
             finally {
-                pipeline.releaseInbound();
-                pipeline.close();
+                channel.releaseInbound();
+                channel.close();
             }
         }
 
@@ -460,7 +460,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2);
 
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final ByteString body = ByteString.copyFrom(randomBytes(10));
                 final RemoteMessage msg = ApplicationMessage.of(
@@ -473,16 +473,16 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<ArmedMessage, SocketAddress> actual = pipeline.readOutbound();
+                final AddressedMessage<ArmedMessage, SocketAddress> actual = channel.readOutbound();
                 assertThat(actual.message().disarm(Crypto.INSTANCE, sessionPairSender), instanceOf(KeyExchangeMessage.class));
-                assertNull(pipeline.readUserEvent());
+                assertNull(channel.readUserEvent());
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -497,7 +497,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
 
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final RemoteMessage msg = KeyExchangeMessage.of(networkId,
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
@@ -510,16 +510,16 @@ class ArmHandlerTest {
                 assertFalse(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(0, session.getInitializedAgreements().size());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
-                pipeline.runPendingTasks();
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.runPendingTasks();
 
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(0, session.getInitializedAgreements().size());
-                assertNull(pipeline.readUserEvent());
+                assertNull(channel.readUserEvent());
             }
             finally {
-                pipeline.releaseOutbound();
-                pipeline.close();
+                channel.releaseOutbound();
+                channel.close();
             }
         }
 
@@ -540,7 +540,7 @@ class ArmHandlerTest {
 
             final ArmHandler handler = new ArmHandler(sessions, Crypto.INSTANCE, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_2, networkId);
 
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyPair = Crypto.INSTANCE.generateEphemeralKeyPair();
 
@@ -552,16 +552,16 @@ class ArmHandlerTest {
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
-                pipeline.runPendingTasks();
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.runPendingTasks();
 
                 assertTrue(session.getCurrentInactiveAgreement().getValue().isPresent());
                 assertEquals(keyPair.getPublicKey(), session.getCurrentInactiveAgreement().getValue().get().getRecipientsKeyAgreementKey().get());
-                assertNull(pipeline.readUserEvent());
+                assertNull(channel.readUserEvent());
             }
             finally {
-                pipeline.releaseOutbound();
-                pipeline.close();
+                channel.releaseOutbound();
+                channel.close();
             }
         }
     }
@@ -579,7 +579,7 @@ class ArmHandlerTest {
                                                                               @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException, CryptoException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
@@ -605,15 +605,15 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                final ReferenceCounted actual = pipeline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(armedMsg, receiveAddress), actual);
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -627,7 +627,7 @@ class ArmHandlerTest {
                                                                              @Mock final Crypto crypto) throws CryptoException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(new byte[]{}).when(crypto).encrypt(any(), any(), any(), any());
 
@@ -647,19 +647,19 @@ class ArmHandlerTest {
 
                 doReturn(IdentityTestUtil.ID_1.getKeyAgreementKeyPair()).when(agreement).getKeyPair();
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                final ReferenceCounted actual1 = pipeline.readOutbound();
+                final ReferenceCounted actual1 = channel.readOutbound();
                 assertNotNull(actual1);
 
-                final ReferenceCounted actual2 = pipeline.readOutbound();
+                final ReferenceCounted actual2 = channel.readOutbound();
                 assertNotNull(actual2);
 
                 actual1.release();
                 actual2.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -674,7 +674,7 @@ class ArmHandlerTest {
                                                                        @Mock final ArmedMessage armedMsg) throws InvalidMessageFormatException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
@@ -692,15 +692,15 @@ class ArmHandlerTest {
                 doReturn(true).when(agreement).isInitialized();
                 doReturn(false).when(agreement).isRenewable();
 
-                pipeline.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<RemoteMessage, SocketAddress> actual = pipeline.readOutbound();
+                final AddressedMessage<RemoteMessage, SocketAddress> actual = channel.readOutbound();
                 assertThat(actual.message(), instanceOf(RemoteMessage.class));
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -715,7 +715,7 @@ class ArmHandlerTest {
                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Agreement agreement) {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -728,16 +728,16 @@ class ArmHandlerTest {
                 doReturn(concurrentAgreement).when(session).getCurrentActiveAgreement();
                 doReturn(Optional.of(agreement)).when(concurrentAgreement).computeOnCondition(any(), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                assertNull(pipeline.readOutbound());
-                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                assertNull(channel.readOutbound());
+                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
                 assertThat(actual.message(), instanceOf(FullReadMessage.class));
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -748,19 +748,19 @@ class ArmHandlerTest {
         void shouldSkipMessagesNotForMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
                 assertEquals(msg, actual.message());
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -768,20 +768,20 @@ class ArmHandlerTest {
         void shouldSkipMessagesFromMe(@Mock(answer = RETURNS_DEEP_STUBS) final ArmedMessage msg) {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
                 assertEquals(msg, actual.message());
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -793,7 +793,7 @@ class ArmHandlerTest {
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -803,15 +803,15 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
                 assertEquals(disarmedMessage, actual.message());
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -823,7 +823,7 @@ class ArmHandlerTest {
                                                                            @Mock final FullReadMessage<?> disarmedMsg) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, 0, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -833,15 +833,15 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMsg).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
                 assertEquals(disarmedMsg, actual.message());
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -853,7 +853,7 @@ class ArmHandlerTest {
                                             @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -863,15 +863,15 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
                 assertEquals(disarmedMessage, actual.message());
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -884,7 +884,7 @@ class ArmHandlerTest {
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -899,16 +899,16 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                final ReferenceCounted actual = pipeline.readInbound();
+                final ReferenceCounted actual = channel.readInbound();
                 assertEquals(new AddressedMessage<>(disarmedMessage, receiveAddress), actual);
                 assertTrue(agreements.isEmpty());
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -921,7 +921,7 @@ class ArmHandlerTest {
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage disarmedMessage) throws IOException {
             final ArmHandler handler = new ArmHandler(sessions, crypto, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1, networkId);
 
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getSender();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
@@ -939,15 +939,15 @@ class ArmHandlerTest {
 
                 doReturn(disarmedMessage).when(msg).disarmAndRelease(any(Crypto.class), any());
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<Object, SocketAddress> actual = pipeline.readInbound();
+                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
                 assertEquals(disarmedMessage, actual.message());
 
                 actual.release();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }

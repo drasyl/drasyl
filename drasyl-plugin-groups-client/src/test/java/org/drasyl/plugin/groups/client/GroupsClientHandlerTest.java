@@ -122,17 +122,17 @@ class GroupsClientHandlerTest {
         void shouldDeregisterFromGroups() {
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final EmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel();
+            final EmbeddedChannel channel = new EmbeddedChannel();
             try {
-                pipeline.pipeline().addLast("handler", handler);
-                pipeline.pipeline().remove("handler");
+                channel.pipeline().addLast("handler", handler);
+                channel.pipeline().remove("handler");
 
-                assertEquals(new GroupLeaveMessage(group), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
+                assertEquals(new GroupLeaveMessage(group), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
 
                 verify(renewTasks).clear();
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -142,14 +142,14 @@ class GroupsClientHandlerTest {
         @Test
         void shouldPassThroughOnNotMatchingEvent(@Mock final NodeOfflineEvent event) {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                pipeline.pipeline().fireUserEventTriggered(event);
+                channel.pipeline().fireUserEventTriggered(event);
 
-                assertEquals(event, pipeline.readUserEvent());
+                assertEquals(event, channel.readUserEvent());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -159,23 +159,23 @@ class GroupsClientHandlerTest {
             final String credentials = "test";
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 when(uri.getGroup()).thenReturn(group);
                 when(uri.getCredentials()).thenReturn(credentials);
                 when(identity.getProofOfWork()).thenReturn(proofOfWork);
 
-                pipeline.pipeline().fireUserEventTriggered(event);
+                channel.pipeline().fireUserEventTriggered(event);
 
                 await().untilAsserted(() -> {
-                    pipeline.runPendingTasks();
-                    assertEquals(event, pipeline.readUserEvent());
+                    channel.runPendingTasks();
+                    assertEquals(event, channel.readUserEvent());
                 });
 
-                assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((AddressedMessage<Object, SocketAddress>) pipeline.readOutbound()).message());
+                assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
@@ -185,32 +185,32 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessMemberJoined() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
-                assertEquals(GroupMemberJoinedEvent.of(publicKey, group), pipeline.readUserEvent());
+                assertEquals(GroupMemberJoinedEvent.of(publicKey, group), channel.readUserEvent());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldProcessMemberLeft() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
-                assertEquals(GroupMemberLeftEvent.of(publicKey, group), pipeline.readUserEvent());
+                assertEquals(GroupMemberLeftEvent.of(publicKey, group), channel.readUserEvent());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -219,17 +219,17 @@ class GroupsClientHandlerTest {
             when(identity.getIdentityPublicKey()).thenReturn(publicKey);
 
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
                 assertEquals(GroupLeftEvent.of(group, () -> {
-                }), pipeline.readUserEvent());
+                }), channel.readUserEvent());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
@@ -237,38 +237,38 @@ class GroupsClientHandlerTest {
         @Test
         void shouldProcessWelcome() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
 
                 when(groups.get(any())).thenReturn(uri);
                 when(uri.getTimeout()).thenReturn(Duration.ofMinutes(10));
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
                 assertEquals(GroupJoinedEvent.of(group, Set.of(publicKey), () -> {
-                }), pipeline.readUserEvent());
+                }), channel.readUserEvent());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
 
         @Test
         void shouldProcessJoinFailed() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final UserEventAwareEmbeddedChannel pipeline = new UserEventAwareEmbeddedChannel(handler);
+            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
                 final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
 
-                pipeline.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
 
                 assertEquals(GroupJoinFailedEvent.of(group, error, () -> {
-                }), pipeline.readUserEvent());
+                }), channel.readUserEvent());
             }
             finally {
-                pipeline.close();
+                channel.close();
             }
         }
     }
