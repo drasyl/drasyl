@@ -773,7 +773,7 @@ public abstract class DrasylNode {
                         errorOccurred = true;
                     }
 
-                    eventConsumer.accept((Event) evt);
+                    ctx.executor().execute(() -> eventConsumer.accept((Event) evt));
                 }
 
                 // drop all other events
