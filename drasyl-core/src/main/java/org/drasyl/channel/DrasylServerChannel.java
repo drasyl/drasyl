@@ -82,7 +82,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     @Override
     protected void doClose() {
         if (state != State.CLOSED) {
-            // Update all internal state before the closeFuture<?> is notified.
+            // Update the internal state before the closeFuture<?> is notified.
             if (localAddress != null) {
                 localAddress = null;
             }
