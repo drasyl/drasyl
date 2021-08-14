@@ -24,6 +24,7 @@ package org.drasyl.behaviour;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.behaviour.Behavior.BehaviorBuilder;
 import org.drasyl.event.Event;
 
@@ -40,6 +41,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Inspired by: <a href="https://doc.akka.io/docs/akka/current/typed/fsm.html">https://doc.akka.io/docs/akka/current/typed/fsm.html</a>
  */
 public final class Behaviors {
+    static volatile boolean eventLoopGroupCreated;
+
     private Behaviors() {
         // util class
     }
@@ -104,7 +107,7 @@ public final class Behaviors {
      * @param factory function that returns the behavior that should react to scheduled self events
      */
     public static Behavior withScheduler(final Function<EventScheduler, Behavior> factory) {
-        return withScheduler(factory, new NioEventLoopGroup(1));
+        return withScheduler(factory, eventLoopGroup());
     }
 
     public static class EventScheduler {
@@ -154,5 +157,28 @@ public final class Behaviors {
                                                    final Duration period) {
             return eventLoopGroup.scheduleAtFixedRate(() -> consumer.accept(event), initialDelay.toMillis(), period.toMillis(), MILLISECONDS);
         }
+    }
+
+    /**
+     * Returns a default, shared {@link EventLoopGroup} instance intended for {@link Behavior}
+     * scheduling.
+     *
+     * @return a {@code EventLoopGroup} meant for {@link Behavior}-bound work
+     */
+    public static EventLoopGroup eventLoopGroup() {
+        return LazyEventLoopGroupHolder.INSTANCE;
+    }
+
+    private static final class LazyEventLoopGroupHolder {
+        public static final int DEFAULT_THREADS = 2;
+        static final int SIZE;
+
+        static {
+            SIZE = SystemPropertyUtil.getInt("org.drasyl.behavior.event-loop", DEFAULT_THREADS);
+        }
+
+        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE);
+        @SuppressWarnings("unused")
+        static final boolean LOCK = eventLoopGroupCreated = true;
     }
 }
