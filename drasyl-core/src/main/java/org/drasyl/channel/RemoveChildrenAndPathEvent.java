@@ -26,7 +26,7 @@ import org.drasyl.identity.IdentityPublicKey;
 
 /**
  * Signals that {@link RemoveChildrenAndPathEvent#getAddress()} is no longer registered at us as a
- * children as the direct routing path to that peer is no longer available.
+ * children because the direct routing path to that peer is no longer available.
  */
 @SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue

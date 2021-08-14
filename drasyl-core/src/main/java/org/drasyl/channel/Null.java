@@ -23,7 +23,7 @@ package org.drasyl.channel;
 
 /**
  * As {@code null} values cannot be processed by a {@link io.netty.channel.Channel}, we need a
- * special type representation this kind fo messages.
+ * special type representation this kind of messages.
  */
 public enum Null {
     NULL
