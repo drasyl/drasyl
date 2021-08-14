@@ -215,11 +215,19 @@ class DrasylNodeIT {
                 // verify
                 //
                 superPeerMessages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
+
                 client1Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
+
                 client2Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()));
+                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
+                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
             }
 
             @Test
@@ -388,14 +396,39 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), new byte[]{
+                        (byte) 0,
+                        (byte) 1
+                }).toCompletableFuture().get();
+                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
                 node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
+
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), new byte[]{
+                        (byte) 0,
+                        (byte) 1
+                }).toCompletableFuture().get();
+                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
                 node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
 
                 //
                 // verify
                 //
-                node1Messages.awaitCount(1).assertValueCount(1);
-                node2Messages.awaitCount(1).assertValueCount(1);
+                node1Messages.awaitCount(10).assertValueCount(10);
+                node2Messages.awaitCount(10).assertValueCount(10);
             }
         }
 
