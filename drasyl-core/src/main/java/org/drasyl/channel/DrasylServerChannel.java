@@ -45,13 +45,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see DrasylChannel
  */
 public class DrasylServerChannel extends AbstractServerChannel {
-    private volatile int state; // 0 - open (node created), 1 - active (node started), 2 - closed (node shut down)
+    private enum State {OPEN, ACTIVE, CLOSED}
+
+    private volatile State state;
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
     private volatile Identity localAddress; // NOSONAR
 
     public DrasylServerChannel() {
-        state = 0;
+        state = State.OPEN;
         localAddress = null;
     }
 
@@ -72,17 +74,17 @@ public class DrasylServerChannel extends AbstractServerChannel {
         }
 
         this.localAddress = (Identity) localAddress;
-        state = 1;
+        state = State.ACTIVE;
     }
 
     @Override
     protected void doClose() {
-        if (state <= 1) {
+        if (state != State.CLOSED) {
             // Update all internal state before the closeFuture<?> is notified.
             if (localAddress != null) {
                 localAddress = null;
             }
-            state = 2; // NOSONAR
+            state = State.CLOSED;
 
             // close all child channels
             channels.forEach((address, channel) -> channel.close());
@@ -103,12 +105,12 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     @Override
     public boolean isOpen() {
-        return state < 2; // NOSONAR
+        return state != State.CLOSED;
     }
 
     @Override
     public boolean isActive() {
-        return state == 1;
+        return state == State.ACTIVE;
     }
 
     public Map<DrasylAddress, Channel> channels() {
