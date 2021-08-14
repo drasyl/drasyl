@@ -40,6 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * A virtual {@link io.netty.channel.ServerChannel} used for overlay network management. This
  * channel must be bind to an {@link Identity}.
  * <p>
+ * (Currently) only compatible with {@link io.netty.channel.nio.NioEventLoop}.
+ * <p>
  * Inspired by {@link io.netty.channel.local.LocalServerChannel}.
  *
  * @see DrasylChannel
