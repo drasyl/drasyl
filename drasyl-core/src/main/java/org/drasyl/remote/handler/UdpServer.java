@@ -170,7 +170,6 @@ public class UdpServer extends ChannelDuplexHandler {
             if (channel != null) {
                 final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
                 LOG.trace("Send Datagram {}", packet);
-                channel.read();
                 channel.write(packet).addListener(future -> {
                     if (future.isSuccess()) {
                         promise.setSuccess();
