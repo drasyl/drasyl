@@ -36,6 +36,8 @@ import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A virtual {@link io.netty.channel.ServerChannel} used for overlay network management. This
  * channel must be bind to an {@link Identity}.
@@ -47,16 +49,24 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see DrasylChannel
  */
 public class DrasylServerChannel extends AbstractServerChannel {
-    private enum State {OPEN, ACTIVE, CLOSED}
+    enum State {OPEN, ACTIVE, CLOSED}
 
     private volatile State state;
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Map<DrasylAddress, Channel> channels = new ConcurrentHashMap<>();
+    private final Map<DrasylAddress, Channel> channels;
     private volatile Identity localAddress; // NOSONAR
 
+    DrasylServerChannel(final State state,
+                        final Map<DrasylAddress, Channel> channels,
+                        final Identity localAddress) {
+        this.state = requireNonNull(state);
+        this.channels = requireNonNull(channels);
+        this.localAddress = localAddress;
+    }
+
+    @SuppressWarnings("unused")
     public DrasylServerChannel() {
-        state = State.OPEN;
-        localAddress = null;
+        this(State.OPEN, new ConcurrentHashMap<>(), null);
     }
 
     @Override
