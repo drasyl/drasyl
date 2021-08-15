@@ -49,7 +49,7 @@ import static org.drasyl.channel.Null.NULL;
  * @see DrasylServerChannel
  */
 public class DrasylChannel extends AbstractChannel {
-    private enum State {OPEN, BOUND, CONNECTED, CLOSED}
+    enum State {OPEN, BOUND, CONNECTED, CLOSED}
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
@@ -57,10 +57,18 @@ public class DrasylChannel extends AbstractChannel {
     private volatile SocketAddress localAddress; // NOSONAR
     private final IdentityPublicKey remoteAddress;
 
-    public DrasylChannel(final Channel parent, final IdentityPublicKey remoteAddress) {
+    public DrasylChannel(final Channel parent,
+                         final State state,
+                         final SocketAddress localAddress,
+                         final IdentityPublicKey remoteAddress) {
         super(parent);
-        this.localAddress = parent.localAddress();
+        this.state = state;
+        this.localAddress = localAddress;
         this.remoteAddress = remoteAddress;
+    }
+
+    public DrasylChannel(final Channel parent, final IdentityPublicKey remoteAddress) {
+        this(parent, null, parent.localAddress(), remoteAddress);
     }
 
     @Override
