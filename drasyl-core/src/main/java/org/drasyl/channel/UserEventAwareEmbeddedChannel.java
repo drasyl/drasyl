@@ -66,7 +66,11 @@ public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
     }
 
     private static class UserEventAcceptor extends ChannelInboundHandlerAdapter {
-        private Queue<Object> userEvents;
+        private final Queue<Object> userEvents;
+
+        public UserEventAcceptor() {
+            this.userEvents = new ArrayDeque<>();
+        }
 
         @Override
         public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -74,10 +78,8 @@ public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
             userEvents().add(evt);
         }
 
+        @SuppressWarnings("java:S2384")
         public Queue<Object> userEvents() {
-            if (userEvents == null) {
-                userEvents = new ArrayDeque<>();
-            }
             return userEvents;
         }
     }
