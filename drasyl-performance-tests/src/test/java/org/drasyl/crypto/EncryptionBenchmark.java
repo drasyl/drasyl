@@ -23,8 +23,8 @@ package org.drasyl.crypto;
 
 import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.IdentitySecretKey;
+import org.drasyl.identity.KeyAgreementPublicKey;
+import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.util.RandomUtil;
@@ -37,13 +37,16 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
+import test.util.IdentityTestUtil;
+
+import java.util.Arrays;
 
 @State(Scope.Benchmark)
 public class EncryptionBenchmark extends AbstractBenchmark {
     @Param({ "1", "256", "1432", "5120" })
     private int size;
     private byte[] message;
-    private KeyPair<IdentityPublicKey, IdentitySecretKey> alice;
+    private KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> alice;
     private SessionPair sessionAlice;
     private SessionPair sessionBob;
     private byte[] encrypted;
@@ -52,10 +55,12 @@ public class EncryptionBenchmark extends AbstractBenchmark {
     @Setup
     public void setup() {
         try {
-            alice = Crypto.INSTANCE.generateLongTimeKeyPair();
-            final KeyPair<IdentityPublicKey, IdentitySecretKey> bob = Crypto.INSTANCE.generateLongTimeKeyPair();
+            alice = IdentityTestUtil.ID_1.getKeyAgreementKeyPair();
+            final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> bob = IdentityTestUtil.ID_2.getKeyAgreementKeyPair();
             sessionAlice = Crypto.INSTANCE.generateSessionKeyPair(alice, bob.getPublicKey());
             sessionBob = Crypto.INSTANCE.generateSessionKeyPair(bob, alice.getPublicKey());
+            assert Arrays.equals(sessionAlice.getTx(), sessionBob.getRx()) : "Session key not valid!";
+            assert Arrays.equals(sessionAlice.getRx(), sessionBob.getTx()) : "Session key not valid!";
             message = RandomUtil.randomBytes(size);
             nonce = Nonce.randomNonce();
             encrypted = Crypto.INSTANCE.encrypt(message, new byte[0], nonce, sessionAlice);
