@@ -54,7 +54,7 @@ public class LoopbackMessageHandler extends MessageToMessageEncoder<AddressedMes
         }
         else {
             // pass through message
-            out.add(msg.retain());
+            out.add(msg);
         }
     }
 }
