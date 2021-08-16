@@ -21,17 +21,16 @@
  */
 package org.drasyl.remote.protocol;
 
-import com.google.protobuf.MessageLite;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Skeleton implementation for a {@link FullReadMessage}.
@@ -41,8 +40,8 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
     public ArmedMessage arm(final Crypto cryptoInstance,
                             final SessionPair sessionPair) throws InvalidMessageFormatException {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            buildPrivateHeader().writeDelimitedTo(outputStream);
-            buildBody().writeDelimitedTo(outputStream);
+            writePrivateHeaderTo(outputStream);
+            writeBodyTo(outputStream);
             final byte[] bytes = outputStream.toByteArray();
 
             final UnarmedMessage unarmedMessage = UnarmedMessage.of(
@@ -67,16 +66,16 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
         // message (partially) present as java objects. get bytes and transfer to buffer
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(out)) {
             MAGIC_NUMBER.writeTo(outputStream);
-            buildPublicHeader().writeDelimitedTo(outputStream);
-            buildPrivateHeader().writeDelimitedTo(outputStream);
-            buildBody().writeDelimitedTo(outputStream);
+            writePublicHeaderTo(outputStream);
+            writePrivateHeaderTo(outputStream);
+            writeBodyTo(outputStream);
         }
         catch (final Exception e) {
             throw new InvalidMessageFormatException(e);
         }
     }
 
-    protected PublicHeader buildPublicHeader() {
+    protected void writePublicHeaderTo(final OutputStream out) throws IOException {
         final PublicHeader.Builder builder = PublicHeader.newBuilder()
                 .setNonce(getNonce().toByteString())
                 .setNetworkId(getNetworkId())
@@ -92,10 +91,10 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
             builder.setAgreementId(getAgreementId().toByteString());
         }
 
-        return builder.build();
+        builder.build().writeDelimitedTo(out);
     }
 
-    protected abstract PrivateHeader buildPrivateHeader();
+    protected abstract void writePrivateHeaderTo(OutputStream out) throws IOException;
 
-    protected abstract MessageLite buildBody();
+    protected abstract void writeBodyTo(OutputStream out) throws IOException;
 }

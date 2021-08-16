@@ -51,10 +51,10 @@ public class ApplicationMessageTest {
     class Of {
         @Test
         void shouldCreateApplicationMessage() {
-            final ApplicationMessage application = ApplicationMessage.of(1, sender, proofOfWork, recipient, String.class.getName(), ByteString.EMPTY);
+            final ApplicationMessage application = ApplicationMessage.of(1, sender, proofOfWork, recipient, ByteString.EMPTY);
 
             assertEquals(1, application.getNetworkId());
-            assertEquals(String.class.getName(), application.getType());
+            assertEquals(ByteString.EMPTY, application.getPayload());
         }
     }
 }

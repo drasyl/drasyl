@@ -76,7 +76,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
             recipient = new InetSocketAddress("127.0.0.1", 25527);
             final byte[] payload = RandomUtil.randomBytes(1024);
             final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
-            message = ApplicationMessage.of(Nonce.randomNonce(), 0, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, byte[].class.getName(), ByteString.copyFrom(payload));
+            message = ApplicationMessage.of(Nonce.randomNonce(), 0, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, ByteString.copyFrom(payload));
             byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
             message.writeTo(byteBuf);
         }
