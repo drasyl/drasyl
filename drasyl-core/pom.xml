@@ -162,7 +162,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <protocVersion>3.14.0</protocVersion>
+                            <protocVersion>3.17.3</protocVersion>
                             <inputDirectories>
                                 <include>src/main/protobuf</include>
                             </inputDirectories>
