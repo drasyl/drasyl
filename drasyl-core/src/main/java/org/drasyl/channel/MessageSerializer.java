@@ -26,10 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
-import org.drasyl.DrasylAddress;
 import org.drasyl.channel.MessageSerializerProtocol.SerializedPayload;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
@@ -39,103 +36,93 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.Null.NULL;
 
 /**
  * This handler serializes messages to {@link ApplicationMessage} an vice vera.
  */
 @SuppressWarnings({ "java:S110" })
-public final class MessageSerializer extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
+public final class MessageSerializer extends MessageToMessageCodec<ByteString, Object> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
-    private final int networkId;
-    private final DrasylAddress myAddress;
-    private final ProofOfWork myProofOfWork;
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
 
-    public MessageSerializer(final int networkId,
-                             final DrasylAddress myAddress,
-                             final ProofOfWork myProofOfWork,
-                             final Serialization inboundSerialization,
+    public MessageSerializer(final Serialization inboundSerialization,
                              final Serialization outboundSerialization) {
-        this.networkId = networkId;
-        this.myAddress = requireNonNull(myAddress);
-        this.myProofOfWork = requireNonNull(myProofOfWork);
         this.inboundSerialization = requireNonNull(inboundSerialization);
         this.outboundSerialization = requireNonNull(outboundSerialization);
     }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<?, ?> msg,
+                          Object o,
                           final List<Object> out) {
-        if (msg.address() instanceof IdentityPublicKey) {
-            final Object o = msg.message();
+        if (o == NULL) {
+            o = null;
+        }
 
-            final String type;
-            if (o != null) {
-                type = o.getClass().getName();
-            }
-            else {
-                type = null;
-            }
+        final String type;
+        if (o != null) {
+            type = o.getClass().getName();
+        }
+        else {
+            type = null;
+        }
 
-            final Serializer serializer = outboundSerialization.findSerializerFor(type);
+        final Serializer serializer = outboundSerialization.findSerializerFor(type);
 
-            if (serializer != null) {
-                try {
-                    final ByteString payload = ByteString.copyFrom(serializer.toByteArray(o));
+        if (serializer != null) {
+            try {
+                final ByteString payload = ByteString.copyFrom(serializer.toByteArray(o));
 
-                    final SerializedPayload.Builder builder = SerializedPayload.newBuilder();
+                final SerializedPayload.Builder builder = SerializedPayload.newBuilder();
 
-                    if (type != null) {
-                        builder.setType(type);
-                    }
-                    builder.setPayload(payload);
-
-                    final ApplicationMessage applicationMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork, (IdentityPublicKey) msg.address(), builder.build().toByteString());
-                    out.add(new AddressedMessage<>(applicationMsg, msg.address()));
-                    LOG.trace("Message has been serialized to `{}`", () -> applicationMsg);
+                if (type != null) {
+                    builder.setType(type);
                 }
-                catch (final IOException e) {
-                    throw new EncoderException("Serialization failed", e);
-                }
+                builder.setPayload(payload);
+
+                final ByteString bytes = builder.build().toByteString();
+                out.add(bytes);
+                LOG.trace("Message has been serialized to `{}`", () -> bytes);
             }
-            else {
-                LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", type);
+            catch (final IOException e) {
+                throw new EncoderException("Serialization failed", e);
             }
         }
         else {
-            out.add(msg);
+            throw new EncoderException("No serializer was found for type `" + type + "`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/");
         }
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<?, ?> msg,
+                          final ByteString bytes,
                           final List<Object> out) {
-        if (msg.message() instanceof ApplicationMessage && msg.address() instanceof IdentityPublicKey) {
-            final ApplicationMessage applicationMsg = (ApplicationMessage) msg.message();
-            try {
-                final SerializedPayload serializedPayload = SerializedPayload.parseFrom(applicationMsg.getPayload());
-                final String type = serializedPayload.getType();
-                final byte[] payload = serializedPayload.getPayload().toByteArray();
-                final Serializer serializer = inboundSerialization.findSerializerFor(type);
+        try {
+            final SerializedPayload serializedPayload = SerializedPayload.parseFrom(bytes);
+            final String type = serializedPayload.getType();
+            final byte[] payload = serializedPayload.getPayload().toByteArray();
+            final Serializer serializer = inboundSerialization.findSerializerFor(type);
 
-                if (serializer != null) {
-                    final Object o = serializer.fromByteArray(payload, type);
-                    out.add(new AddressedMessage<>(o, msg.address()));
-                    LOG.trace("Message has been deserialized to `{}`", () -> o);
+            if (serializer != null) {
+                final Object o = serializer.fromByteArray(payload, type);
+
+                if (o == null) {
+                    out.add(NULL);
+                    LOG.trace("Message has been deserialized to `{}`", () -> NULL);
                 }
                 else {
-                    LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", () -> type);
+                    out.add(o);
+                    LOG.trace("Message has been deserialized to `{}`", () -> o);
                 }
             }
-            catch (final IOException e) {
-                throw new DecoderException("Deserialization failed", e);
+            else {
+                throw new DecoderException("No serializer was found for type `" + type + "`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/");
             }
         }
-        else {
-            out.add(msg);
+        catch (final IOException e) {
+            throw new DecoderException("Deserialization failed", e);
         }
     }
 }
