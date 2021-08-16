@@ -341,11 +341,6 @@ public class ArmHandler extends ChannelDuplexHandler {
                                             final KeyExchangeMessage plaintextMsg,
                                             final Session session,
                                             final ChannelPromise promise) {
-        //TODO: Umschreiben. Hier lieber schauen, ob die Exchange Nachricht sich auf den aktuellen aktiven Key bezieht oder einen möglichen neuen
-        //TODO: in jedem Fall den jeweiligen Key mit einem ACK bestätigen.
-        //TODO: Handlet es sich um einen neuen Key muss auch ein neuer "inactive" key erzeugt und bestätigt werden
-        // on inbound our recipient is the sender of the message
-        // encrypt message with long time key
         ctx.executor().execute(() -> {
             try {
                 //TODO: Umschreiben. Hier lieber schauen, ob die Exchange Nachricht sich auf den aktuellen aktiven Key bezieht oder einen möglichen neuen
