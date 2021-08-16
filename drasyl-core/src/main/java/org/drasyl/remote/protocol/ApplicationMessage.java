@@ -23,12 +23,13 @@ package org.drasyl.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import com.google.protobuf.ByteString;
-import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.crypto.AgreementId;
-import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
+
+import java.io.IOException;
+import java.io.OutputStream;
 
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
@@ -42,61 +43,33 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 @SuppressWarnings("java:S118")
 public abstract class ApplicationMessage extends AbstractFullReadMessage<ApplicationMessage> {
     /**
-     * Returns the fully qualified class name of the payload. Returns {@code null} if the
-     * application sent an empty message.
-     *
-     * @return the fully qualified class name of the payload
-     */
-    @Nullable
-    public abstract String getType();
-
-    /**
-     * Returns the payload. Returns {@code null} if the application sent an empty message.
+     * Returns the payload.
      *
      * @return the payload
      */
-    @Nullable
     public abstract ByteString getPayload();
-
-    public byte[] getPayloadAsByteArray() {
-        if (getPayload() != null) {
-            return getPayload().toByteArray();
-        }
-        else {
-            return new byte[0];
-        }
-    }
 
     @Override
     public ApplicationMessage incrementHopCount() {
-        return ApplicationMessage.of(getNonce(), getNetworkId(), getSender(), getProofOfWork(), getRecipient(), getHopCount().increment(), getAgreementId(), getType(), getPayload());
+        return ApplicationMessage.of(getNonce(), getNetworkId(), getSender(), getProofOfWork(), getRecipient(), getHopCount().increment(), getAgreementId(), getPayload());
     }
 
     @Override
     public ApplicationMessage setAgreementId(final AgreementId agreementId) {
-        return ApplicationMessage.of(getNonce(), getNetworkId(), getSender(), getProofOfWork(), getRecipient(), getHopCount(), agreementId, getType(), getPayload());
+        return ApplicationMessage.of(getNonce(), getNetworkId(), getSender(), getProofOfWork(), getRecipient(), getHopCount(), agreementId, getPayload());
     }
 
     @Override
-    protected PrivateHeader buildPrivateHeader() {
-        return PrivateHeader.newBuilder()
+    protected void writePrivateHeaderTo(final OutputStream out) throws IOException {
+        PrivateHeader.newBuilder()
                 .setType(APPLICATION)
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     @Override
-    protected Application buildBody() {
-        final Application.Builder builder = Application.newBuilder();
-
-        if (getType() != null) {
-            builder.setType(getType());
-        }
-
-        if (getPayload() != null) {
-            builder.setPayload(getPayload());
-        }
-
-        return builder.build();
+    protected void writeBodyTo(final OutputStream out) throws IOException {
+        getPayload().writeTo(out);
     }
 
     /**
@@ -109,10 +82,10 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
      * @param recipient   the public key of the recipient
      * @param hopCount    the hop count
      * @param agreementId the agreement id
-     * @param type        the fully qualified class name of the payload
-     * @param payload     the serialized payload
+     * @param payload     the payload
      * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
-     *                              recipient}, or {@code hopCount} is {@code null}
+     *                              recipient}, {@code hopCount}, or {@code payload} is {@code
+     *                              null}
      */
     @SuppressWarnings("java:S107")
     public static ApplicationMessage of(final Nonce nonce,
@@ -122,7 +95,6 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
                                         final IdentityPublicKey recipient,
                                         final HopCount hopCount,
                                         final AgreementId agreementId,
-                                        final String type,
                                         final ByteString payload) {
         return new AutoValue_ApplicationMessage(
                 nonce,
@@ -132,7 +104,6 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
                 hopCount,
                 agreementId,
                 recipient,
-                type,
                 payload
         );
     }
@@ -145,17 +116,14 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
      * @param sender      the public key of the sender
      * @param proofOfWork the proof of work of {@code sender}
      * @param recipient   the public key of the recipient
-     * @param type        the fully qualified class name of the payload
-     * @param payload     the serialized payload
-     * @throws NullPointerException if {@code sender}, {@code proofOfWork}, {@code recipient}, or
-     *                              {@code correspondingId} is {@code null}
+     * @param payload     the payload
+     * @throws NullPointerException if  {@code sender}, {@code proofOfWork}, {@code recipient}, or
+     *                              {@code payload} is {@code null}
      */
-    @SuppressWarnings("java:S107")
     public static ApplicationMessage of(final int networkId,
                                         final IdentityPublicKey sender,
                                         final ProofOfWork proofOfWork,
                                         final IdentityPublicKey recipient,
-                                        final String type,
                                         final ByteString payload) {
         return of(
                 randomNonce(),
@@ -165,43 +133,7 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
                 recipient,
                 HopCount.of(),
                 null,
-                type,
                 payload
-        );
-    }
-
-    /**
-     * Creates new application message.
-     *
-     * @param nonce       the nonce
-     * @param networkId   the network id
-     * @param sender      the public key of the sender
-     * @param proofOfWork the proof of work of {@code sender}
-     * @param recipient   the public key of the recipient
-     * @param hopCount    the hop count
-     * @param agreementId the agreement id
-     * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
-     *                              recipient}, or {@code hopCount} is {@code null}
-     */
-    @SuppressWarnings("java:S107")
-    static ApplicationMessage of(final Nonce nonce,
-                                 final int networkId,
-                                 final IdentityPublicKey sender,
-                                 final ProofOfWork proofOfWork,
-                                 final IdentityPublicKey recipient,
-                                 final HopCount hopCount,
-                                 final AgreementId agreementId,
-                                 final Application body) {
-        return of(
-                nonce,
-                networkId,
-                sender,
-                proofOfWork,
-                recipient,
-                hopCount,
-                agreementId,
-                body.getType(),
-                body.getPayload()
         );
     }
 }

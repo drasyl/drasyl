@@ -30,6 +30,9 @@ import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 
@@ -66,17 +69,19 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
     }
 
     @Override
-    protected PrivateHeader buildPrivateHeader() {
-        return PrivateHeader.newBuilder()
+    protected void writePrivateHeaderTo(final OutputStream out) throws IOException {
+        PrivateHeader.newBuilder()
                 .setType(DISCOVERY)
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     @Override
-    protected Discovery buildBody() {
-        return Discovery.newBuilder()
+    protected void writeBodyTo(final OutputStream out) throws IOException {
+        Discovery.newBuilder()
                 .setChildrenTime(getChildrenTime())
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     /**

@@ -30,6 +30,8 @@ import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -80,14 +82,15 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
     }
 
     @Override
-    protected PrivateHeader buildPrivateHeader() {
-        return PrivateHeader.newBuilder()
+    protected void writePrivateHeaderTo(final OutputStream out) throws IOException {
+        PrivateHeader.newBuilder()
                 .setType(UNITE)
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     @Override
-    protected Unite buildBody() {
+    protected void writeBodyTo(final OutputStream out) throws IOException {
         final Unite.Builder builder = Unite.newBuilder()
                 .setPublicKey(getPublicKey().getBytes())
                 .setPort(getPort());
@@ -102,7 +105,7 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
             throw new IllegalArgumentException("address must be resolved");
         }
 
-        return builder.build();
+        builder.build().writeDelimitedTo(out);
     }
 
     /**

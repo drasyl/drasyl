@@ -29,6 +29,9 @@ import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.KeyExchange;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.remote.protocol.Protocol.MessageType.KEY_EXCHANGE;
 
@@ -53,17 +56,19 @@ public abstract class KeyExchangeMessage extends AbstractFullReadMessage<KeyExch
     }
 
     @Override
-    protected PrivateHeader buildPrivateHeader() {
-        return PrivateHeader.newBuilder()
+    protected void writePrivateHeaderTo(final OutputStream out) throws IOException {
+        PrivateHeader.newBuilder()
                 .setType(KEY_EXCHANGE)
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     @Override
-    protected KeyExchange buildBody() {
-        return KeyExchange.newBuilder()
+    protected void writeBodyTo(final OutputStream out) throws IOException {
+        KeyExchange.newBuilder()
                 .setSessionKey(getSessionKey().getBytes())
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     /**

@@ -67,7 +67,8 @@ class MessageSerializerTest {
             when(inboundSerialization.findSerializerFor(String.class.getName()).fromByteArray(any(), eq(String.class.getName()))).thenReturn("Hallo Welt");
 
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
-            final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
+            final ByteString payload = MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteString();
+            final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), payload);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
@@ -85,11 +86,10 @@ class MessageSerializerTest {
         @Test
         void shouldBeAbleToDeserializeNullMessage(@Mock final IdentityPublicKey address,
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Serialization inboundSerialization,
-                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) throws IOException {
-            when(inboundSerialization.findSerializerFor(null).fromByteArray(any(), eq((String) null))).thenReturn(null);
-
+                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) {
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
-            final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), null, null);
+            final ByteString payload = MessageSerializerProtocol.SerializedPayload.newBuilder().build().toByteString();
+            final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), payload);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new AddressedMessage<>(message, address));
@@ -111,7 +111,8 @@ class MessageSerializerTest {
             when(inboundSerialization.findSerializerFor(anyString())).thenReturn(null);
 
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
-            final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
+            final ByteString payload = MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteString();
+            final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), payload);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
@@ -130,7 +131,8 @@ class MessageSerializerTest {
             when(inboundSerialization.findSerializerFor(anyString()).fromByteArray(any(), anyString())).thenThrow(IOException.class);
 
             final MessageSerializer handler = new MessageSerializer(networkId, identity.getAddress(), identity.getProofOfWork(), inboundSerialization, outboundSerialization);
-            final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), String.class.getName(), ByteString.copyFromUtf8("Hallo Welt"));
+            final ByteString payload = MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteString();
+            final ApplicationMessage message = ApplicationMessage.of(1, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), payload);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
