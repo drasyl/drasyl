@@ -22,12 +22,13 @@
 package org.drasyl.loopback.handler;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.MessageToMessageEncoder;
 import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+
+import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,7 +36,7 @@ import static java.util.Objects.requireNonNull;
  * This handler converts outgoing messages addressed to the local node to incoming messages
  * addressed to the local node.
  */
-public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
+public class LoopbackMessageHandler extends MessageToMessageEncoder<AddressedMessage<?, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(LoopbackMessageHandler.class);
     private final DrasylAddress myAddress;
 
@@ -44,21 +45,16 @@ public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
     }
 
     @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) throws Exception {
-        if (msg instanceof AddressedMessage) {
-            if (myAddress.equals(((AddressedMessage<?, ?>) msg).address())) {
-                LOG.trace("Outbound message `{}` is addressed to us. Convert to inbound message.", ((AddressedMessage<?, ?>) msg)::message);
-                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), myAddress));
-                promise.setSuccess();
-            }
-            else {
-                ctx.write(msg, promise);
-            }
+    protected void encode(final ChannelHandlerContext ctx,
+                          final AddressedMessage<?, ?> msg,
+                          final List<Object> out) throws Exception {
+        if (myAddress.equals(msg.address())) {
+            LOG.trace("Outbound message `{}` is addressed to us. Convert to inbound message.", ((AddressedMessage<?, ?>) msg)::message);
+            out.add(new AddressedMessage<>(msg.message(), myAddress));
         }
         else {
-            super.write(ctx, msg, promise);
+            // pass through message
+            out.add(msg);
         }
     }
 }
