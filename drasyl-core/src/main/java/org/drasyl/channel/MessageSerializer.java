@@ -27,6 +27,7 @@ import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.DrasylAddress;
+import org.drasyl.channel.MessageSerializerProtocol.SerializedPayload;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.ApplicationMessage;
@@ -83,7 +84,15 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
             if (serializer != null) {
                 try {
                     final ByteString payload = ByteString.copyFrom(serializer.toByteArray(o));
-                    final ApplicationMessage applicationMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork, (IdentityPublicKey) msg.address(), type, payload);
+
+                    final SerializedPayload.Builder builder = SerializedPayload.newBuilder();
+
+                    if (type != null) {
+                        builder.setType(type);
+                    }
+                    builder.setPayload(payload);
+
+                    final ApplicationMessage applicationMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) myAddress, myProofOfWork, (IdentityPublicKey) msg.address(), builder.build().toByteString());
                     out.add(new AddressedMessage<>(applicationMsg, msg.address()));
                     LOG.trace("Message has been serialized to `{}`", () -> applicationMsg);
                 }
@@ -106,20 +115,23 @@ public final class MessageSerializer extends MessageToMessageCodec<AddressedMess
                           final List<Object> out) {
         if (msg.message() instanceof ApplicationMessage && msg.address() instanceof IdentityPublicKey) {
             final ApplicationMessage applicationMsg = (ApplicationMessage) msg.message();
-            final Serializer serializer = inboundSerialization.findSerializerFor(applicationMsg.getType());
+            try {
+                final SerializedPayload serializedPayload = SerializedPayload.parseFrom(applicationMsg.getPayload());
+                final String type = serializedPayload.getType();
+                final byte[] payload = serializedPayload.getPayload().toByteArray();
+                final Serializer serializer = inboundSerialization.findSerializerFor(type);
 
-            if (serializer != null) {
-                try {
-                    final Object o = serializer.fromByteArray(applicationMsg.getPayloadAsByteArray(), applicationMsg.getType());
+                if (serializer != null) {
+                    final Object o = serializer.fromByteArray(payload, type);
                     out.add(new AddressedMessage<>(o, msg.address()));
                     LOG.trace("Message has been deserialized to `{}`", () -> o);
                 }
-                catch (final IOException e) {
-                    throw new DecoderException("Deserialization failed", e);
+                else {
+                    LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", () -> type);
                 }
             }
-            else {
-                LOG.warn("No serializer was found for type `{}`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/", applicationMsg::getType);
+            catch (final IOException e) {
+                throw new DecoderException("Deserialization failed", e);
             }
         }
         else {

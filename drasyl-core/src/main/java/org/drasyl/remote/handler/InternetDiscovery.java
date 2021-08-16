@@ -42,7 +42,6 @@ import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.DiscoveryMessage;
 import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.Nonce;
-import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.RemoteMessage;
 import org.drasyl.remote.protocol.UniteMessage;
 import org.drasyl.util.Pair;
@@ -613,8 +612,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
 
         /**
          * Returns the time when we last received a message from this peer. This includes all
-         * message types ({@link DiscoveryMessage}, {@link AcknowledgementMessage}, {@link
-         * Application}, {@link UniteMessage}, etc.)
+         * message types (discovery, acknowledge, application, unite, etc.)
          */
         public long getLastInboundControlTrafficTime() {
             return lastInboundControlTrafficTime;

@@ -28,6 +28,9 @@ import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 
@@ -55,17 +58,19 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
     }
 
     @Override
-    protected PrivateHeader buildPrivateHeader() {
-        return PrivateHeader.newBuilder()
+    protected void writePrivateHeaderTo(final OutputStream out) throws IOException {
+        PrivateHeader.newBuilder()
                 .setType(ACKNOWLEDGEMENT)
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     @Override
-    protected Acknowledgement buildBody() {
-        return Acknowledgement.newBuilder()
+    protected void writeBodyTo(final OutputStream out) throws IOException {
+        Acknowledgement.newBuilder()
                 .setCorrespondingId(getCorrespondingId().toByteString())
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     /**

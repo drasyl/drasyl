@@ -421,7 +421,7 @@ class InternetDiscoveryTest {
                 when(identity.getAddress()).thenReturn(recipient);
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
 
-                final ApplicationMessage applicationMessage = ApplicationMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, byte[].class.getName(), ByteString.EMPTY);
+                final ApplicationMessage applicationMessage = ApplicationMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, ByteString.EMPTY);
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {

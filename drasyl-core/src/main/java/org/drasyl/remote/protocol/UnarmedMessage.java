@@ -22,6 +22,7 @@
 package org.drasyl.remote.protocol;
 
 import com.google.auto.value.AutoValue;
+import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
@@ -35,7 +36,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
-import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.Protocol.KeyExchange;
 import org.drasyl.remote.protocol.Protocol.KeyExchangeAcknowledgement;
@@ -147,7 +147,7 @@ public abstract class UnarmedMessage implements PartialReadMessage {
                             getRecipient(),
                             getHopCount(),
                             getAgreementId(),
-                            Application.parseDelimitedFrom(in)
+                            ByteString.copyFrom(in.readAllBytes())
                     );
                 case UNITE:
                     return UniteMessage.of(

@@ -117,7 +117,6 @@ class ArmHandlerTest {
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
                                 IdentityTestUtil.ID_1.getProofOfWork(),
                                 IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body.getClass().getName(),
                                 body).
                         setAgreementId(agreementId);
 
@@ -149,7 +148,6 @@ class ArmHandlerTest {
                                 IdentityTestUtil.ID_3.getIdentityPublicKey(),
                                 IdentityTestUtil.ID_3.getProofOfWork(),
                                 IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body.getClass().getName(),
                                 body).
                         setAgreementId(agreementId);
 
@@ -198,7 +196,6 @@ class ArmHandlerTest {
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        body.getClass().getName(),
                         body);
 
                 channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
@@ -238,7 +235,6 @@ class ArmHandlerTest {
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
                                 IdentityTestUtil.ID_1.getProofOfWork(),
                                 IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body.getClass().getName(),
                                 body).
                         setAgreementId(agreementId);
 
@@ -268,7 +264,6 @@ class ArmHandlerTest {
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
                         IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body.getClass().getName(),
                         body);
 
                 channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
@@ -297,7 +292,6 @@ class ArmHandlerTest {
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork(),
                         IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body.getClass().getName(),
                         body);
 
                 channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
@@ -326,7 +320,6 @@ class ArmHandlerTest {
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
                                 IdentityTestUtil.ID_1.getProofOfWork(),
                                 IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body.getClass().getName(),
                                 body)
                         .setAgreementId(agreementId);
 
@@ -355,7 +348,6 @@ class ArmHandlerTest {
                                 IdentityTestUtil.ID_2.getIdentityPublicKey(),
                                 IdentityTestUtil.ID_2.getProofOfWork(),
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                                body.getClass().getName(),
                                 body)
                         .setAgreementId(agreementId);
 
@@ -435,7 +427,6 @@ class ArmHandlerTest {
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
                                 IdentityTestUtil.ID_1.getProofOfWork(),
                                 IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body.getClass().getName(),
                                 body)
                         .setAgreementId(agreementId2)
                         .arm(Crypto.INSTANCE, sessionPairSender);
@@ -468,7 +459,6 @@ class ArmHandlerTest {
                                 IdentityTestUtil.ID_1.getIdentityPublicKey(),
                                 IdentityTestUtil.ID_1.getProofOfWork(),
                                 IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body.getClass().getName(),
                                 body)
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);

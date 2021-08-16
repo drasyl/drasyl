@@ -28,6 +28,9 @@ import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.KeyExchangeAcknowledgement;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.remote.protocol.Protocol.MessageType.KEY_EXCHANGE_ACKNOWLEDGEMENT;
 
@@ -57,17 +60,19 @@ public abstract class KeyExchangeAcknowledgementMessage extends AbstractFullRead
     }
 
     @Override
-    protected PrivateHeader buildPrivateHeader() {
-        return PrivateHeader.newBuilder()
+    protected void writePrivateHeaderTo(final OutputStream out) throws IOException {
+        PrivateHeader.newBuilder()
                 .setType(KEY_EXCHANGE_ACKNOWLEDGEMENT)
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     @Override
-    protected KeyExchangeAcknowledgement buildBody() {
-        return KeyExchangeAcknowledgement.newBuilder()
+    protected void writeBodyTo(final OutputStream out) throws IOException {
+        KeyExchangeAcknowledgement.newBuilder()
                 .setAgreementId(getAcknowledgementAgreementId().toByteString())
-                .build();
+                .build()
+                .writeDelimitedTo(out);
     }
 
     /**

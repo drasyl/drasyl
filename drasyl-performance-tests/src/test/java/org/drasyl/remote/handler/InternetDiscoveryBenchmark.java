@@ -101,7 +101,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         ctx = new MyHandlerContext();
         recipient = new MyAddress();
         final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
-        msg = ApplicationMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), recipient, byte[].class.getName(), ByteString.EMPTY);
+        msg = ApplicationMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), recipient, ByteString.EMPTY);
 
         future = new MyChannelPromise();
 

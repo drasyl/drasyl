@@ -52,7 +52,7 @@ public class ArmedMessageBenchmark extends AbstractBenchmark {
     public void setup() {
         try {
             final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
-            final ApplicationMessage message = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, String.class.getSimpleName(), ByteString.copyFrom(randomBytes(1024)));
+            final ApplicationMessage message = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, ByteString.copyFrom(randomBytes(1024)));
             sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
             armedMessage = message.arm(Crypto.INSTANCE, new SessionPair(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
         }
