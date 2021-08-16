@@ -21,6 +21,7 @@
  */
 package org.drasyl.channel;
 
+import com.google.protobuf.ByteString;
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
@@ -30,6 +31,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
+import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.net.SocketAddress;
@@ -49,6 +51,9 @@ import static org.drasyl.channel.Null.NULL;
  * @see DrasylServerChannel
  */
 public class DrasylChannel extends AbstractChannel {
+    private static final String EXPECTED_TYPES =
+            " (expected: " + StringUtil.simpleClassName(ByteString.class) + ')';
+
     enum State {OPEN, BOUND, CONNECTED, CLOSED}
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
@@ -118,6 +123,16 @@ public class DrasylChannel extends AbstractChannel {
         // NOOP
         // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings
         // TODO: we should maybe create an inboundBuffer?
+    }
+
+    @Override
+    protected Object filterOutboundMessage(final Object msg) throws Exception {
+        if (msg instanceof ByteString) {
+            return super.filterOutboundMessage(msg);
+        }
+
+        throw new UnsupportedOperationException(
+                "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
     }
 
     @Override

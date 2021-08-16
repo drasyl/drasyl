@@ -21,6 +21,7 @@
  */
 package org.drasyl.channel;
 
+import com.google.protobuf.ByteString;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
@@ -36,6 +37,7 @@ import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -138,6 +140,25 @@ class DrasylChannelTest {
 
             verify(channel.parent()).write(any());
             verify(parent).flush();
+        }
+    }
+
+    @Nested
+    class FilterOutboundMessage {
+        @Test
+        void shouldRejectNonByteStringMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+
+            assertThrows(UnsupportedOperationException.class, () -> channel.filterOutboundMessage("Hello World"));
+        }
+
+        @Test
+        void shouldAcceptByteStringMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) throws Exception {
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+
+            assertEquals(ByteString.EMPTY, channel.filterOutboundMessage(ByteString.EMPTY));
         }
     }
 }

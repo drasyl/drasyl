@@ -37,6 +37,7 @@ import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.ApplicationMessageCodec;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MessageSerializer;
 import org.drasyl.channel.Serialization;
@@ -192,7 +193,7 @@ public abstract class DrasylNode {
                 .localAddress(identity)
                 .channel(DrasylServerChannel.class)
                 .handler(new DrasylNodeChannelInitializer(config, identity, inboundSerialization, outboundSerialization, this::onEvent))
-                .childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent));
+                .childHandler(new DrasylNodeChildChannelInitializer(config, identity, inboundSerialization, outboundSerialization, this::onEvent));
 
         LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
     }
@@ -482,9 +483,9 @@ public abstract class DrasylNode {
         public static final String PLUGIN_MANAGER_HANDLER = "PLUGIN_MANAGER_HANDLER";
         public static final String PEERS_MANAGER_HANDLER = "PEERS_MANAGER_HANDLER";
         public static final String CHILD_CHANNEL_ROUTER = "CHILD_CHANNEL_ROUTER";
+        public static final String APPLICATION_MESSAGE_CODEC = "APPLICATION_MESSAGE_CODEC";
         public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
         public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
-        public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
         public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
         public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
         public static final String INTERNET_DISCOVERY = "INTERNET_DISCOVERY";
@@ -547,6 +548,9 @@ public abstract class DrasylNode {
 
             ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 
+            // convert ByteString <-> ApplicationMessage
+            ch.pipeline().addFirst(APPLICATION_MESSAGE_CODEC, new ApplicationMessageCodec(this.config.getNetworkId(), this.identity.getIdentityPublicKey(), this.identity.getProofOfWork()));
+
             // convert outbound messages addresses to us to inbound messages
             ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler(this.identity.getAddress()));
 
@@ -556,15 +560,6 @@ public abstract class DrasylNode {
             }
 
             if (this.config.isRemoteEnabled()) {
-                // convert Object <-> ApplicationMessage
-                ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(
-                        this.config.getNetworkId(),
-                        this.identity.getAddress(),
-                        this.identity.getProofOfWork(),
-                        this.inboundSerialization,
-                        this.outboundSerialization
-                ));
-
                 // route outbound messages to pre-configured ip addresses
                 if (!this.config.getRemoteStaticRoutes().isEmpty()) {
                     ch.pipeline().addFirst(STATIC_ROUTES_HANDLER, new StaticRoutesHandler(this.config.getRemoteStaticRoutes()));
@@ -848,13 +843,23 @@ public abstract class DrasylNode {
      */
     public static class DrasylNodeChildChannelInitializer extends ChannelInitializer<Channel> {
         public static final String NULL_MESSAGE_UNWRAPPER = "NULL_MESSAGE_UNWRAPPER";
+        public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
         public static final String INACTIVITY_CLOSER = "INACTIVITY_CLOSER";
         public static final String INACTIVITY_DETECTOR = "INACTIVITY_DETECTOR";
         private final DrasylConfig config;
+        private final Identity identity;
+        private final Serialization inboundSerialization;
+        private final Serialization outboundSerialization;
         private final Consumer<Event> onEvent;
 
         public DrasylNodeChildChannelInitializer(final DrasylConfig config,
+                                                 final Identity identity,
+                                                 final Serialization inboundSerialization,
+                                                 final Serialization outboundSerialization,
                                                  final Consumer<Event> onEvent) {
+            this.identity = requireNonNull(identity);
+            this.inboundSerialization = requireNonNull(inboundSerialization);
+            this.outboundSerialization = requireNonNull(outboundSerialization);
             this.onEvent = requireNonNull(onEvent);
             this.config = requireNonNull(config);
         }
@@ -874,6 +879,9 @@ public abstract class DrasylNode {
                     onEvent.accept(event);
                 }
             });
+
+            // convert Object <-> ByteString
+            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(this.inboundSerialization, this.outboundSerialization));
 
             // close inactive channels (to free up resources)
             final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
