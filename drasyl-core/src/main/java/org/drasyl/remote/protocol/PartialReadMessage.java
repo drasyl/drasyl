@@ -48,7 +48,7 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
     ByteBuf getBytes();
 
     /**
-     * Calls {@link ByteBuf#release()} on {@link #getBytes()}.
+     * Calls {@link PartialReadMessage#release()}.
      */
     @Override
     void close();
