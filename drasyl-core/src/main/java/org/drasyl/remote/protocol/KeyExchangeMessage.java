@@ -148,8 +148,8 @@ public abstract class KeyExchangeMessage extends AbstractFullReadMessage<KeyExch
      * @param hopCount    the hop count
      * @param agreementId the agreement id
      * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
-     *                              recipient}, {@code hopCount}, or {@code body.getSessionKey()} is
-     *                              {@code null}
+     *                              recipient}, {@code hopCount}, {@code body}, or {@code
+     *                              body.getSessionKey()} is {@code null}
      */
     @SuppressWarnings("java:S107")
     static KeyExchangeMessage of(final Nonce nonce,

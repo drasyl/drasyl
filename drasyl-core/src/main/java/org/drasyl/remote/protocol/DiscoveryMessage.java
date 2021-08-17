@@ -171,6 +171,21 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
         );
     }
 
+    /**
+     * Creates new discovery message.
+     *
+     * @param nonce       the nonce
+     * @param networkId   the network id
+     * @param sender      the public key of the sender
+     * @param proofOfWork the proof of work of {@code sender}
+     * @param recipient   the public key of the recipient
+     * @param hopCount    the hop count
+     * @param agreementId the agreement id
+     * @throws NullPointerException     if {@code nonce},  {@code sender}, {@code proofOfWork},
+     *                                  {@code recipient}, {@code hopCount}, {@code body}, or {@code
+     *                                  body.getChildrenTime()}
+     * @throws IllegalArgumentException if {@code body} contains an invalid address
+     */
     @SuppressWarnings("java:S107")
     static DiscoveryMessage of(final Nonce nonce,
                                final int networkId,

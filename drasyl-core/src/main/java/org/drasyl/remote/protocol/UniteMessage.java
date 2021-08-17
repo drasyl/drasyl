@@ -191,7 +191,7 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
     }
 
     /**
-     * Creates new unit message.
+     * Creates new unite message.
      *
      * @param nonce       the nonce
      * @param networkId   the network id
@@ -201,8 +201,8 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
      * @param hopCount    the hop count
      * @param agreementId the agreement id
      * @throws NullPointerException     if {@code nonce},  {@code sender}, {@code proofOfWork},
-     *                                  {@code recipient}, {@code hopCount}, {@code publicKey}, or
-     *                                  {@code address} is {@code null}
+     *                                  {@code recipient}, {@code hopCount}, {@code publicKey},
+     *                                  {@code body}, or {@code address} is {@code null}
      * @throws IllegalArgumentException if {@code body} contains an invalid address
      */
     @SuppressWarnings("java:S107")

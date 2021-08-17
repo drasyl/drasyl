@@ -127,7 +127,7 @@ public abstract class ArmedMessage implements PartialReadMessage {
                         getHopCount(),
                         getAgreementId(),
                         Unpooled.wrappedBuffer(decryptedBytes)
-                ).readAndRelease();
+                ).read();
             }
         }
         catch (final IOException | CryptoException e) {

@@ -117,6 +117,8 @@ public abstract class UnarmedMessage implements PartialReadMessage {
 
     /**
      * Read the remainder of this message and returns the resulted {@link FullReadMessage}.
+     * <p>
+     * {@code getBytes()} will be consumed and released by this method.
      *
      * @return the fully read message
      * @throws InvalidMessageFormatException if message could not be read
@@ -125,6 +127,10 @@ public abstract class UnarmedMessage implements PartialReadMessage {
     public FullReadMessage<?> read() throws InvalidMessageFormatException {
         try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
             final PrivateHeader privateHeader = PrivateHeader.parseDelimitedFrom(in);
+
+            if (privateHeader == null) {
+                throw new InvalidMessageFormatException("No private header found. Stream is at EOF.");
+            }
 
             switch (privateHeader.getType()) {
                 case ACKNOWLEDGEMENT:
@@ -200,22 +206,8 @@ public abstract class UnarmedMessage implements PartialReadMessage {
         catch (final IOException e) {
             throw new InvalidMessageFormatException("Unable to read full message.", e);
         }
-    }
-
-    /**
-     * Read the remainder of this message, returns the resulted {@link FullReadMessage}, and then
-     * releases this message.
-     *
-     * @return the fully read message
-     * @throws InvalidMessageFormatException if message could not be read
-     */
-    @SuppressWarnings("java:S1452")
-    public FullReadMessage<?> readAndRelease() throws InvalidMessageFormatException {
-        try {
-            return read();
-        }
         finally {
-            release();
+            getBytes().release();
         }
     }
 
@@ -283,7 +275,7 @@ public abstract class UnarmedMessage implements PartialReadMessage {
      * @throws InvalidMessageFormatException if arming was not possible
      */
     public ArmedMessage armAndRelease(final Crypto cryptoInstance,
-                                         final SessionPair sessionPair) throws InvalidMessageFormatException {
+                                      final SessionPair sessionPair) throws InvalidMessageFormatException {
         try {
             return arm(cryptoInstance, sessionPair);
         }

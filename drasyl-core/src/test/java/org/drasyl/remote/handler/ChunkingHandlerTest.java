@@ -113,7 +113,6 @@ class ChunkingHandlerTest {
                     final AddressedMessage<UnarmedMessage, SocketAddress> actual = channel.readInbound();
                     assertEquals(message, actual.message().read());
 
-                    actual.release();
                     bytes.release();
                 }
                 finally {

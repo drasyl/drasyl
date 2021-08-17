@@ -149,8 +149,8 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
      * @param hopCount    the hop count
      * @param agreementId the agreement id
      * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
-     *                              recipient}, {@code hopCount}, or {@code body.getCorrespondingId()}
-     *                              is {@code null}
+     *                              recipient}, {@code hopCount}, {@code body}, or {@code
+     *                              body.getCorrespondingId()} is {@code null}
      */
     @SuppressWarnings("java:S107")
     static AcknowledgementMessage of(final Nonce nonce,
