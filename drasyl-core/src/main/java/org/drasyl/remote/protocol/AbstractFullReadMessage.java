@@ -54,7 +54,7 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
                     getAgreementId(),
                     Unpooled.wrappedBuffer(bytes)
             );
-            return unarmedMessage.arm(cryptoInstance, sessionPair);
+            return unarmedMessage.armAndRelease(cryptoInstance, sessionPair);
         }
         catch (final IOException e) {
             throw new InvalidMessageFormatException("Unable to arm message", e);

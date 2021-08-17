@@ -239,7 +239,7 @@ public abstract class UnarmedMessage implements PartialReadMessage {
     }
 
     /**
-     * Returns a armed version ({@link ArmedMessage}) of this message.
+     * Returns an armed version ({@link ArmedMessage}) of this message.
      *
      * @param cryptoInstance the crypto instance that should be used
      * @param sessionPair    will be used for encryption
@@ -270,6 +270,25 @@ public abstract class UnarmedMessage implements PartialReadMessage {
         }
         finally {
             getBytes().resetReaderIndex();
+        }
+    }
+
+    /**
+     * Returns an armed version ({@link ArmedMessage}) of this message and then releases this
+     * message.
+     *
+     * @param cryptoInstance the crypto instance that should be used
+     * @param sessionPair    will be used for encryption
+     * @return the armed version ({@link ArmedMessage}) of this message
+     * @throws InvalidMessageFormatException if arming was not possible
+     */
+    public ArmedMessage armAndRelease(final Crypto cryptoInstance,
+                                         final SessionPair sessionPair) throws InvalidMessageFormatException {
+        try {
+            return arm(cryptoInstance, sessionPair);
+        }
+        finally {
+            release();
         }
     }
 
