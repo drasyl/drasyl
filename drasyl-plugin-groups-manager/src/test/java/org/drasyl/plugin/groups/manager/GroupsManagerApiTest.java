@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import spark.Request;
 import spark.Response;
 import spark.Service;
+import spark.Service.StaticFiles;
 
 import java.lang.reflect.Field;
 import java.net.InetAddress;
@@ -44,8 +45,6 @@ import static org.eclipse.jetty.http.HttpStatus.UNPROCESSABLE_ENTITY_422;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -58,7 +57,8 @@ class GroupsManagerApiTest {
     private final int bindPort = 8080;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DatabaseAdapter database;
-    private final Service server = Service.ignite().ipAddress("0.0.0.0").port(0);
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Service server;
     private GroupsManagerApi underTest;
 
     @BeforeEach
@@ -69,28 +69,24 @@ class GroupsManagerApiTest {
     @Nested
     class Start {
         @Test
-        void shouldInitializeServer() throws NoSuchFieldException, IllegalAccessException {
-            final Field field = Service.class.getDeclaredField("initialized");
+        void shouldInitializeServer(@Mock final StaticFiles staticFiles) throws NoSuchFieldException, IllegalAccessException {
+            final Field field = Service.class.getDeclaredField("staticFiles");
             field.setAccessible(true);
+            field.set(server, staticFiles);
 
             underTest.start();
 
-            assertTrue((Boolean) field.get(server));
+            verify(server).init();
         }
     }
 
     @Nested
     class Shutdown {
         @Test
-        void shouldInitializeServer() throws NoSuchFieldException, IllegalAccessException {
-            final Field field = Service.class.getDeclaredField("initialized");
-            field.setAccessible(true);
-            server.init();
-            server.awaitInitialization();
-
+        void shouldInitializeServer() {
             underTest.shutdown();
 
-            assertFalse((Boolean) field.get(server));
+            verify(server).stop();
         }
     }
 
@@ -140,7 +136,7 @@ class GroupsManagerApiTest {
 
         @Test
         void shouldReturnErrorOnInvalidJson(@Mock final Request request,
-                                            @Mock final Response response) throws DatabaseException {
+                                            @Mock final Response response) {
             when(request.body()).thenReturn("");
 
             assertThat(underTest.groupsCreate(request, response).toString(), containsString("Unprocessable Entity:"));
