@@ -122,12 +122,12 @@ public class UdpServer extends ChannelDuplexHandler {
             actualBindPort = this.bindPort;
         }
         final ChannelFuture channelFuture = bootstrap
-                .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
+                .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
                     @Override
                     protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                 final DatagramPacket packet) {
                         LOG.trace("Datagram received {}", packet);
-                        ctx.fireChannelRead(new AddressedMessage<>(packet.content().retain(), packet.sender()));
+                        ctx.fireChannelRead(new AddressedMessage<>(packet.content(), packet.sender()));
                     }
                 })
                 .bind(bindHost, actualBindPort);

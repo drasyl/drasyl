@@ -237,6 +237,7 @@ public class TcpClient extends ChannelDuplexHandler {
 
         public TcpClientHandler(
                 final ChannelHandlerContext ctx) {
+            super(false);
             this.ctx = requireNonNull(ctx);
         }
 
@@ -245,7 +246,7 @@ public class TcpClient extends ChannelDuplexHandler {
                                     final ByteBuf msg) {
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
-            ctx.fireChannelRead(new AddressedMessage<>(msg.retain(), sender));
+            ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
         }
     }
 }

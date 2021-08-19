@@ -94,6 +94,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             }
         }
         else {
+            // no chunk. pass through message
             ctx.fireChannelRead(msg);
         }
     }
@@ -109,9 +110,10 @@ public class ChunkingHandler extends ChannelDuplexHandler {
             if (myAddress.equals(remoteMsg.getSender())) {
                 // message from us, check if we have to chunk it
                 final ByteBuf messageByteBuf = ctx.alloc().ioBuffer();
-                remoteMsg.writeTo(messageByteBuf);
+                remoteMsg.writeTo(messageByteBuf); // TODO: inefficient...
                 final int messageLength = messageByteBuf.readableBytes();
                 if (messageMaxContentLength > 0 && messageLength > messageMaxContentLength) {
+                    ReferenceCountUtil.safeRelease(remoteMsg);
                     ReferenceCountUtil.safeRelease(messageByteBuf);
                     LOG.debug("The message has a size of {} bytes and is too large. The max. allowed size is {} bytes. Message dropped.", messageLength, messageMaxContentLength);
                 }

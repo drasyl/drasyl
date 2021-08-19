@@ -24,6 +24,7 @@ package org.drasyl.remote.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.remote.protocol.RemoteMessage;
 
@@ -51,8 +52,10 @@ public final class HopCountGuard extends ChannelOutboundHandlerAdapter {
             else {
                 promise.setFailure(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
             }
+            ReferenceCountUtil.release(msg);
         }
         else {
+            // pass through message
             ctx.write(msg, promise);
         }
     }

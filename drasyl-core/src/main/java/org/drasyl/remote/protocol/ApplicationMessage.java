@@ -23,6 +23,7 @@ package org.drasyl.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import com.google.protobuf.ByteString;
+import io.netty.buffer.ByteBuf;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.crypto.AgreementId;
@@ -49,11 +50,28 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
      */
     public abstract ByteString getPayload();
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code getPayload()} is transferred to this {@link
+     * PartialReadMessage}.
+     *
+     * @return
+     */
     @Override
     public ApplicationMessage incrementHopCount() {
         return ApplicationMessage.of(getNonce(), getNetworkId(), getSender(), getProofOfWork(), getRecipient(), getHopCount().increment(), getAgreementId(), getPayload());
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code getPayload()} is transferred to this {@link
+     * PartialReadMessage}.
+     *
+     * @param agreementId the {@code agreementId} to be set
+     * @return
+     */
     @Override
     public ApplicationMessage setAgreementId(final AgreementId agreementId) {
         return ApplicationMessage.of(getNonce(), getNetworkId(), getSender(), getProofOfWork(), getRecipient(), getHopCount(), agreementId, getPayload());

@@ -64,6 +64,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
                          final Future<?> staleTask,
                          final Serialization inboundSerialization,
                          final Serialization outboundSerialization) {
+        super(false);
         this.database = database;
         this.staleTask = staleTask;
         this.inboundSerialization = inboundSerialization;
@@ -125,13 +126,23 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
             final GroupsClientMessage grpMsg = (GroupsClientMessage) msg.message();
 
             if (grpMsg instanceof GroupJoinMessage) {
-                ctx.executor().execute(() -> handleJoinRequest(ctx, (IdentityPublicKey) msg.address(), (GroupJoinMessage) grpMsg));
+                ctx.executor().execute(() -> {
+                    handleJoinRequest(ctx, (IdentityPublicKey) msg.address(), (GroupJoinMessage) grpMsg);
+                    msg.release();
+                });
             }
             else if (grpMsg instanceof GroupLeaveMessage) {
-                ctx.executor().execute(() -> handleLeaveRequest(ctx, (IdentityPublicKey) msg.address(), (GroupLeaveMessage) grpMsg));
+                ctx.executor().execute(() -> {
+                    handleLeaveRequest(ctx, (IdentityPublicKey) msg.address(), (GroupLeaveMessage) grpMsg);
+                    msg.release();
+                });
+            }
+            else {
+                msg.release();
             }
         }
         else {
+            // pass through
             ctx.fireChannelRead(msg);
         }
     }

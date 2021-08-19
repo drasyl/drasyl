@@ -62,7 +62,8 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
             }
         }
         else {
-            out.add(msg);
+            // pass through message
+            out.add(msg.retain());
         }
     }
 
@@ -76,7 +77,8 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
             out.add(new AddressedMessage<>(PartialReadMessage.of(byteBufMsg.retain()), msg.address()));
         }
         else {
-            out.add(msg);
+            // pass through message
+            out.add(msg.retain());
         }
     }
 }

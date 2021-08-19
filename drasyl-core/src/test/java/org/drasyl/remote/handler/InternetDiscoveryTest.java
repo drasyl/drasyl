@@ -54,6 +54,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
@@ -83,6 +85,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.WARN)
 class InternetDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
@@ -200,6 +203,7 @@ class InternetDiscoveryTest {
             when(peer.getAddress()).thenReturn(new InetSocketAddress(22527));
             when(identity.getIdentityPublicKey()).thenReturn(recipient);
             when(identity.getAddress()).thenReturn(recipient);
+            when(peer.hasControlTraffic(any())).thenReturn(true); // do not remove!
 
             final AcknowledgementMessage acknowledgementMessage = AcknowledgementMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Nonce.randomNonce());
             final InternetDiscovery handler = new InternetDiscovery(new HashMap<>(Map.of(acknowledgementMessage.getCorrespondingId(), new Ping(address))), identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, Set.of(sender), ofSeconds(1), ofSeconds(5), ofSeconds(30), false, ImmutableSet.of(superPeerEndpoint), 0, null, null);
@@ -420,6 +424,7 @@ class InternetDiscoveryTest {
                 when(rendezvousPeers.contains(any())).thenReturn(true);
                 when(identity.getAddress()).thenReturn(recipient);
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
+                when(peer.hasControlTraffic(any())).thenReturn(true); // do not remove!
 
                 final ApplicationMessage applicationMessage = ApplicationMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, ByteString.EMPTY);
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);

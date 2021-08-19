@@ -38,6 +38,7 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
     private final DrasylAddress myAddress;
 
     public InvalidProofOfWorkFilter(final DrasylAddress myAddress) {
+        super(false);
         this.myAddress = requireNonNull(myAddress);
     }
 
@@ -48,14 +49,15 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
             final boolean validProofOfWork = !myAddress.equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
             if (validProofOfWork) {
-                ctx.fireChannelRead(msg.retain());
+                ctx.fireChannelRead(msg);
             }
             else {
+                msg.release();
                 throw new InvalidProofOfWorkException(remoteMsg);
             }
         }
         else {
-            ctx.fireChannelRead(msg.retain());
+            ctx.fireChannelRead(msg);
         }
     }
 

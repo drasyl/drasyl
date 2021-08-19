@@ -76,6 +76,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
                         final Serialization inboundSerialization,
                         final Serialization outboundSerialization,
                         final Identity identity) {
+        super(false);
         this.groups = requireNonNull(groups);
         this.renewTasks = requireNonNull(renewTasks);
         this.firstJoinDelay = requireNonNull(firstJoinDelay);
@@ -110,8 +111,11 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
             else if (grpMsg instanceof GroupJoinFailedMessage) {
                 onJoinFailed(ctx, (GroupJoinFailedMessage) grpMsg);
             }
+
+            msg.release();
         }
         else {
+            // pass through
             ctx.fireChannelRead(msg);
         }
     }

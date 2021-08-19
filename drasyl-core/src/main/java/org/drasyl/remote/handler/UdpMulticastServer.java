@@ -127,14 +127,14 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         if (channel == null) {
             LOG.debug("Start Server...");
             final ChannelFuture channelFuture = bootstrap
-                    .handler(new SimpleChannelInboundHandler<DatagramPacket>() {
+                    .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
                         @Override
                         protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                     final DatagramPacket packet) {
                             final SocketAddress sender = packet.sender();
                             nodes.values().forEach(nodeCtx -> {
                                 LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel().attr(ADDRESS_ATTR_KEY)::get);
-                                nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content().retain(), sender));
+                                nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content(), sender));
                             });
                         }
                     })

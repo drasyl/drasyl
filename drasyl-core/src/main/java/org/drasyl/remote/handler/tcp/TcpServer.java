@@ -199,6 +199,7 @@ public class TcpServer extends ChannelDuplexHandler {
 
         public TcpServerHandler(final Map<SocketAddress, Channel> clients,
                                 final ChannelHandlerContext ctx) {
+            super(false);
             this.clients = requireNonNull(clients);
             this.ctx = requireNonNull(ctx);
         }
@@ -240,17 +241,22 @@ public class TcpServer extends ChannelDuplexHandler {
                 final ByteBuf magicNumber = msg.readBytes(MAGIC_NUMBER_LENGTH);
 
                 if (!Unpooled.wrappedBuffer(MAGIC_NUMBER.toByteArray()).equals(magicNumber)) {
-                    LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message.", nettyCtx.channel()::remoteAddress);
+                    LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (wrong magic number).", nettyCtx.channel()::remoteAddress);
                     msg.release();
                     nettyCtx.close();
                 }
                 else {
                     msg.resetReaderIndex();
                     final SocketAddress sender = nettyCtx.channel().remoteAddress();
-                    ctx.fireChannelRead(new AddressedMessage<>(msg.retain(), sender));
+                    ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
                 }
 
                 magicNumber.release();
+            }
+            else {
+                LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (too short).", nettyCtx.channel()::remoteAddress);
+                msg.release();
+                nettyCtx.close();
             }
         }
     }

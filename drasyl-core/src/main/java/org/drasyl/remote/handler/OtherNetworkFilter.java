@@ -35,6 +35,7 @@ public final class OtherNetworkFilter extends SimpleChannelInboundHandler<Addres
     private final int networkId;
 
     public OtherNetworkFilter(final int networkId) {
+        super(false);
         this.networkId = networkId;
     }
 
@@ -44,14 +45,15 @@ public final class OtherNetworkFilter extends SimpleChannelInboundHandler<Addres
         if (msg.message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
             if (remoteMsg instanceof ChunkMessage || networkId == remoteMsg.getNetworkId()) {
-                ctx.fireChannelRead(msg.retain());
+                ctx.fireChannelRead(msg);
             }
             else {
+                msg.release();
                 throw new OtherNetworkException(remoteMsg);
             }
         }
         else {
-            ctx.fireChannelRead(msg.retain());
+            ctx.fireChannelRead(msg);
         }
     }
 

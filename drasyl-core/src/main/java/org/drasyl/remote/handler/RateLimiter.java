@@ -61,6 +61,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?,
     RateLimiter(final Supplier<Long> timeProvider,
                 final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache,
                 final DrasylAddress myAddress) {
+        super(false);
         this.timeProvider = requireNonNull(timeProvider);
         this.cache = requireNonNull(cache);
         this.myAddress = requireNonNull(myAddress);
@@ -84,14 +85,16 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?,
             final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) msg.message();
 
             if (!myAddress.equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
-                ctx.fireChannelRead(msg.retain());
+                ctx.fireChannelRead(msg);
             }
             else {
+                msg.release();
                 LOG.debug("Message `{}` exceeding rate limit dropped.", fullReadMsg::getNonce);
             }
         }
         else {
-            ctx.fireChannelRead(msg.retain());
+            // pass through
+            ctx.fireChannelRead(msg);
         }
     }
 

@@ -618,7 +618,7 @@ public abstract class DrasylNode {
 
                 ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter(this.identity.getAddress()));
 
-                ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
+                ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<?, ?>>(false) {
                     @Override
                     protected void channelRead0(final ChannelHandlerContext ctx,
                                                 final AddressedMessage<?, ?> msg) throws InvalidMessageFormatException {
@@ -626,7 +626,7 @@ public abstract class DrasylNode {
                             ctx.fireChannelRead(new AddressedMessage<>(((UnarmedMessage) msg.message()).read(), msg.address()));
                         }
                         else {
-                            ctx.fireChannelRead(msg.retain());
+                            ctx.fireChannelRead(msg);
                         }
                     }
                 });
@@ -796,6 +796,10 @@ public abstract class DrasylNode {
          * channels.
          */
         private static class ChildChannelRouter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+            public ChildChannelRouter() {
+                super(false);
+            }
+
             @Override
             protected void channelRead0(final ChannelHandlerContext ctx,
                                         final AddressedMessage<?, ?> msg) {
@@ -814,6 +818,7 @@ public abstract class DrasylNode {
                     channel.pipeline().fireChannelRead(o);
                 }
                 else {
+                    // pass through message
                     ctx.fireChannelRead(msg);
                 }
             }

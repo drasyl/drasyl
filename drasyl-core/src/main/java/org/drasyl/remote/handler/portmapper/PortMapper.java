@@ -57,6 +57,7 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, 
     PortMapper(final ArrayList<PortMapping> methods,
                final int currentMethodPointer,
                final Future<?> retryTask) {
+        super(false);
         this.methods = methods;
         this.currentMethodPointer = currentMethodPointer;
         this.retryTask = retryTask;
@@ -73,12 +74,11 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, 
             final InetSocketAddress sender = (InetSocketAddress) msg.address();
             final ByteBuf byteBufMsg = (ByteBuf) msg.message();
             if (methods.get(currentMethodPointer).acceptMessage(sender, byteBufMsg)) {
-                byteBufMsg.retain();
                 ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, byteBufMsg));
             }
             else {
                 // message was not for the mapper -> passthrough
-                ctx.fireChannelRead(msg.retain());
+                ctx.fireChannelRead(msg);
             }
         }
         else {

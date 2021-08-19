@@ -23,6 +23,7 @@ package org.drasyl.remote.handler.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.remote.protocol.PartialReadMessage;
 
 import java.net.InetSocketAddress;
 
@@ -48,6 +49,9 @@ public interface PortMapping {
 
     /**
      * Is called for incoming messages and thus enables this method to react to relevant messages.
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code msg} is transferred to this {@link
+     * PartialReadMessage}.
      *
      * @param ctx    the handler context
      * @param sender the sender of the message

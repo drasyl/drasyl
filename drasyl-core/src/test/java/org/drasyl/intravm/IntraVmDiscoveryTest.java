@@ -97,7 +97,7 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldSendOutgoingMessageToKnownRecipient(@Mock final IdentityPublicKey recipient,
                                                        @Mock(answer = RETURNS_DEEP_STUBS) final Object message,
-                                                       @Mock final ChannelHandlerContext ctx) {
+                                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, recipient), ctx);
 

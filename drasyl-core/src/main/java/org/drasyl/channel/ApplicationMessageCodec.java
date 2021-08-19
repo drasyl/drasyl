@@ -58,7 +58,7 @@ public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMess
         }
         else {
             // pass through message
-            out.add(msg);
+            out.add(msg.retain());
         }
     }
 
@@ -72,7 +72,7 @@ public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMess
         }
         else {
             // pass through message
-            out.add(msg);
+            out.add(msg.retain());
         }
     }
 }
