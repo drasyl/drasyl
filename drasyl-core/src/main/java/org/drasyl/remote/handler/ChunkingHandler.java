@@ -48,7 +48,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER_LENGTH;
@@ -86,7 +85,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
 
             // message is addressed to me
             if (myAddress.equals(chunkMsg.getRecipient())) {
-                handleInboundChunk(ctx, sender, chunkMsg, new CompletableFuture<>());
+                handleInboundChunk(ctx, sender, chunkMsg);
             }
             else {
                 // pass through all messages not addressed to us
@@ -139,8 +138,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
 
     private void handleInboundChunk(final ChannelHandlerContext ctx,
                                     final SocketAddress sender,
-                                    final ChunkMessage chunk,
-                                    final CompletableFuture<Void> future) throws IOException {
+                                    final ChunkMessage chunk) throws IOException {
         try {
             final ChunksCollector chunksCollector = getChunksCollectors().computeIfAbsent(chunk.getNonce(), id -> new ChunksCollector(messageMaxContentLength, id, ctx.alloc()));
             final RemoteMessage message = chunksCollector.addChunk(chunk);
@@ -149,10 +147,6 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                 // message complete, pass it inbound
                 getChunksCollectors().remove(chunk.getNonce());
                 ctx.fireChannelRead(new AddressedMessage<>(message, sender));
-            }
-            else {
-                // other chunks missing, but this chunk has been processed
-                future.complete(null);
             }
         }
         catch (final IllegalStateException e) {
