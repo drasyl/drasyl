@@ -498,7 +498,7 @@ public abstract class DrasylNode {
         public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
         public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
         public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
-        public static final String REMOTE_MESSAGE_TO_BYTE_BUF_CODEC = "REMOTE_ENVELOPE_TO_BYTE_BUF_CODEC";
+        public static final String REMOTE_MESSAGE_TO_BYTE_BUF_CODEC = "REMOTE_MESSAGE_TO_BYTE_BUF_CODEC";
         public static final String UDP_MULTICAST_SERVER = "UDP_MULTICAST_SERVER";
         public static final String TCP_SERVER = "TCP_SERVER";
         public static final String TCP_CLIENT = "TCP_CLIENT";
