@@ -22,6 +22,7 @@
 package org.drasyl.channel;
 
 import com.google.protobuf.ByteString;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.identity.IdentityPublicKey;
@@ -52,8 +53,8 @@ public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMess
     protected void encode(final ChannelHandlerContext ctx,
                           final AddressedMessage<?, ?> msg,
                           final List<Object> out) throws Exception {
-        if (msg.message() instanceof ByteString && msg.address() instanceof IdentityPublicKey) {
-            final ApplicationMessage wrappedMsg = ApplicationMessage.of(networkId, myPublicKey, myProofOfWork, (IdentityPublicKey) msg.address(), (ByteString) msg.message());
+        if (msg.message() instanceof ByteBuf && msg.address() instanceof IdentityPublicKey) {
+            final ApplicationMessage wrappedMsg = ApplicationMessage.of(networkId, myPublicKey, myProofOfWork, (IdentityPublicKey) msg.address(), ((ByteBuf) msg.message()).retain());
             out.add(new AddressedMessage<>(wrappedMsg, msg.address()));
         }
         else {
@@ -67,7 +68,7 @@ public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMess
                           final AddressedMessage<?, ?> msg,
                           final List<Object> out) {
         if (msg.message() instanceof ApplicationMessage) {
-            final AddressedMessage<ByteString, ?> unwrappedMsg = new AddressedMessage<>(((ApplicationMessage) msg.message()).getPayload(), msg.address());
+            final AddressedMessage<ByteBuf, ?> unwrappedMsg = new AddressedMessage<>(((ApplicationMessage) msg.message()).getPayload().retain(), msg.address());
             out.add(unwrappedMsg);
         }
         else {

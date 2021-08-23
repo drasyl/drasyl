@@ -24,6 +24,8 @@ package org.drasyl.remote.protocol;
 import com.google.auto.value.AutoValue;
 import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.util.ReferenceCounted;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.crypto.AgreementId;
@@ -42,13 +44,13 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
  */
 @AutoValue
 @SuppressWarnings("java:S118")
-public abstract class ApplicationMessage extends AbstractFullReadMessage<ApplicationMessage> {
+public abstract class ApplicationMessage extends AbstractFullReadMessage<ApplicationMessage> implements ReferenceCounted, AutoCloseable {
     /**
      * Returns the payload.
      *
      * @return the payload
      */
-    public abstract ByteString getPayload();
+    public abstract ByteBuf getPayload();
 
     /**
      * {@inheritDoc}
@@ -87,11 +89,129 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
 
     @Override
     protected void writeBodyTo(final OutputStream out) throws IOException {
-        getPayload().writeTo(out);
+        final ByteBuf slice = getPayload().slice();
+        slice.getBytes(slice.readerIndex(), out, slice.readableBytes());
+    }
+
+    @Override
+    public int refCnt() {
+        return getPayload().refCnt();
+    }
+
+    @Override
+    public ReferenceCounted retain() {
+        getPayload().retain();
+        return this;
+    }
+
+    @Override
+    public ReferenceCounted retain(final int increment) {
+        getPayload().retain(increment);
+        return this;
+    }
+
+    @Override
+    public ReferenceCounted touch() {
+        getPayload().touch();
+        return this;
+    }
+
+    @Override
+    public ReferenceCounted touch(final Object hint) {
+        getPayload().touch(hint);
+        return this;
+    }
+
+    @Override
+    public boolean release() {
+        return getPayload().release();
+    }
+
+    @Override
+    public boolean release(final int decrement) {
+        return getPayload().release(decrement);
+    }
+
+    /**
+     * Calls {@link #release()}.
+     */
+    @Override
+    public void close() throws Exception {
+        release();
     }
 
     /**
      * Creates new application message.
+     *
+     * @param nonce       the nonce
+     * @param networkId   the network id
+     * @param sender      the public key of the sender
+     * @param proofOfWork the proof of work of {@code sender}
+     * @param recipient   the public key of the recipient
+     * @param hopCount    the hop count
+     * @param agreementId the agreement id
+     * @param payload     the payload
+     * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
+     *                              recipient}, {@code hopCount}, or {@code payload} is {@code
+     *                              null}
+     * @deprecated
+     */
+    @SuppressWarnings("java:S107")
+    public static ApplicationMessage of(final Nonce nonce,
+                                        final int networkId,
+                                        final IdentityPublicKey sender,
+                                        final ProofOfWork proofOfWork,
+                                        final IdentityPublicKey recipient,
+                                        final HopCount hopCount,
+                                        final AgreementId agreementId,
+                                        final ByteString payload) {
+        return new AutoValue_ApplicationMessage(
+                nonce,
+                networkId,
+                sender,
+                proofOfWork,
+                hopCount,
+                agreementId,
+                recipient,
+                Unpooled.wrappedBuffer(payload.toByteArray())
+        );
+    }
+
+    /**
+     * Creates new application message with random {@link Nonce}, minimal {@link HopCount} value,
+     * and no {@link AgreementId}.
+     *
+     * @param networkId   the network id
+     * @param sender      the public key of the sender
+     * @param proofOfWork the proof of work of {@code sender}
+     * @param recipient   the public key of the recipient
+     * @param payload     the payload
+     * @throws NullPointerException if  {@code sender}, {@code proofOfWork}, {@code recipient}, or
+     *                              {@code payload} is {@code null}
+     * @deprecated
+     */
+    public static ApplicationMessage of(final int networkId,
+                                        final IdentityPublicKey sender,
+                                        final ProofOfWork proofOfWork,
+                                        final IdentityPublicKey recipient,
+                                        final ByteString payload) {
+        return of(
+                randomNonce(),
+                networkId,
+                sender,
+                proofOfWork,
+                recipient,
+                HopCount.of(),
+                null,
+                payload
+        );
+    }
+
+    /**
+     * Creates new application message.
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code getPayload()} is transferred to this {@link
+     * PartialReadMessage}.
      *
      * @param nonce       the nonce
      * @param networkId   the network id
@@ -113,7 +233,7 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
                                         final IdentityPublicKey recipient,
                                         final HopCount hopCount,
                                         final AgreementId agreementId,
-                                        final ByteString payload) {
+                                        final ByteBuf payload) {
         return new AutoValue_ApplicationMessage(
                 nonce,
                 networkId,
@@ -129,6 +249,9 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
     /**
      * Creates new application message with random {@link Nonce}, minimal {@link HopCount} value,
      * and no {@link AgreementId}.
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code getPayload()} is transferred to this {@link
+     * PartialReadMessage}.
      *
      * @param networkId   the network id
      * @param sender      the public key of the sender
@@ -142,7 +265,7 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
                                         final IdentityPublicKey sender,
                                         final ProofOfWork proofOfWork,
                                         final IdentityPublicKey recipient,
-                                        final ByteString payload) {
+                                        final ByteBuf payload) {
         return of(
                 randomNonce(),
                 networkId,

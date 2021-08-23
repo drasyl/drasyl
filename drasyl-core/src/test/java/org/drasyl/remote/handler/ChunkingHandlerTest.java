@@ -27,6 +27,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.Crypto;
@@ -37,6 +38,7 @@ import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.remote.protocol.BodyChunkMessage;
 import org.drasyl.remote.protocol.ChunkMessage;
+import org.drasyl.remote.protocol.FullReadMessage;
 import org.drasyl.remote.protocol.HeadChunkMessage;
 import org.drasyl.remote.protocol.HopCount;
 import org.drasyl.remote.protocol.InvalidMessageFormatException;
@@ -111,9 +113,11 @@ class ChunkingHandlerTest {
                     channel.pipeline().fireChannelRead(new AddressedMessage<>(headChunk, senderAddress));
 
                     final AddressedMessage<UnarmedMessage, SocketAddress> actual = channel.readInbound();
-                    assertEquals(message, actual.message().read());
+                    final FullReadMessage<?> fullReadMessage = actual.message().read();
+                    assertEquals(message, fullReadMessage);
 
                     bytes.release();
+                    ReferenceCountUtil.release(fullReadMessage);
                 }
                 finally {
                     channel.close();

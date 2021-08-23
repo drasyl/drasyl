@@ -21,7 +21,8 @@
  */
 package org.drasyl.channel;
 
-import com.google.protobuf.ByteString;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
@@ -146,19 +147,22 @@ class DrasylChannelTest {
     @Nested
     class FilterOutboundMessage {
         @Test
-        void shouldRejectNonByteStringMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
-                                              @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
+        void shouldRejectNonByteBufMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
             final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
 
             assertThrows(UnsupportedOperationException.class, () -> channel.filterOutboundMessage("Hello World"));
         }
 
         @Test
-        void shouldAcceptByteStringMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) throws Exception {
+        void shouldAcceptByteBufMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
+                                        @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) throws Exception {
             final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
 
-            assertEquals(ByteString.EMPTY, channel.filterOutboundMessage(ByteString.EMPTY));
+            final ByteBuf buffer = Unpooled.buffer();
+            assertEquals(buffer, channel.filterOutboundMessage(buffer));
+
+            buffer.release();
         }
     }
 }

@@ -21,7 +21,7 @@
  */
 package org.drasyl.channel;
 
-import com.google.protobuf.ByteString;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
@@ -31,6 +31,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
+import io.netty.util.ReferenceCounted;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -52,7 +53,7 @@ import static org.drasyl.channel.Null.NULL;
  */
 public class DrasylChannel extends AbstractChannel {
     private static final String EXPECTED_TYPES =
-            " (expected: " + StringUtil.simpleClassName(ByteString.class) + ')';
+            " (expected: " + StringUtil.simpleClassName(ByteBuf.class) + ')';
 
     enum State {OPEN, BOUND, CONNECTED, CLOSED}
 
@@ -127,7 +128,7 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected Object filterOutboundMessage(final Object msg) throws Exception {
-        if (msg instanceof ByteString) {
+        if (msg instanceof ByteBuf) {
             return super.filterOutboundMessage(msg);
         }
 
@@ -158,6 +159,9 @@ public class DrasylChannel extends AbstractChannel {
             }
 
             parent().write(new AddressedMessage<>(msg, remoteAddress));
+            if (msg instanceof ReferenceCounted) {
+                ((ReferenceCounted) msg).retain();
+            }
             in.remove();
         }
         parent().flush();
