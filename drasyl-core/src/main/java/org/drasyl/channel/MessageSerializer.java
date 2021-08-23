@@ -23,7 +23,8 @@ package org.drasyl.channel;
 
 import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
@@ -36,6 +37,8 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -92,7 +95,10 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
                 }
                 builder.setPayload(payload);
 
-                final ByteBuf bytes = ctx.alloc().ioBuffer().writeBytes(builder.build().toByteArray());
+                final ByteBuf bytes = ctx.alloc().ioBuffer();
+                try (final OutputStream outputStream = new ByteBufOutputStream(bytes)) {
+                    builder.build().writeDelimitedTo(outputStream);
+                }
                 out.add(bytes);
                 LOG.trace("Message has been serialized to `{}`", () -> bytes);
             }
@@ -109,9 +115,8 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf bytes,
                           final List<Object> out) {
-        try {
-            final byte[] byteArray = ByteBufUtil.getBytes(bytes);
-            final SerializedPayload serializedPayload = SerializedPayload.parseFrom(byteArray);
+        try (final InputStream in = new ByteBufInputStream(bytes)) {
+            final SerializedPayload serializedPayload = SerializedPayload.parseDelimitedFrom(in);
             final String type = serializedPayload.getType();
             final byte[] payload = serializedPayload.getPayload().toByteArray();
             final Serializer serializer = inboundSerialization.findSerializerFor(type);

@@ -23,9 +23,11 @@ package org.drasyl.channel;
 
 import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.drasyl.channel.MessageSerializerProtocol.SerializedPayload;
 import org.drasyl.identity.Identity;
 import org.drasyl.serialization.StringSerializer;
 import org.junit.jupiter.api.Nested;
@@ -62,7 +64,10 @@ class MessageSerializerTest {
             when(inboundSerialization.findSerializerFor(String.class.getName()).fromByteArray(any(), eq(String.class.getName()))).thenReturn("Hallo Welt");
 
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
-            final ByteBuf payload = Unpooled.wrappedBuffer(MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteArray());
+            final ByteBuf payload = Unpooled.buffer();
+            try (final ByteBufOutputStream out = new ByteBufOutputStream(payload)) {
+                SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().writeDelimitedTo(out);
+            }
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -76,9 +81,12 @@ class MessageSerializerTest {
 
         @Test
         void shouldBeAbleToDeserializeNullMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Serialization inboundSerialization,
-                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) {
+                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) throws IOException {
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
-            final ByteBuf payload = Unpooled.wrappedBuffer(MessageSerializerProtocol.SerializedPayload.newBuilder().build().toByteArray());
+            final ByteBuf payload = Unpooled.buffer();
+            try (final ByteBufOutputStream out = new ByteBufOutputStream(payload)) {
+                SerializedPayload.newBuilder().build().writeDelimitedTo(out);
+            }
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -92,11 +100,14 @@ class MessageSerializerTest {
 
         @Test
         void shouldCompleteExceptionallyIfSerializerDoesNotExist(@Mock(answer = RETURNS_DEEP_STUBS) final Serialization inboundSerialization,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) {
+                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) throws IOException {
             when(inboundSerialization.findSerializerFor(anyString())).thenReturn(null);
 
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
-            final ByteBuf payload = Unpooled.copiedBuffer(MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteArray());
+            final ByteBuf payload = Unpooled.buffer();
+            try (final ByteBufOutputStream out = new ByteBufOutputStream(payload)) {
+                SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().writeDelimitedTo(out);
+            }
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -114,7 +125,10 @@ class MessageSerializerTest {
             when(inboundSerialization.findSerializerFor(anyString()).fromByteArray(any(), anyString())).thenThrow(IOException.class);
 
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
-            final ByteBuf payload = Unpooled.wrappedBuffer(MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteArray());
+            final ByteBuf payload = Unpooled.buffer();
+            try (final ByteBufOutputStream out = new ByteBufOutputStream(payload)) {
+                SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().writeDelimitedTo(out);
+            }
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
