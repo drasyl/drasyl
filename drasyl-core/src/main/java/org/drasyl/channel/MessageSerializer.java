@@ -22,6 +22,8 @@
 package org.drasyl.channel;
 
 import com.google.protobuf.ByteString;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
@@ -42,7 +44,7 @@ import static org.drasyl.channel.Null.NULL;
  * This handler serializes messages to {@link ApplicationMessage} an vice vera.
  */
 @SuppressWarnings({ "java:S110" })
-public final class MessageSerializer extends MessageToMessageCodec<ByteString, Object> {
+public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Object> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageSerializer.class);
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
@@ -82,7 +84,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteString, O
                 }
                 builder.setPayload(payload);
 
-                final ByteString bytes = builder.build().toByteString();
+                final ByteBuf bytes = ctx.alloc().ioBuffer().writeBytes(builder.build().toByteArray());
                 out.add(bytes);
                 LOG.trace("Message has been serialized to `{}`", () -> bytes);
             }
@@ -97,10 +99,11 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteString, O
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final ByteString bytes,
+                          final ByteBuf bytes,
                           final List<Object> out) {
         try {
-            final SerializedPayload serializedPayload = SerializedPayload.parseFrom(bytes);
+            final byte[] byteArray = ByteBufUtil.getBytes(bytes);
+            final SerializedPayload serializedPayload = SerializedPayload.parseFrom(byteArray);
             final String type = serializedPayload.getType();
             final byte[] payload = serializedPayload.getPayload().toByteArray();
             final Serializer serializer = inboundSerialization.findSerializerFor(type);

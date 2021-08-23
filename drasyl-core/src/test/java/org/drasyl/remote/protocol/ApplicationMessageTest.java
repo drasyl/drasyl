@@ -21,7 +21,8 @@
  */
 package org.drasyl.remote.protocol;
 
-import com.google.protobuf.ByteString;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,10 +52,12 @@ public class ApplicationMessageTest {
     class Of {
         @Test
         void shouldCreateApplicationMessage() {
-            final ApplicationMessage application = ApplicationMessage.of(1, sender, proofOfWork, recipient, ByteString.EMPTY);
+            final ByteBuf buffer = Unpooled.buffer();
+            final ApplicationMessage application = ApplicationMessage.of(1, sender, proofOfWork, recipient, buffer);
 
             assertEquals(1, application.getNetworkId());
-            assertEquals(ByteString.EMPTY, application.getPayload());
+            assertEquals(buffer, application.getPayload());
+            buffer.release();
         }
     }
 }

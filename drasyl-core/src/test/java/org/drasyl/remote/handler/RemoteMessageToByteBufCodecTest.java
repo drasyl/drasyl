@@ -24,6 +24,7 @@ package org.drasyl.remote.handler;
 import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -97,18 +98,17 @@ class RemoteMessageToByteBufCodecTest {
         @Test
         void shouldConvertEnvelopeToByteBuf(@Mock final SocketAddress recipient) throws IOException {
             final ApplicationMessage message = ApplicationMessage.of(1337, IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"), ProofOfWork.of(3556154), IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), ByteString.copyFromUtf8("Hello World"));
+            final ByteBuf byteBuf = Unpooled.buffer();
+            message.writeTo(byteBuf);
+
             final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
-                final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-                message.writeTo(byteBuf);
-
                 final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new AddressedMessage<>(byteBuf, recipient), actual);
 
-                byteBuf.release();
                 actual.release();
             }
             finally {

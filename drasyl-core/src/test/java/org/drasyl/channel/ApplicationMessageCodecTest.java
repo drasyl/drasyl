@@ -21,7 +21,8 @@
  */
 package org.drasyl.channel;
 
-import com.google.protobuf.ByteString;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,13 +50,15 @@ class ApplicationMessageCodecTest {
     @Nested
     class Encode {
         @Test
-        void shouldConvertByteStringWithIdentityPublicKeyToApplicationMessage(@Mock final IdentityPublicKey address) {
+        void shouldConvertByteBufWithIdentityPublicKeyToApplicationMessage(@Mock final IdentityPublicKey address) {
             final ChannelHandler handler = new ApplicationMessageCodec(networkId, myPublicKey, myProofOfWork);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            channel.writeAndFlush(new AddressedMessage<>(ByteString.copyFromUtf8("Hello World"), address));
+            final ByteBuf byteBuf = Unpooled.copiedBuffer("Hello World", UTF_8);
+            channel.writeAndFlush(new AddressedMessage<>(byteBuf, address));
 
             assertThat(((AddressedMessage<?, ?>) channel.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+            byteBuf.release();
         }
 
         @Test
@@ -75,9 +79,11 @@ class ApplicationMessageCodecTest {
             final ChannelHandler handler = new ApplicationMessageCodec(networkId, myPublicKey, myProofOfWork);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(ApplicationMessage.of(networkId, myPublicKey, myProofOfWork, sender, ByteString.EMPTY), sender));
+            final ByteBuf byteBuf = Unpooled.buffer();
+            channel.pipeline().fireChannelRead(new AddressedMessage<>(ApplicationMessage.of(networkId, myPublicKey, myProofOfWork, sender, byteBuf), sender));
 
-            assertThat(((AddressedMessage<?, ?>) channel.readInbound()).message(), instanceOf(ByteString.class));
+            assertThat(((AddressedMessage<?, ?>) channel.readInbound()).message(), instanceOf(ByteBuf.class));
+            byteBuf.release();
         }
 
         @Test

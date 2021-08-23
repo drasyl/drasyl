@@ -22,6 +22,8 @@
 package org.drasyl.channel;
 
 import com.google.protobuf.ByteString;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.identity.Identity;
@@ -60,7 +62,7 @@ class MessageSerializerTest {
             when(inboundSerialization.findSerializerFor(String.class.getName()).fromByteArray(any(), eq(String.class.getName()))).thenReturn("Hallo Welt");
 
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
-            final ByteString payload = MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteString();
+            final ByteBuf payload = Unpooled.wrappedBuffer(MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteArray());
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -76,7 +78,7 @@ class MessageSerializerTest {
         void shouldBeAbleToDeserializeNullMessage(@Mock(answer = RETURNS_DEEP_STUBS) final Serialization inboundSerialization,
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) {
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
-            final ByteString payload = MessageSerializerProtocol.SerializedPayload.newBuilder().build().toByteString();
+            final ByteBuf payload = Unpooled.wrappedBuffer(MessageSerializerProtocol.SerializedPayload.newBuilder().build().toByteArray());
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -94,7 +96,7 @@ class MessageSerializerTest {
             when(inboundSerialization.findSerializerFor(anyString())).thenReturn(null);
 
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
-            final ByteString payload = MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteString();
+            final ByteBuf payload = Unpooled.copiedBuffer(MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteArray());
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -112,7 +114,7 @@ class MessageSerializerTest {
             when(inboundSerialization.findSerializerFor(anyString()).fromByteArray(any(), anyString())).thenThrow(IOException.class);
 
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
-            final ByteString payload = MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteString();
+            final ByteBuf payload = Unpooled.wrappedBuffer(MessageSerializerProtocol.SerializedPayload.newBuilder().setType(String.class.getName()).setPayload(ByteString.copyFromUtf8("Hallo Welt")).build().toByteArray());
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -141,7 +143,10 @@ class MessageSerializerTest {
             try {
                 channel.writeAndFlush("Hello World");
 
-                assertThat(channel.readOutbound(), instanceOf(ByteString.class));
+                final ByteBuf actual = channel.readOutbound();
+                assertThat(actual, instanceOf(ByteBuf.class));
+
+                actual.release();
             }
             finally {
                 channel.close();
@@ -198,7 +203,10 @@ class MessageSerializerTest {
             try {
                 channel.writeAndFlush(NULL);
 
-                assertThat(channel.readOutbound(), instanceOf(ByteString.class));
+                final ByteBuf actual = channel.readOutbound();
+                assertThat(actual, instanceOf(ByteBuf.class));
+
+                actual.release();
             }
             finally {
                 channel.close();
