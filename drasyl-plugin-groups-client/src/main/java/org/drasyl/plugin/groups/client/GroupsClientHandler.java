@@ -142,7 +142,11 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         for (final Entry<Group, GroupUri> entry : groups.entrySet()) {
             final Group group = entry.getKey();
             final GroupUri groupURI = entry.getValue();
-            ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())).awaitUninterruptibly();
+            ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())).awaitUninterruptibly().addListener(future -> {
+                if (!future.isSuccess()) {
+                    LOG.warn("Unable to send GroupLeaveMessage", future::cause);
+                }
+            });
         }
     }
 
@@ -239,7 +243,11 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         ctx.fireUserEventTriggered(GroupJoinedEvent.of(
                 group,
                 msg.getMembers(),
-                () -> ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), sender))));
+                () -> ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), sender)).addListener(future -> {
+                    if (!future.isSuccess()) {
+                        LOG.warn("Unable to send GroupLeaveMessage", future::cause);
+                    }
+                })));
     }
 
     /**
@@ -255,7 +263,11 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         final ProofOfWork proofOfWork = identity.getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager));
+        ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager)).addListener(future -> {
+            if (!future.isSuccess()) {
+                LOG.warn("Unable to send GroupJoinMessage", future::cause);
+            }
+        });
 
         // Add re-try task
         if (!renewTasks.containsKey(group.getGroup())) {
