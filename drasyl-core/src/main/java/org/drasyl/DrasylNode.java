@@ -123,8 +123,8 @@ import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static String version;
-    private final Identity identity;
-    private final ServerBootstrap bootstrap;
+    protected final Identity identity;
+    protected final ServerBootstrap bootstrap;
     private ChannelFuture channelFuture;
 
     static {
