@@ -155,24 +155,19 @@ class GroupsClientHandlerTest {
 
         @SuppressWarnings("unchecked")
         @Test
-        void shouldSendJoinOnNodeUpEvent(@Mock final NodeUpEvent event) {
+        void shouldSendJoinOnChannelactive(@Mock final NodeUpEvent event) {
             final String credentials = "test";
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            when(uri.getGroup()).thenReturn(group);
+            when(uri.getCredentials()).thenReturn(credentials);
+            when(identity.getProofOfWork()).thenReturn(proofOfWork);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                when(uri.getGroup()).thenReturn(group);
-                when(uri.getCredentials()).thenReturn(credentials);
-                when(identity.getProofOfWork()).thenReturn(proofOfWork);
-
-                channel.pipeline().fireUserEventTriggered(event);
-
                 await().untilAsserted(() -> {
                     channel.runPendingTasks();
-                    assertEquals(event, channel.readUserEvent());
+                    assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
                 });
-
-                assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
             }
             finally {
                 channel.close();

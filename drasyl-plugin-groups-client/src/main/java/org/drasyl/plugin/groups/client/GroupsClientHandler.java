@@ -26,7 +26,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.Serialization;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -151,15 +150,12 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof NodeUpEvent) {
-            // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
-            ctx.executor().schedule(() -> groups.values().forEach(group ->
-                    joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
-        }
+    public void channelActive(final ChannelHandlerContext ctx) {
+        // join every group but we will wait 5 seconds, to give it the chance to connect to some super peer if needed
+        ctx.executor().schedule(() -> groups.values().forEach(group ->
+                joinGroup(ctx, group, false)), firstJoinDelay.toMillis(), MILLISECONDS);
 
-        ctx.fireUserEventTriggered(evt);
+        ctx.fireChannelActive();
     }
 
     /**
