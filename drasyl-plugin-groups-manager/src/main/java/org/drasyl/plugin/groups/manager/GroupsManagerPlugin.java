@@ -24,6 +24,8 @@ package org.drasyl.plugin.groups.manager;
 import com.typesafe.config.Config;
 import org.drasyl.plugin.DrasylPlugin;
 import org.drasyl.plugin.PluginEnvironment;
+import org.drasyl.plugin.groups.client.GroupsClientMessageDecoder;
+import org.drasyl.plugin.groups.client.GroupsServerMessageEncoder;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapterManager;
@@ -34,6 +36,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.DrasylNode.DrasylNodeChannelInitializer.APPLICATION_MESSAGE_CODEC;
 
 /**
  * Starting point for the groups master plugin.
@@ -78,8 +81,9 @@ public class GroupsManagerPlugin implements DrasylPlugin {
                 }
             }
 
-            env.getPipeline().addLast(GROUPS_MANAGER_HANDLER, new GroupsManagerHandler(database, env.getInboundSerialization(), env.getOutboundSerialization()));
-
+            env.getPipeline().addAfter(APPLICATION_MESSAGE_CODEC, GROUPS_MANAGER_HANDLER, new GroupsManagerHandler(database, env.getInboundSerialization(), env.getOutboundSerialization()));
+            env.getPipeline().addBefore(GROUPS_MANAGER_HANDLER, "GROUPS_MANAGER_ENCODER", new GroupsServerMessageEncoder());
+            env.getPipeline().addBefore(GROUPS_MANAGER_HANDLER, "GROUPS_CLIENT_DECODER", new GroupsClientMessageDecoder());
             LOG.debug("Groups Manager Plugin was started with options: {}", config);
         }
         catch (final DatabaseException e) {
