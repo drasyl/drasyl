@@ -835,7 +835,7 @@ public abstract class DrasylNode {
      * Initialize child {@link Channel}s used by {@link DrasylNode}.
      */
     public static class DrasylNodeChildChannelInitializer extends ChannelInitializer<Channel> {
-        public static final String NULL_MESSAGE_UNWRAPPER = "NULL_MESSAGE_UNWRAPPER";
+        public static final String CHILD_CHANNEL_TAIL = "CHILD_CHANNEL_TAIL";
         public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
         public static final String INACTIVITY_CLOSER = "INACTIVITY_CLOSER";
         public static final String INACTIVITY_DETECTOR = "INACTIVITY_DETECTOR";
@@ -851,7 +851,7 @@ public abstract class DrasylNode {
         @Override
         protected void initChannel(final Channel ch) {
             // emit MessageEvents for every inbound message
-            ch.pipeline().addFirst(NULL_MESSAGE_UNWRAPPER, new ChannelInboundHandlerAdapter() {
+            ch.pipeline().addFirst(CHILD_CHANNEL_TAIL, new ChannelInboundHandlerAdapter() {
                 @Override
                 public void channelRead(final ChannelHandlerContext ctx,
                                         Object msg) {
@@ -861,6 +861,17 @@ public abstract class DrasylNode {
 
                     final MessageEvent event = MessageEvent.of((IdentityPublicKey) ctx.channel().remoteAddress(), msg);
                     onEvent.accept(event);
+                }
+
+                @Override
+                public void exceptionCaught(final ChannelHandlerContext ctx,
+                                            final Throwable e) {
+                    if (e instanceof EncoderException) {
+                        LOG.error(e);
+                    }
+                    else {
+                        onEvent.accept(InboundExceptionEvent.of(e));
+                    }
                 }
             });
 
