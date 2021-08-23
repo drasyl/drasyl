@@ -21,6 +21,7 @@
  */
 package org.drasyl.identity;
 
+import org.drasyl.AbstractBenchmark;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -29,14 +30,35 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
+import test.util.IdentityTestUtil;
+
+import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 
 @State(Scope.Benchmark)
-public class ProofOfWorkBenchmark {
+public class ProofOfWorkBenchmark extends AbstractBenchmark {
     private IdentityPublicKey publicKey;
+    private ProofOfWork invalidProofOfWork;
+    private ProofOfWork validProofOfWork;
 
     @Setup
     public void setup() {
-        publicKey = IdentityPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
+        publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
+        invalidProofOfWork = ProofOfWork.of(1);
+        validProofOfWork = IdentityTestUtil.ID_1.getProofOfWork();
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.AverageTime)
+    public void validationInvalid(final Blackhole blackhole) {
+        blackhole.consume(invalidProofOfWork.isValid(publicKey, (byte) 1));
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.AverageTime)
+    public void validationValid(final Blackhole blackhole) {
+        blackhole.consume(invalidProofOfWork.isValid(publicKey, POW_DIFFICULTY));
     }
 
     @Benchmark
