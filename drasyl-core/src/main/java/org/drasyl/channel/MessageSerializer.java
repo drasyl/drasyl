@@ -28,6 +28,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MessageSerializerProtocol.SerializedPayload;
 import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
@@ -49,10 +50,17 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
     private final Serialization inboundSerialization;
     private final Serialization outboundSerialization;
 
-    public MessageSerializer(final Serialization inboundSerialization,
-                             final Serialization outboundSerialization) {
+    MessageSerializer(final Serialization inboundSerialization,
+                      final Serialization outboundSerialization) {
         this.inboundSerialization = requireNonNull(inboundSerialization);
         this.outboundSerialization = requireNonNull(outboundSerialization);
+    }
+
+    public MessageSerializer(final DrasylConfig config) {
+        this(
+                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound()),
+                new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound())
+        );
     }
 
     @Override

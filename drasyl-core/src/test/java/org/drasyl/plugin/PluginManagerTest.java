@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ServerChannel;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.Serialization;
 import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -48,12 +47,9 @@ class PluginManagerTest {
     private ServerChannel serverChannel;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
+    @SuppressWarnings("unused")
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Serialization inboundSerialization;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Serialization outboundSerialization;
     @InjectMocks
     private PluginManager underTest;
 

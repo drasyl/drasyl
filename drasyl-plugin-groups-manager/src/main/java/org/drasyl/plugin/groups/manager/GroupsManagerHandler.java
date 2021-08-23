@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.Serialization;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
@@ -33,7 +32,6 @@ import org.drasyl.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.plugin.groups.client.message.GroupWelcomeMessage;
 import org.drasyl.plugin.groups.client.message.GroupsClientMessage;
 import org.drasyl.plugin.groups.client.message.GroupsPluginMessage;
-import org.drasyl.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
 import org.drasyl.plugin.groups.manager.data.Group;
@@ -41,7 +39,6 @@ import org.drasyl.plugin.groups.manager.data.Member;
 import org.drasyl.plugin.groups.manager.data.Membership;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
-import org.drasyl.serialization.JacksonJsonSerializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -57,24 +54,16 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
     private Future<?> staleTask;
-    private final Serialization inboundSerialization;
-    private final Serialization outboundSerialization;
 
     GroupsManagerHandler(final DatabaseAdapter database,
-                         final Future<?> staleTask,
-                         final Serialization inboundSerialization,
-                         final Serialization outboundSerialization) {
+                         final Future<?> staleTask) {
         super(false);
         this.database = database;
         this.staleTask = staleTask;
-        this.inboundSerialization = inboundSerialization;
-        this.outboundSerialization = outboundSerialization;
     }
 
-    public GroupsManagerHandler(final DatabaseAdapter database,
-                                final Serialization inboundSerialization,
-                                final Serialization outboundSerialization) {
-        this(database, null, inboundSerialization, outboundSerialization);
+    public GroupsManagerHandler(final DatabaseAdapter database) {
+        this(database, null);
     }
 
     /**
@@ -272,9 +261,6 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
-        inboundSerialization.addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
-        outboundSerialization.addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
-
         // Register stale task timer
         staleTask = ctx.executor().scheduleAtFixedRate(() -> staleTask(ctx), 1L, 1L, MINUTES);
     }

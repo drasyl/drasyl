@@ -56,7 +56,7 @@ public class GroupsClientPlugin implements DrasylPlugin {
     public void onBeforeStart(final PluginEnvironment environment) {
         LOG.debug("Start Groups Client Plugin with options: {}", config);
 
-        environment.getPipeline().addAfter(APPLICATION_MESSAGE_CODEC, GROUPS_CLIENT_HANDLER, new GroupsClientHandler(config.getGroups(), environment.getInboundSerialization(), environment.getOutboundSerialization(), environment.getIdentity()));
+        environment.getPipeline().addAfter(APPLICATION_MESSAGE_CODEC, GROUPS_CLIENT_HANDLER, new GroupsClientHandler(config.getGroups(), environment.getIdentity()));
         environment.getPipeline().addBefore(GROUPS_CLIENT_HANDLER, "GROUPS_MANAGER_DECODER", new GroupsServerMessageDecoder());
         environment.getPipeline().addBefore(GROUPS_CLIENT_HANDLER, "GROUPS_CLIENT_ENCODER", new GroupsClientMessageEncoder());
     }

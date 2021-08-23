@@ -24,7 +24,6 @@ package org.drasyl.plugin;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.Serialization;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -39,17 +38,11 @@ public class PluginManager {
     private static final Logger LOG = LoggerFactory.getLogger(PluginManager.class);
     private final DrasylConfig config;
     private final Identity identity;
-    private final Serialization inboundSerialization;
-    private final Serialization outboundSerialization;
 
     public PluginManager(final DrasylConfig config,
-                         final Identity identity,
-                         final Serialization inboundSerialization,
-                         final Serialization outboundSerialization) {
+                         final Identity identity) {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
-        this.inboundSerialization = requireNonNull(inboundSerialization);
-        this.outboundSerialization = requireNonNull(outboundSerialization);
     }
 
     /**
@@ -62,7 +55,7 @@ public class PluginManager {
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeStart listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline, inboundSerialization, outboundSerialization);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline);
             config.getPlugins().forEach(plugin -> plugin.onBeforeStart(environment));
             LOG.debug("All onBeforeStart listeners executed");
         }
@@ -78,7 +71,7 @@ public class PluginManager {
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterStart listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline, inboundSerialization, outboundSerialization);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline);
             config.getPlugins().forEach(plugin -> plugin.onAfterStart(environment));
             LOG.debug("All onAfterStart listeners executed");
         }
@@ -94,7 +87,7 @@ public class PluginManager {
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeShutdown listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline, inboundSerialization, outboundSerialization);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline);
             config.getPlugins().forEach(plugin -> plugin.onBeforeShutdown(environment));
             LOG.debug("All onBeforeShutdown listeners executed");
         }
@@ -110,7 +103,7 @@ public class PluginManager {
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterShutdown listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline, inboundSerialization, outboundSerialization);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline);
             config.getPlugins().forEach(plugin -> plugin.onAfterShutdown(environment));
             LOG.debug("All onAfterShutdown listeners executed");
         }

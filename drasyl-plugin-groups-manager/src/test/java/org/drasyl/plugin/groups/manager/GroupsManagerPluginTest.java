@@ -42,6 +42,7 @@ import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.API_ENABLED;
 import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.DATABASE_URI;
 import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.GROUPS;
 import static org.drasyl.plugin.groups.manager.GroupsManagerPlugin.GROUPS_MANAGER_HANDLER;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.verify;
@@ -84,7 +85,7 @@ class GroupsManagerPluginTest {
 
             plugin.onBeforeStart(env);
 
-            verify(pipeline).addLast(eq(GROUPS_MANAGER_HANDLER), isA(GroupsManagerHandler.class));
+            verify(pipeline).addAfter(any(), eq(GROUPS_MANAGER_HANDLER), isA(GroupsManagerHandler.class));
         }
     }
 

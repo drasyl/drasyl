@@ -81,7 +81,7 @@ public class GroupsManagerPlugin implements DrasylPlugin {
                 }
             }
 
-            env.getPipeline().addAfter(APPLICATION_MESSAGE_CODEC, GROUPS_MANAGER_HANDLER, new GroupsManagerHandler(database, env.getInboundSerialization(), env.getOutboundSerialization()));
+            env.getPipeline().addAfter(APPLICATION_MESSAGE_CODEC, GROUPS_MANAGER_HANDLER, new GroupsManagerHandler(database));
             env.getPipeline().addBefore(GROUPS_MANAGER_HANDLER, "GROUPS_MANAGER_ENCODER", new GroupsServerMessageEncoder());
             env.getPipeline().addBefore(GROUPS_MANAGER_HANDLER, "GROUPS_CLIENT_DECODER", new GroupsClientMessageDecoder());
             LOG.debug("Groups Manager Plugin was started with options: {}", config);

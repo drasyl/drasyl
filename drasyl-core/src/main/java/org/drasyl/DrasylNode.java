@@ -40,7 +40,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.ApplicationMessageCodec;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MessageSerializer;
-import org.drasyl.channel.Serialization;
 import org.drasyl.event.Event;
 import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.MessageEvent;
@@ -185,15 +184,12 @@ public abstract class DrasylNode {
             throw new DrasylException("Couldn't load or create identity", e);
         }
 
-        final Serialization inboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsInbound());
-        final Serialization outboundSerialization = new Serialization(config.getSerializationSerializers(), config.getSerializationsBindingsOutbound());
-
         bootstrap = new ServerBootstrap()
                 .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
                 .localAddress(identity)
                 .channel(DrasylServerChannel.class)
-                .handler(new DrasylNodeChannelInitializer(config, identity, inboundSerialization, outboundSerialization, this::onEvent))
-                .childHandler(new DrasylNodeChildChannelInitializer(config, identity, inboundSerialization, outboundSerialization, this::onEvent));
+                .handler(new DrasylNodeChannelInitializer(config, identity, this::onEvent))
+                .childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent));
 
         LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
     }
@@ -506,37 +502,29 @@ public abstract class DrasylNode {
         public static final String UDP_SERVER = "UDP_SERVER";
         private final DrasylConfig config;
         private final Identity identity;
-        private final Serialization inboundSerialization;
-        private final Serialization outboundSerialization;
         private final Consumer<Event> eventConsumer;
         private boolean errorOccurred;
 
         public DrasylNodeChannelInitializer(final DrasylConfig config,
                                             final Identity identity,
-                                            final Serialization inboundSerialization,
-                                            final Serialization outboundSerialization,
                                             final Consumer<Event> eventConsumer,
                                             final boolean errorOccurred) {
             this.config = requireNonNull(config);
             this.identity = requireNonNull(identity);
-            this.inboundSerialization = requireNonNull(inboundSerialization);
-            this.outboundSerialization = requireNonNull(outboundSerialization);
             this.errorOccurred = errorOccurred;
             this.eventConsumer = requireNonNull(eventConsumer);
         }
 
         public DrasylNodeChannelInitializer(final DrasylConfig config,
                                             final Identity identity,
-                                            final Serialization inboundSerialization,
-                                            final Serialization outboundSerialization,
                                             final Consumer<Event> eventConsumer) {
-            this(config, identity, inboundSerialization, outboundSerialization, eventConsumer, false);
+            this(config, identity, eventConsumer, false);
         }
 
         @SuppressWarnings("java:S1188")
         @Override
         protected void initChannel(final Channel ch) {
-            final PluginManager pluginManager = new PluginManager(config, identity, inboundSerialization, outboundSerialization);
+            final PluginManager pluginManager = new PluginManager(config, identity);
 
             ch.pipeline().addFirst(NODE_LIFECYCLE_HANDLER, new NodeLifecycleHandler(ch));
 
@@ -852,19 +840,10 @@ public abstract class DrasylNode {
         public static final String INACTIVITY_CLOSER = "INACTIVITY_CLOSER";
         public static final String INACTIVITY_DETECTOR = "INACTIVITY_DETECTOR";
         private final DrasylConfig config;
-        private final Identity identity;
-        private final Serialization inboundSerialization;
-        private final Serialization outboundSerialization;
         private final Consumer<Event> onEvent;
 
         public DrasylNodeChildChannelInitializer(final DrasylConfig config,
-                                                 final Identity identity,
-                                                 final Serialization inboundSerialization,
-                                                 final Serialization outboundSerialization,
                                                  final Consumer<Event> onEvent) {
-            this.identity = requireNonNull(identity);
-            this.inboundSerialization = requireNonNull(inboundSerialization);
-            this.outboundSerialization = requireNonNull(outboundSerialization);
             this.onEvent = requireNonNull(onEvent);
             this.config = requireNonNull(config);
         }
@@ -886,7 +865,7 @@ public abstract class DrasylNode {
             });
 
             // convert Object <-> ByteString
-            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(this.inboundSerialization, this.outboundSerialization));
+            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(config));
 
             // close inactive channels (to free up resources)
             final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();

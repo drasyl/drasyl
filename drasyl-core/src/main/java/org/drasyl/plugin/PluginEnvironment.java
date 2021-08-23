@@ -24,7 +24,6 @@ package org.drasyl.plugin;
 import com.google.auto.value.AutoValue;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
-import org.drasyl.channel.Serialization;
 import org.drasyl.identity.Identity;
 
 /**
@@ -39,15 +38,9 @@ public abstract class PluginEnvironment {
 
     public abstract ChannelPipeline getPipeline();
 
-    public abstract Serialization getInboundSerialization();
-
-    public abstract Serialization getOutboundSerialization();
-
     public static PluginEnvironment of(final DrasylConfig config,
                                        final Identity identity,
-                                       final ChannelPipeline pipeline,
-                                       final Serialization inboundSerialization,
-                                       final Serialization outboundSerialization) {
-        return new AutoValue_PluginEnvironment(config, identity, pipeline, inboundSerialization, outboundSerialization);
+                                       final ChannelPipeline pipeline) {
+        return new AutoValue_PluginEnvironment(config, identity, pipeline);
     }
 }

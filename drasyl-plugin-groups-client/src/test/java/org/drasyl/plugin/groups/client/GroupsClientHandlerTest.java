@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.Serialization;
 import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeUpEvent;
@@ -41,11 +40,8 @@ import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.plugin.groups.client.message.GroupWelcomeMessage;
-import org.drasyl.plugin.groups.client.message.GroupsClientMessage;
-import org.drasyl.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
-import org.drasyl.serialization.JacksonJsonSerializer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -86,30 +81,13 @@ class GroupsClientHandlerTest {
     @Mock
     private IdentityPublicKey publicKey;
     private final Duration firstStartDelay = Duration.ofMillis(1);
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Serialization inboundSerialization;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Serialization outboundSerialization;
-
-    @Nested
-    class HandlerAdded {
-        @Test
-        void shouldStartHandler() {
-            final GroupsClientHandler handler = new GroupsClientHandler(Set.of(), inboundSerialization, outboundSerialization, identity);
-
-            handler.handlerAdded(ctx);
-
-            verify(inboundSerialization).addSerializer(eq(GroupsServerMessage.class), any(JacksonJsonSerializer.class));
-            verify(outboundSerialization).addSerializer(eq(GroupsClientMessage.class), any(JacksonJsonSerializer.class));
-        }
-    }
 
     @Nested
     class HandlerRemoved {
         @Test
         void shouldStopRenewTasks(@Mock final Future<?> disposable) {
             final Map<Group, Future<?>> renewTasks = new HashMap<>(Map.of(group, disposable));
-            final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay, inboundSerialization, outboundSerialization, identity);
+            final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay, identity);
 
             handler.handlerRemoved(ctx);
 
@@ -121,7 +99,7 @@ class GroupsClientHandlerTest {
         @Test
         void shouldDeregisterFromGroups() {
             final Map<Group, GroupUri> groups = Map.of(group, uri);
-            final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay, inboundSerialization, outboundSerialization, identity);
+            final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks, firstStartDelay, identity);
             final EmbeddedChannel channel = new EmbeddedChannel();
             try {
                 channel.pipeline().addLast("handler", handler);
@@ -141,7 +119,7 @@ class GroupsClientHandlerTest {
     class OnEvent {
         @Test
         void shouldPassThroughOnNotMatchingEvent(@Mock final NodeOfflineEvent event) {
-            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
+            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 channel.pipeline().fireUserEventTriggered(event);
@@ -158,7 +136,7 @@ class GroupsClientHandlerTest {
         void shouldSendJoinOnChannelactive(@Mock final NodeUpEvent event) {
             final String credentials = "test";
             final Map<Group, GroupUri> groups = Map.of(group, uri);
-            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
+            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             when(uri.getGroup()).thenReturn(group);
             when(uri.getCredentials()).thenReturn(credentials);
             when(identity.getProofOfWork()).thenReturn(proofOfWork);
@@ -179,7 +157,7 @@ class GroupsClientHandlerTest {
     class Read {
         @Test
         void shouldProcessMemberJoined() {
-            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
+            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
@@ -195,7 +173,7 @@ class GroupsClientHandlerTest {
 
         @Test
         void shouldProcessMemberLeft() {
-            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
+            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
@@ -213,7 +191,7 @@ class GroupsClientHandlerTest {
         void shouldProcessOwnLeft() {
             when(identity.getIdentityPublicKey()).thenReturn(publicKey);
 
-            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
+            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
@@ -231,7 +209,7 @@ class GroupsClientHandlerTest {
         @SuppressWarnings("SuspiciousMethodCalls")
         @Test
         void shouldProcessWelcome() {
-            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
+            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
@@ -251,7 +229,7 @@ class GroupsClientHandlerTest {
 
         @Test
         void shouldProcessJoinFailed() {
-            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, inboundSerialization, outboundSerialization, identity);
+            final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;

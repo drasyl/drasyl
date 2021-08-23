@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.plugin.groups.client.GroupsClientPlugin.GROUPS_CLIENT_HANDLER;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.verify;
@@ -55,7 +56,7 @@ class GroupsClientPluginTest {
 
         plugin.onBeforeStart(env);
 
-        verify(pipeline).addLast(eq(GROUPS_CLIENT_HANDLER), isA(GroupsClientHandler.class));
+        verify(pipeline).addAfter(any(), eq(GROUPS_CLIENT_HANDLER), isA(GroupsClientHandler.class));
     }
 
     @Test

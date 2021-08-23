@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.Serialization;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -38,11 +37,9 @@ import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.plugin.groups.client.message.GroupWelcomeMessage;
-import org.drasyl.plugin.groups.client.message.GroupsClientMessage;
 import org.drasyl.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
-import org.drasyl.serialization.JacksonJsonSerializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -62,8 +59,6 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
     private static final Duration RETRY_DELAY = Duration.ofSeconds(10);
     private static final Duration FIRST_JOIN_DELAY = Duration.ofSeconds(5);
     private final Duration firstJoinDelay;
-    private final Serialization inboundSerialization;
-    private final Serialization outboundSerialization;
     private final Map<Group, GroupUri> groups;
     private final Map<Group, Future<?>> renewTasks;
     private final Identity identity;
@@ -72,24 +67,18 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
     GroupsClientHandler(final Map<Group, GroupUri> groups,
                         final Map<Group, Future<?>> renewTasks,
                         final Duration firstJoinDelay,
-                        final Serialization inboundSerialization,
-                        final Serialization outboundSerialization,
                         final Identity identity) {
         super(false);
         this.groups = requireNonNull(groups);
         this.renewTasks = requireNonNull(renewTasks);
         this.firstJoinDelay = requireNonNull(firstJoinDelay);
-        this.inboundSerialization = requireNonNull(inboundSerialization);
-        this.outboundSerialization = requireNonNull(outboundSerialization);
         this.identity = requireNonNull(identity);
     }
 
     public GroupsClientHandler(final Set<GroupUri> groups,
-                               final Serialization inboundSerialization,
-                               final Serialization outboundSerialization,
                                final Identity identity) {
         this(groups.stream().collect(Collectors.toMap(GroupUri::getGroup, groupURI -> groupURI)),
-                new ConcurrentHashMap<>(), FIRST_JOIN_DELAY, inboundSerialization, outboundSerialization, identity);
+                new ConcurrentHashMap<>(), FIRST_JOIN_DELAY, identity);
     }
 
     @Override
@@ -117,12 +106,6 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
             // pass through
             ctx.fireChannelRead(msg);
         }
-    }
-
-    @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) {
-        inboundSerialization.addSerializer(GroupsServerMessage.class, new JacksonJsonSerializer());
-        outboundSerialization.addSerializer(GroupsClientMessage.class, new JacksonJsonSerializer());
     }
 
     @Override

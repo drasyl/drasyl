@@ -22,7 +22,6 @@
 package org.drasyl.plugin.groups.manager;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
@@ -36,8 +35,6 @@ import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.plugin.groups.client.message.GroupWelcomeMessage;
-import org.drasyl.plugin.groups.client.message.GroupsClientMessage;
-import org.drasyl.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
 import org.drasyl.plugin.groups.manager.data.Group;
@@ -45,7 +42,6 @@ import org.drasyl.plugin.groups.manager.data.Member;
 import org.drasyl.plugin.groups.manager.data.Membership;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
-import org.drasyl.serialization.JacksonJsonSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -88,17 +84,11 @@ class GroupsManagerHandlerTest {
     @Mock
     private IdentityPublicKey publicKey;
     @Mock
-    private ChannelPipeline pipeline;
-    @Mock
     private Future<?> staleTask;
     @Mock
     private ProofOfWork proofOfWork;
     private Set<Membership> memberships;
     private Group group;
-    @Mock
-    private Serialization inboundSerialization;
-    @Mock
-    private Serialization outboundSerialization;
 
     @BeforeEach
     void setUp() {
@@ -115,12 +105,10 @@ class GroupsManagerHandlerTest {
                                                         @Mock final Serialization outboundSerialization) {
             when(ctx.executor()).thenReturn(scheduler);
 
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
 
             handler.handlerAdded(ctx);
 
-            verify(inboundSerialization).addSerializer(eq(GroupsClientMessage.class), any(JacksonJsonSerializer.class));
-            verify(outboundSerialization).addSerializer(eq(GroupsServerMessage.class), any(JacksonJsonSerializer.class));
             verify(scheduler).scheduleAtFixedRate(any(), eq(1L), eq(1L), eq(TimeUnit.MINUTES));
         }
     }
@@ -129,7 +117,7 @@ class GroupsManagerHandlerTest {
     class StaleTask {
         @Test
         void shouldNotifyAboutStaleMembers() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             when(databaseAdapter.deleteStaleMemberships()).thenReturn(memberships);
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
 
@@ -145,7 +133,7 @@ class GroupsManagerHandlerTest {
     class HandlerRemoved {
         @Test
         void shouldDisposeStaleTask() {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, staleTask, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, staleTask);
 
             handler.handlerRemoved(ctx);
 
@@ -157,7 +145,7 @@ class GroupsManagerHandlerTest {
     class OnEvent {
         @Test
         void shouldSkipOnEvent(@Mock final GroupJoinedEvent event) {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 channel.pipeline().fireUserEventTriggered(event);
@@ -175,7 +163,7 @@ class GroupsManagerHandlerTest {
     class Join {
         @Test
         void shouldHandleJoinRequest() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -198,7 +186,7 @@ class GroupsManagerHandlerTest {
 
         @Test
         void shouldSendErrorOnNotExistingGroup() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -217,7 +205,7 @@ class GroupsManagerHandlerTest {
 
         @Test
         void shouldSendErrorOnNotWeakProofOfWork() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -237,7 +225,7 @@ class GroupsManagerHandlerTest {
 
         @Test
         void shouldSendErrorOnUnknownException() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -259,7 +247,7 @@ class GroupsManagerHandlerTest {
         @Test
         @Timeout(value = 15_000, unit = MILLISECONDS)
         void shouldCompleteFutureExceptionallyOnDatabaseException() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
@@ -283,7 +271,7 @@ class GroupsManagerHandlerTest {
         void shouldHandleLeaveRequest() throws DatabaseException {
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
 
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
@@ -301,7 +289,7 @@ class GroupsManagerHandlerTest {
 
         @Test
         void shouldCompleteExceptionallyOnError() throws DatabaseException {
-            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter, inboundSerialization, outboundSerialization);
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
