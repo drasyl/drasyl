@@ -34,6 +34,7 @@ import org.drasyl.cli.command.perf.message.PerfMessage;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.event.Event;
+import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -162,6 +163,10 @@ public class PerfServerNode extends BehavioralDrasylNode {
                 .onEvent(NodeOfflineEvent.class, event -> {
                     printStream.println("Lost connection to super peer. Wait until server is back online...");
                     return offline();
+                })
+                .onEvent(InboundExceptionEvent.class, event -> {
+                    LOG.warn("Inbound exception:", event::getError);
+                    return Behaviors.same();
                 })
                 .onAnyEvent(event -> same())
                 .build();

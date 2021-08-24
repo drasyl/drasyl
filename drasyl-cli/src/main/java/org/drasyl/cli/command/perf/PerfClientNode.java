@@ -37,6 +37,7 @@ import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.event.Event;
+import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -173,6 +174,10 @@ public class PerfClientNode extends BehavioralDrasylNode {
                         return requestSession();
                     })
                     .onEvent(PeerEvent.class, this::handlePeerEvent)
+                    .onEvent(InboundExceptionEvent.class, event -> {
+                        LOG.warn("Inbound exception:", event::getError);
+                        return Behaviors.same();
+                    })
                     .onAnyEvent(event -> same())
                     .build();
         }
