@@ -37,23 +37,23 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * Encodes {@link GroupsServerMessage}s to {@link ByteBuf}s with magic number {@link
  * #MAGIC_NUMBER}.
  */
-public class GroupsServerMessageEncoder extends MessageToMessageEncoder<AddressedMessage<?, ?>> {
+public class GroupsServerMessageEncoder extends MessageToMessageEncoder<AddressedMessage<GroupsServerMessage, ?>> {
     public static final int MAGIC_NUMBER = 578_611_197;
 
     @Override
+    public boolean acceptOutboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof GroupsServerMessage;
+    }
+
+    @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<?, ?> msg,
+                          final AddressedMessage<GroupsServerMessage, ?> msg,
                           final List<Object> out) throws Exception {
-        if (msg.message() instanceof GroupsServerMessage) {
-            final ByteBuf byteBuf = ctx.alloc().ioBuffer();
-            byteBuf.writeInt(MAGIC_NUMBER);
-            try (final OutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
-                JACKSON_WRITER.writeValue(outputStream, msg.message());
-            }
-            out.add(new AddressedMessage<>(byteBuf, msg.address()));
+        final ByteBuf byteBuf = ctx.alloc().ioBuffer();
+        byteBuf.writeInt(MAGIC_NUMBER);
+        try (final OutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
+            JACKSON_WRITER.writeValue(outputStream, msg.message());
         }
-        else {
-            out.add(msg.retain());
-        }
+        out.add(new AddressedMessage<>(byteBuf, msg.address()));
     }
 }

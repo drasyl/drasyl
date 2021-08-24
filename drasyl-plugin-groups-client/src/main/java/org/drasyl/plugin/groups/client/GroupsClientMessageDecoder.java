@@ -38,27 +38,27 @@ import static org.drasyl.util.JSONUtil.JACKSON_READER;
  * Decodes {@link ByteBuf}s with magic number {@link GroupsClientMessageEncoder#MAGIC_NUMBER} to
  * {@link GroupsClientMessage}s.
  */
-public class GroupsClientMessageDecoder extends MessageToMessageDecoder<AddressedMessage<?, ?>> {
+public class GroupsClientMessageDecoder extends MessageToMessageDecoder<AddressedMessage<ByteBuf, ?>> {
+    @Override
+    public boolean acceptInboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf;
+    }
+
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<?, ?> msg,
+                          final AddressedMessage<ByteBuf, ?> msg,
                           final List<Object> out) throws Exception {
-        if (msg.message() instanceof ByteBuf) {
-            final ByteBuf byteBuf = (ByteBuf) msg.message();
-            byteBuf.markReaderIndex();
-            final int magicNumber = byteBuf.readInt();
-            if (magicNumber == MAGIC_NUMBER) {
-                try (final InputStream inputStream = new ByteBufInputStream(byteBuf)) {
-                    out.add(new AddressedMessage<>(JACKSON_READER.readValue(inputStream, GroupsClientMessage.class), msg.address()));
-                }
-            }
-            else {
-                byteBuf.resetReaderIndex();
-                out.add(msg.retain());
+        final ByteBuf byteBuf = msg.message();
+        byteBuf.markReaderIndex();
+        final int magicNumber = byteBuf.readInt();
+        if (magicNumber == MAGIC_NUMBER) {
+            try (final InputStream inputStream = new ByteBufInputStream(byteBuf)) {
+                out.add(new AddressedMessage<>(JACKSON_READER.readValue(inputStream, GroupsClientMessage.class), msg.address()));
             }
         }
         else {
-            msg.retain();
+            byteBuf.resetReaderIndex();
+            out.add(msg.retain());
         }
     }
 }

@@ -29,6 +29,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.protocol.AcknowledgementMessage;
 import org.drasyl.remote.protocol.Nonce;
+import org.drasyl.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,7 @@ import java.net.SocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OtherNetworkFilterTest {
@@ -54,12 +56,13 @@ class OtherNetworkFilterTest {
     }
 
     @Test
-    void shouldDropMessagesFromOtherNetworks() {
+    void shouldDropMessagesFromOtherNetworks(@Mock final RemoteMessage msg,
+                                             @Mock final SocketAddress address) {
+        when(msg.getNetworkId()).thenReturn(1337);
         final ChannelHandler handler = new OtherNetworkFilter(123);
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, senderPublicKey, ProofOfWork.of(1), recipientPublicKey, correspondingId);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
+            channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, address));
 
             assertNull(channel.readInbound());
         }

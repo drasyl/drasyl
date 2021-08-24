@@ -48,7 +48,7 @@ import static org.drasyl.util.DurationUtil.max;
  * Messages exceeding the rate limit are dropped.
  */
 @SuppressWarnings("java:S110")
-public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<FullReadMessage<?>, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(RateLimiter.class);
     private static final long CACHE_SIZE = 1_000;
     private static final long ACKNOWLEDGEMENT_RATE_LIMIT = 100; // 1 ack msg per 100ms
@@ -79,22 +79,21 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<?,
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) {
-        if (msg.message() instanceof FullReadMessage) {
-            final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) msg.message();
+    public boolean acceptInboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof FullReadMessage;
+    }
 
-            if (!myAddress.equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
-                ctx.fireChannelRead(msg);
-            }
-            else {
-                msg.release();
-                LOG.debug("Message `{}` exceeding rate limit dropped.", fullReadMsg::getNonce);
-            }
+    @Override
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedMessage<FullReadMessage<?>, ?> msg) {
+        final FullReadMessage<?> fullReadMsg = msg.message();
+
+        if (!myAddress.equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
+            ctx.fireChannelRead(msg);
         }
         else {
-            // pass through
-            ctx.fireChannelRead(msg);
+            msg.release();
+            LOG.debug("Message `{}` exceeding rate limit dropped.", fullReadMsg::getNonce);
         }
     }
 

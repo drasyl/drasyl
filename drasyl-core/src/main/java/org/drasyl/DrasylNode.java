@@ -606,16 +606,16 @@ public abstract class DrasylNode {
 
                 ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter(this.identity.getAddress()));
 
-                ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<?, ?>>(false) {
+                ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<UnarmedMessage, ?>>(false) {
+                    @Override
+                    public boolean acceptInboundMessage(final Object msg) {
+                        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof UnarmedMessage;
+                    }
+
                     @Override
                     protected void channelRead0(final ChannelHandlerContext ctx,
-                                                final AddressedMessage<?, ?> msg) throws InvalidMessageFormatException {
-                        if (msg.message() instanceof UnarmedMessage) {
-                            ctx.fireChannelRead(new AddressedMessage<>(((UnarmedMessage) msg.message()).read(), msg.address()));
-                        }
-                        else {
-                            ctx.fireChannelRead(msg);
-                        }
+                                                final AddressedMessage<UnarmedMessage, ?> msg) throws InvalidMessageFormatException {
+                        ctx.fireChannelRead(new AddressedMessage<>(msg.message().read(), msg.address()));
                     }
                 });
 
@@ -783,32 +783,31 @@ public abstract class DrasylNode {
          * Routes inbound messages to the correct child channel and broadcast events to all child
          * channels.
          */
-        private static class ChildChannelRouter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+        private static class ChildChannelRouter extends SimpleChannelInboundHandler<AddressedMessage<?, IdentityPublicKey>> {
             public ChildChannelRouter() {
                 super(false);
             }
 
             @Override
+            public boolean acceptInboundMessage(final Object msg) throws Exception {
+                return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey;
+            }
+
+            @Override
             protected void channelRead0(final ChannelHandlerContext ctx,
-                                        final AddressedMessage<?, ?> msg) {
-                if (msg.address() instanceof IdentityPublicKey) {
-                    Object o = msg.message();
-                    final IdentityPublicKey sender = (IdentityPublicKey) msg.address();
+                                        final AddressedMessage<?, IdentityPublicKey> msg) {
+                Object o = msg.message();
+                final IdentityPublicKey sender = msg.address();
 
-                    // create/get channel
-                    final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
+                // create/get channel
+                final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
 
-                    if (o == null) {
-                        o = NULL;
-                    }
-
-                    // pass message to channel
-                    channel.pipeline().fireChannelRead(o);
+                if (o == null) {
+                    o = NULL;
                 }
-                else {
-                    // pass through message
-                    ctx.fireChannelRead(msg);
-                }
+
+                // pass message to channel
+                channel.pipeline().fireChannelRead(o);
             }
         }
 

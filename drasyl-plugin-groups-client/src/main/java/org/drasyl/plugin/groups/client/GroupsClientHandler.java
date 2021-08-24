@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMessage<GroupsServerMessage, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
     private static final Duration RETRY_DELAY = Duration.ofSeconds(10);
     private static final Duration FIRST_JOIN_DELAY = Duration.ofSeconds(5);
@@ -82,29 +82,26 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
     }
 
     @Override
+    public boolean acceptInboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof GroupsServerMessage;
+    }
+
+    @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) {
-        if (msg.message() instanceof GroupsServerMessage) {
-            final GroupsServerMessage grpMsg = (GroupsServerMessage) msg.message();
+                                final AddressedMessage<GroupsServerMessage, ?> msg) {
+        final GroupsServerMessage grpMsg = msg.message();
 
-            if (grpMsg instanceof MemberJoinedMessage) {
-                onMemberJoined(ctx, (MemberJoinedMessage) grpMsg);
-            }
-            else if (grpMsg instanceof MemberLeftMessage) {
-                onMemberLeft(ctx, (MemberLeftMessage) grpMsg);
-            }
-            else if (grpMsg instanceof GroupWelcomeMessage) {
-                onWelcome(ctx, msg.address(), (GroupWelcomeMessage) grpMsg);
-            }
-            else if (grpMsg instanceof GroupJoinFailedMessage) {
-                onJoinFailed(ctx, (GroupJoinFailedMessage) grpMsg);
-            }
-
-            msg.release();
+        if (grpMsg instanceof MemberJoinedMessage) {
+            onMemberJoined(ctx, (MemberJoinedMessage) grpMsg);
         }
-        else {
-            // pass through
-            ctx.fireChannelRead(msg);
+        else if (grpMsg instanceof MemberLeftMessage) {
+            onMemberLeft(ctx, (MemberLeftMessage) grpMsg);
+        }
+        else if (grpMsg instanceof GroupWelcomeMessage) {
+            onWelcome(ctx, msg.address(), (GroupWelcomeMessage) grpMsg);
+        }
+        else if (grpMsg instanceof GroupJoinFailedMessage) {
+            onJoinFailed(ctx, (GroupJoinFailedMessage) grpMsg);
         }
     }
 

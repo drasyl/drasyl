@@ -34,7 +34,7 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
  * This handler filters out all messages received with invalid proof of work.
  */
 @SuppressWarnings("java:S110")
-public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<AddressedMessage<RemoteMessage, ?>> {
     private final DrasylAddress myAddress;
 
     public InvalidProofOfWorkFilter(final DrasylAddress myAddress) {
@@ -43,21 +43,21 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
     }
 
     @Override
+    public boolean acceptInboundMessage(final Object msg) throws Exception {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage;
+    }
+
+    @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) throws InvalidProofOfWorkException {
-        if (msg.message() instanceof RemoteMessage) {
-            final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
-            final boolean validProofOfWork = !myAddress.equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
-            if (validProofOfWork) {
-                ctx.fireChannelRead(msg);
-            }
-            else {
-                msg.release();
-                throw new InvalidProofOfWorkException(remoteMsg);
-            }
+                                final AddressedMessage<RemoteMessage, ?> msg) throws InvalidProofOfWorkException {
+        final RemoteMessage remoteMsg = msg.message();
+        final boolean validProofOfWork = !myAddress.equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
+        if (validProofOfWork) {
+            ctx.fireChannelRead(msg);
         }
         else {
-            ctx.fireChannelRead(msg);
+            msg.release();
+            throw new InvalidProofOfWorkException(remoteMsg);
         }
     }
 

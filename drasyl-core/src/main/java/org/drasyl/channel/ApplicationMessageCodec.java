@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * This codec converts {@link ApplicationMessage}s to {@link ByteString}s and vice vera.
  */
-public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
+public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMessage<ApplicationMessage, ?>, AddressedMessage<ByteBuf, IdentityPublicKey>> {
     private final int networkId;
     private final IdentityPublicKey myPublicKey;
     private final ProofOfWork myProofOfWork;
@@ -50,30 +50,28 @@ public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMess
     }
 
     @Override
+    public boolean acceptOutboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey;
+    }
+
+    @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<?, ?> msg,
+                          final AddressedMessage<ByteBuf, IdentityPublicKey> msg,
                           final List<Object> out) throws Exception {
-        if (msg.message() instanceof ByteBuf && msg.address() instanceof IdentityPublicKey) {
-            final ApplicationMessage wrappedMsg = ApplicationMessage.of(networkId, myPublicKey, myProofOfWork, (IdentityPublicKey) msg.address(), ((ByteBuf) msg.message()).retain());
-            out.add(new AddressedMessage<>(wrappedMsg, msg.address()));
-        }
-        else {
-            // pass through message
-            out.add(msg.retain());
-        }
+        final ApplicationMessage wrappedMsg = ApplicationMessage.of(networkId, myPublicKey, myProofOfWork, msg.address(), msg.message().retain());
+        out.add(new AddressedMessage<>(wrappedMsg, msg.address()));
+    }
+
+    @Override
+    public boolean acceptInboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage;
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<?, ?> msg,
+                          final AddressedMessage<ApplicationMessage, ?> msg,
                           final List<Object> out) {
-        if (msg.message() instanceof ApplicationMessage) {
-            final AddressedMessage<ByteBuf, ?> unwrappedMsg = new AddressedMessage<>(((ApplicationMessage) msg.message()).getPayload().retain(), msg.address());
-            out.add(unwrappedMsg);
-        }
-        else {
-            // pass through message
-            out.add(msg.retain());
-        }
+        final AddressedMessage<ByteBuf, ?> unwrappedMsg = new AddressedMessage<>(msg.message().getPayload().retain(), msg.address());
+        out.add(unwrappedMsg);
     }
 }

@@ -45,7 +45,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * all methods fail, the program waits for {@link #RETRY_DELAY} and then tries all methods again. It
  * never gives up.
  */
-public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<ByteBuf, InetSocketAddress>> {
     public static final Duration MAPPING_LIFETIME = ofMinutes(10);
     public static final Duration RETRY_DELAY = ofMinutes(5);
     private static final Logger LOG = LoggerFactory.getLogger(PortMapper.class);
@@ -68,21 +68,21 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<?, 
     }
 
     @Override
+    public boolean acceptInboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress;
+    }
+
+    @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) {
-        if (msg.message() instanceof ByteBuf && msg.address() instanceof InetSocketAddress) {
-            final InetSocketAddress sender = (InetSocketAddress) msg.address();
-            final ByteBuf byteBufMsg = (ByteBuf) msg.message();
-            if (methods.get(currentMethodPointer).acceptMessage(sender, byteBufMsg)) {
-                ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, byteBufMsg));
-            }
-            else {
-                // message was not for the mapper -> passthrough
-                ctx.fireChannelRead(msg);
-            }
+                                final AddressedMessage<ByteBuf, InetSocketAddress> msg) {
+        final InetSocketAddress sender = msg.address();
+        final ByteBuf byteBufMsg = msg.message();
+        if (methods.get(currentMethodPointer).acceptMessage(sender, byteBufMsg)) {
+            ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, byteBufMsg));
         }
         else {
-            ctx.fireChannelRead(msg.retain());
+            // message was not for the mapper -> passthrough
+            ctx.fireChannelRead(msg);
         }
     }
 

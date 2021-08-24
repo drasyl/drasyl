@@ -37,7 +37,7 @@ import java.util.List;
  */
 @SuppressWarnings("java:S110")
 @Sharable
-public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<AddressedMessage<?, ?>, AddressedMessage<?, ?>> {
+public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<AddressedMessage<ByteBuf, ?>, AddressedMessage<RemoteMessage, ?>> {
     public static final RemoteMessageToByteBufCodec INSTANCE = new RemoteMessageToByteBufCodec();
 
     private RemoteMessageToByteBufCodec() {
@@ -45,40 +45,36 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
     }
 
     @Override
-    protected void encode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<?, ?> msg,
-                          final List<Object> out) throws InvalidMessageFormatException {
-        if (msg.message() instanceof RemoteMessage) {
-            final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
+    public boolean acceptOutboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage;
+    }
 
-            final ByteBuf buffer = ctx.alloc().ioBuffer();
-            try {
-                remoteMsg.writeTo(buffer);
-                out.add(new AddressedMessage<>(buffer, msg.address()));
-            }
-            catch (final InvalidMessageFormatException e) {
-                buffer.release();
-                throw e;
-            }
+    @Override
+    protected void encode(final ChannelHandlerContext ctx,
+                          final AddressedMessage<RemoteMessage, ?> msg,
+                          final List<Object> out) throws InvalidMessageFormatException {
+        final RemoteMessage remoteMsg = msg.message();
+
+        final ByteBuf buffer = ctx.alloc().ioBuffer();
+        try {
+            remoteMsg.writeTo(buffer);
+            out.add(new AddressedMessage<>(buffer, msg.address()));
         }
-        else {
-            // pass through message
-            out.add(msg.retain());
+        catch (final InvalidMessageFormatException e) {
+            buffer.release();
+            throw e;
         }
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<?, ?> msg,
-                          final List<Object> out) throws InvalidMessageFormatException {
-        if (msg.message() instanceof ByteBuf) {
-            final ByteBuf byteBufMsg = (ByteBuf) msg.message();
+    public boolean acceptInboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf;
+    }
 
-            out.add(new AddressedMessage<>(PartialReadMessage.of(byteBufMsg.retain()), msg.address()));
-        }
-        else {
-            // pass through message
-            out.add(msg.retain());
-        }
+    @Override
+    protected void decode(final ChannelHandlerContext ctx,
+                          final AddressedMessage<ByteBuf, ?> msg,
+                          final List<Object> out) throws InvalidMessageFormatException {
+        out.add(new AddressedMessage<>(PartialReadMessage.of(msg.message().retain()), msg.address()));
     }
 }

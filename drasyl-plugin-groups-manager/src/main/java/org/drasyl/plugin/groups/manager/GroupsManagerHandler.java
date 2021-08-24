@@ -50,7 +50,7 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
 
-public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedMessage<GroupsClientMessage, IdentityPublicKey>> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
     private Future<?> staleTask;
@@ -117,30 +117,20 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) {
-        if (msg.message() instanceof GroupsClientMessage && msg.address() instanceof IdentityPublicKey) {
-            final GroupsClientMessage grpMsg = (GroupsClientMessage) msg.message();
+    public boolean acceptInboundMessage(final Object msg) throws Exception {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof GroupsClientMessage && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey;
+    }
 
-            if (grpMsg instanceof GroupJoinMessage) {
-                ctx.executor().execute(() -> {
-                    handleJoinRequest(ctx, (IdentityPublicKey) msg.address(), (GroupJoinMessage) grpMsg);
-                    msg.release();
-                });
-            }
-            else if (grpMsg instanceof GroupLeaveMessage) {
-                ctx.executor().execute(() -> {
-                    handleLeaveRequest(ctx, (IdentityPublicKey) msg.address(), (GroupLeaveMessage) grpMsg);
-                    msg.release();
-                });
-            }
-            else {
-                msg.release();
-            }
+    @Override
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final AddressedMessage<GroupsClientMessage, IdentityPublicKey> msg) {
+        final GroupsClientMessage grpMsg = msg.message();
+
+        if (grpMsg instanceof GroupJoinMessage) {
+            ctx.executor().execute(() -> handleJoinRequest(ctx, msg.address(), (GroupJoinMessage) grpMsg));
         }
-        else {
-            // pass through
-            ctx.fireChannelRead(msg);
+        else if (grpMsg instanceof GroupLeaveMessage) {
+            ctx.executor().execute(() -> handleLeaveRequest(ctx, msg.address(), (GroupLeaveMessage) grpMsg));
         }
     }
 

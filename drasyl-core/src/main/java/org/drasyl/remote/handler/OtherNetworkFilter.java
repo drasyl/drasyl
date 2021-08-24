@@ -31,7 +31,7 @@ import org.drasyl.remote.protocol.RemoteMessage;
  * This handler filters out all messages received from other networks.
  */
 @SuppressWarnings("java:S110")
-public final class OtherNetworkFilter extends SimpleChannelInboundHandler<AddressedMessage<?, ?>> {
+public final class OtherNetworkFilter extends SimpleChannelInboundHandler<AddressedMessage<RemoteMessage, ?>> {
     private final int networkId;
 
     public OtherNetworkFilter(final int networkId) {
@@ -40,20 +40,20 @@ public final class OtherNetworkFilter extends SimpleChannelInboundHandler<Addres
     }
 
     @Override
+    public boolean acceptInboundMessage(final Object msg) {
+        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage;
+    }
+
+    @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<?, ?> msg) throws OtherNetworkException {
-        if (msg.message() instanceof RemoteMessage) {
-            final RemoteMessage remoteMsg = (RemoteMessage) msg.message();
-            if (remoteMsg instanceof ChunkMessage || networkId == remoteMsg.getNetworkId()) {
-                ctx.fireChannelRead(msg);
-            }
-            else {
-                msg.release();
-                throw new OtherNetworkException(remoteMsg);
-            }
+                                final AddressedMessage<RemoteMessage, ?> msg) throws OtherNetworkException {
+        final RemoteMessage remoteMsg = msg.message();
+        if (remoteMsg instanceof ChunkMessage || networkId == remoteMsg.getNetworkId()) {
+            ctx.fireChannelRead(msg);
         }
         else {
-            ctx.fireChannelRead(msg);
+            msg.release();
+            throw new OtherNetworkException(remoteMsg);
         }
     }
 
