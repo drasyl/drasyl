@@ -70,6 +70,12 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
     protected void encode(final ChannelHandlerContext ctx,
                           Object o,
                           final List<Object> out) {
+        if (o instanceof ByteBuf) {
+            // no need to serialize this msg -> pass through
+            out.add(((ByteBuf) o).retain());
+            return;
+        }
+
         if (o == NULL) {
             o = null;
         }

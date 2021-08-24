@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.MessageSerializerProtocol.SerializedPayload;
@@ -39,6 +40,7 @@ import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.drasyl.channel.Null.NULL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -225,6 +227,21 @@ class MessageSerializerTest {
             finally {
                 channel.close();
             }
+        }
+
+        @Test
+        void shouldPassThroughByteBuf(
+                @Mock(answer = RETURNS_DEEP_STUBS) final Serialization inboundSerialization,
+                @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) {
+            final ChannelHandler handler = new MessageSerializer(inboundSerialization, outboundSerialization);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+            final ByteBuf msg = Unpooled.copiedBuffer("Hello", UTF_8);
+            channel.writeAndFlush(msg);
+
+            assertEquals(msg, channel.readOutbound());
+
+            msg.release();
         }
     }
 }
