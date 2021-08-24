@@ -123,6 +123,10 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
                           final List<Object> out) {
         try (final InputStream in = new ByteBufInputStream(bytes)) {
             final SerializedPayload serializedPayload = SerializedPayload.parseDelimitedFrom(in);
+            if (serializedPayload == null) {
+                throw new DecoderException("Unable to create SerializedPayload from given ByteBuf.");
+            }
+
             final String type = serializedPayload.getType();
             final byte[] payload = serializedPayload.getPayload().toByteArray();
             final Serializer serializer = inboundSerialization.findSerializerFor(type);
