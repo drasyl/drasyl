@@ -22,7 +22,7 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.protobuf.ByteString;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
@@ -426,7 +426,7 @@ class InternetDiscoveryTest {
                 when(identity.getIdentityPublicKey()).thenReturn(recipient);
                 when(peer.hasControlTraffic(any())).thenReturn(true); // do not remove!
 
-                final ApplicationMessage applicationMessage = ApplicationMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, ByteString.EMPTY);
+                final ApplicationMessage applicationMessage = ApplicationMessage.of(0, sender, IdentityTestUtil.ID_1.getProofOfWork(), recipient, Unpooled.buffer());
                 final InternetDiscovery handler = new InternetDiscovery(openPingsCache, identity.getAddress(), identity.getProofOfWork(), uniteAttemptsCache, new HashMap<>(Map.of(sender, peer)), rendezvousPeers, superPeers, ofSeconds(1), ofSeconds(5), ofSeconds(30), false, new HashSet<>(), 0, null, null);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {

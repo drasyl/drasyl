@@ -21,7 +21,6 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInboundHandler;
@@ -102,7 +101,7 @@ class ChunkingHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
                     final ByteBuf bytes = Unpooled.buffer();
-                    final ApplicationMessage message = ApplicationMessage.of(0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), ByteString.copyFrom(randomBytes(remoteMessageMtu - 200)));
+                    final ApplicationMessage message = ApplicationMessage.of(0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(remoteMessageMtu - 200)));
                     message.writeTo(bytes);
                     final int readableBytes = bytes.readableBytes();
 
@@ -178,7 +177,7 @@ class ChunkingHandlerTest {
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, ID_1.getIdentityPublicKey());
-                final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
+                final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]));
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
                     channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
@@ -238,7 +237,7 @@ class ChunkingHandlerTest {
 
                 final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, sender);
-                final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, ByteString.copyFrom(new byte[remoteMessageMtu / 2]))
+                final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]))
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
@@ -261,7 +260,7 @@ class ChunkingHandlerTest {
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, sender);
-                final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, ByteString.copyFrom(new byte[remoteMaxContentLength]));
+                final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, Unpooled.wrappedBuffer(new byte[remoteMaxContentLength]));
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
                     final ChannelPromise promise = channel.newPromise();
@@ -282,7 +281,7 @@ class ChunkingHandlerTest {
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 
                 final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
-                final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, ByteString.copyFrom(randomBytes(remoteMessageMtu * 2)))
+                final PartialReadMessage msg = ApplicationMessage.of(randomNonce(), 0, sender, ProofOfWork.of(6518542), recipient, HopCount.of(), agreementId, Unpooled.wrappedBuffer(randomBytes(remoteMessageMtu * 2)))
                         .arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, sender);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -344,7 +343,7 @@ class ChunkingHandlerTest {
                 final IdentityPublicKey recipient = ID_2.getIdentityPublicKey();
 
                 final ChannelInboundHandler handler = new ChunkingHandler(remoteMaxContentLength, remoteMessageMtu, messageComposedMessageTransferTimeout, ID_1.getAddress());
-                final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, ByteString.copyFrom(new byte[remoteMessageMtu / 2]));
+                final ApplicationMessage msg = ApplicationMessage.of(0, sender, ProofOfWork.of(6518542), recipient, Unpooled.wrappedBuffer(new byte[remoteMessageMtu / 2]));
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
                 try {
                     channel.writeAndFlush(new AddressedMessage<>(msg, recipientAddress));

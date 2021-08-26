@@ -21,10 +21,10 @@
  */
 package org.drasyl.remote.protocol;
 
-import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.IdentityPublicKey;
@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.drasyl.remote.protocol.Nonce.randomNonce;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,7 +60,7 @@ public class ArmedMessageTest {
         @BeforeEach
         void setUp() throws IOException, CryptoException {
             final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
-            final FullReadMessage<?> fullReadMessage = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, ByteString.EMPTY);
+            final FullReadMessage<?> fullReadMessage = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, Unpooled.buffer());
             armedMessage = fullReadMessage.arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
         }
 
@@ -94,7 +95,7 @@ public class ArmedMessageTest {
         @BeforeEach
         void setUp() throws IOException, CryptoException {
             final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
-            fullReadMessage = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, ByteString.copyFromUtf8("Heiko"));
+            fullReadMessage = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, Unpooled.copiedBuffer("Heiko", UTF_8));
             sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
             armedMessage = fullReadMessage.arm(Crypto.INSTANCE, new SessionPair(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
         }
@@ -142,7 +143,7 @@ public class ArmedMessageTest {
 
         @Test
         void shouldBeAbleToDisarmToApplicationMessage() throws CryptoException, InvalidMessageFormatException {
-            final FullReadMessage<?> message = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey()), ByteString.EMPTY);
+            final FullReadMessage<?> message = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey()), Unpooled.buffer());
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
             final FullReadMessage<?> disarmedMessage = message.arm(Crypto.INSTANCE, new SessionPair(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(Crypto.INSTANCE, sessionPair);
 
@@ -191,7 +192,7 @@ public class ArmedMessageTest {
         @Test
         void shouldNotModifyMessageByteBuf() throws IOException, CryptoException {
             final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
-            final ApplicationMessage applicationMessage = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, ByteString.EMPTY);
+            final ApplicationMessage applicationMessage = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, Unpooled.buffer());
             final ArmedMessage armedMessage = applicationMessage.arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
 
             final int readableBytes = armedMessage.getBytes().readableBytes();
@@ -206,7 +207,7 @@ public class ArmedMessageTest {
         @Test
         void multipleCallsShouldWriteSameBytes() throws IOException, CryptoException {
             final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
-            final ApplicationMessage applicationMessage = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, ByteString.EMPTY);
+            final ApplicationMessage applicationMessage = ApplicationMessage.of(randomNonce(), 0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, Unpooled.buffer());
             final PartialReadMessage armedMessage = applicationMessage.arm(Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
 
             final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();

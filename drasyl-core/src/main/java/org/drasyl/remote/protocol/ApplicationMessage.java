@@ -22,9 +22,7 @@
 package org.drasyl.remote.protocol;
 
 import com.google.auto.value.AutoValue;
-import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -138,73 +136,6 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
     @Override
     public void close() throws Exception {
         release();
-    }
-
-    /**
-     * Creates new application message.
-     *
-     * @param nonce       the nonce
-     * @param networkId   the network id
-     * @param sender      the public key of the sender
-     * @param proofOfWork the proof of work of {@code sender}
-     * @param recipient   the public key of the recipient
-     * @param hopCount    the hop count
-     * @param agreementId the agreement id
-     * @param payload     the payload
-     * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
-     *                              recipient}, {@code hopCount}, or {@code payload} is {@code
-     *                              null}
-     * @deprecated
-     */
-    @SuppressWarnings("java:S107")
-    public static ApplicationMessage of(final Nonce nonce,
-                                        final int networkId,
-                                        final IdentityPublicKey sender,
-                                        final ProofOfWork proofOfWork,
-                                        final IdentityPublicKey recipient,
-                                        final HopCount hopCount,
-                                        final AgreementId agreementId,
-                                        final ByteString payload) {
-        return new AutoValue_ApplicationMessage(
-                nonce,
-                networkId,
-                sender,
-                proofOfWork,
-                hopCount,
-                agreementId,
-                recipient,
-                Unpooled.wrappedBuffer(payload.toByteArray())
-        );
-    }
-
-    /**
-     * Creates new application message with random {@link Nonce}, minimal {@link HopCount} value,
-     * and no {@link AgreementId}.
-     *
-     * @param networkId   the network id
-     * @param sender      the public key of the sender
-     * @param proofOfWork the proof of work of {@code sender}
-     * @param recipient   the public key of the recipient
-     * @param payload     the payload
-     * @throws NullPointerException if  {@code sender}, {@code proofOfWork}, {@code recipient}, or
-     *                              {@code payload} is {@code null}
-     * @deprecated
-     */
-    public static ApplicationMessage of(final int networkId,
-                                        final IdentityPublicKey sender,
-                                        final ProofOfWork proofOfWork,
-                                        final IdentityPublicKey recipient,
-                                        final ByteString payload) {
-        return of(
-                randomNonce(),
-                networkId,
-                sender,
-                proofOfWork,
-                recipient,
-                HopCount.of(),
-                null,
-                payload
-        );
     }
 
     /**

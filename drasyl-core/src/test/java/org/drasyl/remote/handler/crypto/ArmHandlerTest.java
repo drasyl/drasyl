@@ -21,8 +21,8 @@
  */
 package org.drasyl.remote.handler.crypto;
 
-import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.SessionPair;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
@@ -111,13 +111,7 @@ class ArmHandlerTest {
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final FullReadMessage<?> applicationMessage = ApplicationMessage.of(
-                                networkId,
-                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                                IdentityTestUtil.ID_1.getProofOfWork(),
-                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body).
+                final FullReadMessage<?> applicationMessage = ApplicationMessage.of(networkId, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10))).
                         setAgreementId(agreementId);
 
                 channel.writeAndFlush(new AddressedMessage<>(applicationMessage, receiveAddress));
@@ -142,13 +136,7 @@ class ArmHandlerTest {
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final FullReadMessage<?> msg = ApplicationMessage.of(
-                                networkId,
-                                IdentityTestUtil.ID_3.getIdentityPublicKey(),
-                                IdentityTestUtil.ID_3.getProofOfWork(),
-                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body).
+                final FullReadMessage<?> msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_3.getIdentityPublicKey(), IdentityTestUtil.ID_3.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10))).
                         setAgreementId(agreementId);
 
                 channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
@@ -190,13 +178,7 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final FullReadMessage<?> msg = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        body);
+                final FullReadMessage<?> msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10)));
 
                 channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
@@ -229,13 +211,7 @@ class ArmHandlerTest {
 
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final FullReadMessage<?> msg = ApplicationMessage.of(
-                                networkId,
-                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                                IdentityTestUtil.ID_1.getProofOfWork(),
-                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body).
+                final FullReadMessage<?> msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10))).
                         setAgreementId(agreementId);
 
                 channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
@@ -258,13 +234,7 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, maxAgreements, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final FullReadMessage<?> msg = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body);
+                final FullReadMessage<?> msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10)));
 
                 channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
@@ -286,13 +256,7 @@ class ArmHandlerTest {
             final ArmHandler handler = new ArmHandler(networkId, maxSessionsCount, 0, sessionExpireTime, sessionRetryInterval, IdentityTestUtil.ID_1);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final FullReadMessage<?> msg = ApplicationMessage.of(
-                        networkId,
-                        IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                        IdentityTestUtil.ID_1.getProofOfWork(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                        body);
+                final FullReadMessage<?> msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10)));
 
                 channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
 
@@ -314,13 +278,7 @@ class ArmHandlerTest {
             try {
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey());
 
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final FullReadMessage<?> msg = ApplicationMessage.of(
-                                networkId,
-                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                                IdentityTestUtil.ID_1.getProofOfWork(),
-                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body)
+                final FullReadMessage<?> msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10)))
                         .setAgreementId(agreementId);
 
                 channel.pipeline().fireChannelRead(new AddressedMessage<>(msg.arm(Crypto.INSTANCE, sessionPairSender), receiveAddress));
@@ -342,13 +300,7 @@ class ArmHandlerTest {
                 // construct wrong agreement id
                 final AgreementId agreementId = AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_3.getKeyAgreementPublicKey());
 
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final FullReadMessage<?> msg = ApplicationMessage.of(
-                                networkId,
-                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                IdentityTestUtil.ID_2.getProofOfWork(),
-                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                                body)
+                final FullReadMessage<?> msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), IdentityTestUtil.ID_1.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10)))
                         .setAgreementId(agreementId);
 
                 channel.pipeline().fireChannelRead(new AddressedMessage<>(msg.arm(Crypto.INSTANCE, sessionPairSender), receiveAddress));
@@ -421,13 +373,7 @@ class ArmHandlerTest {
 
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final RemoteMessage msg = ApplicationMessage.of(
-                                networkId,
-                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                                IdentityTestUtil.ID_1.getProofOfWork(),
-                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body)
+                final RemoteMessage msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10)))
                         .setAgreementId(agreementId2)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 
@@ -453,13 +399,7 @@ class ArmHandlerTest {
 
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                final ByteString body = ByteString.copyFrom(randomBytes(10));
-                final RemoteMessage msg = ApplicationMessage.of(
-                                networkId,
-                                IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                                IdentityTestUtil.ID_1.getProofOfWork(),
-                                IdentityTestUtil.ID_2.getIdentityPublicKey(),
-                                body)
+                final RemoteMessage msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), Unpooled.wrappedBuffer(randomBytes(10)))
                         .setAgreementId(agreementId)
                         .arm(Crypto.INSTANCE, sessionPairSender);
 

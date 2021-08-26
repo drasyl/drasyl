@@ -21,8 +21,8 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -101,7 +101,7 @@ public class InternetDiscoveryBenchmark extends AbstractBenchmark {
         ctx = new MyHandlerContext();
         recipient = new MyAddress();
         final IdentityPublicKey recipient = IdentityTestUtil.ID_1.getIdentityPublicKey();
-        msg = ApplicationMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), recipient, ByteString.EMPTY);
+        msg = ApplicationMessage.of(1, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_2.getProofOfWork(), recipient, Unpooled.buffer());
 
         future = new MyChannelPromise();
 

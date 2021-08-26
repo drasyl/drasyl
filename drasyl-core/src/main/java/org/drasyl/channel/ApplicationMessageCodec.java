@@ -21,7 +21,6 @@
  */
 package org.drasyl.channel;
 
-import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -34,7 +33,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This codec converts {@link ApplicationMessage}s to {@link ByteString}s and vice vera.
+ * This codec converts {@link ApplicationMessage}s to {@link ByteBuf}s and vice vera.
  */
 public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMessage<ApplicationMessage, ?>, AddressedMessage<ByteBuf, IdentityPublicKey>> {
     private final int networkId;

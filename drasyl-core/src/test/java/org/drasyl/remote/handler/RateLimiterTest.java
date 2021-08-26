@@ -21,7 +21,7 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.ByteString;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.identity.Identity;
@@ -160,7 +160,7 @@ class RateLimiterTest {
                                                @Mock final SocketAddress msgSender,
                                                @Mock final Supplier<Long> timeProvider) {
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
-        final ApplicationMessage msg = ApplicationMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), ByteString.EMPTY);
+        final ApplicationMessage msg = ApplicationMessage.of(0, sender.getIdentityPublicKey(), sender.getProofOfWork(), ownIdentity.getIdentityPublicKey(), Unpooled.buffer());
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache, ownIdentity.getAddress());
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));

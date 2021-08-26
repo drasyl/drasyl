@@ -21,10 +21,10 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -76,7 +76,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
             recipient = new InetSocketAddress("127.0.0.1", 25527);
             final byte[] payload = RandomUtil.randomBytes(1024);
             final AgreementId agreementId = AgreementId.of(ID_1.getKeyAgreementPublicKey(), ID_2.getKeyAgreementPublicKey());
-            message = ApplicationMessage.of(Nonce.randomNonce(), 0, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, ByteString.copyFrom(payload));
+            message = ApplicationMessage.of(Nonce.randomNonce(), 0, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), IdentityTestUtil.ID_2.getIdentityPublicKey(), HopCount.of(), agreementId, Unpooled.wrappedBuffer(payload));
             byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
             message.writeTo(byteBuf);
         }

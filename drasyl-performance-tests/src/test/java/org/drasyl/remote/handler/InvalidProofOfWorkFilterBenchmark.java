@@ -21,8 +21,8 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -60,8 +60,8 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         final Identity sender = IdentityTestUtil.ID_1;
         ctx = new MyHandlerContext();
         msgSender = new MyAddress();
-        msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), sender.getIdentityPublicKey(), ByteString.EMPTY);
-        msgNotAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), ByteString.EMPTY);
+        msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), sender.getIdentityPublicKey(), Unpooled.buffer());
+        msgNotAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), Unpooled.buffer());
         handler = new InvalidProofOfWorkFilter(sender.getAddress());
     }
 
