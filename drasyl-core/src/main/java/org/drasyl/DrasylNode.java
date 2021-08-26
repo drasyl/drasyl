@@ -536,11 +536,11 @@ public abstract class DrasylNode {
 
             ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
 
-            // convert ByteString <-> ApplicationMessage
-            ch.pipeline().addFirst(APPLICATION_MESSAGE_CODEC, new ApplicationMessageCodec(this.config.getNetworkId(), this.identity.getIdentityPublicKey(), this.identity.getProofOfWork()));
-
             // convert outbound messages addresses to us to inbound messages
             ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler(this.identity.getAddress()));
+
+            // convert ByteString <-> ApplicationMessage
+            ch.pipeline().addFirst(APPLICATION_MESSAGE_CODEC, new ApplicationMessageCodec(this.config.getNetworkId(), this.identity.getIdentityPublicKey(), this.identity.getProofOfWork()));
 
             // discover nodes running within the same jvm
             if (this.config.isIntraVmDiscoveryEnabled()) {
