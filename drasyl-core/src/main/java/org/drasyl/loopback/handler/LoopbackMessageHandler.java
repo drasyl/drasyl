@@ -47,18 +47,13 @@ public class LoopbackMessageHandler extends ChannelOutboundHandlerAdapter {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
-        if (msg instanceof AddressedMessage) {
-            if (myAddress.equals(((AddressedMessage<?, ?>) msg).address())) {
-                LOG.trace("Outbound message `{}` is addressed to us. Convert to inbound message.", ((AddressedMessage<?, ?>) msg)::message);
-                ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), myAddress));
-                promise.setSuccess();
-            }
-            else {
-                ctx.write(msg, promise);
-            }
+        if (msg instanceof AddressedMessage && myAddress.equals(((AddressedMessage<?, ?>) msg).address())) {
+            LOG.trace("Outbound message `{}` is addressed to us. Convert to inbound message.", ((AddressedMessage<?, ?>) msg)::message);
+            ctx.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), myAddress));
+            promise.setSuccess();
         }
         else {
-            super.write(ctx, msg, promise);
+            ctx.write(msg, promise);
         }
     }
 }
