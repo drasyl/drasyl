@@ -106,7 +106,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
                     builder.build().writeDelimitedTo(outputStream);
                 }
                 out.add(bytes);
-                LOG.trace("Message has been serialized to `{}`", () -> bytes);
+                LOG.trace("Message `{}` has been serialized to `{}`", o, bytes);
             }
             catch (final IOException e) {
                 throw new EncoderException("Serialization failed", e);
@@ -136,11 +136,11 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
 
                 if (o == null) {
                     out.add(NULL);
-                    LOG.trace("Message has been deserialized to `{}`", () -> NULL);
+                    LOG.trace("Message `{}` has been deserialized to `{}`", bytes, NULL);
                 }
                 else {
                     out.add(o);
-                    LOG.trace("Message has been deserialized to `{}`", () -> o);
+                    LOG.trace("Message `{}` has been deserialized to `{}`", bytes, o);
                 }
             }
             else {
