@@ -28,6 +28,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.timeout.IdleState;
@@ -307,12 +308,24 @@ public abstract class DrasylNode {
                     p = payload;
                 }
 
-                c.writeAndFlush(p).addListener(f -> {
+                final ChannelPromise promise = c.newPromise();
+                c.writeAndFlush(p, promise);
+
+                // synchronize promise and future in both directions
+                promise.addListener(f -> {
                     if (f.isSuccess()) {
                         future.complete(null);
                     }
                     else {
                         future.completeExceptionally(f.cause());
+                    }
+                });
+                future.whenComplete((result, e) -> {
+                    if (e == null) {
+                        promise.setSuccess();
+                    }
+                    else {
+                        promise.setFailure(e);
                     }
                 });
             });
