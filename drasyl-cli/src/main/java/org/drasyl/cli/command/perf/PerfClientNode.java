@@ -22,6 +22,7 @@
 package org.drasyl.cli.command.perf;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -31,6 +32,7 @@ import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
+import org.drasyl.channel.JacksonCodec;
 import org.drasyl.cli.command.perf.message.PerfMessage;
 import org.drasyl.cli.command.perf.message.Ping;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
@@ -61,7 +63,6 @@ import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.behaviour.Behaviors.ignore;
 import static org.drasyl.behaviour.Behaviors.same;
-import static org.drasyl.serialization.Serializers.SERIALIZER_JACKSON_JSON;
 
 /**
  * Connects to a {@link PerfServerNode} and performs a connection test.
@@ -96,14 +97,20 @@ public class PerfClientNode extends BehavioralDrasylNode {
 
     public PerfClientNode(final DrasylConfig config,
                           final PrintStream printStream) throws DrasylException {
-        super(DrasylConfig.newBuilder(config)
-                .addSerializationsBindingsInbound(PerfMessage.class, SERIALIZER_JACKSON_JSON)
-                .addSerializationsBindingsOutbound(PerfMessage.class, SERIALIZER_JACKSON_JSON)
-                .build());
+        super(config);
         this.doneFuture = new CompletableFuture<>();
         this.printStream = requireNonNull(printStream);
         eventLoopGroup = new NioEventLoopGroup(1);
         directConnections = new HashSet<>();
+
+        bootstrap.childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent) {
+            @Override
+            protected void initChannel(final Channel ch) {
+                super.initChannel(ch);
+
+                ch.pipeline().replace(MESSAGE_SERIALIZER, "PERF_CODEC", new JacksonCodec<>(PerfMessage.class));
+            }
+        });
     }
 
     @Override

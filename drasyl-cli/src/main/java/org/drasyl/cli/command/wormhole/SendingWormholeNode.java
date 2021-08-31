@@ -22,12 +22,14 @@
 package org.drasyl.cli.command.wormhole;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
+import org.drasyl.channel.JacksonCodec;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;
@@ -46,7 +48,6 @@ import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.behaviour.Behaviors.ignore;
 import static org.drasyl.behaviour.Behaviors.same;
-import static org.drasyl.serialization.Serializers.SERIALIZER_JACKSON_JSON;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
 @SuppressWarnings({ "java:S107" })
@@ -74,13 +75,19 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
 
     public SendingWormholeNode(final DrasylConfig config,
                                final PrintStream out) throws DrasylException {
-        super(DrasylConfig.newBuilder(config)
-                .addSerializationsBindingsInbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
-                .addSerializationsBindingsOutbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
-                .build());
+        super(config);
         this.doneFuture = new CompletableFuture<>();
         this.out = requireNonNull(out);
         this.password = Crypto.randomString(PASSWORD_LENGTH);
+
+        bootstrap.childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent) {
+            @Override
+            protected void initChannel(final Channel ch) {
+                super.initChannel(ch);
+
+                ch.pipeline().replace(MESSAGE_SERIALIZER, "WORMHOLE_CODEC", new JacksonCodec<>(WormholeMessage.class));
+            }
+        });
     }
 
     @Override

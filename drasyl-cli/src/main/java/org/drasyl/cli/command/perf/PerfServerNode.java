@@ -22,6 +22,7 @@
 package org.drasyl.cli.command.perf;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -30,6 +31,7 @@ import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
+import org.drasyl.channel.JacksonCodec;
 import org.drasyl.cli.command.perf.message.PerfMessage;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
@@ -52,7 +54,6 @@ import java.util.concurrent.CompletableFuture;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.behaviour.Behaviors.same;
-import static org.drasyl.serialization.Serializers.SERIALIZER_JACKSON_JSON;
 
 /**
  * {@link PerfClientNode}s can connect to this server to perform connection tests.
@@ -84,13 +85,19 @@ public class PerfServerNode extends BehavioralDrasylNode {
 
     public PerfServerNode(final DrasylConfig config,
                           final PrintStream printStream) throws DrasylException {
-        super(DrasylConfig.newBuilder(config)
-                .addSerializationsBindingsInbound(PerfMessage.class, SERIALIZER_JACKSON_JSON)
-                .addSerializationsBindingsOutbound(PerfMessage.class, SERIALIZER_JACKSON_JSON)
-                .build());
+        super(config);
         this.doneFuture = new CompletableFuture<>();
         this.printStream = printStream;
         eventLoopGroup = new NioEventLoopGroup(1);
+
+        bootstrap.childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent) {
+            @Override
+            protected void initChannel(final Channel ch) {
+                super.initChannel(ch);
+
+                ch.pipeline().replace(MESSAGE_SERIALIZER, "PERF_CODEC", new JacksonCodec<>(PerfMessage.class));
+            }
+        });
     }
 
     @Override

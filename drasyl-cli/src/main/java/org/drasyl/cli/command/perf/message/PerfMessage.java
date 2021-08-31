@@ -21,5 +21,18 @@
  */
 package org.drasyl.cli.command.perf.message;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+
+@JsonTypeInfo(use = Id.NAME)
+@JsonSubTypes({
+        @Type(value = Ping.class),
+        @Type(value = SessionConfirmation.class),
+        @Type(value = SessionRejection.class),
+        @Type(value = SessionRequest.class),
+        @Type(value = TestResults.class),
+})
 public interface PerfMessage {
 }
