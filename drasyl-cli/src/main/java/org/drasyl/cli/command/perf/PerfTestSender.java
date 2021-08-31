@@ -24,6 +24,7 @@ package org.drasyl.cli.command.perf;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.Behaviors;
+import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
@@ -33,9 +34,6 @@ import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
@@ -60,7 +58,6 @@ public class PerfTestSender {
      * Is used to identity probe messages. probe messages are used for actual performance
      * measurements.
      */
-    static final byte[] PROBE_HEADER = new byte[]{ 20, 21, 1, 23, 0, 1, 38, 16 };
     private static final Logger LOG = LoggerFactory.getLogger(PerfTestSender.class);
     public static final short COMPLETE_TEST_TRIES = (short) 10;
     private final SessionRequest session;
@@ -109,7 +106,7 @@ public class PerfTestSender {
             printStream.println("Interval                 Transfer     Bitrate          Lost/Total Messages");
             eventLoopGroup.submit(() -> {
                 final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
-                final int messageSize = session.getSize() + PROBE_HEADER.length + Long.BYTES;
+                final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
                 final long startTime = currentTimeSupplier.getAsLong();
                 final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
                 intervalResults = new TestResults(messageSize, totalResults.getTestStartTime(), totalResults.getTestStartTime());
@@ -129,7 +126,11 @@ public class PerfTestSender {
                     // send message?
                     final double desiredSentMessages = ((double) currentTime - startTime) / MICROSECONDS * session.getMps();
                     if (desiredSentMessages >= sentMessages) {
-                        sendProbeMessage(probePayload, sentMessages);
+                        sendMethod.apply(receiver, new Probe(probePayload, sentMessages)).exceptionally(e -> {
+                            LOG.trace("Unable to send message", e);
+                            intervalResults.incrementLostMessages();
+                            return null;
+                        });
                         sentMessages++;
                         intervalResults.incrementTotalMessages();
                     }
@@ -162,26 +163,6 @@ public class PerfTestSender {
                     .onAnyEvent(event -> same())
                     .build();
         });
-    }
-
-    private void sendProbeMessage(final byte[] probePayload, final long messageNo) {
-        final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
-        try (final DataOutputStream outputStream = new DataOutputStream(byteArrayStream)) {
-            outputStream.write(PROBE_HEADER);
-            outputStream.writeLong(messageNo);
-            outputStream.write(probePayload);
-            final Object message = byteArrayStream.toByteArray();
-            sendMethod.apply(receiver, message).exceptionally(e -> {
-                LOG.trace("Unable to send message", e);
-                intervalResults.incrementLostMessages();
-                return null;
-            });
-        }
-        catch (final IOException e) {
-            // should never happen
-            LOG.error("Unable to serialize message", e);
-            intervalResults.incrementLostMessages();
-        }
     }
 
     /**

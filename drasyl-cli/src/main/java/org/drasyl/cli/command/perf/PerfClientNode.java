@@ -108,7 +108,10 @@ public class PerfClientNode extends BehavioralDrasylNode {
             protected void initChannel(final Channel ch) {
                 super.initChannel(ch);
 
+                // (de)serializer for PerfMessages
                 ch.pipeline().replace(MESSAGE_SERIALIZER, "PERF_CODEC", new JacksonCodec<>(PerfMessage.class));
+                // fast (de)serializer for Probe messages
+                ch.pipeline().addFirst(ProbeCodec.INSTANCE);
             }
         });
     }

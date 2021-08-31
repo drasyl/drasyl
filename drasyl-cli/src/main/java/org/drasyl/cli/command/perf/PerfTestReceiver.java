@@ -25,6 +25,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.Behaviors;
+import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
@@ -33,12 +34,8 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,7 +47,6 @@ import java.util.function.Supplier;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.behaviour.Behaviors.same;
-import static org.drasyl.cli.command.perf.PerfTestSender.PROBE_HEADER;
 import static org.drasyl.cli.command.perf.message.TestResults.MICROSECONDS;
 
 /**
@@ -105,7 +101,7 @@ public class PerfTestReceiver {
         return Behaviors.withScheduler(eventScheduler -> {
             final Future<?> sessionProgress = eventScheduler.schedulePeriodicallyEvent(new CheckTestStatus(), SESSION_PROGRESS_INTERVAL, SESSION_PROGRESS_INTERVAL);
 
-            final int messageSize = session.getSize() + PROBE_HEADER.length + Long.BYTES;
+            final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
             final long startTime = currentTimeSupplier.getAsLong();
             final AtomicLong lastMessageReceivedTime = new AtomicLong(startTime);
             final AtomicLong lastReceivedMessageNo = new AtomicLong(-1);
@@ -117,7 +113,7 @@ public class PerfTestReceiver {
 
             // new behavior
             return Behaviors.receive()
-                    .onMessage(byte[].class, (mySender, myPayload) -> mySender.equals(sender), (mySender, myPayload) -> {
+                    .onMessage(Probe.class, (mySender, myPayload) -> mySender.equals(sender), (mySender, myPayload) -> {
                         handleProbeMessage(lastMessageReceivedTime, lastReceivedMessageNo, lastOutOfOrderMessageNo, myPayload);
                         return same();
                     })
@@ -178,30 +174,18 @@ public class PerfTestReceiver {
     void handleProbeMessage(final AtomicLong lastMessageReceivedTime,
                             final AtomicLong lastReceivedMessageNo,
                             final AtomicLong lastOutOfOrderMessageNo,
-                            final byte[] payload) {
-        final ByteArrayInputStream byteArrayStream = new ByteArrayInputStream(payload);
-        try (final DataInputStream inputStream = new DataInputStream(byteArrayStream)) {
-            // is probe message?
-            final byte[] probeHeader = inputStream.readNBytes(PROBE_HEADER.length);
-            if (Arrays.equals(PROBE_HEADER, probeHeader)) {
-                final long messageNo = inputStream.readLong();
-
-                // record prob message
-                LOG.trace("Got probe message {} of {}", () -> messageNo, session::getMps);
-                lastMessageReceivedTime.set(currentTimeSupplier.getAsLong());
-                intervalResults.incrementTotalMessages();
-                final long expectedMessageNo = lastReceivedMessageNo.get() + 1;
-                if (expectedMessageNo != messageNo && lastReceivedMessageNo.get() > messageNo && lastOutOfOrderMessageNo.get() != expectedMessageNo) {
-                    intervalResults.incrementOutOfOrderMessages();
-                    lastOutOfOrderMessageNo.set(expectedMessageNo);
-                }
-                if (messageNo > lastReceivedMessageNo.get()) {
-                    lastReceivedMessageNo.set(messageNo);
-                }
-            }
+                            final Probe probe) {
+        // record prob message
+        LOG.trace("Got probe message {} of {}", () -> probe.getMessageNo(), session::getMps);
+        lastMessageReceivedTime.set(currentTimeSupplier.getAsLong());
+        intervalResults.incrementTotalMessages();
+        final long expectedMessageNo = lastReceivedMessageNo.get() + 1;
+        if (expectedMessageNo != probe.getMessageNo() && lastReceivedMessageNo.get() > probe.getMessageNo() && lastOutOfOrderMessageNo.get() != expectedMessageNo) {
+            intervalResults.incrementOutOfOrderMessages();
+            lastOutOfOrderMessageNo.set(expectedMessageNo);
         }
-        catch (final IOException e) {
-            LOG.warn("Unable to parse message:", e);
+        if (probe.getMessageNo() > lastReceivedMessageNo.get()) {
+            lastReceivedMessageNo.set(probe.getMessageNo());
         }
     }
 
