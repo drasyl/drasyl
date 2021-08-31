@@ -155,7 +155,7 @@ class PerfClientNodeTest {
                         });
                         underTest.onEvent(nodeOnline);
 
-                        verify(childChannel).writeAndFlush(any(SessionRequest.class));
+                        verify(childChannel).writeAndFlush(any(SessionRequest.class), any());
                     }
                 }
 
@@ -178,7 +178,7 @@ class PerfClientNodeTest {
                         });
                         underTest.onEvent(nodeOnline);
 
-                        verify(childChannel).writeAndFlush(any(Ping.class));
+                        verify(childChannel).writeAndFlush(any(Ping.class), any());
                     }
 
                     @Test
@@ -214,7 +214,7 @@ class PerfClientNodeTest {
                         underTest.onEvent(nodeOnline);
                         underTest.onEvent(serverAndOptions);
 
-                        verify(childChannel).writeAndFlush(any(Ping.class));
+                        verify(childChannel).writeAndFlush(any(Ping.class), any());
                     }
                 }
             }
@@ -243,7 +243,7 @@ class PerfClientNodeTest {
                     underTest.onEvent(serverAndOptions);
                     underTest.onEvent(messageEvent);
 
-                    verify(childChannel).writeAndFlush(any(SessionRequest.class));
+                    verify(childChannel).writeAndFlush(any(SessionRequest.class), any());
                 }
             }
 

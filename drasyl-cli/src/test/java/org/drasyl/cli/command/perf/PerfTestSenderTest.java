@@ -26,6 +26,7 @@ import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.DeferredBehavior;
 import org.drasyl.cli.command.perf.PerfTestSender.TestCompleted;
+import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
 import org.drasyl.event.MessageEvent;
@@ -102,7 +103,7 @@ class PerfTestSenderTest {
             behavior.receive(testCompleted);
 
             // messages sent?
-            verify(sendMethod, times(3)).apply(any(IdentityPublicKey.class), any(byte[].class));
+            verify(sendMethod, times(3)).apply(any(IdentityPublicKey.class), any(Probe.class));
 
             // output?
             final String output = outputStream.toString();

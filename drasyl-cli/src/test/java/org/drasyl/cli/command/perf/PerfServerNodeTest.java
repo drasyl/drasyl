@@ -140,7 +140,7 @@ class PerfServerNodeTest {
                     underTest.onEvent(nodeOnline);
                     underTest.onEvent(messageEvent);
 
-                    verify(childChannel).writeAndFlush(any(SessionConfirmation.class));
+                    verify(childChannel).writeAndFlush(any(SessionConfirmation.class), any());
                 }
 
                 @Test
