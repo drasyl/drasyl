@@ -122,7 +122,7 @@ class SendingWormholeNodeTest {
                 underTest.onEvent(event);
 
                 verify(channelFuture.channel().pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.Resolve>) m -> m.recipient().equals(event.getSender())));
-                verify(childChannel).writeAndFlush(any(TextMessage.class));
+                verify(childChannel).writeAndFlush(any(TextMessage.class), any());
             }
 
             @Test
@@ -140,7 +140,7 @@ class SendingWormholeNodeTest {
                 underTest.onEvent(event);
 
                 verify(channelFuture.channel().pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.Resolve>) m -> m.recipient().equals(event.getSender())));
-                verify(childChannel).writeAndFlush(any(WrongPasswordMessage.class));
+                verify(childChannel).writeAndFlush(any(WrongPasswordMessage.class), any());
             }
 
             @Nested
