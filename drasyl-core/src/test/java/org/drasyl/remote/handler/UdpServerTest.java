@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.DatagramPacket;
@@ -62,6 +63,7 @@ class UdpServerTest {
     private Channel channel;
     private InetAddress bindHost;
     private final int bindPort = 22527;
+    private PendingWriteQueue pendingWrites;
 
     @BeforeEach
     void setUp() throws UnknownHostException {
@@ -76,7 +78,7 @@ class UdpServerTest {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, null);
+            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, pendingWrites, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
@@ -93,7 +95,7 @@ class UdpServerTest {
         void shouldStopServerOnChannelInactive() {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, channel);
+            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, pendingWrites, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -110,14 +112,16 @@ class UdpServerTest {
     class MessagePassing {
         @Test
         void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
+            when(channel.isWritable()).thenReturn(true);
+
             final SocketAddress recipient = new InetSocketAddress(1234);
 
-            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, channel);
+            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, pendingWrites, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                verify(UdpServerTest.this.channel).write(any());
+                verify(UdpServerTest.this.channel).writeAndFlush(any());
             }
             finally {
                 channel.close();
@@ -138,7 +142,7 @@ class UdpServerTest {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, null);
+            final UdpServer handler = new UdpServer(identity.getIdentityPublicKey(), bootstrap, bindHost, bindPort, pendingWrites, null);
 
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {

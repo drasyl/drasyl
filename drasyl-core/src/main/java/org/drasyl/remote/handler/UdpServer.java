@@ -30,13 +30,14 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -44,6 +45,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
@@ -51,7 +53,7 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
 /**
- * Binds to a udp port, sends outgoing messages via udp, and sends received udp packets to the
+ * Binds to an udp port, sends outgoing messages via udp, and sends received udp packets to the
  * {@link Channel}.
  */
 public class UdpServer extends ChannelDuplexHandler {
@@ -61,15 +63,20 @@ public class UdpServer extends ChannelDuplexHandler {
     private final Bootstrap bootstrap;
     private final InetAddress bindHost;
     private final int bindPort;
+    private PendingWriteQueue pendingWrites;
     private Channel channel;
 
     UdpServer(final DrasylAddress myAddress,
               final Bootstrap bootstrap,
-              final InetAddress bindHost, final int bindPort, final Channel channel) {
+              final InetAddress bindHost,
+              final int bindPort,
+              final PendingWriteQueue pendingWrites,
+              final Channel channel) {
         this.myAddress = requireNonNull(myAddress);
         this.bootstrap = requireNonNull(bootstrap);
         this.bindHost = bindHost;
         this.bindPort = bindPort;
+        this.pendingWrites = pendingWrites;
         this.channel = channel;
     }
 
@@ -84,8 +91,14 @@ public class UdpServer extends ChannelDuplexHandler {
                         .option(ChannelOption.SO_BROADCAST, false),
                 bindHost,
                 bindPort,
+                null,
                 null
         );
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        this.pendingWrites = new PendingWriteQueue(ctx);
     }
 
     @Override
@@ -100,6 +113,7 @@ public class UdpServer extends ChannelDuplexHandler {
         ctx.fireChannelInactive();
 
         stopServer();
+        pendingWrites.removeAndFailAll(new ClosedChannelException());
     }
 
     @SuppressWarnings({ "UnstableApiUsage", "java:S112" })
@@ -123,6 +137,16 @@ public class UdpServer extends ChannelDuplexHandler {
         }
         final ChannelFuture channelFuture = bootstrap
                 .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
+                    @Override
+                    public void channelWritabilityChanged(final ChannelHandlerContext channelCtx) {
+                        channelCtx.fireChannelWritabilityChanged();
+
+                        if (channelCtx.channel().isWritable()) {
+                            // UDP channel is writable again. Make sure (any existing) pending writes will be written
+                            ctx.executor().submit(UdpServer.this::writePendingWrites);
+                        }
+                    }
+
                     @Override
                     protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                 final DatagramPacket packet) {
@@ -166,23 +190,9 @@ public class UdpServer extends ChannelDuplexHandler {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
             final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
             final InetSocketAddress recipient = (InetSocketAddress) ((AddressedMessage<?, ?>) msg).address();
+            final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
 
-            if (channel != null) {
-                final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
-                LOG.trace("Send Datagram {}", packet);
-                channel.write(packet).addListener(future -> {
-                    if (future.isSuccess()) {
-                        promise.setSuccess();
-                    }
-                    else {
-                        promise.setFailure(future.cause());
-                    }
-                });
-            }
-            else {
-                ReferenceCountUtil.safeRelease(msg);
-                promise.setFailure(new Exception("UDP channel is not present."));
-            }
+            pendingWrites.add(packet, promise);
         }
         else {
             ctx.write(msg, promise);
@@ -191,11 +201,33 @@ public class UdpServer extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) throws Exception {
-        if (channel != null) {
-            channel.flush();
-        }
+        writePendingWrites();
+        ctx.flush();
+    }
 
-        super.flush(ctx);
+    private void writePendingWrites() {
+        // pass all pending writes to the UDP channel while it writable
+        while (channel != null && channel.isWritable()) {
+            final Object currentWrite = pendingWrites.current();
+
+            if (currentWrite == null) {
+                break;
+            }
+
+            // make sure PendingWriteQueue#remove() will not release currentWrite
+            ReferenceCountUtil.retain(currentWrite);
+            final ChannelPromise promise = pendingWrites.remove();
+
+            LOG.trace("Write Datagram {}", currentWrite);
+            channel.writeAndFlush(currentWrite).addListener(future -> {
+                if (future.isSuccess()) {
+                    promise.setSuccess();
+                }
+                else {
+                    promise.setFailure(future.cause());
+                }
+            });
+        }
     }
 
     /**
