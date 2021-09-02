@@ -146,7 +146,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
         }
 
         final Channel channel = new DrasylChannel(ctx.channel(), peer);
-        channel.closeFuture().addListener(future -> channels.remove(channel));
         channels.add(channel);
         ctx.fireChannelRead(channel);
 
