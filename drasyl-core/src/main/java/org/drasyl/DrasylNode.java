@@ -547,8 +547,6 @@ public abstract class DrasylNode {
 
             ch.pipeline().addFirst(PEERS_MANAGER_HANDLER, new PeersManagerHandler(identity));
 
-            ch.pipeline().addFirst(CHILD_CHANNEL_ROUTER, new ChildChannelRouter());
-
             // convert outbound messages addresses to us to inbound messages
             ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler(this.identity.getAddress()));
 
@@ -792,38 +790,6 @@ public abstract class DrasylNode {
             }
         }
 
-        /**
-         * Routes inbound messages to the correct child channel and broadcast events to all child
-         * channels.
-         */
-        private static class ChildChannelRouter extends SimpleChannelInboundHandler<AddressedMessage<?, IdentityPublicKey>> {
-            public ChildChannelRouter() {
-                super(false);
-            }
-
-            @Override
-            public boolean acceptInboundMessage(final Object msg) throws Exception {
-                return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey;
-            }
-
-            @Override
-            protected void channelRead0(final ChannelHandlerContext ctx,
-                                        final AddressedMessage<?, IdentityPublicKey> msg) {
-                Object o = msg.message();
-                final IdentityPublicKey sender = msg.address();
-
-                // create/get channel
-                final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, sender);
-
-                if (o == null) {
-                    o = NULL;
-                }
-
-                // pass message to channel
-                channel.pipeline().fireChannelRead(o);
-            }
-        }
-
         private static class ChannelResolver extends ChannelInboundHandlerAdapter {
             @SuppressWarnings("java:S2221")
             @Override
@@ -833,7 +799,7 @@ public abstract class DrasylNode {
                     final Resolve e = (Resolve) evt;
                     final IdentityPublicKey recipient = (IdentityPublicKey) e.recipient();
                     final CompletableFuture<Channel> future = e.future();
-                    final Channel resolvedChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(ctx, recipient);
+                    final Channel resolvedChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(recipient);
                     resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
                 }
                 else {

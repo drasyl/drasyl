@@ -22,7 +22,6 @@
 package org.drasyl.channel;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.group.ChannelGroup;
 import org.drasyl.channel.DrasylServerChannel.State;
 import org.drasyl.identity.Identity;
@@ -41,7 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,11 +87,10 @@ class DrasylServerChannelTest {
         @Test
         void shouldCreateChildChannel(@Mock final ChannelGroup channels,
                                       @Mock final Identity localAddress,
-                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                       @Mock final IdentityPublicKey peer) {
             final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, null, localAddress);
 
-            final Channel childChannel = channel.getOrCreateChildChannel(ctx, peer);
+            final Channel childChannel = channel.getOrCreateChildChannel(peer);
 
             assertNotNull(childChannel);
         }
