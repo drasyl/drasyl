@@ -23,7 +23,7 @@ package org.drasyl.channel;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.DrasylAddress;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.channel.DrasylServerChannel.State;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -34,8 +34,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.SocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,13 +42,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class DrasylServerChannelTest {
     @Nested
     class DoBind {
         @Test
-        void shouldSetLocalAddressAndActivateChannel(@Mock final Map<DrasylAddress, Channel> channels,
+        void shouldSetLocalAddressAndActivateChannel(@Mock final ChannelGroup channels,
                                                      @Mock final Identity localAddress) {
             final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, channels, null);
 
@@ -61,7 +60,7 @@ class DrasylServerChannelTest {
         }
 
         @Test
-        void shouldRejectNonIdentity(@Mock final Map<DrasylAddress, Channel> channels,
+        void shouldRejectNonIdentity(@Mock final ChannelGroup channels,
                                      @Mock final SocketAddress localAddress) {
             final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, channels, null);
 
@@ -72,26 +71,27 @@ class DrasylServerChannelTest {
     @Nested
     class DoClose {
         @Test
-        void shouldRemoveLocalAddressAndCloseChannelAndCloseAllChildChannels(@Mock final Identity localAddress,
-                                                                             @Mock final DrasylAddress drasylAddress,
-                                                                             @Mock final Channel childChannel) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(drasylAddress, childChannel), localAddress);
+        void shouldRemoveLocalAddressAndCloseChannelAndCloseAllChildChannels(@Mock final ChannelGroup channels,
+                                                                             @Mock final Identity localAddress) {
+            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, channels, localAddress);
 
             channel.doClose();
 
             assertNull(channel.localAddress0());
             assertFalse(channel.isOpen());
             assertFalse(channel.isActive());
+            verify(channels).close();
         }
     }
 
     @Nested
     class GetOrCreateChildChannel {
         @Test
-        void shouldCreateChildChannel(@Mock final Identity localAddress,
+        void shouldCreateChildChannel(@Mock final ChannelGroup channels,
+                                      @Mock final Identity localAddress,
                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                       @Mock final IdentityPublicKey peer) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, new HashMap<>(), localAddress);
+            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, null, localAddress);
 
             final Channel childChannel = channel.getOrCreateChildChannel(ctx, peer);
 

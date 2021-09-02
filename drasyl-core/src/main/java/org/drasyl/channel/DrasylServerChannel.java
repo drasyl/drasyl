@@ -27,14 +27,13 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoop;
-import org.drasyl.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.net.SocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 
@@ -53,20 +52,21 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     private volatile State state;
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Map<DrasylAddress, Channel> channels;
+    private ChannelGroup channels;
     private volatile Identity localAddress; // NOSONAR
 
+    @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
-                        final Map<DrasylAddress, Channel> channels,
+                        final ChannelGroup channels,
                         final Identity localAddress) {
         this.state = requireNonNull(state);
-        this.channels = requireNonNull(channels);
+        this.channels = channels;
         this.localAddress = localAddress;
     }
 
     @SuppressWarnings("unused")
     public DrasylServerChannel() {
-        this(State.OPEN, new ConcurrentHashMap<>(), null);
+        this(State.OPEN, null, null);
     }
 
     @Override
@@ -99,7 +99,9 @@ public class DrasylServerChannel extends AbstractServerChannel {
             state = State.CLOSED;
 
             // close all child channels
-            channels.forEach((address, channel) -> channel.close());
+            if (channels != null) {
+                channels.close();
+            }
         }
     }
 
@@ -125,17 +127,29 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return state == State.ACTIVE;
     }
 
-    public Map<DrasylAddress, Channel> channels() {
-        return Map.copyOf(channels);
+    @SuppressWarnings("java:S2384")
+    public ChannelGroup channels() {
+        return channels;
     }
 
-    public Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
-                                           final IdentityPublicKey peer) {
-        return channels.computeIfAbsent(peer, key -> {
-            final Channel channel = new DrasylChannel(ctx.channel(), peer);
-            channel.closeFuture().addListener(future -> channels.remove(key));
-            ctx.fireChannelRead(channel);
-            return channel;
-        });
+    public synchronized Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
+                                                        final IdentityPublicKey peer) {
+        if (channels != null) {
+            for (final Channel c : channels) {
+                if (peer.equals(c.remoteAddress())) {
+                    return c;
+                }
+            }
+        }
+        else {
+            channels = new DefaultChannelGroup(ctx.executor());
+        }
+
+        final Channel channel = new DrasylChannel(ctx.channel(), peer);
+        channel.closeFuture().addListener(future -> channels.remove(channel));
+        channels.add(channel);
+        ctx.fireChannelRead(channel);
+
+        return channel;
     }
 }
