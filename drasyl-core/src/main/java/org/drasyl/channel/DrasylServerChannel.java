@@ -108,8 +108,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
     @Override
     protected void doBeginRead() {
         // NOOP
-        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings
-        // TODO: we should maybe create an inboundBuffer?
+        // all inbound messages (UdpServer, UdpMulticastServer, TcpServer, TcpClient, ..) are
+        // currently automatically pushed to us. no need to pull reads
     }
 
     @Override
