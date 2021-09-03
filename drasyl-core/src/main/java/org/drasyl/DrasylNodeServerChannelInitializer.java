@@ -356,7 +356,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         protected void decode(final ChannelHandlerContext ctx,
                               final AddressedMessage<UnarmedMessage, ?> msg,
                               final List<Object> out) throws Exception {
-            out.add(new AddressedMessage<>(((UnarmedMessage) msg.message().retain()).read(), msg.address()));
+            out.add(new AddressedMessage<>(msg.message().retain().read(), msg.address()));
         }
     }
 }

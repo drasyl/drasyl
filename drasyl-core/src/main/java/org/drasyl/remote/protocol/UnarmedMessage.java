@@ -27,7 +27,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
-import io.netty.util.ReferenceCounted;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -68,23 +67,27 @@ public abstract class UnarmedMessage implements PartialReadMessage {
     }
 
     @Override
-    public ReferenceCounted retain() {
-        return getBytes().retain();
+    public UnarmedMessage retain() {
+        getBytes().retain();
+        return this;
     }
 
     @Override
-    public ReferenceCounted retain(final int increment) {
-        return getBytes().retain(increment);
+    public UnarmedMessage retain(final int increment) {
+        getBytes().retain(increment);
+        return this;
     }
 
     @Override
-    public ReferenceCounted touch() {
-        return getBytes().touch();
+    public UnarmedMessage touch() {
+        getBytes().touch();
+        return this;
     }
 
     @Override
-    public ReferenceCounted touch(final Object hint) {
-        return getBytes().touch(hint);
+    public UnarmedMessage touch(final Object hint) {
+        getBytes().touch(hint);
+        return this;
     }
 
     @Override
