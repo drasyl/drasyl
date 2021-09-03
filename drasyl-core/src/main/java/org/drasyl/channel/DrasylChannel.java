@@ -60,6 +60,7 @@ public class DrasylChannel extends AbstractChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private volatile State state;
+    volatile boolean pendingWrites;
     private volatile SocketAddress localAddress; // NOSONAR
     private final IdentityPublicKey remoteAddress;
 
@@ -148,9 +149,15 @@ public class DrasylChannel extends AbstractChannel {
                 break;
         }
 
-        for (; ; ) {
+        pendingWrites = false;
+        while (true) {
             Object msg = in.current();
             if (msg == null) {
+                break;
+            }
+
+            if (!parent().isWritable()) {
+                pendingWrites = true;
                 break;
             }
 

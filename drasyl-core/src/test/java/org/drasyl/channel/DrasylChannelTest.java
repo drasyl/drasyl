@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DrasylChannelTest {
@@ -130,6 +131,8 @@ class DrasylChannelTest {
                                                @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
                                                @Mock final Object msg,
                                                @Mock final ChannelPromise promise) throws Exception {
+            when(parent.isWritable()).thenReturn(true);
+
             final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
             channel.doRegister();
 

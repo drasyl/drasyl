@@ -101,6 +101,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             public void initChannel(final Channel ch) {
                 ch.pipeline().addLast(new ChildChannelRouter());
                 ch.pipeline().addLast(new DuplicateChannelFilter());
+                ch.pipeline().addLast(new PendingWritesFlusher(channels));
             }
         }));
     }
@@ -143,19 +144,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return state == State.ACTIVE;
     }
 
-    private static class DuplicateChannelFilter extends SimpleChannelInboundHandler<Channel> {
-        @Override
-        protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final Channel msg) throws Exception {
-            if (((DrasylServerChannel) ctx.channel()).channels != null) {
-                ((DrasylServerChannel) ctx.channel()).channels.close(channel -> channel.remoteAddress().equals(msg.remoteAddress()));
-                ((DrasylServerChannel) ctx.channel()).channels.add(msg);
-            }
-
-            ctx.fireChannelRead(msg);
-        }
-    }
-
     private static class ChildChannelRouter extends ChannelInboundHandlerAdapter {
         @Override
         public void channelRead(final ChannelHandlerContext ctx,
@@ -192,6 +180,36 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
                 // pass message to channel
                 channel.pipeline().fireChannelRead(o);
+            }
+        }
+    }
+
+    private static class DuplicateChannelFilter extends SimpleChannelInboundHandler<Channel> {
+        @Override
+        protected void channelRead0(final ChannelHandlerContext ctx,
+                                    final Channel msg) throws Exception {
+            if (((DrasylServerChannel) ctx.channel()).channels != null) {
+                ((DrasylServerChannel) ctx.channel()).channels.close(channel -> channel.remoteAddress().equals(msg.remoteAddress()));
+                ((DrasylServerChannel) ctx.channel()).channels.add(msg);
+            }
+
+            ctx.fireChannelRead(msg);
+        }
+    }
+
+    private static class PendingWritesFlusher extends ChannelInboundHandlerAdapter {
+        private final ChannelGroup channels;
+
+        public PendingWritesFlusher(final ChannelGroup channels) {
+            this.channels = requireNonNull(channels);
+        }
+
+        @Override
+        public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
+            ctx.fireChannelWritabilityChanged();
+
+            if (ctx.channel().isWritable()) {
+                channels.flush(channel -> ((DrasylChannel) channel).pendingWrites);
             }
         }
     }
