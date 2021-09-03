@@ -63,7 +63,7 @@ public class PcpPortMappingTest {
             when(defaultGatewaySupplier.get()).thenReturn(InetAddress.getByName("38.12.1.15"));
             when(interfaceSupplier.get()).thenReturn(Set.of(InetAddress.getByName("38.12.1.15")));
 
-            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier, myAddress).start(ctx, 12345, onFailure);
+            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier).start(ctx, 12345, onFailure);
 
             verify(ctx).writeAndFlush(any(AddressedMessage.class));
         }
@@ -76,9 +76,8 @@ public class PcpPortMappingTest {
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                   @Mock final Future<?> timeoutGuard,
                                   @Mock final Future<?> refreshTask,
-                                  @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                  @Mock final IdentityPublicKey myAddress) throws UnknownHostException {
-            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, new InetSocketAddress(12345), timeoutGuard, refreshTask, Set.of(InetAddress.getByName("38.12.1.15")), defaultGatewaySupplier, interfaceSupplier, myAddress).stop(ctx);
+                                  @Mock final Supplier<Set<InetAddress>> interfaceSupplier) throws UnknownHostException {
+            new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, new InetSocketAddress(12345), timeoutGuard, refreshTask, Set.of(InetAddress.getByName("38.12.1.15")), defaultGatewaySupplier, interfaceSupplier).stop(ctx);
 
             verify(timeoutGuard).cancel(false);
             verify(refreshTask).cancel(false);
@@ -95,10 +94,9 @@ public class PcpPortMappingTest {
                                                        @Mock final InetSocketAddress sender,
                                                        @Mock final Future<?> timeoutGuard,
                                                        @Mock final Supplier<InetAddress> defaultGatewaySupplier,
-                                                       @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                                       @Mock final IdentityPublicKey myAddress) {
+                                                       @Mock final Supplier<Set<InetAddress>> interfaceSupplier) {
                 final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("02810000000002580004ea00000000000000000000000000027c2af0012b29445e68a77e1100000063f163f100000000000000000000ffffc0a8b202"));
-                new PcpPortMapping(new AtomicInteger(1), 25585, null, new byte[]{}, new InetSocketAddress(12345), timeoutGuard, null, null, defaultGatewaySupplier, interfaceSupplier, myAddress).handleMessage(ctx, sender, byteBuf);
+                new PcpPortMapping(new AtomicInteger(1), 25585, null, new byte[]{}, new InetSocketAddress(12345), timeoutGuard, null, null, defaultGatewaySupplier, interfaceSupplier).handleMessage(ctx, sender, byteBuf);
 
                 verify(timeoutGuard).cancel(false);
                 verify(ctx.executor()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
@@ -111,9 +109,8 @@ public class PcpPortMappingTest {
             void shouldReturnFalse(@Mock final InetSocketAddress sender,
                                    @Mock final ByteBuf msg,
                                    @Mock final Supplier<InetAddress> defaultGatewaySupplier,
-                                   @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                   @Mock final IdentityPublicKey myAddress) {
-                assertFalse(new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier, myAddress).acceptMessage(sender, msg));
+                                   @Mock final Supplier<Set<InetAddress>> interfaceSupplier) {
+                assertFalse(new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier).acceptMessage(sender, msg));
             }
         }
     }
@@ -125,9 +122,8 @@ public class PcpPortMappingTest {
                                    @Mock final Future<?> refreshTask,
                                    @Mock final Runnable onFailure,
                                    @Mock final Supplier<InetAddress> defaultGatewaySupplier,
-                                   @Mock final Supplier<Set<InetAddress>> interfaceSupplier,
-                                   @Mock final IdentityPublicKey myAddress) {
-            new PcpPortMapping(new AtomicInteger(), 0, onFailure, new byte[]{}, null, timeoutGuard, refreshTask, null, defaultGatewaySupplier, interfaceSupplier, myAddress).fail();
+                                   @Mock final Supplier<Set<InetAddress>> interfaceSupplier) {
+            new PcpPortMapping(new AtomicInteger(), 0, onFailure, new byte[]{}, null, timeoutGuard, refreshTask, null, defaultGatewaySupplier, interfaceSupplier).fail();
 
             verify(timeoutGuard).cancel(false);
             verify(refreshTask).cancel(false);

@@ -71,7 +71,7 @@ public class UpnpIgdPortMappingTest {
                                       @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
             when(myAddress.toString()).thenReturn("1234567890");
 
-            new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
+            new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
             verify(ctx).writeAndFlush(any(AddressedMessage.class));
         }
@@ -98,7 +98,7 @@ public class UpnpIgdPortMappingTest {
                 when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                 when(myAddress.toString()).thenReturn("1234567890");
 
-                new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
+                new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                 verify(ctx.executor()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
             }
@@ -124,7 +124,7 @@ public class UpnpIgdPortMappingTest {
                 when(upnpIgdUtil.getSpecificPortMappingEntry(any(), any(), any()).getDescription()).thenReturn("drasyl1234567890");
                 when(myAddress.toString()).thenReturn("1234567890");
 
-                new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
+                new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                 verify(ctx.executor()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
             }
@@ -151,7 +151,7 @@ public class UpnpIgdPortMappingTest {
                     when(upnpIgdUtil.getUpnpService(any())).thenReturn(null);
                     when(myAddress.toString()).thenReturn("1234567890");
 
-                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
+                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                     verify(ctx.executor(), never()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
@@ -176,7 +176,7 @@ public class UpnpIgdPortMappingTest {
                     when(upnpIgdUtil.getStatusInfo(any(), any())).thenReturn(null);
                     when(myAddress.toString()).thenReturn("1234567890");
 
-                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
+                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                     verify(ctx.executor(), never()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
@@ -202,7 +202,7 @@ public class UpnpIgdPortMappingTest {
                     when(upnpIgdUtil.getExternalIpAddress(any(), any())).thenReturn(null);
                     when(myAddress.toString()).thenReturn("1234567890");
 
-                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
+                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                     verify(ctx.executor(), never()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
@@ -228,7 +228,7 @@ public class UpnpIgdPortMappingTest {
                     when(upnpIgdUtil.addPortMapping(any(), any(), any(), any(), any())).thenReturn(null);
                     when(myAddress.toString()).thenReturn("1234567890");
 
-                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
+                    new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
                     verify(ctx.executor(), never()).schedule(ArgumentMatchers.<Runnable>any(), eq((long) 300), eq(SECONDS));
                 }
@@ -246,8 +246,7 @@ public class UpnpIgdPortMappingTest {
                                   @Mock final Future<?> refreshTask,
                                   @Mock final Service upnpService,
                                   @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                  @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor,
-                                  @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) throws InterruptedException {
+                                  @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) throws InterruptedException {
             when(ctx.executor()).thenReturn(executor);
             doAnswer(invocation -> {
                 final Runnable runnable = invocation.getArgument(0, Runnable.class);
@@ -255,7 +254,7 @@ public class UpnpIgdPortMappingTest {
                 return null;
             }).when(executor).execute(any());
 
-            new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).stop(ctx);
+            new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).stop(ctx);
 
             verify(upnpIgdUtil).deletePortMapping(any(), any(), eq(0));
         }
@@ -270,11 +269,10 @@ public class UpnpIgdPortMappingTest {
                                             @Mock final Future<?> refreshTask,
                                             @Mock final Service upnpService,
                                             @Mock final Runnable onFailure,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
+                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             final Set<URI> ssdpServices = new HashSet<>();
             final ByteBuf byteBuf = Unpooled.wrappedBuffer(HexUtil.fromString("485454502f312e3120323030204f4b0d0a43414348452d434f4e54524f4c3a206d61782d6167653d3132300d0a53543a2075726e3a736368656d61732d75706e702d6f72673a736572766963653a57414e436f6d6d6f6e496e74657266616365436f6e6669673a310d0a55534e3a20757569643a64623730643264372d333030312d343763632d626331622d6537316536636335623537343a3a75726e3a736368656d61732d75706e702d6f72673a736572766963653a57414e436f6d6d6f6e496e74657266616365436f6e6669673a310d0a4558543a0d0a5345525645523a20416d706c6946692f416d706c6946692f2055506e502f312e31204d696e6955506e50642f322e310d0a4c4f434154494f4e3a20687474703a2f2f3139322e3136382e3138382e313a353030302f726f6f74446573632e786d6c0d0a4f50543a2022687474703a2f2f736368656d61732e75706e702e6f72672f75706e702f312f302f223b206e733d30310d0a30312d4e4c533a20313630333337353039370d0a424f4f5449442e55504e502e4f52473a20313630333337353039370d0a434f4e46494749442e55504e502e4f52473a20313333370d0a0d0a"));
-            new UpnpIgdPortMapping(new AtomicBoolean(true), upnpIgdUtil, ssdpServices, myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, onFailure).handleMessage(ctx, SSDP_MULTICAST_ADDRESS, byteBuf);
+            new UpnpIgdPortMapping(new AtomicBoolean(true), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, onFailure).handleMessage(ctx, SSDP_MULTICAST_ADDRESS, byteBuf);
 
             assertEquals(1, ssdpServices.size());
         }
@@ -288,9 +286,8 @@ public class UpnpIgdPortMappingTest {
                                    @Mock final Future<?> ssdpDiscoverTask,
                                    @Mock final Future<?> refreshTask,
                                    @Mock final Service upnpService,
-                                   @Mock final Runnable onFailure,
-                                   @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
-            new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, new HashSet<>(), myAddress, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, onFailure).fail();
+                                   @Mock final Runnable onFailure) {
+            new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, new HashSet<>(), null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, onFailure).fail();
 
             verify(timeoutGuard).cancel(false);
             verify(refreshTask).cancel(false);

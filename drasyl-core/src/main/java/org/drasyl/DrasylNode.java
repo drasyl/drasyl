@@ -544,74 +544,74 @@ public abstract class DrasylNode {
             ch.pipeline().addFirst(PEERS_MANAGER_HANDLER, new PeersManagerHandler(identity));
 
             // convert outbound messages addresses to us to inbound messages
-            ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler(this.identity.getAddress()));
+            ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler(identity.getAddress()));
 
             // convert ByteString <-> ApplicationMessage
-            ch.pipeline().addFirst(APPLICATION_MESSAGE_CODEC, new ApplicationMessageCodec(this.config.getNetworkId(), this.identity.getIdentityPublicKey(), this.identity.getProofOfWork()));
+            ch.pipeline().addFirst(APPLICATION_MESSAGE_CODEC, new ApplicationMessageCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
 
             // discover nodes running within the same jvm
-            if (this.config.isIntraVmDiscoveryEnabled()) {
-                ch.pipeline().addFirst(INTRA_VM_DISCOVERY, new IntraVmDiscovery(this.config.getNetworkId(), this.identity.getAddress()));
+            if (config.isIntraVmDiscoveryEnabled()) {
+                ch.pipeline().addFirst(INTRA_VM_DISCOVERY, new IntraVmDiscovery(config.getNetworkId(), identity.getAddress()));
             }
 
-            if (this.config.isRemoteEnabled()) {
+            if (config.isRemoteEnabled()) {
                 // route outbound messages to pre-configured ip addresses
-                if (!this.config.getRemoteStaticRoutes().isEmpty()) {
-                    ch.pipeline().addFirst(STATIC_ROUTES_HANDLER, new StaticRoutesHandler(this.config.getRemoteStaticRoutes()));
+                if (!config.getRemoteStaticRoutes().isEmpty()) {
+                    ch.pipeline().addFirst(STATIC_ROUTES_HANDLER, new StaticRoutesHandler(config.getRemoteStaticRoutes()));
                 }
 
-                if (this.config.isRemoteLocalHostDiscoveryEnabled()) {
+                if (config.isRemoteLocalHostDiscoveryEnabled()) {
                     // discover nodes running on the same local computer
                     ch.pipeline().addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(
-                            this.config.getNetworkId(),
-                            this.config.isRemoteLocalHostDiscoveryWatchEnabled(),
-                            this.config.getRemoteBindHost(),
-                            this.config.getRemoteLocalHostDiscoveryLeaseTime(),
-                            this.config.getRemoteLocalHostDiscoveryPath(),
-                            this.identity.getAddress()
+                            config.getNetworkId(),
+                            config.isRemoteLocalHostDiscoveryWatchEnabled(),
+                            config.getRemoteBindHost(),
+                            config.getRemoteLocalHostDiscoveryLeaseTime(),
+                            config.getRemoteLocalHostDiscoveryPath(),
+                            identity.getAddress()
                     ));
                 }
 
                 // discovery nodes on the local network
-                if (this.config.isRemoteLocalNetworkDiscoveryEnabled()) {
+                if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
                     ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery(
-                            this.config.getNetworkId(),
-                            this.config.getRemotePingInterval(),
-                            this.config.getRemotePingTimeout(),
-                            this.identity.getAddress(),
-                            this.identity.getProofOfWork()
+                            config.getNetworkId(),
+                            config.getRemotePingInterval(),
+                            config.getRemotePingTimeout(),
+                            identity.getAddress(),
+                            identity.getProofOfWork()
                     ));
                 }
 
                 // discover nodes on the internet
                 ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(
-                        this.config.getNetworkId(),
-                        this.config.getRemotePingMaxPeers(),
-                        this.config.getRemotePingInterval(),
-                        this.config.getRemotePingTimeout(),
-                        this.config.getRemotePingCommunicationTimeout(),
-                        this.config.isRemoteSuperPeerEnabled(),
-                        this.config.getRemoteSuperPeerEndpoints(),
-                        this.config.getRemoteUniteMinInterval(),
-                        this.identity.getAddress(),
-                        this.identity.getProofOfWork()
+                        config.getNetworkId(),
+                        config.getRemotePingMaxPeers(),
+                        config.getRemotePingInterval(),
+                        config.getRemotePingTimeout(),
+                        config.getRemotePingCommunicationTimeout(),
+                        config.isRemoteSuperPeerEnabled(),
+                        config.getRemoteSuperPeerEndpoints(),
+                        config.getRemoteUniteMinInterval(),
+                        identity.getAddress(),
+                        identity.getProofOfWork()
                 ));
 
                 // outbound message guards
-                ch.pipeline().addFirst(HOP_COUNT_GUARD, new HopCountGuard(this.config.getRemoteMessageHopLimit()));
+                ch.pipeline().addFirst(HOP_COUNT_GUARD, new HopCountGuard(config.getRemoteMessageHopLimit()));
 
-                if (this.config.isMonitoringEnabled()) {
+                if (config.isMonitoringEnabled()) {
                     ch.pipeline().addFirst(MONITORING_HANDLER, new Monitoring(
-                            this.config.getMonitoringHostTag(),
-                            this.config.getMonitoringInfluxUri(),
-                            this.config.getMonitoringInfluxUser(),
-                            this.config.getMonitoringInfluxPassword(),
-                            this.config.getMonitoringInfluxDatabase(),
-                            this.config.getMonitoringInfluxReportingFrequency()
+                            config.getMonitoringHostTag(),
+                            config.getMonitoringInfluxUri(),
+                            config.getMonitoringInfluxUser(),
+                            config.getMonitoringInfluxPassword(),
+                            config.getMonitoringInfluxDatabase(),
+                            config.getMonitoringInfluxReportingFrequency()
                     ));
                 }
 
-                ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter(this.identity.getAddress()));
+                ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter(identity.getAddress()));
 
                 ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<UnarmedMessage, ?>>(false) {
                     @Override
@@ -627,58 +627,58 @@ public abstract class DrasylNode {
                 });
 
                 // arm outbound and disarm inbound messages
-                if (this.config.isRemoteMessageArmEnabled()) {
+                if (config.isRemoteMessageArmEnabled()) {
                     ch.pipeline().addFirst(ARM_HANDLER, new ArmHandler(
-                            this.config.getNetworkId(),
-                            this.config.getRemoteMessageArmSessionMaxCount(),
-                            this.config.getRemoteMessageArmSessionMaxAgreements(),
-                            this.config.getRemoteMessageArmSessionExpireAfter(),
-                            this.config.getRemoteMessageArmSessionRetryInterval(),
-                            this.identity
+                            config.getNetworkId(),
+                            config.getRemoteMessageArmSessionMaxCount(),
+                            config.getRemoteMessageArmSessionMaxAgreements(),
+                            config.getRemoteMessageArmSessionExpireAfter(),
+                            config.getRemoteMessageArmSessionRetryInterval(),
+                            identity
                     ));
                 }
 
                 // filter out inbound messages with invalid proof of work or other network id
-                ch.pipeline().addFirst(INVALID_PROOF_OF_WORK_FILTER, new InvalidProofOfWorkFilter(this.identity.getAddress()));
-                ch.pipeline().addFirst(OTHER_NETWORK_FILTER, new OtherNetworkFilter(this.config.getNetworkId()));
+                ch.pipeline().addFirst(INVALID_PROOF_OF_WORK_FILTER, new InvalidProofOfWorkFilter(identity.getAddress()));
+                ch.pipeline().addFirst(OTHER_NETWORK_FILTER, new OtherNetworkFilter(config.getNetworkId()));
 
                 // split messages too big for udp
                 ch.pipeline().addFirst(CHUNKING_HANDLER, new ChunkingHandler(
-                        this.config.getRemoteMessageMaxContentLength(),
-                        this.config.getRemoteMessageMtu(),
-                        this.config.getRemoteMessageComposedMessageTransferTimeout(),
-                        this.identity.getAddress()
+                        config.getRemoteMessageMaxContentLength(),
+                        config.getRemoteMessageMtu(),
+                        config.getRemoteMessageComposedMessageTransferTimeout(),
+                        identity.getAddress()
                 ));
 
                 // convert RemoteMessage <-> ByteBuf
                 ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
 
                 // multicast server (lan discovery)
-                if (this.config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                    ch.pipeline().addFirst(UDP_MULTICAST_SERVER, new UdpMulticastServer(this.identity.getAddress()));
+                if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
+                    ch.pipeline().addFirst(UDP_MULTICAST_SERVER, new UdpMulticastServer(identity.getAddress()));
                 }
 
                 // tcp fallback
-                if (this.config.isRemoteTcpFallbackEnabled()) {
-                    if (!this.config.isRemoteSuperPeerEnabled()) {
+                if (config.isRemoteTcpFallbackEnabled()) {
+                    if (!config.isRemoteSuperPeerEnabled()) {
                         ch.pipeline().addFirst(TCP_SERVER, new TcpServer(
-                                this.config.getRemoteTcpFallbackServerBindHost(),
-                                this.config.getRemoteTcpFallbackServerBindPort(),
-                                this.config.getRemotePingTimeout()
+                                config.getRemoteTcpFallbackServerBindHost(),
+                                config.getRemoteTcpFallbackServerBindPort(),
+                                config.getRemotePingTimeout()
                         ));
                     }
                     else {
                         ch.pipeline().addFirst(TCP_CLIENT, new TcpClient(
-                                this.config.getRemoteSuperPeerEndpoints(),
-                                this.config.getRemoteTcpFallbackClientTimeout(),
-                                this.config.getRemoteTcpFallbackClientAddress()
+                                config.getRemoteSuperPeerEndpoints(),
+                                config.getRemoteTcpFallbackClientTimeout(),
+                                config.getRemoteTcpFallbackClientAddress()
                         ));
                     }
                 }
 
                 // port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
-                if (this.config.isRemoteExposeEnabled()) {
-                    ch.pipeline().addFirst(PORT_MAPPER, new PortMapper(this.identity.getAddress()));
+                if (config.isRemoteExposeEnabled()) {
+                    ch.pipeline().addFirst(PORT_MAPPER, new PortMapper());
                 }
 
                 // udp server
@@ -688,7 +688,7 @@ public abstract class DrasylNode {
 
         private int udpServerPort() {
             final int actualBindPort;
-            if (this.config.getRemoteBindPort() == -1) {
+            if (config.getRemoteBindPort() == -1) {
             /*
              derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
              own identity. this is done because we also expose this port via
@@ -701,7 +701,7 @@ public abstract class DrasylNode {
                 actualBindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
             }
             else {
-                actualBindPort = this.config.getRemoteBindPort();
+                actualBindPort = config.getRemoteBindPort();
             }
             return actualBindPort;
         }
