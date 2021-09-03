@@ -21,6 +21,7 @@
  */
 package org.drasyl.plugin.groups.client;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.DrasylConfig;
 import org.drasyl.plugin.PluginEnvironment;
@@ -50,9 +51,11 @@ class GroupsClientPluginTest {
     private PluginEnvironment env;
 
     @Test
-    void shouldAddHandlerToPipeline() {
+    void shouldAddHandlerToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
         final GroupsClientPlugin plugin = new GroupsClientPlugin(groupsClientConfig);
         when(env.getPipeline()).thenReturn(pipeline);
+        when(pipeline.context(any(Class.class))).thenReturn(ctx);
+        when(ctx.name()).thenReturn("handler");
 
         plugin.onBeforeStart(env);
 

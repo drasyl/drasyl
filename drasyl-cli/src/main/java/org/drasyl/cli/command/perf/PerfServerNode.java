@@ -22,7 +22,6 @@
 package org.drasyl.cli.command.perf;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
@@ -32,7 +31,9 @@ import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
+import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.JacksonCodec;
+import org.drasyl.channel.MessageSerializer;
 import org.drasyl.cli.command.perf.message.PerfMessage;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
@@ -94,11 +95,11 @@ public class PerfServerNode extends BehavioralDrasylNode {
 
         bootstrap.childHandler(new DrasylNodeChildChannelInitializer(config, this) {
             @Override
-            protected void initChannel(final Channel ch) {
+            protected void initChannel(final DrasylChannel ch) {
                 super.initChannel(ch);
 
                 // (de)serializer for PerfMessages
-                ch.pipeline().replace(MESSAGE_SERIALIZER, "PERF_CODEC", new JacksonCodec<>(PerfMessage.class));
+                ch.pipeline().replace(ch.pipeline().context(MessageSerializer.class).name(), "PERF_CODEC", new JacksonCodec<>(PerfMessage.class));
                 // fast (de)serializer for Probe messages
                 ch.pipeline().addFirst(ProbeCodec.INSTANCE);
             }

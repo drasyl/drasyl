@@ -490,30 +490,28 @@ public abstract class DrasylNode {
     /**
      * Initialize the {@link io.netty.channel.ServerChannel} used by {@link DrasylNode}.
      */
-    public static class DrasylNodeChannelInitializer extends ChannelInitializer<Channel> {
+    public static class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
         public static final short MIN_DERIVED_PORT = 22528;
         private final DrasylConfig config;
-        private final Identity identity;
         private final DrasylNode node;
-        private boolean errorOccurred;
+        private final Identity identity;
 
         public DrasylNodeChannelInitializer(final DrasylConfig config,
                                             final Identity identity,
                                             final DrasylNode node) {
             this.config = requireNonNull(config);
             this.identity = requireNonNull(identity);
-            this.errorOccurred = false;
             this.node = requireNonNull(node);
         }
 
         @SuppressWarnings("java:S1188")
         @Override
-        protected void initChannel(final Channel ch) {
+        protected void initChannel(final DrasylServerChannel ch) {
             node.channels = new DefaultChannelGroup(ch.eventLoop());
 
             final PluginManager pluginManager = new PluginManager(config, identity);
 
-            ch.pipeline().addFirst(new NodeLifecycleHandler(ch));
+            ch.pipeline().addFirst(new NodeLifecycleHandler());
 
             ch.pipeline().addFirst(new PluginManagerHandler(pluginManager));
 
@@ -548,7 +546,7 @@ public abstract class DrasylNode {
                     ));
                 }
 
-                // discovery nodes on the local network
+                // discover nodes on the local network
                 if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
                     ch.pipeline().addFirst(new LocalNetworkDiscovery(
                             config.getNetworkId(),
@@ -573,7 +571,7 @@ public abstract class DrasylNode {
                         identity.getProofOfWork()
                 ));
 
-                // outbound message guards
+                // outbound message guard
                 ch.pipeline().addFirst(new HopCountGuard(config.getRemoteMessageHopLimit()));
 
                 if (config.isMonitoringEnabled()) {
@@ -658,11 +656,11 @@ public abstract class DrasylNode {
                 }
 
                 // udp server
-                ch.pipeline().addFirst(new UdpServer(config.getRemoteBindHost(), udpServerPort()));
+                ch.pipeline().addFirst(new UdpServer(config.getRemoteBindHost(), udpServerPort(identity.getAddress())));
             }
         }
 
-        private int udpServerPort() {
+        private int udpServerPort(final DrasylAddress address) {
             final int actualBindPort;
             if (config.getRemoteBindPort() == -1) {
             /*
@@ -673,7 +671,7 @@ public abstract class DrasylNode {
              a completely random port would have the disadvantage that every time the node is
              started it would use a new port and this would make discovery more difficult
             */
-                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(identity.getAddress().toByteArray()).asBytes()).getValue();
+                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(address.toByteArray()).asBytes()).getValue();
                 actualBindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
             }
             else {
@@ -719,18 +717,14 @@ public abstract class DrasylNode {
         }
 
         private class NodeLifecycleHandler extends ChannelInboundHandlerAdapter {
-            private final Channel ch;
-
-            public NodeLifecycleHandler(final Channel ch) {
-                this.ch = ch;
-            }
+            private boolean errorOccurred;
 
             @Override
             public void channelActive(final ChannelHandlerContext ctx) throws Exception {
                 super.channelActive(ctx);
 
                 LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
-                userEventTriggered(ctx, NodeUpEvent.of(Node.of(identity)));
+                userEventTriggered(ctx, NodeUpEvent.of(Node.of((Identity) ctx.channel().localAddress())));
                 LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
             }
 
@@ -740,8 +734,8 @@ public abstract class DrasylNode {
 
                 if (!errorOccurred) {
                     LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
-                    userEventTriggered(ctx, NodeDownEvent.of(Node.of(identity)));
-                    userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of(identity)));
+                    userEventTriggered(ctx, NodeDownEvent.of(Node.of((Identity) ctx.channel().localAddress())));
+                    userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of((Identity) ctx.channel().localAddress())));
                     LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
                 }
             }
@@ -766,8 +760,8 @@ public abstract class DrasylNode {
                                         final Throwable e) {
                 if (e instanceof UdpServer.BindFailedException || e instanceof TcpServer.BindFailedException) {
                     LOG.warn("drasyl node faced unrecoverable error and must shut down:", e);
-                    userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(identity), e));
-                    ch.close();
+                    userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of((Identity) ctx.channel().localAddress()), e));
+                    ctx.close();
                 }
                 else if (e instanceof EncoderException) {
                     LOG.error(e);
@@ -782,11 +776,7 @@ public abstract class DrasylNode {
     /**
      * Initialize child {@link Channel}s used by {@link DrasylNode}.
      */
-    public static class DrasylNodeChildChannelInitializer extends ChannelInitializer<Channel> {
-        public static final String CHILD_CHANNEL_TAIL = "CHILD_CHANNEL_TAIL";
-        public static final String MESSAGE_SERIALIZER = "MESSAGE_SERIALIZER";
-        public static final String INACTIVITY_CLOSER = "INACTIVITY_CLOSER";
-        public static final String INACTIVITY_DETECTOR = "INACTIVITY_DETECTOR";
+    public static class DrasylNodeChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
         private final DrasylConfig config;
         private final DrasylNode node;
 
@@ -797,11 +787,11 @@ public abstract class DrasylNode {
         }
 
         @Override
-        protected void initChannel(final Channel ch) {
+        protected void initChannel(final DrasylChannel ch) {
             this.node.channels.add(ch);
 
             // emit MessageEvents for every inbound message
-            ch.pipeline().addFirst(CHILD_CHANNEL_TAIL, new ChannelInboundHandlerAdapter() {
+            ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
                 @Override
                 public void channelRead(final ChannelHandlerContext ctx,
                                         Object msg) {
@@ -826,12 +816,12 @@ public abstract class DrasylNode {
             });
 
             // convert Object <-> ByteString
-            ch.pipeline().addFirst(MESSAGE_SERIALIZER, new MessageSerializer(config));
+            ch.pipeline().addFirst(new MessageSerializer(config));
 
             // close inactive channels (to free up resources)
             final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
             if (inactivityTimeout > 0) {
-                ch.pipeline().addFirst(INACTIVITY_CLOSER, new ChannelInboundHandlerAdapter() {
+                ch.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
                     @Override
                     public void userEventTriggered(final ChannelHandlerContext ctx,
                                                    final Object evt) throws Exception {
@@ -847,7 +837,7 @@ public abstract class DrasylNode {
                         }
                     }
                 });
-                ch.pipeline().addFirst(INACTIVITY_DETECTOR, new IdleStateHandler(0, 0, inactivityTimeout));
+                ch.pipeline().addFirst(new IdleStateHandler(0, 0, inactivityTimeout));
             }
         }
     }

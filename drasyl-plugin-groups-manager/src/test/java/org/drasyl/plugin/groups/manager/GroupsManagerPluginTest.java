@@ -22,6 +22,7 @@
 package org.drasyl.plugin.groups.manager;
 
 import com.typesafe.config.ConfigFactory;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.plugin.PluginEnvironment;
 import org.drasyl.plugin.groups.manager.data.Group;
@@ -42,6 +43,7 @@ import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.API_ENABLED;
 import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.DATABASE_URI;
 import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.GROUPS;
 import static org.drasyl.plugin.groups.manager.GroupsManagerPlugin.GROUPS_MANAGER_HANDLER;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -62,11 +64,13 @@ class GroupsManagerPluginTest {
     @Nested
     class OnBeforeStart {
         @Test
-        void shouldInitDB() throws DatabaseException {
+        void shouldInitDB(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) throws DatabaseException {
             final GroupsManagerPlugin plugin = new GroupsManagerPlugin(groupsManagerConfig, databaseAdapter);
             final Group group = Group.of("group", "secret", (byte) 0, Duration.ofSeconds(60));
             when(groupsManagerConfig.getGroups()).thenReturn(Map.of(group.getName(), group));
             when(env.getPipeline()).thenReturn(pipeline);
+            when(pipeline.context(any(Class.class))).thenReturn(ctx);
+            when(ctx.name()).thenReturn("handler");
 
             plugin.onBeforeStart(env);
 
@@ -74,7 +78,7 @@ class GroupsManagerPluginTest {
         }
 
         @Test
-        void shouldAddHandlerToPipeline() {
+        void shouldAddHandlerToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             final GroupsManagerPlugin plugin = new GroupsManagerPlugin(new GroupsManagerConfig(ConfigFactory.parseMap(Map.of(
                     DATABASE_URI, "",
                     GROUPS, Map.of(),
@@ -82,6 +86,8 @@ class GroupsManagerPluginTest {
                     API_BIND_HOST, "0.0.0.0",
                     API_BIND_PORT, 8080))), databaseAdapter);
             when(env.getPipeline()).thenReturn(pipeline);
+            when(pipeline.context(any(Class.class))).thenReturn(ctx);
+            when(ctx.name()).thenReturn("handler");
 
             plugin.onBeforeStart(env);
 

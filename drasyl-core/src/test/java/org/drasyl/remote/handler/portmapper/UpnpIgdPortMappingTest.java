@@ -26,9 +26,9 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.HexUtil;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.protocol.UpnpIgdUtil;
 import org.drasyl.util.protocol.UpnpIgdUtil.Service;
 import org.junit.jupiter.api.Nested;
@@ -68,8 +68,9 @@ public class UpnpIgdPortMappingTest {
                                       @Mock final Service upnpService,
                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                       @Mock final Runnable onFailure,
-                                      @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
-            when(myAddress.toString()).thenReturn("1234567890");
+                                      @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) {
+            when(ctx.channel().localAddress()).thenReturn(identity);
+            when(identity.getAddress().toString()).thenReturn("1234567890");
 
             new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -86,7 +87,9 @@ public class UpnpIgdPortMappingTest {
                                                                 @Mock final Service upnpService,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                 @Mock final Runnable onFailure,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) throws InterruptedException {
+                                                                @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) throws InterruptedException {
+                when(ctx.channel().localAddress()).thenReturn(identity);
+                when(identity.getAddress().toString()).thenReturn("1234567890");
                 final Set<URI> ssdpServices = new HashSet<>();
                 when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
                 when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
@@ -96,7 +99,6 @@ public class UpnpIgdPortMappingTest {
                     return null;
                 });
                 when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
-                when(myAddress.toString()).thenReturn("1234567890");
 
                 new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -111,7 +113,9 @@ public class UpnpIgdPortMappingTest {
                                                                    @Mock final Service upnpService,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                    @Mock final Runnable onFailure,
-                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) throws InterruptedException {
+                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) throws InterruptedException {
+                when(ctx.channel().localAddress()).thenReturn(identity);
+                when(identity.getAddress().toString()).thenReturn("1234567890");
                 final Set<URI> ssdpServices = new HashSet<>();
                 when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
                 when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
@@ -122,7 +126,6 @@ public class UpnpIgdPortMappingTest {
                 });
                 when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                 when(upnpIgdUtil.getSpecificPortMappingEntry(any(), any(), any()).getDescription()).thenReturn("drasyl1234567890");
-                when(myAddress.toString()).thenReturn("1234567890");
 
                 new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -139,7 +142,9 @@ public class UpnpIgdPortMappingTest {
                                                                 @Mock final Service upnpService,
                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                 @Mock final Runnable onFailure,
-                                                                @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) throws InterruptedException {
+                                                                @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) throws InterruptedException {
+                    when(ctx.channel().localAddress()).thenReturn(identity);
+                    when(identity.getAddress().toString()).thenReturn("1234567890");
                     final Set<URI> ssdpServices = new HashSet<>();
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
@@ -149,7 +154,6 @@ public class UpnpIgdPortMappingTest {
                         return null;
                     });
                     when(upnpIgdUtil.getUpnpService(any())).thenReturn(null);
-                    when(myAddress.toString()).thenReturn("1234567890");
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -164,7 +168,9 @@ public class UpnpIgdPortMappingTest {
                                                             @Mock final Service upnpService,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                             @Mock final Runnable onFailure,
-                                                            @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) throws InterruptedException {
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) throws InterruptedException {
+                    when(ctx.channel().localAddress()).thenReturn(identity);
+                    when(identity.getAddress().toString()).thenReturn("1234567890");
                     final Set<URI> ssdpServices = new HashSet<>();
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
@@ -174,7 +180,6 @@ public class UpnpIgdPortMappingTest {
                         return null;
                     });
                     when(upnpIgdUtil.getStatusInfo(any(), any())).thenReturn(null);
-                    when(myAddress.toString()).thenReturn("1234567890");
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -189,7 +194,9 @@ public class UpnpIgdPortMappingTest {
                                                                  @Mock final Service upnpService,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                  @Mock final Runnable onFailure,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) throws InterruptedException {
+                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) throws InterruptedException {
+                    when(ctx.channel().localAddress()).thenReturn(identity);
+                    when(identity.getAddress().toString()).thenReturn("1234567890");
                     final Set<URI> ssdpServices = new HashSet<>();
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
@@ -200,7 +207,6 @@ public class UpnpIgdPortMappingTest {
                     });
                     when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                     when(upnpIgdUtil.getExternalIpAddress(any(), any())).thenReturn(null);
-                    when(myAddress.toString()).thenReturn("1234567890");
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
@@ -215,7 +221,9 @@ public class UpnpIgdPortMappingTest {
                                                       @Mock final Service upnpService,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                       @Mock final Runnable onFailure,
-                                                      @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) throws InterruptedException {
+                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) throws InterruptedException {
+                    when(ctx.channel().localAddress()).thenReturn(identity);
+                    when(identity.getAddress().toString()).thenReturn("1234567890");
                     final Set<URI> ssdpServices = new HashSet<>();
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 10_000), eq(MILLISECONDS))).then(invocation -> null);
                     when((Future<?>) ctx.executor().schedule(ArgumentMatchers.<Runnable>any(), eq((long) 5_000), eq(MILLISECONDS))).then(invocation -> {
@@ -226,7 +234,6 @@ public class UpnpIgdPortMappingTest {
                     });
                     when(upnpIgdUtil.getStatusInfo(any(), any()).isConnected()).thenReturn(true);
                     when(upnpIgdUtil.addPortMapping(any(), any(), any(), any(), any())).thenReturn(null);
-                    when(myAddress.toString()).thenReturn("1234567890");
 
                     new UpnpIgdPortMapping(new AtomicBoolean(), upnpIgdUtil, ssdpServices, null, 0, timeoutGuard, ssdpDiscoverTask, refreshTask, upnpService, null).start(ctx, 12345, onFailure);
 
