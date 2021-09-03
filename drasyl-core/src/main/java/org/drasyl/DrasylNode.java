@@ -655,7 +655,7 @@ public abstract class DrasylNode {
 
                 // multicast server (lan discovery)
                 if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                    ch.pipeline().addFirst(UDP_MULTICAST_SERVER, new UdpMulticastServer(identity.getAddress()));
+                    ch.pipeline().addFirst(UDP_MULTICAST_SERVER, UdpMulticastServer.INSTANCE);
                 }
 
                 // tcp fallback

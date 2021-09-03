@@ -30,11 +30,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.DrasylAddress;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.identity.Identity;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -46,8 +43,10 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashSet;
+import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Starts an UDP server which joins a multicast group and together with the {@link
@@ -58,14 +57,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Sharable
 @SuppressWarnings({ "java:S112", "java:S2974" })
 public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
-    public static final AttributeKey<DrasylAddress> ADDRESS_ATTR_KEY = AttributeKey.valueOf(Identity.class, "UDP_MULTICAST_ADDRESS");
+    public static final UdpMulticastServer INSTANCE = new UdpMulticastServer();
     private static final String MULTICAST_INTERFACE_PROPERTY = "org.drasyl.remote.multicast.interface";
     private static final Logger LOG = LoggerFactory.getLogger(UdpMulticastServer.class);
     public static final InetSocketAddress MULTICAST_ADDRESS;
     public static final NetworkInterface MULTICAST_INTERFACE;
     private static final String MULTICAST_BIND_HOST;
-    private final Map<DrasylAddress, ChannelHandlerContext> nodes;
-    private final DrasylAddress myAddress;
+    private final Set<ChannelHandlerContext> nodes;
     private final Bootstrap bootstrap;
     private DatagramChannel channel;
 
@@ -97,82 +95,84 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         MULTICAST_INTERFACE = multicastInterface;
     }
 
-    UdpMulticastServer(final Map<DrasylAddress, ChannelHandlerContext> nodes,
-                       final DrasylAddress myAddress,
+    @SuppressWarnings("java:S2384")
+    UdpMulticastServer(final Set<ChannelHandlerContext> nodes,
                        final Bootstrap bootstrap,
                        final DatagramChannel channel) {
-        this.nodes = nodes;
-        this.myAddress = myAddress;
-        this.bootstrap = bootstrap;
+        this.nodes = requireNonNull(nodes);
+        this.bootstrap = requireNonNull(bootstrap);
         this.channel = channel;
     }
 
-    public UdpMulticastServer(final DrasylAddress myAddress) {
+    private UdpMulticastServer() {
         this(
-                new ConcurrentHashMap<>(),
-                myAddress,
+                new HashSet<>(),
                 new Bootstrap().group(EventLoopGroupUtil.getInstanceNio()).channel(NioDatagramChannel.class),
                 null
         );
     }
 
-    private synchronized void startServer(final ChannelHandlerContext ctx) {
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
         if (MULTICAST_INTERFACE == null) {
             LOG.warn("No default network interface could be identified. Therefore the server cannot be started. You can manually specify an interface by using the Java System Property `{}`.", () -> MULTICAST_INTERFACE_PROPERTY);
-            return;
         }
+        else {
+            nodes.add(ctx);
 
-        nodes.put(ctx.channel().attr(ADDRESS_ATTR_KEY).get(), ctx);
+            if (channel == null) {
+                LOG.debug("Start Server...");
+                final ChannelFuture channelFuture = bootstrap
+                        .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
+                            @Override
+                            protected void channelRead0(final ChannelHandlerContext channelCtx,
+                                                        final DatagramPacket packet) {
+                                final SocketAddress sender = packet.sender();
+                                nodes.forEach(nodeCtx -> {
+                                    LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel()::localAddress);
+                                    nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content(), sender));
+                                });
+                            }
+                        })
+                        .bind(MULTICAST_BIND_HOST, MULTICAST_ADDRESS.getPort());
+                channelFuture.awaitUninterruptibly();
 
-        if (channel == null) {
-            LOG.debug("Start Server...");
-            final ChannelFuture channelFuture = bootstrap
-                    .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
-                        @Override
-                        protected void channelRead0(final ChannelHandlerContext channelCtx,
-                                                    final DatagramPacket packet) {
-                            final SocketAddress sender = packet.sender();
-                            nodes.values().forEach(nodeCtx -> {
-                                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel().attr(ADDRESS_ATTR_KEY)::get);
-                                nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content(), sender));
-                            });
-                        }
-                    })
-                    .bind(MULTICAST_BIND_HOST, MULTICAST_ADDRESS.getPort());
-            channelFuture.awaitUninterruptibly();
+                if (channelFuture.isSuccess()) {
+                    // server successfully started
+                    final DatagramChannel myChannel = (DatagramChannel) channelFuture.channel();
+                    LOG.info("Server started and listening at {}", myChannel.localAddress());
 
-            if (channelFuture.isSuccess()) {
-                // server successfully started
-                final DatagramChannel myChannel = (DatagramChannel) channelFuture.channel();
-                LOG.info("Server started and listening at {}", myChannel.localAddress());
+                    // join multicast group
+                    LOG.debug("Join multicast group `{}` at network interface `{}`...", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName);
+                    final ChannelFuture multicastFuture = myChannel.joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).awaitUninterruptibly();
 
-                // join multicast group
-                LOG.debug("Join multicast group `{}` at network interface `{}`...", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName);
-                final ChannelFuture multicastFuture = myChannel.joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).awaitUninterruptibly();
-
-                if (multicastFuture.isSuccess()) {
-                    // join succeeded
-                    LOG.info("Successfully joined multicast group `{}` at network interface `{}`", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName);
-                    this.channel = myChannel;
+                    if (multicastFuture.isSuccess()) {
+                        // join succeeded
+                        LOG.info("Successfully joined multicast group `{}` at network interface `{}`", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName);
+                        this.channel = myChannel;
+                    }
+                    else {
+                        // join failed
+                        //noinspection unchecked
+                        LOG.warn("Unable to join multicast group `{}` at network interface `{}`:", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName, multicastFuture.cause()::getMessage);
+                    }
                 }
                 else {
-                    // join failed
+                    // server start failed
                     //noinspection unchecked
-                    LOG.warn("Unable to join multicast group `{}` at network interface `{}`:", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName, multicastFuture.cause()::getMessage);
+                    LOG.info("Unable to bind server to address {}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port.", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, channelFuture.cause()::getMessage);
                 }
             }
-            else {
-                // server start failed
-                //noinspection unchecked
-                LOG.info("Unable to bind server to address {}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port.", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, channelFuture.cause()::getMessage);
-            }
         }
+
+        ctx.fireChannelActive();
     }
 
-    private synchronized void stopServer(final ChannelHandlerContext ctx) {
-        nodes.remove(ctx.channel().attr(ADDRESS_ATTR_KEY).get());
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        nodes.remove(ctx);
 
-        if (channel != null) {
+        if (channel != null && nodes.isEmpty()) {
             final InetSocketAddress socketAddress = channel.localAddress();
             LOG.debug("Stop Server listening at {}...", socketAddress);
             // leave multicast group
@@ -182,26 +182,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             channel = null;
             LOG.debug("Server stopped");
         }
-    }
-
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        startServer(ctx);
-
-        ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        stopServer(ctx);
 
         ctx.fireChannelInactive();
-    }
-
-    @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
-        ctx.channel().attr(ADDRESS_ATTR_KEY).set(myAddress);
-
-        super.handlerAdded(ctx);
     }
 }
