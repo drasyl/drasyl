@@ -25,9 +25,9 @@ import com.google.common.hash.Hashing;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.EncoderException;
+import io.netty.handler.codec.MessageToMessageDecoder;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.ApplicationMessageCodec;
 import org.drasyl.channel.DrasylServerChannel;
@@ -60,11 +60,12 @@ import org.drasyl.remote.handler.crypto.ArmHandler;
 import org.drasyl.remote.handler.portmapper.PortMapper;
 import org.drasyl.remote.handler.tcp.TcpClient;
 import org.drasyl.remote.handler.tcp.TcpServer;
-import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.UnarmedMessage;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+
+import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
@@ -91,11 +92,9 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     protected void initChannel(final DrasylServerChannel ch) {
         node.channels = new DefaultChannelGroup(ch.eventLoop());
 
-        final PluginManager pluginManager = new PluginManager(config, identity);
-
         ch.pipeline().addFirst(new NodeLifecycleHandler(node));
 
-        ch.pipeline().addFirst(new PluginManagerHandler(pluginManager));
+        ch.pipeline().addFirst(new PluginManagerHandler(new PluginManager(config, identity)));
 
         ch.pipeline().addFirst(new PeersManagerHandler(identity));
 
@@ -169,18 +168,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
             ch.pipeline().addFirst(new RateLimiter(identity.getAddress()));
 
-            ch.pipeline().addFirst(new SimpleChannelInboundHandler<AddressedMessage<UnarmedMessage, ?>>(false) {
-                @Override
-                public boolean acceptInboundMessage(final Object msg) {
-                    return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof UnarmedMessage;
-                }
-
-                @Override
-                protected void channelRead0(final ChannelHandlerContext ctx,
-                                            final AddressedMessage<UnarmedMessage, ?> msg) throws InvalidMessageFormatException {
-                    ctx.fireChannelRead(new AddressedMessage<>(msg.message().read(), msg.address()));
-                }
-            });
+            ch.pipeline().addFirst(new UnarmedMessageDecoder());
 
             // arm outbound and disarm inbound messages
             if (config.isRemoteMessageArmEnabled()) {
@@ -238,28 +226,26 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             }
 
             // udp server
-            ch.pipeline().addFirst(new UdpServer(config.getRemoteBindHost(), udpServerPort(identity.getAddress())));
+            ch.pipeline().addFirst(new UdpServer(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())));
         }
     }
 
-    private int udpServerPort(final DrasylAddress address) {
-        final int actualBindPort;
-        if (config.getRemoteBindPort() == -1) {
-        /*
-         derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
-         own identity. this is done because we also expose this port via
-         UPnP-IGD/NAT-PMP/PCP and some NAT devices behave unexpectedly when multiple nodes
-         in the local network try to expose the same local port.
-         a completely random port would have the disadvantage that every time the node is
-         started it would use a new port and this would make discovery more difficult
-        */
+    private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
+        if (remoteBindPort == -1) {
+            /*
+             derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
+             own identity. this is done because we also expose this port via
+             UPnP-IGD/NAT-PMP/PCP and some NAT devices behave unexpectedly when multiple nodes
+             in the local network try to expose the same local port.
+             a completely random port would have the disadvantage that every time the node is
+             started it would use a new port and this would make discovery more difficult
+            */
             final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(address.toByteArray()).asBytes()).getValue();
-            actualBindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
+            return (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
         }
         else {
-            actualBindPort = config.getRemoteBindPort();
+            return remoteBindPort;
         }
-        return actualBindPort;
     }
 
     private static class PluginManagerHandler extends ChannelInboundHandlerAdapter {
@@ -357,6 +343,20 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             else {
                 userEventTriggered(ctx, InboundExceptionEvent.of(e));
             }
+        }
+    }
+
+    private static class UnarmedMessageDecoder extends MessageToMessageDecoder<AddressedMessage<UnarmedMessage, ?>> {
+        @Override
+        public boolean acceptInboundMessage(final Object msg) {
+            return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof UnarmedMessage;
+        }
+
+        @Override
+        protected void decode(final ChannelHandlerContext ctx,
+                              final AddressedMessage<UnarmedMessage, ?> msg,
+                              final List<Object> out) throws Exception {
+            out.add(new AddressedMessage<>(((UnarmedMessage) msg.message().retain()).read(), msg.address()));
         }
     }
 }
