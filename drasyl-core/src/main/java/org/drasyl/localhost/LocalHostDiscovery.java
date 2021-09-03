@@ -160,8 +160,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         }
     }
 
-    private synchronized CompletableFuture<Void> startDiscovery(final ChannelHandlerContext ctx,
-                                                                final int port) {
+    private void startDiscovery(final ChannelHandlerContext ctx,
+                                final int port) {
         LOG.debug("Start Local Host Discovery...");
         final Path discoveryPath = discoveryPath();
         final File directory = discoveryPath.toFile();
@@ -180,11 +180,9 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             keepOwnInformationUpToDate(ctx, discoveryPath.resolve(myAddress.toString() + ".json"), port);
         }
         LOG.debug("Local Host Discovery started.");
-
-        return completedFuture(null);
     }
 
-    private synchronized CompletableFuture<Void> stopDiscovery(final ChannelHandlerContext ctx) {
+    private void stopDiscovery(final ChannelHandlerContext ctx) {
         LOG.debug("Stop Local Host Discovery...");
 
         if (watchDisposable != null) {
@@ -208,8 +206,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         routes.clear();
 
         LOG.debug("Local Host Discovery stopped.");
-
-        return completedFuture(null);
     }
 
     /**

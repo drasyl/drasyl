@@ -166,14 +166,14 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         this.bestSuperPeer = bestSuperPeer;
     }
 
-    synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
+    void startHeartbeat(final ChannelHandlerContext ctx) {
         if (heartbeatDisposable == null) {
             LOG.debug("Start heartbeat scheduler");
             heartbeatDisposable = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval.toMillis()), pingInterval.toMillis(), MILLISECONDS);
         }
     }
 
-    synchronized void stopHeartbeat() {
+    void stopHeartbeat() {
         if (heartbeatDisposable != null) {
             LOG.debug("Stop heartbeat scheduler");
             heartbeatDisposable.cancel(false);
@@ -417,7 +417,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         ctx.flush();
     }
 
-    private synchronized boolean shouldTryUnite(final IdentityPublicKey sender,
+    private boolean shouldTryUnite(final IdentityPublicKey sender,
                                                 final IdentityPublicKey recipient) {
         final Pair<IdentityPublicKey, IdentityPublicKey> key;
         if (sender.hashCode() > recipient.hashCode()) {
@@ -524,7 +524,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
         }
     }
 
-    private synchronized void determineBestSuperPeer() {
+    private void determineBestSuperPeer() {
         long bestLatency = Long.MAX_VALUE;
         IdentityPublicKey newBestSuperPeer = null;
         for (final IdentityPublicKey superPeer : superPeers) {

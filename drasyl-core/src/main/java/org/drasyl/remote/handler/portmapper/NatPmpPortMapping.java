@@ -145,7 +145,7 @@ public class NatPmpPortMapping implements PortMapping {
         }
     }
 
-    private synchronized void mapPort(final ChannelHandlerContext ctx) {
+    private void mapPort(final ChannelHandlerContext ctx) {
         timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
             if (refreshTask == null) {
@@ -166,7 +166,7 @@ public class NatPmpPortMapping implements PortMapping {
         requestExternalAddress(ctx);
     }
 
-    private synchronized void unmapPort(final ChannelHandlerContext ctx) {
+    private void unmapPort(final ChannelHandlerContext ctx) {
         if (timeoutGuard != null) {
             timeoutGuard.cancel(false);
         }
@@ -177,7 +177,7 @@ public class NatPmpPortMapping implements PortMapping {
         }
     }
 
-    synchronized void fail() {
+    void fail() {
         if (timeoutGuard != null) {
             timeoutGuard.cancel(false);
             timeoutGuard = null;

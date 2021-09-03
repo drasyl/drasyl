@@ -93,7 +93,7 @@ public class TcpServer extends ChannelDuplexHandler {
         this.serverChannel = serverChannel;
     }
 
-    private synchronized void startServer(final ChannelHandlerContext ctx) throws BindFailedException {
+    private void startServer(final ChannelHandlerContext ctx) throws BindFailedException {
         LOG.debug("Start Server...");
         final ChannelFuture channelFuture = bootstrap
                 .childHandler(new TcpServerChannelInitializer(clientChannels, ctx, pingTimeout))
@@ -115,7 +115,7 @@ public class TcpServer extends ChannelDuplexHandler {
         }
     }
 
-    private synchronized void stopServer() {
+    private void stopServer() {
         final SocketAddress socketAddress = serverChannel.localAddress();
         LOG.debug("Stop Server listening at tcp:/{}...", socketAddress);
         // shutdown server

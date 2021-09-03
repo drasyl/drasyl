@@ -100,7 +100,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         this(new ConcurrentHashMap<>(), myAddress, myProofOfWork, pingInterval, pingTimeout, networkId, null);
     }
 
-    synchronized void startHeartbeat(final ChannelHandlerContext ctx) {
+    void startHeartbeat(final ChannelHandlerContext ctx) {
         if (scheduledPingFuture == null) {
             LOG.debug("Start Network Network Discovery...");
             scheduledPingFuture = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval.toMillis()), pingInterval.toMillis(), MILLISECONDS);
@@ -108,7 +108,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         }
     }
 
-    synchronized void stopHeartbeat() {
+    void stopHeartbeat() {
         if (scheduledPingFuture != null) {
             LOG.debug("Stop Network Host Discovery...");
             scheduledPingFuture.cancel(false);
@@ -117,7 +117,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         }
     }
 
-    synchronized void clearRoutes(final ChannelHandlerContext ctx) {
+    void clearRoutes(final ChannelHandlerContext ctx) {
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
             peers.remove(publicKey);

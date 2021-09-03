@@ -163,7 +163,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         }
     }
 
-    private synchronized void mapPort(final ChannelHandlerContext ctx) {
+    private void mapPort(final ChannelHandlerContext ctx) {
         timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
             if (refreshTask == null) {
@@ -175,7 +175,7 @@ public class UpnpIgdPortMapping implements PortMapping {
         doSsdpDiscovery(ctx);
     }
 
-    private synchronized void unmapPort(final ChannelHandlerContext ctx) {
+    private void unmapPort(final ChannelHandlerContext ctx) {
         ctx.executor().execute(() -> {
             if (upnpService != null) {
                 try {

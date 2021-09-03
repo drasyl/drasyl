@@ -97,7 +97,7 @@ public class TcpClient extends ChannelDuplexHandler {
         );
     }
 
-    private synchronized void stopClient() {
+    private void stopClient() {
         if (superPeerChannel != null) {
             superPeerChannel.cancel(true);
 
@@ -192,7 +192,7 @@ public class TcpClient extends ChannelDuplexHandler {
     }
 
     @SuppressWarnings({ "java:S1905", "java:S3824" })
-    private synchronized void startClient(final ChannelHandlerContext ctx) {
+    private void startClient(final ChannelHandlerContext ctx) {
         if (superPeerChannel == null) {
             final long currentTime = System.currentTimeMillis();
             LOG.debug("No response from any super peer since {}ms. UDP traffic" +

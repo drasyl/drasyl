@@ -158,7 +158,7 @@ public class PcpPortMapping implements PortMapping {
         }
     }
 
-    private synchronized void mapPort(final ChannelHandlerContext ctx) {
+    private void mapPort(final ChannelHandlerContext ctx) {
         timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
             if (refreshTask == null) {
@@ -181,7 +181,7 @@ public class PcpPortMapping implements PortMapping {
         }
     }
 
-    private synchronized void unmapPort(final ChannelHandlerContext ctx) {
+    private void unmapPort(final ChannelHandlerContext ctx) {
         if (timeoutGuard != null) {
             timeoutGuard.cancel(false);
         }
@@ -194,7 +194,7 @@ public class PcpPortMapping implements PortMapping {
         }
     }
 
-    synchronized void fail() {
+    void fail() {
         if (timeoutGuard != null) {
             timeoutGuard.cancel(false);
             timeoutGuard = null;
@@ -231,7 +231,7 @@ public class PcpPortMapping implements PortMapping {
         });
     }
 
-    private synchronized void handleMapping(final ChannelHandlerContext ctx,
+    private void handleMapping(final ChannelHandlerContext ctx,
                                             final MappingResponseMessage message) {
         if (mappingRequested.get() > 0) {
             final int openRequests = mappingRequested.decrementAndGet();
