@@ -68,7 +68,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
             identity2 = IdentityTestUtil.ID_2;
 
-            final UdpServer handler = new UdpServer(identity2.getIdentityPublicKey(), InetAddress.getLocalHost(), 0);
+            final UdpServer handler = new UdpServer(InetAddress.getLocalHost(), 0);
 
             channel = new UserEventAwareEmbeddedChannel(
                     handler,

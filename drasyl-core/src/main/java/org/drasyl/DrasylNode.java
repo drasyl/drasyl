@@ -21,6 +21,7 @@
  */
 package org.drasyl;
 
+import com.google.common.hash.Hashing;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -80,6 +81,7 @@ import org.drasyl.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.remote.protocol.UnarmedMessage;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureUtil;
+import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -96,6 +98,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.channel.Null.NULL;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
+import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
 /**
  * Represents a node in the drasyl Overlay Network. Applications that want to run on drasyl must
@@ -157,6 +160,7 @@ public abstract class DrasylNode {
         }
     }
 
+    @SuppressWarnings("java:S2384")
     protected DrasylNode(final Identity identity,
                          final ServerBootstrap bootstrap,
                          final ChannelFuture channelFuture,
@@ -511,6 +515,7 @@ public abstract class DrasylNode {
         public static final String TCP_CLIENT = "TCP_CLIENT";
         public static final String PORT_MAPPER = "PORT_MAPPER";
         public static final String UDP_SERVER = "UDP_SERVER";
+        public static final short MIN_DERIVED_PORT = 22528;
         private final DrasylConfig config;
         private final Identity identity;
         private final DrasylNode node;
@@ -677,12 +682,28 @@ public abstract class DrasylNode {
                 }
 
                 // udp server
-                ch.pipeline().addFirst(UDP_SERVER, new UdpServer(
-                        this.identity.getAddress(),
-                        this.config.getRemoteBindHost(),
-                        this.config.getRemoteBindPort()
-                ));
+                ch.pipeline().addFirst(UDP_SERVER, new UdpServer(config.getRemoteBindHost(), udpServerPort()));
             }
+        }
+
+        private int udpServerPort() {
+            final int actualBindPort;
+            if (this.config.getRemoteBindPort() == -1) {
+            /*
+             derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
+             own identity. this is done because we also expose this port via
+             UPnP-IGD/NAT-PMP/PCP and some NAT devices behave unexpectedly when multiple nodes
+             in the local network try to expose the same local port.
+             a completely random port would have the disadvantage that every time the node is
+             started it would use a new port and this would make discovery more difficult
+            */
+                final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(identity.getAddress().toByteArray()).asBytes()).getValue();
+                actualBindPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
+            }
+            else {
+                actualBindPort = this.config.getRemoteBindPort();
+            }
+            return actualBindPort;
         }
 
         private static class PluginManagerHandler extends ChannelInboundHandlerAdapter {
