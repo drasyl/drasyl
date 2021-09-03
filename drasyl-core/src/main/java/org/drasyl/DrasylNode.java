@@ -491,30 +491,6 @@ public abstract class DrasylNode {
      * Initialize the {@link io.netty.channel.ServerChannel} used by {@link DrasylNode}.
      */
     public static class DrasylNodeChannelInitializer extends ChannelInitializer<Channel> {
-        public static final String NODE_LIFECYCLE_HANDLER = "NODE_LIFECYCLE_HANDLER";
-        public static final String PLUGIN_MANAGER_HANDLER = "PLUGIN_MANAGER_HANDLER";
-        public static final String PEERS_MANAGER_HANDLER = "PEERS_MANAGER_HANDLER";
-        public static final String APPLICATION_MESSAGE_CODEC = "APPLICATION_MESSAGE_CODEC";
-        public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
-        public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
-        public static final String STATIC_ROUTES_HANDLER = "STATIC_ROUTES_HANDLER";
-        public static final String LOCAL_HOST_DISCOVERY = "LOCAL_HOST_DISCOVERY";
-        public static final String INTERNET_DISCOVERY = "INTERNET_DISCOVERY";
-        public static final String LOCAL_NETWORK_DISCOVER = "LOCAL_NETWORK_DISCOVER";
-        public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
-        public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
-        public static final String RATE_LIMITER = "RATE_LIMITER";
-        public static final String UNARMED_MESSAGE_READER = "UNARMED_MESSAGE_READER";
-        public static final String ARM_HANDLER = "ARM_HANDLER";
-        public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
-        public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
-        public static final String CHUNKING_HANDLER = "CHUNKING_HANDLER";
-        public static final String REMOTE_MESSAGE_TO_BYTE_BUF_CODEC = "REMOTE_MESSAGE_TO_BYTE_BUF_CODEC";
-        public static final String UDP_MULTICAST_SERVER = "UDP_MULTICAST_SERVER";
-        public static final String TCP_SERVER = "TCP_SERVER";
-        public static final String TCP_CLIENT = "TCP_CLIENT";
-        public static final String PORT_MAPPER = "PORT_MAPPER";
-        public static final String UDP_SERVER = "UDP_SERVER";
         public static final short MIN_DERIVED_PORT = 22528;
         private final DrasylConfig config;
         private final Identity identity;
@@ -537,32 +513,32 @@ public abstract class DrasylNode {
 
             final PluginManager pluginManager = new PluginManager(config, identity);
 
-            ch.pipeline().addFirst(NODE_LIFECYCLE_HANDLER, new NodeLifecycleHandler(ch));
+            ch.pipeline().addFirst(new NodeLifecycleHandler(ch));
 
-            ch.pipeline().addFirst(PLUGIN_MANAGER_HANDLER, new PluginManagerHandler(pluginManager));
+            ch.pipeline().addFirst(new PluginManagerHandler(pluginManager));
 
-            ch.pipeline().addFirst(PEERS_MANAGER_HANDLER, new PeersManagerHandler(identity));
+            ch.pipeline().addFirst(new PeersManagerHandler(identity));
 
             // convert outbound messages addresses to us to inbound messages
-            ch.pipeline().addFirst(LOOPBACK_MESSAGE_HANDLER, new LoopbackMessageHandler(identity.getAddress()));
+            ch.pipeline().addFirst(new LoopbackMessageHandler(identity.getAddress()));
 
-            // convert ByteString <-> ApplicationMessage
-            ch.pipeline().addFirst(APPLICATION_MESSAGE_CODEC, new ApplicationMessageCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
+            // convert ByteBuf <-> ApplicationMessage
+            ch.pipeline().addFirst(new ApplicationMessageCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
 
             // discover nodes running within the same jvm
             if (config.isIntraVmDiscoveryEnabled()) {
-                ch.pipeline().addFirst(INTRA_VM_DISCOVERY, new IntraVmDiscovery(config.getNetworkId(), identity.getAddress()));
+                ch.pipeline().addFirst(new IntraVmDiscovery(config.getNetworkId(), identity.getAddress()));
             }
 
             if (config.isRemoteEnabled()) {
                 // route outbound messages to pre-configured ip addresses
                 if (!config.getRemoteStaticRoutes().isEmpty()) {
-                    ch.pipeline().addFirst(STATIC_ROUTES_HANDLER, new StaticRoutesHandler(config.getRemoteStaticRoutes()));
+                    ch.pipeline().addFirst(new StaticRoutesHandler(config.getRemoteStaticRoutes()));
                 }
 
                 if (config.isRemoteLocalHostDiscoveryEnabled()) {
                     // discover nodes running on the same local computer
-                    ch.pipeline().addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(
+                    ch.pipeline().addFirst(new LocalHostDiscovery(
                             config.getNetworkId(),
                             config.isRemoteLocalHostDiscoveryWatchEnabled(),
                             config.getRemoteBindHost(),
@@ -574,7 +550,7 @@ public abstract class DrasylNode {
 
                 // discovery nodes on the local network
                 if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                    ch.pipeline().addFirst(LOCAL_NETWORK_DISCOVER, new LocalNetworkDiscovery(
+                    ch.pipeline().addFirst(new LocalNetworkDiscovery(
                             config.getNetworkId(),
                             config.getRemotePingInterval(),
                             config.getRemotePingTimeout(),
@@ -584,7 +560,7 @@ public abstract class DrasylNode {
                 }
 
                 // discover nodes on the internet
-                ch.pipeline().addFirst(INTERNET_DISCOVERY, new InternetDiscovery(
+                ch.pipeline().addFirst(new InternetDiscovery(
                         config.getNetworkId(),
                         config.getRemotePingMaxPeers(),
                         config.getRemotePingInterval(),
@@ -598,10 +574,10 @@ public abstract class DrasylNode {
                 ));
 
                 // outbound message guards
-                ch.pipeline().addFirst(HOP_COUNT_GUARD, new HopCountGuard(config.getRemoteMessageHopLimit()));
+                ch.pipeline().addFirst(new HopCountGuard(config.getRemoteMessageHopLimit()));
 
                 if (config.isMonitoringEnabled()) {
-                    ch.pipeline().addFirst(MONITORING_HANDLER, new Monitoring(
+                    ch.pipeline().addFirst(new Monitoring(
                             config.getMonitoringHostTag(),
                             config.getMonitoringInfluxUri(),
                             config.getMonitoringInfluxUser(),
@@ -611,9 +587,9 @@ public abstract class DrasylNode {
                     ));
                 }
 
-                ch.pipeline().addFirst(RATE_LIMITER, new RateLimiter(identity.getAddress()));
+                ch.pipeline().addFirst(new RateLimiter(identity.getAddress()));
 
-                ch.pipeline().addFirst(UNARMED_MESSAGE_READER, new SimpleChannelInboundHandler<AddressedMessage<UnarmedMessage, ?>>(false) {
+                ch.pipeline().addFirst(new SimpleChannelInboundHandler<AddressedMessage<UnarmedMessage, ?>>(false) {
                     @Override
                     public boolean acceptInboundMessage(final Object msg) {
                         return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof UnarmedMessage;
@@ -628,7 +604,7 @@ public abstract class DrasylNode {
 
                 // arm outbound and disarm inbound messages
                 if (config.isRemoteMessageArmEnabled()) {
-                    ch.pipeline().addFirst(ARM_HANDLER, new ArmHandler(
+                    ch.pipeline().addFirst(new ArmHandler(
                             config.getNetworkId(),
                             config.getRemoteMessageArmSessionMaxCount(),
                             config.getRemoteMessageArmSessionMaxAgreements(),
@@ -639,11 +615,11 @@ public abstract class DrasylNode {
                 }
 
                 // filter out inbound messages with invalid proof of work or other network id
-                ch.pipeline().addFirst(INVALID_PROOF_OF_WORK_FILTER, new InvalidProofOfWorkFilter(identity.getAddress()));
-                ch.pipeline().addFirst(OTHER_NETWORK_FILTER, new OtherNetworkFilter(config.getNetworkId()));
+                ch.pipeline().addFirst(new InvalidProofOfWorkFilter(identity.getAddress()));
+                ch.pipeline().addFirst(new OtherNetworkFilter(config.getNetworkId()));
 
                 // split messages too big for udp
-                ch.pipeline().addFirst(CHUNKING_HANDLER, new ChunkingHandler(
+                ch.pipeline().addFirst(new ChunkingHandler(
                         config.getRemoteMessageMaxContentLength(),
                         config.getRemoteMessageMtu(),
                         config.getRemoteMessageComposedMessageTransferTimeout(),
@@ -651,24 +627,24 @@ public abstract class DrasylNode {
                 ));
 
                 // convert RemoteMessage <-> ByteBuf
-                ch.pipeline().addFirst(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC, RemoteMessageToByteBufCodec.INSTANCE);
+                ch.pipeline().addFirst(RemoteMessageToByteBufCodec.INSTANCE);
 
                 // multicast server (lan discovery)
                 if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                    ch.pipeline().addFirst(UDP_MULTICAST_SERVER, UdpMulticastServer.INSTANCE);
+                    ch.pipeline().addFirst(UdpMulticastServer.INSTANCE);
                 }
 
                 // tcp fallback
                 if (config.isRemoteTcpFallbackEnabled()) {
                     if (!config.isRemoteSuperPeerEnabled()) {
-                        ch.pipeline().addFirst(TCP_SERVER, new TcpServer(
+                        ch.pipeline().addFirst(new TcpServer(
                                 config.getRemoteTcpFallbackServerBindHost(),
                                 config.getRemoteTcpFallbackServerBindPort(),
                                 config.getRemotePingTimeout()
                         ));
                     }
                     else {
-                        ch.pipeline().addFirst(TCP_CLIENT, new TcpClient(
+                        ch.pipeline().addFirst(new TcpClient(
                                 config.getRemoteSuperPeerEndpoints(),
                                 config.getRemoteTcpFallbackClientTimeout(),
                                 config.getRemoteTcpFallbackClientAddress()
@@ -678,11 +654,11 @@ public abstract class DrasylNode {
 
                 // port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
                 if (config.isRemoteExposeEnabled()) {
-                    ch.pipeline().addFirst(PORT_MAPPER, new PortMapper());
+                    ch.pipeline().addFirst(new PortMapper());
                 }
 
                 // udp server
-                ch.pipeline().addFirst(UDP_SERVER, new UdpServer(config.getRemoteBindHost(), udpServerPort()));
+                ch.pipeline().addFirst(new UdpServer(config.getRemoteBindHost(), udpServerPort()));
             }
         }
 

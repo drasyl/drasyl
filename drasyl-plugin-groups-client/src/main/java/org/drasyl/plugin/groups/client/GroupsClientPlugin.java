@@ -22,12 +22,11 @@
 package org.drasyl.plugin.groups.client;
 
 import com.typesafe.config.Config;
+import org.drasyl.channel.ApplicationMessageCodec;
 import org.drasyl.plugin.DrasylPlugin;
 import org.drasyl.plugin.PluginEnvironment;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-
-import static org.drasyl.DrasylNode.DrasylNodeChannelInitializer.APPLICATION_MESSAGE_CODEC;
 
 /**
  * The Groups Membership Client Plugin allows drasyl nodes to connect to membership managers at
@@ -56,7 +55,7 @@ public class GroupsClientPlugin implements DrasylPlugin {
     public void onBeforeStart(final PluginEnvironment environment) {
         LOG.debug("Start Groups Client Plugin with options: {}", config);
 
-        environment.getPipeline().addAfter(APPLICATION_MESSAGE_CODEC, GROUPS_CLIENT_HANDLER, new GroupsClientHandler(config.getGroups(), environment.getIdentity()));
+        environment.getPipeline().addAfter(environment.getPipeline().context(ApplicationMessageCodec.class).name(), GROUPS_CLIENT_HANDLER, new GroupsClientHandler(config.getGroups(), environment.getIdentity()));
         environment.getPipeline().addBefore(GROUPS_CLIENT_HANDLER, "GROUPS_MANAGER_DECODER", new GroupsServerMessageDecoder());
         environment.getPipeline().addBefore(GROUPS_CLIENT_HANDLER, "GROUPS_CLIENT_ENCODER", new GroupsClientMessageEncoder());
     }

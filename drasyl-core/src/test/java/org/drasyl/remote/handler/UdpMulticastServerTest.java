@@ -89,7 +89,9 @@ class UdpMulticastServerTest {
     @Nested
     class StopServer {
         @Test
-        void shouldStopServerOnChannelInactive(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
+        void shouldStopServerOnChannelInactive() {
+            when(nodes.isEmpty()).thenReturn(true);
+
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {

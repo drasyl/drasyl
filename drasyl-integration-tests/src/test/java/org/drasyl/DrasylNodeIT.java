@@ -33,6 +33,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.peer.Endpoint;
+import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -60,7 +61,6 @@ import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.DrasylNode.DrasylNodeChannelInitializer.UDP_SERVER;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -621,7 +621,7 @@ class DrasylNodeIT {
                         .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
                         .build();
                 client = new EmbeddedNode(config).started();
-                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new ChannelOutboundHandlerAdapter() {
+                client.pipeline().addAfter(client.pipeline().context(UdpServer.class).name(), "UDP_BLOCKER", new ChannelOutboundHandlerAdapter() {
                     @Override
                     public void write(final ChannelHandlerContext ctx,
                                       final Object msg,
