@@ -21,7 +21,6 @@
  */
 package org.drasyl;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -41,7 +40,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.Null.NULL;
 
 /**
- * Initialize child {@link Channel}s used by {@link DrasylNode}.
+ * Initialize child {@link DrasylChannel}s used by {@link DrasylNode}.
  */
 public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChannel> {
     private final DrasylConfig config;
@@ -57,18 +56,21 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     protected void initChannel(final DrasylChannel ch) {
         node.channels.add(ch);
 
-        // emit MessageEvents for every inbound message
-        ch.pipeline().addFirst(new MessageEventHandler(node));
-
-        // convert Object <-> ByteBuf
-        ch.pipeline().addFirst(new MessageSerializer(config));
-
         // close inactive channels (to free up resources)
         final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
         if (inactivityTimeout > 0) {
-            ch.pipeline().addFirst(new IdleChannelCloser());
-            ch.pipeline().addFirst(new IdleStateHandler(0, 0, inactivityTimeout));
+            ch.pipeline().addLast(
+                    new IdleStateHandler(0, 0, inactivityTimeout),
+                    new IdleChannelCloser()
+            );
         }
+
+        ch.pipeline().addLast(
+                // convert Object <-> ByteBuf
+                new MessageSerializer(config),
+                // emit MessageEvents for every inbound message
+                new MessageEventHandler(node)
+        );
     }
 
     private static class MessageEventHandler extends ChannelInboundHandlerAdapter {

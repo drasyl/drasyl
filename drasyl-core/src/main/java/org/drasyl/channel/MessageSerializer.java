@@ -67,15 +67,14 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
     }
 
     @Override
+    public boolean acceptOutboundMessage(final Object msg) {
+        return !(msg instanceof ByteBuf);
+    }
+
+    @Override
     protected void encode(final ChannelHandlerContext ctx,
                           Object o,
                           final List<Object> out) {
-        if (o instanceof ByteBuf) {
-            // no need to serialize this msg -> pass through
-            out.add(((ByteBuf) o).retain());
-            return;
-        }
-
         if (o == NULL) {
             o = null;
         }
@@ -92,16 +91,15 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
 
         if (serializer != null) {
             try {
-                final ByteString payload = ByteString.copyFrom(serializer.toByteArray(o));
-
                 final SerializedPayload.Builder builder = SerializedPayload.newBuilder();
 
                 if (type != null) {
                     builder.setType(type);
                 }
+                final ByteString payload = ByteString.copyFrom(serializer.toByteArray(o));
                 builder.setPayload(payload);
 
-                final ByteBuf bytes = ctx.alloc().ioBuffer();
+                final ByteBuf bytes = ctx.alloc().buffer();
                 try (final OutputStream outputStream = new ByteBufOutputStream(bytes)) {
                     builder.build().writeDelimitedTo(outputStream);
                 }

@@ -71,7 +71,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
 /**
- * Initialize the {@link io.netty.channel.ServerChannel} used by {@link DrasylNode}.
+ * Initialize the {@link DrasylServerChannel} used by {@link DrasylNode}.
  */
 public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final short MIN_DERIVED_PORT = 22528;
