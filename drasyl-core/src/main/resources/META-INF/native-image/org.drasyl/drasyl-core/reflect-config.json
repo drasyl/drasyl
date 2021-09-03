@@ -241,16 +241,6 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.protocol.Protocol$Application",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$Application$Builder",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
     "name": "org.drasyl.remote.protocol.Protocol$Discovery",
     "allDeclaredFields": true,
     "allDeclaredMethods": true
