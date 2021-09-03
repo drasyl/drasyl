@@ -155,7 +155,7 @@ public abstract class DrasylNode {
                 .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
                 .localAddress(identity)
                 .channel(DrasylServerChannel.class)
-                .handler(new DrasylServerChannelInitializer(config, identity, this))
+                .handler(new DrasylNodeServerChannelInitializer(config, identity, this))
                 .childHandler(new org.drasyl.DrasylNodeChannelInitializer(config, this));
 
         LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);

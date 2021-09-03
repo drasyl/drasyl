@@ -44,7 +44,6 @@ import static org.drasyl.channel.Null.NULL;
  * Initialize child {@link Channel}s used by {@link DrasylNode}.
  */
 public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeChannelInitializer.class);
     private final DrasylConfig config;
     private final DrasylNode node;
 
@@ -56,10 +55,10 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
 
     @Override
     protected void initChannel(final DrasylChannel ch) {
-        this.node.channels.add(ch);
+        node.channels.add(ch);
 
         // emit MessageEvents for every inbound message
-        ch.pipeline().addFirst(new MessageEventHandler());
+        ch.pipeline().addFirst(new MessageEventHandler(node));
 
         // convert Object <-> ByteBuf
         ch.pipeline().addFirst(new MessageSerializer(config));
@@ -72,7 +71,14 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
         }
     }
 
-    private class MessageEventHandler extends ChannelInboundHandlerAdapter {
+    private static class MessageEventHandler extends ChannelInboundHandlerAdapter {
+        private static final Logger LOG = LoggerFactory.getLogger(MessageEventHandler.class);
+        private final DrasylNode node;
+
+        public MessageEventHandler(final DrasylNode node) {
+            this.node = requireNonNull(node);
+        }
+
         @Override
         public void channelRead(final ChannelHandlerContext ctx,
                                 Object msg) {
@@ -97,6 +103,8 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     }
 
     private static class IdleChannelCloser extends ChannelInboundHandlerAdapter {
+        private static final Logger LOG = LoggerFactory.getLogger(IdleChannelCloser.class);
+
         @Override
         public void userEventTriggered(final ChannelHandlerContext ctx,
                                        final Object evt) throws Exception {

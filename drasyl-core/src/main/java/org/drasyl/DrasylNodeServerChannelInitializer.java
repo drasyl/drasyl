@@ -72,16 +72,15 @@ import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 /**
  * Initialize the {@link io.netty.channel.ServerChannel} used by {@link DrasylNode}.
  */
-public class DrasylServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannelInitializer.class);
+public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final short MIN_DERIVED_PORT = 22528;
     private final DrasylConfig config;
     private final DrasylNode node;
     private final Identity identity;
 
-    public DrasylServerChannelInitializer(final DrasylConfig config,
-                                          final Identity identity,
-                                          final DrasylNode node) {
+    public DrasylNodeServerChannelInitializer(final DrasylConfig config,
+                                              final Identity identity,
+                                              final DrasylNode node) {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
         this.node = requireNonNull(node);
@@ -300,6 +299,7 @@ public class DrasylServerChannelInitializer extends ChannelInitializer<DrasylSer
     }
 
     private static class NodeLifecycleHandler extends ChannelInboundHandlerAdapter {
+        private static final Logger LOG = LoggerFactory.getLogger(NodeLifecycleHandler.class);
         private final DrasylNode node;
         private boolean errorOccurred;
 
