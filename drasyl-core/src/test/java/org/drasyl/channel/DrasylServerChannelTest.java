@@ -21,11 +21,9 @@
  */
 package org.drasyl.channel;
 
-import io.netty.channel.Channel;
 import io.netty.channel.group.ChannelGroup;
 import org.drasyl.channel.DrasylServerChannel.State;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +34,6 @@ import java.net.SocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,20 +76,6 @@ class DrasylServerChannelTest {
             assertFalse(channel.isOpen());
             assertFalse(channel.isActive());
             verify(channels).close();
-        }
-    }
-
-    @Nested
-    class GetOrCreateChildChannel {
-        @Test
-        void shouldCreateChildChannel(@Mock final ChannelGroup channels,
-                                      @Mock final Identity localAddress,
-                                      @Mock final IdentityPublicKey peer) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, null, localAddress);
-
-            final Channel childChannel = channel.getOrCreateChildChannel(peer);
-
-            assertNotNull(childChannel);
         }
     }
 }

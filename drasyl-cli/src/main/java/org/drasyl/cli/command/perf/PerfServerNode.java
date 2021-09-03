@@ -25,6 +25,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
@@ -76,8 +77,9 @@ public class PerfServerNode extends BehavioralDrasylNode {
                    final EventLoopGroup eventLoopGroup,
                    final Identity identity,
                    final ServerBootstrap bootstrap,
-                   final ChannelFuture channelFuture) {
-        super(identity, bootstrap, channelFuture);
+                   final ChannelFuture channelFuture,
+                   final ChannelGroup channels) {
+        super(identity, bootstrap, channelFuture, channels);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.eventLoopGroup = eventLoopGroup;
@@ -90,7 +92,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
         this.printStream = printStream;
         eventLoopGroup = new NioEventLoopGroup(1);
 
-        bootstrap.childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent) {
+        bootstrap.childHandler(new DrasylNodeChildChannelInitializer(config, this) {
             @Override
             protected void initChannel(final Channel ch) {
                 super.initChannel(ch);

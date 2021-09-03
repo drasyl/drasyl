@@ -30,6 +30,8 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -39,6 +41,7 @@ import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.ApplicationMessageCodec;
+import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MessageSerializer;
 import org.drasyl.event.Event;
@@ -87,7 +90,6 @@ import java.lang.reflect.Method;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -127,6 +129,7 @@ public abstract class DrasylNode {
     protected final Identity identity;
     protected final ServerBootstrap bootstrap;
     private ChannelFuture channelFuture;
+    private ChannelGroup channels;
 
     static {
         // https://github.com/netty/netty/issues/7817
@@ -156,10 +159,12 @@ public abstract class DrasylNode {
 
     protected DrasylNode(final Identity identity,
                          final ServerBootstrap bootstrap,
-                         final ChannelFuture channelFuture) {
+                         final ChannelFuture channelFuture,
+                         final ChannelGroup channels) {
         this.identity = requireNonNull(identity);
         this.bootstrap = requireNonNull(bootstrap);
         this.channelFuture = channelFuture;
+        this.channels = channels;
     }
 
     /**
@@ -189,8 +194,8 @@ public abstract class DrasylNode {
                 .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
                 .localAddress(identity)
                 .channel(DrasylServerChannel.class)
-                .handler(new DrasylNodeChannelInitializer(config, identity, this::onEvent))
-                .childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent));
+                .handler(new DrasylNodeChannelInitializer(config, identity, this))
+                .childHandler(new DrasylNodeChildChannelInitializer(config, this));
 
         LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
     }
@@ -351,7 +356,25 @@ public abstract class DrasylNode {
     public CompletionStage<Channel> resolve(@NonNull final DrasylAddress address) {
         if (channelFuture != null && channelFuture.channel().isOpen()) {
             final CompletableFuture<Channel> future = new CompletableFuture<>();
-            channelFuture.channel().pipeline().fireUserEventTriggered(new Resolve(address, future));
+            channelFuture.channel().eventLoop().execute(() -> {
+                for (final Channel channel : channels) {
+                    if (address.equals(channel.remoteAddress())) {
+                        future.complete(channel);
+                        return;
+                    }
+                }
+
+                final DrasylChannel channel = new DrasylChannel(channelFuture.channel(), (IdentityPublicKey) address);
+                channelFuture.channel().pipeline().fireChannelRead(channel);
+
+                channel.pipeline().addLast(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(final Channel ch) {
+                        future.complete(channel);
+                    }
+                });
+            });
+
             return future;
         }
         else {
@@ -461,37 +484,12 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Signals {@link DrasylNodeChannelInitializer} to resolve a given {@link DrasylAddress} to a
-     * {@link Channel}.
-     */
-    public static class Resolve {
-        private final DrasylAddress recipient;
-        private final CompletableFuture<Channel> future;
-
-        public Resolve(final DrasylAddress recipient,
-                       final CompletableFuture<Channel> future) {
-            this.recipient = requireNonNull(recipient);
-            this.future = requireNonNull(future);
-        }
-
-        public DrasylAddress recipient() {
-            return recipient;
-        }
-
-        public CompletableFuture<Channel> future() {
-            return future;
-        }
-    }
-
-    /**
      * Initialize the {@link io.netty.channel.ServerChannel} used by {@link DrasylNode}.
      */
     public static class DrasylNodeChannelInitializer extends ChannelInitializer<Channel> {
         public static final String NODE_LIFECYCLE_HANDLER = "NODE_LIFECYCLE_HANDLER";
-        public static final String CHANNEL_RESOLVER = "CHANNEL_RESOLVER";
         public static final String PLUGIN_MANAGER_HANDLER = "PLUGIN_MANAGER_HANDLER";
         public static final String PEERS_MANAGER_HANDLER = "PEERS_MANAGER_HANDLER";
-        public static final String CHILD_CHANNEL_ROUTER = "CHILD_CHANNEL_ROUTER";
         public static final String APPLICATION_MESSAGE_CODEC = "APPLICATION_MESSAGE_CODEC";
         public static final String LOOPBACK_MESSAGE_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
         public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
@@ -515,33 +513,26 @@ public abstract class DrasylNode {
         public static final String UDP_SERVER = "UDP_SERVER";
         private final DrasylConfig config;
         private final Identity identity;
-        private final Consumer<Event> eventConsumer;
+        private final DrasylNode node;
         private boolean errorOccurred;
 
         public DrasylNodeChannelInitializer(final DrasylConfig config,
                                             final Identity identity,
-                                            final Consumer<Event> eventConsumer,
-                                            final boolean errorOccurred) {
+                                            final DrasylNode node) {
             this.config = requireNonNull(config);
             this.identity = requireNonNull(identity);
-            this.errorOccurred = errorOccurred;
-            this.eventConsumer = requireNonNull(eventConsumer);
-        }
-
-        public DrasylNodeChannelInitializer(final DrasylConfig config,
-                                            final Identity identity,
-                                            final Consumer<Event> eventConsumer) {
-            this(config, identity, eventConsumer, false);
+            this.errorOccurred = false;
+            this.node = requireNonNull(node);
         }
 
         @SuppressWarnings("java:S1188")
         @Override
         protected void initChannel(final Channel ch) {
+            node.channels = new DefaultChannelGroup(ch.eventLoop());
+
             final PluginManager pluginManager = new PluginManager(config, identity);
 
             ch.pipeline().addFirst(NODE_LIFECYCLE_HANDLER, new NodeLifecycleHandler(ch));
-
-            ch.pipeline().addFirst(CHANNEL_RESOLVER, new ChannelResolver());
 
             ch.pipeline().addFirst(PLUGIN_MANAGER_HANDLER, new PluginManagerHandler(pluginManager));
 
@@ -767,7 +758,7 @@ public abstract class DrasylNode {
                         errorOccurred = true;
                     }
 
-                    ctx.executor().execute(() -> eventConsumer.accept((Event) evt));
+                    ctx.executor().execute(() -> node.onEvent((Event) evt));
                 }
 
                 // drop all other events
@@ -789,24 +780,6 @@ public abstract class DrasylNode {
                 }
             }
         }
-
-        private static class ChannelResolver extends ChannelInboundHandlerAdapter {
-            @SuppressWarnings("java:S2221")
-            @Override
-            public void userEventTriggered(final ChannelHandlerContext ctx,
-                                           final Object evt) {
-                if (evt instanceof Resolve) {
-                    final Resolve e = (Resolve) evt;
-                    final IdentityPublicKey recipient = (IdentityPublicKey) e.recipient();
-                    final CompletableFuture<Channel> future = e.future();
-                    final Channel resolvedChannel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(recipient);
-                    resolvedChannel.eventLoop().execute(() -> future.complete(resolvedChannel));
-                }
-                else {
-                    ctx.fireUserEventTriggered(evt);
-                }
-            }
-        }
     }
 
     /**
@@ -818,16 +791,18 @@ public abstract class DrasylNode {
         public static final String INACTIVITY_CLOSER = "INACTIVITY_CLOSER";
         public static final String INACTIVITY_DETECTOR = "INACTIVITY_DETECTOR";
         private final DrasylConfig config;
-        private final Consumer<Event> onEvent;
+        private final DrasylNode node;
 
         public DrasylNodeChildChannelInitializer(final DrasylConfig config,
-                                                 final Consumer<Event> onEvent) {
-            this.onEvent = requireNonNull(onEvent);
+                                                 final DrasylNode node) {
             this.config = requireNonNull(config);
+            this.node = requireNonNull(node);
         }
 
         @Override
         protected void initChannel(final Channel ch) {
+            this.node.channels.add(ch);
+
             // emit MessageEvents for every inbound message
             ch.pipeline().addFirst(CHILD_CHANNEL_TAIL, new ChannelInboundHandlerAdapter() {
                 @Override
@@ -838,7 +813,7 @@ public abstract class DrasylNode {
                     }
 
                     final MessageEvent event = MessageEvent.of((IdentityPublicKey) ctx.channel().remoteAddress(), msg);
-                    onEvent.accept(event);
+                    node.onEvent(event);
                 }
 
                 @Override
@@ -848,7 +823,7 @@ public abstract class DrasylNode {
                         LOG.error(e);
                     }
                     else {
-                        onEvent.accept(InboundExceptionEvent.of(e));
+                        node.onEvent(InboundExceptionEvent.of(e));
                     }
                 }
             });

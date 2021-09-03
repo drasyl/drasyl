@@ -24,7 +24,8 @@ package org.drasyl.cli.command.wormhole;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import org.drasyl.DrasylNode;
+import io.netty.channel.EventLoop;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode.SetText;
 import org.drasyl.event.MessageEvent;
@@ -32,24 +33,25 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -71,13 +73,15 @@ class SendingWormholeNodeTest {
     private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ChannelGroup channels;
     private SendingWormholeNode underTest;
 
     @BeforeEach
     void setUp() {
         outStream = new ByteArrayOutputStream();
         out = new PrintStream(outStream, true);
-        underTest = new SendingWormholeNode(doneFuture, out, password, identity, bootstrap, channelFuture);
+        underTest = new SendingWormholeNode(doneFuture, out, password, identity, bootstrap, channelFuture, channels);
     }
 
     @Nested
@@ -109,37 +113,47 @@ class SendingWormholeNodeTest {
 
             @Test
             void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
-                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                when(channelFuture.channel().isOpen()).thenReturn(true);
-                when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
-                    invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
+                                                                    @Mock final EventLoop eventLoop) {
+                when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                doAnswer(invocation -> {
+                    invocation.getArgument(0, Runnable.class).run();
                     return null;
-                });
+                }).when(eventLoop).execute(any());
+                when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                when(childChannel.remoteAddress()).thenReturn(publicKey);
+                when(channelFuture.channel().isOpen()).thenReturn(true);
                 when(event.getPayload()).thenReturn(new PasswordMessage("123"));
+                when(event.getSender()).thenReturn(publicKey);
                 underTest.setText("Hi");
 
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(channelFuture.channel().pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.Resolve>) m -> m.recipient().equals(event.getSender())));
                 verify(childChannel).writeAndFlush(any(TextMessage.class), any());
             }
 
             @Test
             void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
-                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                when(channelFuture.channel().isOpen()).thenReturn(true);
-                when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
-                    invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
+                                                                  @Mock final EventLoop eventLoop) {
+                when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                doAnswer(invocation -> {
+                    invocation.getArgument(0, Runnable.class).run();
                     return null;
-                });
+                }).when(eventLoop).execute(any());
+                when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                when(childChannel.remoteAddress()).thenReturn(publicKey);
+                when(channelFuture.channel().isOpen()).thenReturn(true);
                 when(event.getPayload()).thenReturn(new PasswordMessage("456"));
+                when(event.getSender()).thenReturn(publicKey);
                 underTest.setText("Hi");
 
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(channelFuture.channel().pipeline()).fireUserEventTriggered(argThat((ArgumentMatcher<DrasylNode.Resolve>) m -> m.recipient().equals(event.getSender())));
                 verify(childChannel).writeAndFlush(any(WrongPasswordMessage.class), any());
             }
 

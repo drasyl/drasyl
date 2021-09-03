@@ -24,8 +24,9 @@ package org.drasyl.cli.command.perf;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
-import org.drasyl.DrasylNode;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.cli.command.perf.PerfServerNode.OnlineTimeout;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
@@ -36,6 +37,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -72,13 +76,15 @@ class PerfServerNodeTest {
     private ServerBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ChannelGroup channels;
     private PerfServerNode underTest;
 
     @BeforeEach
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new PerfServerNode(doneFuture, printStream, eventLoopGroup, identity, bootstrap, channelFuture);
+        underTest = new PerfServerNode(doneFuture, printStream, eventLoopGroup, identity, bootstrap, channelFuture, channels);
     }
 
     @Nested
@@ -129,12 +135,18 @@ class PerfServerNodeTest {
                 @Test
                 void shouldConfirmRequest(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                           @Mock final SessionRequest sessionRequest,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                    when(channelFuture.channel().isOpen()).thenReturn(true);
-                    when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
-                        invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
+                                          @Mock final EventLoop eventLoop) {
+                    when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                    doAnswer(invocation -> {
+                        invocation.getArgument(0, Runnable.class).run();
                         return null;
-                    });
+                    }).when(eventLoop).execute(any());
+                    when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                    when(childChannel.remoteAddress()).thenReturn(publicKey);
+                    when(messageEvent.getSender()).thenReturn(publicKey);
+                    when(channelFuture.channel().isOpen()).thenReturn(true);
                     when(messageEvent.getPayload()).thenReturn(sessionRequest);
 
                     underTest.onEvent(nodeOnline);

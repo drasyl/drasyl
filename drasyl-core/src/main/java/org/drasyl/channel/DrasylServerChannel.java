@@ -29,6 +29,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoop;
@@ -99,6 +100,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             @Override
             public void initChannel(final Channel ch) {
                 ch.pipeline().addLast(new ChildChannelRouter());
+                ch.pipeline().addLast(new DuplicateChannelFilter());
             }
         }));
     }
@@ -141,45 +143,56 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return state == State.ACTIVE;
     }
 
-    @SuppressWarnings("java:S2384")
-    public ChannelGroup channels() {
-        return channels;
-    }
-
-    public synchronized Channel getOrCreateChildChannel(final IdentityPublicKey peer) {
-        final ChannelHandlerContext routerCtx = pipeline().context(ChildChannelRouter.class);
-
-        if (channels != null) {
-            for (final Channel c : channels) {
-                if (peer.equals(c.remoteAddress())) {
-                    return c;
-                }
+    private static class DuplicateChannelFilter extends SimpleChannelInboundHandler<Channel> {
+        @Override
+        protected void channelRead0(final ChannelHandlerContext ctx,
+                                    final Channel msg) throws Exception {
+            if (((DrasylServerChannel) ctx.channel()).channels != null) {
+                ((DrasylServerChannel) ctx.channel()).channels.close(channel -> channel.remoteAddress().equals(msg.remoteAddress()));
+                ((DrasylServerChannel) ctx.channel()).channels.add(msg);
             }
-        }
-        else {
-            channels = new DefaultChannelGroup(routerCtx.executor());
-        }
 
-        final Channel channel = new DrasylChannel(routerCtx.channel(), peer);
-        channels.add(channel);
-        routerCtx.fireChannelRead(channel);
-
-        return channel;
+            ctx.fireChannelRead(msg);
+        }
     }
 
     private static class ChildChannelRouter extends ChannelInboundHandlerAdapter {
         @Override
         public void channelRead(final ChannelHandlerContext ctx,
                                 final Object msg) throws Exception {
-            final AddressedMessage<?, IdentityPublicKey> childMsg = (AddressedMessage<?, IdentityPublicKey>) msg;
-            final Object o = childMsg.message();
-            final IdentityPublicKey peer = childMsg.address();
+            if (msg instanceof Channel) {
+                // pass through
+                ctx.fireChannelRead(msg);
+            }
+            else {
+                final AddressedMessage<?, IdentityPublicKey> childMsg = (AddressedMessage<?, IdentityPublicKey>) msg;
+                final Object o = childMsg.message();
+                final IdentityPublicKey peer = childMsg.address();
 
-            // create/get channel
-            final Channel channel = ((DrasylServerChannel) ctx.channel()).getOrCreateChildChannel(peer);
+                // create/get channel
+                final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
+                Channel channel = null;
+                if (serverChannel.channels != null) {
+                    for (final Channel c : serverChannel.channels) {
+                        if (peer.equals(c.remoteAddress())) {
+                            channel = c;
+                            break;
+                        }
+                    }
+                }
 
-            // pass message to channel
-            channel.pipeline().fireChannelRead(o);
+                if (channel == null) {
+                    if (serverChannel.channels == null) {
+                        serverChannel.channels = new DefaultChannelGroup(ctx.executor());
+                    }
+
+                    channel = new DrasylChannel(ctx.channel(), peer);
+                    ctx.fireChannelRead(channel);
+                }
+
+                // pass message to channel
+                channel.pipeline().fireChannelRead(o);
+            }
         }
     }
 }

@@ -24,9 +24,10 @@ package org.drasyl.cli.command.perf;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.DrasylAddress;
-import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.PerfClientNode.DirectConnectionTimeout;
 import org.drasyl.cli.command.perf.PerfClientNode.OnlineTimeout;
@@ -66,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -89,6 +91,8 @@ class PerfClientNodeTest {
     private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ChannelGroup channels;
     private PerfClientNode underTest;
 
     @BeforeEach
@@ -96,7 +100,7 @@ class PerfClientNodeTest {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
         directConnections = new HashSet<>();
-        underTest = new PerfClientNode(doneFuture, printStream, eventLoopGroup, directConnections, identity, bootstrap, channelFuture);
+        underTest = new PerfClientNode(doneFuture, printStream, eventLoopGroup, directConnections, identity, bootstrap, channelFuture, channels);
     }
 
     @Nested
@@ -147,12 +151,16 @@ class PerfClientNodeTest {
                     }
 
                     @Test
-                    void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                        when(channelFuture.channel().isOpen()).thenReturn(true);
-                        when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
-                            invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                    void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                              @Mock final EventLoop eventLoop) {
+                        when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                        doAnswer(invocation -> {
+                            invocation.getArgument(0, Runnable.class).run();
                             return null;
-                        });
+                        }).when(eventLoop).execute(any());
+                        when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                        when(childChannel.remoteAddress()).thenReturn(server);
+                        when(channelFuture.channel().isOpen()).thenReturn(true);
                         underTest.onEvent(nodeOnline);
 
                         verify(childChannel).writeAndFlush(any(SessionRequest.class), any());
@@ -170,12 +178,16 @@ class PerfClientNodeTest {
                     }
 
                     @Test
-                    void shouldTriggerDirectConnection(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                        when(channelFuture.channel().isOpen()).thenReturn(true);
-                        when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
-                            invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                    void shouldTriggerDirectConnection(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                                       @Mock final EventLoop eventLoop) {
+                        when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                        doAnswer(invocation -> {
+                            invocation.getArgument(0, Runnable.class).run();
                             return null;
-                        });
+                        }).when(eventLoop).execute(any());
+                        when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                        when(childChannel.remoteAddress()).thenReturn(server);
+                        when(channelFuture.channel().isOpen()).thenReturn(true);
                         underTest.onEvent(nodeOnline);
 
                         verify(childChannel).writeAndFlush(any(Ping.class), any());
@@ -204,12 +216,18 @@ class PerfClientNodeTest {
                 class OnSetServer {
                     @Test
                     void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final TestOptions serverAndOptions,
-                                              @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                        when(channelFuture.channel().isOpen()).thenReturn(true);
-                        when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
-                            invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey address,
+                                              @Mock final EventLoop eventLoop) {
+                        when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                        doAnswer(invocation -> {
+                            invocation.getArgument(0, Runnable.class).run();
                             return null;
-                        });
+                        }).when(eventLoop).execute(any());
+                        when(serverAndOptions.getServer()).thenReturn(address);
+                        when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                        when(childChannel.remoteAddress()).thenReturn(address);
+                        when(channelFuture.channel().isOpen()).thenReturn(true);
                         when(serverAndOptions.requireDirectConnection()).thenReturn(true);
                         underTest.onEvent(nodeOnline);
                         underTest.onEvent(serverAndOptions);
@@ -226,12 +244,16 @@ class PerfClientNodeTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                           @Mock final SessionConfirmation sessionConfirmation,
                                           @Mock final IdentityPublicKey sender,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
-                    when(channelFuture.channel().isOpen()).thenReturn(true);
-                    when(channelFuture.channel().pipeline().fireUserEventTriggered(any(DrasylNode.Resolve.class))).then(invocation -> {
-                        invocation.getArgument(0, DrasylNode.Resolve.class).future().complete(childChannel);
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                          @Mock final EventLoop eventLoop) {
+                    when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                    doAnswer(invocation -> {
+                        invocation.getArgument(0, Runnable.class).run();
                         return null;
-                    });
+                    }).when(eventLoop).execute(any());
+                    when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                    when(childChannel.remoteAddress()).thenReturn(sender);
+                    when(channelFuture.channel().isOpen()).thenReturn(true);
                     when(serverAndOptions.getMessagesPerSecond()).thenReturn(100);
                     when(serverAndOptions.getTestDuration()).thenReturn(10);
                     when(serverAndOptions.getMessageSize()).thenReturn(850);

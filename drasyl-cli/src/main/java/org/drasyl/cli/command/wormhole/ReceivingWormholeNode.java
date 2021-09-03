@@ -24,6 +24,7 @@ package org.drasyl.cli.command.wormhole;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
@@ -64,8 +65,9 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
                           final RequestText request,
                           final Identity identity,
                           final ServerBootstrap bootstrap,
-                          final ChannelFuture channelFuture) {
-        super(identity, bootstrap, channelFuture);
+                          final ChannelFuture channelFuture,
+                          final ChannelGroup channels) {
+        super(identity, bootstrap, channelFuture, channels);
         this.doneFuture = requireNonNull(doneFuture);
         this.out = requireNonNull(out);
         this.request = request;
@@ -77,7 +79,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
         this.doneFuture = new CompletableFuture<>();
         this.out = requireNonNull(out);
 
-        bootstrap.childHandler(new DrasylNodeChildChannelInitializer(config, this::onEvent) {
+        bootstrap.childHandler(new DrasylNodeChildChannelInitializer(config, this) {
             @Override
             protected void initChannel(final Channel ch) {
                 super.initChannel(ch);

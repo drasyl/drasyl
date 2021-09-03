@@ -24,6 +24,7 @@ package org.drasyl.behaviour;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
@@ -70,9 +71,10 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     protected BehavioralDrasylNode(final Identity identity,
                                    final ServerBootstrap bootstrap,
                                    final ChannelFuture channelFuture,
+                                   final ChannelGroup channels,
                                    final Channel channel,
                                    final Behavior behavior) {
-        super(identity, bootstrap, channelFuture);
+        super(identity, bootstrap, channelFuture, channels);
         logger = LoggerFactory.getLogger(getClass());
         if (behavior instanceof DeferredBehavior) {
             this.behavior = ((DeferredBehavior) behavior).apply(this);
@@ -85,8 +87,9 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     @SuppressWarnings("unused")
     protected BehavioralDrasylNode(final Identity identity,
                                    final ServerBootstrap bootstrap,
-                                   final ChannelFuture channelFuture) {
-        super(identity, bootstrap, channelFuture);
+                                   final ChannelFuture channelFuture,
+                                   final ChannelGroup channels) {
+        super(identity, bootstrap, channelFuture, channels);
         logger = LoggerFactory.getLogger(getClass());
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {

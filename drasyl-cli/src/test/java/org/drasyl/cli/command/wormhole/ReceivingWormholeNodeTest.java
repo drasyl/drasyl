@@ -22,7 +22,10 @@
 package org.drasyl.cli.command.wormhole;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.EventLoop;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode.RequestText;
 import org.drasyl.event.MessageEvent;
@@ -40,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -66,13 +71,15 @@ class ReceivingWormholeNodeTest {
     private ServerBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ChannelGroup channels;
     private ReceivingWormholeNode underTest;
 
     @BeforeEach
     void setUp() {
         outStream = new ByteArrayOutputStream();
         out = new PrintStream(outStream, true);
-        underTest = new ReceivingWormholeNode(doneFuture, out, request, identity, bootstrap, channelFuture);
+        underTest = new ReceivingWormholeNode(doneFuture, out, request, identity, bootstrap, channelFuture, channels);
     }
 
     @Nested
@@ -120,7 +127,10 @@ class ReceivingWormholeNodeTest {
 
                 @Test
                 void shouldFailOnWrongPasswordMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
-                                                      @Mock final IdentityPublicKey publicKey) {
+                                                      @Mock final IdentityPublicKey publicKey,
+                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel) {
+                    when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                    when(childChannel.remoteAddress()).thenReturn(publicKey);
                     when(channelFuture.channel().isOpen()).thenReturn(true);
                     when(event.getPayload()).thenReturn(new WrongPasswordMessage());
                     when(event.getSender()).thenReturn(publicKey);
@@ -136,15 +146,26 @@ class ReceivingWormholeNodeTest {
             @Nested
             class OnRequestText {
                 @Test
-                void shouldRequestText(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
+                void shouldRequestText(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event,
+                                       @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                       @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
+                                       @Mock final EventLoop eventLoop) {
+                    when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                    doAnswer(invocation -> {
+                        invocation.getArgument(0, Runnable.class).run();
+                        return null;
+                    }).when(eventLoop).execute(any());
+                    when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                    when(childChannel.remoteAddress()).thenReturn(publicKey);
                     when(channelFuture.channel().isOpen()).thenReturn(true);
+                    when(event.getSender()).thenReturn(publicKey);
 
-                    underTest = new ReceivingWormholeNode(doneFuture, out, null, identity, bootstrap, channelFuture);
+                    underTest = new ReceivingWormholeNode(doneFuture, out, null, identity, bootstrap, channelFuture, channels);
 
                     underTest.onEvent(nodeOnline);
                     underTest.onEvent(event);
 
-                    verify(channelFuture.channel().pipeline()).fireUserEventTriggered(any());
+                    verify(childChannel).writeAndFlush(any(PasswordMessage.class), any());
                 }
             }
         }
@@ -153,7 +174,7 @@ class ReceivingWormholeNodeTest {
         class OnRequestText {
             @Test
             void shouldNotRequestTextBecauseNotOffline(@Mock(answer = RETURNS_DEEP_STUBS) final RequestText event) {
-                underTest = new ReceivingWormholeNode(doneFuture, out, null, identity, bootstrap, channelFuture);
+                underTest = new ReceivingWormholeNode(doneFuture, out, null, identity, bootstrap, channelFuture, channels);
 
                 underTest.onEvent(event);
 
