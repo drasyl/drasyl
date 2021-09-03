@@ -96,6 +96,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
     protected void doRegister() throws Exception {
         super.doRegister();
 
+        channels = new DefaultChannelGroup(eventLoop());
+
         pipeline().addLast((new ChannelInitializer<>() {
             @Override
             public void initChannel(final Channel ch) {
@@ -170,10 +172,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 }
 
                 if (channel == null) {
-                    if (serverChannel.channels == null) {
-                        serverChannel.channels = new DefaultChannelGroup(ctx.executor());
-                    }
-
                     channel = new DrasylChannel(ctx.channel(), peer);
                     ctx.fireChannelRead(channel);
                 }
