@@ -239,14 +239,14 @@ public class TcpServer extends ChannelDuplexHandler {
                 final int magicNumber = msg.readInt();
 
                 if (MAGIC_NUMBER == magicNumber) {
-                    LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (wrong magic number).", nettyCtx.channel()::remoteAddress);
-                    msg.release();
-                    nettyCtx.close();
-                }
-                else {
                     msg.resetReaderIndex();
                     final SocketAddress sender = nettyCtx.channel().remoteAddress();
                     ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
+                }
+                else {
+                    LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (wrong magic number).", nettyCtx.channel()::remoteAddress);
+                    msg.release();
+                    nettyCtx.close();
                 }
             }
             else {
