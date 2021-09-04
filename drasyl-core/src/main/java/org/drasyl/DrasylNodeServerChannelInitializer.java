@@ -164,6 +164,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
             ch.pipeline().addFirst(new RateLimiter(identity.getAddress()));
 
+            // fully read unarmed messages (local network discovery)
             ch.pipeline().addFirst(new UnarmedMessageDecoder());
 
             // arm outbound and disarm inbound messages

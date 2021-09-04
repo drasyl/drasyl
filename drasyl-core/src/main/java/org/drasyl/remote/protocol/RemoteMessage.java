@@ -21,7 +21,6 @@
  */
 package org.drasyl.remote.protocol;
 
-import com.google.protobuf.ByteString;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.IdentityPublicKey;
@@ -32,13 +31,7 @@ import org.drasyl.remote.handler.crypto.AgreementId;
  * Describes a message that is sent to remote peers via UDP/TCP.
  */
 public interface RemoteMessage {
-    ByteString MAGIC_NUMBER = ByteString.copyFrom(new byte[]{
-            0x1E,
-            0x3F,
-            0x50,
-            0x01
-    });
-    short MAGIC_NUMBER_LENGTH = (short) MAGIC_NUMBER.size();
+    int MAGIC_NUMBER = 22527 * 22527;
 
     Nonce getNonce();
 

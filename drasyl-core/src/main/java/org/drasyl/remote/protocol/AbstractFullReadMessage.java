@@ -65,7 +65,7 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
     public void writeTo(final ByteBuf out) throws InvalidMessageFormatException {
         // message (partially) present as java objects. get bytes and transfer to buffer
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(out)) {
-            MAGIC_NUMBER.writeTo(outputStream);
+            outputStream.writeInt(MAGIC_NUMBER);
             writePublicHeaderTo(outputStream);
             writePrivateHeaderTo(outputStream);
             writeBodyTo(outputStream);

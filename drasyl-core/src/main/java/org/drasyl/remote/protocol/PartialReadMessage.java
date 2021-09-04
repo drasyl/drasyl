@@ -31,7 +31,6 @@ import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.util.UnsignedShort;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * Describes a message whose content has been read partially. This is the case for encrypted
@@ -178,9 +177,9 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
      */
     static PartialReadMessage of(final ByteBuf bytes) throws InvalidMessageFormatException {
         try (final ByteBufInputStream in = new ByteBufInputStream(bytes)) {
-            final byte[] magicNumber = in.readNBytes(MAGIC_NUMBER_LENGTH);
+            final int magicNumber = in.readInt();
 
-            if (!Arrays.equals(MAGIC_NUMBER.toByteArray(), magicNumber)) {
+            if (MAGIC_NUMBER == magicNumber) {
                 throw new InvalidMessageFormatException("Magic Number mismatch!");
             }
 

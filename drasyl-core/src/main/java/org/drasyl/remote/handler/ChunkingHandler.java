@@ -50,7 +50,7 @@ import java.time.Duration;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER_LENGTH;
+import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
@@ -199,7 +199,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                 ByteBuf chunkBodyByteBuf = null;
                 final ByteBuf chunkByteBuf = ctx.alloc().ioBuffer();
                 try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(chunkByteBuf)) {
-                    RemoteMessage.MAGIC_NUMBER.writeTo(outputStream);
+                    outputStream.writeInt(MAGIC_NUMBER);
 
                     // chunk header
                     final PublicHeader chunkHeader = buildChunkHeader(totalChunks, partialChunkHeader, chunkNo);
@@ -276,6 +276,6 @@ public class ChunkingHandler extends ChannelDuplexHandler {
     private static int getChunkSize(final PublicHeader header, final int mtu) {
         final int headerSize = header.getSerializedSize();
 
-        return mtu - (MAGIC_NUMBER_LENGTH + CodedOutputStream.computeUInt32SizeNoTag(headerSize) + headerSize);
+        return mtu - (Integer.BYTES + CodedOutputStream.computeUInt32SizeNoTag(headerSize) + headerSize);
     }
 }

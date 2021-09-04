@@ -98,7 +98,7 @@ public abstract class HeadChunkMessage implements ChunkMessage {
     @Override
     public void writeTo(final ByteBuf out) throws InvalidMessageFormatException {
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(out)) {
-            MAGIC_NUMBER.writeTo(outputStream);
+            outputStream.writeInt(MAGIC_NUMBER);
             buildPublicHeader().writeDelimitedTo(outputStream);
             out.writeBytes(getBytes().slice());
         }
