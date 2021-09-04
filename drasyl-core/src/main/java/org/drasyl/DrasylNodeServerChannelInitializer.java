@@ -41,7 +41,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.intravm.IntraVmDiscovery;
 import org.drasyl.localhost.LocalHostDiscovery;
-import org.drasyl.loopback.handler.LoopbackMessageHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManagerHandler;
 import org.drasyl.plugin.PluginManager;
@@ -97,9 +96,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.pipeline().addFirst(new PluginManagerHandler(new PluginManager(config, identity)));
 
         ch.pipeline().addFirst(new PeersManagerHandler(identity));
-
-        // convert outbound messages addresses to us to inbound messages
-        ch.pipeline().addFirst(new LoopbackMessageHandler(identity.getAddress()));
 
         // convert ByteBuf <-> ApplicationMessage
         ch.pipeline().addFirst(new ApplicationMessageCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));

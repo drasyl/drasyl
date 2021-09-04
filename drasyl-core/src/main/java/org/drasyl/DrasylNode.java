@@ -35,6 +35,7 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.MessageSerializer;
 import org.drasyl.event.Event;
+import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityPublicKey;
@@ -265,36 +266,46 @@ public abstract class DrasylNode {
                                       @Nullable final Object payload) {
         if (channelFuture != null && channelFuture.channel().isOpen()) {
             final CompletableFuture<Void> future = new CompletableFuture<>();
-            resolve(recipient).thenAccept(c -> {
-                final Object p;
-                if (payload == null) {
-                    p = NULL;
-                }
-                else {
-                    p = payload;
-                }
-
-                final ChannelPromise promise = c.newPromise();
-                c.writeAndFlush(p, promise);
-
-                // synchronize promise and future in both directions
-                promise.addListener(f -> {
-                    if (f.isSuccess()) {
-                        future.complete(null);
+            if (identity.getAddress().equals(recipient)) {
+                LOG.trace("Outbound message `{}` is addressed to us. Convert to inbound message.", () -> payload);
+                channelFuture.channel().eventLoop().execute(() -> {
+                    final MessageEvent event = MessageEvent.of(identity.getIdentityPublicKey(), payload);
+                    onEvent(event);
+                    future.complete(null);
+                });
+            }
+            else {
+                resolve(recipient).thenAccept(c -> {
+                    final Object p;
+                    if (payload == null) {
+                        p = NULL;
                     }
                     else {
-                        future.completeExceptionally(f.cause());
+                        p = payload;
                     }
+
+                    final ChannelPromise promise = c.newPromise();
+                    c.writeAndFlush(p, promise);
+
+                    // synchronize promise and future in both directions
+                    promise.addListener(f -> {
+                        if (f.isSuccess()) {
+                            future.complete(null);
+                        }
+                        else {
+                            future.completeExceptionally(f.cause());
+                        }
+                    });
+                    future.whenComplete((result, e) -> {
+                        if (e == null) {
+                            promise.setSuccess();
+                        }
+                        else {
+                            promise.setFailure(e);
+                        }
+                    });
                 });
-                future.whenComplete((result, e) -> {
-                    if (e == null) {
-                        promise.setSuccess();
-                    }
-                    else {
-                        promise.setFailure(e);
-                    }
-                });
-            });
+            }
 
             return future;
         }
