@@ -179,7 +179,7 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
         try (final ByteBufInputStream in = new ByteBufInputStream(bytes)) {
             final int magicNumber = in.readInt();
 
-            if (MAGIC_NUMBER == magicNumber) {
+            if (MAGIC_NUMBER != magicNumber) {
                 throw new InvalidMessageFormatException("Magic Number mismatch!");
             }
 
