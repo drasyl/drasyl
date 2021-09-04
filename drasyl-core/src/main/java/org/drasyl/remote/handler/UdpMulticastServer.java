@@ -140,7 +140,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                 if (channelFuture.isSuccess()) {
                     // server successfully started
                     final DatagramChannel myChannel = (DatagramChannel) channelFuture.channel();
-                    LOG.info("Server started and listening at {}", myChannel.localAddress());
+                    LOG.info("Server started and listening at udp:/{}", myChannel.localAddress());
 
                     // join multicast group
                     LOG.debug("Join multicast group `{}` at network interface `{}`...", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName);
@@ -160,7 +160,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                 else {
                     // server start failed
                     //noinspection unchecked
-                    LOG.info("Unable to bind server to address {}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port.", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, channelFuture.cause()::getMessage);
+                    LOG.info("Unable to bind server to address udp://{}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port.", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, channelFuture.cause()::getMessage);
                 }
             }
         }
@@ -174,7 +174,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
 
         if (channel != null && nodes.isEmpty()) {
             final InetSocketAddress socketAddress = channel.localAddress();
-            LOG.debug("Stop Server listening at {}...", socketAddress);
+            LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
             // leave multicast group
             channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).awaitUninterruptibly();
             // shutdown server

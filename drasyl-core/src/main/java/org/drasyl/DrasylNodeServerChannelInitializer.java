@@ -249,7 +249,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         private final PluginManager pluginManager;
 
         PluginManagerHandler(final PluginManager pluginManager) {
-            this.pluginManager = pluginManager;
+            this.pluginManager = requireNonNull(pluginManager);
         }
 
         @Override
