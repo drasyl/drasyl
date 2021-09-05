@@ -45,7 +45,18 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * It also updates the {@linkplain Channel#isWritable() writability} of the associated {@link
  * Channel}, so that the pending write operations are also considered to determine the writability.
  * <p>
- * This handler should be used together with {@link ByteToStopAndWaitArqDataCodec}, {@link
+ * This handler changes the behavior of the {@link io.netty.util.concurrent.Promise}s returned by
+ * {@link io.netty.channel.ChannelHandlerContext#write(Object)}: The promise is not complemented
+ * until the message's recipient has acknowledged arrival of the message. If you abort the promise,
+ * this handler will discard the message.
+ * <p>
+ * Keep in mind that this ARQ protocol is originally intended to be used in connection-oriented
+ * communication. Therefore, it may happen (e.g. due to a restart of one of the two peers) that the
+ * expected sequence number of the next message is no longer synchronized. This leads to the loss of
+ * the first message. To avoid this, a NOOP message should be sent once at the beginning of the
+ * communication.
+ * <p>
+ * This handler should be used together with {@link ByteToStopAndWaitArqDataCodec} and {@link
  * StopAndWaitArqCodec}.
  * <blockquote>
  * <pre>
@@ -63,15 +74,24 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(StopAndWaitArqHandler.class);
     private PendingWriteQueue pendingWrites;
     private final Map<Object, ChannelPromise> promises = new IdentityHashMap<>();
-    private final int retryTimeout;
+    private int retryTimeout;
     private boolean expectedInboundSequenceNo;
     private long lastWriteAttempt;
 
     /**
-     * @param retryTimeout time in ms to wait for ACK until DATA is sent again
+     * @param retryTimeout              see {@link #setRetryTimeout(int)}
+     * @param expectedInboundSequenceNo see {@link #setExpectedInboundSequenceNo(boolean)}
+     */
+    public StopAndWaitArqHandler(final int retryTimeout, final boolean expectedInboundSequenceNo) {
+        setRetryTimeout(retryTimeout);
+        setExpectedInboundSequenceNo(expectedInboundSequenceNo);
+    }
+
+    /**
+     * @param retryTimeout see {@link #setRetryTimeout(int)}
      */
     public StopAndWaitArqHandler(final int retryTimeout) {
-        this.retryTimeout = requirePositive(retryTimeout);
+        this(retryTimeout, false);
     }
 
     @Override
@@ -150,6 +170,28 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
         ctx.flush();
     }
 
+    /**
+     * Defines how long to wait for a {@link StopAndWaitArqAck} message before resending it. {@link
+     * StopAndWaitArqData} message is sent again. This timeout should not be smaller than the round
+     * trip time of the connection.
+     *
+     * @param retryTimeout time in ms before the {@link StopAndWaitArqData} message is sent again
+     */
+    public void setRetryTimeout(final int retryTimeout) {
+        this.retryTimeout = requirePositive(retryTimeout);
+    }
+
+    /**
+     * Sets the sequence of the next inbound {@link StopAndWaitArqData} message. This method can be
+     * used to manually synchronize the sequence number of the sender and receiver.
+     *
+     * @param expectedInboundSequenceNo expected sequence number of the next inbound {@link
+     *                                  StopAndWaitArqData} message
+     */
+    public void setExpectedInboundSequenceNo(final boolean expectedInboundSequenceNo) {
+        this.expectedInboundSequenceNo = expectedInboundSequenceNo;
+    }
+
     @SuppressWarnings("java:S2447")
     private Boolean outboundSequenceNo() {
         final StopAndWaitArqData currentWrite = (StopAndWaitArqData) pendingWrites.current();
@@ -166,7 +208,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
     private void writeNextPending(final ChannelHandlerContext ctx) {
         final Channel channel = ctx.channel();
         if (!channel.isActive()) {
-            discardPendingWrites(null);
+            discardPendingWrites(new ClosedChannelException());
             return;
         }
 
