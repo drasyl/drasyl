@@ -22,6 +22,7 @@
 package org.drasyl.cli.command.perf;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
@@ -52,9 +53,11 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.behaviour.Behaviors.ignore;
 import static org.drasyl.behaviour.Behaviors.same;
 
 /**
@@ -190,15 +193,27 @@ public class PerfServerNode extends BehavioralDrasylNode {
      */
     private Behavior startTest(final IdentityPublicKey client,
                                final SessionRequest session) {
-        if (!session.isReverse()) {
-            LOG.debug("Start sender.");
-            final PerfTestReceiver receiver = new PerfTestReceiver(client, session, eventLoopGroup, printStream, this::send, this::waitForSession, e -> waitForSession());
-            return receiver.run();
+        try {
+            final Channel channel = resolve(client).toCompletableFuture().get();
+
+            if (!session.isReverse()) {
+                LOG.debug("Start sender.");
+                final PerfTestReceiver receiver = new PerfTestReceiver(client, session, eventLoopGroup, printStream, this::send, this::waitForSession, e -> waitForSession());
+                return receiver.run();
+            }
+            else {
+                LOG.debug("Running in reverse mode. Start receiver.");
+                final PerfTestSender sender = new PerfTestSender(session, eventLoopGroup, printStream, channel, this::waitForSession, e -> waitForSession());
+                return sender.run();
+            }
         }
-        else {
-            LOG.debug("Running in reverse mode. Start receiver.");
-            final PerfTestSender sender = new PerfTestSender(client, session, eventLoopGroup, printStream, this::send, this::waitForSession, e -> waitForSession());
-            return sender.run();
+        catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ignore();
+        }
+        catch (final ExecutionException e) {
+            doneFuture.completeExceptionally(e);
+            return ignore();
         }
     }
 

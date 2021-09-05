@@ -251,7 +251,7 @@ class PerfClientNodeTest {
                         invocation.getArgument(0, Runnable.class).run();
                         return null;
                     }).when(eventLoop).execute(any());
-                    when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                    when(channels.iterator()).thenReturn(Set.of(childChannel).iterator()).thenReturn(Set.of(childChannel).iterator());
                     when(childChannel.remoteAddress()).thenReturn(sender);
                     when(channelFuture.channel().isOpen()).thenReturn(true);
                     when(serverAndOptions.getMessagesPerSecond()).thenReturn(100);

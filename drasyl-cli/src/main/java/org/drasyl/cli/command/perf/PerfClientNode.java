@@ -22,6 +22,7 @@
 package org.drasyl.cli.command.perf;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
@@ -58,6 +59,7 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -279,14 +281,26 @@ public class PerfClientNode extends BehavioralDrasylNode {
             return ignore();
         };
 
-        if (!session.isReverse()) {
-            final PerfTestSender sender = new PerfTestSender(testOptions.getServer(), session, eventLoopGroup, printStream, this::send, successBehavior, failureBehavior);
-            return sender.run();
+        try {
+            final Channel channel = resolve(testOptions.getServer()).toCompletableFuture().get();
+
+            if (!session.isReverse()) {
+                final PerfTestSender sender = new PerfTestSender(session, eventLoopGroup, printStream, channel, successBehavior, failureBehavior);
+                return sender.run();
+            }
+            else {
+                printStream.println("Reverse mode, server is sending");
+                final PerfTestReceiver receiver = new PerfTestReceiver(testOptions.getServer(), session, eventLoopGroup, printStream, this::send, successBehavior, failureBehavior);
+                return receiver.run();
+            }
         }
-        else {
-            printStream.println("Reverse mode, server is sending");
-            final PerfTestReceiver receiver = new PerfTestReceiver(testOptions.getServer(), session, eventLoopGroup, printStream, this::send, successBehavior, failureBehavior);
-            return receiver.run();
+        catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ignore();
+        }
+        catch (final ExecutionException e) {
+            doneFuture.completeExceptionally(e);
+            return ignore();
         }
     }
 
