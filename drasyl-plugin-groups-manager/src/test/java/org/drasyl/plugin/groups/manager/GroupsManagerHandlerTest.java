@@ -109,7 +109,7 @@ class GroupsManagerHandlerTest {
 
             handler.handlerAdded(ctx);
 
-            verify(scheduler).scheduleAtFixedRate(any(), eq(1L), eq(1L), eq(TimeUnit.MINUTES));
+            verify(scheduler).scheduleWithFixedDelay(any(), eq(1L), eq(1L), eq(TimeUnit.MINUTES));
         }
     }
 

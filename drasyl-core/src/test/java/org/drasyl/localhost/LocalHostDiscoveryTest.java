@@ -155,8 +155,8 @@ class LocalHostDiscoveryTest {
 
             handler.userEventTriggered(ctx, event);
 
-            verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
-            verify(ctx.executor()).scheduleAtFixedRate(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
+            verify(ctx.executor()).scheduleWithFixedDelay(any(), anyLong(), eq(5_000L), eq(MILLISECONDS));
+            verify(ctx.executor()).scheduleWithFixedDelay(any(), anyLong(), eq(55_000L), eq(MILLISECONDS));
         }
 
         @Test
@@ -179,11 +179,11 @@ class LocalHostDiscoveryTest {
                 invocation1.getArgument(0, Runnable.class).run();
                 return null;
             }).when(executor).execute(any());
-            when((Future<?>) ctx.executor().scheduleAtFixedRate(any(), anyLong(), eq(5_000L), eq(MILLISECONDS))).then(invocation -> {
+            when((Future<?>) ctx.executor().scheduleWithFixedDelay(any(), anyLong(), eq(5_000L), eq(MILLISECONDS))).then(invocation -> {
                 invocation.getArgument(0, Runnable.class).run();
                 return null;
             });
-            when((Future<?>) ctx.executor().scheduleAtFixedRate(any(), anyLong(), eq(55_000L), eq(MILLISECONDS))).then(invocation -> {
+            when((Future<?>) ctx.executor().scheduleWithFixedDelay(any(), anyLong(), eq(55_000L), eq(MILLISECONDS))).then(invocation -> {
                 invocation.getArgument(0, Runnable.class).run();
                 return null;
             });

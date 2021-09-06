@@ -103,7 +103,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     void startHeartbeat(final ChannelHandlerContext ctx) {
         if (scheduledPingFuture == null) {
             LOG.debug("Start Network Network Discovery...");
-            scheduledPingFuture = ctx.executor().scheduleAtFixedRate(() -> doHeartbeat(ctx), randomLong(pingInterval.toMillis()), pingInterval.toMillis(), MILLISECONDS);
+            scheduledPingFuture = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), randomLong(pingInterval.toMillis()), pingInterval.toMillis(), MILLISECONDS);
             LOG.debug("Network Discovery started.");
         }
     }

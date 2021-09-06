@@ -106,7 +106,7 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
     private void start(final ChannelHandlerContext ctx) {
         final long startTime = System.currentTimeMillis();
         final AtomicLong intervalTime = new AtomicLong(startTime);
-        scheduledFuture = ctx.executor().scheduleAtFixedRate(() -> {
+        scheduledFuture = ctx.executor().scheduleWithFixedDelay(() -> {
             final long currentTime = System.currentTimeMillis();
 
             final double relativeIntervalStartTime = (intervalTime.get() - startTime) / 1_000.;

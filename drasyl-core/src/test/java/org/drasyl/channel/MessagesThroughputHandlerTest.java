@@ -62,7 +62,7 @@ class MessagesThroughputHandlerTest {
 
     @Test
     void shouldPrintThroughputOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-        when(ctx.executor().scheduleAtFixedRate(any(), eq(0L), eq(1_000L), eq(MILLISECONDS))).then(invocation -> {
+        when(ctx.executor().scheduleWithFixedDelay(any(), eq(0L), eq(1_000L), eq(MILLISECONDS))).then(invocation -> {
             final Runnable runnable = invocation.getArgument(0, Runnable.class);
             runnable.run();
             return null;

@@ -252,7 +252,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         // Register stale task timer
-        staleTask = ctx.executor().scheduleAtFixedRate(() -> staleTask(ctx), 1L, 1L, MINUTES);
+        staleTask = ctx.executor().scheduleWithFixedDelay(() -> staleTask(ctx), 1L, 1L, MINUTES);
     }
 
     @Override

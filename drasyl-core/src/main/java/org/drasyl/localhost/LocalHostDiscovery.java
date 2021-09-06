@@ -53,7 +53,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
@@ -61,7 +60,6 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
@@ -221,7 +219,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             LOG.debug("Watch service for directory `{}` registered", directory);
             final long pollInterval = WATCH_SERVICE_POLL_INTERVAL.toMillis();
             // directory has been changed
-            watchDisposable = ctx.executor().scheduleAtFixedRate(() -> {
+            watchDisposable = ctx.executor().scheduleWithFixedDelay(() -> {
                 if (watchService.poll() != null) {
                     // directory has been changed
                     scan(ctx);
@@ -262,7 +260,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             refreshInterval = ofSeconds(1);
         }
         // only scan in polling mode when watchService does not work
-        postDisposable = ctx.executor().scheduleAtFixedRate(() -> {
+        postDisposable = ctx.executor().scheduleWithFixedDelay(() -> {
             // only scan in polling mode when watchService does not work
             if (watchService == null) {
                 scan(ctx);

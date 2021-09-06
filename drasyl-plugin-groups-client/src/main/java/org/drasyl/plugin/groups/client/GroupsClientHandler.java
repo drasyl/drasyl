@@ -213,7 +213,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         }
 
         // Add renew task
-        renewTasks.put(group, ctx.executor().scheduleAtFixedRate(() ->
+        renewTasks.put(group, ctx.executor().scheduleWithFixedDelay(() ->
                 joinGroup(ctx, groups.get(group), true), timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
 
         ctx.fireUserEventTriggered(GroupJoinedEvent.of(
@@ -247,7 +247,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
 
         // Add re-try task
         if (!renewTasks.containsKey(group.getGroup())) {
-            renewTasks.put(group.getGroup(), ctx.executor().scheduleAtFixedRate(() ->
+            renewTasks.put(group.getGroup(), ctx.executor().scheduleWithFixedDelay(() ->
                     joinGroup(ctx, groups.get(group.getGroup()), false), RETRY_DELAY.toMillis(), RETRY_DELAY.toMillis(), MILLISECONDS));
         }
 

@@ -122,7 +122,7 @@ class LocalNetworkDiscoveryTest {
 
             handler.startHeartbeat(ctx);
 
-            verify(ctx.executor()).scheduleAtFixedRate(any(Runnable.class), anyLong(), anyLong(), any(TimeUnit.class));
+            verify(ctx.executor()).scheduleWithFixedDelay(any(Runnable.class), anyLong(), anyLong(), any(TimeUnit.class));
         }
     }
 
