@@ -39,16 +39,26 @@
     "name": "java.lang.String[]"
   },
   {
+    "name":"com.sun.jna.CallbackProxy",
+    "methods":[{"name":"callback","parameterTypes":["java.lang.Object[]"] }]
+  },
+  {
     "name": "com.sun.jna.Structure$FFIType",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true,
-    "allDeclaredMethods": true
+    "allDeclaredMethods": true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
     "name": "com.sun.jna.Structure$FFIType$size_t",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true,
-    "allDeclaredMethods": true
+    "allDeclaredMethods": true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"java.lang.reflect.Method",
+    "methods":[{"name":"isVarArgs","parameterTypes":[] }]
   },
   {
     "name": "com.sun.jna.NativeLong",
