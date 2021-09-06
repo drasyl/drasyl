@@ -24,17 +24,18 @@ package org.drasyl.remote.handler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
-import org.drasyl.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
@@ -49,6 +50,7 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -65,19 +67,29 @@ class UdpMulticastServerTest {
     class StartServer {
         @Test
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
-                                              @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel datagramChannel,
-                                              @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myAddress) {
-            when(bootstrap.handler(any()).bind(anyString(), anyInt())).thenReturn(channelFuture);
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel datagramChannel) {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel()).thenReturn(datagramChannel);
+            when(bootstrap.handler(any()).bind(anyString(), anyInt()).addListener(any())).then(invocation -> {
+                final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
+                listener.operationComplete(channelFuture);
+                return null;
+            });
             when(datagramChannel.localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).awaitUninterruptibly().isSuccess()).thenReturn(true);
+            when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).addListener(any())).then(new Answer<Object>() {
+                @Override
+                public Object answer(final InvocationOnMock invocation) throws Throwable {
+                    final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
+                    listener.operationComplete(null);
+                    return null;
+                }
+            });
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(nodes).add(channel.pipeline().context(handler));
-                verify(bootstrap.handler(any())).bind(anyString(), anyInt());
+                verify(bootstrap.handler(any()), times(2)).bind(anyString(), anyInt());
                 verify(datagramChannel).joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
             }
             finally {
