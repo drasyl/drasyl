@@ -30,6 +30,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -103,6 +104,15 @@ class UdpMulticastServerTest {
         @Test
         void shouldStopServerOnChannelInactive() {
             when(nodes.isEmpty()).thenReturn(true);
+            when(UdpMulticastServerTest.this.channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).addListener(any())).then(new Answer<Object>() {
+                @SuppressWarnings({ "rawtypes", "unchecked" })
+                @Override
+                public Object answer(final InvocationOnMock invocation) throws Throwable {
+                    final GenericFutureListener listener = invocation.getArgument(0, GenericFutureListener.class);
+                    listener.operationComplete(null);
+                    return null;
+                }
+            });
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -110,8 +120,8 @@ class UdpMulticastServerTest {
                 channel.pipeline().fireChannelInactive();
 
                 verify(nodes).remove(channel.pipeline().context(handler));
-                verify(UdpMulticastServerTest.this.channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE)).awaitUninterruptibly();
-                verify(UdpMulticastServerTest.this.channel.close()).awaitUninterruptibly();
+                verify(UdpMulticastServerTest.this.channel, times(2)).leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
+                verify(UdpMulticastServerTest.this.channel).close();
             }
             finally {
                 channel.close();

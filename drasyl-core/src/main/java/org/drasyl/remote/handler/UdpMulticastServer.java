@@ -175,19 +175,21 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
+
         nodes.remove(ctx);
 
         if (channel != null && nodes.isEmpty()) {
             final InetSocketAddress socketAddress = channel.localAddress();
             LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
             // leave multicast group
-            channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).awaitUninterruptibly();
-            // shutdown server
-            channel.close().awaitUninterruptibly();
-            channel = null;
-            LOG.debug("Server stopped");
+            channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).addListener(future -> {
+                // shutdown server
+                channel.close().addListener(future1 -> {
+                    channel = null;
+                    LOG.debug("Server stopped.");
+                });
+            });
         }
-
-        ctx.fireChannelInactive();
     }
 }
