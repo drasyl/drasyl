@@ -101,19 +101,49 @@ jobs:
         run: ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-cli --also-make package
 
       # package native image
-      - name: Build Package on *nix
+      - name: Build Package on *nix x86
         run: |
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
-          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/linux/
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/linux64/
+          mv ./libs/libsodium/linux/libsodium.so drasyl-${VERSION}-${{ matrix.job_name }}/bin/linux/
+          mv ./libs/libsodium/linux64/libsodium.so drasyl-${VERSION}-${{ matrix.job_name }}/bin/linux64/
           mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
-        if: success() && matrix.os != 'windows-latest'
+        if: success() && matrix.os == 'ubuntu-latest'
+
+      - name: Build Package on *nix ARM
+        run: |
+          VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/arm64/
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/armv6/
+          mv ./libs/libsodium/arm64/libsodium.so drasyl-${VERSION}-${{ matrix.job_name }}/bin/arm64/
+          mv ./libs/libsodium/armv6/libsodium.so drasyl-${VERSION}-${{ matrix.job_name }}/bin/armv6/
+          mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
+          cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
+          zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
+        if: success() && matrix.os == 'ARM64' && matrix.os == 'linux'
+
+      - name: Build Package on Mac x86
+        run: |
+          VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/mac/intel/
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/mac/aarch64/
+          mv ./libs/libsodium/mac/intel/libsodium.dylib drasyl-${VERSION}-${{ matrix.job_name }}/bin/mac/intel/
+          mv ./libs/libsodium/mac/aarch64/libsodium.dylib drasyl-${VERSION}-${{ matrix.job_name }}/bin/mac/aarch64/
+          mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
+          cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
+          zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
+        if: success() && matrix.os == 'macOS-latest'
 
       - name: Build Package on Windows
         run: |
           $VERSION = .\mvnw.cmd help:evaluate "-Dexpression=project.version" -q -DforceStdout
-          New-Item "./drasyl-${VERSION}-${{ matrix.job_name }}/bin" -ItemType Directory -ea 0
+          New-Item "./drasyl-${VERSION}-${{ matrix.job_name }}/bin/windows/" -ItemType Directory -ea 0
+          New-Item "./drasyl-${VERSION}-${{ matrix.job_name }}/bin/windows64/" -ItemType Directory -ea 0
+          Move-Item -Path ./libs/libsodium/windows/libsodium.dll drasyl-${VERSION}-${{ matrix.job_name }}/windows/
+          Move-Item -Path ./libs/libsodium/windows64/libsodium.dll drasyl-${VERSION}-${{ matrix.job_name }}/windows64/
           Move-Item -Path ./drasyl.exe -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}/bin"
           Copy-Item "./LICENSE" -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}"
           Compress-Archive -Path "./drasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-${VERSION}-${{ matrix.job_name }}.zip
