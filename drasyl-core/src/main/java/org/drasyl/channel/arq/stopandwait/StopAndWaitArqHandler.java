@@ -273,7 +273,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
         ctx.writeAndFlush(ack).addListener(future -> {
             if (!future.isSuccess()) {
                 //noinspection unchecked
-                LOG.warn("[{}] Unable to send {}: {}", ctx.channel().id()::asShortText, () -> ack, future::cause);
+                LOG.warn("[{}] Unable to send {}:", ctx.channel().id()::asShortText, () -> ack, future::cause);
             }
         });
     }
