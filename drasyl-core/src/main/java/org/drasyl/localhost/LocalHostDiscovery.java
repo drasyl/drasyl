@@ -191,13 +191,11 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         }
 
         final Path filePath = discoveryPath().resolve(myAddress.toString() + ".json");
-        if (filePath.toFile().exists()) {
-            try {
-                Files.delete(filePath);
-            }
-            catch (final IOException e) {
-                LOG.debug("Unable to delete `{}`", filePath, e);
-            }
+        try {
+            Files.deleteIfExists(filePath);
+        }
+        catch (final IOException e) {
+            LOG.debug("Unable to delete `{}`", filePath, e);
         }
 
         routes.keySet().forEach(publicKey -> ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, eventPath)));
