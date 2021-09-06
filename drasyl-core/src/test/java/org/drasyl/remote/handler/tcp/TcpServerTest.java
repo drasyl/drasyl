@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -83,9 +84,13 @@ class TcpServerTest {
     class StartServer {
         @Test
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
-            when(bootstrap.childHandler(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
+            when(bootstrap.childHandler(any()).bind(any(InetAddress.class), anyInt()).addListener(any())).then(invocation -> {
+                final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
+                listener.operationComplete(channelFuture);
+                return null;
+            });
 
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);

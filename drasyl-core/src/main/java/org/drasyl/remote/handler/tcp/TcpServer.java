@@ -25,7 +25,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
@@ -91,37 +91,6 @@ public class TcpServer extends ChannelDuplexHandler {
         this.serverChannel = serverChannel;
     }
 
-    private void startServer(final ChannelHandlerContext ctx) throws BindFailedException {
-        LOG.debug("Start Server...");
-        final ChannelFuture channelFuture = bootstrap
-                .childHandler(new TcpServerChannelInitializer(clientChannels, ctx, pingTimeout))
-                .bind(bindHost, bindPort);
-        channelFuture.awaitUninterruptibly();
-
-        if (channelFuture.isSuccess()) {
-            // server successfully started
-            this.serverChannel = channelFuture.channel();
-            final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
-            LOG.debug("Server started and listening at tcp:/{}", socketAddress);
-
-            // consume NodeUpEvent and publish NodeUpEvent with port
-            ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
-        }
-        else {
-            // server start failed
-            throw new BindFailedException("Unable to bind server to address tcp://" + bindHost + ":" + bindPort, channelFuture.cause());
-        }
-    }
-
-    private void stopServer() {
-        final SocketAddress socketAddress = serverChannel.localAddress();
-        LOG.debug("Stop Server listening at tcp:/{}...", socketAddress);
-        // shutdown server
-        serverChannel.close().awaitUninterruptibly();
-        serverChannel = null;
-        LOG.debug("Server stopped");
-    }
-
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
@@ -153,18 +122,40 @@ public class TcpServer extends ChannelDuplexHandler {
         }
     }
 
+    @SuppressWarnings("java:S1905")
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws BindFailedException {
-        startServer(ctx);
+        LOG.debug("Start Server...");
+        bootstrap
+                .childHandler(new TcpServerChannelInitializer(clientChannels, ctx, pingTimeout))
+                .bind(bindHost, bindPort)
+                .addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        // server successfully started
+                        TcpServer.this.serverChannel = future.channel();
+                        final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
+                        LOG.debug("Server started and listening at tcp:/{}", socketAddress);
 
-        ctx.fireChannelActive();
+                        ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
+                        ctx.fireChannelActive();
+                    }
+                    else {
+                        // server start failed
+                        ctx.fireExceptionCaught(new BindFailedException("Unable to bind server to address tcp://" + bindHost + ":" + bindPort, future.cause()));
+                    }
+                });
     }
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         ctx.fireChannelInactive();
 
-        stopServer();
+        LOG.debug("Stop Server listening at tcp:/{}...", serverChannel.localAddress());
+        // shutdown server
+        serverChannel.close().addListener(future -> {
+            serverChannel = null;
+            LOG.debug("Server stopped.");
+        });
     }
 
     static class TcpServerChannelInitializer extends ChannelInitializer<Channel> {
