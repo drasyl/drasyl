@@ -74,9 +74,7 @@ public class HopCount {
 
     @Override
     public String toString() {
-        return "HopCount{" +
-                "value=" + value +
-                '}';
+        return String.valueOf(value);
     }
 
     /**
