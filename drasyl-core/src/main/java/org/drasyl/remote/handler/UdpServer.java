@@ -25,7 +25,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
@@ -91,24 +91,11 @@ public class UdpServer extends ChannelDuplexHandler {
         this.pendingWrites = new PendingWriteQueue(ctx);
     }
 
+    @SuppressWarnings("java:S1905")
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws BindFailedException {
-        startServer(ctx);
-
-        ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelInactive();
-
-        stopServer();
-        pendingWrites.removeAndFailAll(new ClosedChannelException());
-    }
-
-    private void startServer(final ChannelHandlerContext ctx) throws BindFailedException {
         LOG.debug("Start Server...");
-        final ChannelFuture channelFuture = bootstrap
+        bootstrap
                 .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
                     @Override
                     public void channelWritabilityChanged(final ChannelHandlerContext channelCtx) {
@@ -127,33 +114,38 @@ public class UdpServer extends ChannelDuplexHandler {
                         ctx.fireChannelRead(new AddressedMessage<>(packet.content(), packet.sender()));
                     }
                 })
-                .bind(bindHost, this.bindPort);
-        channelFuture.awaitUninterruptibly();
+                .bind(bindHost, this.bindPort)
+                .addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        // server successfully started
+                        this.channel = future.channel();
+                        final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+                        LOG.info("Server started and listening at udp:/{}", socketAddress);
 
-        if (channelFuture.isSuccess()) {
-            // server successfully started
-            this.channel = channelFuture.channel();
-            final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-            LOG.info("Server started and listening at udp:/{}", socketAddress);
-
-            // consume NodeUpEvent and publish NodeUpEvent with port
-            ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
-        }
-        else {
-            // server start failed
-            throw new BindFailedException("Unable to bind server to address udp://" + bindHost + ":" + this.bindPort, channelFuture.cause());
-        }
+                        ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
+                        ctx.fireChannelActive();
+                    }
+                    else {
+                        // server start failed
+                        ctx.fireExceptionCaught(new BindFailedException("Unable to bind server to address udp://" + bindHost + ":" + bindPort, future.cause()));
+                    }
+                });
     }
 
-    private void stopServer() {
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
+
         if (channel != null) {
             final SocketAddress socketAddress = channel.localAddress();
             LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
             // shutdown server
-            channel.close().awaitUninterruptibly();
-            channel = null;
-            LOG.debug("Server stopped");
+            channel.close().addListener(future -> {
+                channel = null;
+                LOG.debug("Server stopped.");
+            });
         }
+        pendingWrites.removeAndFailAll(new ClosedChannelException());
     }
 
     @Override
