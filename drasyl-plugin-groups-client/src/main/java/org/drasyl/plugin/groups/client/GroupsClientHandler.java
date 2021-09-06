@@ -121,7 +121,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         for (final Entry<Group, GroupUri> entry : groups.entrySet()) {
             final Group group = entry.getKey();
             final GroupUri groupURI = entry.getValue();
-            ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())).awaitUninterruptibly().addListener(future -> {
+            ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Unable to send GroupLeaveMessage", future::cause);
                 }
