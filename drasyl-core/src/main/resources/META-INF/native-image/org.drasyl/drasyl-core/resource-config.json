@@ -45,6 +45,9 @@
       },
       {
         "pattern": "\\QMETA-INF/org.drasyl.versions.properties\\E"
+      },
+      {
+        "pattern": ".*/libsodium.(so|dll|dylib)$"
       }
     ]
   },
