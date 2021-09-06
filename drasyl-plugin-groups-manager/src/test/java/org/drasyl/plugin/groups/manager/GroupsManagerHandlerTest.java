@@ -26,7 +26,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.channel.Serialization;
 import org.drasyl.channel.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -101,8 +100,7 @@ class GroupsManagerHandlerTest {
     @Nested
     class HandlerAdded {
         @Test
-        void shouldAddClassesToValidatorAndAddStaleTask(@Mock final Serialization inboundSerialization,
-                                                        @Mock final Serialization outboundSerialization) {
+        void shouldAddClassesToValidatorAndAddStaleTask() {
             when(ctx.executor()).thenReturn(scheduler);
 
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
