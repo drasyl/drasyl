@@ -86,7 +86,7 @@ class TcpServerTest {
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
-            when(bootstrap.childHandler(any()).bind(any(InetAddress.class), anyInt()).addListener(any())).then(invocation -> {
+            when(bootstrap.group(any()).channel(any()).childHandler(any()).bind(any(InetAddress.class), anyInt()).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
@@ -95,7 +95,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                verify(bootstrap.childHandler(any())).bind(any(InetAddress.class), anyInt());
+                verify(bootstrap.group(any()).channel(any()).childHandler(any())).bind(any(InetAddress.class), anyInt());
             }
             finally {
                 channel.close();

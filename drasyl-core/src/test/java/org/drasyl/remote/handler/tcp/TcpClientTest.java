@@ -179,7 +179,7 @@ public class TcpClientTest {
                                                            @Mock final ByteBuf msg,
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(superPeerAddresses.contains(any())).thenReturn(true);
-            when(bootstrap.handler(any()).connect(any(InetSocketAddress.class))).thenReturn(superPeerChannel);
+            when(bootstrap.group(any()).channel(any()).handler(any()).connect(any(InetSocketAddress.class))).thenReturn(superPeerChannel);
             when(superPeerChannel.addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
@@ -193,7 +193,7 @@ public class TcpClientTest {
             try {
                 channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
 
-                verify(bootstrap.handler(any())).connect(any(InetSocketAddress.class));
+                verify(bootstrap.group(any()).channel(any()).handler(any())).connect(any(InetSocketAddress.class));
                 verify(superPeerChannel).addListener(any());
             }
             finally {

@@ -29,12 +29,13 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -48,7 +49,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.remote.protocol.RemoteMessage.MAGIC_NUMBER;
-import static org.drasyl.util.NettyUtil.getBestServerSocketChannel;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
@@ -68,7 +68,7 @@ public class TcpServer extends ChannelDuplexHandler {
 
     public TcpServer(final InetAddress bindHost, final int bindPort, final Duration pingTimeout) {
         this(
-                new ServerBootstrap().group(EventLoopGroupUtil.getInstanceBest(), EventLoopGroupUtil.getInstanceBest()).channel(getBestServerSocketChannel()),
+                new ServerBootstrap(),
                 new ConcurrentHashMap<>(),
                 bindHost,
                 bindPort,
@@ -127,6 +127,8 @@ public class TcpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws BindFailedException {
         LOG.debug("Start Server...");
         bootstrap
+                .group((EventLoopGroup) ctx.executor().parent())
+                .channel(NioServerSocketChannel.class)
                 .childHandler(new TcpServerChannelInitializer(clientChannels, ctx, pingTimeout))
                 .bind(bindHost, bindPort)
                 .addListener((ChannelFutureListener) future -> {

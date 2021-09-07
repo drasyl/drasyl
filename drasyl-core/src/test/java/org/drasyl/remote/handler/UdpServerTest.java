@@ -77,7 +77,7 @@ class UdpServerTest {
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(bootstrap.handler(any()).bind(any(InetAddress.class), anyInt()).addListener(any())).then(invocation -> {
+            when(bootstrap.group(any()).channel(any()).handler(any()).bind(any(InetAddress.class), anyInt()).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
@@ -86,7 +86,7 @@ class UdpServerTest {
             final UdpServer handler = new UdpServer(bootstrap, bindHost, bindPort, pendingWrites, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                verify(bootstrap.handler(any())).bind(any(InetAddress.class), anyInt());
+                verify(bootstrap.group(any()).channel(any()).handler(any())).bind(any(InetAddress.class), anyInt());
             }
             finally {
                 channel.close();
@@ -138,12 +138,12 @@ class UdpServerTest {
         void shouldPassIngoingMessagesToPipeline(@Mock final ChannelHandlerContext channelCtx,
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
                                                  @Mock final ByteBuf message) {
-            when(bootstrap.handler(any())).then((Answer<Bootstrap>) invocation -> {
+            when(bootstrap.group(any()).channel(any()).handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
                 handler.channelRead(channelCtx, new DatagramPacket(message, new InetSocketAddress(22527), new InetSocketAddress(25421)));
                 return bootstrap;
             });
-            when(bootstrap.bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
+            when(bootstrap.group(any()).channel(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final UdpServer handler = new UdpServer(bootstrap, bindHost, bindPort, pendingWrites, null);

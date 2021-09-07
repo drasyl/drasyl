@@ -29,13 +29,14 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -45,7 +46,6 @@ import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.NettyUtil.getBestDatagramChannel;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
@@ -76,8 +76,6 @@ public class UdpServer extends ChannelDuplexHandler {
                      final int bindPort) {
         this(
                 new Bootstrap()
-                        .group(EventLoopGroupUtil.getInstanceBest())
-                        .channel(getBestDatagramChannel())
                         .option(ChannelOption.SO_BROADCAST, false),
                 bindHost,
                 bindPort,
@@ -96,6 +94,8 @@ public class UdpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws BindFailedException {
         LOG.debug("Start Server...");
         bootstrap
+                .group((EventLoopGroup) ctx.executor().parent())
+                .channel(NioDatagramChannel.class)
                 .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
                     @Override
                     public void channelWritabilityChanged(final ChannelHandlerContext channelCtx) {

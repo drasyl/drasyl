@@ -44,6 +44,7 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.drasyl.remote.handler.UdpMulticastServer.MULTICAST_INTERFACE;
@@ -58,6 +59,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UdpMulticastServerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
+    private Supplier<Bootstrap> bootstrapSupplier;
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Bootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DatagramChannel channel;
@@ -69,9 +72,10 @@ class UdpMulticastServerTest {
         @Test
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel datagramChannel) {
+            when(bootstrapSupplier.get()).thenReturn(bootstrap);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel()).thenReturn(datagramChannel);
-            when(bootstrap.handler(any()).bind(anyString(), anyInt()).addListener(any())).then(invocation -> {
+            when(bootstrap.group(any()).channel(any()).handler(any()).bind(anyString(), anyInt()).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
@@ -86,11 +90,11 @@ class UdpMulticastServerTest {
                 }
             });
 
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(nodes).add(channel.pipeline().context(handler));
-                verify(bootstrap.handler(any()), times(2)).bind(anyString(), anyInt());
+                verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(anyString(), anyInt());
                 verify(datagramChannel).joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
             }
             finally {
@@ -103,6 +107,7 @@ class UdpMulticastServerTest {
     class StopServer {
         @Test
         void shouldStopServerOnChannelInactive() {
+            when(bootstrapSupplier.get()).thenReturn(bootstrap);
             when(nodes.isEmpty()).thenReturn(true);
             when(UdpMulticastServerTest.this.channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).addListener(any())).then(new Answer<Object>() {
                 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -114,7 +119,7 @@ class UdpMulticastServerTest {
                 }
             });
 
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, channel);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -137,14 +142,15 @@ class UdpMulticastServerTest {
                                                      @Mock final ByteBuf message,
                                                      @Mock final IdentityPublicKey publicKey,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(bootstrap.handler(any())).then((Answer<Bootstrap>) invocation -> {
+            when(bootstrapSupplier.get()).thenReturn(bootstrap);
+            when(bootstrap.group(any()).channel(any()).handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
                 handler.channelRead(channelCtx, new DatagramPacket(message, new InetSocketAddress(22527), new InetSocketAddress(25421)));
                 return bootstrap;
             });
 
             final Set<ChannelHandlerContext> nodes = new HashSet<>(Set.of(ctx));
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrap, null);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(ctx).fireChannelRead(any());

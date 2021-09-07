@@ -26,13 +26,13 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -45,6 +45,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
@@ -64,7 +65,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     public static final NetworkInterface MULTICAST_INTERFACE;
     private static final String MULTICAST_BIND_HOST;
     private final Set<ChannelHandlerContext> nodes;
-    private final Bootstrap bootstrap;
+    private final Supplier<Bootstrap> bootstrapSupplier;
     private DatagramChannel channel;
 
     static {
@@ -97,17 +98,17 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
 
     @SuppressWarnings("java:S2384")
     UdpMulticastServer(final Set<ChannelHandlerContext> nodes,
-                       final Bootstrap bootstrap,
+                       final Supplier<Bootstrap> bootstrapSupplier,
                        final DatagramChannel channel) {
         this.nodes = requireNonNull(nodes);
-        this.bootstrap = requireNonNull(bootstrap);
+        this.bootstrapSupplier = requireNonNull(bootstrapSupplier);
         this.channel = channel;
     }
 
     private UdpMulticastServer() {
         this(
                 new HashSet<>(),
-                new Bootstrap().group(EventLoopGroupUtil.getInstanceNio()).channel(NioDatagramChannel.class),
+                Bootstrap::new,
                 null
         );
     }
@@ -123,8 +124,10 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             nodes.add(ctx);
 
             if (channel == null) {
-                LOG.debug("Start Server...");
-                bootstrap
+                LOG.debug("Start Multicast Server...");
+                bootstrapSupplier.get()
+                        .group((EventLoopGroup) ctx.executor().parent())
+                        .channel(NioDatagramChannel.class)
                         .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
                             @Override
                             protected void channelRead0(final ChannelHandlerContext channelCtx,

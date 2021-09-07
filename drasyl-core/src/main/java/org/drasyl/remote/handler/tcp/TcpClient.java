@@ -29,10 +29,11 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -44,7 +45,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.NettyUtil.getBestSocketChannel;
 
 /**
  * This handler monitors how long the node has not received a response from any super peer. If the
@@ -89,7 +89,7 @@ public class TcpClient extends ChannelDuplexHandler {
                      final InetSocketAddress address) {
         this(
                 superPeerEndpoints.stream().map(Endpoint::toInetSocketAddress).collect(Collectors.toSet()),
-                new Bootstrap().group(EventLoopGroupUtil.getInstanceBest()).channel(getBestSocketChannel()),
+                new Bootstrap(),
                 new AtomicLong(),
                 timeout,
                 address,
@@ -202,6 +202,8 @@ public class TcpClient extends ChannelDuplexHandler {
             noResponseFromSuperPeerSince.set(currentTime);
 
             superPeerChannel = bootstrap
+                    .group((EventLoopGroup) ctx.executor().parent())
+                    .channel(NioSocketChannel.class)
                     .handler(new TcpClientHandler(ctx))
                     .connect(address);
             superPeerChannel.addListener((ChannelFutureListener) future -> {
