@@ -91,7 +91,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     protected void initChannel(final DrasylServerChannel ch) {
         node.channels = new DefaultChannelGroup(ch.eventLoop());
 
-        ch.pipeline().addFirst(new NodeLifecycleHandler(node));
+        ch.pipeline().addFirst(new NodeLifecycleTailHandler(node));
 
         ch.pipeline().addFirst(new PluginManagerHandler(new PluginManager(config, identity)));
 
@@ -224,6 +224,8 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
             // udp server
             ch.pipeline().addFirst(new UdpServer(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())));
+
+            ch.pipeline().addFirst(new NodeLifecycleHeadHandler(node));
         }
     }
 
@@ -281,31 +283,33 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         }
     }
 
-    private static class NodeLifecycleHandler extends ChannelInboundHandlerAdapter {
-        private static final Logger LOG = LoggerFactory.getLogger(NodeLifecycleHandler.class);
+    /**
+     * Emits {@link NodeNormalTerminationEvent} on {@link #channelActive(ChannelHandlerContext)} and
+     * {@link NodeUnrecoverableErrorEvent} or {@link InboundExceptionEvent} on {@link
+     * #exceptionCaught(ChannelHandlerContext, Throwable)}. This handler must be placed at the tail
+     * of the pipeline.
+     */
+    private static class NodeLifecycleTailHandler extends ChannelInboundHandlerAdapter {
+        private static final Logger LOG = LoggerFactory.getLogger(NodeLifecycleTailHandler.class);
         private final DrasylNode node;
         private boolean errorOccurred;
 
-        NodeLifecycleHandler(final DrasylNode node) {
+        NodeLifecycleTailHandler(final DrasylNode node) {
             this.node = requireNonNull(node);
         }
 
         @Override
-        public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-            super.channelActive(ctx);
+        public void channelActive(final ChannelHandlerContext ctx) {
+            ctx.fireChannelActive();
 
-            LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
-            userEventTriggered(ctx, NodeUpEvent.of(Node.of((Identity) ctx.channel().localAddress())));
             LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
         }
 
         @Override
-        public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-            super.channelInactive(ctx);
+        public void channelInactive(final ChannelHandlerContext ctx) {
+            ctx.fireChannelInactive();
 
             if (!errorOccurred) {
-                LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
-                userEventTriggered(ctx, NodeDownEvent.of(Node.of((Identity) ctx.channel().localAddress())));
                 userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of((Identity) ctx.channel().localAddress())));
                 LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
             }
@@ -320,7 +324,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                     errorOccurred = true;
                 }
 
-                ctx.executor().execute(() -> node.onEvent((Event) evt));
+                node.onEvent((Event) evt);
             }
 
             // drop all other events
@@ -340,6 +344,36 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             else {
                 userEventTriggered(ctx, InboundExceptionEvent.of(e));
             }
+        }
+    }
+
+    /**
+     * Emits {@link NodeUpEvent} on {@link #channelActive(ChannelHandlerContext)} and {@link
+     * NodeDownEvent} on {@link #channelInactive(ChannelHandlerContext)}. This handler must be
+     * placed at the head of the pipeline.
+     */
+    private static class NodeLifecycleHeadHandler extends ChannelInboundHandlerAdapter {
+        private static final Logger LOG = LoggerFactory.getLogger(NodeLifecycleHeadHandler.class);
+        private final DrasylNode node;
+
+        NodeLifecycleHeadHandler(final DrasylNode node) {
+            this.node = requireNonNull(node);
+        }
+
+        @Override
+        public void channelActive(final ChannelHandlerContext ctx) {
+            LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
+            node.onEvent(NodeUpEvent.of(Node.of((Identity) ctx.channel().localAddress())));
+
+            ctx.fireChannelActive();
+        }
+
+        @Override
+        public void channelInactive(final ChannelHandlerContext ctx) {
+            LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
+            node.onEvent(NodeDownEvent.of(Node.of((Identity) ctx.channel().localAddress())));
+
+            ctx.fireChannelInactive();
         }
     }
 
