@@ -44,12 +44,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
 import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -838,9 +838,12 @@ class DrasylNodeIT {
         class FourNodesWithOnlyLocalHostDiscoveryEnabled {
             private EmbeddedNode node1;
             private EmbeddedNode node2;
+            private Path localHostDiscoveryPath;
 
             @BeforeEach
-            void setUp(@TempDir final Path localHostDiscoveryPath) throws DrasylException {
+            void setUp() throws DrasylException, IOException {
+                localHostDiscoveryPath = Files.createTempDirectory("test");
+
                 //
                 // create nodes
                 //
@@ -1018,11 +1021,6 @@ class DrasylNodeIT {
                         .build();
                 node = new EmbeddedNode(config);
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node"));
-            }
-
-            @AfterEach
-            void tearDown() {
-                node.close();
             }
 
             @Test
