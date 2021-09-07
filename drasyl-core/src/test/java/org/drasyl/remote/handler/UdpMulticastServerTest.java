@@ -107,7 +107,6 @@ class UdpMulticastServerTest {
     class StopServer {
         @Test
         void shouldStopServerOnChannelInactive() {
-            when(bootstrapSupplier.get()).thenReturn(bootstrap);
             when(nodes.isEmpty()).thenReturn(true);
             when(UdpMulticastServerTest.this.channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).addListener(any())).then(new Answer<Object>() {
                 @SuppressWarnings({ "rawtypes", "unchecked" })
