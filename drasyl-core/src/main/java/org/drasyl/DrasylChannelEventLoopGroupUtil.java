@@ -35,7 +35,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class DrasylChannelEventLoopGroupUtil {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylChannelEventLoopGroupUtil.class);
+    // pool should have at least all available processors minus two threads
     public static final int PARENT_DEFAULT_THREADS = Math.max(2, (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1));
+    // pool should have at least 2 and max 10% of available processors
     public static final int CHILD_DEFAULT_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() - 2);
     static volatile boolean parentEventLoopGroupCreated;
     static volatile boolean childEventLoopGroupCreated;
