@@ -224,9 +224,9 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
             // udp server
             ch.pipeline().addFirst(new UdpServer(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())));
-
-            ch.pipeline().addFirst(new NodeLifecycleHeadHandler(node));
         }
+
+        ch.pipeline().addFirst(new NodeLifecycleHeadHandler(node));
     }
 
     private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
