@@ -26,6 +26,7 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
+import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -33,6 +34,8 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.remote.handler.tcp.TcpServer;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.Arrays;
@@ -40,6 +43,7 @@ import java.util.Arrays;
 import static java.util.Objects.requireNonNull;
 
 public class EmbeddedNode extends DrasylNode implements Closeable {
+    private static final Logger LOG = LoggerFactory.getLogger(EmbeddedNode.class);
     private final Subject<Event> events;
     private int port;
     private int tcpFallbackPort;
@@ -57,6 +61,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
     @Override
     public void onEvent(@NonNull final Event event) {
         if (event instanceof NodeUnrecoverableErrorEvent) {
+            LOG.warn("{}", event);
             events.onError(((NodeUnrecoverableErrorEvent) event).getError());
         }
         else {
@@ -65,6 +70,9 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
             }
             else if (event instanceof TcpServer.Port) {
                 tcpFallbackPort = ((TcpServer.Port) event).getPort();
+            }
+            else if (event instanceof InboundExceptionEvent) {
+                LOG.warn("{}", event, ((InboundExceptionEvent) event).getError());
             }
 
             events.onNext(event);
@@ -97,6 +105,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
     public EmbeddedNode started() {
         start();
         events(NodeUpEvent.class).test().awaitCount(1).assertValueCount(1);
+        events(NodeUnrecoverableErrorEvent.class).test().assertNoValues();
         return this;
     }
 
@@ -108,12 +117,12 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
     @Override
     public void close() {
         shutdown().join();
+        // shutdown() future is completed before channelInactive has passed the pipeline...
+        events(NodeNormalTerminationEvent.class).test().awaitCount(1).assertValueCount(1);
     }
 
     public int getPort() {
-        if (port == 0) {
-            throw new IllegalStateException("Port not set. You have to start the node first.");
-        }
+        events(UdpServer.Port.class).test().awaitCount(1).assertValueCount(1);
         return port;
     }
 
