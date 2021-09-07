@@ -31,10 +31,13 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 
 /**
+ * Holds parent and child {@link io.netty.channel.EventLoop}s that are shared across all {@link
+ * DrasylNode}s.
+ * <p>
  * https://github.com/netty/netty/issues/639#issuecomment-9263566
  */
-public final class DrasylChannelEventLoopGroupUtil {
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylChannelEventLoopGroupUtil.class);
+public final class DrasylNodeSharedEventLoopGroupHolder {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeSharedEventLoopGroupHolder.class);
     // pool should have at least all available processors minus two threads
     public static final int PARENT_DEFAULT_THREADS = Math.max(2, (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1));
     // pool should have at least 2 and max 10% of available processors
@@ -42,7 +45,7 @@ public final class DrasylChannelEventLoopGroupUtil {
     static volatile boolean parentEventLoopGroupCreated;
     static volatile boolean childEventLoopGroupCreated;
 
-    private DrasylChannelEventLoopGroupUtil() {
+    private DrasylNodeSharedEventLoopGroupHolder() {
         // util class
     }
 
@@ -55,7 +58,7 @@ public final class DrasylChannelEventLoopGroupUtil {
      * @return a {@link NioEventLoopGroup} for parent channels
      */
     public static NioEventLoopGroup getParentGroup() {
-        return LazyParentEventLoopGroupHolder.INSTANCE;
+        return LazyParentHolder.INSTANCE;
     }
 
     /**
@@ -67,7 +70,7 @@ public final class DrasylChannelEventLoopGroupUtil {
      * @return a {@link NioEventLoopGroup} for child channels
      */
     public static NioEventLoopGroup getChildGroup() {
-        return LazyChildEventLoopGroupHolder.INSTANCE;
+        return LazyChildHolder.INSTANCE;
     }
 
     /**
@@ -82,21 +85,21 @@ public final class DrasylChannelEventLoopGroupUtil {
         final FutureCombiner combiner = FutureCombiner.getInstance();
 
         if (childEventLoopGroupCreated) {
-            combiner.add(FutureUtil.toFuture(LazyChildEventLoopGroupHolder.INSTANCE.shutdownGracefully()));
+            combiner.add(FutureUtil.toFuture(LazyChildHolder.INSTANCE.shutdownGracefully()));
         }
 
         if (parentEventLoopGroupCreated) {
-            combiner.add(FutureUtil.toFuture(LazyParentEventLoopGroupHolder.INSTANCE.shutdownGracefully()));
+            combiner.add(FutureUtil.toFuture(LazyParentHolder.INSTANCE.shutdownGracefully()));
         }
 
         return combiner.combine(new CompletableFuture<>());
     }
 
-    private static final class LazyParentEventLoopGroupHolder {
+    private static final class LazyParentHolder {
         static final int SIZE;
 
         static {
-            SIZE = SystemPropertyUtil.getInt("org.drasyl.event-loop.parent", PARENT_DEFAULT_THREADS);
+            SIZE = SystemPropertyUtil.getInt("org.drasyl.node.event-loop.parent", PARENT_DEFAULT_THREADS);
             LOG.debug("Parent event loop group size: {}", SIZE);
         }
 
@@ -105,11 +108,11 @@ public final class DrasylChannelEventLoopGroupUtil {
         static final boolean LOCK = parentEventLoopGroupCreated = true;
     }
 
-    private static final class LazyChildEventLoopGroupHolder {
+    private static final class LazyChildHolder {
         static final int SIZE;
 
         static {
-            SIZE = SystemPropertyUtil.getInt("org.drasyl.event-loop.child", CHILD_DEFAULT_THREADS);
+            SIZE = SystemPropertyUtil.getInt("org.drasyl.node.event-loop.child", CHILD_DEFAULT_THREADS);
             LOG.debug("Child event loop group size: {}", SIZE);
         }
 

@@ -39,7 +39,6 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -153,7 +152,7 @@ public abstract class DrasylNode {
         }
 
         bootstrap = new ServerBootstrap()
-                .group(DrasylChannelEventLoopGroupUtil.getParentGroup(), DrasylChannelEventLoopGroupUtil.getChildGroup())
+                .group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup())
                 .localAddress(identity)
                 .channel(DrasylServerChannel.class)
                 .handler(new DrasylNodeServerChannelInitializer(config, identity, this))
@@ -382,7 +381,7 @@ public abstract class DrasylNode {
      * If the local server has been started, it will now be stopped.
      * <p>
      * This method does not stop the shared threads. To kill the shared threads, you have to call
-     * the {@link EventLoopGroupUtil#shutdown()} method.
+     * the {@link DrasylNodeSharedEventLoopGroupHolder#shutdown()} method.
      * <p>
      *
      * @return this method returns a future, which complements if all shutdown steps have been
