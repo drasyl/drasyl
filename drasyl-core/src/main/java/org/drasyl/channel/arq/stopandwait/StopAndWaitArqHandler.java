@@ -112,7 +112,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
         if (msg instanceof StopAndWaitArqData) {
             final StopAndWaitArqData data = (StopAndWaitArqData) msg;
             if (expectedInboundSequenceNo == data.sequenceNo()) {
-                LOG.trace("[{}] Got expected {}. Pass through DATA.", ctx.channel().id()::asShortText, () -> data);
+                LOG.trace("[{}] Got expected {}. Pass through.", ctx.channel().id()::asShortText, () -> data);
 
                 // expected sequence no -> pass DATA inbound
                 ctx.fireChannelRead(msg);
@@ -121,7 +121,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
                 expectedInboundSequenceNo = !expectedInboundSequenceNo;
             }
             else {
-                LOG.trace("[{}] Got unexpected {}. Drop DATA.", ctx.channel().id()::asShortText, () -> data);
+                LOG.trace("[{}] Got unexpected {}. Drop it.", ctx.channel().id()::asShortText, () -> data);
                 data.release();
             }
 
@@ -133,12 +133,12 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
 
             final Boolean outboundSequenceNo = outboundSequenceNo();
             if (outboundSequenceNo != null && outboundSequenceNo != ack.sequenceNo()) {
-                LOG.trace("[{}] Got expected {}. Succeed DATA.", ctx.channel().id()::asShortText, () -> ack);
+                LOG.trace("[{}] Got expected {}. Succeed current DATA.", ctx.channel().id()::asShortText, () -> ack);
                 succeedCurrentWrite(ctx);
                 writeNextPending(ctx);
             }
             else {
-                LOG.trace("[{}] Got unexpected {}. Ignore.", ctx.channel().id()::asShortText, () -> ack);
+                LOG.trace("[{}] Got unexpected {}. Drop it.", ctx.channel().id()::asShortText, () -> ack);
             }
         }
         else {
