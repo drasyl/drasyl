@@ -101,7 +101,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
-        discardPendingWrites(new ClosedChannelException());
+        discardPendingWrites(ctx, new ClosedChannelException());
 
         ctx.fireChannelInactive();
     }
@@ -208,7 +208,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
     private void writeNextPending(final ChannelHandlerContext ctx) {
         final Channel channel = ctx.channel();
         if (!channel.isActive()) {
-            discardPendingWrites(new ClosedChannelException());
+            discardPendingWrites(ctx, new ClosedChannelException());
             return;
         }
 
@@ -262,8 +262,9 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
         lastWriteAttempt = 0;
     }
 
-    private void discardPendingWrites(final Throwable cause) {
-        LOG.trace("[{}] Discard {} pending writes: {}", ctx.channel().id()::asShortText, pendingWrites::size, cause);
+    private void discardPendingWrites(final ChannelHandlerContext ctx,
+                                      final Throwable cause) {
+        LOG.trace("[{}] Discard {} pending writes: {}", ctx.channel().id()::asShortText, pendingWrites::size, () -> cause);
         pendingWrites.removeAndFailAll(cause);
     }
 
