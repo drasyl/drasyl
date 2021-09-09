@@ -264,7 +264,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
 
     private void discardPendingWrites(final ChannelHandlerContext ctx,
                                       final Throwable cause) {
-        LOG.trace("[{}] Discard {} pending writes: {}", ctx.channel().id()::asShortText, pendingWrites::size, () -> cause);
+        LOG.trace("[{}] Discard {} pending writes:", ctx.channel().id()::asShortText, pendingWrites::size, () -> cause);
         pendingWrites.removeAndFailAll(cause);
     }
 
