@@ -24,7 +24,6 @@ package org.drasyl;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.group.ChannelGroup;
@@ -327,7 +326,9 @@ public abstract class DrasylNode {
     public CompletionStage<Channel> resolve(@NonNull final DrasylAddress address) {
         if (channelFuture != null && channelFuture.channel().isOpen()) {
             final CompletableFuture<Channel> future = new CompletableFuture<>();
+            // synchronize resolve by placing it in the ServerChannels's EventLoop
             channelFuture.channel().eventLoop().execute(() -> {
+                // look for existing channel
                 for (final Channel channel : channels) {
                     if (address.equals(channel.remoteAddress())) {
                         future.complete(channel);
@@ -335,15 +336,13 @@ public abstract class DrasylNode {
                     }
                 }
 
+                // no channel present, create new one
                 final DrasylChannel channel = new DrasylChannel(channelFuture.channel(), (IdentityPublicKey) address);
+                channels.add(channel);
                 channelFuture.channel().pipeline().fireChannelRead(channel);
 
-                channel.pipeline().addLast(new ChannelInitializer<>() {
-                    @Override
-                    protected void initChannel(final Channel ch) {
-                        future.complete(channel);
-                    }
-                });
+                // delay future completion to make sure Channel's childHandler is done
+                channel.eventLoop().execute(() -> future.complete(channel));
             });
 
             return future;
