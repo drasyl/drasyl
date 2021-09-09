@@ -37,8 +37,11 @@ import org.drasyl.identity.KeyPair;
 import org.drasyl.identity.PublicKey;
 import org.drasyl.remote.protocol.Nonce;
 
+import java.io.File;
 import java.security.SecureRandom;
 import java.util.Objects;
+
+import static com.goterl.lazysodium.utils.LibraryLoader.getSodiumPathInResources;
 
 /**
  * Util class that provides cryptography functions for drasyl.
@@ -52,8 +55,15 @@ public class Crypto {
     public static final short SK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_SECRETKEYBYTES;
 
     static {
-        INSTANCE = new Crypto(
-                new LazySodiumJava(new SodiumJava()));
+        final File lib = new File("./" + getSodiumPathInResources());
+
+        if (lib.isFile()) {
+            INSTANCE = new Crypto(new LazySodiumJava(new SodiumJava(lib.getAbsolutePath())));
+        }
+        else {
+            INSTANCE = new Crypto(
+                    new LazySodiumJava(new SodiumJava()));
+        }
 
         // check for the optimal cryptographically secure pseudorandom number generator for the current platform
         SecureRandom prng;
