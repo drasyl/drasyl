@@ -177,7 +177,11 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 }
 
                 // pass message to channel
-                channel.pipeline().fireChannelRead(o);
+                final Channel finalChannel = channel;
+                channel.eventLoop().execute(() -> {
+                    finalChannel.pipeline().fireChannelRead(o);
+                    finalChannel.pipeline().fireChannelReadComplete();
+                });
             }
         }
     }

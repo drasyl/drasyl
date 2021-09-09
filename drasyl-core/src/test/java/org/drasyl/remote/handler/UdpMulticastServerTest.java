@@ -30,8 +30,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.GenericFutureListener;
-import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +52,7 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -139,14 +140,19 @@ class UdpMulticastServerTest {
         @SuppressWarnings("unchecked")
         void shouldPassIngoingMessagesToAllPipelines(@Mock final ChannelHandlerContext channelCtx,
                                                      @Mock final ByteBuf message,
-                                                     @Mock final IdentityPublicKey publicKey,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                                     @Mock final EventExecutor eventExecutor) {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
             when(bootstrap.group(any()).channel(any()).handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
                 handler.channelRead(channelCtx, new DatagramPacket(message, new InetSocketAddress(22527), new InetSocketAddress(25421)));
                 return bootstrap;
             });
+            when(ctx.executor()).thenReturn(eventExecutor);
+            doAnswer((Answer<Object>) invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
+                return null;
+            }).when(eventExecutor).execute(any());
 
             final Set<ChannelHandlerContext> nodes = new HashSet<>(Set.of(ctx));
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, null);

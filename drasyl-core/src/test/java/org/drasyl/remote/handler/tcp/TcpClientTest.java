@@ -29,6 +29,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
+import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.remote.handler.tcp.TcpClient.TcpClientHandler;
 import org.junit.jupiter.api.Nested;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -49,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -210,8 +213,14 @@ public class TcpClientTest {
 
         @Test
         void shouldPassInboundMessageToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx,
-                                                @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
+                                                @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg,
+                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor eventExecutor) {
             when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
+            when(ctx.executor()).thenReturn(eventExecutor);
+            doAnswer((Answer<Object>) invocation -> {
+                invocation.getArgument(0, Runnable.class).run();
+                return null;
+            }).when(eventExecutor).execute(any());
 
             new TcpClientHandler(ctx).channelRead0(nettyCtx, msg);
 

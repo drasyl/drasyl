@@ -111,7 +111,10 @@ public class UdpServer extends ChannelDuplexHandler {
                     protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                 final DatagramPacket packet) {
                         LOG.trace("Datagram received {}", packet);
-                        ctx.fireChannelRead(new AddressedMessage<>(packet.content(), packet.sender()));
+                        ctx.executor().execute(() -> {
+                            ctx.fireChannelRead(new AddressedMessage<>(packet.content(), packet.sender()));
+                            ctx.fireChannelReadComplete();
+                        });
                     }
                 })
                 .bind(bindHost, this.bindPort)

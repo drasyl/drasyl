@@ -135,7 +135,10 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                                 final SocketAddress sender = packet.sender();
                                 nodes.forEach(nodeCtx -> {
                                     LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel()::localAddress);
-                                    nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content(), sender));
+                                    nodeCtx.executor().execute(() -> {
+                                        nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content(), sender));
+                                        nodeCtx.fireChannelReadComplete();
+                                    });
                                 });
                             }
                         })
