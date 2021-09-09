@@ -29,12 +29,6 @@ import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
-import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.JacksonCodec;
-import org.drasyl.channel.MessageSerializer;
-import org.drasyl.channel.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
-import org.drasyl.channel.arq.stopandwait.StopAndWaitArqCodec;
-import org.drasyl.channel.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
@@ -82,20 +76,8 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
         super(config);
         this.doneFuture = new CompletableFuture<>();
         this.out = requireNonNull(out);
-
-        bootstrap.childHandler(new org.drasyl.DrasylNodeChannelInitializer(config, this) {
-            @Override
-            protected void initChannel(final DrasylChannel ch) {
-                super.initChannel(ch);
-
-                ch.pipeline().replace(ch.pipeline().context(MessageSerializer.class).name(), "WORMHOLE_CODEC", new JacksonCodec<>(WormholeMessage.class));
-
-                // add ARQ to make sure messages arrive
-                ch.pipeline().addFirst(new ByteToStopAndWaitArqDataCodec());
-                ch.pipeline().addFirst(new StopAndWaitArqHandler(250));
-                ch.pipeline().addFirst(new StopAndWaitArqCodec());
-            }
-        });
+        // use special channel initializer
+        bootstrap.childHandler(new WormholeChannelInitializer(this, config));
     }
 
     @Override

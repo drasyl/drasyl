@@ -56,6 +56,22 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     protected void initChannel(final DrasylChannel ch) {
         node.channels.add(ch);
 
+        addIdleChannelCloser(ch);
+        addMessageSerializer(ch);
+        addMessageEventHandler(ch);
+    }
+
+    protected void addMessageEventHandler(final DrasylChannel ch) {
+        // emit MessageEvents for every inbound message
+        ch.pipeline().addLast(new MessageEventHandler(node));
+    }
+
+    protected void addMessageSerializer(final DrasylChannel ch) {
+        // convert Object <-> ByteBuf
+        ch.pipeline().addLast(new MessageSerializer(config));
+    }
+
+    protected void addIdleChannelCloser(final DrasylChannel ch) {
         // close inactive channels (to free up resources)
         final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
         if (inactivityTimeout > 0) {
@@ -64,13 +80,6 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
                     new IdleChannelCloser()
             );
         }
-
-        ch.pipeline().addLast(
-                // convert Object <-> ByteBuf
-                new MessageSerializer(config),
-                // emit MessageEvents for every inbound message
-                new MessageEventHandler(node)
-        );
     }
 
     private static class MessageEventHandler extends ChannelInboundHandlerAdapter {

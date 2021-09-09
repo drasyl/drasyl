@@ -32,10 +32,6 @@ import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
-import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.JacksonCodec;
-import org.drasyl.channel.MessageSerializer;
-import org.drasyl.cli.command.perf.message.PerfMessage;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.event.Event;
@@ -95,18 +91,8 @@ public class PerfServerNode extends BehavioralDrasylNode {
         this.doneFuture = new CompletableFuture<>();
         this.printStream = printStream;
         eventLoopGroup = new NioEventLoopGroup(1);
-
-        bootstrap.childHandler(new org.drasyl.DrasylNodeChannelInitializer(config, this) {
-            @Override
-            protected void initChannel(final DrasylChannel ch) {
-                super.initChannel(ch);
-
-                // (de)serializer for PerfMessages
-                ch.pipeline().replace(ch.pipeline().context(MessageSerializer.class).name(), "PERF_CODEC", new JacksonCodec<>(PerfMessage.class));
-                // fast (de)serializer for Probe messages
-                ch.pipeline().addFirst(ProbeCodec.INSTANCE);
-            }
-        });
+        // use special channel initializer
+        bootstrap.childHandler(new PerfChannelInitializer(this, config));
     }
 
     @Override
