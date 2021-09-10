@@ -80,7 +80,7 @@ public class SendingWormholeNode extends BehavioralDrasylNode {
         this.out = requireNonNull(out);
         this.password = Crypto.randomString(PASSWORD_LENGTH);
         // use special channel initializer
-        bootstrap.childHandler(new WormholeChannelInitializer(this, config));
+        bootstrap.childHandler(new WormholeChannelInitializer(config, this));
     }
 
     @Override

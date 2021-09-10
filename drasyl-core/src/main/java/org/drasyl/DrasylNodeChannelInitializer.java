@@ -56,9 +56,9 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     protected void initChannel(final DrasylChannel ch) {
         node.channels.add(ch);
 
-        addIdleChannelCloser(ch);
         addMessageSerializer(ch);
         addMessageEventHandler(ch);
+        addIdleChannelCloser(ch);
     }
 
     protected void addMessageEventHandler(final DrasylChannel ch) {

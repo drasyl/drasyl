@@ -77,7 +77,7 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
         this.doneFuture = new CompletableFuture<>();
         this.out = requireNonNull(out);
         // use special channel initializer
-        bootstrap.childHandler(new WormholeChannelInitializer(this, config));
+        bootstrap.childHandler(new WormholeChannelInitializer(config, this));
     }
 
     @Override

@@ -37,7 +37,7 @@ class PerfChannelInitializer extends DrasylNodeChannelInitializer {
     @Override
     protected void addMessageSerializer(final DrasylChannel ch) {
         // fast (de)serializer for Probe messages
-        ch.pipeline().addFirst(ProbeCodec.INSTANCE);
+        ch.pipeline().addLast(ProbeCodec.INSTANCE);
         // (de)serializer for PerfMessages
         ch.pipeline().addLast(new JacksonCodec<>(PerfMessage.class));
     }
