@@ -58,7 +58,7 @@ public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMess
                           final AddressedMessage<ByteBuf, IdentityPublicKey> msg,
                           final List<Object> out) throws Exception {
         final ApplicationMessage wrappedMsg = ApplicationMessage.of(networkId, myPublicKey, myProofOfWork, msg.address(), msg.message().retain());
-        out.add(new AddressedMessage<>(wrappedMsg, msg.address()));
+        out.add(msg.replace(wrappedMsg));
     }
 
     @Override
@@ -70,7 +70,7 @@ public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMess
     protected void decode(final ChannelHandlerContext ctx,
                           final AddressedMessage<ApplicationMessage, ?> msg,
                           final List<Object> out) {
-        final AddressedMessage<ByteBuf, ?> unwrappedMsg = new AddressedMessage<>(msg.message().getPayload().retain(), msg.address());
+        final AddressedMessage<ByteBuf, ?> unwrappedMsg = msg.replace(msg.message().getPayload().retain());
         out.add(unwrappedMsg);
     }
 }

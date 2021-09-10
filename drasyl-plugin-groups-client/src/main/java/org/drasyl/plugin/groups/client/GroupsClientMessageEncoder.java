@@ -54,6 +54,6 @@ public class GroupsClientMessageEncoder extends MessageToMessageEncoder<Addresse
         try (final OutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
             JACKSON_WRITER.writeValue(outputStream, msg.message());
         }
-        out.add(new AddressedMessage<>(byteBuf, msg.address()));
+        out.add(msg.replace(byteBuf));
     }
 }

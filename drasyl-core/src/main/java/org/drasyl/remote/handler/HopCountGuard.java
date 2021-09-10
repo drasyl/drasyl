@@ -47,7 +47,7 @@ public final class HopCountGuard extends ChannelOutboundHandlerAdapter {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
             final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
             if (remoteMsg.getHopCount().getByte() < messageHopLimit) {
-                ctx.write(new AddressedMessage<>(remoteMsg.incrementHopCount(), ((AddressedMessage<?, ?>) msg).address()));
+                ctx.write(((AddressedMessage<?, ?>) msg).replace(remoteMsg.incrementHopCount()));
             }
             else {
                 promise.setFailure(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));

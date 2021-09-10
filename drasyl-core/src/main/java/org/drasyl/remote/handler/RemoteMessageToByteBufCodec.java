@@ -75,6 +75,6 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
     protected void decode(final ChannelHandlerContext ctx,
                           final AddressedMessage<ByteBuf, ?> msg,
                           final List<Object> out) throws InvalidMessageFormatException {
-        out.add(new AddressedMessage<>(PartialReadMessage.of(msg.message().retain()), msg.address()));
+        out.add(msg.replace(PartialReadMessage.of(msg.message().retain())));
     }
 }

@@ -53,7 +53,7 @@ class GroupsServerMessageDecoder extends MessageToMessageDecoder<AddressedMessag
         final int magicNumber = byteBuf.readInt();
         if (magicNumber == MAGIC_NUMBER) {
             try (final InputStream inputStream = new ByteBufInputStream(byteBuf)) {
-                out.add(new AddressedMessage<>(JACKSON_READER.readValue(inputStream, GroupsServerMessage.class), msg.address()));
+                out.add(msg.replace(JACKSON_READER.readValue(inputStream, GroupsServerMessage.class)));
             }
         }
         else {
