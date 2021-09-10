@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.EncoderException;
-import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.channel.DrasylChannel;
@@ -75,10 +74,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
         // close inactive channels (to free up resources)
         final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
         if (inactivityTimeout > 0) {
-            ch.pipeline().addLast(
-                    new IdleStateHandler(0, 0, inactivityTimeout),
-                    new IdleChannelCloser()
-            );
+            ch.pipeline().addLast(new IdleChannelCloser(inactivityTimeout));
         }
     }
 
@@ -113,22 +109,17 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
         }
     }
 
-    private static class IdleChannelCloser extends ChannelInboundHandlerAdapter {
+    private static class IdleChannelCloser extends IdleStateHandler {
         private static final Logger LOG = LoggerFactory.getLogger(IdleChannelCloser.class);
 
+        public IdleChannelCloser(int inactivityTimeout) {
+            super(0, 0, inactivityTimeout);
+        }
+
         @Override
-        public void userEventTriggered(final ChannelHandlerContext ctx,
-                                       final Object evt) throws Exception {
-            if (evt instanceof IdleStateEvent) {
-                final IdleStateEvent e = (IdleStateEvent) evt;
-                if (e.state() == IdleState.ALL_IDLE) {
-                    LOG.debug("Close channel to {} due to inactivity.", ctx.channel()::remoteAddress);
-                    ctx.close();
-                }
-            }
-            else {
-                super.userEventTriggered(ctx, evt);
-            }
+        protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
+            LOG.debug("Close channel to {} due to inactivity.", ctx.channel()::remoteAddress);
+            ctx.close();
         }
     }
 }
