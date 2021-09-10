@@ -74,7 +74,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
         // close inactive channels (to free up resources)
         final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
         if (inactivityTimeout > 0) {
-            ch.pipeline().addLast(new IdleChannelCloser(inactivityTimeout));
+            ch.pipeline().addFirst(new IdleChannelCloser(inactivityTimeout));
         }
     }
 
