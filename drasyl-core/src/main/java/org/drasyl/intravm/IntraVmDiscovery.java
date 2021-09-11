@@ -82,7 +82,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             }
             else {
                 LOG.debug("Send message `{}` via Intra VM Discovery.", ((AddressedMessage<?, ?>) msg)::message);
-                discoveree.fireChannelRead(new AddressedMessage<>(((AddressedMessage<?, ?>) msg).message(), myAddress));
+                discoveree.fireChannelRead(((AddressedMessage<?, ?>) msg).route(myAddress));
                 promise.setSuccess();
             }
         }

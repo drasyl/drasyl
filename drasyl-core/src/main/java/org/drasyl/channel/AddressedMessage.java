@@ -148,10 +148,18 @@ public class AddressedMessage<M, A extends SocketAddress> implements ReferenceCo
     }
 
     /**
-     * Returns a new {@link AddressedMessage} which contains the message {@code message} with
+     * Returns a new {@link AddressedMessage} which contains the message {@code message} with the
      * address {@link #address()}.
      */
     public <N> AddressedMessage<N, A> replace(N message) {
         return new AddressedMessage<>(message, address());
+    }
+
+    /**
+     * Returns a new {@link AddressedMessage} with contains the message {@link #message()} with the
+     * address {@code address}.
+     */
+    public <B extends SocketAddress> AddressedMessage<M, B> route(B address) {
+        return new AddressedMessage<>(message(), address);
     }
 }
