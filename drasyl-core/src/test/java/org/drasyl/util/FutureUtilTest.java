@@ -33,7 +33,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 
+import static org.drasyl.util.FutureUtil.synchronizeFutures;
 import static org.drasyl.util.FutureUtil.toFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -101,6 +103,59 @@ class FutureUtilTest {
 
             assertTrue(future.isCompletedExceptionally());
             assertThrows(CompletionException.class, () -> future.getNow(null));
+        }
+    }
+
+    @Nested
+    class SynchronizeFutures {
+        @Test
+        void shouldSucceedPromiseIfFutureHasBeenSucceeeded(@Mock EventExecutor executor) {
+            Promise<String> promise = new DefaultPromise<>(executor);
+            CompletableFuture<String> future = new CompletableFuture<>();
+            synchronizeFutures(promise, future);
+
+            future.complete("Hello");
+
+            assertEquals("Hello", promise.getNow());
+        }
+
+        @Test
+        void shouldFailPromiseIfFutureHasBeenFailed(@Mock EventExecutor executor,
+                                                    @Mock Throwable ex) {
+            Promise<String> promise = new DefaultPromise<>(executor);
+            CompletableFuture<String> future = new CompletableFuture<>();
+            synchronizeFutures(promise, future);
+
+            future.completeExceptionally(ex);
+
+            assertEquals(ex, promise.cause());
+        }
+
+        @Test
+        void shouldSucceedFutureIfPromiseHasBeenSucceeeded(@Mock EventExecutor executor) {
+            when(executor.inEventLoop()).thenReturn(true);
+
+            Promise<String> promise = new DefaultPromise<>(executor);
+            CompletableFuture<String> future = new CompletableFuture<>();
+            synchronizeFutures(promise, future);
+
+            promise.setSuccess("Hello");
+
+            assertEquals("Hello", future.getNow(null));
+        }
+
+        @Test
+        void shouldFailFutureIfPromiseHasBeenFailed(@Mock EventExecutor executor,
+                                                    @Mock Throwable cause) {
+            when(executor.inEventLoop()).thenReturn(true);
+
+            Promise<String> promise = new DefaultPromise<>(executor);
+            CompletableFuture<String> future = new CompletableFuture<>();
+            synchronizeFutures(promise, future);
+
+            promise.setFailure(cause);
+
+            assertThrows(ExecutionException.class, future::get);
         }
     }
 }

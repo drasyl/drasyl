@@ -285,23 +285,7 @@ public abstract class DrasylNode {
                     final ChannelPromise promise = c.newPromise();
                     c.writeAndFlush(p, promise);
 
-                    // synchronize promise and future in both directions
-                    promise.addListener(f -> {
-                        if (f.isSuccess()) {
-                            future.complete(null);
-                        }
-                        else {
-                            future.completeExceptionally(f.cause());
-                        }
-                    });
-                    future.whenComplete((result, e) -> {
-                        if (e == null) {
-                            promise.setSuccess();
-                        }
-                        else {
-                            promise.setFailure(e);
-                        }
-                    });
+                    FutureUtil.synchronizeFutures(promise, future);
                 });
             }
 
