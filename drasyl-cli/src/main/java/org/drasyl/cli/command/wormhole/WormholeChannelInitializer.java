@@ -21,7 +21,6 @@
  */
 package org.drasyl.cli.command.wormhole;
 
-import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeChannelInitializer;
@@ -32,15 +31,10 @@ import org.drasyl.channel.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.channel.arq.stopandwait.StopAndWaitArqHandler;
 
 class WormholeChannelInitializer extends DrasylNodeChannelInitializer {
+    public static final int ARQ_RETRY_TIMEOUT_MILLIS = 250;
+
     public WormholeChannelInitializer(final DrasylConfig config, final DrasylNode node) {
         super(config, node);
-    }
-
-    @Override
-    protected void initChannel(final DrasylChannel ch) {
-        ch.pipeline().addLast("CHUNKED_WRITER", new ChunkedWriteHandler());
-
-        super.initChannel(ch);
     }
 
     @Override
@@ -51,10 +45,11 @@ class WormholeChannelInitializer extends DrasylNodeChannelInitializer {
         addArq(ch);
     }
 
+    @SuppressWarnings("java:S2325")
     private void addArq(final DrasylChannel ch) {
         // add ARQ to make sure messages arrive
         ch.pipeline().addFirst(new ByteToStopAndWaitArqDataCodec());
-        ch.pipeline().addFirst(new StopAndWaitArqHandler(250));
+        ch.pipeline().addFirst(new StopAndWaitArqHandler(ARQ_RETRY_TIMEOUT_MILLIS));
         ch.pipeline().addFirst(new StopAndWaitArqCodec());
     }
 }
