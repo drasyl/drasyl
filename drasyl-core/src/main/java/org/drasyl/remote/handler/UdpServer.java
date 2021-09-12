@@ -156,8 +156,8 @@ public class UdpServer extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
-            final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
-            final InetSocketAddress recipient = (InetSocketAddress) ((AddressedMessage<?, ?>) msg).address();
+            final ByteBuf byteBufMsg = ((AddressedMessage<ByteBuf, InetSocketAddress>) msg).message();
+            final InetSocketAddress recipient = ((AddressedMessage<ByteBuf, InetSocketAddress>) msg).address();
             final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
 
             pendingWrites.add(packet, promise);

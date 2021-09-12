@@ -135,8 +135,8 @@ public class TcpClient extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
-            final ByteBuf byteBufMsg = (ByteBuf) ((AddressedMessage<?, ?>) msg).message();
-            final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
+            final ByteBuf byteBufMsg = ((AddressedMessage<ByteBuf, ?>) msg).message();
+            final SocketAddress recipient = ((AddressedMessage<ByteBuf, ?>) msg).address();
 
             // check if we can route the message via a tcp connection
             final ChannelFuture mySuperPeerChannel = this.superPeerChannel;

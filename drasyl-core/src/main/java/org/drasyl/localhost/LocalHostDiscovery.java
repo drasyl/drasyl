@@ -140,8 +140,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey) {
-            final IdentityPublicKey recipient = (IdentityPublicKey) ((AddressedMessage<?, ?>) msg).address();
-            final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
+            final ApplicationMessage applicationMsg = ((AddressedMessage<ApplicationMessage, IdentityPublicKey>) msg).message();
+            final IdentityPublicKey recipient = ((AddressedMessage<ApplicationMessage, IdentityPublicKey>) msg).address();
 
             final SocketAddress localAddress = routes.get(recipient);
             if (localAddress != null) {

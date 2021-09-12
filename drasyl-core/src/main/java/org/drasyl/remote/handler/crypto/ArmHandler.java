@@ -408,8 +408,8 @@ public class ArmHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof FullReadMessage) {
-            final FullReadMessage<?> fullReadMsg = (FullReadMessage<?>) ((AddressedMessage<?, ?>) msg).message();
-            final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
+            final FullReadMessage<?> fullReadMsg = ((AddressedMessage<FullReadMessage<?>, ?>) msg).message();
+            final SocketAddress recipient = ((AddressedMessage<FullReadMessage<?>, ?>) msg).address();
 
             if (fullReadMsg.getRecipient() == null) {
                 ctx.write(msg, promise);
@@ -432,8 +432,8 @@ public class ArmHandler extends ChannelDuplexHandler {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws IOException {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ArmedMessage) {
-            final ArmedMessage armedMessage = (ArmedMessage) ((AddressedMessage<?, ?>) msg).message();
-            final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
+            final ArmedMessage armedMessage = ((AddressedMessage<ArmedMessage, ?>) msg).message();
+            final SocketAddress sender = ((AddressedMessage<ArmedMessage, ?>) msg).address();
 
             if (!identity.getIdentityPublicKey().equals(armedMessage.getRecipient())
                     || identity.getIdentityPublicKey().equals(armedMessage.getSender())) {

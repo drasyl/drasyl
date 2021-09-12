@@ -45,7 +45,8 @@ public final class HopCountGuard extends ChannelOutboundHandlerAdapter {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
-            final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
+            final RemoteMessage remoteMsg = ((AddressedMessage<RemoteMessage, ?>) msg).message();
+
             if (remoteMsg.getHopCount().getByte() < messageHopLimit) {
                 ctx.write(((AddressedMessage<?, ?>) msg).replace(remoteMsg.incrementHopCount()));
             }

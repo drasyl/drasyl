@@ -80,7 +80,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws IOException {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ChunkMessage) {
-            final ChunkMessage chunkMsg = (ChunkMessage) ((AddressedMessage<?, ?>) msg).message();
+            final ChunkMessage chunkMsg = ((AddressedMessage<ChunkMessage, ?>) msg).message();
             final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
 
             // message is addressed to me
@@ -103,7 +103,7 @@ public class ChunkingHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) throws IOException {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
-            final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
+            final RemoteMessage remoteMsg = ((AddressedMessage<RemoteMessage, ?>) msg).message();
             final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
 
             if (myAddress.equals(remoteMsg.getSender())) {

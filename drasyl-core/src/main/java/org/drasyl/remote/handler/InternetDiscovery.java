@@ -279,8 +279,8 @@ public class InternetDiscovery extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage) {
-            final ApplicationMessage applicationMsg = (ApplicationMessage) ((AddressedMessage<?, ?>) msg).message();
-            final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
+            final ApplicationMessage applicationMsg = ((AddressedMessage<ApplicationMessage, ?>) msg).message();
+            final SocketAddress recipient = ((AddressedMessage<ApplicationMessage, ?>) msg).address();
 
             if (recipient instanceof IdentityPublicKey) {
                 // record communication to keep active connections alive
@@ -418,7 +418,7 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     }
 
     private boolean shouldTryUnite(final IdentityPublicKey sender,
-                                                final IdentityPublicKey recipient) {
+                                   final IdentityPublicKey recipient) {
         final Pair<IdentityPublicKey, IdentityPublicKey> key;
         if (sender.hashCode() > recipient.hashCode()) {
             key = Pair.of(sender, recipient);
@@ -432,8 +432,8 @@ public class InternetDiscovery extends ChannelDuplexHandler {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress && ((RemoteMessage) ((AddressedMessage<?, ?>) msg).message()).getRecipient() != null) {
-            final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
-            final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
+            final RemoteMessage remoteMsg = ((AddressedMessage<RemoteMessage, ?>) msg).message();
+            final SocketAddress sender = ((AddressedMessage<RemoteMessage, ?>) msg).address();
 
             // this message is for us and we will fully decode it
             if (myAddress.equals(remoteMsg.getRecipient()) && remoteMsg instanceof FullReadMessage) {

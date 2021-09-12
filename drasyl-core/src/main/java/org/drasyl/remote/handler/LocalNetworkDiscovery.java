@@ -143,8 +143,8 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage) {
-            final SocketAddress sender = ((AddressedMessage<?, ?>) msg).address();
-            final DiscoveryMessage discoveryMsg = (DiscoveryMessage) ((AddressedMessage<?, ?>) msg).message();
+            final DiscoveryMessage discoveryMsg = ((AddressedMessage<DiscoveryMessage, ?>) msg).message();
+            final SocketAddress sender = ((AddressedMessage<DiscoveryMessage, ?>) msg).address();
 
             if (scheduledPingFuture != null && sender instanceof InetSocketAddress && discoveryMsg.getRecipient() == null) {
                 handlePing(ctx, sender, discoveryMsg, new CompletableFuture<>());
@@ -179,8 +179,8 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
-            final RemoteMessage remoteMsg = (RemoteMessage) ((AddressedMessage<?, ?>) msg).message();
-            final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
+            final RemoteMessage remoteMsg = ((AddressedMessage<RemoteMessage, ?>) msg).message();
+            final SocketAddress recipient = ((AddressedMessage<RemoteMessage, ?>) msg).address();
 
             final Peer peer = peers.get(recipient);
             if (peer != null) {
