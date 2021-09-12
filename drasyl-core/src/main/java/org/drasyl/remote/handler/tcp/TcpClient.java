@@ -32,6 +32,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.util.logging.Logger;
@@ -142,14 +143,7 @@ public class TcpClient extends ChannelDuplexHandler {
             final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
             if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
                 LOG.trace("Send message `{}` via TCP connection to `{}`.", () -> byteBufMsg, () -> recipient);
-                mySuperPeerChannel.channel().write(byteBufMsg).addListener(future -> {
-                    if (future.isSuccess()) {
-                        promise.setSuccess();
-                    }
-                    else {
-                        promise.setFailure(future.cause());
-                    }
-                });
+                mySuperPeerChannel.channel().write(byteBufMsg).addListener(new PromiseNotifier<>(promise));
             }
             else {
                 // pass through message

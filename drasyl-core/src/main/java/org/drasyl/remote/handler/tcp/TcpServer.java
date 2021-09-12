@@ -34,6 +34,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
 import org.drasyl.util.logging.Logger;
@@ -103,14 +104,7 @@ public class TcpServer extends ChannelDuplexHandler {
             final Channel client = clientChannels.get(recipient);
             if (client != null) {
                 LOG.trace("Send message `{}` via TCP to client `{}`", byteBufMsg, recipient);
-                client.writeAndFlush(byteBufMsg).addListener(future -> {
-                    if (future.isSuccess()) {
-                        promise.setSuccess();
-                    }
-                    else {
-                        promise.setFailure(future.cause());
-                    }
-                });
+                client.writeAndFlush(byteBufMsg).addListener(new PromiseNotifier<>(promise));
             }
             else {
                 // message is not addressed to any of our clients. pass through message

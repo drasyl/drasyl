@@ -35,6 +35,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.event.Event;
 import org.drasyl.util.logging.Logger;
@@ -187,14 +188,7 @@ public class UdpServer extends ChannelDuplexHandler {
             final ChannelPromise promise = pendingWrites.remove();
 
             LOG.trace("Write Datagram {}", currentWrite);
-            channel.writeAndFlush(currentWrite).addListener(future -> {
-                if (future.isSuccess()) {
-                    promise.setSuccess();
-                }
-                else {
-                    promise.setFailure(future.cause());
-                }
-            });
+            channel.writeAndFlush(currentWrite).addListener(new PromiseNotifier<>(promise));
         }
     }
 
