@@ -62,22 +62,26 @@ public abstract class BodyChunkMessage implements ChunkMessage {
 
     @Override
     public ReferenceCounted retain() {
-        return getBytes().retain();
+        getBytes().retain();
+        return this;
     }
 
     @Override
     public ReferenceCounted retain(final int increment) {
-        return getBytes().retain(increment);
+        getBytes().retain(increment);
+        return this;
     }
 
     @Override
     public ReferenceCounted touch() {
-        return getBytes().touch();
+        getBytes().touch();
+        return this;
     }
 
     @Override
     public ReferenceCounted touch(final Object hint) {
-        return getBytes().touch(hint);
+        getBytes().touch(hint);
+        return this;
     }
 
     @Override
