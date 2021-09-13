@@ -23,11 +23,13 @@ package org.drasyl.crypto;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.goterl.lazysodium.LazySodiumJava;
-import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.exceptions.SodiumException;
 import com.goterl.lazysodium.interfaces.AEAD;
 import com.goterl.lazysodium.interfaces.Sign;
 import com.goterl.lazysodium.utils.SessionPair;
+import com.goterl.resourceloader.ResourceLoaderException;
+import org.drasyl.crypto.loader.DrasylLazySodiumJava;
+import org.drasyl.crypto.loader.DrasylSodiumJava;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.Key;
@@ -36,14 +38,20 @@ import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.identity.PublicKey;
 import org.drasyl.remote.protocol.Nonce;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.File;
 import java.security.SecureRandom;
 import java.util.Objects;
+
+import static com.goterl.lazysodium.utils.LibraryLoader.getSodiumPathInResources;
 
 /**
  * Util class that provides cryptography functions for drasyl.
  */
 public class Crypto {
+    private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
     public static final Crypto INSTANCE;
     public static final SecureRandom CSPRNG;
     public static final short PK_LONG_TIME_KEY_LENGTH = Sign.PUBLICKEYBYTES;
@@ -52,8 +60,30 @@ public class Crypto {
     public static final short SK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_SECRETKEYBYTES;
 
     static {
-        INSTANCE = new Crypto(
-                new LazySodiumJava(new SodiumJava()));
+        Crypto cryptoInstance;
+        final File lib = new File("./" + getSodiumPathInResources());
+
+        if (lib.isFile()) {
+            try {
+                cryptoInstance = new Crypto(new DrasylLazySodiumJava(new DrasylSodiumJava(lib)));
+
+                LOG.debug("Loaded libsodium library from local path: {}", lib.getAbsolutePath());
+            }
+            catch (ResourceLoaderException e) {
+                // try default loading
+                cryptoInstance = new Crypto(
+                        new DrasylLazySodiumJava(new DrasylSodiumJava()));
+
+                LOG.warn("Could not load local libs from `{}`. Loaded libsodium library with default constructor.", lib.getAbsolutePath());
+            }
+        }
+        else {
+            cryptoInstance = new Crypto(
+                    new DrasylLazySodiumJava(new DrasylSodiumJava()));
+
+            LOG.debug("Loaded libsodium library with default constructor.");
+        }
+        INSTANCE = cryptoInstance;
 
         // check for the optimal cryptographically secure pseudorandom number generator for the current platform
         SecureRandom prng;
@@ -69,9 +99,9 @@ public class Crypto {
         CSPRNG = prng;
     }
 
-    private final LazySodiumJava sodium;
+    private final DrasylLazySodiumJava sodium;
 
-    Crypto(final LazySodiumJava sodium) {
+    Crypto(final DrasylLazySodiumJava sodium) {
         this.sodium = sodium;
     }
 
@@ -157,7 +187,7 @@ public class Crypto {
      *
      * @return returns the {@link LazySodiumJava} instance.
      */
-    public LazySodiumJava getSodium() {
+    public DrasylLazySodiumJava getSodium() {
         return sodium;
     }
 

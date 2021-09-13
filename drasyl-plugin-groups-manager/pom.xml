@@ -26,7 +26,7 @@
     <parent>
         <artifactId>drasyl-parent</artifactId>
         <groupId>org.drasyl</groupId>
-        <version>0.5.0</version>
+        <version>0.5.1</version>
     </parent>
 
     <artifactId>drasyl-plugin-groups-manager</artifactId>

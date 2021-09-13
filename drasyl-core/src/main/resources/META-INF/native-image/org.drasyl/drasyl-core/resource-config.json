@@ -2,16 +2,52 @@
   "resources": {
     "includes": [
       {
+        "pattern":"\\Qreference.conf\\E"
+      },
+      {
+        "pattern":"\\QMETA-INF/native/libnetty_transport_native_epoll_aarch_64.so\\E"
+      },
+      {
+        "pattern":"\\QMETA-INF/native/libnetty_transport_native_epoll_x86_64.so\\E"
+      },
+      {
+        "pattern":"\\QMETA-INF/native/libnetty_transport_native_kqueue_x86_64.jnilib\\E"
+      },
+      {
+        "pattern":"\\QMETA-INF/native/libnetty_resolver_dns_native_macos_x86_64.jnilib\\E"
+      },
+      {
         "pattern": "\\Qcom/sun/jna/darwin-x86-64/libjnidispatch.jnilib\\E"
       },
       {
         "pattern": "\\Qcom/sun/jna/darwin-aarch64/libjnidispatch.jnilib\\E"
       },
       {
+        "pattern": "\\Qcom/sun/jna/linux-x86/libjnidispatch.so\\E"
+      },
+      {
         "pattern": "\\Qcom/sun/jna/linux-x86-64/libjnidispatch.so\\E"
       },
       {
+        "pattern":"\\Qcom/sun/jna/linux-aarch64/libjnidispatch.so\\E"
+      },
+      {
+        "pattern":"\\Qcom/sun/jna/linux-arm/libjnidispatch.so\\E"
+      },
+      {
+        "pattern":"\\Qcom/sun/jna/win32-x86/jnidispatch.dll\\E"
+      },
+      {
+        "pattern":"\\Qcom/sun/jna/win32-x86-64/jnidispatch.dll\\E"
+      },
+      {
         "pattern": "\\QMETA-INF/org.drasyl.versions.properties\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/org.drasyl.versions.properties\\E"
+      },
+      {
+        "pattern": ".*/libsodium.(so|dll|dylib)$"
       }
     ]
   },
