@@ -103,6 +103,11 @@
         <!-- Crypto -->
         <dependency>
             <groupId>com.goterl</groupId>
+            <artifactId>resource-loader</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.goterl</groupId>
             <artifactId>lazysodium-java</artifactId>
         </dependency>
 

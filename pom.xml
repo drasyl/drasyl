@@ -124,13 +124,13 @@
         <java.version>11</java.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <logback.version>1.2.5</logback.version>
-        <junit.version>5.7.2</junit.version>
+        <logback.version>1.2.6</logback.version>
+        <junit.version>5.8.0</junit.version>
         <mockito.version>3.12.4</mockito.version>
         <jackson.version>2.12.5</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.1.0</awaitility.version>
-        <netty.version>4.1.67.Final</netty.version>
+        <netty.version>4.1.68.Final</netty.version>
         <guava.version>30.1.1-jre</guava.version>
         <rxjava.version>3.1.1</rxjava.version>
         <micrometer.version>1.7.3</micrometer.version>
@@ -143,6 +143,7 @@
         <protobuf.version>3.17.3</protobuf.version>
         <auto-value.version>1.8.2</auto-value.version>
         <lazysodium-java.version>5.1.1</lazysodium-java.version>
+        <resource-loader.version>2.0.1</resource-loader.version>
         <jna.version>5.9.0</jna.version>
 
         <sonar.organization>drasyl</sonar.organization>
@@ -279,10 +280,16 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.115</version>
+                <version>4.8.116</version>
             </dependency>
 
             <!-- Crypto -->
+            <dependency>
+                <groupId>com.goterl</groupId>
+                <artifactId>resource-loader</artifactId>
+                <version>${resource-loader.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.goterl</groupId>
                 <artifactId>lazysodium-java</artifactId>
@@ -398,7 +405,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.3.0</version>
+                    <version>3.3.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
