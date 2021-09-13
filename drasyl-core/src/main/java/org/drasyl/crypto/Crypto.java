@@ -23,15 +23,12 @@ package org.drasyl.crypto;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.goterl.lazysodium.LazySodiumJava;
-import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.exceptions.SodiumException;
 import com.goterl.lazysodium.interfaces.AEAD;
 import com.goterl.lazysodium.interfaces.Sign;
 import com.goterl.lazysodium.utils.SessionPair;
-import com.goterl.resourceloader.ResourceLoader;
 import com.goterl.resourceloader.ResourceLoaderException;
-import com.goterl.resourceloader.SharedLibraryLoader;
-import com.sun.jna.Native;
+import org.drasyl.crypto.loader.DrasylSodiumJava;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.Key;
@@ -44,15 +41,10 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Objects;
 
 import static com.goterl.lazysodium.utils.LibraryLoader.getSodiumPathInResources;
-import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
-import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
  * Util class that provides cryptography functions for drasyl.
@@ -66,58 +58,27 @@ public class Crypto {
     public static final short PK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_PUBLICKEYBYTES;
     public static final short SK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_SECRETKEYBYTES;
 
-    static class LocalLibSodiumJava extends SodiumJava {
-        public LocalLibSodiumJava(File libFile) throws ResourceLoaderException {
-            try {
-                File tempDir = ResourceLoader.createMainTempDirectory();
-                tempDir.mkdirs();
-
-                // We want to copy this to a temp dir to have the right to change permissions
-                File library = copyToTempDir(libFile, tempDir);
-                SharedLibraryLoader.get().setPermissions(library);
-                if (library.isDirectory()) {
-                    throw new ResourceLoaderException("Please supply a relative path to a file and not a directory.");
-                }
-                for (Class clzz : getClassesToRegister()) {
-                    Native.register(clzz, library.getAbsolutePath());
-                }
-                SharedLibraryLoader.get().requestDeletion(library);
-                onRegistered();
-            }
-            catch (Exception e) {
-                throw new ResourceLoaderException("Could not load local library due to: ", e);
-            }
-        }
-
-        private File copyToTempDir(File file, File outputDir) throws IOException {
-            File resourceCopiedToTempFolder = new File(outputDir, file.getName());
-            Files.copy(file.toPath(), resourceCopiedToTempFolder.toPath(), REPLACE_EXISTING, COPY_ATTRIBUTES,
-                    NOFOLLOW_LINKS);
-            return resourceCopiedToTempFolder;
-        }
-    }
-
     static {
         Crypto cryptoInstance;
         final File lib = new File("./" + getSodiumPathInResources());
 
         if (lib.isFile()) {
             try {
-                cryptoInstance = new Crypto(new LazySodiumJava(new LocalLibSodiumJava(lib)));
+                cryptoInstance = new Crypto(new LazySodiumJava(new DrasylSodiumJava(lib)));
 
                 LOG.debug("Loaded libsodium library from local path: {}", lib.getAbsolutePath());
             }
             catch (ResourceLoaderException e) {
                 // try default loading
                 cryptoInstance = new Crypto(
-                        new LazySodiumJava(new SodiumJava()));
+                        new LazySodiumJava(new DrasylSodiumJava()));
 
                 LOG.warn("Could not load local libs from `{}`. Loaded libsodium library with default constructor.", lib.getAbsolutePath());
             }
         }
         else {
             cryptoInstance = new Crypto(
-                    new LazySodiumJava(new SodiumJava()));
+                    new LazySodiumJava(new DrasylSodiumJava()));
 
             LOG.debug("Loaded libsodium library with default constructor.");
         }
