@@ -40,13 +40,13 @@ import java.util.zip.ZipInputStream;
 /**
  * Loads resources from a relative or absolute path even if the file is in a JAR.
  */
-public class ResourceLoader {
+public class DrasylResourceLoader {
     private final Logger logger = LoggerFactory.getLogger("ResourceLoader");
     private final Collection<PosixFilePermission> writePerms = new ArrayList<>();
     private final Collection<PosixFilePermission> readPerms = new ArrayList<>();
     private final Collection<PosixFilePermission> execPerms = new ArrayList<>();
 
-    ResourceLoader() {
+    DrasylResourceLoader() {
         readPerms.add(PosixFilePermission.OWNER_READ);
         readPerms.add(PosixFilePermission.OTHERS_READ);
         readPerms.add(PosixFilePermission.GROUP_READ);
@@ -238,7 +238,7 @@ public class ResourceLoader {
      */
     private File extractFilesOrFoldersFromJar(File outputDir,
                                               URL jarUrl,
-                                              String pathInJar) throws URISyntaxException, IOException {
+                                              String pathInJar) throws IOException {
         File jar = urlToFile(jarUrl);
         unzip(jar.getAbsolutePath(), outputDir.getAbsolutePath());
         String filePath = outputDir.getAbsolutePath() + pathInJar;
@@ -258,7 +258,7 @@ public class ResourceLoader {
     private File getFileFromFileSystem(String relativePath,
                                        File outputDir) throws IOException, URISyntaxException {
         relativePath = prefixStringWithSlashIfNotAlready(relativePath);
-        final URL url = ResourceLoader.class.getResource(relativePath);
+        final URL url = DrasylResourceLoader.class.getResource(relativePath);
         final String urlString = url.getFile();
         final File file;
         if (Platform.isWindows()) {

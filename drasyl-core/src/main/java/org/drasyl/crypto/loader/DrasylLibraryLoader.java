@@ -7,26 +7,28 @@
  */
 package org.drasyl.crypto.loader;
 
+import com.goterl.lazysodium.utils.LibraryLoader;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class LibraryLoader {
+public class DrasylLibraryLoader {
     private final List<Class> classes = new ArrayList<>();
 
-    public LibraryLoader(List<Class> classesToRegister) {
+    public DrasylLibraryLoader(List<Class> classesToRegister) {
         classes.addAll(classesToRegister);
     }
 
     public void loadSystemLibrary(String library) {
-        SharedLibraryLoader.get().loadSystemLibrary(library, classes);
+        DrasylSharedLibraryLoader.get().loadSystemLibrary(library, classes);
     }
 
     private void loadBundledLibrary() {
-        String pathInJar = com.goterl.lazysodium.utils.LibraryLoader.getSodiumPathInResources();
-        SharedLibraryLoader.get().load(pathInJar, classes);
+        String pathInJar = LibraryLoader.getSodiumPathInResources();
+        DrasylSharedLibraryLoader.get().load(pathInJar, classes);
     }
 
-    public void loadLibrary(com.goterl.lazysodium.utils.LibraryLoader.Mode mode,
+    public void loadLibrary(LibraryLoader.Mode mode,
                             String systemFallBack) {
         switch (mode) {
             case PREFER_SYSTEM:

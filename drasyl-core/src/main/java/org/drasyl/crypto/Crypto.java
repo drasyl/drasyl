@@ -28,6 +28,7 @@ import com.goterl.lazysodium.interfaces.AEAD;
 import com.goterl.lazysodium.interfaces.Sign;
 import com.goterl.lazysodium.utils.SessionPair;
 import com.goterl.resourceloader.ResourceLoaderException;
+import org.drasyl.crypto.loader.DrasylLazySodiumJava;
 import org.drasyl.crypto.loader.DrasylSodiumJava;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
@@ -64,21 +65,21 @@ public class Crypto {
 
         if (lib.isFile()) {
             try {
-                cryptoInstance = new Crypto(new LazySodiumJava(new DrasylSodiumJava(lib)));
+                cryptoInstance = new Crypto(new DrasylLazySodiumJava(new DrasylSodiumJava(lib)));
 
                 LOG.debug("Loaded libsodium library from local path: {}", lib.getAbsolutePath());
             }
             catch (ResourceLoaderException e) {
                 // try default loading
                 cryptoInstance = new Crypto(
-                        new LazySodiumJava(new DrasylSodiumJava()));
+                        new DrasylLazySodiumJava(new DrasylSodiumJava()));
 
                 LOG.warn("Could not load local libs from `{}`. Loaded libsodium library with default constructor.", lib.getAbsolutePath());
             }
         }
         else {
             cryptoInstance = new Crypto(
-                    new LazySodiumJava(new DrasylSodiumJava()));
+                    new DrasylLazySodiumJava(new DrasylSodiumJava()));
 
             LOG.debug("Loaded libsodium library with default constructor.");
         }
@@ -98,9 +99,9 @@ public class Crypto {
         CSPRNG = prng;
     }
 
-    private final LazySodiumJava sodium;
+    private final DrasylLazySodiumJava sodium;
 
-    Crypto(final LazySodiumJava sodium) {
+    Crypto(final DrasylLazySodiumJava sodium) {
         this.sodium = sodium;
     }
 
@@ -186,7 +187,7 @@ public class Crypto {
      *
      * @return returns the {@link LazySodiumJava} instance.
      */
-    public LazySodiumJava getSodium() {
+    public DrasylLazySodiumJava getSodium() {
         return sodium;
     }
 

@@ -18,10 +18,10 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
-public class SharedLibraryLoader extends ResourceLoader {
+public class DrasylSharedLibraryLoader extends DrasylResourceLoader {
     private final Object lock = new Object();
 
-    private SharedLibraryLoader() {
+    private DrasylSharedLibraryLoader() {
         super();
     }
 
@@ -30,8 +30,8 @@ public class SharedLibraryLoader extends ResourceLoader {
      *
      * @return Returns this loader instantiated.
      */
-    public static SharedLibraryLoader get() {
-        return SharedLibraryLoader.SingletonHelper.INSTANCE;
+    public static DrasylSharedLibraryLoader get() {
+        return DrasylSharedLibraryLoader.SingletonHelper.INSTANCE;
     }
 
     public void loadSystemLibrary(String libraryName, Class clzz) {
@@ -85,6 +85,6 @@ public class SharedLibraryLoader extends ResourceLoader {
     }
 
     private static class SingletonHelper {
-        private static final SharedLibraryLoader INSTANCE = new SharedLibraryLoader();
+        private static final DrasylSharedLibraryLoader INSTANCE = new DrasylSharedLibraryLoader();
     }
 }
