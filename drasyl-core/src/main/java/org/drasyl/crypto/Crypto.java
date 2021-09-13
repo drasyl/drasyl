@@ -28,6 +28,8 @@ import com.goterl.lazysodium.exceptions.SodiumException;
 import com.goterl.lazysodium.interfaces.AEAD;
 import com.goterl.lazysodium.interfaces.Sign;
 import com.goterl.lazysodium.utils.SessionPair;
+import com.goterl.resourceloader.ResourceLoaderException;
+import com.goterl.resourceloader.SharedLibraryLoader;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.Key;
@@ -36,6 +38,8 @@ import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.identity.PublicKey;
 import org.drasyl.remote.protocol.Nonce;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.File;
 import java.security.SecureRandom;
@@ -47,6 +51,7 @@ import static com.goterl.lazysodium.utils.LibraryLoader.getSodiumPathInResources
  * Util class that provides cryptography functions for drasyl.
  */
 public class Crypto {
+    private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
     public static final Crypto INSTANCE;
     public static final SecureRandom CSPRNG;
     public static final short PK_LONG_TIME_KEY_LENGTH = Sign.PUBLICKEYBYTES;
@@ -54,16 +59,40 @@ public class Crypto {
     public static final short PK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_PUBLICKEYBYTES;
     public static final short SK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_SECRETKEYBYTES;
 
+    static class LocalLibSodiumJava extends SodiumJava {
+        public LocalLibSodiumJava(String relPath) throws ResourceLoaderException {
+            // We want to copy this to a temp dir to have the right to change permissions
+            SharedLibraryLoader.get().load(relPath, getClassesToRegister());
+            onRegistered();
+        }
+    }
+
     static {
-        final File lib = new File("./" + getSodiumPathInResources());
+        Crypto cryptoInstance;
+        final String relPath = "./" + getSodiumPathInResources();
+        final File lib = new File(relPath);
 
         if (lib.isFile()) {
-            INSTANCE = new Crypto(new LazySodiumJava(new SodiumJava(lib.getAbsolutePath())));
+            try {
+                cryptoInstance = new Crypto(new LazySodiumJava(new LocalLibSodiumJava(relPath)));
+
+                LOG.debug("Loaded libsodium library from local path: {}", lib.getAbsolutePath());
+            }
+            catch (ResourceLoaderException e) {
+                // try default loading
+                cryptoInstance = new Crypto(
+                        new LazySodiumJava(new SodiumJava()));
+
+                LOG.warn("Could not load local libs from `{}`. Loaded libsodium library with default constructor.", lib.getAbsolutePath());
+            }
         }
         else {
-            INSTANCE = new Crypto(
+            cryptoInstance = new Crypto(
                     new LazySodiumJava(new SodiumJava()));
+
+            LOG.debug("Loaded libsodium library with default constructor.");
         }
+        INSTANCE = cryptoInstance;
 
         // check for the optimal cryptographically secure pseudorandom number generator for the current platform
         SecureRandom prng;
