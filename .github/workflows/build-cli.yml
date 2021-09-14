@@ -89,7 +89,7 @@ jobs:
       - name: Set up GraalVM environment
         uses: ayltai/setup-graalvm@v1
         with:
-          java-version: 16
+          java-version: 11
           graalvm-version: 21.2.0
           native-image: true
 
