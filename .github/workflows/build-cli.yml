@@ -34,9 +34,10 @@ jobs:
         run: ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -DskipTests --projects drasyl-cli --also-make package
       - name: Publish artifact
         uses: actions/upload-artifact@v2.2.4
+        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         with:
           name: Java
-          path: drasyl-*.zip
+          path: drasyl-*.zip.*
 
   native-image:
     strategy:
@@ -151,9 +152,10 @@ jobs:
       # publish artifact
       - name: Publish artifact
         uses: actions/upload-artifact@v2.2.4
+        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         with:
           name: ${{ matrix.job_name }}
-          path: drasyl-*-${{ matrix.job_name }}.zip
+          path: drasyl-*-${{ matrix.job_name }}.zip.*
 
   docker:
     name: Docker
