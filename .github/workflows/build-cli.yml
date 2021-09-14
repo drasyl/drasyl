@@ -35,7 +35,6 @@ jobs:
       - name: Build hash
         run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
       - name: Publish artifact
-        if: success()
         uses: actions/upload-artifact@v2.2.4
         with:
           name: Java
@@ -70,7 +69,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -85,8 +84,8 @@ jobs:
       - name: Set up GraalVM environment
         uses: ayltai/setup-graalvm@v1
         with:
-          java-version: 11
-          graalvm-version: 21.1.0
+          java-version: 16
+          graalvm-version: 21.2.0
           native-image: true
 
       - name: Cache Maven packages
@@ -157,7 +156,6 @@ jobs:
 
       # publish artifact
       - name: Publish artifact
-        if: success()
         uses: actions/upload-artifact@v2.2.4
         with:
           name: ${{ matrix.job_name }}
@@ -169,7 +167,7 @@ jobs:
 
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2
       - name: Build Docker Image
         run: docker build --tag drasyl/drasyl .
       - name: Test Docker Image
