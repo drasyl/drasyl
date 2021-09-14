@@ -35,9 +35,10 @@ jobs:
       - name: Publish artifact
         if: success()
         uses: actions/upload-artifact@v2.2.4
+        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         with:
           name: Java
-          path: drasyl-*.zip
+          path: drasyl-*.zip.*
 
   native-image:
     strategy:
@@ -153,9 +154,10 @@ jobs:
       - name: Publish artifact
         if: success()
         uses: actions/upload-artifact@v2.2.4
+        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         with:
           name: ${{ matrix.job_name }}
-          path: drasyl-*-${{ matrix.job_name }}.zip
+          path: drasyl-*-${{ matrix.job_name }}.zip.*
 
   docker:
     name: Docker
