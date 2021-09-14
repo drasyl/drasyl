@@ -38,7 +38,12 @@ jobs:
         uses: actions/upload-artifact@v2.2.4
         with:
           name: Java
-          path: drasyl-*.zip.*
+          path: drasyl-*.zip
+      - name: Publish artifact hash
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: Java-Hash
+          path: drasyl-*.zip.sha256
 
   native-image:
     strategy:
@@ -159,7 +164,14 @@ jobs:
         uses: actions/upload-artifact@v2.2.4
         with:
           name: ${{ matrix.job_name }}
-          path: drasyl-*-${{ matrix.job_name }}.zip.*
+          path: drasyl-*-${{ matrix.job_name }}.zip
+
+      # publish artifact hash
+      - name: Publish artifact hash
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: ${{ matrix.job_name }}-Hash
+          path: drasyl-*-${{ matrix.job_name }}.zip.sha256
 
   docker:
     name: Docker
