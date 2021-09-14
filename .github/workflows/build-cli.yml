@@ -113,6 +113,7 @@ jobs:
           mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
+          for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         if: success() && matrix.os == 'ubuntu-latest'
 
       - name: Build Package on *nix ARM
@@ -125,6 +126,7 @@ jobs:
           mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
+          for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         if: success() && matrix.os == 'ARM64' && matrix.os == 'linux'
 
       - name: Build Package on Mac x86
@@ -137,6 +139,7 @@ jobs:
           mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
+          for file in drasyl-*.zip; do shasum -a 256 "$file" | awk '{print $1}' > "$file.sha256"; done
         if: success() && matrix.os == 'macOS-latest'
 
       - name: Build Package on Windows
@@ -149,11 +152,8 @@ jobs:
           Move-Item -Path ./drasyl.exe -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}/bin"
           Copy-Item "./LICENSE" -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}"
           Compress-Archive -Path "./drasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-${VERSION}-${{ matrix.job_name }}.zip
+          CertUtil -hashfile "./drasyl-${VERSION}-${{ matrix.job_name }}.zip" SHA256 | Select-String -Pattern "CertUtil","SHA256" -CaseSensitive -NotMatch > "./drasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"; (Get-Content "./drasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256") -join '' | Set-Content "./drasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"
         if: success() && matrix.os == 'windows-latest'
-
-      - name: Build hash
-        runs-on: ubuntu-latest
-        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
 
       # publish artifact
       - name: Publish artifact
