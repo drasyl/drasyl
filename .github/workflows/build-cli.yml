@@ -32,9 +32,10 @@ jobs:
         env:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
         run: ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -DskipTests --projects drasyl-cli --also-make package
+      - name: Build hash
+        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
       - name: Publish artifact
         uses: actions/upload-artifact@v2.2.4
-        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         with:
           name: Java
           path: drasyl-*.zip.*
@@ -149,10 +150,13 @@ jobs:
           Compress-Archive -Path "./drasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-${VERSION}-${{ matrix.job_name }}.zip
         if: success() && matrix.os == 'windows-latest'
 
+      - name: Build hash
+        runs-on: ubuntu-latest
+        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
+
       # publish artifact
       - name: Publish artifact
         uses: actions/upload-artifact@v2.2.4
-        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         with:
           name: ${{ matrix.job_name }}
           path: drasyl-*-${{ matrix.job_name }}.zip.*
