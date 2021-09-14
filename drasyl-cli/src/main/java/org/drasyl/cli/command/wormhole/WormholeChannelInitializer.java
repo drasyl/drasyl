@@ -38,15 +38,10 @@ class WormholeChannelInitializer extends DrasylNodeChannelInitializer {
     }
 
     @Override
-    protected void addMessageSerializer(final DrasylChannel ch) {
+    protected void serializationStage(final DrasylChannel ch) {
         // (de)serializer for WormholeMessages
         ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
 
-        addArq(ch);
-    }
-
-    @SuppressWarnings("java:S2325")
-    private void addArq(final DrasylChannel ch) {
         // add ARQ to make sure messages arrive
         ch.pipeline().addFirst(new ByteToStopAndWaitArqDataCodec());
         ch.pipeline().addFirst(new StopAndWaitArqHandler(ARQ_RETRY_TIMEOUT_MILLIS));

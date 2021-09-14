@@ -31,7 +31,6 @@ import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.DrasylConfig;
 import org.drasyl.channel.MessageSerializerProtocol.SerializedPayload;
-import org.drasyl.remote.protocol.ApplicationMessage;
 import org.drasyl.serialization.Serializer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -45,7 +44,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.Null.NULL;
 
 /**
- * This handler serializes messages to {@link ApplicationMessage} an vice vera.
+ * This handler serializes messages to {@link ByteBuf} and vice vera.
  */
 @SuppressWarnings({ "java:S110" })
 public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Object> {

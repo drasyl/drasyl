@@ -54,35 +54,46 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     @Override
     protected void initChannel(final DrasylChannel ch) {
         node.channels.add(ch);
-
-        addMessageSerializer(ch);
-        addMessageEventHandler(ch);
-        addIdleChannelCloser(ch);
+        serializationStage(ch);
+        nodeEventStage(ch);
+        idleStage(ch);
     }
 
-    protected void addMessageEventHandler(final DrasylChannel ch) {
-        // emit MessageEvents for every inbound message
-        ch.pipeline().addLast(new MessageEventHandler(node));
+    /**
+     * This stage emits {@link org.drasyl.event.Event}s to {@link #node}.
+     */
+    protected void nodeEventStage(final DrasylChannel ch) {
+        ch.pipeline().addLast(new NodeEventHandler(node));
     }
 
-    protected void addMessageSerializer(final DrasylChannel ch) {
+    /**
+     * This stage serializes {@link java.util.Objects} to {@link io.netty.buffer.ByteBuf} and vice
+     * vera.
+     */
+    protected void serializationStage(final DrasylChannel ch) {
         // convert Object <-> ByteBuf
         ch.pipeline().addLast(new MessageSerializer(config));
     }
 
-    protected void addIdleChannelCloser(final DrasylChannel ch) {
-        // close inactive channels (to free up resources)
+    /**
+     * This stage closes inactive channels (to free up memory).
+     */
+    protected void idleStage(final DrasylChannel ch) {
         final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
         if (inactivityTimeout > 0) {
             ch.pipeline().addFirst(new IdleChannelCloser(inactivityTimeout));
         }
     }
 
-    private static class MessageEventHandler extends ChannelInboundHandlerAdapter {
-        private static final Logger LOG = LoggerFactory.getLogger(MessageEventHandler.class);
+    /**
+     * Creates a {@link MessageEvent} for every inbound message and a {@link InboundExceptionEvent}
+     * for every exception.
+     */
+    private static class NodeEventHandler extends ChannelInboundHandlerAdapter {
+        private static final Logger LOG = LoggerFactory.getLogger(NodeEventHandler.class);
         private final DrasylNode node;
 
-        public MessageEventHandler(final DrasylNode node) {
+        public NodeEventHandler(final DrasylNode node) {
             this.node = requireNonNull(node);
         }
 
@@ -101,6 +112,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
         public void exceptionCaught(final ChannelHandlerContext ctx,
                                     final Throwable e) {
             if (e instanceof EncoderException) {
+                // exception has been propably caused by an outbound message
                 LOG.error(e);
             }
             else {
@@ -109,6 +121,9 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
         }
     }
 
+    /**
+     * Closes inactive channels (to free up memory).
+     */
     private static class IdleChannelCloser extends IdleStateHandler {
         private static final Logger LOG = LoggerFactory.getLogger(IdleChannelCloser.class);
 
