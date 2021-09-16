@@ -5,13 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2021-09-14
+
+### Changed
+
+- Bump lazysodium-java from 5.0.1 to 5.1.1
+
+### Fixed
+
+- Fix visibility of InboundExceptionEvent#getError.
+- Allow protobuf build on Apple Silicon and Linux ARM.
+- Fix problem with lazysodium finding dependencies when drasyl is embedded in a fat jar.
+
 ## [0.5.0] - 2021-06-28
 
 ### Upgrade Notes
 
-- The identities must be replaced by a new one. 
-  Just delete the old `drasyl.identity.json` and let drasyl generate a new one.
-- If you're using a custom configuration with super peer defined, make sure to use (our) super peers running 0.5.0.
+- The identities must be replaced by a new one. Just delete the old `drasyl.identity.json` and let
+  drasyl generate a new one.
+- If you're using a custom configuration with super peer defined, make sure to use (our) super peers
+  running 0.5.0.
 
 ### Added
 
