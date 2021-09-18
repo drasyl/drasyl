@@ -36,7 +36,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-@SuppressWarnings({ "java:S106", "java:S2096" })
+@SuppressWarnings({ "java:S106", "java:S1845", "java:S2096" })
 public class QuoteOfTheMomentClient extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "qotm-client.identity.json");
     private static final Duration pullTimeout = Duration.ofSeconds(3);

@@ -25,6 +25,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
@@ -97,43 +98,9 @@ public class UdpServer extends ChannelDuplexHandler {
         bootstrap
                 .group((EventLoopGroup) ctx.executor().parent())
                 .channel(NioDatagramChannel.class)
-                .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
-                    @Override
-                    public void channelWritabilityChanged(final ChannelHandlerContext channelCtx) {
-                        channelCtx.fireChannelWritabilityChanged();
-
-                        if (channelCtx.channel().isWritable()) {
-                            // UDP channel is writable again. Make sure (any existing) pending writes will be written
-                            ctx.executor().submit(UdpServer.this::writePendingWrites);
-                        }
-                    }
-
-                    @Override
-                    protected void channelRead0(final ChannelHandlerContext channelCtx,
-                                                final DatagramPacket packet) {
-                        LOG.trace("Datagram received {}", packet);
-                        ctx.executor().execute(() -> {
-                            ctx.fireChannelRead(new AddressedMessage<>(packet.content(), packet.sender()));
-                            ctx.fireChannelReadComplete();
-                        });
-                    }
-                })
+                .handler(new UdpServerHandler(ctx))
                 .bind(bindHost, this.bindPort)
-                .addListener((ChannelFutureListener) future -> {
-                    if (future.isSuccess()) {
-                        // server successfully started
-                        this.channel = future.channel();
-                        final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-                        LOG.info("Server started and listening at udp:/{}", socketAddress);
-
-                        ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
-                        ctx.fireChannelActive();
-                    }
-                    else {
-                        // server start failed
-                        ctx.fireExceptionCaught(new BindFailedException("Unable to bind server to address udp://" + bindHost + ":" + bindPort, future.cause()));
-                    }
-                });
+                .addListener(new UdpServerHandlerFutureListener(ctx));
     }
 
     @Override
@@ -189,6 +156,60 @@ public class UdpServer extends ChannelDuplexHandler {
 
             LOG.trace("Write Datagram {}", currentWrite);
             channel.writeAndFlush(currentWrite).addListener(new PromiseNotifier<>(promise));
+        }
+    }
+
+    private class UdpServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+        private final ChannelHandlerContext ctx;
+
+        public UdpServerHandler(final ChannelHandlerContext ctx) {
+            super(false);
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void channelWritabilityChanged(final ChannelHandlerContext channelCtx) {
+            channelCtx.fireChannelWritabilityChanged();
+
+            if (channelCtx.channel().isWritable()) {
+                // UDP channel is writable again. Make sure (any existing) pending writes will be written
+                ctx.executor().submit(UdpServer.this::writePendingWrites);
+            }
+        }
+
+        @Override
+        protected void channelRead0(final ChannelHandlerContext channelCtx,
+                                    final DatagramPacket packet) {
+            LOG.trace("Datagram received {}", packet);
+            ctx.executor().execute(() -> {
+                ctx.fireChannelRead(new AddressedMessage<>(packet.content(), packet.sender()));
+                ctx.fireChannelReadComplete();
+            });
+        }
+    }
+
+    private class UdpServerHandlerFutureListener implements ChannelFutureListener {
+        private final ChannelHandlerContext ctx;
+
+        public UdpServerHandlerFutureListener(final ChannelHandlerContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void operationComplete(ChannelFuture future) throws Exception {
+            if (future.isSuccess()) {
+                // server successfully started
+                UdpServer.this.channel = future.channel();
+                final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+                LOG.info("Server started and listening at udp:/{}", socketAddress);
+
+                ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
+                ctx.fireChannelActive();
+            }
+            else {
+                // server start failed
+                ctx.fireExceptionCaught(new BindFailedException("Unable to bind server to address udp://" + bindHost + ":" + bindPort, future.cause()));
+            }
         }
     }
 

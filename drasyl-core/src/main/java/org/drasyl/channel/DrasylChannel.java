@@ -124,7 +124,6 @@ public class DrasylChannel extends AbstractChannel {
     protected void doBeginRead() {
         // NOOP
         // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings
-        // TODO: we should maybe create an inboundBuffer?
     }
 
     @Override
@@ -137,6 +136,7 @@ public class DrasylChannel extends AbstractChannel {
                 "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
     }
 
+    @SuppressWarnings("java:S135")
     @Override
     protected void doWrite(final ChannelOutboundBuffer in) throws Exception {
         switch (state) {

@@ -257,6 +257,7 @@ public class PerfClientNode extends BehavioralDrasylNode {
     /**
      * Node is doing a performance test with the server.
      */
+    @SuppressWarnings("java:S1142")
     private Behavior startSession(final SessionRequest session) {
         final Supplier<Behavior> successBehavior = () -> {
             doneFuture.complete(null);

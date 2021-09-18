@@ -65,7 +65,6 @@ public class PerfTestSender {
     private final Supplier<Behavior> successBehavior;
     private final Function<Exception, Behavior> failureBehavior;
     private final LongSupplier currentTimeSupplier;
-    private TestResults intervalResults;
 
     @SuppressWarnings("java:S107")
     PerfTestSender(final SessionRequest session,
@@ -98,57 +97,7 @@ public class PerfTestSender {
         return Behaviors.withScheduler(eventScheduler -> {
             printStream.println("Test parameters: " + session);
             printStream.println("Interval                 Transfer     Bitrate          Lost/Total Messages");
-            eventLoopGroup.submit(() -> {
-                final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
-                final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
-                final long startTime = currentTimeSupplier.getAsLong();
-                final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
-                intervalResults = new TestResults(messageSize, totalResults.getTestStartTime(), totalResults.getTestStartTime());
-
-                long currentTime;
-                long sentMessages = 0;
-                final long endTime = startTime + 1_000_000_000L * session.getTime();
-                while (endTime > (currentTime = currentTimeSupplier.getAsLong())) {
-                    // print interim results?
-                    if (intervalResults.getStartTime() + SESSION_PROGRESS_INTERVAL.toNanos() <= currentTime) {
-                        intervalResults.stop(currentTime);
-                        printStream.println(intervalResults.print());
-                        totalResults.add(intervalResults);
-                        intervalResults = new TestResults(messageSize, startTime, currentTime);
-                    }
-
-                    // send message?
-                    final double desiredSentMessages = ((double) currentTime - startTime) / MICROSECONDS * session.getMps();
-                    if (desiredSentMessages >= sentMessages) {
-                        if (channel.isWritable()) {
-                            channel.writeAndFlush(new Probe(probePayload, sentMessages)).addListener(future -> {
-                                if (!future.isSuccess()) {
-                                    LOG.trace("Unable to send message", future::cause);
-                                    intervalResults.incrementLostMessages();
-                                }
-                            });
-                        }
-                        else {
-                            LOG.trace("Unable to send message: Channel is not writable.");
-                            intervalResults.incrementLostMessages();
-                        }
-                        sentMessages++;
-                        intervalResults.incrementTotalMessages();
-                    }
-                }
-
-                // final interim results
-                intervalResults.stop(currentTime);
-                printStream.println(intervalResults.print());
-                totalResults.add(intervalResults);
-
-                printStream.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-                totalResults.stop(currentTime);
-                printStream.println("Sender:");
-                printStream.println(totalResults.print());
-
-                eventScheduler.scheduleEvent(new TestCompleted(totalResults));
-            });
+            eventLoopGroup.submit(() -> sendProbes(eventScheduler));
 
             return Behaviors.receive()
                     .onMessage(SessionRequest.class, (mySender, myPayload) -> {
@@ -164,6 +113,59 @@ public class PerfTestSender {
                     .onAnyEvent(event -> same())
                     .build();
         });
+    }
+
+    private void sendProbes(final Behaviors.EventScheduler eventScheduler) {
+        final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
+        final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
+        final long startTime = currentTimeSupplier.getAsLong();
+        final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
+        TestResults intervalResults = new TestResults(messageSize, totalResults.getTestStartTime(), totalResults.getTestStartTime());
+
+        long currentTime;
+        long sentMessages = 0;
+        final long endTime = startTime + 1_000_000_000L * session.getTime();
+        while (endTime > (currentTime = currentTimeSupplier.getAsLong())) {
+            // print interim results?
+            if (intervalResults.getStartTime() + SESSION_PROGRESS_INTERVAL.toNanos() <= currentTime) {
+                intervalResults.stop(currentTime);
+                printStream.println(intervalResults.print());
+                totalResults.add(intervalResults);
+                intervalResults = new TestResults(messageSize, startTime, currentTime);
+            }
+
+            // send message?
+            final double desiredSentMessages = ((double) currentTime - startTime) / MICROSECONDS * session.getMps();
+            if (desiredSentMessages >= sentMessages) {
+                if (channel.isWritable()) {
+                    TestResults finalIntervalResults = intervalResults;
+                    channel.writeAndFlush(new Probe(probePayload, sentMessages)).addListener(future -> {
+                        if (!future.isSuccess()) {
+                            LOG.trace("Unable to send message", future::cause);
+                            finalIntervalResults.incrementLostMessages();
+                        }
+                    });
+                }
+                else {
+                    LOG.trace("Unable to send message: Channel is not writable.");
+                    intervalResults.incrementLostMessages();
+                }
+                sentMessages++;
+                intervalResults.incrementTotalMessages();
+            }
+        }
+
+        // final interim results
+        intervalResults.stop(currentTime);
+        printStream.println(intervalResults.print());
+        totalResults.add(intervalResults);
+
+        printStream.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+        totalResults.stop(currentTime);
+        printStream.println("Sender:");
+        printStream.println(totalResults.print());
+
+        eventScheduler.scheduleEvent(new TestCompleted(totalResults));
     }
 
     /**

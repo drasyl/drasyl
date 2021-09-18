@@ -200,20 +200,7 @@ public class TcpClient extends ChannelDuplexHandler {
                     .channel(NioSocketChannel.class)
                     .handler(new TcpClientHandler(ctx))
                     .connect(address);
-            superPeerChannel.addListener((ChannelFutureListener) future -> {
-                if (future.isSuccess()) {
-                    final Channel channel = future.channel();
-                    LOG.debug("TCP connection to `{}` established.", address);
-                    channel.closeFuture().addListener(future1 -> {
-                        LOG.debug("TCP connection to `{}` closed.", address);
-                        superPeerChannel = null;
-                    });
-                }
-                else {
-                    LOG.debug("Unable to establish TCP connection to `{}`:", () -> address, future::cause);
-                    superPeerChannel = null;
-                }
-            });
+            superPeerChannel.addListener(new TcpClientFutureListener());
         }
     }
 
@@ -223,6 +210,24 @@ public class TcpClient extends ChannelDuplexHandler {
 
         // stop client
         stopClient();
+    }
+
+    private class TcpClientFutureListener implements ChannelFutureListener {
+        @Override
+        public void operationComplete(ChannelFuture future) throws Exception {
+            if (future.isSuccess()) {
+                final Channel channel = future.channel();
+                LOG.debug("TCP connection to `{}` established.", address);
+                channel.closeFuture().addListener(future1 -> {
+                    LOG.debug("TCP connection to `{}` closed.", address);
+                    superPeerChannel = null;
+                });
+            }
+            else {
+                LOG.debug("Unable to establish TCP connection to `{}`:", () -> address, future::cause);
+                superPeerChannel = null;
+            }
+        }
     }
 
     /**

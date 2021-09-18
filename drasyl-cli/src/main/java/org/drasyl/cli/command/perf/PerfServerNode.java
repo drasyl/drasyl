@@ -177,6 +177,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
     /**
      * Node performs session and wait for completion.
      */
+    @SuppressWarnings("java:S1142")
     private Behavior startTest(final IdentityPublicKey client,
                                final SessionRequest session) {
         try {

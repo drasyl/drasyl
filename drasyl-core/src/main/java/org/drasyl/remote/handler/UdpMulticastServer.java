@@ -22,6 +22,7 @@
 package org.drasyl.remote.handler;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -128,50 +129,9 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                 bootstrapSupplier.get()
                         .group((EventLoopGroup) ctx.executor().parent())
                         .channel(NioDatagramChannel.class)
-                        .handler(new SimpleChannelInboundHandler<DatagramPacket>(false) {
-                            @Override
-                            protected void channelRead0(final ChannelHandlerContext channelCtx,
-                                                        final DatagramPacket packet) {
-                                final SocketAddress sender = packet.sender();
-                                nodes.forEach(nodeCtx -> {
-                                    LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel()::localAddress);
-                                    nodeCtx.executor().execute(() -> {
-                                        nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content(), sender));
-                                        nodeCtx.fireChannelReadComplete();
-                                    });
-                                });
-                            }
-                        })
+                        .handler(new UdpMulticastServerHandler())
                         .bind(MULTICAST_BIND_HOST, MULTICAST_ADDRESS.getPort())
-                        .addListener((ChannelFutureListener) future -> {
-                            if (future.isSuccess()) {
-                                // server successfully started
-                                final DatagramChannel myChannel = (DatagramChannel) future.channel();
-                                LOG.info("Server started and listening at udp:/{}", myChannel.localAddress());
-
-                                // join multicast group
-                                LOG.debug("Join multicast group `{}` at network interface `{}`...", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName);
-                                myChannel.joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).addListener(multicastFuture -> {
-                                    if (multicastFuture.isSuccess()) {
-                                        // join succeeded
-                                        LOG.info("Successfully joined multicast group `{}` at network interface `{}`", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName);
-                                        UdpMulticastServer.this.channel = myChannel;
-                                    }
-                                    else {
-                                        // join failed
-                                        //noinspection unchecked
-                                        LOG.warn("Unable to join multicast group `{}` at network interface `{}`:", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName, multicastFuture.cause()::getMessage);
-                                    }
-                                    ctx.fireChannelActive();
-                                });
-                            }
-                            else {
-                                // server start failed
-                                //noinspection unchecked
-                                LOG.info("Unable to bind server to address udp://{}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port.", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, future.cause()::getMessage);
-                                ctx.fireChannelActive();
-                            }
-                        });
+                        .addListener(new UdpMulticastServerFutureListener(ctx));
             }
             else {
                 ctx.fireChannelActive();
@@ -179,6 +139,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         }
     }
 
+    @SuppressWarnings("java:S1602")
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         ctx.fireChannelInactive();
@@ -196,6 +157,64 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                     LOG.debug("Server stopped.");
                 });
             });
+        }
+    }
+
+    private class UdpMulticastServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+        public UdpMulticastServerHandler() {
+            super(false);
+        }
+
+        @Override
+        protected void channelRead0(final ChannelHandlerContext channelCtx,
+                                    final DatagramPacket packet) {
+            final SocketAddress sender = packet.sender();
+            nodes.forEach(nodeCtx -> {
+                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel()::localAddress);
+                nodeCtx.executor().execute(() -> {
+                    nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content(), sender));
+                    nodeCtx.fireChannelReadComplete();
+                });
+            });
+        }
+    }
+
+    private class UdpMulticastServerFutureListener implements ChannelFutureListener {
+        private final ChannelHandlerContext ctx;
+
+        public UdpMulticastServerFutureListener(final ChannelHandlerContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void operationComplete(ChannelFuture future) throws Exception {
+            if (future.isSuccess()) {
+                // server successfully started
+                final DatagramChannel myChannel = (DatagramChannel) future.channel();
+                LOG.info("Server started and listening at udp:/{}", myChannel.localAddress());
+
+                // join multicast group
+                LOG.debug("Join multicast group `{}` at network interface `{}`...", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName);
+                myChannel.joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).addListener(multicastFuture -> {
+                    if (multicastFuture.isSuccess()) {
+                        // join succeeded
+                        LOG.info("Successfully joined multicast group `{}` at network interface `{}`", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName);
+                        UdpMulticastServer.this.channel = myChannel;
+                    }
+                    else {
+                        // join failed
+                        //noinspection unchecked
+                        LOG.warn("Unable to join multicast group `{}` at network interface `{}`:", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName, multicastFuture.cause()::getMessage);
+                    }
+                    ctx.fireChannelActive();
+                });
+            }
+            else {
+                // server start failed
+                //noinspection unchecked
+                LOG.info("Unable to bind server to address udp://{}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port.", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, future.cause()::getMessage);
+                ctx.fireChannelActive();
+            }
         }
     }
 }
