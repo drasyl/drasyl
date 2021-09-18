@@ -28,7 +28,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
-import org.drasyl.util.UnsignedShort;
 
 import java.io.IOException;
 
@@ -82,31 +81,7 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
     @SuppressWarnings("java:S1142")
     static PartialReadMessage of(final PublicHeader publicHeader,
                                  final ByteBuf bytes) {
-        if (publicHeader.getTotalChunks() > 0) {
-            return HeadChunkMessage.of(
-                    Nonce.of(publicHeader.getNonce()),
-                    publicHeader.getNetworkId(),
-                    IdentityPublicKey.of(publicHeader.getSender()),
-                    ProofOfWork.of(publicHeader.getProofOfWork()),
-                    IdentityPublicKey.of(publicHeader.getRecipient()),
-                    HopCount.of((byte) publicHeader.getHopCount()),
-                    UnsignedShort.of(publicHeader.getTotalChunks()),
-                    bytes
-            );
-        }
-        else if (publicHeader.getChunkNo() > 0) {
-            return BodyChunkMessage.of(
-                    Nonce.of(publicHeader.getNonce()),
-                    publicHeader.getNetworkId(),
-                    IdentityPublicKey.of(publicHeader.getSender()),
-                    ProofOfWork.of(publicHeader.getProofOfWork()),
-                    IdentityPublicKey.of(publicHeader.getRecipient()),
-                    HopCount.of((byte) publicHeader.getHopCount()),
-                    UnsignedShort.of(publicHeader.getChunkNo()),
-                    bytes
-            );
-        }
-        else if (!publicHeader.getAgreementId().isEmpty()) {
+        if (!publicHeader.getAgreementId().isEmpty()) {
             return ArmedMessage.of(
                     Nonce.of(publicHeader.getNonce()),
                     publicHeader.getNetworkId(),

@@ -44,7 +44,6 @@ import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManagerHandler;
 import org.drasyl.plugin.PluginManager;
-import org.drasyl.remote.handler.ChunkingHandler;
 import org.drasyl.remote.handler.HopCountGuard;
 import org.drasyl.remote.handler.InternetDiscovery;
 import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
@@ -207,14 +206,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     @SuppressWarnings("java:S2325")
     private void serializationStage(final DrasylServerChannel ch) {
-        // split messages too big for single udp datagram
-        ch.pipeline().addFirst(new ChunkingHandler(
-                config.getRemoteMessageMaxContentLength(),
-                config.getRemoteMessageMtu(),
-                config.getRemoteMessageComposedMessageTransferTimeout(),
-                identity.getAddress()
-        ));
-
         ch.pipeline().addFirst(RemoteMessageToByteBufCodec.INSTANCE);
     }
 

@@ -27,7 +27,6 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.handler.crypto.AgreementId;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
-import org.drasyl.util.UnsignedShort;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import test.util.IdentityTestUtil;
@@ -52,38 +51,6 @@ public class ProtocolTest {
                     .build();
 
             assertEquals(142, header.getSerializedSize());
-        }
-
-        @Test
-        void shouldSerializeHeadChunkToCorrectSize() {
-            final PublicHeader header = PublicHeader.newBuilder()
-                    .setNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteString())
-                    .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().getBytes())
-                    .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
-                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().getBytes())
-                    .setHopCount(1)
-                    .setAgreementId(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toByteString())
-                    .setTotalChunks(UnsignedShort.of(123).getValue())
-                    .build();
-
-            assertEquals(144, header.getSerializedSize());
-        }
-
-        @Test
-        void shouldSerializeNonHeadChunkToCorrectSize() {
-            final PublicHeader header = PublicHeader.newBuilder()
-                    .setNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteString())
-                    .setNetworkId(Integer.MIN_VALUE)
-                    .setSender(IdentityTestUtil.ID_1.getIdentityPublicKey().getBytes())
-                    .setProofOfWork(ProofOfWork.of(Integer.MAX_VALUE).intValue())
-                    .setRecipient(IdentityTestUtil.ID_2.getIdentityPublicKey().getBytes())
-                    .setHopCount(1)
-                    .setAgreementId(AgreementId.of(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), IdentityTestUtil.ID_2.getKeyAgreementPublicKey()).toByteString())
-                    .setChunkNo(UnsignedShort.of(64).getValue())
-                    .build();
-
-            assertEquals(144, header.getSerializedSize());
         }
     }
 
