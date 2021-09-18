@@ -73,42 +73,6 @@ public class PartialReadMessageTest {
 
                 assertThat(message, instanceOf(ArmedMessage.class));
             }
-
-            @Test
-            void shouldReturnHeadChunkIfTotalChunksIsSet() {
-                final PartialReadMessage message = PartialReadMessage.of(
-                        PublicHeader.newBuilder()
-                                .setNonce(Nonce.randomNonce().toByteString())
-                                .setNetworkId(0)
-                                .setSender(ID_1.getIdentityPublicKey().getBytes())
-                                .setProofOfWork(ID_1.getProofOfWork().intValue())
-                                .setRecipient(ID_2.getIdentityPublicKey().getBytes())
-                                .setHopCount(1)
-                                .setTotalChunks(12)
-                                .build(),
-                        bytes
-                );
-
-                assertThat(message, instanceOf(HeadChunkMessage.class));
-            }
-
-            @Test
-            void shouldReturnBodyChunkIfChunkNoIsSet() {
-                final PartialReadMessage message = PartialReadMessage.of(
-                        PublicHeader.newBuilder()
-                                .setNonce(Nonce.randomNonce().toByteString())
-                                .setNetworkId(0)
-                                .setSender(ID_1.getIdentityPublicKey().getBytes())
-                                .setProofOfWork(ID_1.getProofOfWork().intValue())
-                                .setRecipient(ID_2.getIdentityPublicKey().getBytes())
-                                .setHopCount(1)
-                                .setChunkNo(1)
-                                .build(),
-                        bytes
-                );
-
-                assertThat(message, instanceOf(BodyChunkMessage.class));
-            }
         }
     }
 }

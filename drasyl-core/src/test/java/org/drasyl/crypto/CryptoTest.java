@@ -21,6 +21,7 @@
  */
 package org.drasyl.crypto;
 
+import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.exceptions.SodiumException;
 import com.goterl.lazysodium.interfaces.AEAD;
 import com.goterl.lazysodium.utils.SessionPair;
@@ -157,6 +158,7 @@ class CryptoTest {
             final Crypto crypto = new Crypto(sodium);
             doReturn(sodiumJava).when(sodium).getSodium();
             doReturn(false).when(sodium).successful(anyInt());
+            doReturn(0).when(sodiumJava).crypto_kx_keypair(any(), any());
 
             assertThrows(CryptoException.class, crypto::generateEphemeralKeyPair);
             verify(sodiumJava).crypto_kx_keypair(any(), any());
@@ -367,4 +369,13 @@ class CryptoTest {
             assertTrue(number <= size, "Number " + number + " should be smaller than or equals to " + size + ".");
         }
     }
+
+    // We've to wrap the SodiumJava, because Mockito does not support native calls
+    static class UnitSodium extends SodiumJava {
+        @Override
+        public int crypto_kx_keypair(byte[] publicKey, byte[] secretKey) {
+            return 0;
+        }
+    }
 }
+

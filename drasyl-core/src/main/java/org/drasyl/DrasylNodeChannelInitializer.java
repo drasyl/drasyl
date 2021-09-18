@@ -25,10 +25,17 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.EncoderException;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.MessageSerializer;
+import org.drasyl.channel.chunk.ChunkedMessageAggregator;
+import org.drasyl.channel.chunk.LargeByteBufToChunkedMessageEncoder;
+import org.drasyl.channel.chunk.MessageChunkDecoder;
+import org.drasyl.channel.chunk.MessageChunkEncoder;
+import org.drasyl.channel.chunk.MessageChunksBuffer;
+import org.drasyl.channel.chunk.ReassembledMessageDecoder;
 import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.IdentityPublicKey;
@@ -42,6 +49,10 @@ import static org.drasyl.channel.Null.NULL;
  * Initialize child {@link DrasylChannel}s used by {@link DrasylNode}.
  */
 public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChannel> {
+    // MessageSerializer: 6 bytes
+    // SortedChunk: 6 bytes
+    // RemoteMessage: 142 bytes
+    public static final int PROTOCOL_OVERHEAD = 154;
     private final DrasylConfig config;
     private final DrasylNode node;
 
@@ -73,6 +84,17 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     protected void serializationStage(final DrasylChannel ch) {
         // convert Object <-> ByteBuf
         ch.pipeline().addLast(new MessageSerializer(config));
+
+        // split ByteBufs that are too big for a single udp datagram
+        ch.pipeline().addLast(
+                MessageChunkEncoder.INSTANCE,
+                new ChunkedWriteHandler(),
+                new LargeByteBufToChunkedMessageEncoder(this.config.getRemoteMessageMtu() - PROTOCOL_OVERHEAD, this.config.getRemoteMessageMaxContentLength()),
+                MessageChunkDecoder.INSTANCE,
+                new MessageChunksBuffer(this.config.getRemoteMessageMaxContentLength(), (int) this.config.getRemoteMessageComposedMessageTransferTimeout().toMillis()),
+                new ChunkedMessageAggregator(this.config.getRemoteMessageMaxContentLength()),
+                ReassembledMessageDecoder.INSTANCE
+        );
     }
 
     /**
