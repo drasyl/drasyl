@@ -39,14 +39,13 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.FutureUtil;
+import org.drasyl.util.Version;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -183,17 +182,7 @@ public abstract class DrasylNode {
     @Nullable
     public static String getVersion() {
         if (version == null) {
-            final InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("META-INF/org.drasyl.versions.properties");
-            if (inputStream != null) {
-                try {
-                    final Properties properties = new Properties();
-                    properties.load(inputStream);
-                    version = properties.getProperty("version");
-                }
-                catch (final IOException e) {
-                    LOG.debug("Unable to read properties file.", e);
-                }
-            }
+            version = Version.identify().get("drasyl-core").version();
         }
 
         return version;

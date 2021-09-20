@@ -21,7 +21,7 @@
  */
 package org.drasyl.util.protocol;
 
-import org.drasyl.DrasylNode;
+import org.drasyl.util.Version;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -307,7 +307,7 @@ public class UpnpIgdUtil {
                 "HOST: " + SSDP_MULTICAST_ADDRESS.getAddress().getHostAddress() + ":" + SSDP_MULTICAST_ADDRESS.getPort() + "\r\n" +
                 "MAN: \"ssdp:discover\"\r\n" +
                 "MX: " + SSDP_MAX_WAIT_TIME.toSeconds() + "\r\n" +
-                "USER-AGENT: drasyl/" + DrasylNode.getVersion() + "\r\n" +
+                "USER-AGENT: drasyl/" + Version.identify().get("drasyl-core").version() + "\r\n" +
                 "ST: ssdp:all\r\n" +
                 "\r\n";
         return content.getBytes(UTF_8);

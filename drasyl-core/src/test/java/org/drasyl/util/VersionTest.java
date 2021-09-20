@@ -19,22 +19,19 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl;
+package org.drasyl.util;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-@ExtendWith(MockitoExtension.class)
-class DrasylNodeTest {
+class VersionTest {
     @Nested
-    class GetVersion {
+    class Identify {
         @Test
-        void shouldNotReturnNull() {
-            assertNotNull(DrasylNode.getVersion());
+        void shouldNotCrash() {
+            assertDoesNotThrow(Version::identify);
         }
     }
 }

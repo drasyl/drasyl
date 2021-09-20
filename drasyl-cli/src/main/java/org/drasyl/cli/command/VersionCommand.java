@@ -21,10 +21,8 @@
  */
 package org.drasyl.cli.command;
 
-import io.netty.channel.epoll.Epoll;
-import io.netty.channel.kqueue.KQueue;
 import org.apache.commons.cli.CommandLine;
-import org.drasyl.DrasylNode;
+import org.drasyl.util.Version;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -56,13 +54,13 @@ public class VersionCommand extends AbstractCommand {
 
     @Override
     public void execute(final CommandLine cmd) {
-        out.println("drasyl v" + DrasylNode.getVersion());
+        for (Version version : Version.identify().values()) {
+            out.println("- " + version.artifactId() + ".version " + version.version());
+        }
         out.println("- os.name " + System.getProperty("os.name"));
         out.println("- os.version " + System.getProperty("os.version"));
         out.println("- os.arch " + System.getProperty("os.arch"));
         out.println("- java.version " + System.getProperty("java.version"));
-        out.println("- netty.epoll " + Epoll.isAvailable());
-        out.println("- netty.kqueue " + KQueue.isAvailable());
     }
 
     @Override
