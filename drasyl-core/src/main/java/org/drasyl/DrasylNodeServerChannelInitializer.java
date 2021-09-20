@@ -89,62 +89,111 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
         node.channels = new DefaultChannelGroup(ch.eventLoop());
-
-        ch.pipeline().addFirst(new NodeLifecycleTailHandler(node));
-        ch.pipeline().addFirst(new PluginManagerHandler(new PluginManager(config, identity)));
-        ch.pipeline().addFirst(new PeersManagerHandler(identity));
-
-        // convert ByteBuf <-> ApplicationMessage
-        ch.pipeline().addFirst(new ApplicationMessageCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
-
-        discoveryStage(ch);
+        ch.pipeline().addLast(new NodeLifecycleHeadHandler(node));
 
         if (config.isRemoteEnabled()) {
-            gatekeeperStage(ch);
-            serializationStage(ch);
             ipStage(ch);
+            serializationStage(ch);
+            gatekeeperStage(ch);
+        }
+        discoveryStage(ch);
+        protocolStage(ch);
+
+        ch.pipeline().addLast(new PeersManagerHandler(identity));
+        ch.pipeline().addLast(new PluginManagerHandler(new PluginManager(config, identity)));
+        ch.pipeline().addLast(new NodeLifecycleTailHandler(node));
+    }
+
+    /**
+     * Send/receive messages via IP.
+     */
+    private void ipStage(final DrasylServerChannel ch) {
+        // udp server
+        ch.pipeline().addLast(new UdpServer(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())));
+
+        // port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
+        if (config.isRemoteExposeEnabled()) {
+            ch.pipeline().addLast(new PortMapper());
         }
 
-        ch.pipeline().addFirst(new NodeLifecycleHeadHandler(node));
+        // tcp fallback
+        if (config.isRemoteTcpFallbackEnabled()) {
+            if (!config.isRemoteSuperPeerEnabled()) {
+                ch.pipeline().addLast(new TcpServer(
+                        config.getRemoteTcpFallbackServerBindHost(),
+                        config.getRemoteTcpFallbackServerBindPort(),
+                        config.getRemotePingTimeout()
+                ));
+            }
+            else {
+                ch.pipeline().addLast(new TcpClient(
+                        config.getRemoteSuperPeerEndpoints(),
+                        config.getRemoteTcpFallbackClientTimeout(),
+                        config.getRemoteTcpFallbackClientAddress()
+                ));
+            }
+        }
+
+        // multicast server (lan discovery)
+        if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
+            ch.pipeline().addLast(UdpMulticastServer.INSTANCE);
+        }
+    }
+
+    /**
+     * This stage serializes {@link org.drasyl.remote.protocol.RemoteMessage} to {@link
+     * io.netty.buffer.ByteBuf} and vice vera.
+     */
+    @SuppressWarnings("java:S2325")
+    private void serializationStage(final DrasylServerChannel ch) {
+        ch.pipeline().addLast(RemoteMessageToByteBufCodec.INSTANCE);
+    }
+
+    /**
+     * This stage adds some security services (encryption, sign/verify, throttle, detect message
+     * loops, foreight network filter, proof of work checker, etc...).
+     */
+    private void gatekeeperStage(final DrasylServerChannel ch) {
+        // filter out inbound messages with invalid proof of work or other network id
+        ch.pipeline().addLast(new OtherNetworkFilter(config.getNetworkId()));
+        ch.pipeline().addLast(new InvalidProofOfWorkFilter(identity.getAddress()));
+
+        // arm outbound and disarm inbound messages
+        if (config.isRemoteMessageArmEnabled()) {
+            ch.pipeline().addLast(new ArmHandler(
+                    config.getNetworkId(),
+                    config.getRemoteMessageArmSessionMaxCount(),
+                    config.getRemoteMessageArmSessionMaxAgreements(),
+                    config.getRemoteMessageArmSessionExpireAfter(),
+                    config.getRemoteMessageArmSessionRetryInterval(),
+                    identity
+            ));
+        }
+
+        // fully read unarmed messages (local network discovery)
+        ch.pipeline().addLast(new UnarmedMessageDecoder());
+
+        ch.pipeline().addLast(new RateLimiter(identity.getAddress()));
+
+        if (config.isMonitoringEnabled()) {
+            ch.pipeline().addLast(new Monitoring(
+                    config.getMonitoringHostTag(),
+                    config.getMonitoringInfluxUri(),
+                    config.getMonitoringInfluxUser(),
+                    config.getMonitoringInfluxPassword(),
+                    config.getMonitoringInfluxDatabase(),
+                    config.getMonitoringInfluxReportingFrequency()
+            ));
+        }
+
+        // outbound message guard
+        ch.pipeline().addLast(new HopCountGuard(config.getRemoteMessageHopLimit()));
     }
 
     private void discoveryStage(final DrasylServerChannel ch) {
-        // discover nodes running within the same jvm
-        if (config.isIntraVmDiscoveryEnabled()) {
-            ch.pipeline().addFirst(new IntraVmDiscovery(config.getNetworkId(), identity.getAddress()));
-        }
-
         if (config.isRemoteEnabled()) {
-            // route outbound messages to pre-configured ip addresses
-            if (!config.getRemoteStaticRoutes().isEmpty()) {
-                ch.pipeline().addFirst(new StaticRoutesHandler(config.getRemoteStaticRoutes()));
-            }
-
-            if (config.isRemoteLocalHostDiscoveryEnabled()) {
-                // discover nodes running on the same local computer
-                ch.pipeline().addFirst(new LocalHostDiscovery(
-                        config.getNetworkId(),
-                        config.isRemoteLocalHostDiscoveryWatchEnabled(),
-                        config.getRemoteBindHost(),
-                        config.getRemoteLocalHostDiscoveryLeaseTime(),
-                        config.getRemoteLocalHostDiscoveryPath(),
-                        identity.getAddress()
-                ));
-            }
-
-            // discover nodes on the local network
-            if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addFirst(new LocalNetworkDiscovery(
-                        config.getNetworkId(),
-                        config.getRemotePingInterval(),
-                        config.getRemotePingTimeout(),
-                        identity.getAddress(),
-                        identity.getProofOfWork()
-                ));
-            }
-
             // discover nodes on the internet
-            ch.pipeline().addFirst(new InternetDiscovery(
+            ch.pipeline().addLast(new InternetDiscovery(
                     config.getNetworkId(),
                     config.getRemotePingMaxPeers(),
                     config.getRemotePingInterval(),
@@ -156,93 +205,45 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                     identity.getAddress(),
                     identity.getProofOfWork()
             ));
-        }
-    }
 
-    /**
-     * This stage adds some security services (encryption, sign/verify, throttle, detect message
-     * loops, foreight network filter, proof of work checker, etc...).
-     */
-    private void gatekeeperStage(final DrasylServerChannel ch) {
-        // outbound message guard
-        ch.pipeline().addFirst(new HopCountGuard(config.getRemoteMessageHopLimit()));
-
-        if (config.isMonitoringEnabled()) {
-            ch.pipeline().addFirst(new Monitoring(
-                    config.getMonitoringHostTag(),
-                    config.getMonitoringInfluxUri(),
-                    config.getMonitoringInfluxUser(),
-                    config.getMonitoringInfluxPassword(),
-                    config.getMonitoringInfluxDatabase(),
-                    config.getMonitoringInfluxReportingFrequency()
-            ));
-        }
-
-        ch.pipeline().addFirst(new RateLimiter(identity.getAddress()));
-
-        // fully read unarmed messages (local network discovery)
-        ch.pipeline().addFirst(new UnarmedMessageDecoder());
-
-        // arm outbound and disarm inbound messages
-        if (config.isRemoteMessageArmEnabled()) {
-            ch.pipeline().addFirst(new ArmHandler(
-                    config.getNetworkId(),
-                    config.getRemoteMessageArmSessionMaxCount(),
-                    config.getRemoteMessageArmSessionMaxAgreements(),
-                    config.getRemoteMessageArmSessionExpireAfter(),
-                    config.getRemoteMessageArmSessionRetryInterval(),
-                    identity
-            ));
-        }
-
-        // filter out inbound messages with invalid proof of work or other network id
-        ch.pipeline().addFirst(new InvalidProofOfWorkFilter(identity.getAddress()));
-        ch.pipeline().addFirst(new OtherNetworkFilter(config.getNetworkId()));
-    }
-
-    /**
-     * This stage serializes {@link org.drasyl.remote.protocol.RemoteMessage} to {@link
-     * io.netty.buffer.ByteBuf} and vice vera.
-     */
-    @SuppressWarnings("java:S2325")
-    private void serializationStage(final DrasylServerChannel ch) {
-        ch.pipeline().addFirst(RemoteMessageToByteBufCodec.INSTANCE);
-    }
-
-    /**
-     * Send/receive messages via IP.
-     */
-    private void ipStage(final DrasylServerChannel ch) {
-        // multicast server (lan discovery)
-        if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-            ch.pipeline().addFirst(UdpMulticastServer.INSTANCE);
-        }
-
-        // tcp fallback
-        if (config.isRemoteTcpFallbackEnabled()) {
-            if (!config.isRemoteSuperPeerEnabled()) {
-                ch.pipeline().addFirst(new TcpServer(
-                        config.getRemoteTcpFallbackServerBindHost(),
-                        config.getRemoteTcpFallbackServerBindPort(),
-                        config.getRemotePingTimeout()
+            // discover nodes on the local network
+            if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
+                ch.pipeline().addLast(new LocalNetworkDiscovery(
+                        config.getNetworkId(),
+                        config.getRemotePingInterval(),
+                        config.getRemotePingTimeout(),
+                        identity.getAddress(),
+                        identity.getProofOfWork()
                 ));
             }
-            else {
-                ch.pipeline().addFirst(new TcpClient(
-                        config.getRemoteSuperPeerEndpoints(),
-                        config.getRemoteTcpFallbackClientTimeout(),
-                        config.getRemoteTcpFallbackClientAddress()
+
+            if (config.isRemoteLocalHostDiscoveryEnabled()) {
+                // discover nodes running on the same local computer
+                ch.pipeline().addLast(new LocalHostDiscovery(
+                        config.getNetworkId(),
+                        config.isRemoteLocalHostDiscoveryWatchEnabled(),
+                        config.getRemoteBindHost(),
+                        config.getRemoteLocalHostDiscoveryLeaseTime(),
+                        config.getRemoteLocalHostDiscoveryPath(),
+                        identity.getAddress()
                 ));
+            }
+
+            // route outbound messages to pre-configured ip addresses
+            if (!config.getRemoteStaticRoutes().isEmpty()) {
+                ch.pipeline().addLast(new StaticRoutesHandler(config.getRemoteStaticRoutes()));
             }
         }
 
-        // port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
-        if (config.isRemoteExposeEnabled()) {
-            ch.pipeline().addFirst(new PortMapper());
+        // discover nodes running within the same jvm
+        if (config.isIntraVmDiscoveryEnabled()) {
+            ch.pipeline().addLast(new IntraVmDiscovery(config.getNetworkId(), identity.getAddress()));
         }
+    }
 
-        // udp server
-        ch.pipeline().addFirst(new UdpServer(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())));
+    private void protocolStage(final DrasylServerChannel ch) {
+        // convert ByteBuf <-> ApplicationMessage
+        ch.pipeline().addLast(new ApplicationMessageCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
     }
 
     private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {

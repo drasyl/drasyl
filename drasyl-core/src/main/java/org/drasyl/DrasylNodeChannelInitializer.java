@@ -65,16 +65,20 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     @Override
     protected void initChannel(final DrasylChannel ch) {
         node.channels.add(ch);
+
+        idleStage(ch);
         serializationStage(ch);
         nodeEventStage(ch);
-        idleStage(ch);
     }
 
     /**
-     * This stage emits {@link org.drasyl.event.Event}s to {@link #node}.
+     * This stage closes inactive channels (to free up memory).
      */
-    protected void nodeEventStage(final DrasylChannel ch) {
-        ch.pipeline().addLast(new NodeEventHandler(node));
+    protected void idleStage(final DrasylChannel ch) {
+        final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
+        if (inactivityTimeout > 0) {
+            ch.pipeline().addLast(new IdleChannelCloser(inactivityTimeout));
+        }
     }
 
     /**
@@ -98,13 +102,10 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     }
 
     /**
-     * This stage closes inactive channels (to free up memory).
+     * This stage emits {@link org.drasyl.event.Event}s to {@link #node}.
      */
-    protected void idleStage(final DrasylChannel ch) {
-        final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
-        if (inactivityTimeout > 0) {
-            ch.pipeline().addFirst(new IdleChannelCloser(inactivityTimeout));
-        }
+    protected void nodeEventStage(final DrasylChannel ch) {
+        ch.pipeline().addLast(new NodeEventHandler(node));
     }
 
     /**
