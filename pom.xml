@@ -133,14 +133,14 @@
         <netty.version>4.1.68.Final</netty.version>
         <guava.version>30.1.1-jre</guava.version>
         <rxjava.version>3.1.1</rxjava.version>
-        <micrometer.version>1.7.3</micrometer.version>
+        <micrometer.version>1.7.4</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>1.7.32</slf4j.version>
         <typesafe.config.version>1.4.1</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.28.0</json-unit-assertj.version>
         <commons-cli.version>1.4</commons-cli.version>
-        <protobuf.version>3.17.3</protobuf.version>
+        <protobuf.version>3.18.0</protobuf.version>
         <auto-value.version>1.8.2</auto-value.version>
         <lazysodium-java.version>5.1.1</lazysodium-java.version>
         <resource-loader.version>2.0.1</resource-loader.version>
@@ -390,7 +390,7 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.3.0</version>
+                    <version>4.4.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -573,7 +573,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.3.0</version>
+                <version>4.4.1</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
@@ -626,7 +626,7 @@
                                 <groupId>org.apache.maven.scm</groupId>
                                 <artifactId>maven-scm-provider-gitexe</artifactId>
                                 <!--suppress MavenModelInspection -->
-                                <version>1.11.3</version>
+                                <version>1.12.0</version>
                             </dependency>
                         </dependencies>
                     </plugin>
