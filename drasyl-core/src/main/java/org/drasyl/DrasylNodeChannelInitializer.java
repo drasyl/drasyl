@@ -86,9 +86,6 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
      * vera.
      */
     protected void serializationStage(final DrasylChannel ch) {
-        // convert Object <-> ByteBuf
-        ch.pipeline().addLast(new MessageSerializer(config));
-
         // split ByteBufs that are too big for a single udp datagram
         ch.pipeline().addLast(
                 MessageChunkEncoder.INSTANCE,
@@ -99,6 +96,9 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
                 new ChunkedMessageAggregator(this.config.getRemoteMessageMaxContentLength()),
                 ReassembledMessageDecoder.INSTANCE
         );
+
+        // convert Object <-> ByteBuf
+        ch.pipeline().addLast(new MessageSerializer(config));
     }
 
     /**
