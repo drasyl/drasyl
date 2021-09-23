@@ -21,7 +21,6 @@
  */
 package org.drasyl.crypto;
 
-import com.goterl.lazysodium.SodiumJava;
 import com.goterl.lazysodium.exceptions.SodiumException;
 import com.goterl.lazysodium.interfaces.AEAD;
 import com.goterl.lazysodium.utils.SessionPair;
@@ -139,7 +138,7 @@ class CryptoTest {
     class EphemeralKeyPair {
         @Test
         void shouldGenerate(@Mock final DrasylLazySodiumJava sodium,
-                            @Mock final DrasylSodiumJava sodiumJava) throws CryptoException {
+                            @Mock final UnitSodium sodiumJava) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             doReturn(sodiumJava).when(sodium).getSodium();
             doReturn(true).when(sodium).successful(anyInt());
@@ -154,7 +153,7 @@ class CryptoTest {
 
         @Test
         void shouldThrowExceptionOnError(@Mock final DrasylLazySodiumJava sodium,
-                                         @Mock final DrasylSodiumJava sodiumJava) {
+                                         @Mock final UnitSodium sodiumJava) {
             final Crypto crypto = new Crypto(sodium);
             doReturn(sodiumJava).when(sodium).getSodium();
             doReturn(false).when(sodium).successful(anyInt());
@@ -371,9 +370,9 @@ class CryptoTest {
     }
 
     // We've to wrap the SodiumJava, because Mockito does not support native calls
-    static class UnitSodium extends SodiumJava {
+    static class UnitSodium extends DrasylSodiumJava {
         @Override
-        public int crypto_kx_keypair(byte[] publicKey, byte[] secretKey) {
+        public int crypto_kx_keypair(final byte[] publicKey, final byte[] secretKey) {
             return 0;
         }
     }
