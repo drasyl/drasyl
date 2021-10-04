@@ -127,7 +127,7 @@
         <logback.version>1.2.6</logback.version>
         <junit.version>5.8.1</junit.version>
         <mockito.version>3.12.4</mockito.version>
-        <jackson.version>2.12.5</jackson.version>
+        <jackson.version>2.13.0</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.1.0</awaitility.version>
         <netty.version>4.1.68.Final</netty.version>
