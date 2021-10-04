@@ -131,7 +131,7 @@
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.1.0</awaitility.version>
         <netty.version>4.1.68.Final</netty.version>
-        <guava.version>31.0-jre</guava.version>
+        <guava.version>31.0.1-jre</guava.version>
         <rxjava.version>3.1.1</rxjava.version>
         <micrometer.version>1.7.4</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
