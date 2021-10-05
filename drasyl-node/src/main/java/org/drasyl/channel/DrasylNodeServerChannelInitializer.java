@@ -37,10 +37,9 @@ import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.handler.PeersManagerHandler;
 import org.drasyl.handler.codec.ApplicationMessageCodec;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
-import org.drasyl.handler.monitoring.Monitoring;
-import org.drasyl.handler.peer.PeersManagerHandler;
 import org.drasyl.handler.plugin.PluginManager;
 import org.drasyl.handler.plugin.PluginManagerHandler;
 import org.drasyl.handler.remote.HopCountGuard;
@@ -179,17 +178,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.pipeline().addLast(new UnarmedMessageDecoder());
 
         ch.pipeline().addLast(new RateLimiter(identity.getAddress()));
-
-        if (config.isMonitoringEnabled()) {
-            ch.pipeline().addLast(new Monitoring(
-                    config.getMonitoringHostTag(),
-                    config.getMonitoringInfluxUri(),
-                    config.getMonitoringInfluxUser(),
-                    config.getMonitoringInfluxPassword(),
-                    config.getMonitoringInfluxDatabase(),
-                    config.getMonitoringInfluxReportingFrequency()
-            ));
-        }
 
         // outbound message guard
         ch.pipeline().addLast(new HopCountGuard(config.getRemoteMessageHopLimit()));

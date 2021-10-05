@@ -19,8 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 /**
- * Monitors various messages or events in a {@link io.netty.channel.Channel}.
+ * Provides hints for correct JSON (de)serialization.
  */
-package org.drasyl.handler.monitoring;
+package org.drasyl.identity.serialization;

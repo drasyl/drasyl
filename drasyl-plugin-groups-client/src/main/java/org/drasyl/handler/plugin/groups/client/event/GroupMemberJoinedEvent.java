@@ -29,15 +29,13 @@ import org.drasyl.identity.IdentityPublicKey;
  * <p>
  * This is an immutable object.
  */
+@SuppressWarnings("java:S2974")
 public class GroupMemberJoinedEvent extends GroupMemberActionEvent {
     /**
      * @throws NullPointerException if {@code member} or {@code group} is {@code null}
-     * @deprecated Use {@link #of(IdentityPublicKey, Group)} instead.
      */
-    // make method private on next release
-    @Deprecated(since = "0.5.0", forRemoval = true)
-    public GroupMemberJoinedEvent(final IdentityPublicKey member,
-                                  final Group group) {
+    private GroupMemberJoinedEvent(final IdentityPublicKey member,
+                                   final Group group) {
         super(member, group);
     }
 

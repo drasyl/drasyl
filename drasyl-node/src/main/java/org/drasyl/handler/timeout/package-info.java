@@ -19,39 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.plugin.groups.client.event;
-
-import org.drasyl.handler.plugin.groups.client.Group;
-import org.drasyl.identity.IdentityPublicKey;
-
 /**
- * An event that signals that a member has left a group.
- * <p>
- * This is an immutable object.
+ * Adds support for read and write timeout and idle connection notification.
  */
-@SuppressWarnings("java:S2974")
-public class GroupMemberLeftEvent extends GroupMemberActionEvent {
-    /**
-     * @throws NullPointerException if {@code member} or {@code group} is {@code null}
-     */
-    private GroupMemberLeftEvent(final IdentityPublicKey member,
-                                 final Group group) {
-        super(member, group);
-    }
-
-    @Override
-    public String toString() {
-        return "GroupMemberLeftEvent{" +
-                "member=" + member +
-                ", group=" + group +
-                '}';
-    }
-
-    /**
-     * @throws NullPointerException if {@code member} or {@code group} is {@code null}
-     */
-    public static GroupMemberLeftEvent of(final IdentityPublicKey member,
-                                          final Group group) {
-        return new GroupMemberLeftEvent(member, group);
-    }
-}
+package org.drasyl.handler.timeout;

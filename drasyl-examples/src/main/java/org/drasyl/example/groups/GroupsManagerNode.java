@@ -39,7 +39,7 @@ import java.util.Set;
  * This example starts a drasyl node with activated {@link GroupsManagerPlugin} managing a single
  * group.
  */
-@SuppressWarnings({ "squid:S106", "java:S2096" })
+@SuppressWarnings({ "squid:S106", "java:S1845", "java:S2096" })
 public class GroupsManagerNode extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "groups-manager.identity.json");
     private final Group group;

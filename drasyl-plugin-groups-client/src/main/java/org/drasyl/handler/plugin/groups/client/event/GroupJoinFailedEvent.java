@@ -33,6 +33,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
+@SuppressWarnings("java:S2974")
 public class GroupJoinFailedEvent implements GroupEvent {
     private final Group group;
     private final GroupJoinFailedMessage.Error reason;
@@ -41,13 +42,10 @@ public class GroupJoinFailedEvent implements GroupEvent {
     /**
      * @throws NullPointerException if {@code group}, {@code reason} or {@code reJoin} is {@code
      *                              null}
-     * @deprecated Use {@link #of(Group, GroupJoinFailedMessage.Error, Runnable)} instead.
      */
-    // make method private on next release
-    @Deprecated(since = "0.5.0", forRemoval = true)
-    public GroupJoinFailedEvent(final Group group,
-                                final GroupJoinFailedMessage.Error reason,
-                                final Runnable reJoin) {
+    private GroupJoinFailedEvent(final Group group,
+                                 final GroupJoinFailedMessage.Error reason,
+                                 final Runnable reJoin) {
         this.group = requireNonNull(group);
         this.reason = requireNonNull(reason);
         this.reJoin = requireNonNull(reJoin);

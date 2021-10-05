@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.peer;
+package org.drasyl.handler;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;

@@ -53,7 +53,6 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
                     .intraVmDiscoveryEnabled(true)
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(false)
-                    .monitoringEnabled(false)
                     .build();
             final DrasylConfig config2 = DrasylConfig.newBuilder()
                     .identityProofOfWork(identity2.getProofOfWork())
@@ -62,7 +61,6 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
                     .intraVmDiscoveryEnabled(true)
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(false)
-                    .monitoringEnabled(false)
                     .build();
 
             node1 = new DrasylNode(config1) {

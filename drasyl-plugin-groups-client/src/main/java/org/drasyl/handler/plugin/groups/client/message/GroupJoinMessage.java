@@ -37,10 +37,6 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * This is an immutable object.
  */
 public class GroupJoinMessage extends GroupActionMessage implements GroupsClientMessage {
-    /*
-     * FIXME: This secret is transmitted in plain text as long as
-     * drasyl does not support end-to-end encryption for all messages.
-     */
     private final String credentials;
     private final ProofOfWork proofOfWork;
     private final boolean renew;

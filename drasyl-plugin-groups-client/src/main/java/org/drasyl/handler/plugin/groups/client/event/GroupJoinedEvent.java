@@ -34,6 +34,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
+@SuppressWarnings("java:S2974")
 public class GroupJoinedEvent implements GroupEvent {
     private final Group group;
     private final Set<IdentityPublicKey> members;
@@ -42,13 +43,10 @@ public class GroupJoinedEvent implements GroupEvent {
     /**
      * @throws NullPointerException if {@code group}, {@code members} or {@code leaveRun} is {@code
      *                              null}
-     * @deprecated Use {@link #of(Group, Set, Runnable)} instead.
      */
-    // make method private on next release
-    @Deprecated(since = "0.5.0", forRemoval = true)
-    public GroupJoinedEvent(final Group group,
-                            final Set<IdentityPublicKey> members,
-                            final Runnable leaveRun) {
+    private GroupJoinedEvent(final Group group,
+                             final Set<IdentityPublicKey> members,
+                             final Runnable leaveRun) {
         this.group = requireNonNull(group);
         this.members = Set.copyOf(members);
         this.leaveRun = requireNonNull(leaveRun);

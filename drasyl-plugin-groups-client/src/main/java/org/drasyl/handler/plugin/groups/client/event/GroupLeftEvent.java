@@ -33,18 +33,16 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
+@SuppressWarnings("java:S2974")
 public class GroupLeftEvent implements GroupEvent {
     private final Group group;
     private final Runnable reJoin;
 
     /**
      * @throws NullPointerException if {@code group} or {@code reJoin} is {@code null}
-     * @deprecated Use {@link #of(Group, Runnable)} instead.
      */
-    // make method private on next release
-    @Deprecated(since = "0.5.0", forRemoval = true)
-    public GroupLeftEvent(final Group group,
-                          final Runnable reJoin) {
+    private GroupLeftEvent(final Group group,
+                           final Runnable reJoin) {
         this.group = requireNonNull(group);
         this.reJoin = requireNonNull(reJoin);
     }
