@@ -31,7 +31,8 @@ import java.util.Objects;
  * <p>
  * This is an immutable object.
  */
-public final class Group {
+@SuppressWarnings("java:S2974")
+public class Group {
     private final String name;
 
     private Group(final String name) {

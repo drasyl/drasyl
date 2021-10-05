@@ -37,8 +37,8 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * <p>
  * This is an immutable object.
  */
-@SuppressWarnings({ "java:S1192" })
-public final class GroupUri {
+@SuppressWarnings({ "java:S1192", "java:S2974" })
+public class GroupUri {
     public static final int MIN_TIMEOUT = 60;
     public static final String SCHEME = "groups";
     private final IdentityPublicKey manager;
