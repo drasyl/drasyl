@@ -21,7 +21,6 @@
  */
 package org.drasyl.example.qotm;
 
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
@@ -33,8 +32,9 @@ import org.drasyl.example.qotm.QuoteOfTheMomentServer.Quote;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings({ "java:S106", "java:S1845", "java:S2096" })
 public class QuoteOfTheMomentClient extends DrasylNode {
@@ -82,8 +82,11 @@ public class QuoteOfTheMomentClient extends DrasylNode {
         node.online().join();
 
         // ask for next quote periodically every n seconds
-        Schedulers.io().schedulePeriodicallyDirect(
-                () -> node.send(recipient, null),
-                0, pullTimeout.toSeconds(), TimeUnit.SECONDS);
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                node.send(recipient, null);
+            }
+        }, 0L, pullTimeout.toMillis());
     }
 }

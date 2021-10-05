@@ -32,7 +32,7 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
 import test.util.IdentityTestUtil;
 
-import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
+import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 
 @State(Scope.Benchmark)
 public class ProofOfWorkBenchmark extends AbstractBenchmark {

@@ -21,16 +21,10 @@
  */
 package org.drasyl.identity;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.auto.value.AutoValue;
-import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.Key;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringDeserializer;
-import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringSerializer;
+import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.InternPool;
 
 import static org.drasyl.crypto.Crypto.SK_LONG_TIME_KEY_LENGTH;
@@ -66,12 +60,9 @@ public abstract class IdentitySecretKey implements SecretKey {
         return HexUtil.bytesToHex(toByteArray());
     }
 
-    @JsonValue
-    @JsonSerialize(using = BytesToHexStringSerializer.class)
-    @JsonDeserialize(using = BytesToHexStringDeserializer.class)
     @Override
     public byte[] toByteArray() {
-        return getBytes().toByteArray();
+        return getBytes().getArray();
     }
 
     /**
@@ -82,7 +73,7 @@ public abstract class IdentitySecretKey implements SecretKey {
         return Key.fromBytes(toByteArray());
     }
 
-    public static IdentitySecretKey of(final ByteString bytes) {
+    public static IdentitySecretKey of(final ImmutableByteArray bytes) {
         if (bytes.size() != KEY_LENGTH_AS_BYTES) {
             throw new IllegalArgumentException("key has wrong size.");
         }
@@ -95,9 +86,8 @@ public abstract class IdentitySecretKey implements SecretKey {
      * @param bytes key as byte array
      * @return {@link IdentityPublicKey}
      */
-    @JsonCreator
     public static IdentitySecretKey of(final byte[] bytes) {
-        return of(ByteString.copyFrom(bytes));
+        return of(ImmutableByteArray.of(bytes));
     }
 
     /**
@@ -108,7 +98,6 @@ public abstract class IdentitySecretKey implements SecretKey {
      * @throws IllegalArgumentException if string parameter does not conform to a valid
      *                                  keyAsHexString
      */
-    @JsonCreator
     public static IdentitySecretKey of(final String bytes) {
         return of(HexUtil.fromString(bytes));
     }

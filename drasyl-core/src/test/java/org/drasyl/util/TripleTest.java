@@ -24,11 +24,6 @@ package org.drasyl.util;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -101,28 +96,6 @@ class TripleTest {
             final String string = Triple.of(5, false, "beers").toString();
 
             assertEquals("Triple{first=5, second=false, third=beers}", string);
-        }
-    }
-
-    @Nested
-    class JsonDeserialization {
-        @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "[5, false, \"beers\"]";
-
-            assertEquals(Triple.of(5, false, "beers"), JACKSON_READER.readValue(json, Triple.class));
-        }
-    }
-
-    @Nested
-    class JsonSerialization {
-        @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            final Triple<Integer, Boolean, String> triple = Triple.of(5, false, "beers");
-
-            assertThatJson(JACKSON_WRITER.writeValueAsString(triple))
-                    .isArray()
-                    .containsExactlyInAnyOrder(5, false, "beers");
         }
     }
 }

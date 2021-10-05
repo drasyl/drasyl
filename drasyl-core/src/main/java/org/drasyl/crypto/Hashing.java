@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 public final class Hashing {
     public static final HashFunction MURMUR3_128 = com.google.common.hash.Hashing.murmur3_128();
     public static final HashFunction SHA256 = com.google.common.hash.Hashing.sha256();
+    public static final HashFunction MURMUR3_32 = com.google.common.hash.Hashing.murmur3_32();
 
     private Hashing() {
         // util class
@@ -96,5 +97,35 @@ public final class Hashing {
      */
     public static String murmur3x64Hex(final byte[] input) {
         return hashCode2Hex(MURMUR3_128.hashBytes(input));
+    }
+
+    /**
+     * Generates a hexadecimal representation of the MurMur3x32 hash of the input.
+     *
+     * @param input the input to hash
+     * @return MurMur3x32 hash as hexadecimal string
+     */
+    public static String murmur3x32Hex(final String input) {
+        return murmur3x32Hex(input.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Generates a hexadecimal representation of the MurMur3x32 hash of the input.
+     *
+     * @param input the input to hash
+     * @return MurMur3x32 hash as hexadecimal string
+     */
+    public static String murmur3x32Hex(final byte[] input) {
+        return hashCode2Hex(MURMUR3_32.hashBytes(input));
+    }
+
+    /**
+     * Generates a MurMur3x32 hash of the input.
+     *
+     * @param input the input to hash
+     * @return MurMur3x32 hash
+     */
+    public static byte[] murmur3x32(final byte[]... input) {
+        return MURMUR3_32.hashBytes(Bytes.concat(input)).asBytes();
     }
 }

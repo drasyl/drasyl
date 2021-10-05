@@ -23,10 +23,10 @@ package org.drasyl.crypto;
 
 import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.AbstractBenchmark;
+import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
-import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.util.RandomUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;

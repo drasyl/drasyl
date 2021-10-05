@@ -63,7 +63,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>drasyl-core</artifactId>
+            <artifactId>drasyl-node</artifactId>
             <version>${project.version}</version>
         </dependency>
 

@@ -84,7 +84,7 @@ class PerfCommandIT {
                 .remoteTcpFallbackEnabled(false)
                 .intraVmDiscoveryEnabled(false)
                 .build();
-        superPeer = new EmbeddedNode(superPeerConfig).started();
+        superPeer = new EmbeddedNode(superPeerConfig).awaitStarted();
         LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
 
         serverOut = new ByteArrayOutputStream();
