@@ -111,15 +111,14 @@ public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<A
         LOG.debug("Disarmed protocol msg: {}", disarmedMessage);
     }
 
-    private SessionPair getOrComputeSession(final IdentityPublicKey peer) {
+    private SessionPair getOrComputeSession(final IdentityPublicKey peer) throws CryptoException {
         Objects.requireNonNull(peer);
-        return sessions.computeIfAbsent(peer, k -> {
-            try {
-                return crypto.generateSessionKeyPair(myIdentity.getKeyAgreementKeyPair(), peer.getLongTimeKeyAgreementKey());
-            }
-            catch (final CryptoException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        SessionPair pair = sessions.get(peer); // NOSONAR
+        if (pair == null) {
+            pair = crypto.generateSessionKeyPair(myIdentity.getKeyAgreementKeyPair(), peer.getLongTimeKeyAgreementKey());
+            sessions.put(peer, pair);
+        }
+
+        return pair;
     }
 }
