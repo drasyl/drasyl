@@ -73,6 +73,7 @@ public class UpnpIgdUtil {
     public static final Pattern HTTP_HEADER_SEPARATOR_PATTERN = Pattern.compile("\r\n\r\n");
     public static final Pattern HTTP_HEADER_FIELD_SEPARATOR_PATTERN = Pattern.compile("\r\n");
     private static final Logger LOG = LoggerFactory.getLogger(UpnpIgdUtil.class);
+    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private final HttpClient httpClient;
     private final Function<InetSocketAddress, InetAddress> remoteAddressProvider;
 
@@ -83,7 +84,7 @@ public class UpnpIgdUtil {
     }
 
     public UpnpIgdUtil() {
-        this(HttpClient.newHttpClient(), NetworkUtil::getLocalAddressForRemoteAddress);
+        this(HTTP_CLIENT, NetworkUtil::getLocalAddressForRemoteAddress);
     }
 
     public Service getUpnpService(final URI url) throws InterruptedException {
