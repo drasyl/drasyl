@@ -21,7 +21,6 @@
  */
 package org.drasyl.channel;
 
-import com.google.common.hash.Hashing;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -30,6 +29,7 @@ import io.netty.handler.codec.EncoderException;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNode;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.Hashing;
 import org.drasyl.event.Event;
 import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.Node;
@@ -259,7 +259,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
              a completely random port would have the disadvantage that every time the node is
              started it would use a new port and this would make discovery more difficult
             */
-            final long identityHash = UnsignedInteger.of(Hashing.murmur3_32().hashBytes(address.toByteArray()).asBytes()).getValue();
+            final long identityHash = UnsignedInteger.of(Hashing.murmur3x32(address.toByteArray())).getValue();
             return (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
         }
         else {

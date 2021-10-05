@@ -218,7 +218,7 @@ public class PFSArmHandler extends AbstractArmHandler {
                 LOG.trace("[{}] Send ack message for session {}", ctx.channel()::id, pendingAgreement::getAgreementId);
             }
             catch (final CryptoException e) {
-                LOG.trace("[{}] Error on sending ack message for session {}", ctx.channel()::id, pendingAgreement::getAgreementId);
+                LOG.trace("[{}] Error on sending ack message for session {}: {}", ctx.channel()::id, pendingAgreement::getAgreementId, e::toString);
             }
         }
     }
