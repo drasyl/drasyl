@@ -37,7 +37,6 @@ import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.util.MaskedString;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -114,13 +113,6 @@ public abstract class DrasylConfig {
     public static final String REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT = "drasyl.remote.tcp-fallback.client.timeout";
     public static final String REMOTE_TCP_FALLBACK_CLIENT_ADDRESS = "drasyl.remote.tcp-fallback.client.address";
     public static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
-    public static final String MONITORING_ENABLED = "drasyl.monitoring.enabled";
-    public static final String MONITORING_HOST_TAG = "drasyl.monitoring.host-tag";
-    public static final String MONITORING_INFLUX_URI = "drasyl.monitoring.influx.uri";
-    public static final String MONITORING_INFLUX_USER = "drasyl.monitoring.influx.user";
-    public static final String MONITORING_INFLUX_PASSWORD = "drasyl.monitoring.influx.password";
-    public static final String MONITORING_INFLUX_DATABASE = "drasyl.monitoring.influx.database";
-    public static final String MONITORING_INFLUX_REPORTING_FREQUENCY = "drasyl.monitoring.influx.reporting-frequency";
     public static final String CHANNEL_INACTIVITY_TIMEOUT = "drasyl.channel.inactivity-timeout";
     public static final String PLUGINS = "drasyl.plugins";
     public static final String SERIALIZATION_SERIALIZERS = "drasyl.serialization.serializers";
@@ -205,15 +197,6 @@ public abstract class DrasylConfig {
 
             // intra vm discovery
             builder.intraVmDiscoveryEnabled(config.getBoolean(INTRA_VM_DISCOVERY_ENABLED));
-
-            // monitoring
-            builder.monitoringEnabled(config.getBoolean(MONITORING_ENABLED));
-            builder.monitoringHostTag(config.getString(MONITORING_HOST_TAG));
-            builder.monitoringInfluxUri(getURI(config, MONITORING_INFLUX_URI));
-            builder.monitoringInfluxUser(config.getString(MONITORING_INFLUX_USER));
-            builder.monitoringInfluxPassword(MaskedString.of(config.getString(MONITORING_INFLUX_PASSWORD)));
-            builder.monitoringInfluxDatabase(config.getString(MONITORING_INFLUX_DATABASE));
-            builder.monitoringInfluxReportingFrequency(config.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY));
 
             // plugins
             builder.plugins(DrasylConfig.getPlugins(config, PLUGINS));
@@ -733,20 +716,6 @@ public abstract class DrasylConfig {
 
     public abstract boolean isIntraVmDiscoveryEnabled();
 
-    public abstract boolean isMonitoringEnabled();
-
-    public abstract String getMonitoringHostTag();
-
-    public abstract URI getMonitoringInfluxUri();
-
-    public abstract String getMonitoringInfluxUser();
-
-    public abstract MaskedString getMonitoringInfluxPassword();
-
-    public abstract String getMonitoringInfluxDatabase();
-
-    public abstract Duration getMonitoringInfluxReportingFrequency();
-
     public abstract ImmutableSet<DrasylPlugin> getPlugins();
 
     public abstract ImmutableMap<String, Serializer> getSerializationSerializers();
@@ -841,20 +810,6 @@ public abstract class DrasylConfig {
         public abstract Builder remoteTcpFallbackClientTimeout(final Duration remoteTcpFallbackClientTimeout);
 
         public abstract Builder remoteTcpFallbackClientAddress(final InetSocketAddress remoteTcpFallbackClientAddress);
-
-        public abstract Builder monitoringEnabled(final boolean monitoringEnabled);
-
-        public abstract Builder monitoringHostTag(final String monitoringHostTag);
-
-        public abstract Builder monitoringInfluxUri(final URI monitoringInfluxUri);
-
-        public abstract Builder monitoringInfluxUser(final String monitoringInfluxUser);
-
-        public abstract Builder monitoringInfluxPassword(final MaskedString monitoringInfluxPassword);
-
-        public abstract Builder monitoringInfluxDatabase(final String monitoringInfluxDatabase);
-
-        public abstract Builder monitoringInfluxReportingFrequency(final Duration monitoringInfluxReportingFrequency);
 
         public abstract Builder plugins(final Set<DrasylPlugin> plugins);
 

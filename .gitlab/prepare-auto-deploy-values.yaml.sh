@@ -49,18 +49,6 @@ podEnv:
     value: "false"
   - name: CONFIG_FORCE_drasyl_remote_super__peer_enabled
     value: "false"
-  - name: CONFIG_FORCE_drasyl_monitoring_enabled
-    value: "true"
-  - name: CONFIG_FORCE_drasyl_monitoring_host__tag
-    value: "$(echo $CI_ENVIRONMENT_URL | awk -F[/:] '{print $4}')"
-  - name: CONFIG_FORCE_drasyl_monitoring_influx_uri
-    value: https://influxdb.incorum.org
-  - name: CONFIG_FORCE_drasyl_monitoring_influx_user
-    value: drasyl
-  - name: CONFIG_FORCE_drasyl_monitoring_influx_password
-    value: "$DRASYL_MONITORING_PASSWORD"
-  - name: CONFIG_FORCE_drasyl_monitoring_influx_reporting__frequency
-    value: 10s
   - name: JAVA_OPTS
     value: "$JAVA_OPTS"
 

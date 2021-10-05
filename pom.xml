@@ -133,7 +133,6 @@
         <awaitility.version>4.1.0</awaitility.version>
         <netty.version>4.1.68.Final</netty.version>
         <guava.version>31.0.1-jre</guava.version>
-        <micrometer.version>1.7.4</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>1.7.32</slf4j.version>
         <typesafe.config.version>1.4.1</typesafe.config.version>
@@ -257,11 +256,6 @@
                 <groupId>com.typesafe</groupId>
                 <artifactId>config</artifactId>
                 <version>${typesafe.config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-registry-influx</artifactId>
-                <version>${micrometer.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>

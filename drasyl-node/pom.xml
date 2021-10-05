@@ -77,12 +77,6 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- Monitoring -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-influx</artifactId>
-        </dependency>
-
         <!-- Test Dependencies -->
 
         <dependency>

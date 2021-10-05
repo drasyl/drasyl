@@ -116,15 +116,6 @@
     <build>
         <resources>
             <resource>
-                <directory>relay-monitoring-page</directory>
-                <includes>
-                    <include>dist/*</include>
-                    <include>dist/js/*</include>
-                    <include>dist/css/*</include>
-                    <include>dist/fonts/*</include>
-                </includes>
-            </resource>
-            <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
