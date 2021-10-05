@@ -126,11 +126,11 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
      * @throws InvalidMessageFormatException if magic number or public header is missing
      */
     static PartialReadMessage of(final ByteBuf bytes) throws InvalidMessageFormatException {
-        try {
-            if (bytes.readableBytes() < Integer.BYTES || MAGIC_NUMBER != bytes.readInt()) {
-                throw new MagicNumberMissmatchException();
-            }
+        if (bytes.readableBytes() < Integer.BYTES || MAGIC_NUMBER != bytes.readInt()) {
+            throw new MagicNumberMissmatchException();
+        }
 
+        try {
             return of(PublicHeader.of(bytes), bytes.discardSomeReadBytes().slice());
         }
         catch (final IOException e) {

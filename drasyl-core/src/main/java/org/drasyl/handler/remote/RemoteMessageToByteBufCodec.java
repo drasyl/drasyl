@@ -27,8 +27,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
+import org.drasyl.handler.remote.protocol.MagicNumberMissmatchException;
 import org.drasyl.handler.remote.protocol.PartialReadMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
@@ -38,6 +41,7 @@ import java.util.List;
 @SuppressWarnings("java:S110")
 @Sharable
 public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<AddressedMessage<ByteBuf, ?>, AddressedMessage<RemoteMessage, ?>> {
+    private static final Logger LOG = LoggerFactory.getLogger(RemoteMessageToByteBufCodec.class);
     public static final RemoteMessageToByteBufCodec INSTANCE = new RemoteMessageToByteBufCodec();
 
     private RemoteMessageToByteBufCodec() {
@@ -68,6 +72,11 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
     protected void decode(final ChannelHandlerContext ctx,
                           final AddressedMessage<ByteBuf, ?> msg,
                           final List<Object> out) throws InvalidMessageFormatException {
-        out.add(msg.replace(PartialReadMessage.of(msg.message().retain())));
+        try {
+            out.add(msg.replace(PartialReadMessage.of(msg.message().retain())));
+        }
+        catch (final MagicNumberMissmatchException e) {
+            LOG.trace("Message has invalid magic number. Drop it!", e);
+        }
     }
 }
