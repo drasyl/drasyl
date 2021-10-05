@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.handler.remote.protocol.MagicNumberMissmatchException;
@@ -76,6 +77,7 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
             out.add(msg.replace(PartialReadMessage.of(msg.message().retain())));
         }
         catch (final MagicNumberMissmatchException e) {
+            ReferenceCountUtil.release(msg);
             LOG.trace("Message has invalid magic number. Drop it!", e);
         }
     }

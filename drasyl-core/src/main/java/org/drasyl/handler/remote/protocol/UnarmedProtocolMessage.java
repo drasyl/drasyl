@@ -92,9 +92,15 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
         return getBytes().release(decrement);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code getBytes()} is transferred to this {@link
+     * PartialReadMessage}.
+     */
     @Override
     public UnarmedProtocolMessage incrementHopCount() {
-        return UnarmedProtocolMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getBytes().retain());
+        return UnarmedProtocolMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getBytes());
     }
 
     @Override

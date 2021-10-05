@@ -22,6 +22,7 @@
 package org.drasyl.handler.remote;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -169,13 +170,16 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         protected void channelRead0(final ChannelHandlerContext channelCtx,
                                     final DatagramPacket packet) {
             final SocketAddress sender = packet.sender();
+            final ByteBuf content = packet.content();
             nodes.forEach(nodeCtx -> {
                 LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel()::localAddress);
+                content.retain();
                 nodeCtx.executor().execute(() -> {
-                    nodeCtx.fireChannelRead(new AddressedMessage<>(packet.content(), sender));
+                    nodeCtx.fireChannelRead(new AddressedMessage<>(content, sender));
                     nodeCtx.fireChannelReadComplete();
                 });
             });
+            content.release();
         }
     }
 

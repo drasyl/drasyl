@@ -91,9 +91,15 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
         return getBytes().release(decrement);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code getBytes()} is transferred to this {@link
+     * PartialReadMessage}.
+     */
     @Override
     public ArmedProtocolMessage incrementHopCount() {
-        return ArmedProtocolMessage.of(getNonce(), getHopCount().increment(), getNetworkId(), getRecipient(), getSender(), getProofOfWork(), getBytes().retain());
+        return ArmedProtocolMessage.of(getNonce(), getHopCount().increment(), getNetworkId(), getRecipient(), getSender(), getProofOfWork(), getBytes());
     }
 
     /**
