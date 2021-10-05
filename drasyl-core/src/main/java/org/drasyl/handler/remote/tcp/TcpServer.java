@@ -155,7 +155,7 @@ public class TcpServer extends ChannelDuplexHandler {
                 // server successfully started
                 TcpServer.this.serverChannel = future.channel();
                 final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
-                LOG.debug("Server started and listening at tcp:/{}", socketAddress);
+                LOG.info("Server started and listening at tcp:/{}", socketAddress);
 
                 ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
                 ctx.fireChannelActive();
