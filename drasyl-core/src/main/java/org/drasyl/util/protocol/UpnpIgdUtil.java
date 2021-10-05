@@ -302,7 +302,8 @@ public class UpnpIgdUtil {
         return new ExternalIpAddress(newExternalIpAddress);
     }
 
-    public static byte[] buildDiscoveryMessage() {
+    public static byte[] buildSsdpDiscoveryMessage() {
+        // SSDP: https://datatracker.ietf.org/doc/html/draft-cai-ssdp-v1-03#section-4
         final String content = "M-SEARCH * HTTP/1.1\r\n" +
                 "HOST: " + SSDP_MULTICAST_ADDRESS.getAddress().getHostAddress() + ":" + SSDP_MULTICAST_ADDRESS.getPort() + "\r\n" +
                 "MAN: \"ssdp:discover\"\r\n" +

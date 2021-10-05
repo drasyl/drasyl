@@ -213,7 +213,7 @@ public class UpnpIgdPortMapping implements PortMapping {
 
     private void doSsdpDiscovery(final ChannelHandlerContext ctx) {
         LOG.debug("Send SSDP discovery message to broadcast address `{}`.", SSDP_MULTICAST_ADDRESS);
-        final byte[] content = UpnpIgdUtil.buildDiscoveryMessage();
+        final byte[] content = UpnpIgdUtil.buildSsdpDiscoveryMessage();
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         ssdpServices.clear();
         ssdpDiscoveryActive.set(true);

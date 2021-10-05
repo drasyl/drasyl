@@ -219,10 +219,10 @@ public class UpnpIgdUtilTest {
     }
 
     @Nested
-    class BuildDiscoveryMessage {
+    class BuildSsdpDiscoveryMessage {
         @Test
         void shouldReturnValidMessage() {
-            final byte[] message = UpnpIgdUtil.buildDiscoveryMessage();
+            final byte[] message = UpnpIgdUtil.buildSsdpDiscoveryMessage();
 
             assertThat(new String(message), startsWith("M-SEARCH * HTTP/1.1"));
         }
