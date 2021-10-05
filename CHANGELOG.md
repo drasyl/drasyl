@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2021-10-XX
+
+### Upgrade Notes
+
+- We did it again: The overlay protocol has been changed with breaking changes making it impossible
+  to communicate with peers running older drasyl versions.
+
+### Added
+
+- [Netty](https://netty.io/) based channels are now used to process all overlay network I/O
+  operations. This change allows you to use/add many netty handlers with the drasyl overlay.
+- [`DrasylNode#resolve(...)`](./drasyl-node/src/main/java/org/drasyl/DrasylNode.java) will now
+  return a dedicated [`Channel`](https://netty.io/4.1/api/io/netty/channel/Channel.html) for
+  communication with the given peer.
+- The above mentioned [`Channel`](https://netty.io/4.1/api/io/netty/channel/Channel.html) comes with
+  an backpressure mechanism (`Channel#isWritable`/`Channel#bytesBeforeWritable`
+  /`Channel#bytesBeforeUnwritable`) allowing the application to control how fast traffic is written
+  to the overlay.
+- The encryption of overlay management messages and application messages can now be disabled
+  separtely in
+  the [config](drasyl-node/src/main/resources/reference.conf) (`drasyl.remote.message.arm.protocol.enabled`
+  /`drasyl.remote.message.arm.application.enabled`).
+
+### Changed
+
+- The class `DrasylNode` has been moved to the Maven module `org.drasyl:drasyl-node`.
+- Dependencies have been updated.
+- The monitoring feature was outdated/mostly unusable and has therefore been removed.
+- Replaced protobuf with own message serialization allowing us to reduce the overlay overhead.
+
+### Fixed
+
+- Overwhelming Application Traffic will no longer cause the node to drop out of the overlay.
+
 ## [0.5.1] - 2021-09-14
 
 ### Changed
@@ -73,8 +107,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `DrasylNode`'s API has been enhanced with `@NotNull` and `@Nullable` annotations.
 - Messages that can be delivered within the same JVM are now passed by reference (previously these
   messages have been unnecessarily serialized).
-  **So make sure you either send copies of your objects or it's
-  fine for other nodes to make changes to that object.**
+  **So make sure you either send copies of your objects or it's fine for other nodes to make changes
+  to that object.**
 - Static routes to other remote peers can now be defined. This allows discovery to be omitted in
   static environments (or test setups).
 - **Messages with content `null` are now possible.**
@@ -85,13 +119,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - New examples have been added:
   https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example
 - Nodes can now be implemented as finite state machines (see our example of the philosopher
-  problem: https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example/diningphilosophers).
+  problem: https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example/diningphilosophers)
+  .
 
 ### Changed
 
 - By default, each node now listens on a port in the range 22528 and 65528, which is derived from
-  its identity. This means that the chance for a port collision is now reduced when
-  multiple nodes are running on one computer.
+  its identity. This means that the chance for a port collision is now reduced when multiple nodes
+  are running on one computer.
 - UDP is now used instead of TCP for communication with remote peers.
 - The entire protocol for constructing the overlay network has been revised (it's far better now!).
 - Messages are now serialized in binary. This is faster and creates smaller messages on the wire.
@@ -99,8 +134,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Documentation has been revised (Javadoc and/or documentation at https://docs.drasyl.org).
 - Messages can now be additionally serialized by protobuf or Java. Furthermore, own serializers can
   be implemented. Read more at https://docs.drasyl.org.
-- The third-party portmapper library has been replaced with our own more lightweight
-  and more resilient implementation.
+- The third-party portmapper library has been replaced with our own more lightweight and more
+  resilient implementation.
 - All dependencies have been updated to the latest versions.
 
 ### Fixed
