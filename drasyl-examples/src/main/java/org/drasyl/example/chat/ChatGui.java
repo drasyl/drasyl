@@ -40,6 +40,7 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
+import org.drasyl.handler.serialization.Serialization;
 import org.drasyl.identity.IdentityPublicKey;
 
 import javax.swing.JButton;
@@ -261,6 +262,10 @@ public class ChatGui {
         appendTextToMessageArea("*******************************************************************************************************\n");
 
         startNode();
+
+        // trigger loading of the inheritance graph (otherwise it will be loaded lazilly when user
+        // is sending the first message causing the UI to lag)
+        Serialization.noop();
     }
 
     private void startNode() {

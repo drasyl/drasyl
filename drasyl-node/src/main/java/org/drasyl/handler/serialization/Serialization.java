@@ -208,4 +208,12 @@ public class Serialization {
             lock.writeLock().unlock();
         }
     }
+
+    /**
+     * This method does nothing. However, it triggers the loading of the inheritance graph and thus
+     * allows the caller to eagerly load the inheritance graph.
+     */
+    public static void noop() {
+        // NO-OP
+    }
 }
