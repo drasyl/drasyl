@@ -59,7 +59,6 @@ public interface RemoteMessage {
      * Writes this message to the buffer {@code out}.
      *
      * @param out writes this envelope to this buffer
-     * @throws InvalidMessageFormatException if message could not be written to the given buffer
      */
-    void writeTo(final ByteBuf out) throws InvalidMessageFormatException;
+    void writeTo(final ByteBuf out);
 }

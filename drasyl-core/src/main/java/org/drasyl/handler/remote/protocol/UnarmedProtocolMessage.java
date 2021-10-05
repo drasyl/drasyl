@@ -98,7 +98,7 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
     }
 
     @Override
-    public void writeTo(final ByteBuf out) throws InvalidMessageFormatException {
+    public void writeTo(final ByteBuf out) {
         out.writeInt(MAGIC_NUMBER);
         buildPublicHeader().writeTo(out);
         out.writeBytes(getBytes().slice());

@@ -54,16 +54,9 @@ public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<Add
                           final AddressedMessage<RemoteMessage, ?> msg,
                           final List<Object> out) throws InvalidMessageFormatException {
         final RemoteMessage remoteMsg = msg.message();
-
         final ByteBuf buffer = ctx.alloc().ioBuffer();
-        try {
-            remoteMsg.writeTo(buffer);
-            out.add(new AddressedMessage<>(buffer, msg.address()));
-        }
-        catch (final InvalidMessageFormatException e) {
-            buffer.release();
-            throw e;
-        }
+        remoteMsg.writeTo(buffer);
+        out.add(new AddressedMessage<>(buffer, msg.address()));
     }
 
     @Override

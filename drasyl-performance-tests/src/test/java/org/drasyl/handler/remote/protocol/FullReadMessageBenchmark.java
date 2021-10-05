@@ -77,13 +77,8 @@ public class FullReadMessageBenchmark extends AbstractBenchmark {
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
     public void writeTo(final Blackhole blackhole) {
-        try {
-            final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
-            message.writeTo(byteBuf);
-            blackhole.consume(byteBuf);
-        }
-        catch (final IOException e) {
-            handleUnexpectedException(e);
-        }
+        final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
+        message.writeTo(byteBuf);
+        blackhole.consume(byteBuf);
     }
 }

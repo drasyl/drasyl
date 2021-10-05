@@ -50,7 +50,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.infra.Blackhole;
 import test.util.IdentityTestUtil;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -66,18 +65,13 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
 
     @Setup
     public void setup() {
-        try {
-            ctx = new MyHandlerContext();
-            sender = new InetSocketAddress("127.0.0.1", 25527);
-            recipient = new InetSocketAddress("127.0.0.1", 25527);
-            final byte[] payload = RandomUtil.randomBytes(1024);
-            message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
-            byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
-            message.writeTo(byteBuf);
-        }
-        catch (final IOException e) {
-            handleUnexpectedException(e);
-        }
+        ctx = new MyHandlerContext();
+        sender = new InetSocketAddress("127.0.0.1", 25527);
+        recipient = new InetSocketAddress("127.0.0.1", 25527);
+        final byte[] payload = RandomUtil.randomBytes(1024);
+        message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
+        byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
+        message.writeTo(byteBuf);
     }
 
     @Benchmark

@@ -25,13 +25,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.handler.remote.protocol.PartialReadMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
@@ -42,7 +40,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -52,9 +49,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 class RemoteMessageToByteBufCodecTest {
@@ -110,23 +104,6 @@ class RemoteMessageToByteBufCodecTest {
                 assertEquals(new AddressedMessage<>(byteBuf, recipient), actual);
 
                 actual.release();
-            }
-            finally {
-                channel.close();
-            }
-        }
-
-        @Test
-        void shouldCompleteFutureExceptionallyWhenConversionFail(@Mock final SocketAddress recipient,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage messageEnvelope) throws IOException {
-            Mockito.doThrow(InvalidMessageFormatException.class).when(messageEnvelope).writeTo(any());
-
-            final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-            try {
-                final ChannelPromise promise = channel.newPromise();
-                channel.writeAndFlush(new AddressedMessage<>(messageEnvelope, recipient), promise);
-                assertFalse(promise.isSuccess());
             }
             finally {
                 channel.close();

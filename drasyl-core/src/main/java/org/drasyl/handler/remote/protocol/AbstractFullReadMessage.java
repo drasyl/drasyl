@@ -52,17 +52,12 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
     }
 
     @Override
-    public void writeTo(final ByteBuf out) throws InvalidMessageFormatException {
+    public void writeTo(final ByteBuf out) {
         // message (partially) present as java objects. get bytes and transfer to buffer
-        try {
-            out.writeInt(MAGIC_NUMBER);
-            writePublicHeaderTo(out);
-            writePrivateHeaderTo(out);
-            writeBodyTo(out);
-        }
-        catch (final Exception e) {
-            throw new InvalidMessageFormatException(e);
-        }
+        out.writeInt(MAGIC_NUMBER);
+        writePublicHeaderTo(out);
+        writePrivateHeaderTo(out);
+        writeBodyTo(out);
     }
 
     protected void writePublicHeaderTo(final ByteBuf out) {
