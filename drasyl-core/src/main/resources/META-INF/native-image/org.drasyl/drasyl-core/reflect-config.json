@@ -171,7 +171,7 @@
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.localhost.LocalHostDiscovery",
+    "name": "org.drasyl.handler.remote.LocalHostDiscovery",
     "allDeclaredMethods": true
   },
   {
@@ -181,232 +181,71 @@
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.peer.PeersManagerHandler",
+    "name": "org.drasyl.handler.remote.crypto.ProtocolArmHandler",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.crypto.ArmHandler",
+    "name": "org.drasyl.handler.remote.portmapper.PortMapper",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.portmapper.PortMapper",
+    "name": "org.drasyl.handler.remote.tcp.TcpClient",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.tcp.TcpClient",
+    "name": "org.drasyl.handler.remote.tcp.TcpServer",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.tcp.TcpServer",
+    "name": "org.drasyl.handler.remote.HopCountGuard",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.HopCountGuard",
+    "name": "org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.InternetDiscovery",
+    "name": "org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.InvalidProofOfWorkFilter",
+    "name": "org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.LocalNetworkDiscovery",
+    "name": "org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.OtherNetworkFilter",
+    "name": "org.drasyl.handler.remote.InvalidProofOfWorkFilter",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.RemoteMessageToByteBufCodec",
+    "name": "org.drasyl.handler.remote.LocalNetworkDiscovery",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.StaticRoutesHandler",
+    "name": "org.drasyl.handler.remote.OtherNetworkFilter",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.UdpMulticastServer",
+    "name": "org.drasyl.handler.remote.RemoteMessageToByteBufCodec",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.UdpServer",
+    "name": "org.drasyl.handler.remote.StaticRoutesHandler",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.protocol.Protocol$Acknowledgement",
-    "allDeclaredFields": true,
+    "name": "org.drasyl.handler.remote.UdpMulticastServer",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.protocol.Protocol$Acknowledgement$Builder",
-    "allDeclaredFields": true,
+    "name": "org.drasyl.handler.remote.UdpServer",
     "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$Discovery",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$Discovery$Builder",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$MessageType",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$PrivateHeader",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$PrivateHeader$Builder",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$PublicHeader",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$PublicHeader$Builder",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$Unite",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$Unite$Builder",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.serialization.BooleanSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.ByteArraySerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.ByteSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.CharacterSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.FloatSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.IntegerSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.JacksonJsonSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.JavaSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.LongSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.ProtobufSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.ShortSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "org.drasyl.serialization.StringSerializer",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
-      }
-    ]
   },
   {
     "name": "org.drasyl.util.Pair",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.util.Triple",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
