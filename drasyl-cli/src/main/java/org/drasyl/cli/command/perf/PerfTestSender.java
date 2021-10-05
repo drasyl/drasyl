@@ -138,7 +138,7 @@ public class PerfTestSender {
             final double desiredSentMessages = ((double) currentTime - startTime) / MICROSECONDS * session.getMps();
             if (desiredSentMessages >= sentMessages) {
                 if (channel.isWritable()) {
-                    TestResults finalIntervalResults = intervalResults;
+                    final TestResults finalIntervalResults = intervalResults;
                     channel.writeAndFlush(new Probe(probePayload, sentMessages)).addListener(future -> {
                         if (!future.isSuccess()) {
                             LOG.trace("Unable to send message", future::cause);
@@ -147,7 +147,7 @@ public class PerfTestSender {
                     });
                 }
                 else {
-                    LOG.trace("Unable to send message: Channel is not writable.");
+                    LOG.trace("Unable to send message: Channel is not writable ({} bytes before writable).", channel::bytesBeforeWritable);
                     intervalResults.incrementLostMessages();
                 }
                 sentMessages++;
