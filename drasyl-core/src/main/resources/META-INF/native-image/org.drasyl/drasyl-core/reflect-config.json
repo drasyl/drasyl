@@ -175,12 +175,6 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.peer.Endpoint",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
     "name": "org.drasyl.handler.remote.crypto.ProtocolArmHandler",
     "allDeclaredMethods": true
   },
@@ -251,11 +245,11 @@
     "allDeclaredConstructors": true
   },
   {
-    "name" : "com.sun.jna.ptr.IntByReference",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true,
-    "allDeclaredMethods" : true,
-    "allPublicMethods" : true
+    "name": "com.sun.jna.ptr.IntByReference",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
   },
   {
     "name" : "java.util.Base64$Decoder",

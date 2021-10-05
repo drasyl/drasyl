@@ -16,6 +16,54 @@
     "allDeclaredConstructors": true
   },
   {
+    "name": "org.drasyl.identity.serialization.IdentityMixin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.identity.serialization.IdentityPublicKeyMixin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.identity.serialization.IdentitySecretKeyMixin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.identity.serialization.KeyAgreementPublicKeyMixin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.identity.serialization.KeyAgreementSecretKeyMixin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.identity.serialization.KeyMixin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.identity.serialization.KeyPairMixin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.identity.serialization.ProofOfWorkMixin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
     "name": "org.drasyl.handler.serialization.BooleanSerializer",
     "methods": [
       {
