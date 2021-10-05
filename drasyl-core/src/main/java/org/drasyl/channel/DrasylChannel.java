@@ -31,7 +31,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoop;
-import io.netty.util.ReferenceCounted;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -149,7 +149,7 @@ public class DrasylChannel extends AbstractChannel {
 
         pendingWrites = false;
         while (true) {
-            Object msg = in.current();
+            final Object msg = in.current();
             if (msg == null) {
                 break;
             }
@@ -159,10 +159,8 @@ public class DrasylChannel extends AbstractChannel {
                 break;
             }
 
+            ReferenceCountUtil.retain(msg);
             parent().write(new AddressedMessage<>(msg, remoteAddress));
-            if (msg instanceof ReferenceCounted) {
-                ((ReferenceCounted) msg).retain();
-            }
             in.remove();
         }
         parent().flush();
