@@ -89,7 +89,7 @@ public class IdentityManager {
      */
     public void loadOrCreateIdentity() throws IOException {
         if (config.getIdentityProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentitySecretKey() != null) {
-            LOG.debug("Load identity specified in config");
+            LOG.info("Load identity specified in config");
             try {
                 this.identity = Identity.of(config.getIdentityProofOfWork(), config.getIdentityPublicKey(), config.getIdentitySecretKey());
             }
@@ -101,11 +101,11 @@ public class IdentityManager {
             final Path path = config.getIdentityPath();
 
             if (isIdentityFilePresent(path)) {
-                LOG.debug("Read Identity from file `{}`", path);
+                LOG.info("Read Identity from file `{}`", path);
                 this.identity = readIdentityFile(path);
             }
             else {
-                LOG.debug("No Identity present. Generate a new one and write to file `{}`.", path);
+                LOG.info("No Identity present. Generate a new one and write to file `{}`.", path);
                 final Identity myIdentity = identityGenerator.get();
                 writeIdentityFile(path, myIdentity);
                 this.identity = myIdentity;
