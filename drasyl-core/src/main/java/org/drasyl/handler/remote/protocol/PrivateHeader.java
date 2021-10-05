@@ -34,6 +34,7 @@ import org.drasyl.util.UnsignedShort;
  * <li><b>ArmedLength</b>: The 2 bytes armed length value. Indicates, the length of the encrypted portion of the message without AEAD tag.</li>
  * </ul>
  */
+@SuppressWarnings({ "java:S109", "java:S1142" })
 @AutoValue
 public abstract class PrivateHeader {
     public static final int LENGTH = 3;

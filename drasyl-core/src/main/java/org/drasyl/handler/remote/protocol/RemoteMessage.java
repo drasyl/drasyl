@@ -28,6 +28,7 @@ import org.drasyl.identity.ProofOfWork;
 /**
  * Describes a message that is sent to remote peers via UDP/TCP.
  */
+@SuppressWarnings("java:S2047")
 public interface RemoteMessage {
     int MAGIC_NUMBER = 22527 * 22527;
 

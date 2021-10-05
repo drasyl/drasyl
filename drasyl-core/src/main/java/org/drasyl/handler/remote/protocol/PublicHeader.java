@@ -44,6 +44,7 @@ import org.drasyl.identity.ProofOfWork;
  * </ul>
  * The public header is only authenticated and protected at the 5th byte. The magic number, and hop count are not protected. This allows us to update the hop count in-place.
  */
+@SuppressWarnings({ "java:S2047", "java:S2301" })
 @AutoValue
 public abstract class PublicHeader {
     public static final int LENGTH = 98;

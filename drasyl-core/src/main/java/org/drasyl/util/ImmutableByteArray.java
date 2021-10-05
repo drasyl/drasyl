@@ -26,7 +26,7 @@ import java.util.Arrays;
 /**
  * Immutable byte array implementation, that do not allow any modifications to the original input.
  */
-public class ImmutableByteArray {
+public final class ImmutableByteArray {
     private final byte[] array;
 
     private ImmutableByteArray(final byte[] array) {
@@ -43,7 +43,7 @@ public class ImmutableByteArray {
         return new ImmutableByteArray(array);
     }
 
-    private byte[] copyArray(final byte[] array) {
+    private static byte[] copyArray(final byte[] array) {
         final byte[] copy = new byte[array.length];
         System.arraycopy(array, 0, copy, 0, array.length);
 

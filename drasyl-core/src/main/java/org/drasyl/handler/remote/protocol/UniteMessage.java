@@ -43,6 +43,7 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.UNITE
 @SuppressWarnings("java:S118")
 public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage> {
     public static final int LENGTH = 50;
+    private static final int IPV6_LENGTH = 16;
 
     /**
      * Returns the public key of the peer.
@@ -193,7 +194,7 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
 
         final UnsignedShort port = UnsignedShort.of(body.readUnsignedShort());
 
-        final byte[] addressBuffer = new byte[16];
+        final byte[] addressBuffer = new byte[IPV6_LENGTH];
         body.readBytes(addressBuffer);
 
         try {
