@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package org.drasyl.channel;
-
-message SerializedPayload {
-    bytes payload = 1;
-    string type = 2;
-}

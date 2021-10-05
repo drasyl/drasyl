@@ -201,10 +201,6 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.ChunkingHandler",
-    "allDeclaredMethods": true
-  },
-  {
     "name": "org.drasyl.remote.handler.HopCountGuard",
     "allDeclaredMethods": true
   },

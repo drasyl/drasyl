@@ -27,9 +27,9 @@ import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOnlineEvent;
-import org.drasyl.plugin.groups.manager.GroupsManagerConfig;
-import org.drasyl.plugin.groups.manager.GroupsManagerPlugin;
-import org.drasyl.plugin.groups.manager.data.Group;
+import org.drasyl.handler.plugin.groups.manager.GroupsManagerConfig;
+import org.drasyl.handler.plugin.groups.manager.GroupsManagerPlugin;
+import org.drasyl.handler.plugin.groups.manager.data.Group;
 
 import java.nio.file.Path;
 import java.util.Map;

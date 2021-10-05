@@ -21,10 +21,6 @@
  */
 package org.drasyl.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -33,8 +29,7 @@ import java.util.Objects;
  * <p>
  * Inspired by: https://github.com/javatuples/javatuples/blob/master/src/main/java/org/javatuples/Triplet.java
  */
-@JsonFormat(shape = JsonFormat.Shape.ARRAY)
-@SuppressWarnings({ "squid:S4144", "java:S4926" })
+@SuppressWarnings({ "java:S2974", "squid:S4144", "java:S4926" })
 public class Triple<A, B, C> implements Serializable {
     private static final long serialVersionUID = 5738338228780907721L;
     private final A first; // NOSONAR
@@ -48,10 +43,9 @@ public class Triple<A, B, C> implements Serializable {
      * @param second second object
      * @param third  third object
      */
-    @JsonCreator
-    private Triple(@JsonProperty("first") final A first,
-                   @JsonProperty("second") final B second,
-                   @JsonProperty("third") final C third) {
+    private Triple(final A first,
+                   final B second,
+                   final C third) {
         this.first = first;
         this.second = second;
         this.third = third;
@@ -88,7 +82,6 @@ public class Triple<A, B, C> implements Serializable {
     /**
      * @return the first element
      */
-    @JsonProperty("first")
     public A first() {
         return first;
     }
@@ -96,7 +89,6 @@ public class Triple<A, B, C> implements Serializable {
     /**
      * @return the second element
      */
-    @JsonProperty("second")
     public B second() {
         return second;
     }
@@ -104,7 +96,6 @@ public class Triple<A, B, C> implements Serializable {
     /**
      * @return the third element
      */
-    @JsonProperty("third")
     public C third() {
         return third;
     }

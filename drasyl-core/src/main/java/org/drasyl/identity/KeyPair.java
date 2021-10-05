@@ -21,8 +21,6 @@
  */
 package org.drasyl.identity;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 import org.drasyl.annotation.NonNull;
 
@@ -42,9 +40,8 @@ public abstract class KeyPair<P extends PublicKey, S extends SecretKey> {
     @NonNull
     public abstract S getSecretKey();
 
-    @JsonCreator
-    public static <P extends PublicKey, S extends SecretKey> KeyPair<P, S> of(@JsonProperty("publicKey") final P publicKey,
-                                                                              @JsonProperty("secretKey") final S secretKey) {
+    public static <P extends PublicKey, S extends SecretKey> KeyPair<P, S> of(final P publicKey,
+                                                                              final S secretKey) {
         return new AutoValue_KeyPair<>(publicKey, secretKey);
     }
 }

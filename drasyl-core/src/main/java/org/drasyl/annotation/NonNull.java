@@ -37,8 +37,6 @@ import java.lang.annotation.Target;
  * <p>Should be used at parameter, return value, and field level. Method overrides should
  * repeat parent {@code @NonNull} annotations unless they behave differently.
  *
- * <p>Adapted from {@link io.micrometer.core.lang.NonNull}
- *
  * @see Nullable
  */
 @Target({ ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD })

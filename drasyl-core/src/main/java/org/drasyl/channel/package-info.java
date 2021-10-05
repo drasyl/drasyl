@@ -20,6 +20,7 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
- * <a href="https://netty.io/">netty</a> transport for the drasyl overlay network.
+ * <a href="https://netty.io/">netty</a> {@link io.netty.channel.Channel} for the drasyl overlay
+ * network.
  */
 package org.drasyl.channel;

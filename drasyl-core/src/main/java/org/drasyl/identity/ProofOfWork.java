@@ -21,8 +21,6 @@
  */
 package org.drasyl.identity;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
 import org.drasyl.crypto.Hashing;
 import org.drasyl.util.logging.Logger;
@@ -46,7 +44,6 @@ public abstract class ProofOfWork {
     /**
      * Returns the value of this {@code ProofOfWork} as an {@code int}.
      */
-    @JsonValue
     public int intValue() {
         return getNonce();
     }
@@ -95,7 +92,6 @@ public abstract class ProofOfWork {
     /**
      * @throws NullPointerException if {@code nonce} is {@code null}
      */
-    @JsonCreator
     public static ProofOfWork of(final int nonce) {
         return new AutoValue_ProofOfWork(nonce);
     }

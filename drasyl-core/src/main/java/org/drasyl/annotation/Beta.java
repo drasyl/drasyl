@@ -37,8 +37,6 @@ import java.lang.annotation.Target;
  * <p>It is generally safe for <i>applications</i> to depend on beta APIs, at the cost of some
  * extra work during upgrades. However it is generally inadvisable for <i>libraries</i> (which get
  * included on users' CLASSPATHs, outside the library developers' control) to do so.
- *
- * <p>Adapted from {@link com.google.common.annotations.Beta}
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({

@@ -41,7 +41,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>drasyl-core</artifactId>
+            <artifactId>drasyl-node</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
@@ -50,11 +50,6 @@
             <artifactId>drasyl-plugin-groups-manager</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.reactivex.rxjava3</groupId>
-            <artifactId>rxjava</artifactId>
         </dependency>
 
         <!-- Logging -->

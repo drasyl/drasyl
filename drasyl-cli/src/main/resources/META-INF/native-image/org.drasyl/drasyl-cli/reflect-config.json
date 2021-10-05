@@ -42,13 +42,13 @@
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.serialization.JacksonJsonSerializer$BytesToHexStringSerializer",
+    "name": "org.drasyl.serialization.BytesToHexStringSerializer",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.serialization.JacksonJsonSerializer$BytesToHexStringDeserializer",
+    "name": "org.drasyl.serialization.BytesToHexStringDeserializer",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true

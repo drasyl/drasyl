@@ -28,6 +28,7 @@ import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.cli.CliException;
 import org.drasyl.event.Event;
+import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.util.Pair;
@@ -64,6 +65,9 @@ public class NodeCommand extends AbstractCommand {
                                 LOG.info("Event received: {}", event);
                                 if (event instanceof NodeNormalTerminationEvent) {
                                     running.complete(null);
+                                }
+                                else if (event instanceof InboundExceptionEvent) {
+                                    ((InboundExceptionEvent) event).getError().printStackTrace(System.err); // NOSONAR
                                 }
                                 else if (event instanceof NodeUnrecoverableErrorEvent) {
                                     running.completeExceptionally(((NodeUnrecoverableErrorEvent) event).getError());

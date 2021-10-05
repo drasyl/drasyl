@@ -20,9 +20,9 @@ you want to use, like this:
 drasyl {
   serialization {
     serializers {
-      java = "org.drasyl.serialization.JavaSerializer"
-      jackson-json = "org.drasyl.serialization.JacksonJsonSerializer"
-      proto = "org.drasyl.serialization.ProtobufSerializer"
+      java = "org.drasyl.handler.serialization.JavaSerializer"
+      jackson-json = "org.drasyl.handler.serialization.JacksonJsonSerializer"
+      proto = "org.drasyl.handler.serialization.ProtobufSerializer"
       myown = "docs.serialization.MyOwnSerializer"
     }
   }
@@ -39,9 +39,9 @@ the `drasyl.serialization.bindings.inbound`-section for inbound messages and
 drasyl {
   serialization {
     serializers {
-      java = "org.drasyl.serialization.JavaSerializer"
-      jackson-json = "org.drasyl.serialization.JacksonJsonSerializer"
-      proto = "org.drasyl.serialization.ProtobufSerializer"
+      java = "org.drasyl.handler.serialization.JavaSerializer"
+      jackson-json = "org.drasyl.handler.serialization.JacksonJsonSerializer"
+      proto = "org.drasyl.handler.serialization.ProtobufSerializer"
       myown = "docs.serialization.MyOwnSerializer"
     }
     

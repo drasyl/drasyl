@@ -30,6 +30,7 @@ import com.goterl.lazysodium.utils.SessionPair;
 import com.goterl.resourceloader.ResourceLoaderException;
 import org.drasyl.crypto.loader.DrasylLazySodiumJava;
 import org.drasyl.crypto.loader.DrasylSodiumJava;
+import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.Key;
@@ -37,7 +38,6 @@ import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;
 import org.drasyl.identity.PublicKey;
-import org.drasyl.remote.protocol.Nonce;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
