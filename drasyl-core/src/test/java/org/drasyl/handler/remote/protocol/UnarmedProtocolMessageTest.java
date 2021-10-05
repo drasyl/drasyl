@@ -69,11 +69,11 @@ class UnarmedProtocolMessageTest {
         }
 
         @Test
-        void returnedMessageShouldRetainByteBuffer() {
+        void returnedMessageShouldNotRetainByteBuffer() {
             final UnarmedProtocolMessage newUnarmedMessage = unarmedMessage.incrementHopCount();
             unarmedMessage.release();
 
-            assertEquals(1, newUnarmedMessage.refCnt());
+            assertEquals(0, newUnarmedMessage.refCnt());
         }
     }
 

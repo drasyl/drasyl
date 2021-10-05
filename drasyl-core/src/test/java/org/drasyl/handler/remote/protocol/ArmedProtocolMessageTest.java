@@ -77,11 +77,11 @@ public class ArmedProtocolMessageTest {
         }
 
         @Test
-        void returnedMessageShouldRetainByteBuffer() {
+        void returnedMessageShouldNotRetainByteBuffer() {
             final ArmedProtocolMessage newArmedMessage = armedMessage.incrementHopCount();
             armedMessage.release();
 
-            assertEquals(1, newArmedMessage.refCnt());
+            assertEquals(0, newArmedMessage.refCnt());
         }
     }
 

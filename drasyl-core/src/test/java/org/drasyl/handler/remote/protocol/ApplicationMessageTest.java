@@ -23,13 +23,18 @@ package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.ReferenceCountUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static test.util.IdentityTestUtil.ID_1;
@@ -46,6 +51,38 @@ public class ApplicationMessageTest {
         sender = ID_1.getIdentityPublicKey();
         proofOfWork = ID_1.getProofOfWork();
         recipient = ID_2.getIdentityPublicKey();
+    }
+
+    @Nested
+    class IncrementHopCount {
+        private ApplicationMessage application;
+
+        @BeforeEach
+        void setUp() throws IOException, CryptoException {
+            final ByteBuf buffer = Unpooled.buffer();
+            application = ApplicationMessage.of(1, recipient, sender, proofOfWork, buffer);
+        }
+
+        @AfterEach
+        void tearDown() {
+            ReferenceCountUtil.safeRelease(application);
+        }
+
+        @Test
+        void shouldIncrementHopCount() {
+            final ApplicationMessage newApplication = application.incrementHopCount();
+
+            assertEquals(application.getNonce(), newApplication.getNonce());
+            assertEquals(application.getHopCount().increment(), newApplication.getHopCount());
+        }
+
+        @Test
+        void returnedMessageShouldNotRetainByteBuffer() {
+            final ApplicationMessage newApplication = application.incrementHopCount();
+            application.release();
+
+            assertEquals(0, newApplication.refCnt());
+        }
     }
 
     @Nested
