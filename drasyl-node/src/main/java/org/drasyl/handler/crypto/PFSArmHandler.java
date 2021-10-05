@@ -258,7 +258,8 @@ public class PFSArmHandler extends AbstractArmHandler {
                 return new PendingAgreement(keyPair);
             }
             catch (final CryptoException e) {
-                throw new RuntimeException(e);
+                LOG.debug("Could not generate ephemeral key: ", e);
+                return null;
             }
         });
     }
