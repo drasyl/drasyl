@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -150,6 +151,14 @@ class RandomUtilTest {
         @Test
         void shouldThrowExceptionIfCountIsNegative() {
             assertThrows(IllegalArgumentException.class, () -> RandomUtil.randomBytes(-1));
+        }
+    }
+
+    @Nested
+    class RandomByte {
+        @Test
+        void shouldReturnRandomByte() {
+            assertDoesNotThrow(RandomUtil::randomByte);
         }
     }
 

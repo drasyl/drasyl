@@ -21,25 +21,21 @@
  */
 package org.drasyl.cli.command.perf;
 
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.Channel;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.Behaviors;
+import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
 import org.drasyl.event.Event;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -60,103 +56,58 @@ public class PerfTestSender {
      * Is used to identity probe messages. probe messages are used for actual performance
      * measurements.
      */
-    static final byte[] PROBE_HEADER = new byte[]{ 20, 21, 1, 23, 0, 1, 38, 16 };
     private static final Logger LOG = LoggerFactory.getLogger(PerfTestSender.class);
     public static final short COMPLETE_TEST_TRIES = (short) 10;
     private final SessionRequest session;
-    private final IdentityPublicKey receiver;
-    private final Scheduler scheduler;
+    private final EventLoopGroup eventLoopGroup;
     private final PrintStream printStream;
-    private final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod;
+    private final Channel channel;
     private final Supplier<Behavior> successBehavior;
     private final Function<Exception, Behavior> failureBehavior;
     private final LongSupplier currentTimeSupplier;
-    private TestResults intervalResults;
 
     @SuppressWarnings("java:S107")
-    PerfTestSender(final IdentityPublicKey receiver,
-                   final SessionRequest session,
-                   final Scheduler scheduler,
+    PerfTestSender(final SessionRequest session,
+                   final EventLoopGroup eventLoopGroup,
                    final PrintStream printStream,
-                   final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
+                   final Channel channel,
                    final Supplier<Behavior> successBehavior,
                    final Function<Exception, Behavior> failureBehavior,
                    final LongSupplier currentTimeSupplier) {
-        this.receiver = requireNonNull(receiver);
         this.session = requireNonNull(session);
-        this.scheduler = requireNonNull(scheduler);
+        this.eventLoopGroup = requireNonNull(eventLoopGroup);
         this.printStream = requireNonNull(printStream);
-        this.sendMethod = requireNonNull(sendMethod);
+        this.channel = requireNonNull(channel);
         this.successBehavior = requireNonNull(successBehavior);
         this.failureBehavior = requireNonNull(failureBehavior);
         this.currentTimeSupplier = requireNonNull(currentTimeSupplier);
     }
 
     @SuppressWarnings("java:S107")
-    public PerfTestSender(final IdentityPublicKey receiver,
-                          final SessionRequest session,
-                          final Scheduler scheduler,
+    public PerfTestSender(final SessionRequest session,
+                          final EventLoopGroup eventLoopGroup,
                           final PrintStream printStream,
-                          final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
+                          final Channel channel,
                           final Supplier<Behavior> successBehavior,
                           final Function<Exception, Behavior> failureBehavior) {
-        this(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);
+        this(session, eventLoopGroup, printStream, channel, successBehavior, failureBehavior, System::nanoTime);
     }
 
     public Behavior run() {
         return Behaviors.withScheduler(eventScheduler -> {
             printStream.println("Test parameters: " + session);
             printStream.println("Interval                 Transfer     Bitrate          Lost/Total Messages");
-            scheduler.scheduleDirect(() -> {
-                final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
-                final int messageSize = session.getSize() + PROBE_HEADER.length + Long.BYTES;
-                final long startTime = currentTimeSupplier.getAsLong();
-                final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
-                intervalResults = new TestResults(messageSize, totalResults.getTestStartTime(), totalResults.getTestStartTime());
-
-                long currentTime;
-                long sentMessages = 0;
-                final long endTime = startTime + 1_000_000_000L * session.getTime();
-                while (endTime > (currentTime = currentTimeSupplier.getAsLong())) {
-                    // print interim results?
-                    if (intervalResults.getStartTime() + SESSION_PROGRESS_INTERVAL.toNanos() <= currentTime) {
-                        intervalResults.stop(currentTime);
-                        printStream.println(intervalResults.print());
-                        totalResults.add(intervalResults);
-                        intervalResults = new TestResults(messageSize, startTime, currentTime);
-                    }
-
-                    // send message?
-                    final double desiredSentMessages = ((double) currentTime - startTime) / MICROSECONDS * session.getMps();
-                    if (desiredSentMessages >= sentMessages) {
-                        sendProbeMessage(probePayload, sentMessages);
-                        sentMessages++;
-                        intervalResults.incrementTotalMessages();
-                    }
-                }
-
-                // final interim results
-                intervalResults.stop(currentTime);
-                printStream.println(intervalResults.print());
-                totalResults.add(intervalResults);
-
-                printStream.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-                totalResults.stop(currentTime);
-                printStream.println("Sender:");
-                printStream.println(totalResults.print());
-
-                eventScheduler.scheduleEvent(new TestCompleted(totalResults));
-            });
+            eventLoopGroup.submit(() -> sendProbes(eventScheduler));
 
             return Behaviors.receive()
                     .onMessage(SessionRequest.class, (mySender, myPayload) -> {
                         // already in an active session -> decline further requests
-                        sendMethod.apply(mySender, new SessionRejection());
+                        channel.writeAndFlush(new SessionRejection());
                         return same();
                     })
                     .onEvent(TestCompleted.class, event -> {
                         // complete session
-                        LOG.debug("All probe messages sent. Complete test at {} and wait for confirmation...", receiver);
+                        LOG.debug("All probe messages sent. Complete test at {} and wait for confirmation...", channel::remoteAddress);
                         return completing(event.getTotalResults(), COMPLETE_TEST_TRIES);
                     })
                     .onAnyEvent(event -> same())
@@ -164,24 +115,57 @@ public class PerfTestSender {
         });
     }
 
-    private void sendProbeMessage(final byte[] probePayload, final long messageNo) {
-        final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
-        try (final DataOutputStream outputStream = new DataOutputStream(byteArrayStream)) {
-            outputStream.write(PROBE_HEADER);
-            outputStream.writeLong(messageNo);
-            outputStream.write(probePayload);
-            final Object message = byteArrayStream.toByteArray();
-            sendMethod.apply(receiver, message).exceptionally(e -> {
-                LOG.trace("Unable to send message", e);
-                intervalResults.incrementLostMessages();
-                return null;
-            });
+    private void sendProbes(final Behaviors.EventScheduler eventScheduler) {
+        final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
+        final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
+        final long startTime = currentTimeSupplier.getAsLong();
+        final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
+        TestResults intervalResults = new TestResults(messageSize, totalResults.getTestStartTime(), totalResults.getTestStartTime());
+
+        long currentTime;
+        long sentMessages = 0;
+        final long endTime = startTime + 1_000_000_000L * session.getTime();
+        while (endTime > (currentTime = currentTimeSupplier.getAsLong())) {
+            // print interim results?
+            if (intervalResults.getStartTime() + SESSION_PROGRESS_INTERVAL.toNanos() <= currentTime) {
+                intervalResults.stop(currentTime);
+                printStream.println(intervalResults.print());
+                totalResults.add(intervalResults);
+                intervalResults = new TestResults(messageSize, startTime, currentTime);
+            }
+
+            // send message?
+            final double desiredSentMessages = ((double) currentTime - startTime) / MICROSECONDS * session.getMps();
+            if (desiredSentMessages >= sentMessages) {
+                if (channel.isWritable()) {
+                    TestResults finalIntervalResults = intervalResults;
+                    channel.writeAndFlush(new Probe(probePayload, sentMessages)).addListener(future -> {
+                        if (!future.isSuccess()) {
+                            LOG.trace("Unable to send message", future::cause);
+                            finalIntervalResults.incrementLostMessages();
+                        }
+                    });
+                }
+                else {
+                    LOG.trace("Unable to send message: Channel is not writable.");
+                    intervalResults.incrementLostMessages();
+                }
+                sentMessages++;
+                intervalResults.incrementTotalMessages();
+            }
         }
-        catch (final IOException e) {
-            // should never happen
-            LOG.error("Unable to serialize message", e);
-            intervalResults.incrementLostMessages();
-        }
+
+        // final interim results
+        intervalResults.stop(currentTime);
+        printStream.println(intervalResults.print());
+        totalResults.add(intervalResults);
+
+        printStream.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+        totalResults.stop(currentTime);
+        printStream.println("Sender:");
+        printStream.println(totalResults.print());
+
+        eventScheduler.scheduleEvent(new TestCompleted(totalResults));
     }
 
     /**
@@ -190,14 +174,14 @@ public class PerfTestSender {
     Behavior completing(final TestResults results,
                         final short remainingRetries) {
         if (remainingRetries > 0) {
-            LOG.debug("Got no complete confirmation from {}. Retry and wait for confirmation (remaining={})...", () -> receiver, () -> remainingRetries);
-            sendMethod.apply(receiver, results);
+            LOG.debug("Got no complete confirmation from {}. Retry and wait for confirmation (remaining={})...", channel::remoteAddress, () -> remainingRetries);
+            channel.writeAndFlush(results);
 
             return Behaviors.withScheduler(eventScheduler -> {
                 eventScheduler.scheduleEvent(new TestCompletionTimeout(), ofSeconds(1));
 
                 return Behaviors.receive()
-                        .onMessage(TestResults.class, (sender, payload) -> sender.equals(receiver), (sender2, payload2) -> {
+                        .onMessage(TestResults.class, (sender, payload) -> sender.equals(channel.remoteAddress()), (sender2, payload2) -> {
                             // receiver has sent his results -> print final results
                             LOG.debug("Session completion has been confirmed by {}. We're done!", sender2);
                             printStream.println("Receiver:");
@@ -209,11 +193,11 @@ public class PerfTestSender {
                         .onEvent(TestCompletionTimeout.class, event -> completing(results, (short) (remainingRetries - 1)))
                         .onAnyEvent(myEvent -> same())
                         .build();
-            }, scheduler);
+            }, eventLoopGroup);
         }
         else {
-            LOG.debug("Got no complete confirmation from " + receiver + ". Giving up.");
-            return failureBehavior.apply(new Exception("Got no complete confirmation from " + receiver));
+            LOG.debug("Got no complete confirmation from " + channel.remoteAddress() + ". Giving up.");
+            return failureBehavior.apply(new Exception("Got no complete confirmation from " + channel.remoteAddress()));
         }
     }
 

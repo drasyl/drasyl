@@ -21,7 +21,6 @@
  */
 package org.drasyl.util.network;
 
-import org.drasyl.util.network.NetworkUtil;
 import org.drasyl.util.ThrowingFunction;
 import org.drasyl.util.ThrowingSupplier;
 import org.drasyl.util.network.NetworkUtil.NetworkUtilImpl;
@@ -115,27 +114,6 @@ class NetworkUtilTest {
         void shouldRejectInvalidPort() {
             assertThrows(IllegalArgumentException.class, () -> NetworkUtil.available(NetworkUtil.MIN_PORT_NUMBER - 1));
             assertThrows(IllegalArgumentException.class, () -> NetworkUtil.available(NetworkUtil.MAX_PORT_NUMBER + 1));
-        }
-    }
-
-    @SuppressWarnings({ "CatchMayIgnoreException", "unused" })
-    @Nested
-    class Alive {
-        @Test
-        void shouldReturnCorrectValue() {
-            try (final ServerSocket socket = new ServerSocket(2222)) {
-                assertTrue(NetworkUtil.alive("127.0.0.1", 2222));
-            }
-            catch (final IOException e) {
-            }
-
-            assertFalse(NetworkUtil.alive("127.0.0.1", 3333));
-        }
-
-        @Test
-        void shouldRejectInvalidPort() {
-            assertThrows(IllegalArgumentException.class, () -> NetworkUtil.alive("127.0.0.1", NetworkUtil.MIN_PORT_NUMBER - 1));
-            assertThrows(IllegalArgumentException.class, () -> NetworkUtil.alive("127.0.0.1", NetworkUtil.MAX_PORT_NUMBER + 1));
         }
     }
 

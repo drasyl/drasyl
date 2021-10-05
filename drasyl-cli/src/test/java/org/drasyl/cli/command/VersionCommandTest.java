@@ -79,7 +79,7 @@ class VersionCommandTest {
             underTest.execute(cmd);
 
             final String output = outStream.toString();
-            assertThat(output, containsString("drasyl v"));
+            assertThat(output, containsString("drasyl-core"));
         }
     }
 }

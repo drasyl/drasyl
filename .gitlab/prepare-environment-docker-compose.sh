@@ -51,11 +51,6 @@ services:
       CONFIG_FORCE_drasyl_remote_endpoints_0: udp://${APP_DEPLOY_HOST}:${PORT}?publicKey=${DRASYL_PUBLIC_KEY}&networkId=${DRASYL_NETWORK_ID}
       CONFIG_FORCE_drasyl_remote_expose_enabled: "false"
       CONFIG_FORCE_drasyl_remote_super__peer_enabled: "false"
-      CONFIG_FORCE_drasyl_monitoring_enabled: "true"
-      CONFIG_FORCE_drasyl_monitoring_influx_uri: https://influxdb.incorum.org
-      CONFIG_FORCE_drasyl_monitoring_influx_user: drasyl
-      CONFIG_FORCE_drasyl_monitoring_influx_password: $DRASYL_MONITORING_PASSWORD
-      CONFIG_FORCE_drasyl_monitoring_influx_reporting__frequency: 10s
       JAVA_OPTS: ${JAVA_OPTS}
     ports:
       - "${PORT}:22527/udp"

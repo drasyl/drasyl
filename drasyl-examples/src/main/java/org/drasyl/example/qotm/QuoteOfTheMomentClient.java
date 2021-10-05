@@ -29,14 +29,14 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.example.qotm.QuoteOfTheMomentServer.Quote;
-import org.drasyl.util.scheduler.DrasylSchedulerUtil;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
-@SuppressWarnings({ "java:S106", "java:S2096" })
+@SuppressWarnings({ "java:S106", "java:S1845", "java:S2096" })
 public class QuoteOfTheMomentClient extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "qotm-client.identity.json");
     private static final Duration pullTimeout = Duration.ofSeconds(3);
@@ -81,9 +81,12 @@ public class QuoteOfTheMomentClient extends DrasylNode {
         node.start().join();
         node.online().join();
 
-        //ask for next quote periodically every n seconds
-        DrasylSchedulerUtil.getInstanceLight().schedulePeriodicallyDirect(
-                () -> node.send(recipient, null),
-                0, pullTimeout.toSeconds(), TimeUnit.SECONDS);
+        // ask for next quote periodically every n seconds
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                node.send(recipient, null);
+            }
+        }, 0L, pullTimeout.toMillis());
     }
 }

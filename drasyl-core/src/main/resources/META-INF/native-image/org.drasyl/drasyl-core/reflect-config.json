@@ -109,6 +109,15 @@
     ]
   },
   {
+    "name": "org.drasyl.channel.DrasylServerChannel",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
     "name": "org.drasyl.identity.PublicKey",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -172,23 +181,7 @@
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.pipeline.HandlerMask",
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.pipeline.skeleton.HandlerAdapter",
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.pipeline.AbstractEndHandler",
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.pipeline.skeleton.SimpleDuplexHandler",
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.pipeline.skeleton.SimpleInboundHandler",
+    "name": "org.drasyl.peer.PeersManagerHandler",
     "allDeclaredMethods": true
   },
   {
@@ -205,10 +198,6 @@
   },
   {
     "name": "org.drasyl.remote.handler.tcp.TcpServer",
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.handler.ChunkingHandler",
     "allDeclaredMethods": true
   },
   {
@@ -232,7 +221,7 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.remote.handler.RemoteEnvelopeToByteBufCodec",
+    "name": "org.drasyl.remote.handler.RemoteMessageToByteBufCodec",
     "allDeclaredMethods": true
   },
   {
@@ -254,16 +243,6 @@
   },
   {
     "name": "org.drasyl.remote.protocol.Protocol$Acknowledgement$Builder",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$Application",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "org.drasyl.remote.protocol.Protocol$Application$Builder",
     "allDeclaredFields": true,
     "allDeclaredMethods": true
   },

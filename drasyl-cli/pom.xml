@@ -40,7 +40,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>drasyl-core</artifactId>
+            <artifactId>drasyl-node</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
@@ -63,7 +63,7 @@
             <artifactId>logback-classic</artifactId>
         </dependency>
 
-        <!-- Command Line Interfae -->
+        <!-- Command Line Interface -->
         <!-- https://mvnrepository.com/artifact/commons-cli/commons-cli -->
         <dependency>
             <groupId>commons-cli</groupId>
@@ -78,7 +78,23 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>drasyl-node</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
 
     <profiles>
         <profile>

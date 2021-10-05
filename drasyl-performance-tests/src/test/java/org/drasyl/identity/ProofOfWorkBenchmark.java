@@ -32,7 +32,7 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
 import test.util.IdentityTestUtil;
 
-import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
+import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 
 @State(Scope.Benchmark)
 public class ProofOfWorkBenchmark extends AbstractBenchmark {
@@ -81,53 +81,53 @@ public class ProofOfWorkBenchmark extends AbstractBenchmark {
     public void GenerateProofOfWorkDifficulty03(final Blackhole blackhole) {
         blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 3));
     }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.AverageTime)
-    public void GenerateProofOfWorkDifficulty04(final Blackhole blackhole) {
-        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 4));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.AverageTime)
-    public void GenerateProofOfWorkDifficulty05(final Blackhole blackhole) {
-        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 5));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.AverageTime)
-    public void GenerateProofOfWorkDifficulty06(final Blackhole blackhole) {
-        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 6));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.AverageTime)
-    public void GenerateProofOfWorkDifficulty07(final Blackhole blackhole) {
-        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 7));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.AverageTime)
-    public void GenerateProofOfWorkDifficulty08(final Blackhole blackhole) {
-        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 8));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.AverageTime)
-    public void GenerateProofOfWorkDifficulty09(final Blackhole blackhole) {
-        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 9));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.AverageTime)
-    public void GenerateProofOfWorkDifficulty10(final Blackhole blackhole) {
-        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 10));
-    }
+//
+//    @Benchmark
+//    @Threads(1)
+//    @BenchmarkMode(Mode.AverageTime)
+//    public void GenerateProofOfWorkDifficulty04(final Blackhole blackhole) {
+//        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 4));
+//    }
+//
+//    @Benchmark
+//    @Threads(1)
+//    @BenchmarkMode(Mode.AverageTime)
+//    public void GenerateProofOfWorkDifficulty05(final Blackhole blackhole) {
+//        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 5));
+//    }
+//
+//    @Benchmark
+//    @Threads(1)
+//    @BenchmarkMode(Mode.AverageTime)
+//    public void GenerateProofOfWorkDifficulty06(final Blackhole blackhole) {
+//        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 6));
+//    }
+//
+//    @Benchmark
+//    @Threads(1)
+//    @BenchmarkMode(Mode.AverageTime)
+//    public void GenerateProofOfWorkDifficulty07(final Blackhole blackhole) {
+//        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 7));
+//    }
+//
+//    @Benchmark
+//    @Threads(1)
+//    @BenchmarkMode(Mode.AverageTime)
+//    public void GenerateProofOfWorkDifficulty08(final Blackhole blackhole) {
+//        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 8));
+//    }
+//
+//    @Benchmark
+//    @Threads(1)
+//    @BenchmarkMode(Mode.AverageTime)
+//    public void GenerateProofOfWorkDifficulty09(final Blackhole blackhole) {
+//        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 9));
+//    }
+//
+//    @Benchmark
+//    @Threads(1)
+//    @BenchmarkMode(Mode.AverageTime)
+//    public void GenerateProofOfWorkDifficulty10(final Blackhole blackhole) {
+//        blackhole.consume(ProofOfWork.generateProofOfWork(publicKey, (byte) 10));
+//    }
 }

@@ -30,8 +30,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylNode;
 import org.drasyl.cli.CliException;
+import org.drasyl.util.Version;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.logging.Slf4JLogger;
@@ -70,7 +70,7 @@ abstract class AbstractCommand implements Command {
             final CommandLine cmd = parser.parse(flags, args);
 
             setLogLevel(cmd);
-            log().debug("drasyl: Version `{}` starting with parameters [{}]", DrasylNode::getVersion, () -> args.length > 0 ? ("'" + String.join("', '", args) + "'") : "");
+            log().debug("drasyl: Version `{}` starting with parameters [{}]", Version.identify().get("drasyl-core")::version, () -> args.length > 0 ? ("'" + String.join("', '", args) + "'") : "");
 
             if (cmd.hasOption(OPT_HELP)) {
                 help(cmd);

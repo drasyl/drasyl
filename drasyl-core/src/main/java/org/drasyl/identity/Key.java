@@ -22,10 +22,10 @@
 
 package org.drasyl.identity;
 
-import com.google.protobuf.ByteString;
+import org.drasyl.util.ImmutableByteArray;
 
 public interface Key {
-    ByteString getBytes();
+    ImmutableByteArray getBytes();
 
     byte[] toByteArray();
 

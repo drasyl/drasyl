@@ -21,18 +21,17 @@
  */
 package org.drasyl.cli.command.perf;
 
-import com.google.common.primitives.Longs;
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.DeferredBehavior;
 import org.drasyl.cli.command.perf.PerfTestReceiver.CheckTestStatus;
 import org.drasyl.cli.command.perf.PerfTestReceiver.ResultsReplied;
+import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.ArrayUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,7 +48,6 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.drasyl.cli.command.perf.PerfTestSender.PROBE_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -66,7 +64,7 @@ class PerfTestReceiverTest {
     @Mock
     private SessionRequest session;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Scheduler scheduler;
+    private EventLoopGroup eventLoopGroup;
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
     @Mock
@@ -92,12 +90,12 @@ class PerfTestReceiverTest {
 
         @BeforeEach
         void setUp() {
-            receiver = spy(new PerfTestReceiver(sender, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier));
+            receiver = spy(new PerfTestReceiver(sender, session, eventLoopGroup, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier));
         }
 
         @Test
         void shouldHandleProbeMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent probeMessageEvent) {
-            when(probeMessageEvent.getPayload()).thenReturn(probeMessage(0));
+            when(probeMessageEvent.getPayload()).thenReturn(new Probe(new byte[0], 0));
             when(probeMessageEvent.getSender()).thenReturn(sender);
             when(currentTimeSupplier.getAsLong()).thenReturn(1_000_000_000L);
 
@@ -120,7 +118,7 @@ class PerfTestReceiverTest {
                                      @Mock final ResultsReplied resultsReplied,
                                      @Mock final TestResults testResults,
                                      @Mock final Behavior newBehavior) {
-            when(probeMessageEvent.getPayload()).thenReturn(probeMessage(0), probeMessage(2), probeMessage(1));
+            when(probeMessageEvent.getPayload()).thenReturn(new Probe(new byte[0], 0), new Probe(new byte[0], 2), new Probe(new byte[0], 1));
             when(probeMessageEvent.getSender()).thenReturn(sender);
             when(resultsMessageEvent.getPayload()).thenReturn(testResults);
             when(resultsMessageEvent.getSender()).thenReturn(sender);
@@ -163,7 +161,7 @@ class PerfTestReceiverTest {
                                                         @Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent resultsMessageEvent,
                                                         @Mock(answer = RETURNS_DEEP_STUBS) final CheckTestStatus checkTestStatus,
                                                         @Mock final Behavior newBehavior) {
-            when(probeMessageEvent.getPayload()).thenReturn(probeMessage(0));
+            when(probeMessageEvent.getPayload()).thenReturn(new Probe(new byte[0], 0));
             when(probeMessageEvent.getSender()).thenReturn(sender);
             when(resultsMessageEvent.getSender()).thenReturn(sender);
             when(currentTimeSupplier.getAsLong()).thenReturn(1_000_000_000L, 1_000_000_000L, 100_000_000_000L);
@@ -179,9 +177,5 @@ class PerfTestReceiverTest {
             final String output = outputStream.toString();
             assertThat(output, containsString("No message received for 99.00s"));
         }
-    }
-
-    private static byte[] probeMessage(final long messageNo) {
-        return ArrayUtil.concat(PROBE_HEADER, Longs.toByteArray(messageNo));
     }
 }

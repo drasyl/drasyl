@@ -21,20 +21,21 @@
  */
 package org.drasyl;
 
-import io.netty.buffer.ByteBuf;
-import io.reactivex.rxjava3.observers.TestObserver;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeOfflineEvent;
-import org.drasyl.event.NodeOnlineEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
+import org.drasyl.handler.discovery.IntraVmDiscovery;
+import org.drasyl.handler.remote.LocalHostDiscovery;
+import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
-import org.drasyl.pipeline.handler.filter.OutboundMessageFilter;
-import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -44,27 +45,35 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
 import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.pipeline.DrasylPipeline.UDP_SERVER;
 import static org.drasyl.util.Ansi.ansi;
+import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
+import static test.util.IdentityTestUtil.ID_3;
 
 class DrasylNodeIT {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeIT.class);
@@ -116,9 +125,9 @@ class DrasylNodeIT {
                 // super peer
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                        .identityProofOfWork(ID_1.getProofOfWork())
+                        .identityPublicKey(ID_1.getIdentityPublicKey())
+                        .identitySecretKey(ID_1.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
@@ -129,54 +138,55 @@ class DrasylNodeIT {
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                superPeer = new EmbeddedNode(config).started();
+                superPeer = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
 
                 // client1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
+                        .identityProofOfWork(ID_2.getProofOfWork())
+                        .identityPublicKey(ID_2.getIdentityPublicKey())
+                        .identitySecretKey(ID_2.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
-                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
+                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                client1 = new EmbeddedNode(config).started().online();
+                client1 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client1"));
 
                 // client2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_3.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_3.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_3.getIdentitySecretKey())
+                        .identityProofOfWork(ID_3.getProofOfWork())
+                        .identityPublicKey(ID_3.getIdentityPublicKey())
+                        .identitySecretKey(ID_3.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
-                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
+                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                client2 = new EmbeddedNode(config).started().online();
+                client2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client2"));
 
-                superPeer.events(PeerDirectEvent.class).test().awaitCount(2).assertValueCount(2);
-                client1.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
-                client2.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+                await().untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
@@ -195,16 +205,12 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                final TestObserver<MessageEvent> superPeerMessages = superPeer.messages().test();
-                final TestObserver<MessageEvent> client1Messages = client1.messages().test();
-                final TestObserver<MessageEvent> client2Messages = client2.messages().test();
-
                 //
                 // send messages
                 //
-                final Set<String> identities = Set.of(IdentityTestUtil.ID_1.getIdentityPublicKey().toString(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey().toString(),
-                        IdentityTestUtil.ID_3.getIdentityPublicKey().toString());
+                final Set<String> identities = Set.of(ID_1.getIdentityPublicKey().toString(),
+                        ID_2.getIdentityPublicKey().toString(),
+                        ID_3.getIdentityPublicKey().toString());
                 for (final String recipient : identities) {
                     superPeer.send(recipient, "Hallo Welt");
                     client1.send(recipient, "Hallo Welt");
@@ -214,34 +220,25 @@ class DrasylNodeIT {
                 //
                 // verify
                 //
-                superPeerMessages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
-                client1Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
-                client2Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
+                for (int i = 0; i < 3; i++) {
+                    await().untilAsserted(() -> assertMessagePayload(superPeer.readEvent(), "Hallo Welt"));
+                    await().untilAsserted(() -> assertMessagePayload(client1.readEvent(), "Hallo Welt"));
+                    await().untilAsserted(() -> assertMessagePayload(client2.readEvent(), "Hallo Welt"));
+                }
             }
 
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesExceedingMtuShouldBeDelivered() {
-                final TestObserver<MessageEvent> superPeerMessages = superPeer.messages().test();
-                final TestObserver<MessageEvent> client1Messages = client1.messages().test();
-                final TestObserver<MessageEvent> client2Messages = client2.messages().test();
-
                 //
                 // send messages
                 //
-                final byte[] payload = RandomUtil.randomBytes(MESSAGE_MTU);
-                final Set<String> identities = Set.of(IdentityTestUtil.ID_1.getIdentityPublicKey().toString(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey().toString(),
-                        IdentityTestUtil.ID_3.getIdentityPublicKey().toString());
+                final byte[] payload = randomBytes(MESSAGE_MTU);
+                final Set<String> identities = Set.of(
+                        ID_1.getIdentityPublicKey().toString(),
+                        ID_2.getIdentityPublicKey().toString(),
+                        ID_3.getIdentityPublicKey().toString()
+                );
                 for (final String recipient : identities) {
                     superPeer.send(recipient, payload);
                     client1.send(recipient, payload);
@@ -251,18 +248,11 @@ class DrasylNodeIT {
                 //
                 // verify
                 //
-                superPeerMessages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> Objects.deepEquals(m.getPayload(), payload))
-                        .assertValueAt(1, m -> Objects.deepEquals(m.getPayload(), payload))
-                        .assertValueAt(2, m -> Objects.deepEquals(m.getPayload(), payload));
-                client1Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> Objects.deepEquals(m.getPayload(), payload))
-                        .assertValueAt(1, m -> Objects.deepEquals(m.getPayload(), payload))
-                        .assertValueAt(2, m -> Objects.deepEquals(m.getPayload(), payload));
-                client2Messages.awaitCount(3).assertValueCount(3)
-                        .assertValueAt(0, m -> Objects.deepEquals(m.getPayload(), payload))
-                        .assertValueAt(1, m -> Objects.deepEquals(m.getPayload(), payload))
-                        .assertValueAt(2, m -> Objects.deepEquals(m.getPayload(), payload));
+                for (int i = 0; i < 3; i++) {
+                    await().untilAsserted(() -> assertMessagePayload(superPeer.readEvent(), payload));
+                    await().untilAsserted(() -> assertMessagePayload(client1.readEvent(), payload));
+                    await().untilAsserted(() -> assertMessagePayload(client2.readEvent(), payload));
+                }
             }
 
             /**
@@ -272,20 +262,9 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
-                //
-                // send messages
-                //
-                final TestObserver<PeerDirectEvent> superPeerEvents = superPeer.events(PeerDirectEvent.class).test();
-                final TestObserver<PeerDirectEvent> client1Events = client1.events(PeerDirectEvent.class).test();
-                final TestObserver<PeerDirectEvent> client2Events = client2.events(PeerDirectEvent.class).test();
-
-//            superPeer.second().subscribe(e -> System.err.println("SP: " + e));
-//            client1.second().subscribe(e -> System.err.println("C1: " + e));
-//            client2.second().subscribe(e -> System.err.println("C2: " + e));
-
-                superPeerEvents.awaitCount(2).assertValueCount(2);
-                client1Events.awaitCount(1).assertValueCount(1);
-                client2Events.awaitCount(1).assertValueCount(1);
+                await().untilAsserted(() -> assertNull(superPeer.readEvent()));
+                await().untilAsserted(() -> assertNull(client1.readEvent()));
+                await().untilAsserted(() -> assertNull(client2.readEvent()));
             }
 
             /**
@@ -295,16 +274,19 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void shuttingDownNodeShouldCloseConnections() {
-                //
-                // send messages
-                //
-                final TestObserver<NodeOfflineEvent> client1Events = client1.events(NodeOfflineEvent.class).test();
-                final TestObserver<NodeOfflineEvent> client2Events = client2.events(NodeOfflineEvent.class).test();
+                superPeer.shutdown();
 
-                superPeer.shutdown().join();
+                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(NodeOfflineEvent.class)));
+                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(NodeOfflineEvent.class)));
+            }
 
-                client1Events.awaitCount(1).assertValueCount(1);
-                client2Events.awaitCount(1).assertValueCount(1);
+            @Test
+            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            void shouldCreateDirectConnectionOnCommunication() {
+                client1.send(client2.identity().getAddress(), "Ping");
+
+                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
         }
 
@@ -331,49 +313,49 @@ class DrasylNodeIT {
                 // node1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                        .identityProofOfWork(ID_1.getProofOfWork())
+                        .identityPublicKey(ID_1.getIdentityPublicKey())
+                        .identitySecretKey(ID_1.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(22528)
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteStaticRoutes(Map.of(IdentityTestUtil.ID_2.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22529)))
+                        .remoteStaticRoutes(Map.of(ID_2.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22529)))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                node1 = new EmbeddedNode(config).started();
+                node1 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
 
                 // node2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
+                        .identityProofOfWork(ID_2.getProofOfWork())
+                        .identityPublicKey(ID_2.getIdentityPublicKey())
+                        .identitySecretKey(ID_2.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(22529)
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteStaticRoutes(Map.of(IdentityTestUtil.ID_1.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22528)))
+                        .remoteStaticRoutes(Map.of(ID_1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                node2 = new EmbeddedNode(config).started();
+                node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
-                node1.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
-                node2.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+                await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
@@ -388,45 +370,44 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
-                final TestObserver<MessageEvent> node1Messages = node1.messages().test();
-                final TestObserver<MessageEvent> node2Messages = node2.messages().test();
-
                 //
                 // send messages
                 //
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), new byte[]{
+                node1.send(ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), new byte[]{
                         (byte) 0,
                         (byte) 1
                 }).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
 
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), new byte[]{
+                node2.send(ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), new byte[]{
                         (byte) 0,
                         (byte) 1
                 }).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
 
                 //
                 // verify
                 //
-                node1Messages.awaitCount(10).assertValueCount(10);
-                node2Messages.awaitCount(10).assertValueCount(10);
+                for (int i = 0; i < 10; i++) {
+                    await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(MessageEvent.class)));
+                    await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(MessageEvent.class)));
+                }
             }
         }
 
@@ -457,9 +438,9 @@ class DrasylNodeIT {
                 // node1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                        .identityProofOfWork(ID_1.getProofOfWork())
+                        .identityPublicKey(ID_1.getIdentityPublicKey())
+                        .identitySecretKey(ID_1.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("0.0.0.0"))
                         .remoteBindPort(0)
@@ -470,15 +451,15 @@ class DrasylNodeIT {
                         .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                node1 = new EmbeddedNode(config).started();
+                node1 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
 
                 // node2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
+                        .identityProofOfWork(ID_2.getProofOfWork())
+                        .identityPublicKey(ID_2.getIdentityPublicKey())
+                        .identitySecretKey(ID_2.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("0.0.0.0"))
                         .remoteBindPort(0)
@@ -488,11 +469,11 @@ class DrasylNodeIT {
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
                         .build();
-                node2 = new EmbeddedNode(config).started();
+                node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
-                node1.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
-                node2.events(PeerDirectEvent.class).test().awaitCount(1).assertValueCount(1);
+                await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
@@ -507,45 +488,44 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
-                final TestObserver<MessageEvent> node1Messages = node1.messages().test();
-                final TestObserver<MessageEvent> node2Messages = node2.messages().test();
-
                 //
                 // send messages
                 //
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), new byte[]{
+                node1.send(ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), new byte[]{
                         (byte) 0,
                         (byte) 1
                 }).toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
 
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), new byte[]{
+                node2.send(ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), new byte[]{
                         (byte) 0,
                         (byte) 1
                 }).toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
 
                 //
                 // verify
                 //
-                node1Messages.awaitCount(10).assertValueCount(10);
-                node2Messages.awaitCount(10).assertValueCount(10);
+                for (int i = 0; i < 10; i++) {
+                    await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(MessageEvent.class)));
+                    await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(MessageEvent.class)));
+                }
             }
         }
 
@@ -572,6 +552,7 @@ class DrasylNodeIT {
             private EmbeddedNode superPeer;
             private EmbeddedNode client;
 
+            @SuppressWarnings("ConstantConditions")
             @BeforeEach
             void setUp() throws DrasylException {
                 //
@@ -582,55 +563,50 @@ class DrasylNodeIT {
                 // super peer
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                        .identityProofOfWork(ID_1.getProofOfWork())
+                        .identityPublicKey(ID_1.getIdentityPublicKey())
+                        .identitySecretKey(ID_1.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
                         .remoteSuperPeerEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackServerBindHost(createInetAddress("127.0.0.1"))
                         .remoteTcpFallbackServerBindPort(0)
                         .intraVmDiscoveryEnabled(false)
                         .build();
-                superPeer = new EmbeddedNode(config).started();
+                superPeer = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
 
                 // client
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
+                        .identityProofOfWork(ID_2.getProofOfWork())
+                        .identityPublicKey(ID_2.getIdentityPublicKey())
+                        .identitySecretKey(ID_2.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
-                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
+                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(true)
                         .remoteTcpFallbackClientTimeout(ofSeconds(2))
                         .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
                         .build();
-                client = new EmbeddedNode(config).started();
-                client.pipeline().addAfter(UDP_SERVER, "UDP_BLOCKER", new OutboundMessageFilter<ByteBuf, Address>() {
+                client = new EmbeddedNode(config).awaitStarted();
+                client.pipeline().addAfter(client.pipeline().context(UdpServer.class).name(), "UDP_BLOCKER", new ChannelOutboundHandlerAdapter() {
                     @Override
-                    protected boolean accept(final HandlerContext ctx,
-                                             final Address sender,
-                                             final ByteBuf msg) {
-                        return false; // drop all messages
-                    }
-
-                    @Override
-                    protected void messageRejected(final HandlerContext ctx,
-                                                   final Address sender,
-                                                   final ByteBuf msg,
-                                                   final CompletableFuture<Void> future) {
+                    public void write(final ChannelHandlerContext ctx,
+                                      final Object msg,
+                                      final ChannelPromise promise) {
                         LOG.trace("UDP message blocked: {}", msg);
-                        future.complete(null);
+                        ReferenceCountUtil.release(msg);
+                        promise.setSuccess();
                     }
                 });
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client"));
@@ -643,14 +619,9 @@ class DrasylNodeIT {
             }
 
             @Test
-            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
-                superPeer.events(PeerDirectEvent.class).test()
-                        .awaitCount(1)
-                        .assertValueCount(1);
-                client.events(NodeOnlineEvent.class).test()
-                        .awaitCount(1)
-                        .assertValueCount(1);
+                await().untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> assertThat(client.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
         }
     }
@@ -682,9 +653,9 @@ class DrasylNodeIT {
                 // node1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                        .identityProofOfWork(ID_1.getProofOfWork())
+                        .identityPublicKey(ID_1.getIdentityPublicKey())
+                        .identitySecretKey(ID_1.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
@@ -692,15 +663,15 @@ class DrasylNodeIT {
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                node1 = new EmbeddedNode(config).started();
+                node1 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
 
                 // node2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
+                        .identityProofOfWork(ID_2.getProofOfWork())
+                        .identityPublicKey(ID_2.getIdentityPublicKey())
+                        .identitySecretKey(ID_2.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
@@ -708,15 +679,15 @@ class DrasylNodeIT {
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                node2 = new EmbeddedNode(config).started();
+                node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
                 // node3
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_3.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_3.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_3.getIdentitySecretKey())
+                        .identityProofOfWork(ID_3.getProofOfWork())
+                        .identityPublicKey(ID_3.getIdentityPublicKey())
+                        .identitySecretKey(ID_3.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
@@ -724,7 +695,7 @@ class DrasylNodeIT {
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                node3 = new EmbeddedNode(config).started();
+                node3 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node3"));
 
                 // node4
@@ -740,7 +711,7 @@ class DrasylNodeIT {
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                node4 = new EmbeddedNode(config).started();
+                node4 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node4"));
             }
 
@@ -753,28 +724,25 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the messages sent via {@link org.drasyl.intravm.IntraVmDiscovery}
-             * are delivered.
+             * This test checks whether the messages sent via {@link IntraVmDiscovery} are
+             * delivered.
              */
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                node1.events(PeerDirectEvent.class).test().awaitCount(3).assertValueCount(3);
-                node2.events(PeerDirectEvent.class).test().awaitCount(3).assertValueCount(3);
-                node3.events(PeerDirectEvent.class).test().awaitCount(3).assertValueCount(3);
-                node4.events(PeerDirectEvent.class).test().awaitCount(3).assertValueCount(3);
-
-                final TestObserver<MessageEvent> node1Messages = node1.messages().test();
-                final TestObserver<MessageEvent> nodes2Messages = node2.messages().test();
-                final TestObserver<MessageEvent> node3Messages = node3.messages().test();
-                final TestObserver<MessageEvent> node4Messages = node4.messages().test();
+                for (int i = 0; i < 3; i++) {
+                    assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class));
+                    assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class));
+                    assertThat(node3.readEvent(), instanceOf(PeerDirectEvent.class));
+                    assertThat(node4.readEvent(), instanceOf(PeerDirectEvent.class));
+                }
 
                 //
                 // send messages
                 //
-                final Set<String> identities = Set.of(IdentityTestUtil.ID_1.getIdentityPublicKey().toString(),
-                        IdentityTestUtil.ID_2.getIdentityPublicKey().toString(),
-                        IdentityTestUtil.ID_3.getIdentityPublicKey().toString(),
+                final Set<String> identities = Set.of(ID_1.getIdentityPublicKey().toString(),
+                        ID_2.getIdentityPublicKey().toString(),
+                        ID_3.getIdentityPublicKey().toString(),
                         IdentityTestUtil.ID_4.getIdentityPublicKey().toString());
                 for (final String recipient : identities) {
                     node1.send(recipient, "Hallo Welt");
@@ -786,43 +754,32 @@ class DrasylNodeIT {
                 //
                 // verify
                 //
-                node1Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(3, m -> "Hallo Welt".equals(m.getPayload()));
-                nodes2Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(3, m -> "Hallo Welt".equals(m.getPayload()));
-                node3Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()));
-                node4Messages.awaitCount(4).assertValueCount(4)
-                        .assertValueAt(0, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(1, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(2, m -> "Hallo Welt".equals(m.getPayload()))
-                        .assertValueAt(3, m -> "Hallo Welt".equals(m.getPayload()));
+                for (int i = 0; i < 4; i++) {
+                    await().untilAsserted(() -> assertMessagePayload(node1.readEvent(), "Hallo Welt"));
+                    await().untilAsserted(() -> assertMessagePayload(node2.readEvent(), "Hallo Welt"));
+                    await().untilAsserted(() -> assertMessagePayload(node3.readEvent(), "Hallo Welt"));
+                    await().untilAsserted(() -> assertMessagePayload(node4.readEvent(), "Hallo Welt"));
+                }
             }
 
             /**
-             * This test checks whether the {@link org.drasyl.intravm.IntraVmDiscovery} emits the
-             * correct {@link PeerEvent}s.
+             * This test checks whether the {@link IntraVmDiscovery} emits the correct {@link
+             * PeerEvent}s.
              */
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
-                final TestObserver<PeerDirectEvent> node1Events = node1.events(PeerDirectEvent.class).test();
-                final TestObserver<PeerDirectEvent> node2Events = node2.events(PeerDirectEvent.class).test();
-                final TestObserver<PeerDirectEvent> node3Events = node3.events(PeerDirectEvent.class).test();
-                final TestObserver<PeerDirectEvent> node4Events = node4.events(PeerDirectEvent.class).test();
+                for (int i = 0; i < 3; i++) {
+                    assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class));
+                    assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class));
+                    assertThat(node3.readEvent(), instanceOf(PeerDirectEvent.class));
+                    assertThat(node4.readEvent(), instanceOf(PeerDirectEvent.class));
+                }
 
-                node1Events.awaitCount(3).assertValueCount(3);
-                node2Events.awaitCount(3).assertValueCount(3);
-                node3Events.awaitCount(3).assertValueCount(3);
-                node4Events.awaitCount(3).assertValueCount(3);
+                assertNull(node1.readEvent());
+                assertNull(node2.readEvent());
+                assertNull(node3.readEvent());
+                assertNull(node4.readEvent());
             }
         }
     }
@@ -841,9 +798,12 @@ class DrasylNodeIT {
         class FourNodesWithOnlyLocalHostDiscoveryEnabled {
             private EmbeddedNode node1;
             private EmbeddedNode node2;
+            private Path localHostDiscoveryPath;
 
             @BeforeEach
-            void setUp(@TempDir final Path localHostDiscoveryPath) throws DrasylException {
+            void setUp() throws DrasylException, IOException {
+                localHostDiscoveryPath = Files.createTempDirectory("test");
+
                 //
                 // create nodes
                 //
@@ -852,9 +812,9 @@ class DrasylNodeIT {
                 // node1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                        .identityProofOfWork(ID_1.getProofOfWork())
+                        .identityPublicKey(ID_1.getIdentityPublicKey())
+                        .identitySecretKey(ID_1.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteEnabled(true)
                         .remoteBindPort(0)
@@ -867,15 +827,15 @@ class DrasylNodeIT {
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                node1 = new EmbeddedNode(config).started();
+                node1 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
 
                 // node2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
+                        .identityProofOfWork(ID_2.getProofOfWork())
+                        .identityPublicKey(ID_2.getIdentityPublicKey())
+                        .identitySecretKey(ID_2.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteEnabled(true)
                         .remoteBindPort(0)
@@ -888,7 +848,7 @@ class DrasylNodeIT {
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
-                node2 = new EmbeddedNode(config).started();
+                node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
             }
 
@@ -899,35 +859,26 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the {@link org.drasyl.localhost.LocalHostDiscovery} emits
-             * the correct {@link PeerEvent}s and is able to route outgoing messages.
+             * This test checks whether the {@link LocalHostDiscovery} emits the correct {@link
+             * PeerEvent}s and is able to route outgoing messages.
              */
             @Test
             @Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
-                node1.events(PeerDirectEvent.class).test()
-                        .awaitCount(1).awaitCount(1);
-                node2.events(PeerDirectEvent.class).test()
-                        .awaitCount(1).awaitCount(1);
-
-                final TestObserver<MessageEvent> node1Messages = node1.messages().test();
-                final TestObserver<MessageEvent> nodes2Messages = node2.messages().test();
+                await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
 
                 //
                 // send messages
                 //
-                node1.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
-                node2.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
+                node1.send(ID_2.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
+                node2.send(ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
 
                 //
                 // verify
                 //
-                node1Messages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(MessageEvent.of(IdentityTestUtil.ID_2.getIdentityPublicKey(), "Hallo Welt"));
-                nodes2Messages.awaitCount(1)
-                        .assertValueCount(1)
-                        .assertValue(MessageEvent.of(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt"));
+                await().untilAsserted(() -> assertEquals(MessageEvent.of(ID_2.getIdentityPublicKey(), "Hallo Welt"), node1.readEvent()));
+                await().untilAsserted(() -> assertEquals(MessageEvent.of(ID_1.getIdentityPublicKey(), "Hallo Welt"), node2.readEvent()));
             }
         }
     }
@@ -954,9 +905,9 @@ class DrasylNodeIT {
             // node
             config = DrasylConfig.newBuilder()
                     .networkId(0)
-                    .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                    .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                    .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                    .identityProofOfWork(ID_1.getProofOfWork())
+                    .identityPublicKey(ID_1.getIdentityPublicKey())
+                    .identitySecretKey(ID_1.getIdentitySecretKey())
                     .remoteExposeEnabled(false)
                     .remoteEnabled(false)
                     .remoteSuperPeerEnabled(false)
@@ -964,7 +915,7 @@ class DrasylNodeIT {
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteTcpFallbackEnabled(false)
                     .build();
-            node = new EmbeddedNode(config).started();
+            node = new EmbeddedNode(config).awaitStarted();
             LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
         }
 
@@ -978,13 +929,10 @@ class DrasylNodeIT {
          */
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-        void applicationMessagesShouldBeDelivered() {
-            final TestObserver<MessageEvent> node1Messages = node.messages().test();
+        void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
+            node.send(ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
 
-            node.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt");
-
-            node1Messages.awaitCount(1).assertValueCount(1)
-                    .assertValue(m -> "Hallo Welt".equals(m.getPayload()));
+            assertEquals(MessageEvent.of(ID_1.getIdentityPublicKey(), "Hallo Welt"), node.readEvent());
         }
     }
 
@@ -1010,9 +958,9 @@ class DrasylNodeIT {
                 //
                 final DrasylConfig config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                        .identityProofOfWork(ID_1.getProofOfWork())
+                        .identityPublicKey(ID_1.getIdentityPublicKey())
+                        .identitySecretKey(ID_1.getIdentitySecretKey())
                         .remoteExposeEnabled(false)
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
@@ -1023,36 +971,31 @@ class DrasylNodeIT {
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node"));
             }
 
-            @AfterEach
-            void tearDown() {
-                node.close();
-            }
-
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void sendToSelfShouldThrowException() {
-                assertThrows(ExecutionException.class, () -> node.send(IdentityTestUtil.ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get());
+                assertThrows(ExecutionException.class, () -> node.send(ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get());
             }
 
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void sendToAnOtherPeerShouldThrowException() {
-                assertThrows(ExecutionException.class, () -> node.send(IdentityTestUtil.ID_2.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get());
+                assertThrows(ExecutionException.class, () -> node.send(ID_2.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get());
             }
         }
     }
 
     @Nested
-    class Start {
+    class EventLifecycle {
         private DrasylConfig.Builder configBuilder;
 
         @BeforeEach
         void setUp() {
             configBuilder = DrasylConfig.newBuilder()
                     .networkId(0)
-                    .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                    .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                    .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                    .identityProofOfWork(ID_1.getProofOfWork())
+                    .identityPublicKey(ID_1.getIdentityPublicKey())
+                    .identitySecretKey(ID_1.getIdentitySecretKey())
                     .remoteExposeEnabled(false)
                     .remoteEnabled(true)
                     .remoteBindHost(createInetAddress("127.0.0.1"))
@@ -1064,18 +1007,27 @@ class DrasylNodeIT {
 
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-        void shouldEmitErrorEventAndCompleteExceptionallyIfStartFailed() throws DrasylException, IOException {
+        void shouldEmitErrorEventAndCompleteNotExceptionallyIfStartFailed() throws DrasylException, IOException {
             try (final DatagramSocket socket = new DatagramSocket(0)) {
+                socket.setReuseAddress(false);
+                await().untilAsserted(socket::isBound);
                 final DrasylConfig config = configBuilder
                         .remoteBindPort(socket.getLocalPort())
                         .build();
                 final EmbeddedNode node = new EmbeddedNode(config);
-                final TestObserver<Event> events = node.events().test();
-                final CompletableFuture<Void> future = node.start();
+                node.start();
 
-                await().untilAsserted(() -> assertTrue(future.isCompletedExceptionally()));
-                events.assertError(e -> e instanceof Exception);
+                await().untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUpEvent.class)));
+                await().untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUnrecoverableErrorEvent.class)));
+                assertNull(node.readEvent());
             }
         }
+    }
+
+    private void assertMessagePayload(final Event event, final Object expected) {
+        assertNotNull(event);
+        assertThat(event, instanceOf(MessageEvent.class));
+        final Object actual = ((MessageEvent) event).getPayload();
+        assertTrue(Objects.deepEquals(expected, actual), String.format("expected: <%s> but was: <%s>", expected, actual));
     }
 }

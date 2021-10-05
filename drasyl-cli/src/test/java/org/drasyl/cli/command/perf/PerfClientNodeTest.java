@@ -21,8 +21,12 @@
  */
 package org.drasyl.cli.command.perf;
 
-import io.reactivex.rxjava3.core.Scheduler;
-import org.drasyl.DrasylConfig;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.PerfClientNode.DirectConnectionTimeout;
 import org.drasyl.cli.command.perf.PerfClientNode.OnlineTimeout;
@@ -39,11 +43,10 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
+import org.drasyl.handler.plugin.PluginManager;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,7 +59,6 @@ import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
@@ -65,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -78,22 +81,18 @@ class PerfClientNodeTest {
     @Mock
     private CompletableFuture<Void> doneFuture;
     @Mock
-    private Scheduler perfScheduler;
-    private Set<IdentityPublicKey> directConnections;
-    @Mock
-    private DrasylConfig config;
+    private EventLoopGroup eventLoopGroup;
+    private Set<DrasylAddress> directConnections;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
-    @Mock
-    private PeersManager peersManager;
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Pipeline pipeline;
-    @Mock
+    private ServerBootstrap bootstrap;
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private PluginManager pluginManager;
-    @Mock
-    private Scheduler scheduler;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ChannelGroup channels;
     private PerfClientNode underTest;
 
     @BeforeEach
@@ -101,7 +100,7 @@ class PerfClientNodeTest {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
         directConnections = new HashSet<>();
-        underTest = new PerfClientNode(doneFuture, printStream, perfScheduler, directConnections, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        underTest = new PerfClientNode(doneFuture, printStream, eventLoopGroup, directConnections, identity, bootstrap, channelFuture, channels);
     }
 
     @Nested
@@ -152,10 +151,19 @@ class PerfClientNodeTest {
                     }
 
                     @Test
-                    void shouldRequestSession() {
+                    void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                              @Mock final EventLoop eventLoop) {
+                        when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                        doAnswer(invocation -> {
+                            invocation.getArgument(0, Runnable.class).run();
+                            return null;
+                        }).when(eventLoop).execute(any());
+                        when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                        when(childChannel.remoteAddress()).thenReturn(server);
+                        when(channelFuture.channel().isOpen()).thenReturn(true);
                         underTest.onEvent(nodeOnline);
 
-                        verify(pipeline).processOutbound(any(), any(SessionRequest.class));
+                        verify(childChannel).writeAndFlush(any(SessionRequest.class), any());
                     }
                 }
 
@@ -170,10 +178,19 @@ class PerfClientNodeTest {
                     }
 
                     @Test
-                    void shouldTriggerDirectConnection() {
+                    void shouldTriggerDirectConnection(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                                       @Mock final EventLoop eventLoop) {
+                        when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                        doAnswer(invocation -> {
+                            invocation.getArgument(0, Runnable.class).run();
+                            return null;
+                        }).when(eventLoop).execute(any());
+                        when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                        when(childChannel.remoteAddress()).thenReturn(server);
+                        when(channelFuture.channel().isOpen()).thenReturn(true);
                         underTest.onEvent(nodeOnline);
 
-                        verify(pipeline).processOutbound(any(), any(Ping.class));
+                        verify(childChannel).writeAndFlush(any(Ping.class), any());
                     }
 
                     @Test
@@ -192,18 +209,30 @@ class PerfClientNodeTest {
                 void shouldWaitForServer() {
                     underTest.onEvent(nodeOnline);
 
-                    verify(pipeline, never()).processOutbound(any(), any());
+                    verify(channelFuture.channel().pipeline(), never()).fireUserEventTriggered(any());
                 }
 
                 @Nested
                 class OnSetServer {
                     @Test
-                    void shouldRequestSession(@Mock final TestOptions serverAndOptions) {
+                    void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final TestOptions serverAndOptions,
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey address,
+                                              @Mock final EventLoop eventLoop) {
+                        when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                        doAnswer(invocation -> {
+                            invocation.getArgument(0, Runnable.class).run();
+                            return null;
+                        }).when(eventLoop).execute(any());
+                        when(serverAndOptions.getServer()).thenReturn(address);
+                        when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                        when(childChannel.remoteAddress()).thenReturn(address);
+                        when(channelFuture.channel().isOpen()).thenReturn(true);
                         when(serverAndOptions.requireDirectConnection()).thenReturn(true);
                         underTest.onEvent(nodeOnline);
                         underTest.onEvent(serverAndOptions);
 
-                        verify(pipeline).processOutbound(any(), any(Ping.class));
+                        verify(childChannel).writeAndFlush(any(Ping.class), any());
                     }
                 }
             }
@@ -214,7 +243,17 @@ class PerfClientNodeTest {
                 void shouldRequestSession(@Mock final TestOptions serverAndOptions,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                           @Mock final SessionConfirmation sessionConfirmation,
-                                          @Mock final IdentityPublicKey sender) {
+                                          @Mock final IdentityPublicKey sender,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                          @Mock final EventLoop eventLoop) {
+                    when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                    doAnswer(invocation -> {
+                        invocation.getArgument(0, Runnable.class).run();
+                        return null;
+                    }).when(eventLoop).execute(any());
+                    when(channels.iterator()).thenReturn(Set.of(childChannel).iterator()).thenReturn(Set.of(childChannel).iterator());
+                    when(childChannel.remoteAddress()).thenReturn(sender);
+                    when(channelFuture.channel().isOpen()).thenReturn(true);
                     when(serverAndOptions.getMessagesPerSecond()).thenReturn(100);
                     when(serverAndOptions.getTestDuration()).thenReturn(10);
                     when(serverAndOptions.getMessageSize()).thenReturn(850);
@@ -226,7 +265,7 @@ class PerfClientNodeTest {
                     underTest.onEvent(serverAndOptions);
                     underTest.onEvent(messageEvent);
 
-                    verify(pipeline).processOutbound(any(), any(SessionRequest.class));
+                    verify(childChannel).writeAndFlush(any(SessionRequest.class), any());
                 }
             }
 
@@ -256,7 +295,6 @@ class PerfClientNodeTest {
             class WhenSessionRequestTimeout {
                 @Test
                 void shouldCompleteExceptionally(@Mock final TestOptions serverAndOptions,
-                                                 @Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent messageEvent,
                                                  @Mock final RequestSessionTimeout requestSessionTimeout,
                                                  @Mock final IdentityPublicKey sender) {
                     when(serverAndOptions.getMessagesPerSecond()).thenReturn(100);

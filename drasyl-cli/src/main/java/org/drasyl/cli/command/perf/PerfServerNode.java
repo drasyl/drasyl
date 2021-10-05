@@ -21,17 +21,21 @@
  */
 package org.drasyl.cli.command.perf;
 
-import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
-import org.drasyl.cli.command.perf.message.PerfMessage;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.event.Event;
+import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -39,21 +43,18 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.behaviour.Behaviors.ignore;
 import static org.drasyl.behaviour.Behaviors.same;
-import static org.drasyl.serialization.Serializers.SERIALIZER_JACKSON_JSON;
 
 /**
  * {@link PerfClientNode}s can connect to this server to perform connection tests.
@@ -68,35 +69,30 @@ public class PerfServerNode extends BehavioralDrasylNode {
     public static final Duration TEST_DELAY = ofMillis(10);
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream printStream;
-    private final Scheduler perfScheduler;
+    private final EventLoopGroup eventLoopGroup;
 
     @SuppressWarnings("java:S107")
     PerfServerNode(final CompletableFuture<Void> doneFuture,
                    final PrintStream printStream,
-                   final Scheduler perfScheduler,
-                   final DrasylConfig config,
+                   final EventLoopGroup eventLoopGroup,
                    final Identity identity,
-                   final PeersManager peersManager,
-                   final Pipeline pipeline,
-                   final PluginManager pluginManager,
-                   final AtomicReference<CompletableFuture<Void>> startFuture,
-                   final AtomicReference<CompletableFuture<Void>> shutdownFuture,
-                   final Scheduler scheduler) {
-        super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+                   final ServerBootstrap bootstrap,
+                   final ChannelFuture channelFuture,
+                   final ChannelGroup channels) {
+        super(identity, bootstrap, channelFuture, channels);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
-        this.perfScheduler = perfScheduler;
+        this.eventLoopGroup = eventLoopGroup;
     }
 
     public PerfServerNode(final DrasylConfig config,
                           final PrintStream printStream) throws DrasylException {
-        super(DrasylConfig.newBuilder(config)
-                .addSerializationsBindingsInbound(PerfMessage.class, SERIALIZER_JACKSON_JSON)
-                .addSerializationsBindingsOutbound(PerfMessage.class, SERIALIZER_JACKSON_JSON)
-                .build());
+        super(config);
         this.doneFuture = new CompletableFuture<>();
         this.printStream = printStream;
-        perfScheduler = Schedulers.io();
+        eventLoopGroup = new NioEventLoopGroup(1);
+        // use special channel initializer
+        bootstrap.childHandler(new PerfChannelInitializer(this, config));
     }
 
     @Override
@@ -170,6 +166,10 @@ public class PerfServerNode extends BehavioralDrasylNode {
                     printStream.println("Lost connection to super peer. Wait until server is back online...");
                     return offline();
                 })
+                .onEvent(InboundExceptionEvent.class, event -> {
+                    LOG.warn("Inbound exception:", event::getError);
+                    return Behaviors.same();
+                })
                 .onAnyEvent(event -> same())
                 .build();
     }
@@ -177,17 +177,30 @@ public class PerfServerNode extends BehavioralDrasylNode {
     /**
      * Node performs session and wait for completion.
      */
+    @SuppressWarnings("java:S1142")
     private Behavior startTest(final IdentityPublicKey client,
                                final SessionRequest session) {
-        if (!session.isReverse()) {
-            LOG.debug("Start sender.");
-            final PerfTestReceiver receiver = new PerfTestReceiver(client, session, perfScheduler, printStream, this::send, this::waitForSession, e -> waitForSession());
-            return receiver.run();
+        try {
+            final Channel channel = resolve(client).toCompletableFuture().get();
+
+            if (!session.isReverse()) {
+                LOG.debug("Start sender.");
+                final PerfTestReceiver receiver = new PerfTestReceiver(client, session, eventLoopGroup, printStream, this::send, this::waitForSession, e -> waitForSession());
+                return receiver.run();
+            }
+            else {
+                LOG.debug("Running in reverse mode. Start receiver.");
+                final PerfTestSender sender = new PerfTestSender(session, eventLoopGroup, printStream, channel, this::waitForSession, e -> waitForSession());
+                return sender.run();
+            }
         }
-        else {
-            LOG.debug("Running in reverse mode. Start receiver.");
-            final PerfTestSender sender = new PerfTestSender(client, session, perfScheduler, printStream, this::send, this::waitForSession, e -> waitForSession());
-            return sender.run();
+        catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ignore();
+        }
+        catch (final ExecutionException e) {
+            doneFuture.completeExceptionally(e);
+            return ignore();
         }
     }
 

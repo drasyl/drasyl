@@ -91,6 +91,7 @@
         <module>drasyl-plugin-groups-client</module>
         <module>drasyl-plugin-groups-manager</module>
         <module>drasyl-all</module>
+        <module>drasyl-node</module>
     </modules>
 
     <scm>
@@ -132,8 +133,6 @@
         <awaitility.version>4.1.0</awaitility.version>
         <netty.version>4.1.68.Final</netty.version>
         <guava.version>31.0.1-jre</guava.version>
-        <rxjava.version>3.1.1</rxjava.version>
-        <micrometer.version>1.7.4</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>1.7.32</slf4j.version>
         <typesafe.config.version>1.4.1</typesafe.config.version>
@@ -149,8 +148,10 @@
         <sonar.organization>drasyl</sonar.organization>
         <sonar.projectName>drasyl</sonar.projectName>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.exclusions>**/org/drasyl/remote/protocol/Protocol.java</sonar.exclusions>
-        <sonar.coverage.exclusions>**/org/drasyl/remote/protocol/Protocol.java,drasyl-examples/**/*,drasyl-performance-tests/**/*</sonar.coverage.exclusions>
+        <sonar.exclusions>**/org/drasyl/handler/MessageSerializerProtocol.java,**/org/drasyl/handler/remote/protocol/Protocol.java</sonar.exclusions>
+        <sonar.coverage.exclusions>
+            **/org/drasyl/handler/MessageSerializerProtocol.java,**/org/drasyl/handler/remote/protocol/Protocol.java,drasyl-examples/**/*,drasyl-performance-tests/**/*
+        </sonar.coverage.exclusions>
         <sonar.coverage.jacoco.xmlReportPaths>${project.artifactId}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
@@ -232,13 +233,6 @@
                 <version>${logback.version}</version>
             </dependency>
 
-            <!-- RxJava -->
-            <dependency>
-                <groupId>io.reactivex.rxjava3</groupId>
-                <artifactId>rxjava</artifactId>
-                <version>${rxjava.version}</version>
-            </dependency>
-
             <!-- Guava -->
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -262,11 +256,6 @@
                 <groupId>com.typesafe</groupId>
                 <artifactId>config</artifactId>
                 <version>${typesafe.config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-registry-influx</artifactId>
-                <version>${micrometer.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>

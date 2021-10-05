@@ -41,10 +41,17 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.annotation.NonNull;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+
+import static java.util.Objects.requireNonNull;
+
 /**
  * Utility class for netty-related operations
  */
 public final class NettyUtil {
+    private static final NettyUtilImpl impl = new NettyUtilImpl();
+
     private NettyUtil() {
         // util class
     }
@@ -62,15 +69,7 @@ public final class NettyUtil {
      */
     @NonNull
     public static EventLoopGroup getBestEventLoopGroup(final int nThreads) {
-        if (Epoll.isAvailable()) {
-            return new EpollEventLoopGroup(nThreads);
-        }
-        else if (KQueue.isAvailable()) {
-            return new KQueueEventLoopGroup(nThreads);
-        }
-        else {
-            return new NioEventLoopGroup(nThreads);
-        }
+        return impl.getBestEventLoopGroup(nThreads);
     }
 
     /**
@@ -85,15 +84,7 @@ public final class NettyUtil {
      * @return {@link DatagramChannel} that fits best to the current environment
      */
     public static Class<? extends DatagramChannel> getBestDatagramChannel() {
-        if (Epoll.isAvailable()) {
-            return EpollDatagramChannel.class;
-        }
-        else if (KQueue.isAvailable()) {
-            return KQueueDatagramChannel.class;
-        }
-        else {
-            return NioDatagramChannel.class;
-        }
+        return impl.getBestDatagramChannel();
     }
 
     /**
@@ -108,15 +99,7 @@ public final class NettyUtil {
      * @return {@link ServerSocketChannel} that fits best to the current environment
      */
     public static Class<? extends ServerSocketChannel> getBestServerSocketChannel() {
-        if (Epoll.isAvailable()) {
-            return EpollServerSocketChannel.class;
-        }
-        else if (KQueue.isAvailable()) {
-            return KQueueServerSocketChannel.class;
-        }
-        else {
-            return NioServerSocketChannel.class;
-        }
+        return impl.getBestServerSocketChannel();
     }
 
     /**
@@ -131,14 +114,78 @@ public final class NettyUtil {
      * @return {@link SocketChannel} that fits best to the current environment
      */
     public static Class<? extends SocketChannel> getBestSocketChannel() {
-        if (Epoll.isAvailable()) {
-            return EpollSocketChannel.class;
+        return impl.getBestSocketChannel();
+    }
+
+    static class NettyUtilImpl {
+        private final BooleanSupplier epollAvailable;
+        private final BooleanSupplier kqueueAvailable;
+        private final Function<Integer, EpollEventLoopGroup> epollGroupProvider;
+        private final Function<Integer, KQueueEventLoopGroup> kqueueGroupProvider;
+        private final Function<Integer, NioEventLoopGroup> nioGroupProvider;
+
+        NettyUtilImpl(final BooleanSupplier epollAvailable,
+                      final BooleanSupplier kqueueAvailable,
+                      final Function<Integer, EpollEventLoopGroup> epollGroupProvider,
+                      final Function<Integer, KQueueEventLoopGroup> kqueueGroupProvider,
+                      final Function<Integer, NioEventLoopGroup> nioGroupProvider) {
+            this.epollAvailable = requireNonNull(epollAvailable);
+            this.kqueueAvailable = requireNonNull(kqueueAvailable);
+            this.epollGroupProvider = requireNonNull(epollGroupProvider);
+            this.kqueueGroupProvider = requireNonNull(kqueueGroupProvider);
+            this.nioGroupProvider = requireNonNull(nioGroupProvider);
         }
-        else if (KQueue.isAvailable()) {
-            return KQueueSocketChannel.class;
+
+        NettyUtilImpl() {
+            this(Epoll::isAvailable, KQueue::isAvailable, EpollEventLoopGroup::new, KQueueEventLoopGroup::new, NioEventLoopGroup::new);
         }
-        else {
-            return NioSocketChannel.class;
+
+        EventLoopGroup getBestEventLoopGroup(final int nThreads) {
+            if (epollAvailable.getAsBoolean()) {
+                return epollGroupProvider.apply(nThreads);
+            }
+            else if (kqueueAvailable.getAsBoolean()) {
+                return kqueueGroupProvider.apply(nThreads);
+            }
+            else {
+                return nioGroupProvider.apply(nThreads);
+            }
+        }
+
+        Class<? extends DatagramChannel> getBestDatagramChannel() {
+            if (epollAvailable.getAsBoolean()) {
+                return EpollDatagramChannel.class;
+            }
+            else if (kqueueAvailable.getAsBoolean()) {
+                return KQueueDatagramChannel.class;
+            }
+            else {
+                return NioDatagramChannel.class;
+            }
+        }
+
+        Class<? extends ServerSocketChannel> getBestServerSocketChannel() {
+            if (epollAvailable.getAsBoolean()) {
+                return EpollServerSocketChannel.class;
+            }
+            else if (kqueueAvailable.getAsBoolean()) {
+                return KQueueServerSocketChannel.class;
+            }
+            else {
+                return NioServerSocketChannel.class;
+            }
+        }
+
+        Class<? extends SocketChannel> getBestSocketChannel() {
+            if (epollAvailable.getAsBoolean()) {
+                return EpollSocketChannel.class;
+            }
+            else if (kqueueAvailable.getAsBoolean()) {
+                return KQueueSocketChannel.class;
+            }
+            else {
+                return NioSocketChannel.class;
+            }
         }
     }
 }

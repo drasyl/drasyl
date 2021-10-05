@@ -26,14 +26,14 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
+import org.drasyl.handler.plugin.groups.client.GroupUri;
+import org.drasyl.handler.plugin.groups.client.GroupsClientConfig;
+import org.drasyl.handler.plugin.groups.client.GroupsClientPlugin;
+import org.drasyl.handler.plugin.groups.client.event.GroupEvent;
+import org.drasyl.handler.plugin.groups.client.event.GroupJoinedEvent;
+import org.drasyl.handler.plugin.groups.client.event.GroupMemberJoinedEvent;
+import org.drasyl.handler.plugin.groups.client.event.GroupMemberLeftEvent;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.plugin.groups.client.GroupUri;
-import org.drasyl.plugin.groups.client.GroupsClientConfig;
-import org.drasyl.plugin.groups.client.GroupsClientPlugin;
-import org.drasyl.plugin.groups.client.event.GroupEvent;
-import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
-import org.drasyl.plugin.groups.client.event.GroupMemberJoinedEvent;
-import org.drasyl.plugin.groups.client.event.GroupMemberLeftEvent;
 
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -43,7 +43,7 @@ import java.util.Set;
  * This example starts a drasyl node with activated {@link GroupsClientNode}. The node joins a given
  * group and then tracks the members of the group.
  */
-@SuppressWarnings({ "squid:S106", "squid:S126", "java:S1943", "java:S2096" })
+@SuppressWarnings({ "squid:S106", "squid:S126", "java:S1845", "java:S1943", "java:S2096" })
 public class GroupsClientNode extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "groups-client.identity.json");
     private final Set<IdentityPublicKey> members = new HashSet<>();

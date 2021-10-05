@@ -21,7 +21,7 @@
  */
 package org.drasyl.example.chat;
 
-import io.reactivex.rxjava3.disposables.Disposable;
+import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
@@ -75,7 +75,7 @@ public class ChatGui {
     private final JTextArea messagesArea = new JTextArea(30, 70);
     private final DrasylConfig config;
     private DrasylNode node;
-    private Disposable onlineTimeoutDisposable;
+    private Future<?> onlineTimeoutDisposable;
 
     public ChatGui(final DrasylConfig config) {
         this.config = config;
@@ -211,7 +211,7 @@ public class ChatGui {
             private Behavior downEvent(final NodeDownEvent event) {
                 appendTextToMessageArea("drasyl Node is shutting down. No more communication possible.\n");
                 if (onlineTimeoutDisposable != null) {
-                    onlineTimeoutDisposable.dispose();
+                    onlineTimeoutDisposable.cancel(false);
                     onlineTimeoutDisposable = null;
                 }
                 recipientField.setEditable(false);

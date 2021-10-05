@@ -21,17 +21,11 @@
  */
 package org.drasyl.identity;
 
-import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import test.util.IdentityTestUtil;
 
-import java.io.IOException;
-
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -82,29 +76,6 @@ class IdentitySecretKeyTest {
         void shouldRejectInvalidKeys() {
             assertThrows(IllegalArgumentException.class, () -> IdentitySecretKey.of(new byte[0]));
             assertThrows(IllegalArgumentException.class, () -> IdentitySecretKey.of(""));
-        }
-    }
-
-    @Nested
-    class JsonDeserialization {
-        @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "\"" + IdentityTestUtil.ID_1.getIdentitySecretKey().toUnmaskedString() + "\"";
-
-            assertEquals(
-                    IdentityTestUtil.ID_1.getIdentitySecretKey(),
-                    JACKSON_READER.readValue(json, IdentitySecretKey.class)
-            );
-        }
-    }
-
-    @Nested
-    class JsonSerialization {
-        @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            assertThatJson(JACKSON_WRITER.writeValueAsString(secretKey))
-                    .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo(IdentityTestUtil.ID_1.getIdentitySecretKey().toUnmaskedString());
         }
     }
 }

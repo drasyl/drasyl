@@ -21,17 +21,11 @@
  */
 package org.drasyl.identity;
 
-import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import test.util.IdentityTestUtil;
 
-import java.io.IOException;
-
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -63,29 +57,6 @@ class IdentityPublicKeyTest {
         void shouldRejectInvalidKeys() {
             assertThrows(IllegalArgumentException.class, () -> IdentityPublicKey.of(new byte[0]));
             assertThrows(IllegalArgumentException.class, () -> IdentityPublicKey.of(""));
-        }
-    }
-
-    @Nested
-    class JsonDeserialization {
-        @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "\"18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127\"";
-
-            assertEquals(
-                    IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"),
-                    JACKSON_READER.readValue(json, IdentityPublicKey.class)
-            );
-        }
-    }
-
-    @Nested
-    class JsonSerialization {
-        @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            assertThatJson(JACKSON_WRITER.writeValueAsString(publicKey))
-                    .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
         }
     }
 }

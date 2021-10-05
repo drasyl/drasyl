@@ -21,8 +21,7 @@
  */
 package org.drasyl.util.protocol;
 
-import org.drasyl.DrasylNode;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.util.Version;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -59,7 +58,7 @@ import static java.util.regex.Pattern.UNICODE_CHARACTER_CLASS;
  */
 @SuppressWarnings({ "java:S1192" })
 public class UpnpIgdUtil {
-    public static final InetSocketAddressWrapper SSDP_MULTICAST_ADDRESS = new InetSocketAddressWrapper("239.255.255.250", 1900);
+    public static final InetSocketAddress SSDP_MULTICAST_ADDRESS = new InetSocketAddress("239.255.255.250", 1900);
     public static final Duration SSDP_MAX_WAIT_TIME = ofSeconds(3);
     public static final Pattern SSDP_DISCOVERY_RESPONSE_PATTERN = Pattern.compile("^HTTP/1\\.1 [0-9]+?");
     public static final Pattern SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$", UNICODE_CHARACTER_CLASS);
@@ -198,7 +197,7 @@ public class UpnpIgdUtil {
                             "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">" +
                             "<s:Body>" +
                             "<u:" + service + " xmlns:u=\"" + serviceType + "\">" +
-                            argumentsXml.toString() +
+                            argumentsXml +
                             "</u:" + service + ">" +
                             "</s:Body>" +
                             "</s:Envelope>")).build();
@@ -308,7 +307,7 @@ public class UpnpIgdUtil {
                 "HOST: " + SSDP_MULTICAST_ADDRESS.getAddress().getHostAddress() + ":" + SSDP_MULTICAST_ADDRESS.getPort() + "\r\n" +
                 "MAN: \"ssdp:discover\"\r\n" +
                 "MX: " + SSDP_MAX_WAIT_TIME.toSeconds() + "\r\n" +
-                "USER-AGENT: drasyl/" + DrasylNode.getVersion() + "\r\n" +
+                "USER-AGENT: drasyl/" + Version.identify().get("drasyl-core").version() + "\r\n" +
                 "ST: ssdp:all\r\n" +
                 "\r\n";
         return content.getBytes(UTF_8);

@@ -21,7 +21,9 @@
  */
 package org.drasyl.cli.command.wormhole;
 
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.behaviour.Behavior;
@@ -34,22 +36,17 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.behaviour.Behaviors.ignore;
 import static org.drasyl.behaviour.Behaviors.same;
-import static org.drasyl.serialization.Serializers.SERIALIZER_JACKSON_JSON;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
 @SuppressWarnings({ "java:S107" })
@@ -64,15 +61,11 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
     ReceivingWormholeNode(final CompletableFuture<Void> doneFuture,
                           final PrintStream out,
                           final RequestText request,
-                          final DrasylConfig config,
                           final Identity identity,
-                          final PeersManager peersManager,
-                          final Pipeline pipeline,
-                          final PluginManager pluginManager,
-                          final AtomicReference<CompletableFuture<Void>> startFuture,
-                          final AtomicReference<CompletableFuture<Void>> shutdownFuture,
-                          final Scheduler scheduler) {
-        super(config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+                          final ServerBootstrap bootstrap,
+                          final ChannelFuture channelFuture,
+                          final ChannelGroup channels) {
+        super(identity, bootstrap, channelFuture, channels);
         this.doneFuture = requireNonNull(doneFuture);
         this.out = requireNonNull(out);
         this.request = request;
@@ -80,12 +73,11 @@ public class ReceivingWormholeNode extends BehavioralDrasylNode {
 
     public ReceivingWormholeNode(final DrasylConfig config,
                                  final PrintStream out) throws DrasylException {
-        super(DrasylConfig.newBuilder(config)
-                .addSerializationsBindingsInbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
-                .addSerializationsBindingsOutbound(WormholeMessage.class, SERIALIZER_JACKSON_JSON)
-                .build());
+        super(config);
         this.doneFuture = new CompletableFuture<>();
         this.out = requireNonNull(out);
+        // use special channel initializer
+        bootstrap.childHandler(new WormholeChannelInitializer(config, this));
     }
 
     @Override

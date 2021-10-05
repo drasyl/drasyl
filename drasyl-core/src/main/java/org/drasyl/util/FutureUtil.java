@@ -22,6 +22,7 @@
 package org.drasyl.util;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -68,5 +69,32 @@ public final class FutureUtil {
         });
 
         return completableFuture;
+    }
+
+    /**
+     * Synchronizes {@code promise} and {@code future} in both directions.
+     *
+     * @param promise
+     * @param future
+     * @param <T>
+     */
+    public static <T> void synchronizeFutures(final Promise<T> promise,
+                                              final CompletableFuture<T> future) {
+        promise.addListener(f -> {
+            if (f.isSuccess()) {
+                future.complete((T) f.getNow());
+            }
+            else {
+                future.completeExceptionally(f.cause());
+            }
+        });
+        future.whenComplete((result, e) -> {
+            if (e == null) {
+                promise.setSuccess(result);
+            }
+            else {
+                promise.setFailure(e);
+            }
+        });
     }
 }

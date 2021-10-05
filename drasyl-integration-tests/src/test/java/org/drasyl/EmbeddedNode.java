@@ -21,95 +21,101 @@
  */
 package org.drasyl;
 
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.ReplaySubject;
-import io.reactivex.rxjava3.subjects.Subject;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.annotation.NonNull;
+import org.drasyl.channel.DrasylNodeServerChannelInitializer;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
+import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
-import org.drasyl.event.NodeOnlineEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.tcp.TcpServer;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.Arrays;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 
 public class EmbeddedNode extends DrasylNode implements Closeable {
-    private final Subject<Event> events;
+    private static final Logger LOG = LoggerFactory.getLogger(EmbeddedNode.class);
+    private final Queue<Event> events;
     private int port;
     private int tcpFallbackPort;
 
     private EmbeddedNode(final DrasylConfig config,
-                         final Subject<Event> events) throws DrasylException {
+                         final Queue<Event> events) throws DrasylException {
         super(config);
         this.events = requireNonNull(events);
     }
 
     public EmbeddedNode(final DrasylConfig config) throws DrasylException {
-        this(config, ReplaySubject.<Event>create().toSerialized());
+        this(config, new ArrayDeque<>());
+
+        bootstrap.handler(new DrasylNodeServerChannelInitializer(config, identity, this) {
+            @Override
+            protected void initChannel(final DrasylServerChannel ch) {
+                super.initChannel(ch);
+
+                ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                   final Object evt) throws Exception {
+                        if (evt instanceof UdpServer.Port) {
+                            port = ((UdpServer.Port) evt).getPort();
+                        }
+                        else if (evt instanceof TcpServer.Port) {
+                            tcpFallbackPort = ((TcpServer.Port) evt).getPort();
+                        }
+                        else {
+                            ctx.fireUserEventTriggered(evt);
+                        }
+                    }
+                });
+            }
+        });
     }
 
     @Override
     public void onEvent(@NonNull final Event event) {
-        if (event instanceof NodeUnrecoverableErrorEvent) {
-            events.onError(((NodeUnrecoverableErrorEvent) event).getError());
+        if (event instanceof UdpServer.Port) {
+            port = ((UdpServer.Port) event).getPort();
         }
-        else {
-            if (event instanceof NodeUpEvent) {
-                port = ((NodeUpEvent) event).getNode().getPort();
-                tcpFallbackPort = ((NodeUpEvent) event).getNode().getTcpFallbackPort();
-            }
-
-            events.onNext(event);
-
-            if (event instanceof NodeNormalTerminationEvent) {
-                events.onComplete();
-            }
+        else if (event instanceof TcpServer.Port) {
+            tcpFallbackPort = ((TcpServer.Port) event).getPort();
         }
+        else if (event instanceof InboundExceptionEvent) {
+            LOG.warn("{}", event, ((InboundExceptionEvent) event).getError());
+        }
+
+        events.add(event);
     }
 
-    @SuppressWarnings("unused")
-    public Observable<Event> events() {
-        return events;
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T extends Event> Observable<T> events(final Class<T> clazz) {
-        return (Observable<T>) events.filter(clazz::isInstance);
-    }
-
-    @SuppressWarnings("unchecked")
-    public Observable<Event> events(final Class<? extends Event>... clazzes) {
-        return events.filter(event -> Arrays.stream(clazzes).anyMatch(clazz -> clazz.isInstance(event)));
-    }
-
-    public Observable<MessageEvent> messages() {
-        return events(MessageEvent.class);
-    }
-
-    public EmbeddedNode started() {
+    public EmbeddedNode awaitStarted() {
         start();
-        events(NodeUpEvent.class).test().awaitCount(1).assertValueCount(1);
-        return this;
-    }
-
-    public EmbeddedNode online() {
-        events(NodeOnlineEvent.class).test().awaitCount(1).assertValueCount(1);
+        await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeUpEvent.class)));
         return this;
     }
 
     @Override
     public void close() {
         shutdown().join();
+        // shutdown() future is completed before channelInactive has passed the pipeline...
+        await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeNormalTerminationEvent.class)));
     }
 
     public int getPort() {
-        if (port == 0) {
-            throw new IllegalStateException("Port not set. You have to start the node first.");
-        }
+        await().atMost(ofSeconds(5_000)).until(() -> port != 0);
         return port;
     }
 
@@ -118,5 +124,17 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
             throw new IllegalStateException("TCP Fallback Port not set. You have to start the node running in super peer mode with TCP fallback enabled first.");
         }
         return tcpFallbackPort;
+    }
+
+    /**
+     * Return received user events from this {@link Channel}
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T readEvent() {
+        final T event = (T) events.poll();
+        if (event != null) {
+            ReferenceCountUtil.touch(event, "Caller of readEvent() will handle the user event from this point");
+        }
+        return event;
     }
 }

@@ -111,6 +111,15 @@ public final class RandomUtil {
     }
 
     /**
+     * Returns a single pseudorandom byte.
+     *
+     * @return a pseudorandom byte
+     */
+    public static byte randomByte() {
+        return randomBytes(1)[0];
+    }
+
+    /**
      * Returns a string of the given {@code length} containing pseudorandom alphanumeric
      * characters.
      *

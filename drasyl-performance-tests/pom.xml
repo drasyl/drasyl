@@ -57,8 +57,13 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>drasyl-core</artifactId>
+            <artifactId>drasyl-node</artifactId>
             <version>${project.version}</version>
         </dependency>
 

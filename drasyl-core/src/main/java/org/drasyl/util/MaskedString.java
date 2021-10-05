@@ -21,9 +21,6 @@
  */
 package org.drasyl.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import java.util.Objects;
 
 import static org.drasyl.util.SecretUtil.maskSecret;
@@ -33,10 +30,8 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * {@link #toString()}. Do not use this class if the length of the string must not be revealed.
  */
 public final class MaskedString {
-    @JsonValue
     private final String string;
 
-    @JsonCreator
     private MaskedString(final String string) {
         this.string = string;
     }

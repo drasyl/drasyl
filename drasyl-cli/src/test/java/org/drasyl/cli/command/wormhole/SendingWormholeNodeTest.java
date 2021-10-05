@@ -21,18 +21,20 @@
  */
 package org.drasyl.cli.command.wormhole;
 
-import io.reactivex.rxjava3.core.Scheduler;
-import org.drasyl.DrasylConfig;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.EventLoop;
+import io.netty.channel.group.ChannelGroup;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode.OnlineTimeout;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode.SetText;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.handler.plugin.PluginManager;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugin.PluginManager;
+import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,14 +44,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,27 +65,23 @@ class SendingWormholeNodeTest {
     private PrintStream out;
     @SuppressWarnings("FieldCanBeLocal")
     private final String password = "123";
-    @Mock
-    private DrasylConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
-    @Mock
-    private PeersManager peersManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Pipeline pipeline;
-    @Mock
+    private ServerBootstrap bootstrap;
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private PluginManager pluginManager;
-    private final AtomicReference<CompletableFuture<Void>> startFuture = new AtomicReference<>();
-    private final AtomicReference<CompletableFuture<Void>> shutdownFuture = new AtomicReference<>();
-    @Mock
-    private Scheduler scheduler;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ChannelFuture channelFuture;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ChannelGroup channels;
     private SendingWormholeNode underTest;
 
     @BeforeEach
     void setUp() {
         outStream = new ByteArrayOutputStream();
         out = new PrintStream(outStream, true);
-        underTest = new SendingWormholeNode(doneFuture, out, password, config, identity, peersManager, pipeline, pluginManager, startFuture, shutdownFuture, scheduler);
+        underTest = new SendingWormholeNode(doneFuture, out, password, identity, bootstrap, channelFuture, channels);
     }
 
     @Nested
@@ -114,25 +112,49 @@ class SendingWormholeNodeTest {
             private NodeOnlineEvent nodeOnline;
 
             @Test
-            void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+            void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
+                                                                    @Mock final EventLoop eventLoop) {
+                when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                doAnswer(invocation -> {
+                    invocation.getArgument(0, Runnable.class).run();
+                    return null;
+                }).when(eventLoop).execute(any());
+                when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                when(childChannel.remoteAddress()).thenReturn(publicKey);
+                when(channelFuture.channel().isOpen()).thenReturn(true);
                 when(event.getPayload()).thenReturn(new PasswordMessage("123"));
+                when(event.getSender()).thenReturn(publicKey);
                 underTest.setText("Hi");
 
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(pipeline).processOutbound(eq(event.getSender()), any(TextMessage.class));
+                verify(childChannel).writeAndFlush(any(TextMessage.class), any());
             }
 
             @Test
-            void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
+            void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event,
+                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
+                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
+                                                                  @Mock final EventLoop eventLoop) {
+                when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                doAnswer(invocation -> {
+                    invocation.getArgument(0, Runnable.class).run();
+                    return null;
+                }).when(eventLoop).execute(any());
+                when(channels.iterator()).thenReturn(Set.of(childChannel).iterator());
+                when(childChannel.remoteAddress()).thenReturn(publicKey);
+                when(channelFuture.channel().isOpen()).thenReturn(true);
                 when(event.getPayload()).thenReturn(new PasswordMessage("456"));
+                when(event.getSender()).thenReturn(publicKey);
                 underTest.setText("Hi");
 
                 underTest.onEvent(nodeOnline);
                 underTest.onEvent(event);
 
-                verify(pipeline).processOutbound(eq(event.getSender()), any(WrongPasswordMessage.class));
+                verify(childChannel).writeAndFlush(any(WrongPasswordMessage.class), any());
             }
 
             @Nested

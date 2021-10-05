@@ -21,57 +21,62 @@
  */
 package org.drasyl.util;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.DatagramChannel;
-import io.netty.channel.socket.ServerSocketChannel;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.drasyl.util.NettyUtil.NettyUtilImpl;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class NettyUtilTest {
+    @Mock
+    BooleanSupplier epollAvailable;
+    @Mock
+    BooleanSupplier kqueueAvailable;
+    @Mock
+    Function<Integer, EpollEventLoopGroup> epollGroupProvider;
+    @Mock
+    Function<Integer, KQueueEventLoopGroup> kqueueGroupProvider;
+    @Mock
+    Function<Integer, NioEventLoopGroup> nioGroupProvider;
+
     @Nested
     class GetBestEventLoopGroup {
-        @SuppressWarnings("ConstantConditions")
         @Test
         void shouldReturnCorrectGroup() {
-            EventLoopGroup group = null;
-            try {
-                group = NettyUtil.getBestEventLoopGroup(1);
+            when(epollAvailable.getAsBoolean()).thenReturn(true);
+            new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestEventLoopGroup(1);
+            verify(epollGroupProvider).apply(1);
 
-                if (Epoll.isAvailable()) {
-                    assertThat(group, instanceOf(EpollEventLoopGroup.class));
-                }
-                else if (KQueue.isAvailable()) {
-                    assertThat(group, instanceOf(KQueueEventLoopGroup.class));
-                }
-                else {
-                    assertThat(group, instanceOf(NioEventLoopGroup.class));
-                }
-            }
-            finally {
-                group.shutdownGracefully().awaitUninterruptibly();
-            }
+            when(epollAvailable.getAsBoolean()).thenReturn(false);
+            when(kqueueAvailable.getAsBoolean()).thenReturn(true);
+            new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestEventLoopGroup(1);
+            verify(kqueueGroupProvider).apply(1);
+
+            when(epollAvailable.getAsBoolean()).thenReturn(false);
+            when(kqueueAvailable.getAsBoolean()).thenReturn(false);
+            new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestEventLoopGroup(1);
+            verify(nioGroupProvider).apply(1);
         }
     }
 
@@ -79,17 +84,16 @@ class NettyUtilTest {
     class GetBestDatagramChannel {
         @Test
         void shouldReturnCorrectChannel() {
-            final Class<? extends DatagramChannel> channel = NettyUtil.getBestDatagramChannel();
+            when(epollAvailable.getAsBoolean()).thenReturn(true);
+            assertEquals(EpollDatagramChannel.class, new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestDatagramChannel());
 
-            if (Epoll.isAvailable()) {
-                assertEquals(EpollDatagramChannel.class, channel);
-            }
-            else if (KQueue.isAvailable()) {
-                assertEquals(KQueueDatagramChannel.class, channel);
-            }
-            else {
-                assertEquals(NioDatagramChannel.class, channel);
-            }
+            when(epollAvailable.getAsBoolean()).thenReturn(false);
+            when(kqueueAvailable.getAsBoolean()).thenReturn(true);
+            assertEquals(KQueueDatagramChannel.class, new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestDatagramChannel());
+
+            when(epollAvailable.getAsBoolean()).thenReturn(false);
+            when(kqueueAvailable.getAsBoolean()).thenReturn(false);
+            assertEquals(NioDatagramChannel.class, new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestDatagramChannel());
         }
     }
 
@@ -97,17 +101,16 @@ class NettyUtilTest {
     class GetBestServerSocketChannel {
         @Test
         void shouldReturnCorrectChannel() {
-            final Class<? extends ServerSocketChannel> channel = NettyUtil.getBestServerSocketChannel();
+            when(epollAvailable.getAsBoolean()).thenReturn(true);
+            assertEquals(EpollServerSocketChannel.class, new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestServerSocketChannel());
 
-            if (Epoll.isAvailable()) {
-                assertEquals(EpollServerSocketChannel.class, channel);
-            }
-            else if (KQueue.isAvailable()) {
-                assertEquals(KQueueServerSocketChannel.class, channel);
-            }
-            else {
-                assertEquals(NioServerSocketChannel.class, channel);
-            }
+            when(epollAvailable.getAsBoolean()).thenReturn(false);
+            when(kqueueAvailable.getAsBoolean()).thenReturn(true);
+            assertEquals(KQueueServerSocketChannel.class, new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestServerSocketChannel());
+
+            when(epollAvailable.getAsBoolean()).thenReturn(false);
+            when(kqueueAvailable.getAsBoolean()).thenReturn(false);
+            assertEquals(NioServerSocketChannel.class, new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestServerSocketChannel());
         }
     }
 
@@ -115,17 +118,16 @@ class NettyUtilTest {
     class GetBestSocketChannel {
         @Test
         void shouldReturnCorrectChannel() {
-            final Class<? extends SocketChannel> channel = NettyUtil.getBestSocketChannel();
+            when(epollAvailable.getAsBoolean()).thenReturn(true);
+            assertEquals(EpollSocketChannel.class, new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestSocketChannel());
 
-            if (Epoll.isAvailable()) {
-                assertEquals(EpollSocketChannel.class, channel);
-            }
-            else if (KQueue.isAvailable()) {
-                assertEquals(KQueueSocketChannel.class, channel);
-            }
-            else {
-                assertEquals(NioSocketChannel.class, channel);
-            }
+            when(epollAvailable.getAsBoolean()).thenReturn(false);
+            when(kqueueAvailable.getAsBoolean()).thenReturn(true);
+            assertEquals(KQueueSocketChannel.class, new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestSocketChannel());
+
+            when(epollAvailable.getAsBoolean()).thenReturn(false);
+            when(kqueueAvailable.getAsBoolean()).thenReturn(false);
+            assertEquals(NioSocketChannel.class, new NettyUtilImpl(epollAvailable, kqueueAvailable, epollGroupProvider, kqueueGroupProvider, nioGroupProvider).getBestSocketChannel());
         }
     }
 }

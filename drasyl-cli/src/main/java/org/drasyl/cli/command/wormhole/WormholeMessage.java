@@ -21,5 +21,16 @@
  */
 package org.drasyl.cli.command.wormhole;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+
+@JsonTypeInfo(use = Id.NAME)
+@JsonSubTypes({
+        @Type(value = PasswordMessage.class),
+        @Type(value = TextMessage.class),
+        @Type(value = WrongPasswordMessage.class),
+})
 public interface WormholeMessage {
 }

@@ -21,37 +21,30 @@
  */
 package org.drasyl.identity;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.auto.value.AutoValue;
-import com.google.protobuf.ByteString;
 import com.goterl.lazysodium.utils.Key;
-import org.drasyl.DrasylAddress;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringDeserializer;
-import org.drasyl.serialization.JacksonJsonSerializer.BytesToHexStringSerializer;
+import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.InternPool;
 import org.drasyl.util.Worm;
 
 import static org.drasyl.crypto.Crypto.PK_LONG_TIME_KEY_LENGTH;
 
 /**
- * This class models a ed25519 public key that is used as node's unique overlay address.
+ * This class models an ed25519 public key that is used as node's unique overlay address.
  * <p>
  * This is an immutable object.
  */
 @AutoValue
-@SuppressWarnings("java:S118")
-public abstract class IdentityPublicKey implements PublicKey, Address, DrasylAddress {
+@SuppressWarnings({ "java:S118", "java:S1213" })
+public abstract class IdentityPublicKey extends DrasylAddress implements PublicKey {
     public static final short KEY_LENGTH_AS_BYTES = PK_LONG_TIME_KEY_LENGTH;
     public static final short KEY_LENGTH_AS_STRING = KEY_LENGTH_AS_BYTES * 2;
     private static final InternPool<IdentityPublicKey> POOL = new InternPool<>();
-    private final Worm<KeyAgreementPublicKey> convertedKey = Worm.of();
+    private final transient Worm<KeyAgreementPublicKey> convertedKey = Worm.of();
+    public static final IdentityPublicKey ZERO_ID = IdentityPublicKey.of(new byte[KEY_LENGTH_AS_BYTES]);
 
     /**
      * @return this public key as key agreement key (curve25519)
@@ -74,12 +67,9 @@ public abstract class IdentityPublicKey implements PublicKey, Address, DrasylAdd
         return POOL.intern(this);
     }
 
-    @JsonValue
-    @JsonSerialize(using = BytesToHexStringSerializer.class)
-    @JsonDeserialize(using = BytesToHexStringDeserializer.class)
     @Override
     public byte[] toByteArray() {
-        return getBytes().toByteArray();
+        return getBytes().getArray();
     }
 
     /**
@@ -87,19 +77,19 @@ public abstract class IdentityPublicKey implements PublicKey, Address, DrasylAdd
      */
     @Override
     public Key toSodiumKey() {
-        return Key.fromBytes(getBytes().toByteArray());
+        return Key.fromBytes(getBytes().getArray());
     }
 
     @Override
     public String toString() {
-        return HexUtil.bytesToHex(getBytes().toByteArray());
+        return HexUtil.bytesToHex(getBytes().getArray());
     }
 
     /**
      * @throws NullPointerException     if {@code bytes} is {@code null}
      * @throws IllegalArgumentException if {@code bytes} has wrong key size
      */
-    public static IdentityPublicKey of(final ByteString bytes) {
+    public static IdentityPublicKey of(final ImmutableByteArray bytes) {
         if (bytes.size() != KEY_LENGTH_AS_BYTES) {
             throw new IllegalArgumentException("key has wrong size.");
         }
@@ -113,9 +103,8 @@ public abstract class IdentityPublicKey implements PublicKey, Address, DrasylAdd
      * @return {@link IdentityPublicKey}
      * @throws NullPointerException if {@code key} is {@code null}
      */
-    @JsonCreator
     public static IdentityPublicKey of(final byte[] bytes) {
-        return of(ByteString.copyFrom(bytes));
+        return of(ImmutableByteArray.of(bytes));
     }
 
     /**
@@ -127,7 +116,6 @@ public abstract class IdentityPublicKey implements PublicKey, Address, DrasylAdd
      * @throws IllegalArgumentException if {@code keyAsHexString} does not conform to a valid
      *                                  keyAsHexString string
      */
-    @JsonCreator
     public static IdentityPublicKey of(final String bytes) {
         return of(HexUtil.fromString(bytes));
     }

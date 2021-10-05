@@ -21,11 +21,13 @@
  */
 package org.drasyl.cli.command.perf;
 
-import io.reactivex.rxjava3.core.Scheduler;
+import io.netty.channel.Channel;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNode;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.DeferredBehavior;
 import org.drasyl.cli.command.perf.PerfTestSender.TestCompleted;
+import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
 import org.drasyl.event.MessageEvent;
@@ -39,13 +41,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -62,11 +61,11 @@ class PerfTestSenderTest {
     @Mock
     private SessionRequest session;
     @Mock
-    private Scheduler scheduler;
+    private EventLoopGroup eventLoopGroup;
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
-    @Mock
-    BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    Channel channel;
     @Mock
     Supplier<Behavior> successBehavior;
     @Mock
@@ -86,23 +85,23 @@ class PerfTestSenderTest {
     class Run {
         @Test
         void shouldRunTest(@Mock(answer = RETURNS_DEEP_STUBS) final TestCompleted testCompleted) {
+            when(channel.isWritable()).thenReturn(true);
             when(session.getMps()).thenReturn(1);
             when(session.getSize()).thenReturn(1);
             when(session.getTime()).thenReturn(3);
-            when(scheduler.scheduleDirect(any())).then(invocation -> {
+            when(eventLoopGroup.submit(any(Runnable.class))).then(invocation -> {
                 final Runnable runnable = invocation.getArgument(0, Runnable.class);
                 runnable.run();
                 return null;
             });
-            when(sendMethod.apply(any(), any())).thenReturn(completedFuture(null));
             when(currentTimeSupplier.getAsLong()).thenReturn(1_000_000_000L, 1_000_000_000L, 1_500_000_000L, 2_000_000_000L, 3_000_000_000L, 4_000_000_000L);
 
-            final PerfTestSender sender = spy(new PerfTestSender(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier));
+            final PerfTestSender sender = spy(new PerfTestSender(session, eventLoopGroup, printStream, channel, successBehavior, failureBehavior, currentTimeSupplier));
             final Behavior behavior = ((DeferredBehavior) sender.run()).apply(node);
             behavior.receive(testCompleted);
 
             // messages sent?
-            verify(sendMethod, times(3)).apply(any(IdentityPublicKey.class), any(byte[].class));
+            verify(channel, times(3)).writeAndFlush(any(Probe.class));
 
             // output?
             final String output = outputStream.toString();
@@ -129,20 +128,21 @@ class PerfTestSenderTest {
 
         @Test
         void shouldSendResultsWhenRetriesAreNotExhausted() {
-            final PerfTestSender sender = new PerfTestSender(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier);
+            final PerfTestSender sender = new PerfTestSender(session, eventLoopGroup, printStream, channel, successBehavior, failureBehavior, currentTimeSupplier);
             ((DeferredBehavior) sender.completing(results, (short) 1)).apply(node);
 
-            verify(sendMethod).apply(receiver, results);
+            verify(channel).writeAndFlush(results);
         }
 
         @Test
         void shouldPrintResultsOnResponse(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent message,
                                           @Mock final Behavior newBehavior) {
+            when(channel.remoteAddress()).thenReturn(receiver);
             when(message.getPayload()).thenReturn(results);
             when(message.getSender()).thenReturn(receiver);
             when(successBehavior.get()).thenReturn(newBehavior);
 
-            final PerfTestSender sender = new PerfTestSender(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier);
+            final PerfTestSender sender = new PerfTestSender(session, eventLoopGroup, printStream, channel, successBehavior, failureBehavior, currentTimeSupplier);
             final Behavior behavior = ((DeferredBehavior) sender.completing(results, (short) 1)).apply(node);
             behavior.receive(message);
 
@@ -155,7 +155,7 @@ class PerfTestSenderTest {
         void shouldFailWhenRetriesAreExhausted(@Mock final Behavior newBehavior) {
             when(failureBehavior.apply(any())).thenReturn(newBehavior);
 
-            final PerfTestSender sender = new PerfTestSender(receiver, session, scheduler, printStream, sendMethod, successBehavior, failureBehavior, currentTimeSupplier);
+            final PerfTestSender sender = new PerfTestSender(session, eventLoopGroup, printStream, channel, successBehavior, failureBehavior, currentTimeSupplier);
             sender.completing(results, (short) 0);
 
             verify(failureBehavior).apply(any());

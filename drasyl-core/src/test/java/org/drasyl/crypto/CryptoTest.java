@@ -26,11 +26,11 @@ import com.goterl.lazysodium.interfaces.AEAD;
 import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.crypto.loader.DrasylLazySodiumJava;
 import org.drasyl.crypto.loader.DrasylSodiumJava;
+import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyPair;
-import org.drasyl.remote.protocol.Nonce;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -138,7 +138,7 @@ class CryptoTest {
     class EphemeralKeyPair {
         @Test
         void shouldGenerate(@Mock final DrasylLazySodiumJava sodium,
-                            @Mock final DrasylSodiumJava sodiumJava) throws CryptoException {
+                            @Mock final UnitSodium sodiumJava) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             doReturn(sodiumJava).when(sodium).getSodium();
             doReturn(true).when(sodium).successful(anyInt());
@@ -153,10 +153,11 @@ class CryptoTest {
 
         @Test
         void shouldThrowExceptionOnError(@Mock final DrasylLazySodiumJava sodium,
-                                         @Mock final DrasylSodiumJava sodiumJava) {
+                                         @Mock final UnitSodium sodiumJava) {
             final Crypto crypto = new Crypto(sodium);
             doReturn(sodiumJava).when(sodium).getSodium();
             doReturn(false).when(sodium).successful(anyInt());
+            doReturn(0).when(sodiumJava).crypto_kx_keypair(any(), any());
 
             assertThrows(CryptoException.class, crypto::generateEphemeralKeyPair);
             verify(sodiumJava).crypto_kx_keypair(any(), any());
@@ -367,4 +368,13 @@ class CryptoTest {
             assertTrue(number <= size, "Number " + number + " should be smaller than or equals to " + size + ".");
         }
     }
+
+    // We've to wrap the SodiumJava, because Mockito does not support native calls
+    static class UnitSodium extends DrasylSodiumJava {
+        @Override
+        public int crypto_kx_keypair(final byte[] publicKey, final byte[] secretKey) {
+            return 0;
+        }
+    }
 }
+

@@ -21,15 +21,12 @@
  */
 package org.drasyl.identity;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
-import org.drasyl.DrasylAddress;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 
-import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
+import java.net.SocketAddress;
 
 /**
  * Represents the private identity of a peer (includes the proof of work, the public and private
@@ -39,19 +36,19 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
  */
 @AutoValue
 @SuppressWarnings("java:S118")
-public abstract class Identity {
+public abstract class Identity extends SocketAddress {
+    public static final byte POW_DIFFICULTY = (byte) SystemPropertyUtil.getInt("org.drasyl.identity.pow-difficulty", 6);
+
     public abstract ProofOfWork getProofOfWork();
 
     public abstract KeyPair<IdentityPublicKey, IdentitySecretKey> getIdentityKeyPair();
 
     public abstract KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> getKeyAgreementKeyPair();
 
-    @JsonIgnore
     public IdentityPublicKey getIdentityPublicKey() {
         return getIdentityKeyPair().getPublicKey();
     }
 
-    @JsonIgnore
     public IdentitySecretKey getIdentitySecretKey() {
         return getIdentityKeyPair().getSecretKey();
     }
@@ -61,28 +58,16 @@ public abstract class Identity {
      *
      * @return returns the address for this identity.
      */
-    @JsonIgnore
     public DrasylAddress getAddress() {
         return getIdentityPublicKey();
     }
 
-    @JsonIgnore
     public KeyAgreementPublicKey getKeyAgreementPublicKey() {
         return getKeyAgreementKeyPair().getPublicKey();
     }
 
-    @JsonIgnore
     public KeyAgreementSecretKey getKeyAgreementSecretKey() {
         return getKeyAgreementKeyPair().getSecretKey();
-    }
-
-    /**
-     * @deprecated Use {@link #getIdentityPublicKey()} instead.
-     */
-    @Deprecated(since = "0.5.0", forRemoval = true)
-    @JsonIgnore
-    public IdentityPublicKey getPublicKey() {
-        return getIdentityPublicKey();
     }
 
     /**
@@ -90,7 +75,6 @@ public abstract class Identity {
      *
      * @return {@code true} if this identity is valid. Otherwise {@code false}
      */
-    @JsonIgnore
     public boolean isValid() {
         return getProofOfWork().isValid(getIdentityKeyPair().getPublicKey(), POW_DIFFICULTY);
     }
@@ -133,10 +117,9 @@ public abstract class Identity {
                 IdentitySecretKey.of(identitySecretKey)));
     }
 
-    @JsonCreator
-    public static Identity of(@JsonProperty("proofOfWork") final int proofOfWork,
-                              @JsonProperty("identityKeyPair") final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
-                              @JsonProperty("keyAgreementKeyPair") final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
+    public static Identity of(final int proofOfWork,
+                              final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
+                              final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
         return of(ProofOfWork.of(proofOfWork), identityKeyPair, keyAgreementKeyPair);
     }
 }

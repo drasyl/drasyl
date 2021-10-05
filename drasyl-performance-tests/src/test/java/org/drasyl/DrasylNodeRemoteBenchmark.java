@@ -26,7 +26,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -38,6 +37,7 @@ import org.openjdk.jmh.annotations.Threads;
 import test.util.IdentityTestUtil;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -69,8 +69,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
                     .remoteBindHost(InetAddress.getByName("127.0.0.1"))
                     .remoteBindPort(22528)
                     .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(identity2.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22529)))
-                    .monitoringEnabled(false)
+                    .remoteStaticRoutes(Map.of(identity2.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22529)))
                     .build();
             final DrasylConfig config2 = DrasylConfig.newBuilder()
                     .identityProofOfWork(identity2.getProofOfWork())
@@ -80,10 +79,9 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
                     .remoteBindHost(InetAddress.getByName("127.0.0.1"))
                     .remoteBindPort(22529)
                     .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(identity1.getIdentityPublicKey(), new InetSocketAddressWrapper("127.0.0.1", 22528)))
+                    .remoteStaticRoutes(Map.of(identity1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
-                    .monitoringEnabled(false)
                     .build();
 
             final CompletableFuture<Void> node1Ready = new CompletableFuture<>();

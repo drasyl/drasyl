@@ -32,7 +32,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -151,18 +150,6 @@ public final class NetworkUtil {
     @SuppressWarnings("unused")
     public static boolean isValidPort(final int port) {
         return impl.isValidPort(port);
-    }
-
-    /**
-     * Checks to see if a specific host:port is available.
-     *
-     * @param host host name or IP address to check for availability
-     * @param port the port number to check for availability
-     * @return <tt>true</tt> if the host:port is available, or <tt>false</tt> if not
-     * @throws IllegalArgumentException is thrown if the port number is out of range
-     */
-    public static boolean alive(final String host, final int port) {
-        return impl.alive(host, port);
     }
 
     /**
@@ -450,24 +437,6 @@ public final class NetworkUtil {
             return port >= MIN_PORT_NUMBER && port <= MAX_PORT_NUMBER;
         }
 
-        boolean alive(final String host, final int port) {
-            if (!isValidPort(port)) {
-                throw new IllegalArgumentException("Invalid port: " + port);
-            }
-
-            try (final Socket s = new Socket(host, port)) {
-                final PrintWriter out = new PrintWriter(s.getOutputStream(), true, UTF_8);
-                out.println("GET / HTTP/1.1");
-
-                return true;
-            }
-            catch (final IOException e) {
-                LOG.debug("I/O error occurred.", e);
-            }
-
-            return false;
-        }
-
         @SuppressWarnings("java:S134")
         Set<InetAddress> getAddresses() {
             try {
@@ -538,7 +507,7 @@ public final class NetworkUtil {
             }
         }
 
-        @SuppressWarnings({ "java:S1142", "UnstableApiUsage" })
+        @SuppressWarnings({ "java:S1142", "java:S3776", "UnstableApiUsage" })
         InetAddress getDefaultGateway() {
             // get line with default gateway address from "netstat"
             String line;

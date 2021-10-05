@@ -21,16 +21,10 @@
  */
 package org.drasyl.identity;
 
-import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import test.util.IdentityTestUtil;
 
-import java.io.IOException;
-
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -71,29 +65,6 @@ class ProofOfWorkTest {
             final ProofOfWork proof = ProofOfWork.of(1);
 
             assertEquals(ProofOfWork.of(2), proof.incNonce());
-        }
-    }
-
-    @Nested
-    class JsonDeserialization {
-        @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "123";
-
-            assertEquals(
-                    ProofOfWork.of(123),
-                    JACKSON_READER.readValue(json, ProofOfWork.class)
-            );
-        }
-    }
-
-    @Nested
-    class JsonSerialization {
-        @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            assertThatJson(JACKSON_WRITER.writeValueAsString(ProofOfWork.of(123)))
-                    .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo("123");
         }
     }
 

@@ -27,9 +27,9 @@ import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOnlineEvent;
-import org.drasyl.plugin.groups.manager.GroupsManagerConfig;
-import org.drasyl.plugin.groups.manager.GroupsManagerPlugin;
-import org.drasyl.plugin.groups.manager.data.Group;
+import org.drasyl.handler.plugin.groups.manager.GroupsManagerConfig;
+import org.drasyl.handler.plugin.groups.manager.GroupsManagerPlugin;
+import org.drasyl.handler.plugin.groups.manager.data.Group;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -39,7 +39,7 @@ import java.util.Set;
  * This example starts a drasyl node with activated {@link GroupsManagerPlugin} managing a single
  * group.
  */
-@SuppressWarnings({ "squid:S106", "java:S2096" })
+@SuppressWarnings({ "squid:S106", "java:S1845", "java:S2096" })
 public class GroupsManagerNode extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "groups-manager.identity.json");
     private final Group group;
