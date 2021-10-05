@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets;
 public final class Hashing {
     public static final HashFunction MURMUR3_128 = com.google.common.hash.Hashing.murmur3_128();
     public static final HashFunction SHA256 = com.google.common.hash.Hashing.sha256();
-    public static final HashFunction MURMUR3_32 = com.google.common.hash.Hashing.murmur3_32();
+    public static final HashFunction MURMUR3_32 = com.google.common.hash.Hashing.murmur3_32_fixed();
 
     private Hashing() {
         // util class
