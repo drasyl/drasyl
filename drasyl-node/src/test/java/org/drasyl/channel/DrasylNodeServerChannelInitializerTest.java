@@ -53,7 +53,7 @@ class DrasylNodeServerChannelInitializerTest {
             when(config.isRemoteExposeEnabled()).thenReturn(true);
             when(config.isRemoteTcpFallbackEnabled()).thenReturn(true);
             when(config.isRemoteLocalNetworkDiscoveryEnabled()).thenReturn(true);
-            when(config.isRemoteMessageArmEnabled()).thenReturn(true);
+            when(config.isRemoteMessageArmProtocolEnabled()).thenReturn(true);
             when(config.isRemoteLocalHostDiscoveryEnabled()).thenReturn(true);
             when(config.isIntraVmDiscoveryEnabled()).thenReturn(true);
 

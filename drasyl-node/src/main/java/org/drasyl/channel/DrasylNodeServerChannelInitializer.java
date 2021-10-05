@@ -166,12 +166,12 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.pipeline().addLast(new InvalidProofOfWorkFilter(identity.getAddress()));
 
         // arm outbound and disarm inbound messages
-        if (config.isRemoteMessageArmEnabled()) {
+        if (config.isRemoteMessageArmProtocolEnabled()) {
             ch.pipeline().addLast(new ProtocolArmHandler(
                     identity,
                     Crypto.INSTANCE,
-                    config.getRemoteMessageArmSessionMaxCount(),
-                    config.getRemoteMessageArmSessionExpireAfter()));
+                    config.getRemoteMessageArmProtocolSessionMaxCount(),
+                    config.getRemoteMessageArmProtocolSessionExpireAfter()));
         }
 
         // fully read unarmed messages (local network discovery)

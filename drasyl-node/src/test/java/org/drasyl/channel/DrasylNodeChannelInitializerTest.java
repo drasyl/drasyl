@@ -55,8 +55,8 @@ class DrasylNodeChannelInitializerTest {
             when(config.getRemoteMessageMtu()).thenReturn(1_000);
             when(config.getRemoteMessageMaxContentLength()).thenReturn(2_000);
             when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(ofSeconds(10));
-            when(config.isRemoteMessageArmEnabled()).thenReturn(true);
-            when(config.getRemoteMessageArmSessionMaxAgreements()).thenReturn(100);
+            when(config.isRemoteMessageArmApplicationEnabled()).thenReturn(true);
+            when(config.getRemoteMessageArmApplicationAgreementMaxCount()).thenReturn(100);
             when(ctx.channel()).thenReturn(channel);
             when(channel.localAddress0()).thenReturn(ID_1);
             when(channel.remoteAddress0()).thenReturn(ID_2.getIdentityPublicKey());
