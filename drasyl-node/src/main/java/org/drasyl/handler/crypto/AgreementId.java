@@ -31,7 +31,7 @@ import java.util.Objects;
 /**
  * This class represents an identifier for an {@link Agreement} between to nodes.
  */
-public class AgreementId {
+public final class AgreementId {
     public static final short ID_LENGTH = 4;
     private final ImmutableByteArray id;
 
