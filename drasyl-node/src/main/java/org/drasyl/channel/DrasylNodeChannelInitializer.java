@@ -105,15 +105,15 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
         );
 
         // arm outbound and disarm inbound messages
-        if (config.isRemoteMessageArmEnabled()) {
+        if (config.isRemoteMessageArmApplicationEnabled()) {
             ch.pipeline().addLast(ArmeHeaderCodec.INSTANCE);
             // PFS is enabled
-            if (config.getRemoteMessageArmSessionMaxAgreements() > 0) {
+            if (config.getRemoteMessageArmApplicationAgreementMaxCount() > 0) {
                 ch.pipeline().addLast(new PFSArmHandler(
                         Crypto.INSTANCE,
-                        config.getRemoteMessageArmSessionExpireAfter(),
-                        config.getRemoteMessageArmSessionRetryInterval(),
-                        config.getRemoteMessageArmSessionMaxAgreements(),
+                        config.getRemoteMessageArmApplicationAgreementExpireAfter(),
+                        config.getRemoteMessageArmApplicationAgreementRetryInterval(),
+                        config.getRemoteMessageArmApplicationAgreementMaxCount(),
                         (Identity) ch.localAddress0(),
                         (IdentityPublicKey) ch.remoteAddress0()
                 ));
@@ -121,8 +121,8 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
             else {
                 ch.pipeline().addLast(new LongTimeArmHandler(
                         Crypto.INSTANCE,
-                        config.getRemoteMessageArmSessionExpireAfter(),
-                        config.getRemoteMessageArmSessionMaxAgreements(),
+                        config.getRemoteMessageArmApplicationAgreementExpireAfter(),
+                        config.getRemoteMessageArmApplicationAgreementMaxCount(),
                         (Identity) ch.localAddress0(),
                         (IdentityPublicKey) ch.remoteAddress0()
                 ));
