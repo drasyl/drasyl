@@ -131,6 +131,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                 && sender.getPort() == SSDP_MULTICAST_ADDRESS.getPort();
     }
 
+    @SuppressWarnings("java:S134")
     @Override
     public void handleMessage(final ChannelHandlerContext ctx,
                               final InetSocketAddress sender,
