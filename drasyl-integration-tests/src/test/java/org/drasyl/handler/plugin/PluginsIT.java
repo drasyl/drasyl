@@ -67,6 +67,7 @@ class PluginsIT {
                 .remoteExposeEnabled(false)
                 .remoteSuperPeerEnabled(false)
                 .remoteBindPort(0)
+                .remoteTcpFallbackEnabled(false)
                 .build();
 
         node = new EmbeddedNode(config);
