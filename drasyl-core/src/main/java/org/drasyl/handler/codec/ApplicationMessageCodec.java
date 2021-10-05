@@ -34,7 +34,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This codec converts {@link ApplicationMessage}s to {@link ByteBuf}s and vice vera.
+ * This codec converts {@link ApplicationMessage}s to {@link ByteBuf}s and vice versa.
  */
 public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMessage<ApplicationMessage, ?>, AddressedMessage<ByteBuf, IdentityPublicKey>> {
     private final int networkId;
