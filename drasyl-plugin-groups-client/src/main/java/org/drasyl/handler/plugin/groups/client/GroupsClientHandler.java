@@ -58,6 +58,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
     private static final Duration RETRY_DELAY = Duration.ofSeconds(10);
     private static final Duration FIRST_JOIN_DELAY = Duration.ofSeconds(5);
+    private static final int HALF = 2;
     private final Duration firstJoinDelay;
     private final Map<Group, GroupUri> groups;
     private final Map<Group, Future<?>> renewTasks;
@@ -214,7 +215,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
 
         // Add renew task
         renewTasks.put(group, ctx.executor().scheduleWithFixedDelay(() ->
-                joinGroup(ctx, groups.get(group), true), timeout.dividedBy(2).toMillis(), timeout.dividedBy(2).toMillis(), MILLISECONDS));
+                joinGroup(ctx, groups.get(group), true), timeout.dividedBy(HALF).toMillis(), timeout.dividedBy(HALF).toMillis(), MILLISECONDS));
 
         ctx.fireUserEventTriggered(GroupJoinedEvent.of(
                 group,

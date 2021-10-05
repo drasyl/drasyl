@@ -41,7 +41,7 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * <b>This class should only plugin internally used.</b>
  * </p>
  */
-public class Group {
+public final class Group {
     public static final Duration GROUP_MIN_TIMEOUT = ofSeconds(60);
     public static final Duration GROUP_DEFAULT_TIMEOUT = GROUP_MIN_TIMEOUT;
     public static final byte GROUP_DEFAULT_MIN_DIFFICULTY = (byte) 0;

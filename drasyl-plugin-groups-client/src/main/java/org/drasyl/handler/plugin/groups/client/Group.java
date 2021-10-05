@@ -31,7 +31,7 @@ import java.util.Objects;
  * <p>
  * This is an immutable object.
  */
-public class Group {
+public final class Group {
     private final String name;
 
     private Group(final String name) {

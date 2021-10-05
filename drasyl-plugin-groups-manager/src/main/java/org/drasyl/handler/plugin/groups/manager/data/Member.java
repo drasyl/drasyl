@@ -32,7 +32,7 @@ import java.util.Objects;
  * <b>This class should only plugin internally used.</b>
  * </p>
  */
-public class Member {
+public final class Member {
     private final IdentityPublicKey publicKey;
 
     private Member(final IdentityPublicKey publicKey) {
