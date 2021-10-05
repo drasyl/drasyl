@@ -32,7 +32,7 @@ import java.util.List;
  * <a href="https://en.wikipedia.org/wiki/Dining_philosophers_problem">dining philosophers
  * problem</a>.
  * <p>
- * Adapted from: <a href="https://developer.lightbend.com/start/?group=akka&project=akka-samples-fsm-java">Akka</a>
+ * Adapted from: <a href="https://developer.lightbend.com/start/?group=akka&amp;project=akka-samples-fsm-java">Akka</a>
  */
 @SuppressWarnings({ "java:S106", "java:S2096" })
 public class DiningPhilosophers {

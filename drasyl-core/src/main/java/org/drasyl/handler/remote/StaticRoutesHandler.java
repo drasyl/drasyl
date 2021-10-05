@@ -38,8 +38,7 @@ import java.util.Map;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This handler uses preconfigured static routes ({@link org.drasyl.DrasylConfig#getStaticRoutes(com.typesafe.config.Config,
- * String)}) to deliver messages.
+ * This handler uses preconfigured static routes to deliver messages.
  */
 public final class StaticRoutesHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);

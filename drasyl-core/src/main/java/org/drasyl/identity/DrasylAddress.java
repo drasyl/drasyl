@@ -24,8 +24,7 @@ package org.drasyl.identity;
 import java.net.SocketAddress;
 
 /**
- * Models the address to a {@link DrasylNode} in the overlay. The address is used to send overlay
- * messages to.
+ * Models the address to a peer in the overlay. The address is used to send overlay messages to.
  */
 @SuppressWarnings("java:S118")
 public abstract class DrasylAddress extends SocketAddress {

@@ -58,8 +58,8 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * network. In case no {@link DiscoveryMessage} has been received for a longer period of time, the
  * other node is considered stale.
  * <p>
- * In addition, this handler periodically sends a {@link Discovery} messages to a multicast group so
- * that other nodes become aware of this node.
+ * In addition, this handler periodically sends a {@link DiscoveryMessage} messages to a multicast
+ * group so that other nodes become aware of this node.
  *
  * @see UdpMulticastServer
  */

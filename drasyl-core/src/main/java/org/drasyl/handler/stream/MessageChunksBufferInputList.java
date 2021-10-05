@@ -35,8 +35,6 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * <p>
  * Beware: Only {@link #size()}, {@link #isEmpty()}, {@link #iterator()}, {@link #toArray()}, {@link
  * #clear()}, {@link #get(int)}, and {@link #set(int, Object)} are implemented.
- *
- * @param <T> the type of the elements in this list
  */
 public class MessageChunksBufferInputList implements List<MessageChunk> {
     private MessageChunk[] array;
@@ -57,7 +55,7 @@ public class MessageChunksBufferInputList implements List<MessageChunk> {
     }
 
     @Override
-    public boolean contains(Object o) {
+    public boolean contains(final Object o) {
         throw new UnsupportedOperationException();
     }
 
@@ -69,7 +67,7 @@ public class MessageChunksBufferInputList implements List<MessageChunk> {
     @SuppressWarnings("java:S881")
     @Override
     public Object[] toArray() {
-        Object[] elements = new Object[size];
+        final Object[] elements = new Object[size];
         int j = 0;
         for (int i = 0; i < size; i++) {
             if (array[i] != null) {
@@ -81,42 +79,42 @@ public class MessageChunksBufferInputList implements List<MessageChunk> {
     }
 
     @Override
-    public <T> T[] toArray(T[] a) {
+    public <T> T[] toArray(final T[] a) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean add(MessageChunk e) {
+    public boolean add(final MessageChunk e) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean remove(Object o) {
+    public boolean remove(final Object o) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean containsAll(Collection<?> c) {
+    public boolean containsAll(final Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean addAll(Collection<? extends MessageChunk> c) {
+    public boolean addAll(final Collection<? extends MessageChunk> c) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean addAll(int index, Collection<? extends MessageChunk> c) {
+    public boolean addAll(final int index, final Collection<? extends MessageChunk> c) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean removeAll(Collection<?> c) {
+    public boolean removeAll(final Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean retainAll(Collection<?> c) {
+    public boolean retainAll(final Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
@@ -127,12 +125,12 @@ public class MessageChunksBufferInputList implements List<MessageChunk> {
     }
 
     @Override
-    public MessageChunk get(int index) {
+    public MessageChunk get(final int index) {
         return array[index];
     }
 
     @Override
-    public MessageChunk set(int index, MessageChunk element) {
+    public MessageChunk set(final int index, final MessageChunk element) {
         final MessageChunk prevElement = array[index];
         if (prevElement == null) {
             size++;
@@ -142,22 +140,22 @@ public class MessageChunksBufferInputList implements List<MessageChunk> {
     }
 
     @Override
-    public void add(int index, MessageChunk element) {
+    public void add(final int index, final MessageChunk element) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MessageChunk remove(int index) {
+    public MessageChunk remove(final int index) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int indexOf(Object o) {
+    public int indexOf(final Object o) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int lastIndexOf(Object o) {
+    public int lastIndexOf(final Object o) {
         throw new UnsupportedOperationException();
     }
 
@@ -167,12 +165,12 @@ public class MessageChunksBufferInputList implements List<MessageChunk> {
     }
 
     @Override
-    public ListIterator<MessageChunk> listIterator(int index) {
+    public ListIterator<MessageChunk> listIterator(final int index) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<MessageChunk> subList(int fromIndex, int toIndex) {
+    public List<MessageChunk> subList(final int fromIndex, final int toIndex) {
         throw new UnsupportedOperationException();
     }
 }
