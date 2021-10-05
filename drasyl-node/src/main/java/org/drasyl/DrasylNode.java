@@ -180,7 +180,9 @@ public abstract class DrasylNode {
      * Returns the version of the node. If the version could not be read, {@code null} is returned.
      *
      * @return the version of the node. If the version could not be read, {@code null} is returned
+     * @deprecated Use {@code Version.identify().get("drasyl-core").version()} instead.
      */
+    @Deprecated(since = "0.6.0", forRemoval = true)
     @SuppressWarnings("java:S2444")
     @Nullable
     public static String getVersion() {
