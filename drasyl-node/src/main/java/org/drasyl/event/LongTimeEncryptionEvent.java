@@ -31,7 +31,7 @@ import com.google.auto.value.AutoValue;
  * PerfectForwardSecrecyEncryptionEvent} is fired.
  */
 @AutoValue
-@SuppressWarnings("java:S118")
+@SuppressWarnings({ "java:S118", "java:S1118" })
 public abstract class LongTimeEncryptionEvent implements PeerEvent {
     /**
      * @param peer the affected peer

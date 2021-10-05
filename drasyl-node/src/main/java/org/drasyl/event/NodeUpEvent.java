@@ -33,7 +33,7 @@ import com.google.auto.value.AutoValue;
  * @see NodeUnrecoverableErrorEvent
  */
 @AutoValue
-@SuppressWarnings("java:S118")
+@SuppressWarnings({ "java:S118", "java:S1118" })
 public abstract class NodeUpEvent implements NodeEvent {
     /**
      * @throws NullPointerException if {@code node} is {@code null}

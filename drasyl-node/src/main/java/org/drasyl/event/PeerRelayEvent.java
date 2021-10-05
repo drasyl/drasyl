@@ -35,7 +35,7 @@ import com.google.auto.value.AutoValue;
  * @see NodeOfflineEvent
  */
 @AutoValue
-@SuppressWarnings("java:S118")
+@SuppressWarnings({ "java:S118", "java:S1118" })
 public abstract class PeerRelayEvent implements PeerEvent {
     /**
      * @throws NullPointerException if {@code peer} is {@code null}

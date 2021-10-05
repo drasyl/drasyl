@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.monitoring;
+package org.drasyl.handler;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
