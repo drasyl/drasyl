@@ -190,6 +190,15 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             postDisposable.cancel(false);
         }
 
+        if (watchService != null) {
+            try {
+                watchService.close();
+            }
+            catch (final IOException e) {
+                LOG.warn("Unable to close the watch service:", e);
+            }
+        }
+
         final Path filePath = discoveryPath().resolve(myAddress.toString() + FILE_SUFFIX);
         try {
             Files.deleteIfExists(filePath);
