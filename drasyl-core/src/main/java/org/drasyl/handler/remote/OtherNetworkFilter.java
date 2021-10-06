@@ -61,7 +61,7 @@ public final class OtherNetworkFilter extends SimpleChannelInboundHandler<Addres
      */
     public static class OtherNetworkException extends Exception {
         public OtherNetworkException(final RemoteMessage msg) {
-            super("Message `" + msg.getNonce() + "` from other network dropped.");
+            super("Message `" + msg.getNonce() + "` from other network `" + msg.getNetworkId() + "` dropped.");
         }
     }
 }
