@@ -72,7 +72,7 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
 
     @Override
     public UniteMessage incrementHopCount() {
-        return UniteMessage.of(getHopCount().increment(), false, getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getPublicKey(), getAddress(), getPort());
+        return UniteMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getPublicKey(), getAddress(), getPort());
     }
 
     @Override

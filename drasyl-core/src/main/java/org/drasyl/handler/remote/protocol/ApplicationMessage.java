@@ -55,7 +55,7 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
      */
     @Override
     public ApplicationMessage incrementHopCount() {
-        return ApplicationMessage.of(getHopCount().increment(), false, getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getPayload());
+        return ApplicationMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getPayload());
     }
 
     @Override

@@ -63,7 +63,7 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
 
     @Override
     public DiscoveryMessage incrementHopCount() {
-        return DiscoveryMessage.of(getHopCount().increment(), false, getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime());
+        return DiscoveryMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime());
     }
 
     @Override
