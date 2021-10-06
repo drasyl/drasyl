@@ -74,6 +74,8 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
         node.channels.add(ch);
 
         idleStage(ch);
+        chunkingStage(ch);
+        armStage(ch);
         serializationStage(ch);
         nodeEventStage(ch);
     }
@@ -89,10 +91,10 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     }
 
     /**
-     * This stage serializes {@link java.util.Objects} to {@link io.netty.buffer.ByteBuf} and vice
-     * vera.
+     * This stages plits {@link io.netty.buffer.ByteBuf}s that are too big for a single udp
+     * datagram.
      */
-    protected void serializationStage(final DrasylChannel ch) throws CryptoException {
+    protected void chunkingStage(final DrasylChannel ch) {
         // split ByteBufs that are too big for a single udp datagram
         ch.pipeline().addLast(
                 MessageChunkEncoder.INSTANCE,
@@ -103,7 +105,12 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
                 new ChunkedMessageAggregator(this.config.getRemoteMessageMaxContentLength()),
                 ReassembledMessageDecoder.INSTANCE
         );
+    }
 
+    /**
+     * This stage arms outbound and disarms inbound messages.
+     */
+    private void armStage(final DrasylChannel ch) throws CryptoException {
         // arm outbound and disarm inbound messages
         if (config.isRemoteMessageArmApplicationEnabled()) {
             ch.pipeline().addLast(ArmeHeaderCodec.INSTANCE);
@@ -128,8 +135,13 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
                 ));
             }
         }
+    }
 
-        // convert Object <-> ByteBuf
+    /**
+     * This stage serializes {@link java.util.Objects} to {@link io.netty.buffer.ByteBuf} and vice
+     * versa.
+     */
+    protected void serializationStage(final DrasylChannel ch) {
         ch.pipeline().addLast(new MessageSerializer(config));
     }
 
