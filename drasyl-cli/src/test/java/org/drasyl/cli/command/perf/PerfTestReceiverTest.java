@@ -152,7 +152,7 @@ class PerfTestReceiverTest {
             assertThat(output, containsString("0/1 (0.00%)"));
             assertThat(output, containsString("Sender:"));
             assertThat(output, containsString("Receiver:"));
-            assertThat(output, containsString("64 B"));
+            assertThat(output, containsString("48 B"));
             assertThat(output, containsString("1/4 (25.00%)"));
         }
 
