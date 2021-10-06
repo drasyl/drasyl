@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * This codec converts with <a href="https://github.com/FasterXML/jackson">Jackson</a> messages of
- * type {@code T} to {@link ByteBuf}s and vice vera.
+ * type {@code T} to {@link ByteBuf}s and vice versa.
  * <p>
  * Make sure to declare the following dependency in your software when using this handler:
  * <blockquote>

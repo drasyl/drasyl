@@ -37,7 +37,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.Null.NULL;
 
 /**
- * This handler serializes messages to {@link ByteBuf} and vice vera.
+ * This handler serializes messages to {@link ByteBuf} and vice versa.
  */
 @SuppressWarnings({ "java:S110" })
 public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Object> {

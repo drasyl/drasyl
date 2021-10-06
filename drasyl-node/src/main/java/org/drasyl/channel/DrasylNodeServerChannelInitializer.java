@@ -149,7 +149,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
     /**
      * This stage serializes {@link RemoteMessage} to {@link io.netty.buffer.ByteBuf} and vice
-     * vera.
+     * versa.
      */
     @SuppressWarnings("java:S2325")
     private void serializationStage(final DrasylServerChannel ch) {
