@@ -33,7 +33,7 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.InboundExceptionEvent;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.handler.crypto.ArmeHeaderCodec;
+import org.drasyl.handler.crypto.ArmHeaderCodec;
 import org.drasyl.handler.crypto.LongTimeArmHandler;
 import org.drasyl.handler.crypto.PFSArmHandler;
 import org.drasyl.handler.serialization.MessageSerializer;
@@ -113,7 +113,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     private void armStage(final DrasylChannel ch) throws CryptoException {
         // arm outbound and disarm inbound messages
         if (config.isRemoteMessageArmApplicationEnabled()) {
-            ch.pipeline().addLast(ArmeHeaderCodec.INSTANCE);
+            ch.pipeline().addLast(ArmHeaderCodec.INSTANCE);
             // PFS is enabled
             if (config.getRemoteMessageArmApplicationAgreementMaxCount() > 0) {
                 ch.pipeline().addLast(new PFSArmHandler(

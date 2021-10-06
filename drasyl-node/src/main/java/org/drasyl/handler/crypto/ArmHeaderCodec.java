@@ -32,8 +32,8 @@ import org.drasyl.handler.remote.protocol.Nonce;
 import java.util.List;
 
 @ChannelHandler.Sharable
-public class ArmeHeaderCodec extends MessageToMessageCodec<ByteBuf, ArmHeader> {
-    public static final ArmeHeaderCodec INSTANCE = new ArmeHeaderCodec();
+public class ArmHeaderCodec extends MessageToMessageCodec<ByteBuf, ArmHeader> {
+    public static final ArmHeaderCodec INSTANCE = new ArmHeaderCodec();
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
