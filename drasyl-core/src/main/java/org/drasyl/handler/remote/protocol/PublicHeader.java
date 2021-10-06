@@ -33,7 +33,6 @@ import org.drasyl.identity.ProofOfWork;
  * This class models the public header of a drasyl protocol message. The header is structured as
  * follows:
  * <ul>
- * <li><b>MagicNumber</b>: The 4 bytes magic number value. Is a static value for all messages. Used to filter unrelated messages.</li>
  * <li><b>Armed</b>: The 1 byte armed value. Indicates, if the message is armed or not.</li>
  * <li><b>HopCount</b>: The 1 byte hop count value. Is incremented on each hop. Used to avoid loops.</li>
  * <li><b>NetworkId</b>: The 4 bytes network id value. Is a unique network-wide value. Used to filter messages from other networks.</li>
@@ -44,7 +43,7 @@ import org.drasyl.identity.ProofOfWork;
  * </ul>
  * The public header is only authenticated and protected at the 5th byte. The magic number, and hop count are not protected. This allows us to update the hop count in-place.
  */
-@SuppressWarnings({ "java:S2047", "java:S2301" })
+@SuppressWarnings({ "java:S118", "java:S2047", "java:S2301" })
 @AutoValue
 public abstract class PublicHeader {
     public static final int LENGTH = 98;

@@ -27,6 +27,27 @@ import org.drasyl.identity.ProofOfWork;
 
 /**
  * Describes a message that is sent to remote peers via UDP/TCP.
+ * <p>
+ * Each message is made up of several parts:
+ * <ul>
+ *     <li>A fixed-length magic number used to identity if message belongs to the drasyl protocol.</li>
+ *     <li>A fixed-length public header with partly authenticated information required for routing the message to its destination.</li>
+ *     <li>An armed-dependent fixed-length private header with encrypted information only readable by the recipient.</li>
+ *     <li>A variable-length body with message type specific (encrypted) information.</li>
+ * </ul>
+ * <pre>
+ *     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *     |               Magic Number (4 Bytes)                |
+ *     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *     |      {@link PublicHeader} ({@link PublicHeader#LENGTH} Bytes)       |
+ *     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *     |       {@link PrivateHeader} ({@link PrivateHeader#LENGTH} or        |
+ *     |          {@link PrivateHeader#ARMED_LENGTH} Bytes)          |
+ *     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *     /     Body ({@link DiscoveryMessage}, {@link ApplicationMessage},     /
+ *     \      {@link AcknowledgementMessage}, or {@link UniteMessage})       \
+ *     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * </pre>
  */
 @SuppressWarnings("java:S2047")
 public interface RemoteMessage {

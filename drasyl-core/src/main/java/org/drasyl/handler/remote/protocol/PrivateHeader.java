@@ -25,6 +25,8 @@ import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.util.UnsignedShort;
 
+import static org.drasyl.handler.remote.protocol.ArmedProtocolMessage.ARMED_HEADER_LENGTH;
+
 /**
  * This class models the private header of a drasyl protocol message. If the {@link
  * PublicHeader#getArmed()} flag is set, this header is fully encrypted. The header is structured as
@@ -34,10 +36,11 @@ import org.drasyl.util.UnsignedShort;
  * <li><b>ArmedLength</b>: The 2 bytes armed length value. Indicates, the length of the encrypted portion of the message without AEAD tag.</li>
  * </ul>
  */
-@SuppressWarnings({ "java:S109", "java:S1142" })
+@SuppressWarnings({ "java:S109", "java:S118", "java:S1142" })
 @AutoValue
 public abstract class PrivateHeader {
     public static final int LENGTH = 3;
+    public static final int ARMED_LENGTH = LENGTH + ARMED_HEADER_LENGTH;
 
     /**
      * @return the message type

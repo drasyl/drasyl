@@ -51,6 +51,10 @@ import static org.drasyl.cli.command.perf.message.TestResults.MICROSECONDS;
  * @see PerfTestReceiver
  */
 public class PerfTestSender {
+    // Probe: 16 bytes
+    // PublicHeader: 98 bytes + 4 bytes MagicNumber
+    // PrivateHeader: 3 byte + 16 bytes MAC
+    public static final int PROTOCOL_OVERHEAD = 137;
     public static final Duration SESSION_PROGRESS_INTERVAL = ofSeconds(1);
     /**
      * Is used to identity probe messages. probe messages are used for actual performance
@@ -116,7 +120,7 @@ public class PerfTestSender {
     }
 
     private void sendProbes(final Behaviors.EventScheduler eventScheduler) {
-        final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
+        final byte[] probePayload = RandomUtil.randomBytes(session.getSize() - PROTOCOL_OVERHEAD);
         final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
         final long startTime = currentTimeSupplier.getAsLong();
         final TestResults totalResults = new TestResults(messageSize, startTime, startTime);

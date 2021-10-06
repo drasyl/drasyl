@@ -47,6 +47,9 @@ import java.io.IOException;
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class ArmedProtocolMessage implements PartialReadMessage {
+    // authentication header is 16 bytes long
+    public static final int ARMED_HEADER_LENGTH = 16;
+
     @Override
     public void close() {
         release();
