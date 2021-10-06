@@ -144,17 +144,18 @@ public class TestResults implements PerfMessage {
         final double relativeIntervalStopTime = ((double) stopTime - testStartTime) / MICROSECONDS;
         final double intervalDuration = relativeIntervalStopTime - relativeIntervalStartTime;
         final long currentTotalMessages = totalMessages.sum();
-        final String transfer = numberToHumanData(currentTotalMessages * messageSize);
-        final String bitrate = numberToHumanDataRate(currentTotalMessages * messageSize * 8 * (1 / intervalDuration));
+        final long currentLostMessages = lostMessages.sum();
+        final String transfer = numberToHumanData((currentTotalMessages - currentLostMessages) * messageSize);
+        final String bitrate = numberToHumanDataRate((currentTotalMessages - currentLostMessages) * messageSize * 8 * (1 / intervalDuration));
         final double lostPercent;
         if (currentTotalMessages > 0) {
-            lostPercent = (double) lostMessages.sum() / currentTotalMessages / PERCENT;
+            lostPercent = (double) currentLostMessages / currentTotalMessages / PERCENT;
         }
         else {
             lostPercent = 0;
         }
 
-        String result = String.format((Locale) null, "%,6.2f - %,6.2f sec      %7s      %10s      %19s", relativeIntervalStartTime, relativeIntervalStopTime, transfer, bitrate, String.format((Locale) null, "%d/%d (%.2f%%)", lostMessages.sum(), totalMessages.sum(), lostPercent));
+        String result = String.format((Locale) null, "%,6.2f - %,6.2f sec      %7s      %10s      %19s", relativeIntervalStartTime, relativeIntervalStopTime, transfer, bitrate, String.format((Locale) null, "%d/%d (%.2f%%)", currentLostMessages, totalMessages.sum(), lostPercent));
         if (getOutOfOrderMessages() > 0) {
             result += String.format((Locale) null, "%n  %5d messages received out-of-order", getOutOfOrderMessages());
         }
