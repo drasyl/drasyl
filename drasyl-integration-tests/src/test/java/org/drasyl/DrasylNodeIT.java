@@ -66,7 +66,6 @@ import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -205,54 +204,27 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                //
-                // send messages
-                //
-                final Set<String> identities = Set.of(ID_1.getIdentityPublicKey().toString(),
-                        ID_2.getIdentityPublicKey().toString(),
-                        ID_3.getIdentityPublicKey().toString());
-                for (final String recipient : identities) {
-                    superPeer.send(recipient, "Hallo Welt");
-                    client1.send(recipient, "Hallo Welt");
-                    client2.send(recipient, "Hallo Welt");
-                }
+                assertMessageDelivery(superPeer, superPeer, "Hallo Welt");
+                assertMessageDelivery(client1, client1, "Hallo Welt");
+                assertMessageDelivery(client2, client2, "Hallo Welt");
 
-                //
-                // verify
-                //
-                for (int i = 0; i < 3; i++) {
-                    await().untilAsserted(() -> assertMessagePayload(superPeer.readEvent(), "Hallo Welt"));
-                    await().untilAsserted(() -> assertMessagePayload(client1.readEvent(), "Hallo Welt"));
-                    await().untilAsserted(() -> assertMessagePayload(client2.readEvent(), "Hallo Welt"));
-                }
+                assertBidirectionalMessageDelivery(superPeer, client1, "Hallo Welt");
+                assertBidirectionalMessageDelivery(superPeer, client2, "Hallo Welt");
+                assertBidirectionalMessageDelivery(client1, client2, "Hallo Welt");
             }
 
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesExceedingMtuShouldBeDelivered() {
-                //
-                // send messages
-                //
                 final byte[] payload = randomBytes(MESSAGE_MTU);
-                final Set<String> identities = Set.of(
-                        ID_1.getIdentityPublicKey().toString(),
-                        ID_2.getIdentityPublicKey().toString(),
-                        ID_3.getIdentityPublicKey().toString()
-                );
-                for (final String recipient : identities) {
-                    superPeer.send(recipient, payload);
-                    client1.send(recipient, payload);
-                    client2.send(recipient, payload);
-                }
 
-                //
-                // verify
-                //
-                for (int i = 0; i < 3; i++) {
-                    await().untilAsserted(() -> assertMessagePayload(superPeer.readEvent(), payload));
-                    await().untilAsserted(() -> assertMessagePayload(client1.readEvent(), payload));
-                    await().untilAsserted(() -> assertMessagePayload(client2.readEvent(), payload));
-                }
+                assertMessageDelivery(superPeer, superPeer, payload);
+                assertMessageDelivery(client1, client1, payload);
+                assertMessageDelivery(client2, client2, payload);
+
+                assertBidirectionalMessageDelivery(superPeer, client1, payload);
+                assertBidirectionalMessageDelivery(superPeer, client2, payload);
+                assertBidirectionalMessageDelivery(client1, client2, payload);
             }
 
             /**
@@ -370,44 +342,19 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
-                //
-                // send messages
-                //
-                node1.send(ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), new byte[]{
+                assertBidirectionalMessageDelivery(node1, node2, true);
+                assertBidirectionalMessageDelivery(node1, node2, (byte) 23);
+                assertBidirectionalMessageDelivery(node1, node2, 'C');
+                assertBidirectionalMessageDelivery(node1, node2, 3.141F);
+                assertBidirectionalMessageDelivery(node1, node2, 1337);
+                assertBidirectionalMessageDelivery(node1, node2, 9001L);
+                assertBidirectionalMessageDelivery(node1, node2, (short) 42);
+                assertBidirectionalMessageDelivery(node1, node2, new byte[]{
                         (byte) 0,
                         (byte) 1
-                }).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
-
-                node2.send(ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), new byte[]{
-                        (byte) 0,
-                        (byte) 1
-                }).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
-
-                //
-                // verify
-                //
-                for (int i = 0; i < 10; i++) {
-                    await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(MessageEvent.class)));
-                    await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(MessageEvent.class)));
-                }
+                });
+                assertBidirectionalMessageDelivery(node1, node2, "String");
+                assertBidirectionalMessageDelivery(node1, node2, null);
             }
         }
 
@@ -488,44 +435,19 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
-                //
-                // send messages
-                //
-                node1.send(ID_2.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), new byte[]{
+                assertBidirectionalMessageDelivery(node1, node2, true);
+                assertBidirectionalMessageDelivery(node1, node2, (byte) 23);
+                assertBidirectionalMessageDelivery(node1, node2, 'C');
+                assertBidirectionalMessageDelivery(node1, node2, 3.141F);
+                assertBidirectionalMessageDelivery(node1, node2, 1337);
+                assertBidirectionalMessageDelivery(node1, node2, 9001L);
+                assertBidirectionalMessageDelivery(node1, node2, (short) 42);
+                assertBidirectionalMessageDelivery(node1, node2, new byte[]{
                         (byte) 0,
                         (byte) 1
-                }).toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), "String").toCompletableFuture().get();
-                node1.send(ID_2.getIdentityPublicKey(), null).toCompletableFuture().get();
-
-                node2.send(ID_1.getIdentityPublicKey(), true).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), (byte) 23).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), 'C').toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), 3.141F).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), 1337).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), 9001L).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), (short) 42).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), new byte[]{
-                        (byte) 0,
-                        (byte) 1
-                }).toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), "String").toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), null).toCompletableFuture().get();
-
-                //
-                // verify
-                //
-                for (int i = 0; i < 10; i++) {
-                    await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(MessageEvent.class)));
-                    await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(MessageEvent.class)));
-                }
+                });
+                assertBidirectionalMessageDelivery(node1, node2, "String");
+                assertBidirectionalMessageDelivery(node1, node2, null);
             }
         }
 
@@ -737,29 +659,12 @@ class DrasylNodeIT {
                     assertThat(node4.readEvent(), instanceOf(PeerDirectEvent.class));
                 }
 
-                //
-                // send messages
-                //
-                final Set<String> identities = Set.of(ID_1.getIdentityPublicKey().toString(),
-                        ID_2.getIdentityPublicKey().toString(),
-                        ID_3.getIdentityPublicKey().toString(),
-                        IdentityTestUtil.ID_4.getIdentityPublicKey().toString());
-                for (final String recipient : identities) {
-                    node1.send(recipient, "Hallo Welt");
-                    node2.send(recipient, "Hallo Welt");
-                    node3.send(recipient, "Hallo Welt");
-                    node4.send(recipient, "Hallo Welt");
-                }
-
-                //
-                // verify
-                //
-                for (int i = 0; i < 4; i++) {
-                    await().untilAsserted(() -> assertMessagePayload(node1.readEvent(), "Hallo Welt"));
-                    await().untilAsserted(() -> assertMessagePayload(node2.readEvent(), "Hallo Welt"));
-                    await().untilAsserted(() -> assertMessagePayload(node3.readEvent(), "Hallo Welt"));
-                    await().untilAsserted(() -> assertMessagePayload(node4.readEvent(), "Hallo Welt"));
-                }
+                assertBidirectionalMessageDelivery(node1, node2, "Hallo Welt");
+                assertBidirectionalMessageDelivery(node1, node3, "Hallo Welt");
+                assertBidirectionalMessageDelivery(node1, node4, "Hallo Welt");
+                assertBidirectionalMessageDelivery(node2, node3, "Hallo Welt");
+                assertBidirectionalMessageDelivery(node2, node4, "Hallo Welt");
+                assertBidirectionalMessageDelivery(node3, node4, "Hallo Welt");
             }
 
             /**
@@ -868,17 +773,7 @@ class DrasylNodeIT {
                 await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
                 await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
 
-                //
-                // send messages
-                //
-                node1.send(ID_2.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
-                node2.send(ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
-
-                //
-                // verify
-                //
-                await().untilAsserted(() -> assertEquals(MessageEvent.of(ID_2.getIdentityPublicKey(), "Hallo Welt"), node1.readEvent()));
-                await().untilAsserted(() -> assertEquals(MessageEvent.of(ID_1.getIdentityPublicKey(), "Hallo Welt"), node2.readEvent()));
+                assertBidirectionalMessageDelivery(node1, node2, "Hallo Welt");
             }
         }
     }
@@ -930,9 +825,7 @@ class DrasylNodeIT {
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
         void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
-            node.send(ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get();
-
-            assertEquals(MessageEvent.of(ID_1.getIdentityPublicKey(), "Hallo Welt"), node.readEvent());
+            assertMessageDelivery(node, node, "Hallo Welt");
         }
     }
 
@@ -974,7 +867,7 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void sendToSelfShouldThrowException() {
-                assertThrows(ExecutionException.class, () -> node.send(ID_1.getIdentityPublicKey(), "Hallo Welt").toCompletableFuture().get());
+                assertThrows(ExecutionException.class, () -> node.send(node.identity().getAddress(), "Hallo Welt").toCompletableFuture().get());
             }
 
             @Test
@@ -1024,10 +917,23 @@ class DrasylNodeIT {
         }
     }
 
-    private void assertMessagePayload(final Event event, final Object expected) {
-        assertNotNull(event);
-        assertThat(event, instanceOf(MessageEvent.class));
-        final Object actual = ((MessageEvent) event).getPayload();
-        assertTrue(Objects.deepEquals(expected, actual), String.format("expected: <%s> but was: <%s>", expected, actual));
+    private void assertMessageDelivery(final EmbeddedNode sender,
+                                       final EmbeddedNode recipient,
+                                       final Object msg) {
+        sender.send(recipient.identity().getAddress(), msg).toCompletableFuture().join();
+        await().untilAsserted(() -> {
+            final Event event = recipient.readEvent();
+            assertNotNull(event, String.format("expected message from <%s> to <%s> with payload <%s>", sender, recipient, msg));
+            assertThat(event, instanceOf(MessageEvent.class));
+            final Object actual = ((MessageEvent) event).getPayload();
+            assertTrue(Objects.deepEquals(msg, actual), String.format("expected: <%s> but was: <%s>", msg, actual));
+        });
+    }
+
+    private void assertBidirectionalMessageDelivery(final EmbeddedNode alice,
+                                                    final EmbeddedNode bob,
+                                                    final Object msg) {
+        assertMessageDelivery(alice, bob, msg);
+        assertMessageDelivery(bob, alice, msg);
     }
 }

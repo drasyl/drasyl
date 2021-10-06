@@ -137,4 +137,9 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
         }
         return event;
     }
+
+    @Override
+    public String toString() {
+        return identity.getAddress().toString();
+    }
 }
