@@ -149,11 +149,14 @@ public class PerfCommand extends AbstractCommand {
 
             // wait for node to finish
             ((PerfServerNode) node).doneFuture().get();
+            node.shutdown().join();
         }
         catch (final DrasylException e) {
             throw new CliException("Unable to create/run perf server node.", e);
         }
         catch (final InterruptedException e) {
+            LOG.info("Shutdown perf server node.");
+            node.shutdown().join();
             Thread.currentThread().interrupt();
         }
         catch (final ExecutionException e) {
@@ -167,6 +170,13 @@ public class PerfCommand extends AbstractCommand {
     }
 
     private void client(final CommandLine cmd) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (node != null) {
+                LOG.info("Shutdown perf client node.");
+                node.shutdown().join();
+            }
+        }));
+
         try {
             // prepare node
             node = clientNodeSupplier.apply(getDrasylConfig(cmd), out);
@@ -211,6 +221,7 @@ public class PerfCommand extends AbstractCommand {
 
             // wait for node to finish
             ((PerfClientNode) node).doneFuture().get();
+            node.shutdown().join();
         }
         catch (final IllegalArgumentException e) {
             throw new CliException("Invalid server address supplied", e);
@@ -222,6 +233,8 @@ public class PerfCommand extends AbstractCommand {
             throw new CliException("Unable to parse options", e);
         }
         catch (final InterruptedException e) {
+            LOG.info("Shutdown perf client node.");
+            node.shutdown().join();
             Thread.currentThread().interrupt();
         }
         catch (final ExecutionException e) {

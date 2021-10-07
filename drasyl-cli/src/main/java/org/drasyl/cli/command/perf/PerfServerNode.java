@@ -29,6 +29,7 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
+import org.drasyl.annotation.NonNull;
 import org.drasyl.behaviour.Behavior;
 import org.drasyl.behaviour.BehavioralDrasylNode;
 import org.drasyl.behaviour.Behaviors;
@@ -217,6 +218,17 @@ public class PerfServerNode extends BehavioralDrasylNode {
                     .onAnyEvent(event -> same())
                     .build();
         });
+    }
+
+    @NonNull
+    @Override
+    public synchronized CompletableFuture<Void> shutdown() {
+        try {
+            return super.shutdown();
+        }
+        finally {
+            eventLoopGroup.shutdownGracefully().awaitUninterruptibly();
+        }
     }
 
     /**
