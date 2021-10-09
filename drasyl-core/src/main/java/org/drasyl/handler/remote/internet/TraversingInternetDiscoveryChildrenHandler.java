@@ -213,7 +213,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
         traversingPeer.acknowledgementReceived(inetAddress);
 
-        ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, PATH));
+        ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, inetAddress, PATH));
     }
 
     @Override

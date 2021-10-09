@@ -22,7 +22,10 @@
 package org.drasyl.handler.discovery;
 
 import com.google.auto.value.AutoValue;
+import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.DrasylAddress;
+
+import java.net.InetSocketAddress;
 
 /**
  * Signals that a direct routing path has been discovered to {@link AddPathEvent#getAddress()}.
@@ -30,7 +33,12 @@ import org.drasyl.identity.DrasylAddress;
 @SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
 public abstract class AddPathEvent implements PathEvent {
-    public static AddPathEvent of(final DrasylAddress publicKey, final Object path) {
-        return new AutoValue_AddPathEvent(publicKey, path);
+    @Nullable
+    public abstract InetSocketAddress getInetAddress();
+
+    public static AddPathEvent of(final DrasylAddress publicKey,
+                                  final InetSocketAddress inetAddress,
+                                  final Object path) {
+        return new AutoValue_AddPathEvent(publicKey, path, inetAddress);
     }
 }

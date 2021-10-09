@@ -251,7 +251,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
         final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress));
         childrenPeer.discoveryReceived();
-        ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(msg.getSender(), PATH));
+        ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH));
 
         // reply with Acknowledgement
         final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getNonce(), msg.getTime());

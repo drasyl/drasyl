@@ -330,7 +330,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         newRoutes.forEach(((publicKey, address) -> {
             if (!routes.containsKey(publicKey)) {
                 routes.put(publicKey, address);
-                ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, eventPath));
+                ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, address, eventPath));
             }
         }));
     }

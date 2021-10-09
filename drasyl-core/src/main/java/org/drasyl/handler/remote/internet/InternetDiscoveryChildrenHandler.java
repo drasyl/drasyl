@@ -146,7 +146,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (isAcknowledgementMessageFromSuperPeer(msg)) {
             final AddressedMessage<AcknowledgementMessage, InetSocketAddress> addressedMsg = (AddressedMessage<AcknowledgementMessage, InetSocketAddress>) msg;
-            handleAcknowledgementMessage(ctx, addressedMsg.message());
+            handleAcknowledgementMessage(ctx, addressedMsg.message(), addressedMsg.address());
         }
         else if (isUnexpectedMessage(msg)) {
             LOG.trace("Got unexpected message `{}`. Drop it.", msg);
@@ -240,7 +240,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     }
 
     private void handleAcknowledgementMessage(final ChannelHandlerContext ctx,
-                                              final AcknowledgementMessage msg) {
+                                              final AcknowledgementMessage msg,
+                                              final InetSocketAddress inetAddress) {
         final IdentityPublicKey publicKey = msg.getSender();
         LOG.trace("Got Acknowledgement ({}ms latency) from super peer `{}`.", () -> System.currentTimeMillis() - msg.getTime(), () -> publicKey);
 
@@ -248,7 +249,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         final SuperPeer superPeer = superPeers.get(publicKey);
         superPeer.acknowledgementReceived(latency);
 
-        ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(publicKey, PATH));
+        ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH));
 
         determineBestSuperPeer(ctx);
     }

@@ -22,7 +22,10 @@
 package org.drasyl.handler.discovery;
 
 import com.google.auto.value.AutoValue;
+import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.IdentityPublicKey;
+
+import java.net.InetSocketAddress;
 
 /**
  * Signals that a direct routing path has been discovered to {@link AddPathAndChildrenEvent#getAddress()}
@@ -31,8 +34,12 @@ import org.drasyl.identity.IdentityPublicKey;
 @SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
 public abstract class AddPathAndChildrenEvent implements PathEvent {
+    @Nullable
+    public abstract InetSocketAddress getInetAddress();
+
     public static AddPathAndChildrenEvent of(final IdentityPublicKey publicKey,
+                                             final InetSocketAddress inetAddress,
                                              final Object path) {
-        return new AutoValue_AddPathAndChildrenEvent(publicKey, path);
+        return new AutoValue_AddPathAndChildrenEvent(publicKey, path, inetAddress);
     }
 }

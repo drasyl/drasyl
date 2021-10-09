@@ -49,6 +49,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
+import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -85,22 +86,24 @@ class PeersManagerHandlerTest {
         @Test
         void shouldEmitEventIfThisIsTheFirstPath(@Mock final ChannelHandlerContext ctx,
                                                  @Mock final IdentityPublicKey publicKey,
+                                                 @Mock final InetSocketAddress inetAddress,
                                                  @Mock final Object path) {
-            underTest.userEventTriggered(ctx, AddPathEvent.of(publicKey, path));
+            underTest.userEventTriggered(ctx, AddPathEvent.of(publicKey, inetAddress, path));
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
         }
 
         @Test
         void shouldEmitNotEventIfPeerHasAlreadyPaths(@Mock final ChannelHandlerContext ctx,
                                                      @Mock final IdentityPublicKey publicKey,
+                                                     @Mock final InetSocketAddress inetAddress,
                                                      @Mock final Object path1,
                                                      @Mock final Object path2) {
             paths.put(publicKey, path1);
 
-            underTest.userEventTriggered(ctx, AddPathEvent.of(publicKey, path2));
+            underTest.userEventTriggered(ctx, AddPathEvent.of(publicKey, inetAddress, path2));
 
-            verify(ctx, never()).fireUserEventTriggered(any());
+            verify(ctx, never()).fireUserEventTriggered(any(Event.class));
         }
     }
 
@@ -127,7 +130,7 @@ class PeersManagerHandlerTest {
 
             underTest.userEventTriggered(ctx, RemovePathEvent.of(publicKey, path1));
 
-            verify(ctx, never()).fireUserEventTriggered(any());
+            verify(ctx, never()).fireUserEventTriggered(any(Event.class));
         }
 
         @Test
@@ -138,7 +141,7 @@ class PeersManagerHandlerTest {
 
             underTest.userEventTriggered(ctx, RemovePathEvent.of(publicKey, path));
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerRelayEvent.of(Peer.of(publicKey)).equals(e)));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> PeerRelayEvent.of(Peer.of(publicKey)).equals(e)));
         }
     }
 
@@ -161,7 +164,7 @@ class PeersManagerHandlerTest {
 
             underTest.userEventTriggered(ctx, RemoveSuperPeerAndPathEvent.of(publicKey, path));
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> e instanceof NodeOfflineEvent));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> e instanceof NodeOfflineEvent));
         }
 
         @Test
@@ -174,7 +177,7 @@ class PeersManagerHandlerTest {
 
             underTest.userEventTriggered(ctx, RemoveSuperPeerAndPathEvent.of(publicKey, path));
 
-            verify(ctx, never()).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> e instanceof NodeOfflineEvent));
+            verify(ctx, never()).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> e instanceof NodeOfflineEvent));
         }
     }
 
@@ -183,8 +186,9 @@ class PeersManagerHandlerTest {
         @Test
         void shouldAddPathAndAddSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock final IdentityPublicKey publicKey,
+                                          @Mock final InetSocketAddress inetAddress,
                                           @Mock final Object path) {
-            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, path));
+            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, inetAddress, path));
 
             assertEquals(Set.of(publicKey), superPeers);
             assertEquals(Set.of(path), paths.get(publicKey));
@@ -193,11 +197,12 @@ class PeersManagerHandlerTest {
         @Test
         void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                      @Mock final IdentityPublicKey publicKey,
+                                                                     @Mock final InetSocketAddress inetAddress,
                                                                      @Mock final Object path) {
-            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, path));
+            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, inetAddress, path));
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> e instanceof NodeOnlineEvent));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> e instanceof NodeOnlineEvent));
         }
     }
 
@@ -221,7 +226,7 @@ class PeersManagerHandlerTest {
                                                        @Mock final Object path) {
             underTest.userEventTriggered(ctx, RemoveChildrenAndPathEvent.of(publicKey, path));
 
-            verify(ctx, never()).fireUserEventTriggered(any());
+            verify(ctx, never()).fireUserEventTriggered(any(Event.class));
         }
     }
 
@@ -230,8 +235,9 @@ class PeersManagerHandlerTest {
         @Test
         void shouldAddPathAndChildren(@Mock final ChannelHandlerContext ctx,
                                       @Mock final IdentityPublicKey publicKey,
+                                      @Mock final InetSocketAddress inetAddress,
                                       @Mock final Object path) {
-            underTest.userEventTriggered(ctx, AddPathAndChildrenEvent.of(publicKey, path));
+            underTest.userEventTriggered(ctx, AddPathAndChildrenEvent.of(publicKey, inetAddress, path));
 
             assertThat(SetUtil.merge(paths.keySet(), SetUtil.merge(superPeers, children)), hasItem(publicKey));
             assertEquals(Set.of(publicKey), children);
@@ -240,22 +246,24 @@ class PeersManagerHandlerTest {
         @Test
         void shouldEmitPeerDirectEventIfGivenPathIsTheFirstOneForThePeer(@Mock final ChannelHandlerContext ctx,
                                                                          @Mock final IdentityPublicKey publicKey,
+                                                                         @Mock final InetSocketAddress inetAddress,
                                                                          @Mock final Object path) {
-            underTest.userEventTriggered(ctx, AddPathAndChildrenEvent.of(publicKey, path));
+            underTest.userEventTriggered(ctx, AddPathAndChildrenEvent.of(publicKey, inetAddress, path));
 
-            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Event>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
+            verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
         }
 
         @Test
         void shouldEmitNoEventIfGivenPathIsNotTheFirstOneForThePeer(@Mock final ChannelHandlerContext ctx,
                                                                     @Mock final IdentityPublicKey publicKey,
+                                                                    @Mock final InetSocketAddress inetAddress,
                                                                     @Mock final Object path,
                                                                     @Mock final Object o) {
             paths.put(publicKey, o);
 
-            underTest.userEventTriggered(ctx, AddPathAndChildrenEvent.of(publicKey, path));
+            underTest.userEventTriggered(ctx, AddPathAndChildrenEvent.of(publicKey, inetAddress, path));
 
-            verify(ctx, never()).fireUserEventTriggered(any());
+            verify(ctx, never()).fireUserEventTriggered(any(Event.class));
         }
     }
 }

@@ -32,7 +32,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -43,9 +43,9 @@ import static java.util.Objects.requireNonNull;
 public final class StaticRoutesHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
-    private final Map<IdentityPublicKey, SocketAddress> staticRoutes;
+    private final Map<IdentityPublicKey, InetSocketAddress> staticRoutes;
 
-    public StaticRoutesHandler(final Map<IdentityPublicKey, SocketAddress> staticRoutes) {
+    public StaticRoutesHandler(final Map<IdentityPublicKey, InetSocketAddress> staticRoutes) {
         this.staticRoutes = requireNonNull(staticRoutes);
     }
 
@@ -57,7 +57,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
             final ApplicationMessage applicationMsg = ((AddressedMessage<ApplicationMessage, IdentityPublicKey>) msg).message();
             final IdentityPublicKey recipient = ((AddressedMessage<ApplicationMessage, IdentityPublicKey>) msg).address();
 
-            final SocketAddress staticAddress = staticRoutes.get(recipient);
+            final InetSocketAddress staticAddress = staticRoutes.get(recipient);
             if (staticAddress != null) {
                 LOG.trace("Send message `{}` via static route {}.", () -> applicationMsg, () -> staticAddress);
                 ctx.write(((AddressedMessage<?, ?>) msg).route(staticAddress), promise);
@@ -87,7 +87,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
     }
 
     private void populateRoutes(final ChannelHandlerContext ctx) {
-        staticRoutes.forEach(((publicKey, address) -> ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, path))));
+        staticRoutes.forEach(((publicKey, address) -> ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, address, path))));
     }
 
     private void clearRoutes(final ChannelHandlerContext ctx) {

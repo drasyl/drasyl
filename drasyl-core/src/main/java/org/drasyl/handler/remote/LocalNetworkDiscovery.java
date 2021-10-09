@@ -146,7 +146,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             final SocketAddress sender = ((AddressedMessage<DiscoveryMessage, ?>) msg).address();
 
             if (scheduledPingFuture != null && sender instanceof InetSocketAddress && discoveryMsg.getRecipient() == null) {
-                handlePing(ctx, sender, discoveryMsg, new CompletableFuture<>());
+                handlePing(ctx, (InetSocketAddress) sender, discoveryMsg, new CompletableFuture<>());
             }
             else {
                 ctx.fireChannelRead(msg);
@@ -158,7 +158,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void handlePing(final ChannelHandlerContext ctx,
-                            final SocketAddress sender,
+                            final InetSocketAddress sender,
                             final RemoteMessage msg,
                             final CompletableFuture<Void> future) {
         final IdentityPublicKey msgSender = msg.getSender();
@@ -166,7 +166,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
             final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender, pingTimeout));
             peer.inboundPingOccurred();
-            ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, path));
+            ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, sender, path));
         }
 
         future.complete(null);

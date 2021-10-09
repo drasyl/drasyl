@@ -40,7 +40,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class LocalHostPeerInformation {
     final Set<InetSocketAddress> addresses;
 
-    public LocalHostPeerInformation(Set<InetSocketAddress> addresses) {
+    public LocalHostPeerInformation(final Set<InetSocketAddress> addresses) {
         this.addresses = ImmutableSet.copyOf(addresses);
     }
 
@@ -48,9 +48,9 @@ public class LocalHostPeerInformation {
         return addresses;
     }
 
-    void writeTo(File file) throws IOException {
-        try (FileOutputStream out = new FileOutputStream(file)) {
-            for (InetSocketAddress address : addresses) {
+    void writeTo(final File file) throws IOException {
+        try (final FileOutputStream out = new FileOutputStream(file)) {
+            for (final InetSocketAddress address : addresses) {
                 out.write(serializeAddress(address).getBytes(UTF_8));
                 out.write("\n".getBytes(UTF_8));
             }
@@ -61,9 +61,9 @@ public class LocalHostPeerInformation {
         return new LocalHostPeerInformation(addresses);
     }
 
-    public static LocalHostPeerInformation of(File file) throws IOException {
-        Set<InetSocketAddress> addresses = new HashSet<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(file, UTF_8))) {
+    public static LocalHostPeerInformation of(final File file) throws IOException {
+        final Set<InetSocketAddress> addresses = new HashSet<>();
+        try (final BufferedReader reader = new BufferedReader(new FileReader(file, UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 final InetSocketAddress address = deserializeAddress(line);
@@ -86,10 +86,10 @@ public class LocalHostPeerInformation {
      * @return {@link String} representation of {@code vlaue}
      */
     @SuppressWarnings("java:S864")
-    static String serializeAddress(InetSocketAddress value) {
-        InetAddress addr = value.getAddress();
+    public static String serializeAddress(final InetSocketAddress value) {
+        final InetAddress addr = value.getAddress();
         String str = addr == null ? value.getHostName() : addr.toString().trim();
-        int ix = str.indexOf('/');
+        final int ix = str.indexOf('/');
         if (ix >= 0) {
             if (ix == 0) { // missing host name; use address
                 str = addr instanceof Inet6Address
@@ -112,22 +112,22 @@ public class LocalHostPeerInformation {
      * @param value address to deserialize
      * @return {@link InetSocketAddress} representation of {@code vlaue}
      */
-    static InetSocketAddress deserializeAddress(String value) {
+    static InetSocketAddress deserializeAddress(final String value) {
         if (value.startsWith("[")) {
             // bracketed IPv6 (with port number)
-            int i = value.lastIndexOf(']');
+            final int i = value.lastIndexOf(']');
             if (i == -1) {
                 throw new IllegalArgumentException("Bracketed IPv6 address must contain closing bracket");
             }
 
-            int j = value.indexOf(':', i);
-            int port = j > -1 ? Integer.parseInt(value.substring(j + 1)) : 0;
+            final int j = value.indexOf(':', i);
+            final int port = j > -1 ? Integer.parseInt(value.substring(j + 1)) : 0;
             return new InetSocketAddress(value.substring(0, i + 1), port);
         }
-        int ix = value.indexOf(':');
+        final int ix = value.indexOf(':');
         if (ix >= 0 && value.indexOf(':', ix + 1) < 0) {
             // host:port
-            int port = Integer.parseInt(value.substring(ix + 1));
+            final int port = Integer.parseInt(value.substring(ix + 1));
             return new InetSocketAddress(value.substring(0, ix), port);
         }
         // host or unbracketed IPv6, without port number

@@ -38,7 +38,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -49,7 +48,7 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 class StaticRoutesHandlerTest {
     @Test
     void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
-        final SocketAddress address = new InetSocketAddress(22527);
+        final InetSocketAddress address = new InetSocketAddress(22527);
 
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
@@ -65,7 +64,7 @@ class StaticRoutesHandlerTest {
 
     @Test
     void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
-                                            @Mock final SocketAddress address) {
+                                            @Mock final InetSocketAddress address) {
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
@@ -81,7 +80,7 @@ class StaticRoutesHandlerTest {
 
     @Test
     void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        final SocketAddress address = new InetSocketAddress(22527);
+        final InetSocketAddress address = new InetSocketAddress(22527);
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));

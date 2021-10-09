@@ -31,7 +31,8 @@ import org.drasyl.identity.DrasylAddress;
 @SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
 public abstract class RemovePathEvent implements PathEvent {
-    public static RemovePathEvent of(final DrasylAddress publicKey, final Object path) {
+    public static RemovePathEvent of(final DrasylAddress publicKey,
+                                     final Object path) {
         return new AutoValue_RemovePathEvent(publicKey, path);
     }
 }

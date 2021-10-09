@@ -103,9 +103,8 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
                 removeChildrenAndPath(ctx, e.getAddress(), e.getPath());
             }
         }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
+
+        ctx.fireUserEventTriggered(evt);
     }
 
     private void addPath(final ChannelInboundInvoker ctx,
